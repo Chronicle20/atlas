@@ -18,6 +18,7 @@ type TenantVariant struct {
 var Variants = []TenantVariant{
 	{Name: "GMS v28", Region: "GMS", MajorVersion: 28, MinorVersion: 1},
 	{Name: "GMS v83", Region: "GMS", MajorVersion: 83, MinorVersion: 1},
+	{Name: "GMS v87", Region: "GMS", MajorVersion: 87, MinorVersion: 1},
 	{Name: "GMS v95", Region: "GMS", MajorVersion: 95, MinorVersion: 1},
 	{Name: "JMS v185", Region: "JMS", MajorVersion: 185, MinorVersion: 1},
 }

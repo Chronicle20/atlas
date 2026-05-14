@@ -28,9 +28,9 @@ func TestItemUpgradeRoundTrip(t *testing.T) {
 			if output.WhiteScroll() != input.WhiteScroll() {
 				t.Errorf("whiteScroll: got %v, want %v", output.WhiteScroll(), input.WhiteScroll())
 			}
-			// enchantCategory and enchantResultFlag only present in GMS>83 and JMS.
-			// IDA v83 CUser::ShowItemUpgradeEffect@0x93354d reads only 4 × Decode1.
-			hasEnchantFields := (v.Region == "GMS" && v.MajorVersion > 83) || v.Region == "JMS"
+			// enchantCategory and enchantResultFlag only present in GMS>87 and JMS.
+			// IDA v83 and v87 CUser::ShowItemUpgradeEffect read only 4 × Decode1; v95 adds enchant fields.
+			hasEnchantFields := (v.Region == "GMS" && v.MajorVersion > 87) || v.Region == "JMS"
 			if hasEnchantFields {
 				if output.EnchantCategory() != input.EnchantCategory() {
 					t.Errorf("enchantCategory: got %v, want %v", output.EnchantCategory(), input.EnchantCategory())
@@ -40,10 +40,10 @@ func TestItemUpgradeRoundTrip(t *testing.T) {
 				}
 			} else {
 				if output.EnchantCategory() != 0 {
-					t.Errorf("enchantCategory: expected 0 for v83, got %v", output.EnchantCategory())
+					t.Errorf("enchantCategory: expected 0 for v83/v87, got %v", output.EnchantCategory())
 				}
 				if output.EnchantResultFlag() != 0 {
-					t.Errorf("enchantResultFlag: expected 0 for v83, got %v", output.EnchantResultFlag())
+					t.Errorf("enchantResultFlag: expected 0 for v83/v87, got %v", output.EnchantResultFlag())
 				}
 			}
 		})
@@ -60,8 +60,9 @@ func TestItemUpgradeEnchantRoundTrip(t *testing.T) {
 			if output.CharacterId() != input.CharacterId() {
 				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
 			}
-			// enchantCategory and enchantResultFlag only present in GMS>83 and JMS.
-			hasEnchantFields := (v.Region == "GMS" && v.MajorVersion > 83) || v.Region == "JMS"
+			// enchantCategory and enchantResultFlag only present in GMS>87 and JMS.
+			// IDA v83 and v87 CUser::ShowItemUpgradeEffect read only 4 × Decode1; v95 adds enchant fields.
+			hasEnchantFields := (v.Region == "GMS" && v.MajorVersion > 87) || v.Region == "JMS"
 			if hasEnchantFields {
 				if output.EnchantCategory() != input.EnchantCategory() {
 					t.Errorf("enchantCategory: got %v, want %v", output.EnchantCategory(), input.EnchantCategory())
@@ -71,10 +72,10 @@ func TestItemUpgradeEnchantRoundTrip(t *testing.T) {
 				}
 			} else {
 				if output.EnchantCategory() != 0 {
-					t.Errorf("enchantCategory: expected 0 for v83, got %v", output.EnchantCategory())
+					t.Errorf("enchantCategory: expected 0 for v83/v87, got %v", output.EnchantCategory())
 				}
 				if output.EnchantResultFlag() != 0 {
-					t.Errorf("enchantResultFlag: expected 0 for v83, got %v", output.EnchantResultFlag())
+					t.Errorf("enchantResultFlag: expected 0 for v83/v87, got %v", output.EnchantResultFlag())
 				}
 			}
 		})

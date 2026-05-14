@@ -172,6 +172,40 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserRemote::OnAvatarModified":
 		// Struct is CharacterAppearanceUpdate.
 		return []candidate{{name: "CharacterAppearanceUpdate", dir: csvpkg.DirClientbound}}
+	// --- Character misc-state bucket ---
+	case "CUserRemote::OnSetActivePortableChair":
+		// Struct is CharacterChairShow; writer = "CharacterShowChair".
+		// CUserPool::OnUserRemotePacket (case 222 = 0xDE) reads characterId, then
+		// delegates remaining packet to OnSetActivePortableChair which reads Decode4 (chairId).
+		return []candidate{{name: "CharacterChairShow", dir: csvpkg.DirClientbound}}
+	case "CUser::OnADBoard":
+		// Struct is ChalkboardUse; writer = "ChalkboardUse".
+		// CUserPool::OnUserCommonPacket (case 183 = 0xB7) reads characterId, then
+		// delegates remaining packet to OnADBoard which reads Decode1 (active) + optional DecodeStr.
+		return []candidate{{name: "ChalkboardUse", dir: csvpkg.DirClientbound}}
+	case "CUser::OnEmotion":
+		// Struct is CharacterExpression; writer = "CharacterExpression".
+		// CUserPool::OnUserRemotePacket (case 219 = 0xDB) reads characterId, then
+		// delegates remaining packet to OnEmotion which reads Decode4 (expressionId) +
+		// Decode4 (duration) + Decode1 (itemOptionFlag).
+		// The local-player variant (case 232 = 0xE8) goes through CUserLocal::OnPacket
+		// and has no characterId prefix.
+		return []candidate{{name: "CharacterExpression", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnBalloonMsg":
+		// Struct is CharacterHint; writer = "CharacterHint".
+		// CUserLocal::OnPacket (case 245 = 0xF5) delegates directly (no characterId prefix).
+		// Reads: DecodeStr (hint) + Decode2 (width) + Decode2 (height) + Decode1 (notAtPoint flag)
+		// + if !notAtPoint: Decode4 (x) + Decode4 (y).
+		return []candidate{{name: "CharacterHint", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnCharacterInfo":
+		// Struct is CharacterInfo; writer = "CharacterInfo".
+		// CWvsContext::OnPacket (case 61 = 0x3D) delegates directly.
+		return []candidate{{name: "CharacterInfo", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnSitResult":
+		// Struct is CharacterSitResult; writer = "CharacterSitResult".
+		// CUserLocal::OnPacket (case 231 = 0xE7) delegates directly (no characterId prefix).
+		// Reads: Decode1 (sitting flag); if 1: Decode2 (chairId).
+		return []candidate{{name: "CharacterSitResult", dir: csvpkg.DirClientbound}}
 	// --- Login domain ---
 	case "CLogin::OnCheckPasswordResult":
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}

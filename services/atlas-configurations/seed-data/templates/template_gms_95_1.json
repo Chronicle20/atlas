@@ -376,6 +376,30 @@
       {
         "opCode": "0x114",
         "writer": "CharacterSkillCooldown"
+      },
+      {
+        "opCode": "0x3D",
+        "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xDB",
+        "writer": "CharacterExpression"
+      },
+      {
+        "opCode": "0xDE",
+        "writer": "CharacterShowChair"
+      },
+      {
+        "opCode": "0xE7",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xF5",
+        "writer": "CharacterHint"
       }
     ]
   },

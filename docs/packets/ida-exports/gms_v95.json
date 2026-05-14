@@ -121,7 +121,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64; atlas for-loop body collapses to 1 static entry)",
+          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 \u00d7 int64; atlas for-loop body collapses to 1 static entry)",
           "guard": "loop nCount"
         },
         {
@@ -434,7 +434,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "ipv4 (4 octets — WriteByteArray in atlas, Decode4 in client; same wire bytes)"
+          "comment": "ipv4 (4 octets \u2014 WriteByteArray in atlas, Decode4 in client; same wire bytes)"
         },
         {
           "op": "Decode2",
@@ -642,19 +642,19 @@
         },
         {
           "op": "EncodeStr",
-          "comment": "nexonPassport (szPassport) — only when gameStartMode==1"
+          "comment": "nexonPassport (szPassport) \u2014 only when gameStartMode==1"
         },
         {
           "op": "EncodeBuf",
-          "comment": "machineId (16 bytes) — only when gameStartMode==1"
+          "comment": "machineId (16 bytes) \u2014 only when gameStartMode==1"
         },
         {
           "op": "Encode4",
-          "comment": "gameRoomClient — only when gameStartMode==1"
+          "comment": "gameRoomClient \u2014 only when gameStartMode==1"
         },
         {
           "op": "Encode1",
-          "comment": "gameStartMode (echoed) — only when gameStartMode==1"
+          "comment": "gameStartMode (echoed) \u2014 only when gameStartMode==1"
         }
       ]
     },
@@ -684,7 +684,7 @@
       "calls": [
         {
           "op": "Decode2",
-          "comment": "world status (2 bytes — v95 reads as 2 × Decode1; atlas writes WriteShort, wire-equivalent)"
+          "comment": "world status (2 bytes \u2014 v95 reads as 2 \u00d7 Decode1; atlas writes WriteShort, wire-equivalent)"
         }
       ]
     },
@@ -787,7 +787,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "nWorldID terminator (0xFF dispatch — end of world list)"
+          "comment": "nWorldID terminator (0xFF dispatch \u2014 end of world list)"
         }
       ]
     },
@@ -895,7 +895,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read before dispatching to OnAttack/OnHit/OnMove/etc."
+          "comment": "characterId \u2014 read before dispatching to OnAttack/OnHit/OnMove/etc."
         }
       ]
     },
@@ -1118,7 +1118,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "DecodeBuf",
@@ -1132,11 +1132,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
         },
         {
           "op": "Decode1",
-          "comment": "nMode — sub-op byte dispatching to 16+ effect branches (case 0..15+); sub-op enum not modeled by pipeline"
+          "comment": "nMode \u2014 sub-op byte dispatching to 16+ effect branches (case 0..15+); sub-op enum not modeled by pipeline"
         }
       ]
     },
@@ -1160,7 +1160,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -1168,7 +1168,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "AvatarLook::Decode — full avatar look data (guard: v4 & 1)",
+          "comment": "AvatarLook::Decode \u2014 full avatar look data (guard: v4 & 1)",
           "guard": "v4 & 1"
         },
         {
@@ -1290,7 +1290,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64)",
+          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 \u00d7 int64)",
           "guard": "loop nCount"
         },
         {
@@ -1475,7 +1475,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "m_bLoginOpt (PIC handling — GMS v95 guard: >v87)"
+          "comment": "m_bLoginOpt (PIC handling \u2014 GMS v95 guard: >v87)"
         }
       ]
     },
@@ -1485,7 +1485,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "code byte (case 2/3/6/7 = error — no further reads in v95)"
+          "comment": "code byte (case 2/3/6/7 = error \u2014 no further reads in v95)"
         }
       ]
     },
@@ -1529,7 +1529,7 @@
         },
         {
           "op": "Decode8",
-          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64)",
+          "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 \u00d7 int64)",
           "guard": "code == 0"
         },
         {
@@ -1720,7 +1720,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwCharacterID — user leaving the field"
+          "comment": "dwCharacterID \u2014 user leaving the field"
         }
       ]
     },
@@ -1735,6 +1735,166 @@
         {
           "op": "Decode1",
           "comment": "v5 result code: 0=OK, 1=alreadyRegistered, 2=notAllowed, else=systemError"
+        }
+      ]
+    },
+    "CUserRemote::OnSetActivePortableChair": {
+      "address": "0x949240",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserRemotePacket dispatcher, case 222 = 0xDE, before calling this function)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nPortableChairID (chairId)"
+        }
+      ]
+    },
+    "CUser::OnADBoard": {
+      "address": "0x8ed310",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket dispatcher, case 183 = 0xB7, before calling this function)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "active (bool: 1=show chalkboard, 0=clear)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message text (only if active != 0)"
+        }
+      ]
+    },
+    "CUser::OnEmotion": {
+      "address": "0x8e0150",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserRemotePacket dispatcher, case 219 = 0xDB)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEmotion (expression/emote ID)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEmotionDuration (duration in ms)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "m_bEmotionByItemOption (item-option emotion flag)"
+        }
+      ]
+    },
+    "CUserLocal::OnBalloonMsg": {
+      "address": "0x91d780",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "msg (hint text)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "width (balloon width)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "duration/height (1000 * value ms)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "notAtPoint flag (0=use explicit x,y; non-zero=use avatar position)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x coordinate (only if notAtPoint == 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y coordinate (only if notAtPoint == 0)"
+        }
+      ]
+    },
+    "CWvsContext::OnCharacterInfo": {
+      "address": "0xa05750",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwCharacterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nLevel"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nJob"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOP (fame)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bMarriageRing (bool)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCommunity (guild name)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sAlliance (alliance name)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pMedalInfo (medal slot byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v7 (pet count; if >0: SetMultiPetInfo reads pets in bool-terminated loop)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "taming mob active flag"
+        },
+        {
+          "op": "Decode1",
+          "comment": "wish list count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "MedalAchievementInfo: nEquipedMedalID"
+        },
+        {
+          "op": "Decode2",
+          "comment": "MedalAchievementInfo: ausMedalQuestID count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "chair list count (ZArray<long>::_Alloc + DecodeBuffer with 4 * count bytes)"
+        }
+      ]
+    },
+    "CUserLocal::OnSitResult": {
+      "address": "0x905e70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sitting flag (0=cancel sit / stand up, 1=sit in chair)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "chairId / nSeat (only if sitting flag == 1)"
         }
       ]
     }

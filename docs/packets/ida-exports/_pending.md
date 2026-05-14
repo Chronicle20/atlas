@@ -125,6 +125,45 @@ Encode method.
 |---|---|---|
 | (bare-handler) | `CharacterSkillChange` (opcode 0x23) | Already in gms_v95.json. Audit reports ❌ due to tool-limitation in nested `SecondaryStat` sub-struct analysis. See CharacterSkillChange.md ack footer. Deferred to Phase 3 analyzer descent. |
 
+## Known false positives — character misc-state bucket (Task 10)
+
+### CharacterSitResult.md (verdict ❌)
+
+Row 2 shows an extra byte not consumed by the client. The analyzer flattens both
+branches of the `if m.sitting { WriteByte(1)+WriteShort } else { WriteByte(0) }`
+into a merged call list, treating the else-branch `WriteByte(0)` as a 3rd sequential
+write that appears after the if-branch writes. At runtime only one branch fires:
+either `byte(1)+short(chairId)` or `byte(0)`. IDA `CUserLocal::OnSitResult`
+(case 231 = 0xE7 in `CUserLocal::OnPacket`) reads `Decode1` then conditionally
+`Decode2` — exactly matching the atlas encoder. The ❌ verdict is a branch-flattening
+false positive; no wire bug present.
+
+Resolution: analyzer needs to detect exclusive if/else branches and not union their writes.
+Deferred to Phase 3 analyzer enhancement.
+
+### CharacterInfo.md (verdict ❌)
+
+Rows 9–22 show multiple width mismatches and extra bytes. `CWvsContext::OnCharacterInfo`
+(case 61 = 0x3D in `CWvsContext::OnPacket`) is a complex packet with:
+- A bool-terminated pet list (SetMultiPetInfo do-while loop)
+- An optional taming mob block (if-guarded)
+- A wishList loop (count + N × int32)
+- Version-guarded monster book block (GMS < 87 only; absent in v95)
+- MedalAchievementInfo sub-struct (Decode4 + Decode2 + optional loop)
+- A chair list block (Decode4 count + DecodeBuffer array)
+
+The flat analyzer cannot track loop state, conditional loops, or the version guard
+producing the correct sub-sequence for v95. Cross-checking the atlas encoder against
+the IDA manually confirms the encoding is correct for v95:
+- No monster book block (GMS v95 ≥ 87 → guard false)
+- MedalAchievementInfo: WriteInt(medalId) + WriteShort(0) = Decode4 + Decode2 ✅
+- Chair list: WriteInt(0) count + no items = Decode4(0) + no buffer ✅
+
+The ❌ verdict is a multi-cause tool limitation (loop linearization, conditional sub-struct
+expansion, version guard interaction). No wire bug present.
+
+Resolution: Phase 3 sub-struct descent + loop-aware analyzer.
+
 ## Known false positives — character spawn/list bucket (Task 9)
 
 ### AddCharacterEntry.md (verdict ❌)

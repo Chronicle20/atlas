@@ -80,5 +80,6 @@ func (m *Model) Is(tenant Model) bool {
 }
 
 func (m *Model) String() string {
-	return fmt.Sprintf("Id [%s] Region [%s] Version [%d.%d]", m.Id().String(), m.Region(), m.MajorVersion(), m.MinorVersion())
+	return fmt.Sprintf("Id [%s] Region [%s] Version [%d.%d]",
+		m.Id().String(), m.Region(), m.MajorVersion(), m.MinorVersion())
 }

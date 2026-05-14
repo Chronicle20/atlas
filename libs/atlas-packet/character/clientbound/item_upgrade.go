@@ -14,18 +14,19 @@ const CharacterItemUpgradeWriter = "CharacterItemUpgrade"
 
 // ItemUpgrade represents the SHOW_SCROLL_EFFECT packet (CUser::ShowItemUpgradeEffect).
 //
-// Wire layout — version-gated (IDA v83@0x93354d, v95@0x8e7b00):
+// Wire layout — version-gated (IDA v83@0x93354d, v87@0x9adb79, v95@0x8e7b00):
 //
 //	Decode4  characterId        — read by CUserPool::OnUserCommonPacket (case 0xBA) before dispatch
 //	Decode1  success            — bSuccess
 //	Decode1  cursed             — v4 (cursed/failed flag)
 //	Decode1  legendarySpirit    — bEnchantSkill (Vega/enchant scroll category)
-//	Decode4  enchantCategory    — nEnchantCategory [GMS>83 || JMS only; added after v83]
+//	Decode4  enchantCategory    — nEnchantCategory [GMS>87 || JMS only; added after v87]
 //	Decode1  whiteScroll        — v5 (lucky/white-scroll display flag)
-//	Decode1  enchantResultFlag  — v6 (passed to CUIEnchantDlg) [GMS>83 || JMS only]
+//	Decode1  enchantResultFlag  — v6 (passed to CUIEnchantDlg) [GMS>87 || JMS only]
 //
-// IDA v83 CUser::ShowItemUpgradeEffect@0x93354d: reads Decode1×4 only (no enchantCategory,
-// no enchantResultFlag). IDA v95 CUser::ShowItemUpgradeEffect@0x8e7b00: reads all 7 fields.
+// IDA v83 CUser::ShowItemUpgradeEffect@0x93354d: reads Decode1×4 only.
+// IDA v87 CUser::ShowItemUpgradeEffect@0x9adb79: reads Decode1×4 only (same as v83 — no enchantCategory, no enchantResultFlag).
+// IDA v95 CUser::ShowItemUpgradeEffect@0x8e7b00: reads all 7 fields (enchantCategory+enchantResultFlag added in v95).
 type ItemUpgrade struct {
 	characterId      uint32
 	success          bool
@@ -81,13 +82,13 @@ func (m ItemUpgrade) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteBool(m.success)
 		w.WriteBool(m.cursed)
 		w.WriteBool(m.legendarySpirit)
-		// enchantCategory and enchantResultFlag added after GMS v83 (first seen in v87 IDA).
-		// IDA v83 CUser::ShowItemUpgradeEffect@0x93354d reads only 4 × Decode1.
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		// enchantCategory and enchantResultFlag added after GMS v87 (first seen in v95 IDA).
+		// IDA v83 and v87 CUser::ShowItemUpgradeEffect read only 4 × Decode1.
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 			w.WriteInt32(m.enchantCategory)
 		}
 		w.WriteBool(m.whiteScroll)
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 			w.WriteByte(m.enchantResultFlag)
 		}
 		return w.Bytes()
@@ -101,11 +102,11 @@ func (m *ItemUpgrade) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *
 		m.success = r.ReadBool()
 		m.cursed = r.ReadBool()
 		m.legendarySpirit = r.ReadBool()
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 			m.enchantCategory = r.ReadInt32()
 		}
 		m.whiteScroll = r.ReadBool()
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 			m.enchantResultFlag = r.ReadByte()
 		}
 	}

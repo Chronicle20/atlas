@@ -17,13 +17,3 @@
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-**ack: sub-op enum drift — deferred to `_pending.md § Sub-op enum drift — character domain`**
-
-This report represents the effect_quest.go file. Same root cause as EffectSimple:
-the IDA export describes the foreign path while EffectQuest has no characterId
-(row 0), and the mode byte's sub-op tree cannot be modeled (rows 2+). The
-"atlas: extra" rows are quest-specific fields (reward count, message, nEffect)
-that appear beyond the pipeline's view of the IDA flat sequence. Deferred to
-Phase 3 for per-mode case-arm verification.

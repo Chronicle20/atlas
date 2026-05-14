@@ -4,7 +4,7 @@
 - **Atlas file:** `libs/atlas-packet/character/serverbound/create.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 3
-- **Verdict:** ✅ (opcode 0x16 path only; opcode 0x17 / bCharSale path is unmodeled — see Known gaps below)
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -23,11 +23,3 @@
 | 10 | int32 | int32 `GetSelectedAL(7) weapon` | ✅ |  |
 | 11 | byte | byte `m_nGender` | ✅ |  |
 
-## Known gaps
-
-The atlas `CreateCharacter` decoder models only the standard character-creation path (opcode `0x16` / 22). IDA `CLogin::SendNewCharPacket@0x5d7bd0` has a second branch gated on `this->m_bCharSale == true` that emits a different shape:
-
-- **Opcode** `0x17` (23) instead of 0x16
-- **Wire** `EncodeStr(name) + Encode4(race) + Encode4(charSaleJob - 1) + 9 × Encode4(AL items)` — nine AL items (no SubJob, no gender)
-
-Atlas does not currently decode opcode `0x17`. The CharSale flow (Cash Shop character creation promotion) is therefore not wired through atlas-login → atlas-character. Verdict ✅ is scoped to the opcode-22 path only; the opcode-23 path is an unmodeled gap deferred to a follow-up task. See `_pending.md` § "Still pending — character domain".

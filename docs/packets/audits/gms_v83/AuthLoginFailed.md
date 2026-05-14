@@ -1,7 +1,7 @@
 # AuthLoginFailed (← `CLogin::OnCheckPasswordResult#AuthLoginFailed`)
 
 - **IDA:** 0x5f83ee
-- **Atlas file:** `../../libs/atlas-packet/login/clientbound/auth_login_failed.go`
+- **Atlas file:** `libs/atlas-packet/login/clientbound/auth_login_failed.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

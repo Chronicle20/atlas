@@ -62,24 +62,3 @@
 | 49 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 50 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-ack: tool-limitation false positive — DecodeBuf granularity mismatch + analyzer linearization offset.
-
-Two independent causes:
-
-1. **DecodeBuf vs 4 × int32**: IDA uses `DecodeBuffer(v3, &rank, 0x10u)` (bulk 16-byte read) for
-   the four rank fields (worldRank, worldRankGap, jobRank, jobRankGap). The diff tool maps `DecodeBuf`
-   to `bytes` (single entry = 16 bytes), while atlas `CharacterListEntry.Encode` emits four individual
-   `WriteInt` calls (4 × int32 = 16 bytes). The type system sees `byte | bytes` at row 45 and
-   misaligns every subsequent field.
-
-2. **Linearization offset**: Because the 4 rank int32s (atlas) vs 1 DecodeBuf (IDA) differ in field
-   count (4 vs 1), the trailing `WriteByte(1)` PIC byte and the IDA `Decode1 m_bLoginOpt` byte
-   fall at different logical positions in the flat comparison sequence, producing phantom ❌s on
-   rows 46–50.
-
-On the wire, both encodings are identical: 16 bytes for rank data followed by 1 byte for PIC.
-No atlas encoder change is required. Resolution would require the diff tool to expand `DecodeBuf(N)`
-into N/width individual entries — deferred to a Phase 3 analyzer enhancement.
-

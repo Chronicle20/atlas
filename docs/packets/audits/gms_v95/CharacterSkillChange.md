@@ -18,6 +18,3 @@
 | 5 | int64 | bytes `dateExpire: 8-byte FILETIME (per entry)` | ❌ | width mismatch |
 | 6 | byte | byte `sn / MovementAffectingStat (after loop)` | ✅ |  |
 
----
-
-ack: tool type-classification false positive — row 5 shows int64 (Encode8) vs bytes (DecodeBuf 8) as a width mismatch, but both are 8 bytes on the wire. IDA calls DecodeBuffer(iPacket, &dateExpire, 8u) which the tool classifies as DecodeBuf (width=-2) while atlas writes WriteInt64 (Encode8, width=8). Functionally identical 8-byte wire read; no wire bug. All other 6 fields ✅.

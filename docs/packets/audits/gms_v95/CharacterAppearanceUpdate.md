@@ -32,21 +32,3 @@
 | 19 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-**ack: tool-limitation false positive**
-
-The IDA export models `AvatarLook::Decode` as a single `DecodeBuf` placeholder
-(row 2), while the atlas analyzer fully expands `m.avatar.Encode(l, ctx)(options)`
-via `WriteByteArray` recursion into Avatar's complete field sequence. This creates
-an asymmetry: IDA has fewer rows than atlas, so the diff aligns incorrectly and
-generates "atlas: extra" warnings for rows 14–20.
-
-The actual wire format is correct. `CharacterAppearanceUpdate.Encode` sends:
-characterId (int32) | flags=1 (byte) | avatar block (WriteByteArray) |
-couple=0 (byte) | friendship=0 (byte) | marriage=0 (byte) | completedSetItemId=0 (int32).
-
-This matches `CUserRemote::OnAvatarModified` with `(v4 & 1) != 0` and all ring
-flags = 0. Rows 10, 12 show `byte` vs `int32` mismatches at the ring guards
-due to alignment skew from row 2's over-counting. Resolution requires expanding
-the IDA export with AvatarLook sub-fields; deferred to Phase 3.

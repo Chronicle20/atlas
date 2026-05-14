@@ -23,6 +23,3 @@
 | 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-ack: CTS delegate gap — CWvsContext::OnTemporaryStatSet@0xa02fc0 delegates the CTS bitmask+stat encoding to SecondaryStat::DecodeForLocal (not decompiled); IDA entry only covers the post-delegate tDelay+MovementAffectingStat tail. Tool ❌s are positional misalignment between the inlined CTS fields (from atlas CharacterTemporaryStat.Encode registry) and the 2-call IDA entry. Atlas BuffGive.Encode+Decode round-trips are clean; no wire bug detected.

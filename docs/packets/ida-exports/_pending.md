@@ -198,3 +198,43 @@ Refresh procedure:
 The synthetic-FName scheme (e.g., `CLogin::OnCheckPasswordResult#AuthLoginFailed`)
 lets one IDA function model multiple sub-branches when atlas has separate
 writers for different result codes.
+
+## Cross-version — character domain (v83)
+
+Results of the GMS v83 cross-version pass (Task 15). All 44+ character FNames were
+looked up in v83 IDA (base 0x400000, `MapleStory_dump.exe`).
+
+### Missing FNames in v83 IDA
+
+The following v95 FNames have no equivalent function in v83 IDA; the pipeline produces
+no report for them. For each, the v83 behaviour is noted.
+
+| v95 FName | v83 behaviour | Atlas struct | Notes |
+|---|---|---|---|
+| `CUser::OnEmotion` | Handled inline in `CUserPool::OnUserRemotePacket` case 0xC1: reads `Decode4(emotionId)` only; calls `CAvatar::SetEmotion` directly — no separate function | `CharacterExpression` | **Fixed**: `expression.go` (clientbound) now gates `duration` + `byItemOption` on `GMS>83\|\|JMS`. v83 wire: 8 bytes (4 charId + 4 emotionId). v95 wire: 13 bytes. |
+| `CUserRemote::OnSetActivePortableChair` | Handled inline in `CUserPool::OnUserRemotePacket` case 0xC4: reads `Decode4(chairId)` directly into `RemoteUser[3567]` — no separate function | `CharacterChairShow` | Same wire shape (`characterId + chairId` = 8 bytes); no divergence. Atlas encoder correct for v83. |
+| `CLogin::SendCheckDuplicateIDPacket` | In v83 this lives on `CUICharacterSaleDlg` (a UI class), not `CLogin`. Wire format `EncodeStr(name)` is identical. | `CheckName` | Audit can't match FName; no pipeline report. Wire shape unchanged — no v83 bug. |
+| `CWvsContext::SendStatChangeRequest` | In v83 renamed `CWvsContext::SendStatChangeRequestByItemOption@0xa1e997`. Wire format `Encode4+Encode4+Encode2+Encode2+Encode1` is **identical** to v95. | `HealOverTime` | No divergence; audit entry added under the v95 FName key for gms_v83.json. |
+
+### Resolved v83-only divergences (fixed in this task)
+
+| FName | Atlas struct | v83 wire | v95 wire | Gate added |
+|---|---|---|---|---|
+| `CUser::ShowItemUpgradeEffect` | `ItemUpgrade` (clientbound) | `Decode1×4` (no enchantCategory, no enchantResultFlag) | `Decode1×3 + Decode4 + Decode1×2` | `GMS>83 \|\| JMS` guards around `enchantCategory` + `enchantResultFlag` in `item_upgrade.go` |
+| `CWvsContext::SendEmotionChange` | `ExpressionRequest` (serverbound) | `Encode4` (emotionId only) | `Encode4 + Encode4 + Encode1` | `GMS>83 \|\| JMS` guard around `duration` + `byItemOption` in `serverbound/expression.go` |
+| `CUser::OnEmotion` (absent in v83) | `CharacterExpression` (clientbound) | `Decode4` (expressionId only, inline in dispatcher) | `Decode4 + Decode4 + Decode1` | `GMS>83 \|\| JMS` guard around `duration` + `byItemOption` in `clientbound/expression.go` |
+
+### v83 IDA structural differences not requiring encoder changes
+
+| FName / area | Difference | Verdict |
+|---|---|---|
+| `CVecCtrlUser::EndUpdateActive` | v83 encodes `Encode1(fieldKey) + Encode4(crc)` only — no dr0/dr1/dr2/dr3/dwKey/crc32. v95 IDA already documented these with `GMS>83\|\|JMS` guards on dr fields. | No action — gates were already correct from v95 audit. |
+| `CLogin::SendNewCharPacket` | v83 has no `Encode2(subJob)` after race index. Already gated `MajorVersion() > 83` in `create.go`. | No action — already correct. |
+| `CLogin::SendDeleteCharPacket` | v83 sends `EncodeStr(deletionPwd) + Encode4(charId)` — same shape as v95. | No divergence. |
+| `CFuncKeyMappedMan::OnInit` | v83 loop count is 89 entries (v95: 90). Pipeline reports ❌ for both versions (loop-count tool limitation). Atlas sends 90 × (type+id) regardless — the extra entry is harmless as the client treats it as a full keymap. | Deferred: loop-count discrepancy. No functional impact. |
+| `CWvsContext::OnMessage` | v83 has 14 sub-op modes (0–0xD); v95 added mode 0xE (SkillExpire). Both versions ❌ in pipeline due to sub-op dispatch limitation. | Deferred to Phase 3 sub-op audit. |
+| `GW_CharacterStat::Decode` field widths | v83: HP/MHP/MP/MMP are `Decode2` (int16); v95: widened to `Decode4` (int32). Both `CharacterList` and `CharacterViewAllCharacters` have `nSubJob` absent in v83. These are sub-struct fields inside complex packets that the flat analyzer cannot reach. | Deferred — existing `_pending.md` tool-limitation rows cover these. |
+
+### Hard-cap gate check
+
+No encoder/decoder in the character domain now contains more than **2 nested** `if t.Region()` / `if t.MajorVersion()` levels after this task's changes. The three fixed encoders each have a single flat gate. Hard cap not triggered.

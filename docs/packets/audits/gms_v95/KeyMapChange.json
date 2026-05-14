@@ -11,7 +11,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "mode (0 = key mapping change; 1 = HP-pet item; 2 = MP-pet item)",
+      "IDAComment": "mode (0 = key mapping change)",
       "Verdict": 0,
       "Note": ""
     },
@@ -28,38 +28,38 @@
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "[loop] keyId (key slot index; from anChangedIdx array)",
-      "Verdict": 3,
-      "Note": "ack:tool-limitation — loop body; IDA export limited to invariant header (mode+count); FUNCKEY_MAPPED::Decode@0x4f2b20 reads matching 5-byte struct"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "[loop] theType (FUNCKEY_MAPPED::nType)",
-      "Verdict": 3,
-      "Note": "ack:tool-limitation — see row 2"
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 4,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "[loop] action (FUNCKEY_MAPPED::nID)",
-      "Verdict": 3,
-      "Note": "ack:tool-limitation — see row 2"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 5,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "[mode≠0] itemId (pet-consume item ID; mode=1→HP-pot, mode=2→MP-pot)",
-      "Verdict": 3,
-      "Note": "ack:tool-limitation — mode-branch field; verified via ChangePetConsumeItemID@0x568920 (mode=1) and ChangePetConsumeMPItemID@0x5689c0 (mode=2)"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 3
+  "Verdict": 2
 }

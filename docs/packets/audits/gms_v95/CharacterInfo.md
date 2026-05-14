@@ -34,18 +34,3 @@
 | 21 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 
-ack: tool-limitation false positive — multiple overlapping causes: (1) loop linearization: the
-bool-terminated pet list (SetMultiPetInfo do-while) is modelled as a flat sequence of individual
-field writes rather than a loop body, causing the analyzer to misalign all subsequent fields;
-(2) conditional sub-struct expansion: the optional taming mob block (if-guarded) and the wishList
-count+loop are flattened independently, shifting alignment further; (3) version guard interaction:
-the GMS-v87 monster book block (absent in v95) is correctly suppressed by the guard, but the
-analyzer's flattened view emits extra fields from both guard branches; (4) method-boundary: the
-MedalAchievementInfo::Decode sub-struct is modelled as two raw Decode calls (Decode4 medalId +
-Decode2 questCount) which the flattener treats as inline with the parent sequence.
-
-Manual cross-check against IDA CWvsContext::OnCharacterInfo (0xa05750) confirms the encoding is
-correct for GMS v95: monster book block absent, pet list writes terminate correctly with bool=false,
-MedalAchievementInfo writes int32(medalId)+short(0) matching Decode4+Decode2, chair list writes
-int32(0) count + no buffer matching Decode4(0). No wire bug present. See _pending.md
-"Known false positives — character misc-state bucket (Task 10)".

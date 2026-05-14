@@ -25,8 +25,34 @@ func TestItemUpgradeRoundTrip(t *testing.T) {
 			if output.LegendarySpirit() != input.LegendarySpirit() {
 				t.Errorf("legendarySpirit: got %v, want %v", output.LegendarySpirit(), input.LegendarySpirit())
 			}
+			if output.EnchantCategory() != input.EnchantCategory() {
+				t.Errorf("enchantCategory: got %v, want %v", output.EnchantCategory(), input.EnchantCategory())
+			}
 			if output.WhiteScroll() != input.WhiteScroll() {
 				t.Errorf("whiteScroll: got %v, want %v", output.WhiteScroll(), input.WhiteScroll())
+			}
+			if output.EnchantResultFlag() != input.EnchantResultFlag() {
+				t.Errorf("enchantResultFlag: got %v, want %v", output.EnchantResultFlag(), input.EnchantResultFlag())
+			}
+		})
+	}
+}
+
+func TestItemUpgradeEnchantRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewItemUpgradeEnchant(99999, true, false, true, 2, true, 1)
+			output := ItemUpgrade{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.CharacterId() != input.CharacterId() {
+				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
+			}
+			if output.EnchantCategory() != input.EnchantCategory() {
+				t.Errorf("enchantCategory: got %v, want %v", output.EnchantCategory(), input.EnchantCategory())
+			}
+			if output.EnchantResultFlag() != input.EnchantResultFlag() {
+				t.Errorf("enchantResultFlag: got %v, want %v", output.EnchantResultFlag(), input.EnchantResultFlag())
 			}
 		})
 	}

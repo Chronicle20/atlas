@@ -157,9 +157,15 @@ jobs:
   build-docker-pr:
     name: Build PR Image - ${{ matrix.service.name }}
     needs: [detect-changes, test-go-services, test-go-libraries, test-ui]
+    # Only build per-PR images when the PR opts into a deployable env via
+    # the `deploy-env` label. Without the label, the Argo ApplicationSet
+    # filters the PR out and no environment ever syncs, so the per-PR
+    # ghcr tags would be orphaned. Skipping the build here saves CI time
+    # and ghcr quota.
     if: |
       always() &&
       github.event_name == 'pull_request' &&
+      contains(github.event.pull_request.labels.*.name, 'deploy-env') &&
       needs.detect-changes.outputs.docker-services-matrix != '[]' &&
       (needs.test-go-services.result == 'success' || needs.test-go-services.result == 'skipped') &&
       (needs.test-go-libraries.result == 'success' || needs.test-go-libraries.result == 'skipped') &&
@@ -205,11 +211,155 @@ jobs:
           sbom: false
 
   # ============================================
+  # PR-env resolved overlay (bot branch)
+  #
+  # After build-docker-pr completes, create/update a derived branch
+  # `bot/pr-<N>-resolved` that:
+  #   1. Substitutes every PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER /
+  #      PLACEHOLDER_SHA token in deploy/k8s/overlays/pr/ with the actual
+  #      per-PR value (sed across the directory).
+  #   2. Bumps deploy/k8s/overlays/pr/kustomization.yaml's `images:` block
+  #      so only the just-built services point at pr-<N>-<sha>; unchanged
+  #      services keep `newTag: latest` (which option-b's main-publish
+  #      flow now keeps fresh under :latest manifest list).
+  #   3. Force-pushes to bot/pr-<N>-resolved.
+  #
+  # The Argo ApplicationSet targets bot/pr-<N>-resolved (not the PR head
+  # directly), so kustomize sees an already-resolved overlay with no
+  # placeholders. This sidesteps kustomize's substring-substitution
+  # limitations on the bracketed KAFKA_CONSUMER_GROUP form and the
+  # variable-dash DB_NAME form.
+  #
+  # GITHUB_TOKEN is used intentionally: its pushes do NOT trigger
+  # downstream workflow runs, which is exactly what we want — the bot
+  # commit must not re-trigger pr-validation.yml on the bot branch
+  # (infinite loop), and we don't need PR checks to run on bot branches.
+  # ============================================
+  update-pr-overlay:
+    name: Resolve PR overlay
+    needs: [detect-changes, build-docker-pr]
+    if: |
+      always() &&
+      github.event_name == 'pull_request' &&
+      contains(github.event.pull_request.labels.*.name, 'deploy-env') &&
+      needs.build-docker-pr.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          # GITHUB_TOKEN is intentional — see header comment.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64" \
+            -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
+      - name: Compute per-PR tokens
+        id: tokens
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # ATLAS_ENV must match the ApplicationSet's computation:
+          #   sha256("pr-<N>")[:4]
+          ATLAS_ENV=$(printf "pr-%d" "$PR_NUMBER" | sha256sum | cut -c1-4)
+          SHORT_SHA=$(git rev-parse --short=7 "$HEAD_SHA")
+          echo "atlas_env=$ATLAS_ENV" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "Tokens: ATLAS_ENV=$ATLAS_ENV PR_NUMBER=$PR_NUMBER SHA=$SHORT_SHA"
+
+      - name: Substitute placeholders in PR overlay
+        env:
+          ATLAS_ENV: ${{ steps.tokens.outputs.atlas_env }}
+          PR_NUMBER: ${{ steps.tokens.outputs.pr_number }}
+          SHORT_SHA: ${{ steps.tokens.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          # find + sed across every file under deploy/k8s/overlays/pr/.
+          # Order matters: PLACEHOLDER_ATLAS_ENV must be replaced before
+          # any token whose name is a prefix of it (none today, but
+          # defensive).
+          find deploy/k8s/overlays/pr -type f \( -name '*.yaml' -o -name '*.yml' \) \
+            -exec sed -i \
+              -e "s|PLACEHOLDER_ATLAS_ENV|${ATLAS_ENV}|g" \
+              -e "s|PLACEHOLDER_PR_NUMBER|${PR_NUMBER}|g" \
+              -e "s|PLACEHOLDER_SHA|${SHORT_SHA}|g" \
+              {} +
+          echo "=== Placeholders remaining (expect none) ==="
+          grep -rn 'PLACEHOLDER_' deploy/k8s/overlays/pr || echo "(clean)"
+
+      - name: Bump image tags for built services
+        env:
+          SERVICES_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          PR_NUMBER: ${{ steps.tokens.outputs.pr_number }}
+          SHORT_SHA: ${{ steps.tokens.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          OVERLAY=deploy/k8s/overlays/pr/kustomization.yaml
+          NEW_TAG="pr-${PR_NUMBER}-${SHORT_SHA}"
+
+          # The detect-changes matrix is the exact list of services
+          # that build-docker-pr pushed pr-<N>-<sha> tags for. For each,
+          # bump the corresponding entry in the overlay's `images:` block.
+          # Services NOT in this list keep their existing tag (typically
+          # `latest` for first-build PRs, or a previous `pr-<N>-<sha>`
+          # for subsequent pushes that left unchanged services untouched).
+          while read -r image; do
+              echo "Bumping ${image} → ${NEW_TAG}"
+              yq -i \
+                  "(.images[] | select(.name == \"${image}\") | .newTag) = \"${NEW_TAG}\"" \
+                  "$OVERLAY"
+          done < <(echo "$SERVICES_JSON" | jq -r '.[].docker_image')
+
+          echo "=== Resulting images: block (head) ==="
+          yq '.images[0:5]' "$OVERLAY"
+
+      - name: Force-push bot/pr-<N>-resolved
+        env:
+          PR_NUMBER: ${{ steps.tokens.outputs.pr_number }}
+          SHORT_SHA: ${{ steps.tokens.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          BRANCH="bot/pr-${PR_NUMBER}-resolved"
+          git config user.name 'atlas-image-bot'
+          git config user.email 'atlas-image-bot@users.noreply.github.com'
+
+          # Stage the substituted overlay + bumped image tags.
+          git add deploy/k8s/overlays/pr
+
+          if git diff --cached --quiet; then
+              echo "::warning::No changes to commit — PR overlay was already resolved? Skipping force-push."
+              exit 0
+          fi
+
+          # Create/reset the bot branch from the current PR head with our
+          # substitutions on top. Force-push to overwrite any prior bot
+          # branch for this PR (each new PR push starts fresh).
+          git checkout -b "$BRANCH"
+          git commit -m "chore(pr-overlay): resolve placeholders for PR #${PR_NUMBER} at ${SHORT_SHA}
+
+          Auto-generated by pr-validation.yml. Argo ApplicationSet(atlas-pr)
+          targets this branch; do not edit by hand. Force-pushed on every
+          pr-validation run for PR #${PR_NUMBER}.
+
+          [skip ci]"
+          git push --force-with-lease origin "$BRANCH"
+          echo "Pushed bot/pr-${PR_NUMBER}-resolved at $(git rev-parse --short=7 HEAD)"
+
+  # ============================================
   # Summary Job
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, build-docker-pr]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, build-docker-pr, update-pr-overlay]
     if: always()
     runs-on: ubuntu-latest
 
@@ -225,6 +375,7 @@ jobs:
           UI_RESULT="${{ needs.test-ui.result }}"
           DOCKER_RESULT="${{ needs.build-docker.result }}"
           DOCKER_PR_RESULT="${{ needs.build-docker-pr.result }}"
+          OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
@@ -233,9 +384,12 @@ jobs:
           echo "| UI | $UI_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker PR Push | $DOCKER_PR_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          # Fail if any required job failed
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$DOCKER_PR_RESULT" == "failure" ]; then
+          # Fail if any required job failed. update-pr-overlay is allowed
+          # to be skipped (e.g., when the deploy-env label is absent) but
+          # not to fail outright.
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$DOCKER_PR_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

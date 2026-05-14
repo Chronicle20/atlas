@@ -1,24 +1,22 @@
 # Per-PR overlay shell.
 #
 # PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER / PLACEHOLDER_SHA are
-# sentinel strings rewritten by the Argo CD ApplicationSet (Phase 7.10)
-# at sync time, before kustomize runs. The ATLAS_ENV slot is also
-# fanned out within rendered manifests via the replacements: rule
-# below.
+# sentinel strings resolved at CI time by .github/workflows/pr-validation.yml's
+# update-pr-overlay job, which sed-substitutes them across this directory
+# and force-pushes the result to bot/pr-<N>-resolved. The Argo CD
+# ApplicationSet(atlas-pr) targets that derived branch, NOT the PR head
+# directly — so kustomize never sees the placeholders.
 #
-# CAVEAT (substring substitution):
-#   Kustomize 5.4.3 replacements support whole-value substitution and
-#   delimiter-based partial substitution where the placeholder is the
-#   trailing token after a single-character separator (e.g.
-#   "atlas-accounts-PLACEHOLDER_ATLAS_ENV" with delimiter "-" and the
-#   correct index). Bracketed forms like
-#   "Account Service [PLACEHOLDER_ATLAS_ENV]" cannot be split cleanly
-#   because rejoining with a multi-character delimiter corrupts the
-#   value. Until that's resolved, the broader vision (replacing
-#   PLACEHOLDER_ATLAS_ENV inside KAFKA_CONSUMER_GROUP, DB_NAME, and the
-#   COMMAND_TOPIC_*/EVENT_TOPIC_* env keys) is handled at ApplicationSet
-#   sync time, not here. The replacements: block below only covers the
-#   container ATLAS_ENV env var (whole-value).
+# This approach sidesteps kustomize's substring-substitution limitations
+# (bracketed KAFKA_CONSUMER_GROUP, variable-dash DB_NAME) which couldn't
+# be cleanly resolved via either kustomization.yaml's `replacements:` or
+# Argo CD's `kustomize.patches`. The CI bot can use plain sed.
+#
+# As a side effect of the bot-branch model: the `images:` block below
+# starts with `newTag: latest` for every service. Bot job bumps only
+# the services it actually rebuilt to `pr-<N>-<sha>`; the rest stay on
+# `:latest`, which resolves to whatever main-side option-(b) image
+# promotion last digested.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -148,8 +146,13 @@ configMapGenerator:
       - MINOR_VERSION=1
 
 # Token replacement: ATLAS_ENV from atlas-env-tokens flows into every
-# container's ATLAS_ENV env var. atlas-env-tokens itself is rewritten
-# per-PR by the ApplicationSet before this kustomization runs.
+# container's ATLAS_ENV env var (creating the env entry on stateless
+# Deployments like atlas-ingress / atlas-ui that aren't covered by
+# patches/consumer-group-env.yaml). atlas-env-tokens.data.ATLAS_ENV
+# itself is rewritten per-PR by pr-validation.yml's update-pr-overlay
+# job via sed across this directory — by the time kustomize runs on
+# the resolved bot/pr-<N>-resolved branch, the placeholder is already
+# the actual hash.
 replacements:
   - source:
       kind: ConfigMap
@@ -170,118 +173,120 @@ replacements:
 
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-fame/atlas-fame
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: pr-PLACEHOLDER_PR_NUMBER-PLACEHOLDER_SHA
+    newTag: latest
 
 commonLabels:
   atlas.env: PLACEHOLDER_ATLAS_ENV
-  atlas.pr-number: PLACEHOLDER_PR_NUMBER
+  # Quoted so post-sed values like "500" parse as strings (Kustomize
+  # commonLabels values must be strings, not integers).
+  atlas.pr-number: "PLACEHOLDER_PR_NUMBER"

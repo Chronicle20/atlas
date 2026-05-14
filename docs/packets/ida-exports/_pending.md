@@ -283,3 +283,47 @@ looked up in v87 IDA (base 0x400000, `GMSv87_4GB.exe`).
 ### Hard-cap gate check (Task 16)
 
 No encoder/decoder in the character domain now contains more than **2 nested** `if t.Region()` / `if t.MajorVersion()` levels after Task 16 changes. All four fixed encoders (`ItemUpgrade`, `CharacterExpression`, `ExpressionRequest`, `CharacterInfo`) have at most 2 sequential flat gates (never nested). Hard cap not triggered.
+
+## Cross-version — character domain (JMS v185)
+
+Results of the JMS v185 cross-version pass (Task 17). All character domain FNames were
+looked up in JMS v185 IDA (base 0x400000, `MapleStory_dump_SCY.exe`, md5 af6652ff9b7c549341f35e3569d7564a).
+
+The JMS v185 binary shares C++ mangled symbol names with GMS v95 for all character-domain
+functions searched. No separate opcode space split was found for the character domain
+(unlike the login domain which had distinct GMS vs JMS packet structures for
+`OnCheckPasswordResult`).
+
+### Resolved JMS divergences (fixed in Task 17; `|| JMS` clauses removed)
+
+These gates had an incorrect `|| JMS` clause added during Task 15/16 under the assumption
+that JMS v185 matched GMS v95 behaviour. JMS v185 IDA confirms it uses the older
+(v83/v87-equivalent) layout for these packets.
+
+| FName | Atlas struct | JMS v185 wire | GMS v95 wire | Fix |
+|---|---|---|---|---|
+| `CUser::OnEmotion@0x9f636b` | `CharacterExpression` (clientbound) | `Decode4(nEmotion)+Decode4(tDuration)` — no byItemOption | `Decode4+Decode4+Decode1` | Gate narrowed: duration emitted for JMS (Decode4), byItemOption NOT emitted for JMS. `expression.go` clientbound updated. |
+| `CUser::ShowItemUpgradeEffect@0x9f1a92` | `ItemUpgrade` (clientbound) | `Decode1×5` — no Decode4(nEnchantCategory); enchantResultFlag (v6) IS present | `Decode1×3+Decode4+Decode1×2` | Gate narrowed: `|| JMS` removed from enchantCategory gate only. enchantResultFlag gate retains `|| JMS` since JMS reads Decode1(v6). `item_upgrade.go` updated. |
+| `CVecCtrlUser::EndUpdateActive@0xaaa076` | `Move` (serverbound) | `Encode1(detectFlag)+[if active: Encode1(fieldKey)+Encode4(crc)+CMovePath]` — no dr0/dr1/dr2/dr3/dwKey/crc32 | Full dr-field sequence | Gate narrowed: `|| JMS` removed from all dr-field gates in `move.go`. JMS movement is GMS v83-equivalent layout. |
+
+### Resolved JMS divergences — serverbound ExpressionRequest
+
+| FName | Atlas struct | JMS v185 wire | GMS v95 wire | Fix |
+|---|---|---|---|---|
+| `CWvsContext::SendEmotionChange@0xb0b8be` | `ExpressionRequest` (serverbound) | Encodes only `Encode4(charId)` — the local user's characterId, NOT emotionId+duration+byItemOption | `Encode4(emotionId)+Encode4(duration)+Encode1(byItemOption)` | Gate narrowed: `|| JMS` removed. JMS serverbound opcode 0x2B carries only a charId. Atlas server reads the first int4 as emotionId; JMS sends charId in that slot. No duration or byItemOption for JMS. `serverbound/expression.go` updated. |
+
+### JMS-specific structural differences (no encoder change, documented)
+
+| FName | JMS difference | Atlas struct | Status |
+|---|---|---|---|
+| `CWvsContext::SendStatChangeRequestByItemOption@0xb054d6` | JMS appends `Encode4(timeGetTime())` after `Encode1(nType)` — 5 fields vs GMS v95's 5 fields (same 5 but JMS adds a 6th trailing int4). Low-severity: atlas server reads only 5 fields then stops; the trailing 4 bytes are ignored. No functional impact. | `HealOverTime` | Deferred. JMS-only trailing field; server ignores it. No encoder change needed. |
+| `CWvsContext::OnCharacterInfo@0xb0aa6e` | JMS v185 INCLUDES the monster book block (`SomethingMonsterBook` call). The gate `(GMS && <=87) \|\| JMS` in `info.go` is **correct** for JMS. | `CharacterInfo` | No action — already correct. |
+| `CWvsContext::SendCharacterInfoRequest@0xb0b323` | JMS wire: `Encode4(updateTime)+Encode4(dwCharacterID)+Encode1(bPetInfo)` — identical to GMS v95. | `CharacterInfoRequest` | No action — no divergence. |
+| `CFuncKeyMappedMan::OnInit@0x5e79aa` | JMS function present, same structure. Loop count not easily determinable from decompile. | `FuncKeyMap` | No action — same tool-limitation as v83/v87. |
+| `CUserRemote::OnAvatarModified@0xa57221` | JMS uses a *list* format for couple/friendship (Decode4(count)+loop:DecodeBuf(0x10)+Decode4(pairCharId)) vs GMS v95 which reads single-entry buffers. This is a sub-struct difference beyond the flat analyzer's scope. | `CharacterAppearanceUpdate` | Deferred to Phase 3 sub-struct descent. No wire bug in the outer packet structure. |
+| `CUser::OnEmotion@0x9f636b` duration field | JMS reads Decode4(tDuration) — confirmed. Atlas now writes duration for JMS (without byItemOption). | `CharacterExpression` | Fixed — see resolved table above. |
+| `CLogin::OnCheckPasswordResult@0x66e79f` | JMS v185 success path decodes differently: `Decode4(accountId)+Decode1(gender)+Decode1(gradeCode)+Decode1(combined)+2×DecodeStr(nexon IDs)+5×Decode1+DecodeBuffer(8)+DecodeStr`. Fundamentally different structure from GMS v95. Atlas server only needs the pre-shared accountId for login; login domain is tracked separately in task-027. | `AuthSuccess` (login domain) | Out of scope for character domain audit. Login domain audit (task-027) tracks this separately. |
+
+### Hard-cap gate check (Task 17)
+
+After Task 17 changes, no encoder/decoder in the character domain contains more than **2 nested** gates. The three fixed encoders each have flat sequential gates — `CharacterExpression` now has one `if GMS>87` + one `else if JMS`, `ItemUpgrade` has a single `if GMS>87`, `Move` has three sequential `if GMS>83` + one `if GMS>28`. No nested gates. Hard cap not triggered.

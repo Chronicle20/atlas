@@ -43,7 +43,7 @@ func GetRegistry() *Registry {
 }
 
 func (r *Registry) tenantSetKey() string {
-	return "atlas:" + r.characters.Namespace() + ":_tenants"
+	return atlas.KeyPrefix() + ":" + r.characters.Namespace() + ":_tenants"
 }
 
 func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {

@@ -11,6 +11,7 @@ import (
 	monster2 "atlas-maps/data/map/monster"
 	"atlas-maps/map/character"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -58,7 +59,8 @@ func GetRegistry() *SpawnPointRegistry {
 }
 
 func spawnHashKey(mapKey character.MapKey) string {
-	return fmt.Sprintf("atlas:maps:spawn:%s:%d:%d:%d:%s",
+	return fmt.Sprintf("%s:maps:spawn:%s:%d:%d:%d:%s",
+		atlasredis.KeyPrefix(),
 		mapKey.Tenant.String(),
 		mapKey.Field.WorldId(),
 		mapKey.Field.ChannelId(),
@@ -258,7 +260,7 @@ func (r *SpawnPointRegistry) ResetCooldown(ctx context.Context, mapKey character
 
 // Reset clears all spawn point registries. Primarily used for testing.
 func (r *SpawnPointRegistry) Reset(ctx context.Context) {
-	iter := r.client.Scan(ctx, 0, "atlas:maps:spawn:*", 0).Iterator()
+	iter := r.client.Scan(ctx, 0, atlasredis.KeyPrefix()+":maps:spawn:*", 0).Iterator()
 	for iter.Next(ctx) {
 		r.client.Del(ctx, iter.Val())
 	}

@@ -11,12 +11,14 @@ import (
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-map-actions"
-const consumerGroupId = "Map Actions Service"
+
+var consumerGroupId = consumergroup.Resolve("Map Actions Service")
 
 type Server struct {
 	baseUrl string

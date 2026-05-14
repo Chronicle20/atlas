@@ -24,14 +24,16 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-maps"
-const consumerGroupId = "Map Service"
-const dataEventsConsumerGroupId = "Map Spawn Registry Invalidator"
+
+var consumerGroupId = consumergroup.Resolve("Map Service")
+var dataEventsConsumerGroupId = consumergroup.Resolve("Map Spawn Registry Invalidator")
 
 type Server struct {
 	baseUrl string

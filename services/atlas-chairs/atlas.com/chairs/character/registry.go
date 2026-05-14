@@ -31,8 +31,8 @@ func getRegistry() *Registry {
 func (r *Registry) setKey(key MapKey) string {
 	tk := atlas.TenantKey(key.Tenant)
 	f := key.Field
-	return fmt.Sprintf("atlas:%s:%s:%d:%d:%d:%s",
-		r.namespace, tk,
+	return fmt.Sprintf("%s:%s:%s:%d:%d:%d:%s",
+		atlas.KeyPrefix(), r.namespace, tk,
 		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 
@@ -66,7 +66,7 @@ func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
 // ResetForTesting clears all registry state. Only for use in tests.
 func (r *Registry) ResetForTesting(ctx context.Context, t tenant.Model) {
 	// Flush by scanning and deleting keys with our namespace prefix.
-	pattern := fmt.Sprintf("atlas:%s:*", r.namespace)
+	pattern := fmt.Sprintf("%s:%s:*", atlas.KeyPrefix(), r.namespace)
 	var cursor uint64
 	for {
 		keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()

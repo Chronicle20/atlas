@@ -28,6 +28,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
@@ -62,7 +63,7 @@ func main() {
 	handlerMap := produceHandlers()
 	writerList := produceWriters()
 
-	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Id.String())
+	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, config.Id.String()))
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)

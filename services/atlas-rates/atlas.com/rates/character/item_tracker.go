@@ -213,7 +213,7 @@ func (t *ItemTracker) GetTrackedItem(ctx context.Context, characterId uint32, te
 func (t *ItemTracker) GetAllTrackedItems(ctx context.Context, characterId uint32) []TrackedItem {
 	ten := tenant.MustFromContext(ctx)
 	c := t.items.Client()
-	scanPattern := "atlas:" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"
+	scanPattern := atlas.KeyPrefix() + ":" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"
 
 	result := make([]TrackedItem, 0)
 	var cursor uint64

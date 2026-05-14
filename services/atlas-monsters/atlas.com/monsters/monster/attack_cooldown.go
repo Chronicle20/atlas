@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -29,7 +30,8 @@ func GetAttackCooldownRegistry() *attackCooldownRegistry {
 }
 
 func attackCooldownKey(t tenant.Model, monsterId uint32, attackPos uint8) string {
-	return fmt.Sprintf("atlas:monster-attack-cooldown:%s:%s:%s",
+	return fmt.Sprintf("%s:monster-attack-cooldown:%s:%s:%s",
+		atlasredis.KeyPrefix(),
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 		strconv.FormatUint(uint64(attackPos), 10),
@@ -37,7 +39,8 @@ func attackCooldownKey(t tenant.Model, monsterId uint32, attackPos uint8) string
 }
 
 func attackCooldownScanPattern(t tenant.Model, monsterId uint32) string {
-	return fmt.Sprintf("atlas:monster-attack-cooldown:%s:%s:*",
+	return fmt.Sprintf("%s:monster-attack-cooldown:%s:%s:*",
+		atlasredis.KeyPrefix(),
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 	)

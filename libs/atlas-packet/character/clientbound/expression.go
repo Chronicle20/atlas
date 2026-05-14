@@ -15,18 +15,21 @@ const CharacterExpressionWriter = "CharacterExpression"
 // CharacterExpression represents the EMOTION packet sent to remote clients.
 //
 // Wire layout — version-gated (IDA v83 CUserPool::OnUserRemotePacket case 0xC1;
-// IDA v87 CUserPool::OnUserRemotePacket case 0xCE; IDA v95 CUser::OnEmotion@0x8e0150):
+// IDA v87 CUserPool::OnUserRemotePacket case 0xCE; IDA v95 CUser::OnEmotion@0x8e0150;
+// IDA JMS v185 CUser::OnEmotion@0x9f636b):
 //
 //	Decode4  characterId   — read by CUserPool::OnUserRemotePacket dispatcher
 //	Decode4  expression    — emotion/expression ID
-//	Decode4  duration      — display duration in ms [GMS>87 || JMS only]
-//	Decode1  byItemOption  — item-option emotion flag [GMS>87 || JMS only]
+//	Decode4  duration      — display duration in ms [GMS>87 only]
+//	Decode1  byItemOption  — item-option emotion flag [GMS>87 only]
 //
 // IDA v83: case 0xC1 in CUserPool::OnUserRemotePacket reads only Decode4(expressionId)
 // inline — no separate OnEmotion function, no duration, no byItemOption.
 // IDA v87: case 0xCE in CUserPool::OnUserRemotePacket@0x9f7492 reads only Decode4(emotionId)
 // inline and calls CAvatar::SetEmotion — same as v83, no duration, no byItemOption.
 // IDA v95: CUser::OnEmotion@0x8e0150 reads Decode4 + Decode4 + Decode1 (duration+byItemOption added).
+// IDA JMS v185: CUser::OnEmotion@0x9f636b reads Decode4(nEmotion)+Decode4(tDuration) only —
+// no byItemOption. JMS v185 is older code than GMS v95; the || JMS clause was incorrect.
 type CharacterExpression struct {
 	characterId  uint32
 	expression   uint32
@@ -55,9 +58,12 @@ func (m CharacterExpression) Encode(l logrus.FieldLogger, ctx context.Context) f
 		w.WriteInt(m.expression)
 		// duration and byItemOption added after GMS v87 (first seen in v95).
 		// IDA v83 and v87 CUserPool::OnUserRemotePacket read only Decode4(expressionId) inline.
-		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
+		// IDA JMS v185 CUser::OnEmotion@0x9f636b reads only Decode4+Decode4 (no byItemOption).
+		if t.Region() == "GMS" && t.MajorVersion() > 87 {
 			w.WriteInt(m.duration)
 			w.WriteBool(m.byItemOption)
+		} else if t.Region() == "JMS" {
+			w.WriteInt(m.duration)
 		}
 		return w.Bytes()
 	}
@@ -70,9 +76,12 @@ func (m *CharacterExpression) Decode(_ logrus.FieldLogger, ctx context.Context) 
 		m.expression = r.ReadUint32()
 		// duration and byItemOption added after GMS v87 (first seen in v95).
 		// IDA v83 and v87 CUserPool::OnUserRemotePacket read only Decode4(expressionId) inline.
-		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
+		// IDA JMS v185 CUser::OnEmotion@0x9f636b reads only Decode4+Decode4 (no byItemOption).
+		if t.Region() == "GMS" && t.MajorVersion() > 87 {
 			m.duration = r.ReadUint32()
 			m.byItemOption = r.ReadBool()
+		} else if t.Region() == "JMS" {
+			m.duration = r.ReadUint32()
 		}
 	}
 }

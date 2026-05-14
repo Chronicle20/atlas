@@ -19,9 +19,9 @@ func TestCharacterExpressionRoundTrip(t *testing.T) {
 			if output.Expression() != input.Expression() {
 				t.Errorf("expression: got %v, want %v", output.Expression(), input.Expression())
 			}
-			// duration and byItemOption are only present in GMS>83 and JMS.
-			// For GMS v83 (and v28) the fields are not encoded; expect zero values.
-			hasDurationAndOption := (v.Region == "GMS" && v.MajorVersion > 83) || v.Region == "JMS"
+			// duration and byItemOption are only present in GMS>87 and JMS.
+			// IDA v83 and v87: only Decode4(expressionId) inline. v95: adds duration+byItemOption.
+			hasDurationAndOption := (v.Region == "GMS" && v.MajorVersion > 87) || v.Region == "JMS"
 			if hasDurationAndOption {
 				if output.Duration() != input.Duration() {
 					t.Errorf("duration: got %v, want %v", output.Duration(), input.Duration())
@@ -31,10 +31,10 @@ func TestCharacterExpressionRoundTrip(t *testing.T) {
 				}
 			} else {
 				if output.Duration() != 0 {
-					t.Errorf("duration: expected 0 for v83, got %v", output.Duration())
+					t.Errorf("duration: expected 0 for v83/v87, got %v", output.Duration())
 				}
 				if output.ByItemOption() != false {
-					t.Errorf("byItemOption: expected false for v83, got %v", output.ByItemOption())
+					t.Errorf("byItemOption: expected false for v83/v87, got %v", output.ByItemOption())
 				}
 			}
 		})

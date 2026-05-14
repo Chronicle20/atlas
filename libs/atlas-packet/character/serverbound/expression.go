@@ -14,14 +14,15 @@ const CharacterExpressionHandle = "CharacterExpressionHandle"
 
 // ExpressionRequest - CWvsContext::SendEmotionChange
 //
-// Wire layout — version-gated (IDA v83@0xa24470, v95@0x9f9320):
+// Wire layout — version-gated (IDA v83@0xa24470, v87@0xabbfbb, v95@0x9f9320):
 //
 //	Encode4  emote          — emotion/expression ID
-//	Encode4  duration       — display duration in ms [GMS>83 || JMS only]
-//	Encode1  byItemOption   — 1 = triggered by item option [GMS>83 || JMS only]
+//	Encode4  duration       — display duration in ms [GMS>87 || JMS only]
+//	Encode1  byItemOption   — 1 = triggered by item option [GMS>87 || JMS only]
 //
 // IDA v83 CWvsContext::SendEmotionChange@0xa24470: encodes only Encode4(emotionId).
-// IDA v95 CWvsContext::SendEmotionChange@0x9f9320: encodes Encode4 + Encode4 + Encode1.
+// IDA v87 CWvsContext::SendEmotionChange@0xabbfbb: encodes only Encode4(emotionId) — same as v83.
+// IDA v95 CWvsContext::SendEmotionChange@0x9f9320: encodes Encode4 + Encode4 + Encode1 (duration+byItemOption added).
 type ExpressionRequest struct {
 	emote        uint32
 	duration     int32
@@ -45,9 +46,9 @@ func (m ExpressionRequest) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.emote)
-		// duration and byItemOption added after GMS v83.
-		// IDA v83 CWvsContext::SendEmotionChange@0xa24470 encodes only Encode4(emotionId).
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		// duration and byItemOption added after GMS v87 (first seen in v95).
+		// IDA v83 and v87 CWvsContext::SendEmotionChange encode only Encode4(emotionId).
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 			w.WriteInt32(m.duration)
 			w.WriteBool(m.byItemOption)
 		}
@@ -59,7 +60,9 @@ func (m *ExpressionRequest) Decode(_ logrus.FieldLogger, ctx context.Context) fu
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.emote = r.ReadUint32()
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		// duration and byItemOption added after GMS v87 (first seen in v95).
+		// IDA v83 and v87 CWvsContext::SendEmotionChange encode only Encode4(emotionId).
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 			m.duration = r.ReadInt32()
 			m.byItemOption = r.ReadBool()
 		}

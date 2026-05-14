@@ -31,12 +31,12 @@ const CharacterItemUpgradeWriter = "CharacterItemUpgrade"
 // IDA JMS v185 CUser::ShowItemUpgradeEffect@0x9f1a92: reads Decode1×5 (bSuccess+bCursed+bEnchantSkill+v5+v6).
 // JMS has enchantResultFlag (v6) but NOT enchantCategory (Decode4). So || JMS applies only to enchantResultFlag.
 type ItemUpgrade struct {
-	characterId      uint32
-	success          bool
-	cursed           bool
-	legendarySpirit  bool
-	enchantCategory  int32
-	whiteScroll      bool
+	characterId       uint32
+	success           bool
+	cursed            bool
+	legendarySpirit   bool
+	enchantCategory   int32
+	whiteScroll       bool
 	enchantResultFlag byte
 }
 
@@ -65,14 +65,14 @@ func NewItemUpgradeEnchant(characterId uint32, success bool, cursed bool, legend
 	}
 }
 
-func (m ItemUpgrade) CharacterId() uint32       { return m.characterId }
-func (m ItemUpgrade) Success() bool             { return m.success }
-func (m ItemUpgrade) Cursed() bool              { return m.cursed }
-func (m ItemUpgrade) LegendarySpirit() bool     { return m.legendarySpirit }
-func (m ItemUpgrade) EnchantCategory() int32    { return m.enchantCategory }
-func (m ItemUpgrade) WhiteScroll() bool         { return m.whiteScroll }
-func (m ItemUpgrade) EnchantResultFlag() byte   { return m.enchantResultFlag }
-func (m ItemUpgrade) Operation() string         { return CharacterItemUpgradeWriter }
+func (m ItemUpgrade) CharacterId() uint32     { return m.characterId }
+func (m ItemUpgrade) Success() bool           { return m.success }
+func (m ItemUpgrade) Cursed() bool            { return m.cursed }
+func (m ItemUpgrade) LegendarySpirit() bool   { return m.legendarySpirit }
+func (m ItemUpgrade) EnchantCategory() int32  { return m.enchantCategory }
+func (m ItemUpgrade) WhiteScroll() bool       { return m.whiteScroll }
+func (m ItemUpgrade) EnchantResultFlag() byte { return m.enchantResultFlag }
+func (m ItemUpgrade) Operation() string       { return CharacterItemUpgradeWriter }
 func (m ItemUpgrade) String() string {
 	return fmt.Sprintf("item upgrade characterId [%d] success [%v]", m.characterId, m.success)
 }

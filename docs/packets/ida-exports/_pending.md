@@ -113,11 +113,12 @@ that the pipeline cannot verify.
 | `CUser::OnEffect` | `EffectSimple`, `EffectSkillAffected`, `EffectPet`, `EffectWithId`, `EffectWithMessage`, `EffectProtectOnDie`, `EffectIncDecHP`, `EffectShowInfo`, `EffectLotteryUse`, `EffectItemMaker`, `EffectUpgradeTomb`, `EffectIncubatorUse` (all in effect.go) | 16+ sub-op modes (case 0–15+). Atlas models each mode as a separate struct. All use opcode 0xE0 (foreign) or 0xE9 (self). Pipeline can only see the outermost Decode1 (mode byte). Sub-op byte values need per-mode verification. |
 | `CUser::OnEffect` | `EffectQuest`, `EffectQuestForeign` (effect_quest.go) | Mode byte = quest-effect sub-op. Same pipeline limitation. |
 | `CUser::OnEffect` | `EffectSkillUse`, `EffectSkillUseForeign` (effect_skill_use.go) | Mode byte = skill-use sub-op (mode 1 in GMS). Berserk/DragonFury/MonsterMagnet branches also conditional on skill ID. |
+| `CWvsContext::OnMessage` | `StatusMessageDropPickUpInventoryFull`, `StatusMessageDropPickUpItemUnavailable`, `StatusMessageDropPickUpGameFileDamaged`, `StatusMessageDropPickUpStackableItem`, `StatusMessageDropPickUpUnStackableItem`, `StatusMessageDropLossStackableItem`, `StatusMessageDropLossUnStackableItem`, `StatusMessageDropPickUpMeso`, `StatusMessageForfeitQuestRecord`, `StatusMessageUpdateQuestRecord`, `StatusMessageCompleteQuestRecord`, `StatusMessageCashItemExpire`, `StatusMessageIncreaseExperience`, `StatusMessageIncreaseSkillPoint`, `StatusMessageIncreaseFame`, `StatusMessageIncreaseMeso`, `StatusMessageIncreaseGuildPoint`, `StatusMessageGiveBuff`, `StatusMessageGeneralItemExpire`, `StatusMessageSystemMessage`, `StatusMessageQuestRecordEx`, `StatusMessageItemProtectExpire`, `StatusMessageItemExpireReplace`, `StatusMessageSkillExpire` (all in status_message.go) | Opcode 0x26. Top-level Decode1 = mode byte (0–14); each case delegates to a sub-handler that reads mode-specific fields. Atlas has 20+ sub-op structs each writing: mode byte first, then sub-op body. Pipeline report: `StatusMessageDropPickUpInventoryFull.md` (mode=0, representative). IDA sub-handler trace per mode needed to verify sub-op body layouts. See ack footer in `StatusMessageDropPickUpInventoryFull.md`. |
 
-Resolution: Phase 3 — per-mode IDA sub-function trace for each atlas Effect
-struct. Each mode constant maps to a specific IDA case-arm; wire format per
-arm needs to be exported and compared against the corresponding struct's
-Encode method.
+Resolution: Phase 3 — per-mode IDA sub-function trace for each atlas StatusMessage
+struct. Each mode constant maps to a specific IDA case-arm (OnDropPickUpMessage,
+OnQuestRecordMessage, OnIncEXPMessage, etc.); wire format per arm needs to be
+exported and compared against the corresponding struct's Encode method.
 
 ## Still pending — character domain
 

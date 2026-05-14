@@ -1,0 +1,20 @@
+package testdata
+
+import (
+    "context"
+    "github.com/Chronicle20/atlas/libs/atlas-socket/response"
+    "github.com/sirupsen/logrus"
+)
+
+type EarlyReturnNegative struct{}
+
+func (m EarlyReturnNegative) Encode(l logrus.FieldLogger, ctx context.Context) func(opts map[string]interface{}) []byte {
+    return func(opts map[string]interface{}) []byte {
+        w := response.NewWriter()
+        if a {
+            w.WriteByte(1)
+        }
+        w.WriteInt(2)
+        return w.Bytes()
+    }
+}

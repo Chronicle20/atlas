@@ -66,6 +66,10 @@ func (p *Processor) WithTransaction(tx *gorm.DB) *Processor {
 	}
 }
 
+func (p *Processor) ConsumableProcessor() consumable.Processor {
+	return p.consumableProcessor
+}
+
 func (p *Processor) WithConsumableProcessor(conp consumable.Processor) *Processor {
 	return &Processor{
 		l:                   p.l,

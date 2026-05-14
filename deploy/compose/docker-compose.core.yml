@@ -337,6 +337,17 @@ services:
     environment:
       LOG_LEVEL: debug
 
+  atlas-monster-book:
+    <<: *atlas-defaults
+    container_name: atlas-monster-book
+    build:
+      context: ../..
+      dockerfile: services/atlas-monster-book/Dockerfile
+    image: atlas-monster-book:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-monster-book
+
   atlas-monster-death:
     <<: *atlas-defaults
     container_name: atlas-monster-death

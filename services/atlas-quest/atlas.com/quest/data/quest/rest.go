@@ -71,6 +71,10 @@ type RequirementsRestModel struct {
 	InfoNumber      uint32             `json:"infoNumber,omitempty"`
 	NormalAutoStart bool               `json:"normalAutoStart,omitempty"`
 	CompletionCount uint32             `json:"completionCount,omitempty"`
+	// MonsterBookCountMin is the minimum number of unique monster book cards
+	// the character must have collected. Sourced from the WZ `mbmin` (monster
+	// book minimum) field. Zero means no requirement.
+	MonsterBookCountMin uint32 `json:"monsterBookCountMin,omitempty"`
 }
 
 // QuestRequirement represents a prerequisite quest requirement

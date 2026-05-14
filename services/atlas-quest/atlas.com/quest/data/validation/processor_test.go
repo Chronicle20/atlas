@@ -115,6 +115,85 @@ func TestBuildStartConditions_SelectedSkillId_Zero_DoesNotEmit(t *testing.T) {
 	}
 }
 
+func TestBuildStartConditions_MonsterBookCountMin_Emits(t *testing.T) {
+	def := dataquest.RestModel{
+		StartRequirements: dataquest.RequirementsRestModel{
+			MonsterBookCountMin: 25,
+		},
+	}
+	got := buildStartConditions(def)
+	want := []ConditionInput{
+		{Type: MonsterBookCountCondition, Operator: ">=", Value: 25},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestBuildStartConditions_MonsterBookCountMin_Zero_DoesNotEmit(t *testing.T) {
+	def := dataquest.RestModel{
+		StartRequirements: dataquest.RequirementsRestModel{
+			MonsterBookCountMin: 0,
+			LevelMin:            10,
+		},
+	}
+	got := buildStartConditions(def)
+	for _, c := range got {
+		if c.Type == MonsterBookCountCondition {
+			t.Fatalf("expected no MonsterBookCountCondition when MonsterBookCountMin is 0, got %+v", got)
+		}
+	}
+}
+
+func TestBuildEndConditions_MonsterBookCountMin_Emits(t *testing.T) {
+	def := dataquest.RestModel{
+		EndRequirements: dataquest.RequirementsRestModel{
+			MonsterBookCountMin: 5,
+		},
+	}
+	got := buildEndConditions(def)
+	want := []ConditionInput{
+		{Type: MonsterBookCountCondition, Operator: ">=", Value: 5},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestBuildEndConditions_MonsterBookCountMin_Zero_DoesNotEmit(t *testing.T) {
+	def := dataquest.RestModel{
+		EndRequirements: dataquest.RequirementsRestModel{
+			MonsterBookCountMin: 0,
+			MesoMin:             1000,
+		},
+	}
+	got := buildEndConditions(def)
+	for _, c := range got {
+		if c.Type == MonsterBookCountCondition {
+			t.Fatalf("expected no MonsterBookCountCondition when MonsterBookCountMin is 0, got %+v", got)
+		}
+	}
+}
+
+func TestBuildEndConditions_MonsterBookCountMin_CombinedWithItems(t *testing.T) {
+	def := dataquest.RestModel{
+		EndRequirements: dataquest.RequirementsRestModel{
+			Items: []dataquest.ItemRequirement{
+				{Id: 4031013, Count: 1},
+			},
+			MonsterBookCountMin: 25,
+		},
+	}
+	got := buildEndConditions(def)
+	want := []ConditionInput{
+		{Type: ItemCondition, Operator: ">=", Value: 1, ReferenceId: 4031013},
+		{Type: MonsterBookCountCondition, Operator: ">=", Value: 25},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
 func TestBuildStartConditions_SelectedSkillId_CombinedWithOthers(t *testing.T) {
 	def := dataquest.RestModel{
 		SelectedSkillId: 4001344,

@@ -35,12 +35,19 @@ jobs:
     outputs:
       docker-services-matrix: ${{ steps.override.outputs.docker-services-matrix || steps.detect.outputs.docker-services-matrix }}
       has-changes: ${{ steps.has-changes.outputs.value }}
+      short-sha: ${{ steps.short-sha.outputs.value }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Compute short SHA
+        id: short-sha
+        shell: bash
+        run: |
+          echo "value=$(git rev-parse --short=7 ${{ github.sha }})" >> "$GITHUB_OUTPUT"
 
       - name: Detect changes
         id: detect
@@ -130,7 +137,9 @@ jobs:
           file: ${{ matrix.service.path }}/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ matrix.service.docker_image }}:latest-amd64
+          tags: |
+            ${{ matrix.service.docker_image }}:latest-amd64
+            ${{ matrix.service.docker_image }}:main-${{ needs.detect-changes.outputs.short-sha }}-amd64
           cache-from: type=gha,scope=${{ matrix.service.name }}-amd64
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-amd64
           # Disable attestations to produce single-platform image (not manifest list)
@@ -172,7 +181,9 @@ jobs:
           file: ${{ matrix.service.path }}/Dockerfile
           platforms: linux/arm64
           push: true
-          tags: ${{ matrix.service.docker_image }}:latest-arm64
+          tags: |
+            ${{ matrix.service.docker_image }}:latest-arm64
+            ${{ matrix.service.docker_image }}:main-${{ needs.detect-changes.outputs.short-sha }}-arm64
           cache-from: type=gha,scope=${{ matrix.service.name }}-arm64
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-arm64
           # Disable attestations to produce single-platform image (not manifest list)
@@ -201,21 +212,142 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Create and push multi-arch manifest
+      - name: Create and push multi-arch manifests
         run: |
           IMAGE="${{ matrix.service.docker_image }}"
+          SHORT_SHA="${{ needs.detect-changes.outputs.short-sha }}"
 
+          # :latest — multi-arch manifest list (back-compat for anything pinning latest)
           echo "Creating manifest for $IMAGE:latest"
-
           docker manifest create $IMAGE:latest \
             --amend $IMAGE:latest-amd64 \
             --amend $IMAGE:latest-arm64
-
           docker manifest push $IMAGE:latest
 
-          echo "### Manifest Created" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: $IMAGE:latest" >> $GITHUB_STEP_SUMMARY
+          # :main-<sha7> — SHA-pinned manifest list used by the GitOps promotion PR
+          echo "Creating manifest for $IMAGE:main-$SHORT_SHA"
+          docker manifest create $IMAGE:main-$SHORT_SHA \
+            --amend $IMAGE:main-$SHORT_SHA-amd64 \
+            --amend $IMAGE:main-$SHORT_SHA-arm64
+          docker manifest push $IMAGE:main-$SHORT_SHA
+
+          echo "### Manifests Created" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: $IMAGE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: latest, main-$SHORT_SHA" >> $GITHUB_STEP_SUMMARY
           echo "- **Architectures**: amd64, arm64" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # GitOps promotion: open auto-merge PR bumping
+  # main overlay's images: block to the new SHA tag.
+  # Without this, Argo CD wouldn't notice any drift
+  # for code-only changes — the :latest tag string
+  # stays the same and the manifest is byte-identical.
+  # ============================================
+  update-image-tags:
+    name: Update main overlay image tags
+    needs: [detect-changes, create-manifest]
+    if: needs.detect-changes.outputs.has-changes == 'true' && needs.create-manifest.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          # MANIFEST_PAT lets the bot PR trigger downstream workflows
+          # (PR Validation) so the auto-merge has a green check to wait
+          # on. Falls back to GITHUB_TOKEN, but PRs opened by GITHUB_TOKEN
+          # don't trigger workflows, so auto-merge would hang.
+          token: ${{ secrets.MANIFEST_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        run: |
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64" \
+            -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
+      - name: Bump newTag for every built service
+        env:
+          SERVICES_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          SHORT_SHA: ${{ needs.detect-changes.outputs.short-sha }}
+        run: |
+          set -euo pipefail
+          OVERLAY=deploy/k8s/overlays/main/kustomization.yaml
+          NEW_TAG="main-${SHORT_SHA}"
+
+          # The docker-services-matrix is a JSON array of {name, path, docker_image, ...}.
+          # For each entry, find its image in the overlay's `images:` block and bump newTag.
+          while read -r image; do
+              echo "Bumping ${image} → ${NEW_TAG}"
+              yq -i \
+                  "(.images[] | select(.name == \"${image}\") | .newTag) = \"${NEW_TAG}\"" \
+                  "$OVERLAY"
+          done < <(echo "$SERVICES_JSON" | jq -r '.[].docker_image')
+
+          # Show the resulting diff in the workflow log for auditability
+          git --no-pager diff "$OVERLAY" || true
+
+      - name: Open auto-merge PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.MANIFEST_PAT || secrets.GITHUB_TOKEN }}
+          SHORT_SHA: ${{ needs.detect-changes.outputs.short-sha }}
+          SERVICES_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+        run: |
+          set -euo pipefail
+          OVERLAY=deploy/k8s/overlays/main/kustomization.yaml
+
+          if git diff --quiet "$OVERLAY"; then
+              echo "No image-tag changes to commit. Skipping PR."
+              exit 0
+          fi
+
+          BRANCH="bot/main-image-bump-${SHORT_SHA}"
+          BUILT_SVCS=$(echo "$SERVICES_JSON" | jq -r '[.[].name] | join(", ")')
+
+          git config user.name 'atlas-image-bot'
+          git config user.email 'atlas-image-bot@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          git add "$OVERLAY"
+          # [skip ci] on the commit message so the squash-merge onto main
+          # doesn't re-trigger main-publish.yml. detect-changes would
+          # produce an empty matrix anyway (manifest-only change), but
+          # belt-and-suspenders avoids a wasted workflow run.
+          git commit -m "chore(images): bump main overlay to ${{ needs.detect-changes.outputs.short-sha }} [skip ci]
+
+          Bumps image tags for: ${BUILT_SVCS}
+
+          Generated by main-publish.yml after a successful build + manifest push.
+          See deploy/k8s/README.md for the ATLAS_ENV / GitOps promotion flow.
+
+          Refs main-publish run ${{ github.run_id }}."
+          git push origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "chore(images): bump main overlay to ${SHORT_SHA} [skip ci]" \
+              --body "Auto-generated by main-publish.yml run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          Bumps \`deploy/k8s/overlays/main/kustomization.yaml\`'s \`images:\` block from \`newTag: latest\` (or the prior \`main-<sha>\`) to \`newTag: main-${SHORT_SHA}\` for every service rebuilt in this run.
+
+          **Services updated:** ${BUILT_SVCS}
+
+          Argo CD's \`Application(atlas-main)\` detects the manifest diff on its next reconcile and triggers a rolling restart of the affected Deployments with the new image digest.
+
+          Will auto-merge once required checks pass.")
+          echo "PR opened: $PR_URL"
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.MANIFEST_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge "${{ steps.pr.outputs.number }}" --auto --squash --delete-branch || {
+              echo "::warning::Auto-merge could not be enabled (branch protection may require manual approval). PR is open at #${{ steps.pr.outputs.number }}."
+          }
 
   # ============================================
   # Summary Job

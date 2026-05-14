@@ -1,0 +1,87 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-wz-input-pvc
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-wz-extractor
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: atlas-wz-extractor
+  template:
+    metadata:
+      labels:
+        app: atlas-wz-extractor
+    spec:
+      containers:
+      - name: wz-extractor
+        image: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: INPUT_WZ_DIR
+          value: "/usr/wz-input"
+        - name: OUTPUT_XML_DIR
+          value: "/usr/data"
+        - name: OUTPUT_IMG_DIR
+          value: "/usr/assets"
+        # BOOTSTRAP_SERVERS, REDIS_URL, and COMMAND_TOPIC_WZ_EXTRACTION are
+        # supplied by the atlas-env ConfigMap above.
+        # REDIS_PASSWORD: not required for this cluster's Redis instance (no auth configured).
+        # Kafka topic partition requirements: see services/atlas-wz-extractor/atlas.com/wz-extractor/docs/kafka.md
+        # Topic provisioning is out-of-band (no KafkaTopic CRs in this repo); ensure
+        # COMMAND_TOPIC_WZ_EXTRACTION is created with partitions=16, replication=3, retention=24h.
+        - name: WZ_EXTRACT_PARALLELISM
+          value: "16"
+        resources:
+          requests:
+            cpu: "2"
+            memory: "2Gi"
+          limits:
+            cpu: "8"
+            memory: "8Gi"
+        volumeMounts:
+          - mountPath: "/usr/wz-input"
+            name: wz-input-storage
+          - mountPath: "/usr/data"
+            name: data-storage
+          - mountPath: "/usr/assets"
+            name: assets-storage
+      volumes:
+        - name: wz-input-storage
+          persistentVolumeClaim:
+            claimName: atlas-wz-input-pvc
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: atlas-data-pvc
+        - name: assets-storage
+          persistentVolumeClaim:
+            claimName: atlas-assets-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-wz-extractor
+spec:
+  selector:
+    app: atlas-wz-extractor
+  ports:
+  - protocol: TCP
+    port: 8080

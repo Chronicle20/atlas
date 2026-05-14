@@ -4,6 +4,7 @@ import (
 	"atlas-consumables/kafka/consumer/character"
 	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
+	pickupconsumer "atlas-consumables/kafka/consumer/pickup"
 	"atlas-consumables/logger"
 	mapCharacter "atlas-consumables/map/character"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
@@ -11,13 +12,15 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-consumables"
-const consumerGroupId = "Consumables Service"
+
+var consumerGroupId = consumergroup.Resolve("Consumables Service")
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -37,11 +40,15 @@ func main() {
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	pickupconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := pickupconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register pickup handlers.")
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })

@@ -19,7 +19,7 @@ Add entry to the `services` array:
 Both workflows (`main-publish.yml`, `pr-validation.yml`) dynamically read this file — no YAML changes needed.
 
 ## 2. Kubernetes Manifest
-**File:** `services/atlas-<service>/atlas-<service>.yml`
+**File:** `deploy/k8s/atlas-<service>.yaml`
 
 Two resources: Deployment + Service. Pattern:
 ```yaml
@@ -163,7 +163,33 @@ location ~ ^/api/<service-path>(/.*)?$ {
 
 After editing, run `./deploy/scripts/sync-k8s-ingress-routes.sh` to regenerate the inlined K8s ConfigMap in `deploy/k8s/ingress.yaml`.
 
-## 6. Post-Scaffold Verification
+## 6. Tenant Opcode Template (atlas-channel packet writers/handlers only)
+**File:** `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`
+
+Atlas tenants are seeded from these JSON templates the first time they are created. If your service introduces new packet writers or recv handlers in `atlas-channel` (i.e., the change touches `libs/atlas-packet/character/{clientbound,serverbound}/<feature>/` or registers new `Writer`/`Handler` constants in `services/atlas-channel/atlas.com/channel/main.go`), seed the corresponding opcode rows in **every targeted template** so fresh tenants get the mappings without manual operator action.
+
+Two top-level arrays:
+
+- `handlers[]` — recv side. Add an entry with `opCode`, `validator`, and `handler` name (the constant string registered in `main.go`):
+  ```json
+  {
+    "opCode": "0x39",
+    "validator": "LoggedInValidator",
+    "handler": "MonsterBookCover"
+  }
+  ```
+- `writers[]` — send side. Add `opCode` + `writer` name:
+  ```json
+  { "opCode": "0x53", "writer": "MonsterBookSetCard" }
+  ```
+
+Insert each entry in numeric order alongside neighbouring opcodes. Match the indentation and trailing-comma style of adjacent entries; the file is plain JSON and must remain valid (`python3 -m json.tool` validates).
+
+If the feature targets a single client version (e.g. v83-only), only that template needs the entries — but document the scope decision in the design doc so future client-version expansions know to add them.
+
+Operators creating a tenant from a snapshot taken before this change still need the rows applied via `atlas-tenants` admin; the seed templates only affect tenants instantiated post-merge.
+
+## 7. Post-Scaffold Verification
 After scaffolding is complete, run these skills to verify the work:
 1. `/service-doc` — generates/verifies service documentation
 2. `/backend-audit` — audits against Atlas backend developer guidelines
@@ -176,5 +202,5 @@ After scaffolding is complete, run these skills to verify the work:
 - Entity structs should use `TenantId` (not `TenantID`) for field naming consistency
 
 ## Conditional Steps
-- Steps 4 and 5 only apply to services that expose REST endpoints
-- Kafka-only services (no REST API) skip Bruno and ingress
+- Steps 4 and 5 only apply to services that expose REST endpoints. Kafka-only services skip Bruno and ingress.
+- Step 6 only applies when the change introduces new atlas-channel packet writers or recv handlers. Pure-REST services and Kafka-only services skip the opcode template seed.

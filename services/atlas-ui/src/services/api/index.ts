@@ -166,3 +166,8 @@ export { getShopTypeName, getShopStateName, getShopTypeBadgeVariant, getShopStat
 // Ban management
 export { bansService } from './bans.service';
 export type { Ban, BanAttributes, CreateBanRequest, CheckBanResult, BanQueryOptions, CheckBanParams } from './bans.service';
+
+// Monster Book
+export { monsterBookService } from './monster-book.service';
+export type { ListCardsOptions } from './monster-book.service';
+export type { MonsterBookCard, MonsterBookCollection } from '@/types/monster-book';

@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-pihole-register
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pihole-register
+          image: curlimages/curl:8.10.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              host="${PR_NUMBER}.atlas.home"
+              ok=0
+              for i in 1 2; do
+                  base_var="PIHOLE_API_BASE_${i}"
+                  token_var="PIHOLE_TOKEN_${i}"
+                  base=$(eval echo \$${base_var})
+                  token=$(eval echo \$${token_var})
+                  [ -z "$base" ] && continue
+                  if curl -fsS -X POST \
+                          -H "X-Pi-Auth: $token" \
+                          -H "Content-Type: application/json" \
+                          -d "{\"name\":\"$host\",\"address\":\"$TRAEFIK_LB_IP\"}" \
+                          "$base/api/config/dns/hosts"; then
+                      ok=$((ok+1))
+                  fi
+              done
+              [ "$ok" -ge 1 ] || exit 1
+          envFrom:
+            - configMapRef:
+                name: atlas-env-tokens
+            - secretRef:
+                name: pihole-credentials
+          env:
+            - name: PR_NUMBER
+              value: "PLACEHOLDER_PR_NUMBER"
+            - name: TRAEFIK_LB_IP
+              value: "192.168.23.230"

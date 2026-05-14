@@ -14,13 +14,14 @@ type ConditionInput struct {
 
 // Condition types supported by query-aggregator
 const (
-	LevelCondition       = "level"
-	JobCondition         = "jobId"
-	FameCondition        = "fame"
-	MesoCondition        = "meso"
-	ItemCondition        = "item"
-	QuestStatusCondition = "questStatus"
-	SkillCondition       = "skillLevel"
+	LevelCondition            = "level"
+	JobCondition              = "jobId"
+	FameCondition             = "fame"
+	MesoCondition             = "meso"
+	ItemCondition             = "item"
+	QuestStatusCondition      = "questStatus"
+	SkillCondition            = "skillLevel"
+	MonsterBookCountCondition = "monsterBookCount"
 )
 
 // Quest states for QuestStatusCondition

@@ -296,7 +296,8 @@ func validateConditionInput(input ConditionInput) error {
 	case JobCondition, MesoCondition, MapCondition, FameCondition, GenderCondition,
 		StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition,
 		GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition,
-		PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
+		PartyIdCondition, PartyLeaderCondition, PartySizeCondition,
+		MonsterBookCountCondition:
 		// Standard conditions with no extra requirements.
 	default:
 		return fmt.Errorf("unsupported condition type: %s", input.Type)

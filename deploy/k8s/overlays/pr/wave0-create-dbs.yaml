@@ -1,0 +1,70 @@
+# Pre-create every Postgres database this PR env needs, before any service
+# Deployment comes up. Same pattern as atlas-kafka-precreate (base): a one-shot
+# Sync-wave 0 Job that runs once per sync, Argo waits for it to complete, then
+# proceeds to wave 10 (Deployments).
+#
+# Previously a PreSync hook, but PreSync hooks run before the Sync wave —
+# meaning the ConfigMaps (atlas-env, atlas-env-tokens, atlas-db-names) and
+# Reflector-replicated Secret (db-credentials) this Job depends on don't yet
+# exist in the PR namespace. Moving to Sync-wave 0 lets all wave-0 resources
+# come up together; kubelet retries the container until the missing env
+# sources materialize, typically within seconds.
+#
+# Idempotent: re-running against an existing DB is a no-op (psql skips with
+# NOT EXISTS).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-create-dbs
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  # Cap each pod's wait for missing ConfigMaps/Secrets so a kustomize render
+  # bug or RBAC denial can't wedge the Job indefinitely. 300s is enough headroom
+  # for normal sync-wave-0 convergence (typically <10s).
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: psql
+          image: postgres:15-alpine
+          envFrom:
+            - configMapRef:
+                name: atlas-env-tokens
+            - configMapRef:
+                name: atlas-db-names
+            - secretRef:
+                name: db-credentials
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: DB_PORT
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              : "${ATLAS_DB_NAMES:?ATLAS_DB_NAMES not set in atlas-db-names ConfigMap}"
+              : "${ATLAS_ENV:?ATLAS_ENV not set in atlas-env-tokens ConfigMap}"
+              # Phase 0 Task 0.1 finding: db-credentials values carry literal
+              # trailing whitespace (space + CR + LF). Strip before passing to
+              # psql, otherwise auth fails with: password authentication failed
+              # for user "atlas ".
+              DB_USER="$(printf '%s' "$DB_USER" | tr -d ' \r\n')"
+              DB_PASSWORD="$(printf '%s' "$DB_PASSWORD" | tr -d ' \r\n')"
+              for raw in $ATLAS_DB_NAMES; do
+                  full="${raw}-${ATLAS_ENV}"
+                  PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
+                      -v "ON_ERROR_STOP=1" \
+                      -c "SELECT 'CREATE DATABASE \"'||'$full'||'\"' WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$full')\gexec"
+              done

@@ -297,6 +297,11 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x39",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
         "opCode": "0x3A",
         "validator": "LoggedInValidator",
         "handler": "NPCStartConversationHandle"
@@ -1206,7 +1211,7 @@
             "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
             "UNKNOWN_ERROR": 9,
             "TOO_MANY_CONNECTIONS": 10,
-            "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+            "NEXON_ID_DIFFERENT_THEN_REGISTERED": 26,
             "CANNOT_DELETE_AS_GUILD_MASTER": 22,
             "SECONDARY_PIN_DOES_NOT_MATCH": 20,
             "CANNOT_DELETE_WHEN_ENGAGED": 24,
@@ -1497,6 +1502,14 @@
       {
         "opCode": "0x4C",
         "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x53",
+        "writer": "MonsterBookSetCard"
+      },
+      {
+        "opCode": "0x54",
+        "writer": "MonsterBookSetCover"
       },
       {
         "opCode": "0x7A",

@@ -3,8 +3,10 @@ package objectid
 import (
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -126,6 +128,33 @@ func TestRelease_aboveThresholdRecyclesLIFO(t *testing.T) {
 	got4, err := a.Allocate(ctx, te)
 	require.NoError(t, err)
 	require.Equal(t, RecycleThreshold+1, got4)
+}
+
+func TestAllocator_keysRespectEnvPrefix(t *testing.T) {
+	id := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	tm, err := tenant.Create(id, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	prefix := atlasredis.KeyPrefix()
+
+	gotNext := counterKey(tm)
+	if want := prefix + ":oid:" + id.String() + ":next"; gotNext != want {
+		t.Fatalf("counterKey = %q, want %q", gotNext, want)
+	}
+
+	gotFree := freeKey(tm)
+	if want := prefix + ":oid:" + id.String() + ":free"; gotFree != want {
+		t.Fatalf("freeKey = %q, want %q", gotFree, want)
+	}
+
+	// Non-tautological guard: keys must carry the atlas-redis library's
+	// "atlas" literal somewhere in the prefix. Catches a regression where
+	// KeyPrefix() drifts from the documented prefix shape ("atlas" or
+	// "<atlasEnv>:atlas").
+	if !strings.Contains(gotNext, "atlas") {
+		t.Fatalf("counterKey = %q does not contain the atlas literal", gotNext)
+	}
 }
 
 func TestClear_resetsTenant(t *testing.T) {

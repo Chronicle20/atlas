@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -26,7 +27,7 @@ type ConsumableCache struct {
 var consumableCache ConsumableCacheInterface
 
 func consumableCacheKey(tenantId uuid.UUID) string {
-	return fmt.Sprintf("atlas:npc-shop:consumables:%s", tenantId.String())
+	return fmt.Sprintf("%s:npc-shop:consumables:%s", atlasredis.KeyPrefix(), tenantId.String())
 }
 
 // InitConsumableCache initializes the Redis-backed consumable cache

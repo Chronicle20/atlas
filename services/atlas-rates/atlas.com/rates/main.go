@@ -12,12 +12,14 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-rates"
-const consumerGroupId = "Rate Service"
+
+var consumerGroupId = consumergroup.Resolve("Rate Service")
 
 type Server struct {
 	baseUrl string

@@ -8,6 +8,7 @@ import (
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
 	dropMsg "atlas-inventory/kafka/message/drop"
+	pickupMsg "atlas-inventory/kafka/message/pickup"
 	"atlas-inventory/kafka/producer"
 	"context"
 	"errors"
@@ -1150,6 +1151,19 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
 			return errors.New("invalid inventory item")
+		}
+
+		// Consume-on-pickup branch: items flagged with consumeOnPickup never enter
+		// the inventory. Emit the consume command (downstream services may handle
+		// monster-book registration, etc.) and release the drop reservation.
+		if inventoryType == inventory.TypeValueUse {
+			cm, cerr := p.assetProcessor.ConsumableProcessor().GetById(templateId)
+			if cerr == nil && cm.ConsumeOnPickup() {
+				if err := mb.Put(pickupMsg.EnvCommandTopic, pickupMsg.NewCommandProvider(p.t.Id(), characterId, templateId, transactionId)); err != nil {
+					return err
+				}
+				return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
+			}
 		}
 
 		invLock := LockRegistry().Get(characterId, inventoryType)

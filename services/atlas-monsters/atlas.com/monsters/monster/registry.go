@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -273,17 +274,17 @@ func GetMonsterRegistry() *Registry {
 }
 
 func monsterKey(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("atlas:monster:%s:%d", t.Id().String(), uniqueId)
+	return fmt.Sprintf("%s:monster:%s:%d", atlasredis.KeyPrefix(), t.Id().String(), uniqueId)
 }
 
 func mapIndexKey(t tenant.Model, f field.Model) string {
-	return fmt.Sprintf("atlas:monster-map:%s:%d:%d:%d:%s",
-		t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+	return fmt.Sprintf("%s:monster-map:%s:%d:%d:%d:%s",
+		atlasredis.KeyPrefix(), t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 
 func mapIndexKeyFromModel(t tenant.Model, m Model) string {
-	return fmt.Sprintf("atlas:monster-map:%s:%d:%d:%d:%s",
-		t.Id().String(), m.worldId, m.channelId, m.mapId, m.instance.String())
+	return fmt.Sprintf("%s:monster-map:%s:%d:%d:%d:%s",
+		atlasredis.KeyPrefix(), t.Id().String(), m.worldId, m.channelId, m.mapId, m.instance.String())
 }
 
 func (r *Registry) storeMonster(ctx context.Context, t tenant.Model, m Model) error {
@@ -703,7 +704,7 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 
 	var cursor uint64
 	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, "atlas:monster:*", 100).Result()
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, atlasredis.KeyPrefix()+":monster:*", 100).Result()
 		if err != nil {
 			break
 		}
@@ -740,8 +741,8 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 }
 
 func (r *Registry) Clear(ctx context.Context) {
-	r.scanAndDelete(ctx, "atlas:monster:*")
-	r.scanAndDelete(ctx, "atlas:monster-map:*")
+	r.scanAndDelete(ctx, atlasredis.KeyPrefix()+":monster:*")
+	r.scanAndDelete(ctx, atlasredis.KeyPrefix()+":monster-map:*")
 }
 
 func (r *Registry) scanAndDelete(ctx context.Context, pattern string) {

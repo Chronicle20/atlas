@@ -32,5 +32,5 @@
 
 ---
 
-ack: dispatcher-layer offset — CUserPool::OnUserRemotePacket@0x94b390 reads characterId (Decode4) before calling CUserRemote::OnAttack@0x95a670; all tool ❌s are due to atlas including characterId at position 0 while IDA function starts one field later. After accounting for the +1 offset the remaining fields match IDA. Atlas Attack.Encode round-trips correctly across all variants including v95 strafe passive-SLV byte; no wire bug detected.
+ack: Two tool-limitation causes — (1) dispatcher-layer +1 offset: CUserPool::OnUserRemotePacket consumes characterId before dispatching to OnAttack, while atlas writes characterId at offset 0; (2) the analyzer linearizes deeply conditional field expansion (skillId, strafe passive-SLV, meso-explosion, ranged, keydown) against IDA's guarded branches, producing width mismatches even after the offset is applied. No structural wire bug — atlas's encode tracks the IDA field sequence for the attack type subset wired through the service layer.
 

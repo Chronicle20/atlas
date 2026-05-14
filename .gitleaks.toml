@@ -45,6 +45,20 @@ tags = ["identifying", "email"]
 
 [allowlist]
 description = "Permitted matches"
+# Commit-scoped exceptions: historical commits whose CURRENT file content
+# is already sanitized but whose diff still contains the pre-sanitize text.
+# These are blanket-skipped from gitleaks history scans. Add new entries
+# sparingly; each one must cite the follow-up commit that sanitized the
+# file so the exception remains auditable.
+commits = [
+  # docs(task-063): backend-guidelines audit for Phases 1-5.
+  # Sanitized in commit 29312509d (chore(task-063): sanitize identifying
+  # refs from task docs).
+  "6e915c97a8dc6cbb3320dcdb06b07660e83ee560",
+  # plan(task-063): implementation plan and context (initial commit).
+  # Sanitized in commit 29312509d.
+  "50434603f771f4e51554155bc38ebeb55d365711",
+]
 paths = [
   '''(^|/)\.git/''',
   '''(^|/)go\.sum$''',

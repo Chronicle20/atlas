@@ -36,7 +36,7 @@ func compositeKey(characterId, skillId uint32) string {
 }
 
 func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
 }
 
 func (r *Registry) Apply(ctx context.Context, characterId uint32, skillId uint32, cooldown uint32) error {
@@ -59,7 +59,7 @@ func (r *Registry) Get(ctx context.Context, characterId uint32, skillId uint32) 
 func (r *Registry) ClearAll(ctx context.Context, characterId uint32) error {
 	t := tenant.MustFromContext(ctx)
 	charPrefix := strconv.FormatUint(uint64(characterId), 10) + ":"
-	pattern := fmt.Sprintf("atlas:%s:%s:%s*", r.reg.Namespace(), atlas.TenantKey(t), charPrefix)
+	pattern := fmt.Sprintf("%s:%s:%s:%s*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t), charPrefix)
 
 	var cursor uint64
 	for {
@@ -120,8 +120,8 @@ func (r *Registry) GetAll(ctx context.Context) []CooldownHolder {
 			continue
 		}
 
-		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
-		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+		pattern := fmt.Sprintf("%s:%s:%s:*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
+		prefix := fmt.Sprintf("%s:%s:%s:", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
 		var cursor uint64
 		for {
 			keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()

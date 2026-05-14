@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -46,7 +47,7 @@ func TestAttackCooldown_DistinctFromSkillRegistry(t *testing.T) {
 	r.SetCooldown(ctx, tm, 100, uint8(0), 1*time.Second)
 	keys := mr.Keys()
 	for _, k := range keys {
-		if k == "atlas:monster-cooldown:"+tm.Id().String()+":100:0" {
+		if k == atlasredis.KeyPrefix()+":monster-cooldown:"+tm.Id().String()+":100:0" {
 			t.Fatalf("attack-cooldown key collides with skill-cooldown key namespace: %s", k)
 		}
 	}

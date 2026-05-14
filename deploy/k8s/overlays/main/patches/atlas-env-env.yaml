@@ -1,0 +1,715 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-account
+spec:
+  template:
+    spec:
+      containers:
+        - name: account
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-asset-expiration
+spec:
+  template:
+    spec:
+      containers:
+        - name: asset-expiration
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-assets
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ban
+spec:
+  template:
+    spec:
+      containers:
+        - name: ban
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-buddies
+spec:
+  template:
+    spec:
+      containers:
+        - name: buddies
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-buffs
+spec:
+  template:
+    spec:
+      containers:
+        - name: buffs
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-cashshop
+spec:
+  template:
+    spec:
+      containers:
+        - name: cashshop
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-chairs
+spec:
+  template:
+    spec:
+      containers:
+        - name: chairs
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-chalkboards
+spec:
+  template:
+    spec:
+      containers:
+        - name: chalkboards
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-channel
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-channel
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-character-factory
+spec:
+  template:
+    spec:
+      containers:
+        - name: character-factory
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-character
+spec:
+  template:
+    spec:
+      containers:
+        - name: character
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-configurations
+spec:
+  template:
+    spec:
+      containers:
+        - name: configurations
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-consumables
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-consumables
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-data
+spec:
+  template:
+    spec:
+      containers:
+        - name: data
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-drop-information
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-drop-information
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-drops
+spec:
+  template:
+    spec:
+      containers:
+        - name: drops
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-effective-stats
+spec:
+  template:
+    spec:
+      containers:
+        - name: effective-stats
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-expressions
+spec:
+  template:
+    spec:
+      containers:
+        - name: expressions
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-fame
+spec:
+  template:
+    spec:
+      containers:
+        - name: fame
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-gachapons
+spec:
+  template:
+    spec:
+      containers:
+        - name: gachapons
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-guilds
+spec:
+  template:
+    spec:
+      containers:
+        - name: guilds
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ingress
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-inventory
+spec:
+  template:
+    spec:
+      containers:
+        - name: inventory
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-invites
+spec:
+  template:
+    spec:
+      containers:
+        - name: invites
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-keys
+spec:
+  template:
+    spec:
+      containers:
+        - name: keys
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-login
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-login
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-map-actions
+spec:
+  template:
+    spec:
+      containers:
+        - name: map-actions
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-maps
+spec:
+  template:
+    spec:
+      containers:
+        - name: maps
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-merchant
+spec:
+  template:
+    spec:
+      containers:
+        - name: merchant
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-messages
+spec:
+  template:
+    spec:
+      containers:
+        - name: messages
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-messengers
+spec:
+  template:
+    spec:
+      containers:
+        - name: messengers
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-monster-death
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-monster-death
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-monsters
+spec:
+  template:
+    spec:
+      containers:
+        - name: monsters
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-notes
+spec:
+  template:
+    spec:
+      containers:
+        - name: notes
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-npc-conversations
+spec:
+  template:
+    spec:
+      containers:
+        - name: npc-conversations
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-npc-shops
+spec:
+  template:
+    spec:
+      containers:
+        - name: npc-shops
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-parties
+spec:
+  template:
+    spec:
+      containers:
+        - name: parties
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-party-quests
+spec:
+  template:
+    spec:
+      containers:
+        - name: party-quests
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-pets
+spec:
+  template:
+    spec:
+      containers:
+        - name: pets
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-portal-actions
+spec:
+  template:
+    spec:
+      containers:
+        - name: portal-actions
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-portals
+spec:
+  template:
+    spec:
+      containers:
+        - name: portals
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-query-aggregator
+spec:
+  template:
+    spec:
+      containers:
+        - name: guilds
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-quest
+spec:
+  template:
+    spec:
+      containers:
+        - name: quest
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-rates
+spec:
+  template:
+    spec:
+      containers:
+        - name: rates
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-reactor-actions
+spec:
+  template:
+    spec:
+      containers:
+        - name: reactor-actions
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-reactors
+spec:
+  template:
+    spec:
+      containers:
+        - name: reactors
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-saga-orchestrator
+spec:
+  template:
+    spec:
+      containers:
+        - name: saga-orchestrator
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-skills
+spec:
+  template:
+    spec:
+      containers:
+        - name: skills
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-storage
+spec:
+  template:
+    spec:
+      containers:
+        - name: storage
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-tenants
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-tenants
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-transports
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-transports
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ui
+spec:
+  template:
+    spec:
+      containers:
+        - name: ui
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-world
+spec:
+  template:
+    spec:
+      containers:
+        - name: world
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-wz-extractor
+spec:
+  template:
+    spec:
+      containers:
+        - name: wz-extractor
+          env:
+            - name: ATLAS_ENV
+              value: "main"

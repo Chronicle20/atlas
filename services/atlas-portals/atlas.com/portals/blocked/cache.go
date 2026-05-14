@@ -30,7 +30,7 @@ func GetRegistry() *Registry {
 }
 
 func (r *Registry) setKey(t tenant.Model, characterId uint32) string {
-	return fmt.Sprintf("atlas:%s:%s:%s", r.namespace, atlas.TenantKey(t), strconv.FormatUint(uint64(characterId), 10))
+	return fmt.Sprintf("%s:%s:%s:%s", atlas.KeyPrefix(), r.namespace, atlas.TenantKey(t), strconv.FormatUint(uint64(characterId), 10))
 }
 
 func portalKey(mapId _map.Id, portalId uint32) string {

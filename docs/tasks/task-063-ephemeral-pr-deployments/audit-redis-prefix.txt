@@ -1,0 +1,41 @@
+services/atlas-npc-shops/atlas.com/npc/shops/registry.go:34:	return fmt.Sprintf("atlas:npc-shop-chars:%s:%d", atlas.TenantKey(t), shopId)
+services/atlas-buffs/atlas.com/buffs/character/registry.go:46:	return "atlas:" + r.characters.Namespace() + ":_tenants"
+services/atlas-npc-shops/atlas.com/npc/shops/cache.go:29:	return fmt.Sprintf("atlas:npc-shop:consumables:%s", tenantId.String())
+services/atlas-pets/atlas.com/pets/character/registry.go:40:	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+services/atlas-pets/atlas.com/pets/character/registry.go:69:		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
+services/atlas-pets/atlas.com/pets/character/registry.go:70:		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+services/atlas-portals/atlas.com/portals/blocked/cache.go:33:	return fmt.Sprintf("atlas:%s:%s:%s", r.namespace, atlas.TenantKey(t), strconv.FormatUint(uint64(characterId), 10))
+services/atlas-skills/atlas.com/skills/skill/cooldown_registry.go:39:	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+services/atlas-skills/atlas.com/skills/skill/cooldown_registry.go:62:	pattern := fmt.Sprintf("atlas:%s:%s:%s*", r.reg.Namespace(), atlas.TenantKey(t), charPrefix)
+services/atlas-skills/atlas.com/skills/skill/cooldown_registry.go:123:		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
+services/atlas-skills/atlas.com/skills/skill/cooldown_registry.go:124:		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+services/atlas-expressions/atlas.com/expressions/expression/registry.go:31:		tenantKey: "atlas:expression:_tenants",
+services/atlas-maps/atlas.com/maps/map/monster/registry.go:60:	return fmt.Sprintf("atlas:maps:spawn:%s:%d:%d:%d:%s",
+services/atlas-maps/atlas.com/maps/map/monster/registry.go:260:	iter := r.client.Scan(ctx, 0, "atlas:maps:spawn:*", 0).Iterator()
+services/atlas-chairs/atlas.com/chairs/character/registry.go:34:	return fmt.Sprintf("atlas:%s:%s:%d:%d:%d:%s",
+services/atlas-chairs/atlas.com/chairs/character/registry.go:69:	pattern := fmt.Sprintf("atlas:%s:*", r.namespace)
+services/atlas-storage/atlas.com/storage/storage/cache.go:36:	return fmt.Sprintf("atlas:npc-context:%d", characterId)
+services/atlas-character/atlas.com/character/session/registry.go:38:	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+services/atlas-chalkboards/atlas.com/chalkboards/character/registry.go:33:	return fmt.Sprintf("atlas:%s:%s:%d:%d:%d:%s",
+services/atlas-monsters/atlas.com/monsters/monster/cooldown.go:32:	return fmt.Sprintf("atlas:monster-cooldown:%s:%s:%s",
+services/atlas-monsters/atlas.com/monsters/monster/cooldown.go:40:	return fmt.Sprintf("atlas:monster-cooldown:%s:%s:*",
+services/atlas-monsters/atlas.com/monsters/monster/drop_timer_registry.go:67:	return fmt.Sprintf("atlas:drop-timer:%s:%d", t.Id().String(), uniqueId)
+services/atlas-monsters/atlas.com/monsters/monster/drop_timer_registry.go:156:		keys, nextCursor, err := r.client.Scan(ctx, cursor, "atlas:drop-timer:*", 100).Result()
+services/atlas-monsters/atlas.com/monsters/monster/registry.go:276:	return fmt.Sprintf("atlas:monster:%s:%d", t.Id().String(), uniqueId)
+services/atlas-monsters/atlas.com/monsters/monster/registry.go:280:	return fmt.Sprintf("atlas:monster-map:%s:%d:%d:%d:%s",
+services/atlas-monsters/atlas.com/monsters/monster/registry.go:285:	return fmt.Sprintf("atlas:monster-map:%s:%d:%d:%d:%s",
+services/atlas-monsters/atlas.com/monsters/monster/registry.go:706:		keys, nextCursor, err := r.client.Scan(ctx, cursor, "atlas:monster:*", 100).Result()
+services/atlas-monsters/atlas.com/monsters/monster/registry.go:743:	r.scanAndDelete(ctx, "atlas:monster:*")
+services/atlas-monsters/atlas.com/monsters/monster/registry.go:744:	r.scanAndDelete(ctx, "atlas:monster-map:*")
+services/atlas-monsters/atlas.com/monsters/monster/attack_cooldown.go:32:	return fmt.Sprintf("atlas:monster-attack-cooldown:%s:%s:%s",
+services/atlas-monsters/atlas.com/monsters/monster/attack_cooldown.go:40:	return fmt.Sprintf("atlas:monster-attack-cooldown:%s:%s:*",
+services/atlas-rates/atlas.com/rates/character/item_tracker.go:216:	scanPattern := "atlas:" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"
+services/atlas-account/atlas.com/account/account/registry.go:84:	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+services/atlas-account/atlas.com/account/account/registry.go:248:		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
+services/atlas-account/atlas.com/account/account/registry.go:249:		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+libs/atlas-object-id/allocator.go:103:	return fmt.Sprintf("atlas:oid:%s:next", t.Id().String())
+libs/atlas-object-id/allocator.go:107:	return fmt.Sprintf("atlas:oid:%s:free", t.Id().String())
+libs/atlas-redis/keys.go:10:const keyPrefix = "atlas"
+libs/atlas-redis/keys.go:22:	all = append(all, keyPrefix, namespace)
+services/atlas-buffs/atlas.com/buffs/character/registry.go:46:	return "atlas:" + r.characters.Namespace() + ":_tenants"
+services/atlas-rates/atlas.com/rates/character/item_tracker.go:216:	scanPattern := "atlas:" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"

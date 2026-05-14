@@ -125,6 +125,7 @@ exported and compared against the corresponding struct's Encode method.
 | FName | Atlas writer/handler | Notes |
 |---|---|---|
 | (bare-handler) | `CharacterSkillChange` (opcode 0x23) | Already in gms_v95.json. Audit reports ❌ due to tool-limitation in nested `SecondaryStat` sub-struct analysis. See CharacterSkillChange.md ack footer. Deferred to Phase 3 analyzer descent. |
+| CreateCharacter (opcode 0x17 / bCharSale path) | atlas decoder absent for `m_bCharSale == true` branch in `CLogin::SendNewCharPacket@0x5d7bd0` (opcode 23, 9× AL items, no SubJob/gender). Cash Shop character creation flow not wired. | follow-up |
 
 ## Known false positives — character misc-state bucket (Task 10)
 

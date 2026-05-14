@@ -216,13 +216,13 @@ no report for them. For each, the v83 behaviour is noted.
 | `CLogin::SendCheckDuplicateIDPacket` | In v83 this lives on `CUICharacterSaleDlg` (a UI class), not `CLogin`. Wire format `EncodeStr(name)` is identical. | `CheckName` | Audit can't match FName; no pipeline report. Wire shape unchanged — no v83 bug. |
 | `CWvsContext::SendStatChangeRequest` | In v83 renamed `CWvsContext::SendStatChangeRequestByItemOption@0xa1e997`. Wire format `Encode4+Encode4+Encode2+Encode2+Encode1` is **identical** to v95. | `HealOverTime` | No divergence; audit entry added under the v95 FName key for gms_v83.json. |
 
-### Resolved v83-only divergences (fixed in this task)
+### Resolved v83-only divergences (fixed in Task 15; gates updated to >87 in Task 16)
 
-| FName | Atlas struct | v83 wire | v95 wire | Gate added |
-|---|---|---|---|---|
-| `CUser::ShowItemUpgradeEffect` | `ItemUpgrade` (clientbound) | `Decode1×4` (no enchantCategory, no enchantResultFlag) | `Decode1×3 + Decode4 + Decode1×2` | `GMS>83 \|\| JMS` guards around `enchantCategory` + `enchantResultFlag` in `item_upgrade.go` |
-| `CWvsContext::SendEmotionChange` | `ExpressionRequest` (serverbound) | `Encode4` (emotionId only) | `Encode4 + Encode4 + Encode1` | `GMS>83 \|\| JMS` guard around `duration` + `byItemOption` in `serverbound/expression.go` |
-| `CUser::OnEmotion` (absent in v83) | `CharacterExpression` (clientbound) | `Decode4` (expressionId only, inline in dispatcher) | `Decode4 + Decode4 + Decode1` | `GMS>83 \|\| JMS` guard around `duration` + `byItemOption` in `clientbound/expression.go` |
+| FName | Atlas struct | v83 wire | v87 wire | v95 wire | Final gate |
+|---|---|---|---|---|---|
+| `CUser::ShowItemUpgradeEffect` | `ItemUpgrade` (clientbound) | `Decode1×4` (no enchantCategory, no enchantResultFlag) | `Decode1×4` (same as v83) | `Decode1×3 + Decode4 + Decode1×2` | `GMS>87 \|\| JMS` — widened from `>83` after Task 16 confirmed v87 also has only 4 bytes |
+| `CWvsContext::SendEmotionChange` | `ExpressionRequest` (serverbound) | `Encode4` (emotionId only) | `Encode4` (same as v83) | `Encode4 + Encode4 + Encode1` | `GMS>87 \|\| JMS` — widened from `>83` after Task 16 confirmed v87 IDA@0xabbfbb |
+| `CUser::OnEmotion` (absent in v83) | `CharacterExpression` (clientbound) | `Decode4` (inline in dispatcher case 0xC1) | `Decode4` (inline in case 0xCE, no separate function) | `Decode4 + Decode4 + Decode1` | `GMS>87 \|\| JMS` — widened from `>83` after Task 16 confirmed v87 IDA@0x9f7492 |
 
 ### v83 IDA structural differences not requiring encoder changes
 
@@ -238,3 +238,48 @@ no report for them. For each, the v83 behaviour is noted.
 ### Hard-cap gate check
 
 No encoder/decoder in the character domain now contains more than **2 nested** `if t.Region()` / `if t.MajorVersion()` levels after this task's changes. The three fixed encoders each have a single flat gate. Hard cap not triggered.
+
+## Cross-version — character domain (v87)
+
+Results of the GMS v87 cross-version pass (Task 16). All 44+ character FNames were
+looked up in v87 IDA (base 0x400000, `GMSv87_4GB.exe`).
+
+### Confirmed v87 alignments (no change needed)
+
+| FName | v87 behaviour | Notes |
+|---|---|---|
+| `GW_CharacterStat::Decode` HP/MHP/MP/MMP | v87: `Decode2` (int16), same as v83. Widened to `Decode4` in v95 only. Atlas currently writes int32 for all versions — this sub-struct is inside complex CharacterList packets the flat analyzer cannot reach. Deferred. | Same situation as v83; no new gate needed |
+| `GW_CharacterStat::Decode` nSubJob | v87: `Decode2(nSubJob)` IS present at end of stat block. Same as v95. Gate `MajorVersion() > 83` for nSubJob already correct. | No action |
+| `CFuncKeyMappedMan::OnInit` loop count | v87: loop count = **89** entries (identical to v83; v95 = 90). Deferred — pipeline cannot model loop counts; atlas always sends 90 which is harmless. | No action |
+| `CWvsContext::OnMessage` sub-op modes | v87: 15 modes (0x0–0xE) including SkillExpire — same as v95. | No action |
+| `CVecCtrlUser::EndUpdateActive` | v87 IDA@0xa5c937: has full dr0/dr1/fieldKey/dr2/dr3/crc/dwKey/crc32 sequence. Gate `GMS>83\|\|JMS` fires correctly for v87. | No action |
+| `CLogin::OnSelectCharacterResult` | v87 success path (LABEL_48): `Decode4(ip)+Decode2(port)+Decode4(charId)+Decode1(authenCode)+Decode4(ulPremiumArgument)` — identical to v95. | No action |
+| `CLogin::OnViewAllCharResult` case 0 (CharacterViewAllCharacters) | v87: reads same fields as v95 except NO `m_bLoginOpt` at end. Atlas gates `MajorVersion()>87` for this field — already correct. | No action |
+| `CLogin::OnSelectWorldResult` m_nBuyCharCount | v87: absent. Atlas gates `MajorVersion()>87` for `nBuyCharCount` in `list.go` — already correct. | No action |
+
+### Missing FNames in v87 IDA
+
+| v95 FName | v87 behaviour | Atlas struct | Notes |
+|---|---|---|---|
+| `CUser::OnEmotion` | Handled inline in `CUserPool::OnUserRemotePacket@0x9f7492` case 0xCE: reads `Decode4(emotionId)` only (same as v83 case 0xC1). No duration, no byItemOption. | `CharacterExpression` | **Fixed**: gate widened to `GMS>87\|\|JMS` in Task 16. |
+| `CUserRemote::OnSetActivePortableChair` | Handled inline in `CUserPool::OnUserRemotePacket` case 0xD1: reads `Decode4(chairId)` directly. Same wire shape as v95. | `CharacterChairShow` | No divergence. |
+
+### Resolved v87-only divergences (fixed in Task 16)
+
+| FName | Atlas struct | v87 wire | v95 wire | Fix |
+|---|---|---|---|---|
+| `CUser::ShowItemUpgradeEffect@0x9adb79` | `ItemUpgrade` (clientbound) | `Decode1×4` (no enchantCategory, no enchantResultFlag) | `Decode1×3+Decode4+Decode1×2` | Gate widened from `>83` to `>87` in `item_upgrade.go` |
+| `CWvsContext::SendEmotionChange@0xabbfbb` | `ExpressionRequest` (serverbound) | `Encode4` (emotionId only) | `Encode4+Encode4+Encode1` | Gate widened from `>83` to `>87` in `serverbound/expression.go` |
+| `CUser::OnEmotion` (inline@0x9f7492) | `CharacterExpression` (clientbound) | `Decode4` (expressionId only) | `Decode4+Decode4+Decode1` | Gate widened from `>83` to `>87` in `clientbound/expression.go` |
+| `CWvsContext::OnCharacterInfo@0xabb181` | `CharacterInfo` (clientbound) | monster book block (5×int32) IS present | monster book absent (GMS≥87 guard false) | Gate changed from `< 87` to `<= 87` in `info.go` so v87 correctly includes monster book block |
+
+### v87 IDA structural differences deferred to _pending (not fixed)
+
+| FName | v87 difference | Atlas struct | Status |
+|---|---|---|---|
+| `CLogin::SendCheckPasswordPacket@0x62dfb4` | v87 appends `Encode4(PartnerCode)` after the 3×Encode1 unknowns; atlas reads only `unknown2` for `>=95` — v87 sends unknown2+PartnerCode but atlas only reads unknown1 for v87 (gate `>=95` skips unknown2 for v87). Low-severity: packet read ends cleanly since no subsequent reads follow. | `Request` | Deferred. Wire-format quirk limited to `SendCheckPasswordPacket`; functional impact is zero since atlas doesn't use PartnerCode. |
+| `CLogin::SendSelectCharPacket` 0x1D/0x1E opcodes | v87 PIC-register opcode 0x1E sends `EncodeStr+Encode4+EncodeStr+EncodeStr`; v87 PIC-select opcode 0x1D sends `Encode1(1u)+Encode4+EncodeStr+EncodeStr+EncodeStr`. v95 has layouts at opcodes 0x1C/0x1D. Atlas handler–opcode mapping in v87 template assigns 0x1D→RegisterPicHandle, 0x1E→CharacterSelectedPicHandle — layouts are structurally different from the v87 wire. | `CharacterSelectRegisterPic`, `CharacterSelectWithPic` | Deferred. Requires v87-specific handler variants or opcode-keyed decode dispatch. |
+
+### Hard-cap gate check (Task 16)
+
+No encoder/decoder in the character domain now contains more than **2 nested** `if t.Region()` / `if t.MajorVersion()` levels after Task 16 changes. All four fixed encoders (`ItemUpgrade`, `CharacterExpression`, `ExpressionRequest`, `CharacterInfo`) have at most 2 sequential flat gates (never nested). Hard cap not triggered.

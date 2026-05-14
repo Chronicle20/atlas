@@ -1,0 +1,56 @@
+{
+  "WriterName": "AuthTemporaryBan",
+  "IDAName": "CLogin::OnCheckPasswordResult#AuthTemporaryBan",
+  "Address": "0x62fb84",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/login/clientbound/auth_temporary_ban.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "resultCode (== 2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "post-auth flag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "reserved (always decoded before branch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "ban reason",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 3,
+      "IDAComment": "chatUnblockDate (DecodeBuffer 8 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

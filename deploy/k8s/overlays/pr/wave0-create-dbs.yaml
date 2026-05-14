@@ -62,9 +62,17 @@ spec:
               # for user "atlas ".
               DB_USER="$(printf '%s' "$DB_USER" | tr -d ' \r\n')"
               DB_PASSWORD="$(printf '%s' "$DB_PASSWORD" | tr -d ' \r\n')"
+              # CREATE DATABASE doesn't support IF NOT EXISTS, and the prior
+              # \gexec trick fails under `psql -c` (meta-commands need stdin or
+              # -f, not -c). Check existence in shell, then create only if
+              # missing.
               for raw in $ATLAS_DB_NAMES; do
                   full="${raw}-${ATLAS_ENV}"
-                  PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
-                      -v "ON_ERROR_STOP=1" \
-                      -c "SELECT 'CREATE DATABASE \"'||'$full'||'\"' WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$full')\gexec"
+                  exists=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
+                      -tAc "SELECT 1 FROM pg_database WHERE datname='$full'" || true)
+                  if [ -z "$exists" ]; then
+                      PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
+                          -v "ON_ERROR_STOP=1" \
+                          -c "CREATE DATABASE \"$full\""
+                  fi
               done

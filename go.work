@@ -73,4 +73,5 @@ use (
 	./services/atlas-world/atlas.com/world
 	./services/atlas-wz-extractor/atlas.com/wz-extractor
 	./tools/cideps
+	./tools/packet-audit
 )

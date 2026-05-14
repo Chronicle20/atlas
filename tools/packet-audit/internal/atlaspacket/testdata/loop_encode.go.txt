@@ -1,0 +1,25 @@
+package fixture
+
+import "context"
+
+type Item struct{}
+
+func (i Item) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	return func(opts map[string]interface{}) []byte { return nil }
+}
+
+type Looped struct {
+	items []Item
+}
+
+func (m Looped) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(byte(len(m.items)))
+		for _, x := range m.items {
+			w.WriteInt(0)
+			x.Encode(l, ctx)(opts)
+		}
+		return w.Bytes()
+	}
+}

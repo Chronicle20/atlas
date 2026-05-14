@@ -109,10 +109,18 @@ func (m CharacterStatistics) Encode(l logrus.FieldLogger, ctx context.Context) f
 		w.WriteShort(m.dexterity)
 		w.WriteShort(m.intelligence)
 		w.WriteShort(m.luck)
-		w.WriteShort(m.hp)
-		w.WriteShort(m.maxHp)
-		w.WriteShort(m.mp)
-		w.WriteShort(m.maxMp)
+		// v95 widened HP/MaxHP/MP/MaxMP from int16 to int32 in GW_CharacterStat.
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteInt(uint32(m.hp))
+			w.WriteInt(uint32(m.maxHp))
+			w.WriteInt(uint32(m.mp))
+			w.WriteInt(uint32(m.maxMp))
+		} else {
+			w.WriteShort(m.hp)
+			w.WriteShort(m.maxHp)
+			w.WriteShort(m.mp)
+			w.WriteShort(m.maxMp)
+		}
 		w.WriteShort(m.ap)
 
 		if m.hasSPTable {
@@ -178,10 +186,17 @@ func (m *CharacterStatistics) Decode(_ logrus.FieldLogger, ctx context.Context) 
 		m.dexterity = r.ReadUint16()
 		m.intelligence = r.ReadUint16()
 		m.luck = r.ReadUint16()
-		m.hp = r.ReadUint16()
-		m.maxHp = r.ReadUint16()
-		m.mp = r.ReadUint16()
-		m.maxMp = r.ReadUint16()
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			m.hp = uint16(r.ReadUint32())
+			m.maxHp = uint16(r.ReadUint32())
+			m.mp = uint16(r.ReadUint32())
+			m.maxMp = uint16(r.ReadUint32())
+		} else {
+			m.hp = r.ReadUint16()
+			m.maxHp = r.ReadUint16()
+			m.mp = r.ReadUint16()
+			m.maxMp = r.ReadUint16()
+		}
 		m.ap = r.ReadUint16()
 
 		if m.hasSPTable {

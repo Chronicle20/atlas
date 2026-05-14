@@ -1,0 +1,23 @@
+package fixture
+
+import "context"
+
+type Sub struct{}
+
+func (s Sub) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	return func(opts map[string]interface{}) []byte { return nil }
+}
+
+type Recursive struct {
+	sub Sub
+}
+
+func (m Recursive) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(0)
+		m.sub.Encode(l, ctx)(opts)
+		w.WriteInt(1)
+		return w.Bytes()
+	}
+}

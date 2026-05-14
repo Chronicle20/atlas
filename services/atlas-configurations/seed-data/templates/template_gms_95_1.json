@@ -370,7 +370,7 @@
         "writer": "CharacterBuffCancelForeign"
       },
       {
-        "opCode": "0xE7",
+        "opCode": "0xB4",
         "writer": "CharacterDespawn"
       },
       {

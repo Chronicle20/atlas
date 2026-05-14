@@ -1,10 +1,10 @@
 # CharacterList (← `CLogin::OnSelectWorldResult`)
 
 - **IDA:** 0x5dda00
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/list.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/list.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -55,12 +55,11 @@
 | 42 | int32 | int32 `AvatarLook::anPetID[2]` | ✅ |  |
 | 43 | byte | byte `viewAll/onFamily byte` | ✅ |  |
 | 44 | byte | byte `rankEnabled / hasRank byte` | ✅ |  |
-| 45 | byte | int32 `worldRank` | ❌ | width mismatch |
+| 45 | int32 | int32 `worldRank` | ✅ |  |
 | 46 | int32 | int32 `worldRankMove` | ✅ |  |
 | 47 | int32 | int32 `jobRank` | ✅ |  |
 | 48 | int32 | int32 `jobRankMove` | ✅ |  |
-| 49 | int32 | byte `m_bLoginOpt (hasPic)` | ❌ | width mismatch |
-| 50 | byte | int32 `m_nSlotCount` | ❌ | width mismatch |
+| 49 | byte | byte `m_bLoginOpt (hasPic)` | ✅ |  |
+| 50 | int32 | int32 `m_nSlotCount` | ✅ |  |
 | 51 | int32 | int32 `m_nBuyCharCount` | ✅ |  |
-| 52 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

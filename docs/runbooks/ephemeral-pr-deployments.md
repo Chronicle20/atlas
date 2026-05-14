@@ -72,6 +72,86 @@ A re-upload (`mc cp ... atlas.zip`) is picked up by every subsequent PR sync;
 existing PR envs need a manual sync to pull the new zip (`argocd app sync
 atlas-pr-<N>` or label-toggle the PR).
 
+## §9.1b Cross-namespace Secret replication (Reflector)
+
+Per-PR hook Jobs (`atlas-pr-create-dbs`, `atlas-pr-pihole-register`,
+`atlas-pr-cleanup`) reference Secrets that live in `atlas-main` or `argocd`:
+
+- `db-credentials` (in `atlas-main`) — Postgres user + password for the
+  create-dbs Job and the cleanup Job's DB-drop step.
+- `pihole-credentials` (in `argocd`) — Pi-hole API tokens for DNS
+  registration / deregistration.
+- `ghcr-pat` (in `argocd`) — GitHub PAT for deleting per-PR image tags
+  on env teardown.
+
+Kubernetes Secrets are namespace-scoped, so PR namespaces need their own
+copies. [Reflector](https://github.com/emberstack/kubernetes-reflector) is
+a small controller that watches annotated Secrets and auto-creates copies
+in matching namespaces.
+
+### Stand up Reflector (one-time)
+
+From the cluster-infra repo:
+
+```sh
+kubectl apply -f <infra-repo>/reflector.yml
+kubectl rollout status -n reflector deployment/reflector --timeout=120s
+```
+
+### Annotate the source Secrets (one-time)
+
+The source Secrets need these annotations to enable replication into
+`atlas-pr-*` namespaces:
+
+```yaml
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "atlas-pr-.*"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "atlas-pr-.*"
+```
+
+For the live cluster (one-shot kubectl annotate, since the source Secrets
+were created out-of-band):
+
+```sh
+kubectl annotate secret db-credentials -n atlas-main \
+    reflector.v1.k8s.emberstack.com/reflection-allowed=true \
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces=atlas-pr-.* \
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled=true \
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces=atlas-pr-.*
+
+kubectl annotate secret pihole-credentials -n argocd \
+    reflector.v1.k8s.emberstack.com/reflection-allowed=true \
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces=atlas-pr-.* \
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled=true \
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces=atlas-pr-.*
+
+kubectl annotate secret ghcr-pat -n argocd \
+    reflector.v1.k8s.emberstack.com/reflection-allowed=true \
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces=atlas-pr-.* \
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled=true \
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces=atlas-pr-.*
+```
+
+Future re-applies of the source Secret manifests preserve these
+annotations — see `deploy/k8s/base/secrets.example.yaml` (for
+`db-credentials`) and `<infra-repo>/argocd-secrets.yml.example` (for
+`pihole-credentials` + `ghcr-pat`).
+
+### Verify replication
+
+After annotations are in place, replicated copies should appear in any
+existing `atlas-pr-*` namespace within seconds:
+
+```sh
+kubectl get secret -n atlas-pr-<N> db-credentials pihole-credentials ghcr-pat
+```
+
+For new PR namespaces, the copies appear as soon as the namespace is
+created by Argo CD's ApplicationSet.
+
 ## §9.2 Force-cleanup of a PR env
 
 Bypass the grace period:

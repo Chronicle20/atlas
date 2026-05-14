@@ -1,15 +1,33 @@
+# Pre-create every Postgres database this PR env needs, before any service
+# Deployment comes up. Same pattern as atlas-kafka-precreate (base): a one-shot
+# Sync-wave 0 Job that runs once per sync, Argo waits for it to complete, then
+# proceeds to wave 10 (Deployments).
+#
+# Previously a PreSync hook, but PreSync hooks run before the Sync wave —
+# meaning the ConfigMaps (atlas-env, atlas-env-tokens, atlas-db-names) and
+# Reflector-replicated Secret (db-credentials) this Job depends on don't yet
+# exist in the PR namespace. Moving to Sync-wave 0 lets all wave-0 resources
+# come up together; kubelet retries the container until the missing env
+# sources materialize, typically within seconds.
+#
+# Idempotent: re-running against an existing DB is a no-op (psql skips with
+# NOT EXISTS).
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: atlas-pr-create-dbs
   annotations:
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  # Cap each pod's wait for missing ConfigMaps/Secrets so a kustomize render
+  # bug or RBAC denial can't wedge the Job indefinitely. 300s is enough headroom
+  # for normal sync-wave-0 convergence (typically <10s).
+  activeDeadlineSeconds: 300
   template:
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers:
         - name: psql
           image: postgres:15-alpine
@@ -35,7 +53,9 @@ spec:
             - /bin/sh
             - -c
             - |
-              set -e
+              set -euo pipefail
+              : "${ATLAS_DB_NAMES:?ATLAS_DB_NAMES not set in atlas-db-names ConfigMap}"
+              : "${ATLAS_ENV:?ATLAS_ENV not set in atlas-env-tokens ConfigMap}"
               # Phase 0 Task 0.1 finding: db-credentials values carry literal
               # trailing whitespace (space + CR + LF). Strip before passing to
               # psql, otherwise auth fails with: password authentication failed

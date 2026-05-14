@@ -27,4 +27,4 @@
 
 ---
 
-ack: dispatcher-layer offset — CUserPool::OnUserRemotePacket@0x94b390 reads characterId (Decode4) before calling CUserRemote::OnHit@0x954c50; all tool ❌s are due to atlas including characterId at position 0 while IDA function starts one field later. After accounting for the +1 offset the remaining fields align correctly with IDA. Atlas CharacterDamage.Encode round-trips cleanly; no wire bug detected.
+ack: Two tool-limitation causes — (1) dispatcher-layer +1 offset: CUserPool::OnUserRemotePacket consumes characterId before dispatching to OnHit, while atlas writes characterId at offset 0; (2) the analyzer linearizes conditionally-emitted fields (mob hit type, hit coordinates, power-guard, knockback) against IDA's guarded entries, producing width mismatches the diff cannot reconcile. No structural wire bug — atlas only encodes the hit-type subset wired through the service layer.

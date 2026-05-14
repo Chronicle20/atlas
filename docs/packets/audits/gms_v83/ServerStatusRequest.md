@@ -1,8 +1,8 @@
 # ServerStatusRequest (← `CLogin::SendCheckUserLimitPacket`)
 
-- **IDA:** 0x5d43d0
+- **IDA:** 0x5f8078
 - **Atlas file:** `../../libs/atlas-packet/login/serverbound/server_status_request.go`
-- **Variant:** GMS/v95
+- **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅
 

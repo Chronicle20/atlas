@@ -1057,6 +1057,38 @@
       {
         "opCode": "0x156",
         "writer": "CashShopOperation"
+      },
+      {
+        "opCode": "0x20",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x24",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0xC7",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xC8",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xC9",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xD4",
+        "writer": "CharacterBuffGiveForeign"
       }
     ]
   },

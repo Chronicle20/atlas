@@ -148,6 +148,30 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "CharacterMovement", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnChangeSkillRecordResult":
 		return []candidate{{name: "CharacterSkillChange", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnTemporaryStatReset":
+		// Self buff-cancel: mask-only packet (no characterId prefix).
+		// Struct is BuffCancel; writer constant = "CharacterBuffCancel".
+		return []candidate{{name: "BuffCancel", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnResetTemporaryStat":
+		// Foreign buff-cancel: characterId prefix + mask.
+		// Struct is BuffCancelForeign; writer constant = "CharacterBuffCancelForeign".
+		return []candidate{{name: "BuffCancelForeign", dir: csvpkg.DirClientbound}}
+	case "CUser::OnEffect":
+		// Effect family: dispatches on a leading sub-op byte (mode).
+		// The pipeline can only model the outermost Decode1; sub-op enum drift
+		// is deferred to _pending.md.  Generate one representative report per
+		// atlas effect file so the SUMMARY covers all 3 effect files.
+		return []candidate{
+			{name: "EffectSimple", dir: csvpkg.DirClientbound},       // effect.go
+			{name: "EffectQuest", dir: csvpkg.DirClientbound},        // effect_quest.go
+			{name: "EffectSkillUse", dir: csvpkg.DirClientbound},     // effect_skill_use.go
+		}
+	case "CUserLocal::OnSkillCooltimeSet":
+		// Struct is CharacterSkillCooldown.
+		return []candidate{{name: "CharacterSkillCooldown", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnAvatarModified":
+		// Struct is CharacterAppearanceUpdate.
+		return []candidate{{name: "CharacterAppearanceUpdate", dir: csvpkg.DirClientbound}}
 	// --- Login domain ---
 	case "CLogin::OnCheckPasswordResult":
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}

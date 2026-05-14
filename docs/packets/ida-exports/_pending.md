@@ -100,6 +100,31 @@ guarded blocks; deferred to a follow-up.
   AND all version templates (v83/v87/v92/v95/v111/JMS) that share this
   key. Left as-is for now to avoid cross-version breakage.
 
+## Sub-op enum drift — character domain
+
+The following character-domain packets dispatch on a leading mode/sub-op byte
+inside the packet body. The audit pipeline models a single flat sequence of
+Decode calls and cannot represent a switch-on-mode dispatch tree. Each row
+below was filed as ❌ by the pipeline; the real issue is sub-op enum drift
+that the pipeline cannot verify.
+
+| FName | Atlas writer structs | Notes |
+|---|---|---|
+| `CUser::OnEffect` | `EffectSimple`, `EffectSkillAffected`, `EffectPet`, `EffectWithId`, `EffectWithMessage`, `EffectProtectOnDie`, `EffectIncDecHP`, `EffectShowInfo`, `EffectLotteryUse`, `EffectItemMaker`, `EffectUpgradeTomb`, `EffectIncubatorUse` (all in effect.go) | 16+ sub-op modes (case 0–15+). Atlas models each mode as a separate struct. All use opcode 0xE0 (foreign) or 0xE9 (self). Pipeline can only see the outermost Decode1 (mode byte). Sub-op byte values need per-mode verification. |
+| `CUser::OnEffect` | `EffectQuest`, `EffectQuestForeign` (effect_quest.go) | Mode byte = quest-effect sub-op. Same pipeline limitation. |
+| `CUser::OnEffect` | `EffectSkillUse`, `EffectSkillUseForeign` (effect_skill_use.go) | Mode byte = skill-use sub-op (mode 1 in GMS). Berserk/DragonFury/MonsterMagnet branches also conditional on skill ID. |
+
+Resolution: Phase 3 — per-mode IDA sub-function trace for each atlas Effect
+struct. Each mode constant maps to a specific IDA case-arm; wire format per
+arm needs to be exported and compared against the corresponding struct's
+Encode method.
+
+## Still pending — character domain
+
+| FName | Atlas writer/handler | Notes |
+|---|---|---|
+| (bare-handler) | `CharacterSkillChange` (opcode 0x23) | Already in gms_v95.json. Audit reports ❌ due to tool-limitation in nested `SecondaryStat` sub-struct analysis. See CharacterSkillChange.md ack footer. Deferred to Phase 3 analyzer descent. |
+
 ## Workflow notes
 
 Refresh procedure:

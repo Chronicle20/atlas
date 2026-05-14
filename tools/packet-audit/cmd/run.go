@@ -206,6 +206,39 @@ func candidatesFromFName(fname string) []candidate {
 		// CUserLocal::OnPacket (case 231 = 0xE7) delegates directly (no characterId prefix).
 		// Reads: Decode1 (sitting flag); if 1: Decode2 (chairId).
 		return []candidate{{name: "CharacterSitResult", dir: csvpkg.DirClientbound}}
+	// --- Character tail bucket ---
+	case "CLogin::OnDeleteCharacterResult":
+		// Struct is DeleteCharacterResponse; writer = "DeleteCharacterResponse".
+		// CLogin::OnDeleteCharacterResult (case 0x0F in login socket) reads
+		// Decode4 (characterId) + Decode1 (result code).
+		return []candidate{{name: "DeleteCharacterResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMessage":
+		// Struct family is StatusMessage*; writer = "CharacterStatusMessage".
+		// CWvsContext::OnPacket case 38 (0x26) delegates here; dispatches on
+		// a leading mode byte (0-14) to 15 sub-handlers.  The pipeline can only
+		// model the outermost Decode1 (mode byte); sub-op enum drift is deferred
+		// to _pending.md "## Sub-op enum drift — character domain".
+		return []candidate{{name: "StatusMessageDropPickUpInventoryFull", dir: csvpkg.DirClientbound}}
+	case "CUser::ShowItemUpgradeEffect":
+		// Struct is ItemUpgrade; writer = "CharacterItemUpgrade".
+		// CUserPool::OnUserCommonPacket case 186 (0xBA) reads Decode4 (characterId)
+		// then delegates to this function which reads 3 × Decode1 + Decode4 + 2 × Decode1.
+		return []candidate{{name: "ItemUpgrade", dir: csvpkg.DirClientbound}}
+	case "CFuncKeyMappedMan::OnInit":
+		// Struct is CharacterKeyMap; writer = "CharacterKeyMap".
+		// CFuncKeyMappedMan::OnPacket case 0x18E delegates here.
+		// Reads: Decode1 (resetToDefault) + 90 × (Decode1 keyType + Decode4 keyAction).
+		return []candidate{{name: "CharacterKeyMap", dir: csvpkg.DirClientbound}}
+	case "CFuncKeyMappedMan::OnPetConsumeItemInit":
+		// Struct is CharacterKeyMapAutoHp; writer = "CharacterKeyMapAutoHp".
+		// CFuncKeyMappedMan::OnPacket case 0x18F delegates here.
+		// Reads: Decode4 (HP auto-pot item ID).
+		return []candidate{{name: "CharacterKeyMapAutoHp", dir: csvpkg.DirClientbound}}
+	case "CFuncKeyMappedMan::OnPetConsumeMPItemInit":
+		// Struct is CharacterKeyMapAutoMp; writer = "CharacterKeyMapAutoMp".
+		// CFuncKeyMappedMan::OnPacket case 0x190 delegates here.
+		// Reads: Decode4 (MP auto-pot item ID).
+		return []candidate{{name: "CharacterKeyMapAutoMp", dir: csvpkg.DirClientbound}}
 	// --- Login domain ---
 	case "CLogin::OnCheckPasswordResult":
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}

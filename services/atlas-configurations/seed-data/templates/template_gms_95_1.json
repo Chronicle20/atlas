@@ -400,6 +400,26 @@
       {
         "opCode": "0xF5",
         "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0x26",
+        "writer": "CharacterStatusMessage"
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0x18E",
+        "writer": "CharacterKeyMap"
+      },
+      {
+        "opCode": "0x18F",
+        "writer": "CharacterKeyMapAutoHp"
+      },
+      {
+        "opCode": "0x190",
+        "writer": "CharacterKeyMapAutoMp"
       }
     ]
   },

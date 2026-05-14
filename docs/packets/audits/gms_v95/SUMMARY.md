@@ -58,3 +58,9 @@
 | [AddCharacterError](AddCharacterError.md) | ✅ | `libs/atlas-packet/character/clientbound/add_entry_error.go` |
 | [CharacterDespawn](CharacterDespawn.md) | ✅ | `libs/atlas-packet/character/clientbound/despawn.go` |
 | [CharacterChairShow](CharacterChairShow.md) | ✅ | `libs/atlas-packet/character/clientbound/chair_show.go` |
+| [DeleteCharacterResponse](DeleteCharacterResponse.md) | ✅ | `libs/atlas-packet/character/clientbound/delete_response.go` |
+| [ItemUpgrade](ItemUpgrade.md) | ✅ | `libs/atlas-packet/character/clientbound/item_upgrade.go` |
+| [CharacterKeyMap](CharacterKeyMap.md) | ❌ | `libs/atlas-packet/character/clientbound/keymap.go` |
+| [CharacterKeyMapAutoHp](CharacterKeyMapAutoHp.md) | ✅ | `libs/atlas-packet/character/clientbound/keymap_auto_hp.go` |
+| [CharacterKeyMapAutoMp](CharacterKeyMapAutoMp.md) | ✅ | `libs/atlas-packet/character/clientbound/keymap_auto_mp.go` |
+| [StatusMessageDropPickUpInventoryFull](StatusMessageDropPickUpInventoryFull.md) | ❌ | `libs/atlas-packet/character/clientbound/status_message.go` |

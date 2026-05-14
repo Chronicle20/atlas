@@ -1897,6 +1897,104 @@
           "comment": "chairId / nSeat (only if sitting flag == 1)"
         }
       ]
+    },
+    "CLogin::OnDeleteCharacterResult": {
+      "address": "0x5d9e10",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwCharacterID (characterId of the deleted character)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result code (0=success; error codes: 6=system error, 9=unknown, 10=too many connections, 18=?, 20=secondary pin mismatch, 22=guild master, 24=engaged, 26=nexon id mismatch, 29=has family, 35/36=other errors)"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage": {
+      "address": "0xa06c90",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode/sub-op byte (0=drop pick-up, 1=quest record, 2=cash item expire, 3=inc EXP, 4=inc SP, 5=inc fame/POP, 6=inc meso, 7=inc GP, 8=give buff, 9=general item expire, 10=system message, 11=quest record ex, 12=item protect expire, 13=item expire replace, 14=skill expire)"
+        }
+      ]
+    },
+    "CUser::ShowItemUpgradeEffect": {
+      "address": "0x8e7b00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher (case 186 = 0xBA) before calling this function"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bSuccess (scroll succeeded flag)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v4 / bCursed (cursed/failed outcome flag)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bEnchantSkill (true = Vega/enchant scroll category; false = normal scroll)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEnchantCategory (enchant category type; 0 for normal scrolls; passed to CUIEnchantDlg::SetResult)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v5 (lucky/white-scroll display flag; selects 'Lucky Day' vs 'Scroll of Goodness' string)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v6 (enchant result flag; passed to CUIEnchantDlg::SetResult; 0 for normal scrolls)"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::OnInit": {
+      "address": "0x568c30",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "resetToDefault flag (non-zero = reset to defaults; zero = read key bindings from packet)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "FUNCKEY_MAPPED::nType (key type byte; loop 90 entries, only if resetToDefault==0 and packet length >= 0x1BD)",
+          "guard": "loop 90, if resetToDefault==0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "FUNCKEY_MAPPED::nID (key action int32; loop 90 entries, only if resetToDefault==0)",
+          "guard": "loop 90, if resetToDefault==0"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::OnPetConsumeItemInit": {
+      "address": "0x5688c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nPetConsumeItemID (HP auto-pot item ID; 0 = use config default)"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::OnPetConsumeMPItemInit": {
+      "address": "0x5688f0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nPetConsumeMPItemID (MP auto-pot item ID; 0 = use config default)"
+        }
+      ]
     }
   }
 }

@@ -1,7 +1,7 @@
 # Stage 1: Apache Kafka CLI scripts. We need kafka-topics.sh and
 # kafka-consumer-groups.sh for cleanup.sh — they ship in the upstream
 # Apache Kafka tarball, not as an Alpine package.
-FROM alpine:3.20 AS kafka
+FROM alpine:3.23 AS kafka
 
 ARG KAFKA_VERSION=3.7.2
 ARG SCALA_VERSION=2.13
@@ -15,7 +15,7 @@ RUN curl -fsSL --retry 3 --retry-delay 5 \
     rm /tmp/kafka.tgz
 
 # Stage 2: runtime image with all entrypoint dependencies.
-FROM alpine:3.20
+FROM alpine:3.23
 
 RUN apk add --no-cache \
         bash \

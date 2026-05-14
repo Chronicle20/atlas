@@ -1543,29 +1543,18 @@ fi
 log info "LB IP for channel service: $LB_IP"
 
 # Service configs: the live atlas-configurations API is keyed by service
-# UUID, not by tenant. Phase 0 Task 0.7 captured THREE separate canonical
-# payloads (login/channel/drops), one per pinned SERVICE_ID. The single-
-# payload form below is a SIMPLIFICATION that assumes a tenant-scoped
-# 'services' configuration resource; the real shape is per-service-UUID.
+# UUID (verified at services/atlas-configurations/.../services/resource.go:19-24).
+# Phase 0 Task 0.7 captured three separate canonical payloads (login/channel/drops),
+# one per pinned SERVICE_ID. The shipped implementation iterates the three
+# canonicals at /atlas/canonical/services/ and POST/PATCHes each individually
+# against /api/configurations/services/{serviceId} via the upsert_service_config()
+# helper — see services/atlas-pr-bootstrap/scripts/bootstrap.sh for the final form.
+# The channel-service record's tenants[].ipAddress is rewritten to the
+# per-PR LB_IP discovered above; login-service has no ipAddress field;
+# drops-service has no tenants array.
 #
-# OPEN — resolve before running Phase 6:
-#   The plan was drafted before Phase 0.7 captured live API responses.
-#   Two implementations are possible:
-#     (a) bootstrap iterates the three canonicals at /atlas/canonical/services/
-#         and POST/PATCHes each individually against
-#         GET/POST /api/configurations/services/{serviceId}
-#         (matches the live atlas-configurations API observed at Phase 0.7).
-#     (b) a tenant-scoped composite endpoint
-#         GET/PATCH /api/tenants/{tenantId}/configurations/services
-#         exists with a body that bundles all three under one record.
-#   Inspect services/atlas-configurations and services/atlas-tenants to
-#   decide. Path (a) is what the captured payloads support without further
-#   transformation; the reference command sketched below assumes (a).
-#
-# Captured shape is locked at Phase 0.7. The canonical payloads at
-# /atlas/canonical/services/{login,channel,drops}-service.json hold pinned
-# service UUIDs and the live channel-service ipAddress (192.168.23.232) which
-# we rewrite to the per-PR LB_IP for the channel record only.
+# The single-payload block below is the original plan sketch, kept for
+# historical reference; the shipped bootstrap.sh uses upsert_service_config().
 ATLAS_STEP=service-config
 payload=/atlas/canonical/services.json
 [ -f "$payload" ] || { log error "missing canonical services payload"; exit 1; }

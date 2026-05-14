@@ -126,10 +126,12 @@ type callCtx struct {
 	rangeVars map[string]string
 	// fieldVars maps a local variable name to a resolved Go type name.
 	// Used when a field is bound to a variable before calling .Write on it.
-	fieldVars map[string]string
-	out       *[]Call
-	stack     *[]*GuardExpr
-	fset      *token.FileSet
+	fieldVars         map[string]string
+	out               *[]Call
+	stack             *[]*GuardExpr
+	suffixGuards      []*GuardExpr // implicit guards from preceding if-returns at this scope
+	unreachableSuffix bool         // true when both branches of a preceding if returned
+	fset              *token.FileSet
 }
 
 // resolveRecurse attempts to resolve a variable-name hint to an actual Go type
@@ -184,8 +186,51 @@ func (cc *callCtx) appendCall(c Call) {
 	*cc.out = append(*cc.out, c)
 }
 
+func (cc *callCtx) pushSuffixGuard(g *GuardExpr) {
+	if g == nil {
+		return
+	}
+	cc.suffixGuards = append(cc.suffixGuards, g)
+}
+
 func (cc *callCtx) conjoin() *GuardExpr {
-	return conjoin(*cc.stack)
+	// Combine explicit stack and any accumulated suffix guards.
+	if len(cc.suffixGuards) == 0 {
+		return conjoin(*cc.stack)
+	}
+	combined := append([]*GuardExpr{}, *cc.stack...)
+	combined = append(combined, cc.suffixGuards...)
+	return conjoin(combined)
+}
+
+// blockTerminatesWithReturn reports whether b's final statement is an *ast.ReturnStmt,
+// either at top level or as the terminator of every branch of a terminal IfStmt.
+// Loops are not descended (design §3.3 — loop-internal early-return is out of scope).
+func blockTerminatesWithReturn(b *ast.BlockStmt) bool {
+	if b == nil || len(b.List) == 0 {
+		return false
+	}
+	last := b.List[len(b.List)-1]
+	switch s := last.(type) {
+	case *ast.ReturnStmt:
+		return true
+	case *ast.IfStmt:
+		if s.Else == nil {
+			return false
+		}
+		elseBlock, ok := s.Else.(*ast.BlockStmt)
+		if !ok {
+			// else if — descend into the inner IfStmt's body and walk its else recursively.
+			innerIf, ok := s.Else.(*ast.IfStmt)
+			if !ok {
+				return false
+			}
+			wrapped := &ast.BlockStmt{List: []ast.Stmt{innerIf}}
+			return blockTerminatesWithReturn(s.Body) && blockTerminatesWithReturn(wrapped)
+		}
+		return blockTerminatesWithReturn(s.Body) && blockTerminatesWithReturn(elseBlock)
+	}
+	return false
 }
 
 func (cc *callCtx) walk(node ast.Node) {
@@ -195,16 +240,47 @@ func (cc *callCtx) walk(node ast.Node) {
 		*cc.stack = append(*cc.stack, g)
 		cc.walk(n.Body)
 		*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+		thenReturns := blockTerminatesWithReturn(n.Body)
+		elseReturns := false
 		if n.Else != nil {
 			ng := negate(g)
 			*cc.stack = append(*cc.stack, ng)
 			cc.walk(n.Else)
 			*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+			switch e := n.Else.(type) {
+			case *ast.BlockStmt:
+				elseReturns = blockTerminatesWithReturn(e)
+			case *ast.IfStmt:
+				// else if — wrap and check.
+				elseReturns = blockTerminatesWithReturn(&ast.BlockStmt{List: []ast.Stmt{e}})
+			}
+		}
+		// Suffix-taint: when one branch returns, push an implicit guard for the surviving branch
+		// onto cc.suffixGuards so any sibling calls after this if-block inherit it.
+		switch {
+		case thenReturns && elseReturns:
+			// Both branches return — unreachable suffix. Mark and skip.
+			cc.unreachableSuffix = true
+		case thenReturns:
+			cc.pushSuffixGuard(negate(g))
+		case elseReturns && n.Else != nil:
+			cc.pushSuffixGuard(g)
 		}
 	case *ast.BlockStmt:
+		// Each block scope owns its own suffix-guard accumulator.
+		savedSuffix := cc.suffixGuards
+		savedUnreachable := cc.unreachableSuffix
+		cc.suffixGuards = nil
+		cc.unreachableSuffix = false
 		for _, s := range n.List {
+			if cc.unreachableSuffix {
+				// Optionally emit a sentinel call for reviewer-visible reporting; for now skip.
+				break
+			}
 			cc.walk(s)
 		}
+		cc.suffixGuards = savedSuffix
+		cc.unreachableSuffix = savedUnreachable
 	case *ast.ExprStmt:
 		cc.walk(n.X)
 	case *ast.RangeStmt:

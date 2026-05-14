@@ -286,7 +286,8 @@ images:
     newTag: latest
 
 commonLabels:
-  atlas.env: PLACEHOLDER_ATLAS_ENV
-  # Quoted so post-sed values like "500" parse as strings (Kustomize
-  # commonLabels values must be strings, not integers).
+  # Both values quoted so post-sed all-digit hashes (e.g. ATLAS_ENV="1756"
+  # for PR #461) and all-digit PR numbers (e.g. "500") parse as strings.
+  # Kustomize rejects commonLabels values that YAML parses as integers.
+  atlas.env: "PLACEHOLDER_ATLAS_ENV"
   atlas.pr-number: "PLACEHOLDER_PR_NUMBER"

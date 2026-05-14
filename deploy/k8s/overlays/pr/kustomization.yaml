@@ -28,7 +28,7 @@ resources:
   - ../../base
   - atlas-env-tokens.yaml
   - ingress-route.yaml
-  - presync-create-dbs.yaml
+  - wave0-create-dbs.yaml
   - postsync-bootstrap.yaml
   - postsync-pihole-add.yaml
   - postdelete-cleanup.yaml

@@ -25,11 +25,8 @@ type GuardExpr struct {
 // Eval evaluates the guard against a GuardContext.
 func (g *GuardExpr) Eval(c GuardContext) bool { return g.eval(c) }
 
-// String returns the original source text of the guard.
-func (g *GuardExpr) String() string { return g.text }
-
-// Text returns the canonical string form of this guard expression.
-func (g *GuardExpr) Text() string {
+// String returns the original source text of the guard, or "" for a nil receiver.
+func (g *GuardExpr) String() string {
 	if g == nil {
 		return ""
 	}

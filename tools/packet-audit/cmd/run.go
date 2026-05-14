@@ -235,6 +235,26 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthPermanentBan", dir: csvpkg.DirClientbound}}
 	case "CLogin::SendViewAllCharPacket":
 		return []candidate{{name: "AllCharacterListRequest", dir: csvpkg.DirServerbound}}
+	// --- Character spawn/list bucket ---
+	case "CLogin::OnViewAllCharResult#CharacterViewAllCount":
+		return []candidate{{name: "CharacterViewAllCount", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnViewAllCharResult#CharacterViewAllCharacters":
+		return []candidate{{name: "CharacterViewAllCharacters", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed":
+		// CharacterViewAllSearchFailed and CharacterViewAllError both encode only
+		// a single code byte; model both from the same dispatcher sub-path.
+		return []candidate{
+			{name: "CharacterViewAllSearchFailed", dir: csvpkg.DirClientbound},
+			{name: "CharacterViewAllError", dir: csvpkg.DirClientbound},
+		}
+	case "CLogin::OnCreateNewCharacterResult":
+		return []candidate{{name: "AddCharacterEntry", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnCreateNewCharacterResult#AddCharacterError":
+		return []candidate{{name: "AddCharacterError", dir: csvpkg.DirClientbound}}
+	case "CUserPool::OnUserLeaveField":
+		return []candidate{{name: "CharacterDespawn", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnCheckDuplicatedIDResult":
+		return []candidate{{name: "CharacterNameResponse", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

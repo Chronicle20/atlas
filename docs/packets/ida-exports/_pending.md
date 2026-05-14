@@ -125,6 +125,25 @@ Encode method.
 |---|---|---|
 | (bare-handler) | `CharacterSkillChange` (opcode 0x23) | Already in gms_v95.json. Audit reports ❌ due to tool-limitation in nested `SecondaryStat` sub-struct analysis. See CharacterSkillChange.md ack footer. Deferred to Phase 3 analyzer descent. |
 
+## Known false positives — character spawn/list bucket (Task 9)
+
+### AddCharacterEntry.md (verdict ❌)
+
+Rows 42–47 show extra atlas bytes (viewAll placeholder + rankEnabled + 4 × rank int32) not
+consumed by the client. `CLogin::OnCreateNewCharacterResult` reads only GW_CharacterStat +
+AvatarLook; rank data is zero-filled from client state. MapleStory packets are length-prefixed;
+the client silently ignores trailing bytes in standalone packets, so no wire corruption occurs.
+The analyzer correctly identifies these 18 extra bytes but they are functionally harmless.
+Resolution: dedicated non-rank payload type for AddCharacterEntry or context-aware CharacterListEntry
+encoder — deferred to follow-up refactor.
+
+### CharacterViewAllCharacters.md (verdict ❌)
+
+Rows 45–50 show DecodeBuf vs 4 × int32 representation mismatch for rank fields, plus
+linearization offset shifting the PIC byte. IDA reads rank as `DecodeBuffer(0x10)` (bulk 16
+bytes). Atlas emits 4 × `WriteInt`. Wire bytes are identical. Resolution: diff tool DecodeBuf
+expansion — deferred to Phase 3 analyzer enhancement.
+
 ## Workflow notes
 
 Refresh procedure:

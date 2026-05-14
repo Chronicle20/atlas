@@ -129,6 +129,36 @@
         "opCode": "0x24",
         "validator": "LoggedInValidator",
         "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x37",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
+        "opCode": "0x38",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterExpressionHandle"
+      },
+      {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x9F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle"
       }
     ],
     "writers": [

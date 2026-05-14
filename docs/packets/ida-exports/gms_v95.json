@@ -2108,6 +2108,105 @@
           "comment": "nItemID (stat-change item ID to cancel)"
         }
       ]
+    },
+    "CUserLocal::HandleXKeyDown": {
+      "address": "0x90f6d0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "chairId (seat index from CField::FindSeatByPosition; 0xFFFF = get-up-from-chair)"
+        }
+      ]
+    },
+    "CWvsContext::SendSitOnPortableChairRequest": {
+      "address": "0x9da100",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nItemID (portable chair item ID)"
+        }
+      ]
+    },
+    "CUserLocal::HandleLButtonClk": {
+      "address": "0x933920",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CWvsContext::SendEmotionChange": {
+      "address": "0x9f9320",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nEmotion (emotion/expression ID; validated <= 0x17)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nDuration (display duration in ms)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bByItemOption (1 = triggered by item option, 0 = normal)"
+        }
+      ]
+    },
+    "CWvsContext::SendDropMoneyRequest": {
+      "address": "0x9f6650",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time() at time of drop)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nAmount (meso amount to drop)"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::SaveFuncKeyMap": {
+      "address": "0x568a60",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "mode (0 = key mapping change)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "count (number of changed key slot indices); per-entry: Encode4(keyId) + Encode1(nType) + Encode4(nID) via FUNCKEY_MAPPED::Encode@0x4f6d80"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::ChangePetConsumeItemID": {
+      "address": "0x568920",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "mode (1 = HP pet-consume item change)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nPetConsumeItemID (HP auto-pot item ID)"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::ChangePetConsumeMPItemID": {
+      "address": "0x5689c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "mode (2 = MP pet-consume item change)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nPetConsumeMPItemID (MP auto-pot item ID)"
+        }
+      ]
     }
   }
 }

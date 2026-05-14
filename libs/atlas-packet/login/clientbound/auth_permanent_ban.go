@@ -35,10 +35,11 @@ func (m AuthPermanentBan) Encode(l logrus.FieldLogger, ctx context.Context) func
 			w.WriteInt(0)
 		}
 
-		// v95 client's OnCheckPasswordResult permanent-ban branch (resultCode == 27)
-		// reads only the 3 leading fields and routes to a dialog; the trailing
-		// reason+timestamp are wasted bytes on v95. Keep them for older versions.
-		if !(t.Region() == "GMS" && t.MajorVersion() >= 95) {
+		// GMS clients (v83 through v95 verified via IDA) route resultCode == 27
+		// to a dialog and never decode the trailing reason+timestamp. Skip them
+		// for all GMS to avoid emitting 9 wasted bytes. JMS retains the trailing
+		// bytes pending verification with a JMS binary.
+		if t.Region() != "GMS" {
 			w.WriteByte(0) // reason
 			w.WriteLong(0) // timestamp
 		}
@@ -56,7 +57,7 @@ func (m *AuthPermanentBan) Decode(l logrus.FieldLogger, ctx context.Context) fun
 			_ = r.ReadUint32()
 		}
 
-		if !(t.Region() == "GMS" && t.MajorVersion() >= 95) {
+		if t.Region() != "GMS" {
 			_ = r.ReadByte()   // reason
 			_ = r.ReadUint64() // timestamp
 		}

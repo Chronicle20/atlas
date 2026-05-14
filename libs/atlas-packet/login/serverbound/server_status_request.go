@@ -33,7 +33,7 @@ func (m ServerStatusRequest) Encode(l logrus.FieldLogger, ctx context.Context) f
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" {
 			w.WriteShort(uint16(m.worldId))
 		} else {
 			w.WriteByte(byte(m.worldId))
@@ -45,7 +45,7 @@ func (m ServerStatusRequest) Encode(l logrus.FieldLogger, ctx context.Context) f
 func (m *ServerStatusRequest) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" {
 			m.worldId = world.Id(r.ReadUint16())
 		} else {
 			m.worldId = world.Id(r.ReadByte())

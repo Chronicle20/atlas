@@ -19,11 +19,23 @@ func TestCharacterExpressionRoundTrip(t *testing.T) {
 			if output.Expression() != input.Expression() {
 				t.Errorf("expression: got %v, want %v", output.Expression(), input.Expression())
 			}
-			if output.Duration() != input.Duration() {
-				t.Errorf("duration: got %v, want %v", output.Duration(), input.Duration())
-			}
-			if output.ByItemOption() != input.ByItemOption() {
-				t.Errorf("byItemOption: got %v, want %v", output.ByItemOption(), input.ByItemOption())
+			// duration and byItemOption are only present in GMS>83 and JMS.
+			// For GMS v83 (and v28) the fields are not encoded; expect zero values.
+			hasDurationAndOption := (v.Region == "GMS" && v.MajorVersion > 83) || v.Region == "JMS"
+			if hasDurationAndOption {
+				if output.Duration() != input.Duration() {
+					t.Errorf("duration: got %v, want %v", output.Duration(), input.Duration())
+				}
+				if output.ByItemOption() != input.ByItemOption() {
+					t.Errorf("byItemOption: got %v, want %v", output.ByItemOption(), input.ByItemOption())
+				}
+			} else {
+				if output.Duration() != 0 {
+					t.Errorf("duration: expected 0 for v83, got %v", output.Duration())
+				}
+				if output.ByItemOption() != false {
+					t.Errorf("byItemOption: expected false for v83, got %v", output.ByItemOption())
+				}
 			}
 		})
 	}

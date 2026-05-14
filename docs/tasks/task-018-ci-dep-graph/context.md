@@ -6,7 +6,7 @@
 
 ## Repository shape (key bits)
 
-- Monorepo root: `<home>/source/atlas-ms/atlas`
+- Monorepo root: `<repo-root>`
 - Go services: `services/atlas-*/atlas.com/<leaf>/go.mod`
   - Service `go.mod` uses **short** module names, e.g. `module atlas-account`
   - "Service short name" = the `services/atlas-*` directory name, e.g. `atlas-account`

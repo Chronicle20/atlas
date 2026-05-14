@@ -18,6 +18,7 @@ COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 COPY libs/atlas-object-id/go.mod libs/atlas-object-id/go.sum libs/atlas-object-id/
+COPY libs/atlas-lock/go.mod libs/atlas-lock/go.sum libs/atlas-lock/
 # Copy service module definitions
 COPY services/atlas-monsters/atlas.com/monsters/go.mod services/atlas-monsters/atlas.com/monsters/go.sum services/atlas-monsters/atlas.com/monsters/
 
@@ -35,6 +36,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./libs/atlas-object-id' >> go.work && \
+    echo '    ./libs/atlas-lock' >> go.work && \
     echo '    ./services/atlas-monsters/atlas.com/monsters' >> go.work && \
     echo ')' >> go.work
 
@@ -53,6 +55,7 @@ COPY libs/atlas-redis libs/atlas-redis
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
 COPY libs/atlas-object-id libs/atlas-object-id
+COPY libs/atlas-lock libs/atlas-lock
 # Copy service source code
 COPY services/atlas-monsters/atlas.com/monsters services/atlas-monsters/atlas.com/monsters
 
@@ -69,6 +72,7 @@ RUN cd services/atlas-monsters/atlas.com/monsters && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
       -replace=github.com/Chronicle20/atlas/libs/atlas-object-id=/app/libs/atlas-object-id \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-lock=/app/libs/atlas-lock \
     && go mod tidy
 
 # Build

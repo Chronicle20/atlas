@@ -6,6 +6,7 @@ import (
 	"atlas-maps/character/location"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
+	data2 "atlas-maps/kafka/consumer/data"
 	mapConsumer "atlas-maps/kafka/consumer/map"
 	mistConsumer "atlas-maps/kafka/consumer/mist"
 	"atlas-maps/kafka/consumer/monster"
@@ -32,6 +33,7 @@ import (
 const serviceName = "atlas-maps"
 
 var consumerGroupId = consumergroup.Resolve("Map Service")
+var dataEventsConsumerGroupId = consumergroup.Resolve("Map Spawn Registry Invalidator")
 
 type Server struct {
 	baseUrl string
@@ -76,6 +78,7 @@ func main() {
 	mapConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	sessionConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	data2.InitConsumers(l)(cmf)(dataEventsConsumerGroupId)
 	if err := character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
@@ -93,6 +96,9 @@ func main() {
 	}
 	if err := sessionConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register session-status kafka handlers.")
+	}
+	if err := data2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register data-events kafka handlers.")
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })

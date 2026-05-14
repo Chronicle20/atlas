@@ -948,3 +948,416 @@ func TestFetchTimeoutResetsOnSuccessfulFetch(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// SetMaxInFlight tests
+// ---------------------------------------------------------------------------
+
+// controlledReader delivers messages from a channel and records commits.
+// It also supports optional blocking per-message: callers can inject a
+// per-message release channel to simulate slow handlers.
+type controlledReader struct {
+	msgCh     chan kafka.Message
+	committed []kafka.Message
+	mu        sync.Mutex
+}
+
+func (r *controlledReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
+	select {
+	case m, ok := <-r.msgCh:
+		if !ok {
+			// closed channel → block on ctx so the loop sees context cancel
+			<-ctx.Done()
+			return kafka.Message{}, ctx.Err()
+		}
+		return m, nil
+	case <-ctx.Done():
+		return kafka.Message{}, ctx.Err()
+	}
+}
+
+func (r *controlledReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.committed = append(r.committed, msgs...)
+	return nil
+}
+
+func (r *controlledReader) Committed() []kafka.Message {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]kafka.Message, len(r.committed))
+	copy(out, r.committed)
+	return out
+}
+
+func (r *controlledReader) Close() error { return nil }
+
+// makeMsg builds a kafka.Message with offset o and value v.
+func makeMsg(o int64, v string) kafka.Message {
+	return kafka.Message{Offset: o, Value: []byte(v)}
+}
+
+// TestConsumer_DefaultIsSerial verifies that without SetMaxInFlight, the
+// consumer processes messages one at a time (serial) and commits each after
+// the handler returns.
+func TestConsumer_DefaultIsSerial(t *testing.T) {
+	consumer.ResetInstance()
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	reader := &controlledReader{msgCh: make(chan kafka.Message, 3)}
+	reader.msgCh <- makeMsg(0, "msg0")
+	reader.msgCh <- makeMsg(1, "msg1")
+	reader.msgCh <- makeMsg(2, "msg2")
+
+	rp := consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader {
+		return reader
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "serial-test", "serial-topic", "serial-group")
+	// No SetMaxInFlight — default serial path.
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	var mu sync.Mutex
+	var concurrentPeak int
+	var concurrentNow int
+	done := make(chan struct{})
+	count := atomic.Int32{}
+
+	_, _ = cm.RegisterHandler("serial-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		mu.Lock()
+		concurrentNow++
+		if concurrentNow > concurrentPeak {
+			concurrentPeak = concurrentNow
+		}
+		mu.Unlock()
+
+		time.Sleep(10 * time.Millisecond)
+
+		mu.Lock()
+		concurrentNow--
+		mu.Unlock()
+
+		if count.Add(1) == 3 {
+			close(done)
+		}
+		return true, nil
+	})
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for 3 messages")
+	}
+
+	// Serial: never more than one handler running at a time.
+	if concurrentPeak > 1 {
+		t.Fatalf("expected serial execution (peak concurrency 1), got %d", concurrentPeak)
+	}
+	// All three committed.
+	time.Sleep(30 * time.Millisecond)
+	if n := len(reader.Committed()); n != 3 {
+		t.Fatalf("expected 3 commits, got %d", n)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestConsumer_MaxInFlight_RunsConcurrently verifies that with SetMaxInFlight(n>1)
+// more than one handler goroutine runs simultaneously.
+func TestConsumer_MaxInFlight_RunsConcurrently(t *testing.T) {
+	consumer.ResetInstance()
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	const n = 4
+	reader := &controlledReader{msgCh: make(chan kafka.Message, n)}
+	for i := 0; i < n; i++ {
+		reader.msgCh <- makeMsg(int64(i), "msg")
+	}
+
+	rp := consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader {
+		return reader
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "parallel-test", "parallel-topic", "parallel-group")
+	cm.AddConsumer(l, ctx, wg)(c, consumer.SetMaxInFlight(n))
+
+	var mu sync.Mutex
+	var peakConcurrent int
+	var nowRunning int
+	allDone := make(chan struct{})
+	count := atomic.Int32{}
+
+	_, _ = cm.RegisterHandler("parallel-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		mu.Lock()
+		nowRunning++
+		if nowRunning > peakConcurrent {
+			peakConcurrent = nowRunning
+		}
+		mu.Unlock()
+
+		// Simulate work — hold long enough for others to start.
+		time.Sleep(50 * time.Millisecond)
+
+		mu.Lock()
+		nowRunning--
+		mu.Unlock()
+
+		if count.Add(1) == n {
+			close(allDone)
+		}
+		return true, nil
+	})
+
+	select {
+	case <-allDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for all messages")
+	}
+
+	if peakConcurrent < 2 {
+		t.Fatalf("expected concurrency > 1 with MaxInFlight=%d, got peak=%d", n, peakConcurrent)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestConsumer_MaxInFlight_PrefixCommitOrdering verifies that offsets are
+// committed in order even when handlers complete out of order.
+//
+// Scenario: M1 (offset 0) finishes last; M2 (offset 1) finishes first;
+// M3 (offset 2) finishes second.
+//
+// While M1 is still pending:
+//   - M2 done → cursor cannot advance (M1 still in-flight) → no commit yet.
+//   - M3 done → cursor still cannot advance → no commit yet.
+//
+// When M1 finally finishes, the prefix-commit cursor advances past all three
+// contiguous completed entries in one shot, producing a single CommitMessages
+// call for the highest offset (2 / M3). The cursor never skips M1.
+//
+// The key invariant: no commit happens before M1 completes, and the committed
+// offset is M3 (2) — not M2 (1) alone and not M3 before M2.
+func TestConsumer_MaxInFlight_PrefixCommitOrdering(t *testing.T) {
+	consumer.ResetInstance()
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// Release channels: each handler blocks until its release is closed.
+	releaseM1 := make(chan struct{})
+	releaseM2 := make(chan struct{})
+	releaseM3 := make(chan struct{})
+
+	reader := &controlledReader{msgCh: make(chan kafka.Message, 3)}
+	reader.msgCh <- makeMsg(0, "M1")
+	reader.msgCh <- makeMsg(1, "M2")
+	reader.msgCh <- makeMsg(2, "M3")
+
+	rp := consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader {
+		return reader
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "ordering-test", "ordering-topic", "ordering-group")
+	cm.AddConsumer(l, ctx, wg)(c, consumer.SetMaxInFlight(3))
+
+	allDone := make(chan struct{})
+	count := atomic.Int32{}
+
+	_, _ = cm.RegisterHandler("ordering-topic", func(_ logrus.FieldLogger, _ context.Context, msg kafka.Message) (bool, error) {
+		switch string(msg.Value) {
+		case "M1":
+			<-releaseM1
+		case "M2":
+			<-releaseM2
+		case "M3":
+			<-releaseM3
+		}
+		if count.Add(1) == 3 {
+			close(allDone)
+		}
+		return true, nil
+	})
+
+	// Give all 3 handlers time to start, then release in order: M2, M3, M1.
+	time.Sleep(80 * time.Millisecond)
+
+	// Verify no commits happened before M1 finishes.
+	close(releaseM2) // M2 done first
+	time.Sleep(20 * time.Millisecond)
+	if c := len(reader.Committed()); c != 0 {
+		t.Fatalf("expected 0 commits after M2 done (M1 still pending), got %d", c)
+	}
+
+	close(releaseM3) // M3 done second
+	time.Sleep(20 * time.Millisecond)
+	if c := len(reader.Committed()); c != 0 {
+		t.Fatalf("expected 0 commits after M3 done (M1 still pending), got %d", c)
+	}
+
+	close(releaseM1) // M1 done last — cursor should now advance past all three
+
+	select {
+	case <-allDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for all messages to complete")
+	}
+	// Let advanceCommit run after M1's goroutine calls it.
+	time.Sleep(50 * time.Millisecond)
+
+	committed := reader.Committed()
+	// The prefix-commit cursor advances M1→M2→M3 in one shot, producing a
+	// single CommitMessages call for offset 2 (M3 — the highest contiguous).
+	if len(committed) != 1 {
+		t.Fatalf("expected 1 batch commit (highest contiguous offset), got %d commits: %v", len(committed), committed)
+	}
+	if committed[0].Offset != 2 {
+		t.Fatalf("expected committed offset 2 (M3), got %d", committed[0].Offset)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestConsumer_MaxInFlight_FailedMessageBlocksCursor verifies that a failed
+// handler blocks the commit cursor. M1 succeeds (offset 0), M2 fails (offset 1),
+// M3 succeeds (offset 2). Only offset 0 should be committed; M2 and M3 must
+// not be committed (would be redelivered on restart).
+func TestConsumer_MaxInFlight_FailedMessageBlocksCursor(t *testing.T) {
+	consumer.ResetInstance()
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	reader := &controlledReader{msgCh: make(chan kafka.Message, 3)}
+	reader.msgCh <- makeMsg(0, "M1")
+	reader.msgCh <- makeMsg(1, "M2-fail")
+	reader.msgCh <- makeMsg(2, "M3")
+
+	rp := consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader {
+		return reader
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "fail-cursor-test", "fail-cursor-topic", "fail-cursor-group")
+	cm.AddConsumer(l, ctx, wg)(c, consumer.SetMaxInFlight(3))
+
+	allDone := make(chan struct{})
+	count := atomic.Int32{}
+
+	_, _ = cm.RegisterHandler("fail-cursor-topic", func(_ logrus.FieldLogger, _ context.Context, msg kafka.Message) (bool, error) {
+		if count.Add(1) == 3 {
+			close(allDone)
+		}
+		if string(msg.Value) == "M2-fail" {
+			return true, errors.New("handler failed for M2")
+		}
+		return true, nil
+	})
+
+	select {
+	case <-allDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for all messages")
+	}
+	// Wait long enough for any in-progress advanceCommit to settle.
+	time.Sleep(50 * time.Millisecond)
+
+	committed := reader.Committed()
+	// Only M1 (offset 0) should be committed; M2 failed → cursor blocked →
+	// M3 not committed either.
+	if len(committed) != 1 {
+		t.Fatalf("expected exactly 1 commit (M1 only), got %d: %v", len(committed), committed)
+	}
+	if committed[0].Offset != 0 {
+		t.Fatalf("expected committed offset 0 (M1), got %d", committed[0].Offset)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestConsumer_MaxInFlight_BackPressure verifies that the fetch loop stops
+// fetching when the in-flight queue is full (e.g., head stuck on a failing
+// handler). The total queue must not grow past 4*MaxInFlight.
+func TestConsumer_MaxInFlight_BackPressure(t *testing.T) {
+	consumer.ResetInstance()
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	const maxInFlight = 2
+	const maxQueue = 4 * maxInFlight // 8
+
+	// Feed 12 messages — more than maxQueue.
+	reader := &controlledReader{msgCh: make(chan kafka.Message, 12)}
+	for i := 0; i < 12; i++ {
+		reader.msgCh <- makeMsg(int64(i), "msg")
+	}
+
+	rp := consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader {
+		return reader
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "backpressure-test", "backpressure-topic", "backpressure-group")
+	// Short fetch timeout so the back-pressure check inside the loop fires quickly.
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetMaxInFlight(maxInFlight),
+		consumer.SetFetchTimeout(20*time.Millisecond),
+	)
+
+	// Handler for M1 (offset 0) is permanently stuck — blocks the cursor.
+	// All other handlers complete quickly.
+	m1Started := make(chan struct{})
+	m1StartOnce := sync.Once{}
+	processed := atomic.Int32{}
+
+	_, _ = cm.RegisterHandler("backpressure-topic", func(_ logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
+		if msg.Offset == 0 {
+			m1StartOnce.Do(func() { close(m1Started) })
+			// Block until context is canceled (simulates permanently stuck handler).
+			<-ctx.Done()
+			return false, nil
+		}
+		processed.Add(1)
+		return true, nil
+	})
+
+	// Wait for M1 handler to start.
+	select {
+	case <-m1Started:
+	case <-time.After(3 * time.Second):
+		t.Fatal("M1 handler never started")
+	}
+
+	// Give the loop time to potentially over-fetch.
+	time.Sleep(200 * time.Millisecond)
+
+	// The channel should still have unread messages since the queue was capped.
+	remaining := len(reader.msgCh)
+	fetched := 12 - remaining
+	if fetched > maxQueue+maxInFlight {
+		// Allow some slack: maxQueue + in-flight goroutines that haven't yet
+		// blocked can fetch up to maxInFlight beyond maxQueue before the loop
+		// notices fullness.
+		t.Fatalf("back-pressure failed: fetched %d messages (max allowed ~%d)", fetched, maxQueue+maxInFlight)
+	}
+
+	cancel()
+	wg.Wait()
+}

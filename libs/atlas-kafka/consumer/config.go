@@ -31,6 +31,7 @@ type Config struct {
 	startOffset            int64
 	fetchTimeout           time.Duration
 	maxConsecutiveTimeouts int
+	maxInFlight            int
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -69,6 +70,31 @@ func SetFetchTimeout(d time.Duration) model.Decorator[Config] {
 func SetMaxConsecutiveTimeouts(n int) model.Decorator[Config] {
 	return func(config Config) Config {
 		config.maxConsecutiveTimeouts = n
+		return config
+	}
+}
+
+// SetMaxInFlight enables within-pod parallelism for this consumer. The fetch
+// loop spawns up to n handler goroutines concurrently and commits offsets
+// using a prefix-commit cursor: only the highest *contiguously*-completed
+// message offset is committed, so a failed message in the middle blocks
+// subsequent commits (matching today's at-least-once semantics).
+//
+// Default is 1 (serial — today's behavior). Set to runtime.NumCPU() or a
+// service-specific value for high-throughput consumers where messages are
+// independent and handlers are CPU-bound.
+//
+// IMPORTANT: only set this for consumers whose handler is safe for concurrent
+// invocation across messages on the same partition. If the handler relies on
+// strict in-partition ordering of side effects, leave the default (1).
+//
+//goland:noinspection GoUnusedExportedFunction
+func SetMaxInFlight(n int) model.Decorator[Config] {
+	return func(config Config) Config {
+		if n < 1 {
+			n = 1
+		}
+		config.maxInFlight = n
 		return config
 	}
 }

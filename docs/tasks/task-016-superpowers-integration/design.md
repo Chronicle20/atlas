@@ -227,7 +227,7 @@ Update every match except this task's own PRD (which describes the migration its
 - `CLAUDE.md` — any mentions of `dev/active/` or `dev/audits/`.
 - `docs/TODO.md` — any mentions.
 - Any other markdown under `docs/`.
-- `~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/MEMORY.md` — currently references `dev/active/redis-registry-migration/`, `dev/active/automatic-tenant-filtering/`, `dev/active/saga-orchestrator-durability/`, `dev/active/character-shop-merchant/`, `dev/active/writer-packet-extraction/`.
+- `~/.claude/projects/-<workspace-pers-atlas>/memory/MEMORY.md` — currently references `dev/active/redis-registry-migration/`, `dev/active/automatic-tenant-filtering/`, `dev/active/saga-orchestrator-durability/`, `dev/active/character-shop-merchant/`, `dev/active/writer-packet-extraction/`.
 - Auto-memory sibling files under the same directory that the index points to (e.g., `redis-migration.md`) — grep those too for `dev/active/` references to the slug they describe.
 
 Rewrite rule: `dev/active/<slug>/` → `docs/tasks/legacy-<slug>/`; file-inside references (`<slug>-context.md` etc.) update to the bare-name form per §4.1.

@@ -8,7 +8,7 @@ Quick reference for the executing agent. The authoritative artifacts are `prd.md
 - `design.md` — Architectural choices and the "why pathway (a)" decision.
 - `risks.md` — R1–R7 risks (cardinality, sampling skew, etc.). Design adds R8–R9.
 - `migration-runbook.md` — Per-service edit pattern (created by Task 14).
-- `cluster-changes.md` — Out-of-tree bee-cluster YAML edits (created by Task 18).
+- `cluster-changes.md` — Out-of-tree cluster YAML edits (created by Task 18).
 
 ## Key files (existing, read-only context)
 
@@ -73,7 +73,7 @@ Quick reference for the executing agent. The authoritative artifacts are `prd.md
 - **`writer.Producer` signature.** `services/atlas-channel/atlas.com/channel/socket/writer/` defines this; the test in Task 7 mocks it. Inspect the actual signature before writing the mock — it may have shifted from what the test stub assumes.
 - **Test file existing imports.** `processor_test.go` doesn't currently import `context`, `errors`, or any OTel packages. Add what you need; don't accidentally import the production tracer (would couple test to global state across tests).
 - **Test isolation.** `TestAnnounce_StartsSpan` sets the global tracer provider via `otel.SetTracerProvider`. `t.Cleanup` to restore the previous provider, otherwise neighbouring tests in the same package leak the mock.
-- **Dashboard datasource UIDs.** The JSON uses conventional UIDs `prometheus` and `loki`. The bee Grafana might use different ones. Verify via `kubectl get configmaps -n observability` and inspect the datasources configmap, or accept that panels show "datasource not found" until UIDs are corrected.
+- **Dashboard datasource UIDs.** The JSON uses conventional UIDs `prometheus` and `loki`. The cluster Grafana might use different ones. Verify via `kubectl get configmaps -n observability` and inspect the datasources configmap, or accept that panels show "datasource not found" until UIDs are corrected.
 - **`CLAUDE.md` rule:** "always verify Docker builds when changing shared libraries". Tasks 6 and 15 are the canary docker builds; Task 16 step 3 fans out the full matrix.
 
 ## Verification commands cheat-sheet

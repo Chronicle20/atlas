@@ -57,3 +57,7 @@ deploy/k8s/secrets.yaml
 /.idea/vcs.xml
 /.idea/modules.xml
 /.idea/atlas.iml
+
+# Local-only gitleaks config containing personal identifiers (usernames,
+# cluster names, hostnames). Never commit. Schema in .gitleaks.local.toml.example.
+.gitleaks.local.toml

@@ -178,7 +178,7 @@ err = e.setContextValue(characterId, key, value)  // Method doesn't exist!
 **CRITICAL:** Build ALL affected services before proceeding:
 
 ```bash
-# From workspace root (<home>/source/atlas)
+# From workspace root (<repo-root>)
 
 # Build each affected service
 go build ./services/atlas-character/atlas.com/character/...

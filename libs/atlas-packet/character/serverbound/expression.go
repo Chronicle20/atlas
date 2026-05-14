@@ -35,9 +35,9 @@ type ExpressionRequest struct {
 	byItemOption bool
 }
 
-func (m ExpressionRequest) Emote() uint32       { return m.emote }
-func (m ExpressionRequest) Duration() int32     { return m.duration }
-func (m ExpressionRequest) ByItemOption() bool  { return m.byItemOption }
+func (m ExpressionRequest) Emote() uint32      { return m.emote }
+func (m ExpressionRequest) Duration() int32    { return m.duration }
+func (m ExpressionRequest) ByItemOption() bool { return m.byItemOption }
 
 func (m ExpressionRequest) Operation() string {
 	return CharacterExpressionHandle

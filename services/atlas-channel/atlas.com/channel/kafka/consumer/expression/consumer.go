@@ -14,10 +14,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -49,6 +49,11 @@ func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expression
 			return
 		}
 
+		// TODO(task-028 follow-up): Kafka expression.Event doesn't carry duration
+		// or byItemOption, so v95+ and JMS clients always observe duration=0 and
+		// byItemOption=false. Extend kafka/message/expression/kafka.go to carry the
+		// fields end-to-end (producer side too). Tracked in
+		// docs/tasks/task-028-character-domain-audit/post-phase-b.md "Remaining work".
 		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(charpkt.CharacterExpressionWriter)(charpkt.NewCharacterExpression(e.CharacterId, e.Expression, 0).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] expression [%d] change to characters in map [%d].", e.CharacterId, e.Expression, e.MapId)

@@ -162,9 +162,9 @@ func candidatesFromFName(fname string) []candidate {
 		// is deferred to _pending.md.  Generate one representative report per
 		// atlas effect file so the SUMMARY covers all 3 effect files.
 		return []candidate{
-			{name: "EffectSimple", dir: csvpkg.DirClientbound},       // effect.go
-			{name: "EffectQuest", dir: csvpkg.DirClientbound},        // effect_quest.go
-			{name: "EffectSkillUse", dir: csvpkg.DirClientbound},     // effect_skill_use.go
+			{name: "EffectSimple", dir: csvpkg.DirClientbound},   // effect.go
+			{name: "EffectQuest", dir: csvpkg.DirClientbound},    // effect_quest.go
+			{name: "EffectSkillUse", dir: csvpkg.DirClientbound}, // effect_skill_use.go
 		}
 	case "CUserLocal::OnSkillCooltimeSet":
 		// Struct is CharacterSkillCooldown.

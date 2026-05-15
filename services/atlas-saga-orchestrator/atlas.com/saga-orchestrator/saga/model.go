@@ -139,7 +139,8 @@ const (
 	CreateInvite                 = sharedsaga.CreateInvite
 
 	// Character creation actions
-	CreateCharacter = sharedsaga.CreateCharacter
+	CreateCharacter      = sharedsaga.CreateCharacter
+	AwaitInventoryCreated = sharedsaga.AwaitInventoryCreated
 
 	// Transport actions
 	StartInstanceTransport = sharedsaga.StartInstanceTransport

@@ -750,6 +750,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateInvite, true
 	case CreateCharacter:
 		return h.handleCreateCharacter, true
+	case AwaitInventoryCreated:
+		return h.handleAwaitInventoryCreated, true
 	case CreateAndEquipAsset:
 		return h.handleCreateAndEquipAsset, true
 	case IncreaseBuddyCapacity:
@@ -2855,5 +2857,14 @@ func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
 	}
 
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleAwaitInventoryCreated is a no-op handler. The AwaitInventoryCreated
+// step is passive: it is advanced by handleInventoryCreatedEvent (or failed by
+// handleInventoryCreationFailedEvent) in kafka/consumer/inventory/consumer.go.
+// This handler exists only to satisfy the dispatcher's unknown-action guard
+// at saga/processor.go:947.
+func (h *HandlerImpl) handleAwaitInventoryCreated(_ Saga, _ Step[any]) error {
 	return nil
 }

@@ -3,7 +3,7 @@
   "IDAName": "CMobPool::OnMobLeaveField",
   "Address": "0x67961d",
   "Variant": "GMS/v83",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/monster/clientbound/destroy.go",
   "Rows": [
     {
@@ -26,13 +26,13 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "dwSwallowCharacterID — only if destroyType == 4",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

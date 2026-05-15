@@ -894,13 +894,13 @@
     "CMobPool::OnMobChangeController": {
       "address": "0x6b52c3",
       "direction": "clientbound",
+      "notes": "v87 production shape — dev seed block excluded (same as v95). Matches atlas's encoder.",
       "calls": [
         {"op": "Decode1", "comment": "controlMode"},
-        {"op": "Decode4", "comment": "moveRandSeed.s1 — gated controlMode && opt", "guard": "controlMode != 0 && client_opt 2"},
-        {"op": "Decode4", "comment": "moveRandSeed.s2", "guard": "controlMode != 0 && client_opt 2"},
-        {"op": "Decode4", "comment": "moveRandSeed.s3", "guard": "controlMode != 0 && client_opt 2"},
         {"op": "Decode4", "comment": "dwMobID"},
-        {"op": "Decode1", "comment": "aggro byte — gated controlMode != 0", "guard": "controlMode != 0"}
+        {"op": "Decode1", "comment": "aggro byte — atlas hardcodes 5", "guard": "controlMode != 0"},
+        {"op": "Decode4", "comment": "dwTemplateID via SetLocalMob — atlas monsterId", "guard": "controlMode != 0"},
+        {"op": "DecodeBuf", "comment": "MonsterModel body", "guard": "controlMode != 0"}
       ]
     },
     "CMob::OnMove": {

@@ -371,13 +371,13 @@
       "address": "0x6f8b84",
       "region": "JMS",
       "direction": "clientbound",
+      "notes": "JMS v185 production shape (function size 0x47 — same as v83, no dev seed block). Matches atlas's encoder.",
       "calls": [
         {"op": "Decode1", "comment": "controlMode"},
-        {"op": "Decode4", "comment": "moveRandSeed.s1", "guard": "controlMode != 0 && client_opt 2"},
-        {"op": "Decode4", "comment": "moveRandSeed.s2", "guard": "controlMode != 0 && client_opt 2"},
-        {"op": "Decode4", "comment": "moveRandSeed.s3", "guard": "controlMode != 0 && client_opt 2"},
         {"op": "Decode4", "comment": "dwMobID"},
-        {"op": "Decode1", "comment": "aggro byte", "guard": "controlMode != 0"}
+        {"op": "Decode1", "comment": "aggro byte — atlas hardcodes 5", "guard": "controlMode != 0"},
+        {"op": "Decode4", "comment": "dwTemplateID via sub_6F75D6 — atlas monsterId", "guard": "controlMode != 0"},
+        {"op": "DecodeBuf", "comment": "MonsterModel body", "guard": "controlMode != 0"}
       ]
     },
     "CMob::OnMove": {
@@ -710,6 +710,35 @@
         {"op": "Encode4", "comment": "stance flag"},
         {"op": "Encode2", "comment": "tDelay"},
         {"op": "Encode4", "comment": "reserved (0)"}
+      ]
+    },
+    "CMob::GenerateMovePath": {
+      "address": "0x6e8892",
+      "region": "JMS",
+      "direction": "serverbound",
+      "notes": "MOB_MOVE (opcode 0xC2). Atlas MovementRequest decoder mirrors this byte-for-byte. The four `>v83 || JMS`-gated blocks in atlas (multiTargetForBall + randTimeForAreaAttack, hackedCodeCRC, bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration) all fire for JMS — verified against this decompile.",
+      "calls": [
+        {"op": "Encode4", "comment": "dwMobID (uniqueId)"},
+        {"op": "Encode2", "comment": "nMobCtrlSN (moveId)"},
+        {"op": "Encode1", "comment": "flags byte: nMoveEndingX | (v109 << 1) | (bRiseByToss << 2) | (nMoveTypeb << 3) — atlas dwFlag"},
+        {"op": "Encode1", "comment": "nAction (atlas nActionAndDir)"},
+        {"op": "Encode4", "comment": "ti (TARGETINFO — atlas skillData; LOBYTE=skillId, BYTE1=skillLevel)"},
+        {"op": "Encode4", "comment": "multiTargetForBall count"},
+        {"op": "Encode4", "comment": "multiTargetForBall[i].x — loop", "guard": "loop multiTargetForBall"},
+        {"op": "Encode4", "comment": "multiTargetForBall[i].y — loop", "guard": "loop multiTargetForBall"},
+        {"op": "Encode4", "comment": "randTimeForAreaAttack count"},
+        {"op": "Encode4", "comment": "randTimeForAreaAttack[i] — loop", "guard": "loop randTimeForAreaAttack"},
+        {"op": "Encode1", "comment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) — atlas moveFlags"},
+        {"op": "Encode4", "comment": "TSecType<long>.GetData(sub_6E9537) — atlas hackedCode"},
+        {"op": "Encode4", "comment": "v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX"},
+        {"op": "Encode4", "comment": "v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY"},
+        {"op": "Encode4", "comment": "sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC"},
+        {"op": "EncodeBuf", "comment": "CMovePath::Flush body (Movement elements, variable length)"},
+        {"op": "Encode1", "comment": "bChasing (sub_68664B of m_bChasing)"},
+        {"op": "Encode1", "comment": "hasTarget (LODWORD(v14[1].m_ap._ZtlSecureTear_vx[1]) != 0)"},
+        {"op": "Encode1", "comment": "bChasing2 (m_pLadderOrRope flag)"},
+        {"op": "Encode1", "comment": "bChasingHack (m_lZMass flag)"},
+        {"op": "Encode4", "comment": "tChaseDuration (vy / fall velocity)"}
       ]
     }
   }

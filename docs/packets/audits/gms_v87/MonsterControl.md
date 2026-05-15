@@ -11,11 +11,11 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | byte | byte `controlMode` | ✅ |  |
-| 1 | int32 | int32 `moveRandSeed.s1 — gated controlMode && opt` | ✅ |  |
-| 2 | byte | int32 `moveRandSeed.s2` | ❌ | width mismatch |
-| 3 | int32 | int32 `moveRandSeed.s3` | ✅ |  |
-| 4 | int32 | int32 `dwMobID` | ✅ |  |
-| 5 | int32 | byte `aggro byte — gated controlMode != 0` | ❌ | width mismatch |
+| 1 | int32 | int32 `dwMobID` | ✅ |  |
+| 2 | byte | byte `aggro byte — atlas hardcodes 5` | ✅ |  |
+| 3 | int32 | int32 `dwTemplateID via SetLocalMob — atlas monsterId` | ✅ |  |
+| 4 | int32 | bytes `MonsterModel body` | ❌ | width mismatch |
+| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

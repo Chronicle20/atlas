@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "moveRandSeed.s1 — conditional: only if controlMode \u0026\u0026 CClientOptMan::GetOpt(2)",
+      "IDAComment": "dwMobID (uniqueId / v7)",
       "Verdict": 0,
       "Note": ""
     },
@@ -28,17 +28,17 @@
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "moveRandSeed.s2 — conditional with seed.s1",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 0,
+      "IDAComment": "aggro byte — atlas hardcodes 5, v95 reads as aggro flag",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "moveRandSeed.s3 — conditional with seed.s1",
+      "IDAComment": "dwTemplateID via SetLocalMob — atlas monsterId",
       "Verdict": 0,
       "Note": ""
     },
@@ -46,19 +46,19 @@
       "Index": 4,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "dwMobID (uniqueId / v7)",
-      "Verdict": 0,
-      "Note": ""
+      "IDAOp": 5,
+      "IDAComment": "MonsterModel body via SetLocalMob's CMob::Init delegate",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 5,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "aggro byte — conditional: only if controlMode != 0",
+      "IDAComment": "",
       "Verdict": 2,
-      "Note": "width mismatch"
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 6,

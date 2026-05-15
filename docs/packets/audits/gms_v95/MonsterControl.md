@@ -11,11 +11,11 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | byte | byte `controlMode (v4/v5 — 0 = remote, non-zero = local-controlled)` | ✅ |  |
-| 1 | int32 | int32 `moveRandSeed.s1 — conditional: only if controlMode && CClientOptMan::GetOpt(2)` | ✅ |  |
-| 2 | byte | int32 `moveRandSeed.s2 — conditional with seed.s1` | ❌ | width mismatch |
-| 3 | int32 | int32 `moveRandSeed.s3 — conditional with seed.s1` | ✅ |  |
-| 4 | int32 | int32 `dwMobID (uniqueId / v7)` | ✅ |  |
-| 5 | int32 | byte `aggro byte — conditional: only if controlMode != 0` | ❌ | width mismatch |
+| 1 | int32 | int32 `dwMobID (uniqueId / v7)` | ✅ |  |
+| 2 | byte | byte `aggro byte — atlas hardcodes 5, v95 reads as aggro flag` | ✅ |  |
+| 3 | int32 | int32 `dwTemplateID via SetLocalMob — atlas monsterId` | ✅ |  |
+| 4 | int32 | bytes `MonsterModel body via SetLocalMob's CMob::Init delegate` | ❌ | width mismatch |
+| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

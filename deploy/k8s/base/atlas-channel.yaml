@@ -41,10 +41,6 @@ metadata:
     app: atlas-channel
 spec:
   type: LoadBalancer
-  # Opt out of k3s ServiceLB (klipper-lb) so MetalLB is the sole controller.
-  # Any non-empty class makes ServiceLB skip the Service; MetalLB ignores
-  # class by default and still allocates.
-  loadBalancerClass: metallb.universe.tf/l2
   selector:
     app: atlas-channel
   ports:

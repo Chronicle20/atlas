@@ -619,6 +619,13 @@ type AwaitCharacterCreatedPayload struct {
 	CreatedCharacterId uint32 `json:"createdCharacterId,omitempty"` // CharacterId once created (set by orchestrator)
 }
 
+// AwaitInventoryCreatedPayload represents the payload required to await
+// inventory-compartment creation. The orchestrator's result-forwarding
+// substitutes CharacterId=0 with the actual id emitted by handleCharacterCreatedEvent.
+type AwaitInventoryCreatedPayload struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 // StartInstanceTransportPayload represents the payload required to start an instance-based transport.
 type StartInstanceTransportPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to start transport for

@@ -131,8 +131,9 @@ const (
 	CreateInvite                 Action = "create_invite"
 
 	// Character creation actions
-	CreateCharacter       Action = "create_character"
-	AwaitCharacterCreated Action = "await_character_created"
+	CreateCharacter        Action = "create_character"
+	AwaitCharacterCreated  Action = "await_character_created"
+	AwaitInventoryCreated  Action = "await_inventory_created"
 
 	// Transport actions
 	StartInstanceTransport Action = "start_instance_transport"

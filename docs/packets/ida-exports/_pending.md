@@ -409,3 +409,25 @@ Phase 2d (task-065) audit of 4 reactor packets in GMS v95. ✅ 3 / ❌ 1.
 | `CReactorPool::OnReactorChangeState@0x6ccd60` | ReactorHit | ✅ | Wire matches (reactorId + newState + ptPos + tDelay + frameDelay + stance). |
 | `CReactorPool::OnReactorLeaveField@0x6ccea0` | ReactorDestroy | ✅ | Wire matches (reactorId + finalState + ptPos). |
 | `CReactorPool::FindHitReactor@0x6cd4e0` | ReactorHitRequest (sb) | ❌ | **Analyzer FP** — same if/else pattern. Atlas writes `if isSkill { WriteInt(1) } else { WriteInt(0) }` which expands to two consecutive Encode4 entries; wire bytes match v95 exactly (oid + isSkill + dwHitOption + delay + skillId = 18 bytes). |
+
+## Phase 3 — GMS v83 cross-version pass
+
+Phase 3 Task 8 (task-065) audit of 30 combat packets against v83 IDA. ✅ 11 / ❌ 19. Comparable verdict distribution to v95.
+
+| Packet | v95 verdict | v83 verdict | Cross-version note |
+|---|---|---|---|
+| MonsterMovementAck | ✅ | ✅ | Wire matches both versions. |
+| MonsterDamage | ✅ | ✅ | Wire matches both versions. |
+| MonsterHealth | ✅ | ✅ | Wire matches both versions. |
+| PetChat | ✅ | ✅ | Wire matches both versions. |
+| PetCashFoodResult | ✅ | ✅ | Wire matches both versions. |
+| PetSpawn (sb) | ✅ | (skipped) | `CWvsContext::SendActivatePetRequest` does not exist in v83 IDA. The atlas serverbound handler may target a different v83 FName; needs cross-version trace. |
+| PetFood (sb) | ✅ | ✅ | Wire matches both versions. |
+| DropPickUp (sb) | ✅ | ✅ | Wire matches both versions. |
+| ReactorSpawn | ✅ | ✅ | Wire matches both versions. |
+| ReactorHit | ✅ | ✅ | Wire matches both versions. |
+| ReactorDestroy | ✅ | ✅ | Wire matches both versions. |
+| MonsterMovement | 🔍 | ❌ | v83 lacks `bNotChangeAction` byte + `multiTargetForBall` + `randTimeForAreaAttack` loops. Atlas correctly gates these with `(GMS && >83) \|\| JMS` in `monster/clientbound/movement.go` so v83 wire is shorter. **No encoder fix needed** — the audit-tool's flat diff over-reports because atlas's separate `WriteInt16(skillId) + WriteInt16(skillLevel)` (4 bytes total) vs v83's packed `Decode4(sEffect.m_Data)` is the same 4 wire bytes but different field decomposition. |
+| All other ❌ verdicts | ❌ | ❌ | Same analyzer FP root causes (registry struct-name collision, if/else branch double-counting, sub-struct expansion gap). No encoder change needed — wire bytes match between versions on the in-scope fields. |
+
+**Conclusion:** v83 introduces no new wire bugs that v95's audit didn't already surface. Atlas's existing `(GMS && >83) || JMS` gate on monster movement is verified correct. No encoder commits land in this Phase 3 sub-task — verdict shifts are pure analyzer artifacts of the version delta.

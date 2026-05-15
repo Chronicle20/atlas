@@ -388,3 +388,13 @@ Pet sub-domain shares the same analyzer-FP pattern as monster — `DecodeBuf`/`E
 Real wire bugs that look likely (need confirmation):
 - `PetCommandResponse` trailing petPos fields may be vestigial — IDA doesn't read them on every code path.
 - `PetItemUse` field order vs v95 IDA needs side-by-side.
+
+## Still pending — combat domain (drop)
+
+Phase 2c (task-065) audit of 3 drop packets in GMS v95. ✅ 1 / ❌ 2.
+
+| FName | Atlas writer/handler | Verdict | Notes |
+|---|---|---|---|
+| `CDropPool::OnDropEnterField@0x516670` | DropSpawn | ❌ | **Analyzer FP.** Atlas's `if isMeso { WriteInt(meso) } else { WriteInt(itemId) }` if/else expands into two consecutive Encode4 entries in the flat call list, throwing off positions 4+. Wire actually matches field-for-field. Same root cause as MonsterSpawn — analyzer should model mutually-exclusive if/else writes as a single position with alternation. |
+| `CDropPool::OnDropLeaveField@0x511e20` | DropDestroy | ❌ (real) | Atlas's destroy encoder for `destroyType == 4` (explode) writes `WriteInt(characterId)` + optional `WriteByte(petSlot)` but v95 reads `Decode2 (tLeaveDelay)`. Wire desync on explode. Also for `destroyType == 5` (pet pickup), v95 reads an extra `Decode4` (pet locker SN low part?) inside the case — atlas may emit petSlot byte where v95 expects 4 bytes. Defer to follow-up that adds the explode-delay field + tightens pet-pickup wire shape; needs constructor update + 4-variant test. |
+| `CWvsContext::SendDropPickUpRequest@0x9d5d50` | DropPickUp (sb) | ✅ | Wire matches (fieldKey + tick + pt.x + pt.y + dropId + cliCrc). |

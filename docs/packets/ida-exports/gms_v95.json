@@ -2868,6 +2868,126 @@
         }
       ]
     },
+    "CDropPool::OnDropEnterField": {
+      "address": "0x516670",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nEnterType (v3 — 0=disappear, 1=fresh, 2=existing-on-map, 3/4=animations)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwDropID (drop id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nIsMoney (atlas: isMeso bool)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId or meso amount (atlas: meso if isMeso else itemId)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerCharId (owner)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "dropType"
+        },
+        {
+          "op": "Decode2",
+          "comment": "drop x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "drop y"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sourceObjectId (dropperId — mob or character)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sourceX — gated nEnterType != 2",
+          "guard": "nEnterType != 2"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sourceY — gated nEnterType != 2",
+          "guard": "nEnterType != 2"
+        },
+        {
+          "op": "Decode2",
+          "comment": "tDelay — gated nEnterType != 2",
+          "guard": "nEnterType != 2"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "cashItemSN (8 bytes _FILETIME-like; atlas writes WriteInt64(-1)) — gated !isMoney",
+          "guard": "isMoney == 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "questId / pre-pet flag (atlas: !characterDrop bool)"
+        }
+      ]
+    },
+    "CWvsContext::SendDropPickUpRequest": {
+      "address": "0x9d5d50",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "field->m_bFieldKey"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time() (tick)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.x (pickup point x)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.y (pickup point y)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwDropID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCliCrc"
+        }
+      ]
+    },
+    "CDropPool::OnDropLeaveField": {
+      "address": "0x511e20",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "destroyType (v3 — 0=expire, 2=pickup-char, 3=pickup-mob, 4=explode, 5=ftxs)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwDropID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pickupCharId — gated destroyType in {2,3,5}",
+          "guard": "destroyType in (2,3,5)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "tLeaveDelay — gated destroyType == 4 (explode)",
+          "guard": "destroyType == 4"
+        }
+      ]
+    },
     "CPet::SendDropPickUpRequest": {
       "address": "0x6a0820",
       "direction": "serverbound",

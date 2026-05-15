@@ -144,14 +144,16 @@ else
     fi
     log info "cloning template $template_id into tenant configuration $TENANT_ID"
 
-    body=$(echo "$template" | jq --arg tid "$TENANT_ID" \
-        '{data: {id: $tid, type: "tenants", attributes: .data.attributes}}')
-
-    curl -fsS -X POST \
-        -H 'Accept: application/vnd.api+json' \
-        -H 'Content-Type: application/vnd.api+json' \
-        -d "$body" \
-        "$ATLAS_UI_BASE/api/configurations/tenants" >/dev/null
+    # Pipe via stdin (-d @-) because the template attributes are ~76KB and
+    # passing them as a curl argv arg exceeds the kernel argv size limit
+    # ("Argument list too long").
+    echo "$template" | jq --arg tid "$TENANT_ID" \
+        '{data: {id: $tid, type: "tenants", attributes: .data.attributes}}' \
+        | curl -fsS -X POST \
+            -H 'Accept: application/vnd.api+json' \
+            -H 'Content-Type: application/vnd.api+json' \
+            --data-binary @- \
+            "$ATLAS_UI_BASE/api/configurations/tenants" >/dev/null
     log info "tenant configuration $TENANT_ID created"
 fi
 

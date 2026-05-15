@@ -39,6 +39,19 @@ patches:
   - path: patches/consumer-group-env.yaml
   - path: patches/pvc-storageclass.yaml
   - path: patches/lb-allocate.yaml
+  # Ephemeral PR envs do not need HA. Pin every Deployment to a single
+  # replica to halve the pod footprint vs main (some base manifests ship
+  # with replicas: 2 or 4). This is the cluster-relief patch from the
+  # task-063 deploy testing on 2026-05-15 — gaia + helios were sitting at
+  # the default kubelet --max-pods=110, control plane was flapping
+  # NodeNotReady. Targets kind=Deployment so Jobs / IngressRoutes etc.
+  # are untouched.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:

@@ -51,10 +51,31 @@ jobs:
               done
           done
 
+  delete-bot-branch:
+    name: Delete bot/pr-<N>-resolved branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # The update-pr-overlay job (pr-validation.yml) creates a derived
+      # branch `bot/pr-<N>-resolved` that the Argo CD ApplicationSet
+      # targets. It's not the head of any PR, so GitHub's
+      # "Automatically delete head branches" setting does not clean it
+      # up on PR close. Delete it here.
+      - name: Delete branch via API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="bot/pr-${PR_NUMBER}-resolved"
+          echo "Deleting $BRANCH (if it exists)"
+          gh api --method DELETE \
+            "/repos/${{ github.repository }}/git/refs/heads/${BRANCH}" \
+            || echo "branch ${BRANCH} not present; skipping"
+
   notify-argo:
     name: Notify Argo of PR close
     runs-on: ubuntu-latest
-    needs: delete-images
+    needs: [delete-images, delete-bot-branch]
     steps:
       - name: Log notice
         run: |

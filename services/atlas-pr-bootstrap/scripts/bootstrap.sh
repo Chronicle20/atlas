@@ -207,12 +207,25 @@ upsert_service_config() {
         "$ATLAS_UI_BASE/api/configurations/services/$svc_id" 2>/dev/null || true)
 
     if echo "$existing" | jq -e '.data.id' >/dev/null 2>&1; then
-        log info "service config $svc_id exists; PATCH"
-        curl -fsS -X PATCH \
-            -H 'Accept: application/vnd.api+json' \
-            -H 'Content-Type: application/vnd.api+json' \
-            -d "$rewritten" \
-            "$ATLAS_UI_BASE/api/configurations/services/$svc_id" >/dev/null
+        # Skip the PATCH if existing.attributes already match what we'd send.
+        # Necessary because atlas-configurations' PATCH handler panics with
+        # "reflect: reflect.Value.Set using unaddressable value" on
+        # tenant-agnostic configs (drops-service). Tracking as a separate
+        # bug — for now skip the no-op PATCH; first-time POST below
+        # populates the config and re-runs see no diff.
+        local existing_attrs rewritten_attrs
+        existing_attrs=$(echo "$existing" | jq -cS '.data.attributes')
+        rewritten_attrs=$(echo "$rewritten" | jq -cS '.data.attributes')
+        if [ "$existing_attrs" = "$rewritten_attrs" ]; then
+            log info "service config $svc_id matches; skipping PATCH"
+        else
+            log info "service config $svc_id exists; PATCH"
+            curl -fsS -X PATCH \
+                -H 'Accept: application/vnd.api+json' \
+                -H 'Content-Type: application/vnd.api+json' \
+                -d "$rewritten" \
+                "$ATLAS_UI_BASE/api/configurations/services/$svc_id" >/dev/null
+        fi
     else
         log info "service config $svc_id absent; POST"
         curl -fsS -X POST \

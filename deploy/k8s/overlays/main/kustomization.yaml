@@ -217,6 +217,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
     newTag: main-779e558
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-378ee2a
+    newTag: main-f504e39
 commonLabels:
   atlas.env: main

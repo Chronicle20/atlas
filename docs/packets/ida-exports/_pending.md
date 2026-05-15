@@ -431,3 +431,15 @@ Phase 3 Task 8 (task-065) audit of 30 combat packets against v83 IDA. ✅ 11 / �
 | All other ❌ verdicts | ❌ | ❌ | Same analyzer FP root causes (registry struct-name collision, if/else branch double-counting, sub-struct expansion gap). No encoder change needed — wire bytes match between versions on the in-scope fields. |
 
 **Conclusion:** v83 introduces no new wire bugs that v95's audit didn't already surface. Atlas's existing `(GMS && >83) || JMS` gate on monster movement is verified correct. No encoder commits land in this Phase 3 sub-task — verdict shifts are pure analyzer artifacts of the version delta.
+
+## Phase 3 — GMS v87 cross-version pass
+
+Phase 3 Task 9 (task-065) audit of 30 combat packets against v87 IDA. ✅ 12 / ❌ 18. Matches v95 verdict distribution since v87's atlas gates (`>v83 || JMS`) evaluate the same as v95.
+
+| Difference vs v95 | Note |
+|---|---|
+| All FNames present | Including `CWvsContext::SendActivatePetRequest@0xabbb70` (absent in v83). |
+| Same wire shape | `>v83` gate firing means v87 reads `bNotChangeAction`, `multiTargetForBall`, and `randTimeForAreaAttack` — same as v95. |
+| Same verdict pattern | 11 ✅ + 1 🔍 + 18 ❌ = 30. The ❌ rows are the same analyzer FPs (registry struct-name collision, if/else branch double-counting, sub-struct expansion gap). |
+
+**Conclusion:** v87 introduces no new wire bugs beyond v95. The atlas encoders are version-compatible across v83/v87/v95 for all packets in scope, with the documented `>v83` gates correctly narrowing v83-only wire shape differences.

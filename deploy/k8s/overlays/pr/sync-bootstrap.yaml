@@ -39,8 +39,30 @@ kind: Job
 metadata:
   name: atlas-pr-bootstrap
   annotations:
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    # `Sync` hook (was PostSync, see incident 2026-05-15). PostSync waits for
+    # the entire Sync phase to reach Healthy before firing. But several Atlas
+    # services (atlas-channel, atlas-login, atlas-world, atlas-drops) panic
+    # on startup if they cannot fetch their tenant config from
+    # atlas-configurations — and atlas-configurations is empty until
+    # bootstrap seeds it via atlas-tenants. On a cold-start PR env (no
+    # leftover tenant rows in Postgres) those four services CrashLoopBackOff
+    # forever and Argo never declares the Sync phase Healthy, so PostSync
+    # never fires. Classic chicken-and-egg.
+    #
+    # `Sync` hooks run *in parallel* with the sync wave's normal resource
+    # apply, so bootstrap starts the moment Argo applies the manifests. The
+    # bootstrap script (`scripts/bootstrap.sh`) already polls atlas-tenants
+    # / atlas-configurations / atlas-data / atlas-wz-extractor with `retry
+    # 60 5` (5 minutes per dependency) before doing any work, so racing
+    # with the Deployments coming up is fine — it just waits.
+    #
+    # `BeforeHookCreation` ensures Argo deletes any prior Job from a
+    # previous (possibly failed) sync before applying a new one. Without
+    # this, a Failed Job from a half-completed sync wedges all subsequent
+    # syncs with "spec.template: Invalid value … field is immutable"
+    # because Argo tries to patch the immutable Job spec.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   backoffLimit: 3
   template:

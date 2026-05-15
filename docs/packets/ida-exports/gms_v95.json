@@ -2964,6 +2964,122 @@
         }
       ]
     },
+    "CReactorPool::OnReactorEnterField": {
+      "address": "0x6cf490",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwID (reactor unique id)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTemplateID (reactor template id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nState (initial state)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.y"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bFlip (orientation)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sName (reactor name override)"
+        }
+      ]
+    },
+    "CReactorPool::OnReactorChangeState": {
+      "address": "0x6ccd60",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "reactorId (dwID)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "newState"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.y"
+        },
+        {
+          "op": "Decode2",
+          "comment": "tDelay (animation delay)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "frameDelay (state-transition timing)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance/proper-event index (multiplied by 100)"
+        }
+      ]
+    },
+    "CReactorPool::OnReactorLeaveField": {
+      "address": "0x6ccea0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "reactorId (dwID)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "finalState"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.y"
+        }
+      ]
+    },
+    "CReactorPool::FindHitReactor": {
+      "address": "0x6cd4e0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "reactorId (dwID)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "reserved (0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "stance flag (v21[13] — combined user-state bits)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "tDelay"
+        },
+        {
+          "op": "Encode4",
+          "comment": "reserved (0)"
+        }
+      ]
+    },
     "CDropPool::OnDropLeaveField": {
       "address": "0x511e20",
       "direction": "clientbound",

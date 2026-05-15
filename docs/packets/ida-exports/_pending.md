@@ -398,3 +398,14 @@ Phase 2c (task-065) audit of 3 drop packets in GMS v95. ✅ 1 / ❌ 2.
 | `CDropPool::OnDropEnterField@0x516670` | DropSpawn | ❌ | **Analyzer FP.** Atlas's `if isMeso { WriteInt(meso) } else { WriteInt(itemId) }` if/else expands into two consecutive Encode4 entries in the flat call list, throwing off positions 4+. Wire actually matches field-for-field. Same root cause as MonsterSpawn — analyzer should model mutually-exclusive if/else writes as a single position with alternation. |
 | `CDropPool::OnDropLeaveField@0x511e20` | DropDestroy | ❌ (real) | Atlas's destroy encoder for `destroyType == 4` (explode) writes `WriteInt(characterId)` + optional `WriteByte(petSlot)` but v95 reads `Decode2 (tLeaveDelay)`. Wire desync on explode. Also for `destroyType == 5` (pet pickup), v95 reads an extra `Decode4` (pet locker SN low part?) inside the case — atlas may emit petSlot byte where v95 expects 4 bytes. Defer to follow-up that adds the explode-delay field + tightens pet-pickup wire shape; needs constructor update + 4-variant test. |
 | `CWvsContext::SendDropPickUpRequest@0x9d5d50` | DropPickUp (sb) | ✅ | Wire matches (fieldKey + tick + pt.x + pt.y + dropId + cliCrc). |
+
+## Still pending — combat domain (reactor)
+
+Phase 2d (task-065) audit of 4 reactor packets in GMS v95. ✅ 3 / ❌ 1.
+
+| FName | Atlas writer/handler | Verdict | Notes |
+|---|---|---|---|
+| `CReactorPool::OnReactorEnterField@0x6cf490` | ReactorSpawn | ✅ | Wire matches (dwID + dwTemplateID + nState + ptPos + bFlip + sName). |
+| `CReactorPool::OnReactorChangeState@0x6ccd60` | ReactorHit | ✅ | Wire matches (reactorId + newState + ptPos + tDelay + frameDelay + stance). |
+| `CReactorPool::OnReactorLeaveField@0x6ccea0` | ReactorDestroy | ✅ | Wire matches (reactorId + finalState + ptPos). |
+| `CReactorPool::FindHitReactor@0x6cd4e0` | ReactorHitRequest (sb) | ❌ | **Analyzer FP** — same if/else pattern. Atlas writes `if isSkill { WriteInt(1) } else { WriteInt(0) }` which expands to two consecutive Encode4 entries; wire bytes match v95 exactly (oid + isSkill + dwHitOption + delay + skillId = 18 bytes). |

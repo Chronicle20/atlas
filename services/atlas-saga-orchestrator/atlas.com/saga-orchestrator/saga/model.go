@@ -233,6 +233,7 @@ type (
 	RequestGuildCapacityIncreasePayload  = sharedsaga.RequestGuildCapacityIncreasePayload
 	CreateInvitePayload                  = sharedsaga.CreateInvitePayload
 	CharacterCreatePayload               = sharedsaga.CharacterCreatePayload
+	AwaitInventoryCreatedPayload         = sharedsaga.AwaitInventoryCreatedPayload
 	StartInstanceTransportPayload        = sharedsaga.StartInstanceTransportPayload
 	SaveLocationPayload                  = sharedsaga.SaveLocationPayload
 	WarpToSavedLocationPayload           = sharedsaga.WarpToSavedLocationPayload

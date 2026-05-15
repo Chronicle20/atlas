@@ -1455,6 +1455,9 @@ func forwardCharacterCreationResult(l logrus.FieldLogger, s Saga) Saga {
 		case CreateSkillPayload:
 			p.CharacterId = characterId
 			updated, err = s.WithStepPayload(i, p)
+		case AwaitInventoryCreatedPayload:
+			p.CharacterId = characterId
+			updated, err = s.WithStepPayload(i, p)
 		default:
 			continue
 		}

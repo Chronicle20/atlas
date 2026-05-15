@@ -50,8 +50,17 @@ spec:
                       echo "Pi-hole $i: auth failed, skipping" >&2
                       continue
                   fi
-                  # PUT /api/config/dns/hosts/<encoded entry> appends to the list.
-                  # Returns 201 on insert, 200 if the entry already exists.
+                  # PUT /api/config/dns/hosts/<encoded entry> on a duplicate
+                  # entry returns 4xx with an "already exists"-class error;
+                  # `-f` would treat that as failure. Check existence first
+                  # (idempotent: same Job re-running after a successful add).
+                  if curl -k -fsS -H "X-FTL-SID: $sid" \
+                          "$base/api/config/dns/hosts" 2>/dev/null \
+                          | jq -e --arg e "$entry" '.config.dns.hosts | any(. == $e)' >/dev/null; then
+                      echo "Pi-hole $i: entry already exists, skipping"
+                      ok=$((ok+1))
+                      continue
+                  fi
                   if curl -k -fsS -X PUT \
                           -H "X-FTL-SID: $sid" \
                           "$base/api/config/dns/hosts/$encoded_entry"; then

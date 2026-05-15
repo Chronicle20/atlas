@@ -10,10 +10,10 @@ const (
 )
 
 // StatusEvent is the on-wire shape of an inventory status event. TransactionId
-// is added with omitempty so existing consumers (atlas-cashshop) continue to
-// decode the same struct; non-saga emitters serialise without the field.
+// is populated by saga-driven emits; non-saga emits leave it as uuid.Nil, which
+// existing consumers ignore via the nil-txid skip path.
 type StatusEvent[E any] struct {
-	TransactionId uuid.UUID `json:"transactionId,omitempty"`
+	TransactionId uuid.UUID `json:"transactionId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

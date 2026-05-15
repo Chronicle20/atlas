@@ -36,6 +36,7 @@ type (
 	CharacterCreatePayload                = sharedsaga.CharacterCreatePayload
 	CreateAndEquipAssetPayload            = sharedsaga.CreateAndEquipAssetPayload
 	AwaitCharacterCreatedPayload          = sharedsaga.AwaitCharacterCreatedPayload
+	AwaitInventoryCreatedPayload          = sharedsaga.AwaitInventoryCreatedPayload
 	ExperienceDistributions               = sharedsaga.ExperienceDistributions
 )
 
@@ -74,6 +75,7 @@ const (
 	CreateCharacter              = sharedsaga.CreateCharacter
 	CreateAndEquipAsset          = sharedsaga.CreateAndEquipAsset
 	AwaitCharacterCreated        = sharedsaga.AwaitCharacterCreated
+	AwaitInventoryCreated        = sharedsaga.AwaitInventoryCreated
 )
 
 // ValidateCharacterStatePayload uses the character-factory service's validation.ConditionInput.

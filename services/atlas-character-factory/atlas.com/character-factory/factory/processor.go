@@ -205,7 +205,16 @@ func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl t
 		MapId:        input.MapId,
 	})
 
-	// Steps 2-N: Award assets for template items (characterId=0, forwarded by orchestrator)
+	// Step 2: Await inventory-compartment creation. Passive step advanced by
+	// kafka/consumer/inventory/consumer.go in atlas-saga-orchestrator. Required
+	// to close the race where AwardAsset dispatches before atlas-inventory's
+	// compartments are committed. CharacterId=0 sentinel is replaced by
+	// forwardCharacterCreationResult after create_character completes.
+	builder.AddStep("await_inventory_created", saga.Pending, saga.AwaitInventoryCreated, saga.AwaitInventoryCreatedPayload{
+		CharacterId: 0,
+	})
+
+	// Steps 3-N: Award assets for template items (characterId=0, forwarded by orchestrator)
 	for i, templateId := range tmpl.Items {
 		builder.AddStep(fmt.Sprintf("award_item_%d", i), saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 			CharacterId: 0,
@@ -369,7 +378,13 @@ func buildPresetCharacterCreationSaga(
 		Meso:         a.Meso,
 	})
 
-	// Steps 2..N+1: award_asset for each inventory item
+	// Step 2: Await inventory-compartment creation. See buildCharacterCreationSaga
+	// for the rationale; this is the preset variant.
+	builder.AddStep("await_inventory_created", saga.Pending, saga.AwaitInventoryCreated, saga.AwaitInventoryCreatedPayload{
+		CharacterId: 0,
+	})
+
+	// Steps 3..N+2: award_asset for each inventory item
 	for i, inv := range a.Inventory {
 		builder.AddStep(fmt.Sprintf("award_asset_%d", i), saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 			CharacterId: 0,

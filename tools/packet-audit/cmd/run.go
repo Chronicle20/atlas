@@ -441,6 +441,103 @@ func candidatesFromFName(fname string) []candidate {
 		// Client sends opcode 0x18 (24) with EncodeStr(pic)+Encode4(charId) (v95: PIC path).
 		// IDA: CLogin::SendDeleteCharPacket@0x5d53a0 (m_bLoginOpt==1 branch).
 		return []candidate{{name: "DeleteCharacter", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: monster (clientbound) ---
+	// FNames verified against the canonical CSV (docs/packets/MapleStory Ops -
+	// ClientBound.csv) and live GMS v95 IDA. CMobPool::OnMobPacket dispatches
+	// per-mob ops to CMob::OnXxx leaf handlers; we route each leaf directly.
+	case "CMobPool::OnMobEnterField":
+		return []candidate{{name: "Spawn", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMobPool::OnMobLeaveField":
+		return []candidate{{name: "Destroy", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMobPool::OnMobChangeController":
+		return []candidate{{name: "Control", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMove":
+		return []candidate{{name: "Movement", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnCtrlAck":
+		return []candidate{{name: "MovementAck", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnStatSet":
+		return []candidate{{name: "StatSet", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnStatReset":
+		return []candidate{{name: "StatReset", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnDamaged":
+		return []candidate{{name: "Damage", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnHPIndicator":
+		return []candidate{{name: "Health", pkg: "monster", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: drop (clientbound) ---
+	case "CDropPool::OnDropEnterField":
+		return []candidate{{name: "Spawn", pkg: "drop", dir: csvpkg.DirClientbound}}
+	case "CDropPool::OnDropLeaveField":
+		return []candidate{{name: "Destroy", pkg: "drop", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: reactor (clientbound) ---
+	case "CReactorPool::OnReactorEnterField":
+		return []candidate{{name: "Spawn", pkg: "reactor", dir: csvpkg.DirClientbound}}
+	case "CReactorPool::OnReactorChangeState":
+		// CSV: REACTOR_HIT — atlas Hit (writer = "ReactorHit").
+		return []candidate{{name: "Hit", pkg: "reactor", dir: csvpkg.DirClientbound}}
+	case "CReactorPool::OnReactorLeaveField":
+		return []candidate{{name: "Destroy", pkg: "reactor", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: pet (clientbound) ---
+	// CSV maps SPAWN_PET → CUser::OnPetPacket (the dispatcher for self/foreign
+	// pet activation). PetChat in atlas corresponds to CSV PET_CHAT →
+	// CPet::OnAction (pet animation action), while PetCommandResponse
+	// corresponds to PET_COMMAND → CPet::OnActionCommand (chat-typed command).
+	case "CUser::OnPetPacket":
+		return []candidate{{name: "Activated", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnMove":
+		return []candidate{{name: "Movement", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnAction":
+		return []candidate{{name: "Chat", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnActionCommand":
+		return []candidate{{name: "CommandResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnLoadExceptionList":
+		return []candidate{{name: "ExcludeResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnCashPetFoodResult":
+		return []candidate{{name: "CashFoodResult", pkg: "pet", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: monster (serverbound) ---
+	case "CMob::GenerateMovePath":
+		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
+		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: drop (serverbound) ---
+	case "CWvsContext::SendDropPickUpRequest":
+		// CSV: ITEM_PICKUP — atlas PickUp (handle = "DropPickUpHandle").
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: reactor (serverbound) ---
+	case "CReactorPool::FindHitReactor":
+		// CSV: DAMAGE_REACTOR — atlas HitRequest (handle = "ReactorHitHandle").
+		return []candidate{{name: "HitRequest", pkg: "reactor", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: pet (serverbound) ---
+	case "CWvsContext::SendActivatePetRequest":
+		// CSV: SPAWN_PET (serverbound) — atlas Spawn (handle = "PetSpawnHandle").
+		return []candidate{{name: "Spawn", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CVecCtrlPet::EndUpdateActive":
+		// CSV: MOVE_PET (serverbound) — atlas MovementRequest.
+		return []candidate{{name: "MovementRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::DoAction":
+		// CSV: PET_CHAT (serverbound) — atlas ChatRequest.
+		return []candidate{{name: "ChatRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::ParseCommand":
+		// CSV: PET_COMMAND (serverbound) — atlas Command.
+		return []candidate{{name: "Command", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::SendUpdateExceptionListRequest":
+		// CSV: PET_EXCLUDE_ITEMS — atlas ExcludeItem.
+		return []candidate{{name: "ExcludeItem", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendPetFoodItemUseRequest":
+		// CSV: PET_FOOD — atlas Food.
+		return []candidate{{name: "Food", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendStatChangeItemUseRequestByPetQ":
+		// CSV: PET_AUTO_POT — atlas ItemUse.
+		return []candidate{{name: "ItemUse", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::SendDropPickUpRequest":
+		// CSV: PET_LOOT — atlas DropPickUp.
+		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

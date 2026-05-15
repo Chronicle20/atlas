@@ -2337,6 +2337,246 @@
           "comment": "characterStat.dwCharacterID"
         }
       ]
+    },
+    "CMobPool::OnMobEnterField": {
+      "address": "0x6589e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId (uniqueId)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCalcDamageIndex (atlas: controlled — region/version gated >v12 GMS || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTemplateID (monsterId)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init — variable-length sub-struct)"
+        }
+      ]
+    },
+    "CMobPool::OnMobLeaveField": {
+      "address": "0x658b90",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobID (uniqueId)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "destroyType (v4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSwallowCharacterID — conditional: only if destroyType == 4 (swallowed by character/eater)",
+          "guard": "destroyType == 4"
+        }
+      ]
+    },
+    "CMobPool::OnMobChangeController": {
+      "address": "0x658d10",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "controlMode (v4/v5 — 0 = remote, non-zero = local-controlled)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "moveRandSeed.s1 — conditional: only if controlMode && CClientOptMan::GetOpt(2)",
+          "guard": "controlMode != 0 && client_opt 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "moveRandSeed.s2 — conditional with seed.s1",
+          "guard": "controlMode != 0 && client_opt 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "moveRandSeed.s3 — conditional with seed.s1",
+          "guard": "controlMode != 0 && client_opt 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwMobID (uniqueId / v7)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "aggro byte — conditional: only if controlMode != 0",
+          "guard": "controlMode != 0"
+        }
+      ]
+    },
+    "CMob::OnMove": {
+      "address": "0x6521e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNotForceLandingWhenDiscard"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNotChangeAction"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNextAttackPossible"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bLeft (action-byte: low bit = direction, high bits = action+flags)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sEffect.m_Data (skill effect id+level packed; LOBYTE=skillId, BYTE1=level)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "multiTargetForBall count (nCount)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "multiTargetForBall[i].x — per entry, loop nCount times",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Decode4",
+          "comment": "multiTargetForBall[i].y — per entry",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Decode4",
+          "comment": "randTimeForAreaAttack count (nCount)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "randTimeForAreaAttack[i] — per entry, loop nCount times",
+          "guard": "loop randTimeForAreaAttack"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "Movement body via CMovePath::OnMovePacket (variable-length elements)"
+        }
+      ]
+    },
+    "CMob::OnCtrlAck": {
+      "address": "0x640c50",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+        },
+        {
+          "op": "Decode2",
+          "comment": "mobCtrlSN (v5 — int16)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNextAttackPossible"
+        },
+        {
+          "op": "Decode2",
+          "comment": "mp (uint16)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "skillCommand (v7)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "skillLevel (v8)"
+        }
+      ]
+    },
+    "CMob::OnStatSet": {
+      "address": "0x652660",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "uFlagSet: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "per-stat body via CMob::ProcessStatSet (variable-length, mask-dispatched)"
+        }
+      ]
+    },
+    "CMob::OnStatReset": {
+      "address": "0x652780",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "uFlagReset: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "per-stat reset body via CMob::ProcessStatReset (variable-length, mask-dispatched)"
+        }
+      ]
+    },
+    "CMob::OnDamaged": {
+      "address": "0x64ecb0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "damageType (v3 — 2 = friendly/no-show)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage amount (v4/v5)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hp current — conditional: only if mobTemplate.bDamagedByMob (friendly-mob field)",
+          "guard": "mob.bDamagedByMob"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hp max — conditional: only if mobTemplate.bDamagedByMob",
+          "guard": "mob.bDamagedByMob"
+        }
+      ]
+    },
+    "CMob::OnHPIndicator": {
+      "address": "0x642ef0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nHPpercentage (0..100)"
+        }
+      ]
     }
   }
 }

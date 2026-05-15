@@ -333,3 +333,31 @@ that JMS v185 matched GMS v95 behaviour. JMS v185 IDA confirms it uses the older
 ### Hard-cap gate check (Task 17)
 
 After Task 17 changes, no encoder/decoder in the character domain contains more than **2 nested** gates. The three fixed encoders each have flat sequential gates — `CharacterExpression` now has one `if GMS>87` + one `else if JMS`, `ItemUpgrade` has a single `if GMS>87`, `Move` has three sequential `if GMS>83` + one `if GMS>28`. No nested gates. Hard cap not triggered.
+
+
+## Still pending — combat domain (monster)
+
+Phase 2a (task-065) audit of 9 monster clientbound packets in GMS v95. ✅ 3 / ❌ 5 / 🔍 1.
+
+| FName | Atlas writer | Verdict | Notes |
+|---|---|---|---|
+| `CMobPool::OnMobEnterField@0x6589e0` | MonsterSpawn | ❌ | **Analyzer FP (design §3).** Atlas`s `if (region/version) { if controlled then WriteByte(1) else WriteByte(5) }` if/else expands into two consecutive WriteByte entries in the flat call list, throwing off positions 2+. Plus the `m.monster.Encode` MonsterModel sub-struct cannot be fully resolved because the registry keys on unqualified struct names and there are 4 `Spawn` structs across monster/drop/reactor/pet (last-write-wins in `r.types`). Manual IDA confirms wire is ✅. Defer until registry handles qualified type names. |
+| `CMobPool::OnMobLeaveField@0x658b90` | MonsterDestroy | ❌ (real) | Atlas missing optional `WriteInt(swallowCharacterId)` when destroyType == 4 (swallowed by character-eater mob like Yeti-and-Pepe). Real wire bug; narrow scope (swallow eaters only). Constructor signature change `NewMonsterDestroy` affects callers in `services/atlas-channel`. Defer to a follow-up that adds the field + updates call sites. |
+| `CMobPool::OnMobChangeController@0x658d10` | MonsterControl | ❌ (real, large) | Atlas wire shape fundamentally differs from v95. Atlas writes `int8 controlType + int32 uniqueId + (if type>0: byte(5) + int32 monsterId + MonsterModel)`. v95 reads `byte controlMode + (if controlMode && opt: int32×3 seed) + int32 mobId + (if controlMode: byte aggro)`. Looks like atlas implements an older-protocol shape; v95 controllers carry a movement-seed instead of MonsterModel. Defer to follow-up — needs cross-version IDA pass (v83/v87) to understand when the shape changed. |
+| `CMob::OnMove@0x6521e0` | MonsterMovement | 🔍 | Mostly analyzer FP: sub-struct expansion of `MultiTargetForBall`, `RandTimeForAreaAttack`, and `Movement` is incomplete due to registry struct-name collision. The skill block `(skillId, skillLevel)` is gated `GMS>83 || JMS` in atlas but is written as `Decode4 sEffect.m_Data` (packed) in v95 IDA, vs atlas writing `Decode2 skillId + Decode2 skillLevel` separately — same 4 bytes, different field decomposition. May be ✅ on wire bytes; defer for now. |
+| `CMob::OnCtrlAck@0x640c50` | MonsterMovementAck | ✅ | Wire shape matches. uniqueId + moveId(int16) + useSkills(byte) + mp(int16) + skillId(byte) + skillLevel(byte). |
+| `CMob::OnStatSet@0x652660` | MonsterStatSet | ❌ | **Analyzer FP.** Atlas writes `uniqueId + MonsterTemporaryStat.Encode(mask + per-bit data) + int16(tDelay=0) + byte(nCalcDamageStatIndex=0) + optional byte(bStat)`. v95 OnStatSet top-level reads `mobId + DecodeBuffer(0x10) mask + delegate ProcessStatSet`. The post-mask trailing fields (tDelay/calcIndex/bStat) live inside `CMob::ProcessStatSet` which the audit pipeline cannot descend into. Wire bytes likely ✅. Defer pending ProcessStatSet decompile. |
+| `CMob::OnStatReset@0x652780` | MonsterStatReset | ❌ | Same analyzer FP as StatSet. |
+| `CMob::OnDamaged@0x64ecb0` | MonsterDamage | ✅ | Wire shape matches. uniqueId + damageType + damage + (conditional hp/maxHp for bDamagedByMob). |
+| `CMob::OnHPIndicator@0x642ef0` | MonsterHealth | ✅ | Wire shape matches. uniqueId + hpPercent. |
+
+### Audit-tool follow-ups suggested by combat domain
+
+- Registry should track qualified struct names (e.g. `monster/clientbound.Spawn`) so cross-sub-domain struct name collisions do not lose field-type info needed by `resolveRecurse`. The combat sub-domains all use unqualified names (Spawn/Destroy/Damage/Hit/Movement) which collide with each other and with `pet/serverbound.Spawn`.
+- Analyzer could detect mutually-exclusive `if/else` writes and treat them as a single position so MonsterSpawn does not show two consecutive WriteByte entries in the flat list.
+- Sub-domain pet/drop/reactor audit (Phase 2b/c/d in plan.md) is deferred; monster-only is the scope of this PR per session decision.
+
+### Hard-cap gate check — combat domain
+
+No combat encoder has 3+ nested region/version guards. monster/movement.go has two sequential `if (GMS>83 || JMS)` blocks (not nested). monster/spawn.go has one `(GMS>12 || JMS)` block. No hard cap triggered.
+

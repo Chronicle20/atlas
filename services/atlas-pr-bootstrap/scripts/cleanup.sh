@@ -79,12 +79,26 @@ if [ -n "${PIHOLE_API_BASE_1:-}" ] && [ -n "${PIHOLE_TOKEN_1:-}" ]; then
         if [ -z "$base" ] || [ -z "$token" ]; then
             continue
         fi
-        # Pi-hole v6: list existing hosts, find one matching <PR>.atlas.home, delete by id.
+        # Pi-hole v6: session-based auth + path-encoded literal entry. The host
+        # entry shape is "IP hostname" — we don't know the IP at cleanup time,
+        # so list and grep for the entry whose suffix matches our hostname.
+        # See deploy/k8s/overlays/pr/postsync-pihole-add.yaml for the matching
+        # register flow.
         host="${PR_NUMBER}.atlas.home"
-        id=$(curl -fsS -H "X-Pi-Auth: $token" "$base/api/config/dns/hosts" \
-            | jq -r ".hosts[] | select(.name == \"$host\") | .id" | head -1)
-        if [ -n "$id" ]; then
-            curl -fsS --request DELETE -H "X-Pi-Auth: $token" "$base/api/config/dns/hosts/$id" || \
+        sid=$(curl -k -fsS -X POST "$base/api/auth" \
+            -H "Content-Type: application/json" \
+            -d "{\"password\":\"$token\"}" 2>/dev/null \
+            | jq -r '.session.sid // empty')
+        if [ -z "$sid" ]; then
+            log warn "Pi-hole $i: auth failed, skipping host removal"
+            continue
+        fi
+        entry=$(curl -k -fsS -H "X-FTL-SID: $sid" "$base/api/config/dns/hosts" \
+            | jq -r ".config.dns.hosts[]? | select(endswith(\" $host\"))" | head -1)
+        if [ -n "$entry" ]; then
+            encoded_entry=$(printf '%s' "$entry" | sed 's/ /%20/g')
+            curl -k -fsS -X DELETE -H "X-FTL-SID: $sid" \
+                "$base/api/config/dns/hosts/$encoded_entry" || \
                 log warn "Pi-hole $i delete failed for $host"
         fi
     done

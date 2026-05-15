@@ -145,31 +145,29 @@ configMapGenerator:
       - MAJOR_VERSION=83
       - MINOR_VERSION=1
 
-# Token replacement: ATLAS_ENV from atlas-env-tokens flows into every
-# container's ATLAS_ENV env var (creating the env entry on stateless
-# Deployments like atlas-ingress / atlas-ui that aren't covered by
-# patches/consumer-group-env.yaml). atlas-env-tokens.data.ATLAS_ENV
-# itself is rewritten per-PR by pr-validation.yml's update-pr-overlay
-# job via sed across this directory — by the time kustomize runs on
-# the resolved bot/pr-<N>-resolved branch, the placeholder is already
-# the actual hash.
-replacements:
-  - source:
-      kind: ConfigMap
-      name: atlas-env-tokens
-      fieldPath: data.ATLAS_ENV
-    targets:
-      - select:
-          kind: Deployment
-        fieldPaths:
-          - spec.template.spec.containers.*.env.[name=ATLAS_ENV].value
-        options:
-          # create: true lets kustomize insert ATLAS_ENV when a Deployment
-          # doesn't already have it. Stateless services like atlas-ingress,
-          # atlas-ui, atlas-assets, atlas-query-aggregator, and
-          # atlas-wz-extractor are not patched by consumer-group-env.yaml,
-          # so their ATLAS_ENV env entry is created here.
-          create: true
+# ATLAS_ENV propagation:
+#
+# Services that consume Kafka topics declare a `consumerGroupId`, and
+# `scripts/gen-consumer-group-patch.sh` emits patches in
+# `patches/consumer-group-env.yaml` that set ATLAS_ENV (plus
+# KAFKA_CONSUMER_GROUP) with proper string quoting:
+#
+#     - name: ATLAS_ENV
+#       value: "PLACEHOLDER_ATLAS_ENV"
+#
+# The PLACEHOLDER is rewritten per-PR by pr-validation.yml's
+# update-pr-overlay job via sed; the surrounding quotes are preserved,
+# so all-digit hashes (e.g. "1756" for PR #461) parse as strings.
+#
+# Stateless Deployments (atlas-ingress, atlas-ui, atlas-assets,
+# atlas-query-aggregator, atlas-wz-extractor, atlas-configurations,
+# atlas-drop-information, atlas-gachapons) don't consume ATLAS_ENV in
+# their containers and therefore have no env entry for it — and don't
+# need one. An earlier kustomize `replacements:` block with
+# `options.create: true` was force-injecting ATLAS_ENV here. It also
+# stripped the source's string quoting, producing `value: 1756`
+# (unquoted), which Argo CD's typed-patch validator rejects as int
+# where the API schema demands string. That block has been removed.
 
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account

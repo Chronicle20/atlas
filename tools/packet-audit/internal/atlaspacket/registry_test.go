@@ -105,3 +105,50 @@ func TestRegistryRegistersMovementElements(t *testing.T) {
 		}
 	}
 }
+
+func TestRegistryRegistersCombatSubStructs(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{
+		"MonsterModel",
+		"MonsterTemporaryStat",
+		"MultiTargetForBall",
+		"RandTimeForAreaAttack",
+	} {
+		if !reg.HasType(name) {
+			t.Errorf("registry missing combat sub-struct %s", name)
+			continue
+		}
+		calls, ok := reg.Calls(name)
+		if !ok || len(calls) == 0 {
+			t.Errorf("%s.Encode produced no calls (ok=%v len=%d)", name, ok, len(calls))
+		}
+	}
+}
+
+func TestRegistryStillRegistersMovementAfterCombatExtension(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{
+		"Movement",
+		"Element",
+		"NormalElement",
+		"TeleportElement",
+		"StartFallDownElement",
+		"FlyingBlockElement",
+		"JumpElement",
+		"StatChangeElement",
+	} {
+		if !reg.HasType(name) {
+			t.Errorf("registry missing movement sub-type %s (task-028 regression)", name)
+		}
+	}
+}

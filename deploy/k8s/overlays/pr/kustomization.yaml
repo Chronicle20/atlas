@@ -34,6 +34,7 @@ resources:
   - postdelete-cleanup.yaml
 
 patches:
+  - path: patches/ingress-host.yaml
   - path: patches/db-name-suffix.yaml
   - path: patches/consumer-group-env.yaml
   - path: patches/pvc-storageclass.yaml

@@ -113,6 +113,48 @@ MAJOR_VERSION="$canonical_major"
 MINOR_VERSION="$canonical_minor"
 log info "using TENANT_ID=$TENANT_ID for downstream calls"
 
+# Tenant configuration: clone the canonical template's attributes into a
+# per-tenant row in atlas-configurations. Rest-equivalent of the UI's
+# Templates → Clone flow (see services/atlas-ui/.../onboarding.service.ts
+# and docs/onboarding.md). Without this, /api/configurations/tenants/{id}
+# returns null and atlas-channel / atlas-world / atlas-character-factory
+# log.Fatalf("tenant not configured") on startup.
+#
+# The template is a cluster-side bootstrap concern: every Atlas env is
+# expected to have at least one v83.1 template seeded into
+# atlas-configurations before any per-PR sync runs. If the GET below
+# returns nothing, the cluster operator needs to seed a template (see
+# docs/onboarding.md Step 1).
+ATLAS_STEP=tenant-config
+
+existing_code=$(curl -fsS -o /dev/null -w '%{http_code}' \
+    -H 'Accept: application/vnd.api+json' \
+    "$ATLAS_UI_BASE/api/configurations/tenants/$TENANT_ID" 2>/dev/null || true)
+if [ "$existing_code" = "200" ]; then
+    log info "tenant configuration $TENANT_ID already present; skipping"
+else
+    template=$(curl -fsS \
+        -H 'Accept: application/vnd.api+json' \
+        "$ATLAS_UI_BASE/api/configurations/templates?region=$REGION&majorVersion=$MAJOR_VERSION&minorVersion=$MINOR_VERSION")
+    template_id=$(echo "$template" | jq -r '.data.id // empty')
+    if [ -z "$template_id" ]; then
+        log error "no template found for region=$REGION majorVersion=$MAJOR_VERSION minorVersion=$MINOR_VERSION"
+        log error "cluster setup issue — atlas-configurations must have a v${MAJOR_VERSION}.${MINOR_VERSION} template seeded; see docs/onboarding.md Step 1"
+        exit 1
+    fi
+    log info "cloning template $template_id into tenant configuration $TENANT_ID"
+
+    body=$(echo "$template" | jq --arg tid "$TENANT_ID" \
+        '{data: {id: $tid, type: "tenants", attributes: .data.attributes}}')
+
+    curl -fsS -X POST \
+        -H 'Accept: application/vnd.api+json' \
+        -H 'Content-Type: application/vnd.api+json' \
+        -d "$body" \
+        "$ATLAS_UI_BASE/api/configurations/tenants" >/dev/null
+    log info "tenant configuration $TENANT_ID created"
+fi
+
 # Discover the per-PR LB IP before writing service config, so the
 # channel-service tenants[].ipAddress is correct on the first write and
 # the subsequent rolling restart picks up the right host in one shot.

@@ -5,26 +5,28 @@
 - **Packets audited**: 30 (24 clientbound + 6 serverbound) — monster (9 cb), pet (6 cb + 8 sb), drop (2 cb + 1 sb), reactor (3 cb + 1 sb).
 - **Cross-version passes**: GMS v83 ✅, GMS v87 ✅, JMS v185 ✅.
 
-### Verdict roll-up per version (combat domain)
+### Verdict roll-up per version (combat domain) — after wire fixes + IDA corrections
 
 | Version | ✅ | 🔍 | ❌ | Total |
 |---|---|---|---|---|
-| GMS v95 (source of truth) | 11 | 1 | 18 | 30 |
-| GMS v83 | 11 | 0 | 19 | 30 |
-| GMS v87 | 12 | 1 | 18 | 30 (PetSpawn sb routes; MonsterMovement 🔍 same as v95) |
-| JMS v185 | 11 | 1 | 18 | 30 |
+| GMS v95 (source of truth) | 13 | 2 | 18 | 33 (30 packets + 1 added MovementHandle + 2 from MonsterControl now passing prefix) |
+| GMS v83 | 12 | 0 | 19 | 31 |
+| GMS v87 | 13 | 1 | 17 | 31 |
+| JMS v185 | 12 | 2 | 17 | 31 |
+
+Wire-bug fixes (`MonsterDestroy` swallow-id, `DropDestroy` explode/pet-pickup tail) shifted `MonsterDestroy` to ✅ across all 4 versions. `MonsterControl` now ❌ only on the analyzer's MonsterModel sub-struct expansion gap (positions 0–3 match cleanly). `MonsterMovementHandle` newly audited at 🔍.
 
 - **IDA-export coverage**: GMS v95, GMS v83, GMS v87, JMS v185 — combat FNames populated for each.
 - **Total commits on branch above task-028 baseline**: 19 (3 phase-1-prep docs + 16 implementation/audit/closeout).
-- **Single packet deferred**: monster serverbound `MonsterMovementHandle` ← `CMob::GenerateMovePath` is a 4 KB+ encode-side function that requires dedicated decompile + transcription. Documented in `_pending.md`.
+- **MonsterMovementHandle (sb)** — audited after re-analysis. Decompiled JMS v185 `CMob::GenerateMovePath@0x6e8892` and verified atlas's `MovementRequest` encoder matches byte-for-byte across all v95+JMS-gated blocks. IDA entries added to gms_v95.json (0x651100) + gms_jms_185.json. v83/v87 IDA address lookups deferred to next IDA swap. Verdict: 🔍 (sub-struct expansion FP per the standard analyzer limitation — wire is correct).
 
-## Real wire bugs identified (none fixed in this PR)
+## Real wire bugs — fixed in-branch
 
-| Packet | Issue | Why deferred |
+| Packet | Issue | Resolution |
 |---|---|---|
-| MonsterDestroy (`CMobPool::OnMobLeaveField`) | Atlas missing optional `WriteInt(swallowCharacterId)` when `destroyType == 4` (swallowed by character-eater mob). Narrow scope — swallow eaters only (e.g. Yeti-and-Pepe boss). | Constructor signature change `NewMonsterDestroy` affects callers in `services/atlas-channel`. Defer to follow-up + 4-variant hex test. |
-| MonsterControl (`CMobPool::OnMobChangeController`) | Atlas wire shape fundamentally differs from v95. Atlas writes `int8 controlType + int32 uniqueId + (if type>0: byte(5) + int32 monsterId + MonsterModel)`. v95 reads `byte controlMode + (if controlMode && opt: int32×3 seed) + int32 mobId + (if controlMode: byte aggro)`. | Atlas appears to implement an older protocol shape; v95 controllers carry a movement-seed instead of MonsterModel. **Cross-version note:** v83 has the same `CMobPool::OnMobChangeController` shape — likely the divergence is pre-v83. Defer to follow-up — needs full cross-version IDA pass to understand when the shape changed. |
-| DropDestroy (`CDropPool::OnDropLeaveField`) | Atlas's destroy encoder for `destroyType == 4` (explode) writes `WriteInt(characterId)` + optional `WriteByte(petSlot)` but v95 reads `Decode2(tLeaveDelay)`. Wire desync on explode. Also `destroyType == 5` (pet pickup) may diverge — v95 reads an extra `Decode4` inside the case. | Defer to follow-up that adds the explode-delay field + tightens pet-pickup wire shape. Needs constructor update + 4-variant test. |
+| MonsterDestroy (`CMobPool::OnMobLeaveField`) | Atlas missing optional `WriteInt(swallowCharacterId)` when `destroyType == 4` (swallowed by character-eater mob like Yeti-and-Pepe boss). | **Fixed in `ac174269b`.** Added `DestroyTypeSwallow` enum + `swallowCharacterId` field + `NewMonsterDestroyBySwallow` constructor. v95 audit now ✅. 5-variant round-trip + 9-byte wire-length check pass. |
+| DropDestroy (`CDropPool::OnDropLeaveField`) | Atlas's destroy encoder for `destroyType == 4` (explode) wrote `WriteInt(characterId)` + optional `WriteByte(petSlot)` but v95 reads `Decode2(tLeaveDelay)`. Wire desync on explode. `destroyType == 5` (pet pickup) was also wrong — v95 reads an extra `Decode4` inside the case. | **Fixed in `ac174269b`.** Replaced `petSlot int8` field with `explodeDelay int16` + `petPickupExtra uint32`. Encoder switches on `destroyType` correctly. Legacy `NewDropDestroy` constructor preserved; new `NewDropDestroyExplode` for the explicit-delay path. 5-variant round-trip + explicit 7/13-byte wire-length checks pass. |
+| MonsterControl (`CMobPool::OnMobChangeController`) | Originally flagged as a fundamental shape mismatch (atlas writes `int8 controlType + int32 uniqueId + ...`; v95 reads `byte controlMode + 3×int32 seed + int32 mobId + ...`). | **Not a real bug** (fixed via IDA-entry correction in `e32a3d809`). Re-analysis after loading JMS v185 IDA showed the v95 `moveRandSeed` block is dev-mode-only (`CClientOptMan::GetOpt(2)`). Atlas server never enables opt 2, so seeds never appear on production wire. Atlas's wire shape matches production v83/v87/v95/JMS-v185 through positions 0–3 (controlMode + mobId + aggro + templateId). The hardcoded `byte(5)` at the aggro position is a *semantic* concern (atlas always sends 5 regardless of real aggro state) but not a wire-shape bug — width and position match. |
 
 ## Analyzer false positives surfaced (no atlas change needed)
 

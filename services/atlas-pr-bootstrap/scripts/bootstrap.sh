@@ -142,14 +142,19 @@ upsert_service_config() {
 
     # Rewrite tenants[].id to per-PR TENANT_ID.
     # For channel-service, also rewrite tenants[].ipAddress to LB_IP.
+    #
+    # Tenant-agnostic configs (drops-service) have no .data.attributes.tenants
+    # — guarded with `has("tenants")` instead of `(.tenants? // [])` because
+    # the latter is not a valid path expression on the LHS of `|=` and jq
+    # errors out with "Invalid path expression with result []".
     local rewritten
     if [ "$rewrite_ip" = "yes" ]; then
         rewritten=$(jq --arg tid "$TENANT_ID" --arg ip "$LB_IP" \
-            '(.data.attributes.tenants? // []) |= map(.id = $tid | (if has("ipAddress") then .ipAddress = $ip else . end))' \
+            'if .data.attributes | has("tenants") then .data.attributes.tenants |= map(.id = $tid | (if has("ipAddress") then .ipAddress = $ip else . end)) else . end' \
             "$payload_path")
     else
         rewritten=$(jq --arg tid "$TENANT_ID" \
-            '(.data.attributes.tenants? // []) |= map(.id = $tid)' \
+            'if .data.attributes | has("tenants") then .data.attributes.tenants |= map(.id = $tid) else . end' \
             "$payload_path")
     fi
 

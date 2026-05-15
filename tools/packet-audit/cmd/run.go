@@ -48,7 +48,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	worstVerdict := diff.VerdictMatch
 	var summary []report.Packet
 
-	process := func(direction csvpkg.Direction, name string, fname string) {
+	process := func(direction csvpkg.Direction, name, pkg, fname string) {
 		fields, err := src.Resolve(context.Background(), fname)
 		if err != nil {
 			if errors.Is(err, idasrc.ErrMCPUnavailable) {
@@ -61,7 +61,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "resolve", fname+":", err)
 			return
 		}
-		atlasPath, found := locateAtlasFile(opts.AtlasPacket, name, direction)
+		atlasPath, found := locateAtlasFile(opts.AtlasPacket, name, pkg, direction)
 		if !found {
 			return
 		}
@@ -73,8 +73,9 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		flat := diff.FlattenWithRegistry(calls, ctx, reg)
 		rows := diff.Diff(flat, fields)
 		v := worstRow(rows)
+		writerName := qualifiedWriterName(pkg, name)
 		pkt := report.Packet{
-			WriterName:  name,
+			WriterName:  writerName,
 			IDAName:     fname,
 			Address:     fields.Address,
 			Variant:     fmt.Sprintf("%s/v%d", ctx.Region, ctx.MajorVersion),
@@ -88,7 +89,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		}
 		summary = append(summary, pkt)
 		if err := report.WritePacket(outDir, pkt); err != nil {
-			fmt.Fprintln(stderr, "write", name+":", err)
+			fmt.Fprintln(stderr, "write", writerName+":", err)
 		}
 	}
 
@@ -99,11 +100,12 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	seen := map[string]bool{}
 	for _, fname := range idaExportFunctions(opts.IDASource) {
 		for _, candidate := range candidatesFromFName(fname) {
-			if seen[candidate.name] {
+			key := candidate.pkg + "::" + candidate.name
+			if seen[key] {
 				continue
 			}
-			seen[candidate.name] = true
-			process(candidate.dir, candidate.name, fname)
+			seen[key] = true
+			process(candidate.dir, candidate.name, candidate.pkg, fname)
 		}
 	}
 
@@ -123,7 +125,24 @@ func runPipeline(opts Options, stderr io.Writer) int {
 
 type candidate struct {
 	name string
-	dir  csvpkg.Direction
+	// pkg is an optional sub-domain folder hint (e.g. "monster", "drop",
+	// "reactor", "pet"). When set, locateAtlasFile restricts the walk to
+	// libs/atlas-packet/<pkg>/<direction>/ and the report filename becomes
+	// titlecase(pkg)+name (e.g. MonsterSpawn.md), disambiguating short
+	// struct names that collide across sub-domains.
+	pkg string
+	dir csvpkg.Direction
+}
+
+// qualifiedWriterName returns the report/file name for a candidate. When pkg
+// is empty (the existing login/character routing), the writer name is just
+// the struct name. When pkg is set, the writer name is titlecase(pkg)+name
+// so each sub-domain's short-named structs get unique report files.
+func qualifiedWriterName(pkg, name string) string {
+	if pkg == "" {
+		return name
+	}
+	return strings.ToUpper(pkg[:1]) + pkg[1:] + name
 }
 
 // candidatesFromFName converts an IDA function name into one or more
@@ -489,7 +508,7 @@ func lookupFName(name string, dir csvpkg.Direction, cb, sb csvpkg.Map, template 
 	return "", false
 }
 
-func locateAtlasFile(root, name string, dir csvpkg.Direction) (string, bool) {
+func locateAtlasFile(root, name, pkg string, dir csvpkg.Direction) (string, bool) {
 	needle := "type " + name + " struct"
 	var hit string
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -503,6 +522,15 @@ func locateAtlasFile(root, name string, dir csvpkg.Direction) (string, bool) {
 		}
 		if !strings.Contains(path, string(os.PathSeparator)+expectDir+string(os.PathSeparator)) {
 			return nil
+		}
+		// When pkg is set, restrict to /<pkg>/<expectDir>/ so combat sub-domains
+		// (monster/drop/reactor/pet) with colliding short struct names route
+		// to the correct file.
+		if pkg != "" {
+			pkgNeedle := string(os.PathSeparator) + pkg + string(os.PathSeparator) + expectDir + string(os.PathSeparator)
+			if !strings.Contains(path, pkgNeedle) {
+				return nil
+			}
 		}
 		b, err := os.ReadFile(path)
 		if err != nil {

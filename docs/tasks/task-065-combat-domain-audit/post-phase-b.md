@@ -15,7 +15,7 @@
 | JMS v185 | 11 | 1 | 18 | 30 |
 
 - **IDA-export coverage**: GMS v95, GMS v83, GMS v87, JMS v185 — combat FNames populated for each.
-- **Total commits on branch above task-028 baseline**: 13.
+- **Total commits on branch above task-028 baseline**: 19 (3 phase-1-prep docs + 16 implementation/audit/closeout).
 - **Single packet deferred**: monster serverbound `MonsterMovementHandle` ← `CMob::GenerateMovePath` is a 4 KB+ encode-side function that requires dedicated decompile + transcription. Documented in `_pending.md`.
 
 ## Real wire bugs identified (none fixed in this PR)
@@ -103,4 +103,4 @@ eab8e64d8 feat(packet-audit): sub-domain disambiguation via candidate.pkg
 2ae7cf590 test(packet-audit): assert combat sub-structs registered
 ```
 
-Plus three earlier docs commits (spec, design, plan). 18 total commits ahead of task-028.
+Plus three earlier docs commits (spec, design, plan). 19 total commits ahead of task-028 baseline (e4113fd3b).

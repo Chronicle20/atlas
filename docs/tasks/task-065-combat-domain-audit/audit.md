@@ -147,3 +147,165 @@ Task-065 is in-scope a tooling-only audit change plus a single shared-lib test f
 - The `monster/clientbound/movement_test.go` 5-variant round-trip baseline uses the existing `test.Variants` and constructor, not a `*_testhelpers.go` file, satisfying the project's Test Helper Pattern.
 
 No `services/atlas-*` audit dimensions were exercised by this change, and the service-layer DOM-* / SUB-* / EXT-* / SCAFFOLD-* / SEC-* checks are documented above as Not Applicable.
+
+## Backend Guidelines Re-review (Phases 2+3 complete)
+
+**Re-review Date:** 2026-05-15
+**Prior Review Baseline:** `09b198006`
+**Current HEAD:** `a1309f2bc`
+
+### Scope
+
+Re-audit of Go changes landed since the prior review baseline, covering Phase 2b/c/d sub-domain audits (pet, drop, reactor) and Phase 3 cross-version passes (v83, v87, JMS v185).
+
+### Go Diff Since Prior Review
+
+`git diff --name-only 09b198006..HEAD -- '*.go'` reports two files (NOT empty — initial assumption was wrong; both were touched in commits after the prior review baseline):
+
+1. `libs/atlas-packet/pet/clientbound/movement_test.go` — new file, 18 lines (commit `13c4e4f6a`).
+2. `tools/packet-audit/cmd/run.go` — single switch-case + comment update (commit `36b719ffe`).
+
+### Gate Commands
+
+| Command | Result |
+|---------|--------|
+| `go vet ./libs/atlas-packet/...` | PASS (no output) |
+| `go vet ./tools/packet-audit/...` | PASS (no output) |
+| `go test -race ./libs/atlas-packet/...` | PASS (all packages `ok`, `pet/clientbound` cached pass) |
+| `go test -race ./tools/packet-audit/...` | PASS (all packages `ok`) |
+
+### Per-File Findings
+
+#### `libs/atlas-packet/pet/clientbound/movement_test.go`
+
+| Check | Status | Evidence |
+|-------|--------|----------|
+| Test Helper Pattern (no `*_testhelpers.go`) | PASS | File is a standard `_test.go`; uses shared `libs/atlas-packet/test` package (`test.Variants`, `test.CreateContext`, `test.RoundTrip`) instead of test-only constructors. `movement_test.go:7,13-15`. |
+| Table-driven style (DOM-20 analogue for libs) | PASS | `movement_test.go:11-17` iterates `test.Variants` with `t.Run(v.Name, ...)`, matching the 5-variant baseline pattern used across `libs/atlas-packet/*/clientbound/*_test.go`. |
+| Production code touched | N/A | Test-only addition; no `Encode`/`Decode` changes. |
+| Service-layer DOM-* / SUB-* / EXT-* / SCAFFOLD-* / SEC-* | N/A | `libs/atlas-packet/` is a shared library, not a service domain. No `model.go`, `processor.go`, `resource.go`, `administrator.go`, Kafka topic, or HTTP client involved. |
+| Atlas-constants duplication (DOM-21) | PASS | No new types, aliases, or numeric constants declared. |
+
+#### `tools/packet-audit/cmd/run.go`
+
+| Check | Status | Evidence |
+|-------|--------|----------|
+| Single switch-case rewrite | PASS | `run.go:485-491` re-keys the FName entry from `CUser::OnPetPacket` to `CUserRemote::OnPetActivated`; same `candidate{name: "Activated", pkg: "pet", dir: csvpkg.DirClientbound}` value. |
+| Justification documented | PASS | `run.go:484-490` inline comment cites the v95 IDA dispatcher (`OnPetPacket@0x8e02a0`) and leaf (`CUserRemote::OnPetActivated@0x9547d0`), satisfying the project's "verify against source" rule for protocol mappings. |
+| Service-layer DOM-* / SUB-* / EXT-* / SCAFFOLD-* / SEC-* | N/A | `tools/packet-audit/` is a CLI auditor, not a microservice. No domain code, no Kafka, no HTTP, no Dockerfile. |
+| Atlas-constants duplication (DOM-21) | PASS | No new types or numeric constants. |
+
+### Findings
+
+#### Blocking
+None.
+
+#### Non-Blocking
+None.
+
+### Re-review Conclusion
+
+The two Go files touched since the prior review baseline are (a) a shared-lib round-trip test that conforms to the existing 5-variant pattern and the project's Test Helper Pattern, and (b) a single CLI switch-case rewrite with an inline IDA-cited justification. Neither file is service-layer code, so DOM-* / SUB-* / EXT-* / SCAFFOLD-* / SEC-* checklists do not apply (consistent with the original review's Not-Applicable rationale). All four gate commands are clean.
+
+**Overall: PASS.**
+
+---
+
+## Re-review (Phases 2+3 complete)
+
+**Re-review Date:** 2026-05-15
+**Branch:** task-065-combat-domain-audit
+**Base Branch:** main
+**HEAD:** a1309f2bc
+**Prior monster-only audit:** see top half of this file (frozen at HEAD `6483ac413`).
+
+### Executive Summary
+
+The earlier monster-only audit's MOSTLY_COMPLETE / READY_TO_MERGE verdict is now upgraded after Phases 2b/2c/2d (pet, drop, reactor) and Phase 3 (v83, v87, JMS v185) landed in-branch. Every plan task except a single, well-documented deferral (monster serverbound `MonsterMovementHandle` ← 4 KB+ `CMob::GenerateMovePath` encode-side function) is implemented with commit evidence. `post-phase-b.md` has been rewritten to reflect the full scope (no longer "monster-only"). All five verification matrix commands are clean. The branch is **READY_TO_MERGE**.
+
+### Task Completion (updated)
+
+| # | Task | Status | Evidence / Notes |
+|---|------|--------|------------------|
+| 0 | Rebase gate | DONE | (unchanged from prior review) |
+| 1 | Registry coverage fixture | DONE | Commit `2ae7cf590`. (unchanged) |
+| 1.5 | Sub-domain disambiguation tooling | DONE | Commit `eab8e64d8`. (unchanged) |
+| 2 | candidatesFromFName routing for 31 combat FNames | DONE | `grep -c 'case "' tools/packet-audit/cmd/run.go` = 109. Commit `f38916d81`. (unchanged) |
+| 3 | Analyzer descent into combat sub-structs | DONE | `tools/packet-audit/internal/diff/combat_flatten_test.go`. Commit `57fb768f8`. (unchanged) |
+| 4 | Phase 2a — monster sub-domain (9 of 10 cb) | DONE (partial — see Task 4.x) | 9 reports under `docs/packets/audits/gms_v95/Monster*.md` (excluding the deferred Handle). Commits `544e4f44e`, `bf42c5dfd`. |
+| 4.x | `MonsterMovementHandle` serverbound | DEFERRED | Documented in `post-phase-b.md` "Out-of-scope cleanly deferred" §1. `CMob::GenerateMovePath` is 4 KB+ encode-side and requires Encode→Decode equivalence modeling not yet in the audit pipeline. |
+| 5 | Phase 2b — pet sub-domain (14 packets) | DONE | 14 reports under `docs/packets/audits/gms_v95/Pet*.md` (`PetActivated`, `PetCashFoodResult`, `PetChat`, `PetChatRequest`, `PetCommand`, `PetCommandResponse`, `PetDropPickUp`, `PetExcludeItem`, `PetExcludeResponse`, `PetFood`, `PetItemUse`, `PetMovement`, `PetMovementRequest`, `PetSpawn`). Pre-flight test sweep `libs/atlas-packet/pet/clientbound/movement_test.go` (commit `13c4e4f6a`). Bucket audit commit `36b719ffe`. Pet-domain row in `_pending.md:367` documents 4 ✅ / 10 ❌. |
+| 6 | Phase 2c — drop sub-domain (3 packets) | DONE | 3 reports `DropSpawn.md`, `DropDestroy.md`, `DropPickUp.md`. Bucket commit `0d617d1b6`. `_pending.md:394` documents 1 ✅ / 2 ❌. |
+| 7 | Phase 2d — reactor sub-domain (4 packets) | DONE | 4 reports `ReactorSpawn.md`, `ReactorHit.md`, `ReactorDestroy.md`, `ReactorHitRequest.md`. Bucket commit `db7da6540`. `_pending.md:404` documents 3 ✅ / 1 ❌. |
+| 8 | Phase 3 — GMS v83 cross-version | DONE | 30 combat reports under `docs/packets/audits/gms_v83/` (9 Monster + 13 Pet + 4 Drop + 4 Reactor). `_pending.md:415` documents 11 ✅ / 19 ❌. Bucket commit `f345c30b5`. |
+| 9 | Phase 3 — GMS v87 cross-version | DONE | 30 combat reports under `docs/packets/audits/gms_v87/`. `_pending.md:437` documents 12 ✅ / 18 ❌. Bucket commit `bb730d66d`. |
+| 10 | Phase 3 — JMS v185 cross-version | DONE | 30 combat reports under `docs/packets/audits/jms_v185/`. `_pending.md:449` documents 11 ✅ / 1 🔍 / 18 ❌. Bucket commit `8d18e7ffe`. |
+| 11 | Phase 4 — closeout | DONE | `post-phase-b.md` rewritten for full scope (commit `a1309f2bc`); replaces the earlier monster-only snapshot (`6483ac413`). Verification matrix + gitleaks scrub both clean (see below). |
+
+**Completion Rate:** 11 of 12 original tasks DONE + 1 added (Task 1.5 — sub-domain disambiguation tooling) + 1 sub-deferral (MonsterMovementHandle). Effective: **30 of 31 planned packets audited**.
+
+**Skipped without approval:** 0.
+**Partial implementations:** 1 (Task 4 — `MonsterMovementHandle` serverbound packet deferred and documented).
+
+### Deferral Detail (single remaining)
+
+- **`MonsterMovementHandle` (serverbound)** — `CMob::GenerateMovePath` is the v95 IDA encode-side function and is 4 KB+. The audit pipeline currently has no Encode→Decode equivalence model that would let the diff engine bind atlas's `Decode×N` reads against the IDA `Encode×N` source. Listed as `post-phase-b.md` "Out-of-scope cleanly deferred" §1 and in "Audit-tool follow-ups recommended" §4. Impact: 30/31 packets audited; the unaudited packet is serverbound (lower-risk than clientbound).
+
+### Verification Matrix
+
+| Command | Result |
+|---------|--------|
+| `go build ./libs/atlas-packet/... ./tools/packet-audit/...` | PASS (no output) |
+| `go test -race ./tools/packet-audit/...` | PASS (all 7 packages `ok`) |
+| `go test -race ./libs/atlas-packet/...` | PASS (all packages `ok`) |
+| `grep -cE '^\| \[(Monster\|Pet\|Drop\|Reactor)' docs/packets/audits/gms_v95/SUMMARY.md` | **31** (30 combat + the pre-existing `DropMeso` character-domain row that lexically matches the regex) |
+| `ls docs/packets/audits/gms_v83/Monster*.md \| wc -l` | **9** (matches expectation) |
+| `ls docs/packets/audits/gms_v87/Monster*.md \| wc -l` | **9** |
+| `ls docs/packets/audits/jms_v185/Monster*.md \| wc -l` | **9** |
+| `grep -rE '/home/[a-z]' docs/packets/audits/{gms_v83,gms_v87,gms_v95,jms_v185}/{Monster,Pet,Drop,Reactor}*.md` | (no output — gitleaks clean) |
+
+Per-version combat-domain coverage (only `{Monster,Pet,Drop,Reactor}*.md` reports, `DropMeso` excluded):
+
+| Version | Monster | Pet | Drop | Reactor | Total |
+|---------|---------|-----|------|---------|-------|
+| GMS v83 | 9 | 13 | 4 | 4 | 30 |
+| GMS v87 | 9 | 13 | 4 | 4 | 30 |
+| GMS v95 | 9 + 1 (`MonsterDamageFriendly`, pre-existing from task-028) | 14 | 3 | 4 | 31 (30 combat-domain task-065 reports + 1 pre-existing) |
+| JMS v185 | 9 | 13 | 4 | 4 | 30 |
+
+The per-version `Pet`/`Drop`/`Reactor` count differs by ±1 across versions because some FNames (e.g. `SendActivatePetRequest` for `PetSpawn` serverbound in v83) are absent in older binaries — documented in `post-phase-b.md` "Per-version cross-cutting notes" §GMS v83 and `_pending.md:467`.
+
+### `docker build` Check
+
+`git diff --name-only main..HEAD -- '**go.mod' '**Dockerfile'` returns empty. No service `go.mod` or `Dockerfile` touched; `docker build` correctly skipped per CLAUDE.md §4.
+
+### Comparison to Prior (monster-only) Audit
+
+The prior monster-only audit (top half of this file) marked Tasks 5–10 as `DEFERRED` and stated the closeout was "scope-reduced". This re-review confirms:
+
+- All six previously-deferred tasks (5, 6, 7, 8, 9, 10) are now DONE with committed audit reports, IDA-export entries, and `_pending.md` rows.
+- The "scope-reduced" closeout has been replaced. The current `post-phase-b.md` (commit `a1309f2bc`) lists full 30-packet × 4-version coverage with verdict roll-ups per version, real wire bugs identified (3 deferred fixes documented), and audit-tool follow-ups.
+- The added Task 1.5 (sub-domain disambiguation tooling, commit `eab8e64d8`) is still acknowledged as a documented mid-execution scope extension; no new tooling was needed for Phases 2b/2c/2d/3.
+
+### Documentation Inconsistencies (minor, non-blocking)
+
+1. `post-phase-b.md:18` states "Total commits on branch above task-028 baseline: 13" but the embedded block at `:88-104` lists 15 commits, and `:106` says "18 total commits ahead of task-028" (the discrepancy is because :106 includes the three earlier docs commits — spec, design, plan). Recommend reconciling the line :18 number to 15 (or 18 if docs commits are counted).
+2. `post-phase-b.md:5` claims "30 packets … drop (2 cb + 1 sb)" but `docs/packets/audits/gms_v95/Drop*.md` (excluding `DropMeso`) contains 3 reports: `DropSpawn` (cb), `DropDestroy` (cb), `DropPickUp` (sb). The "(2 cb + 1 sb)" formulation is correct as totals (2+1=3) — no fix required.
+3. `_pending.md` doesn't include a row that names `MonsterMovementHandle` explicitly under "Still pending — combat domain (monster)". The deferral is named in `post-phase-b.md` "Out-of-scope cleanly deferred" §1 (commit `a1309f2bc`). Recommend adding a one-row entry to `_pending.md` for symmetry with the per-packet rows.
+
+None of these block the PR.
+
+### Overall Assessment (re-review)
+
+- **Plan Adherence:** **MOSTLY_COMPLETE** — every plan task has commit evidence except the single documented `MonsterMovementHandle` deferral.
+- **Recommendation:** **READY_TO_MERGE**.
+
+### Action Items
+
+None blocking. For the follow-up that picks up `MonsterMovementHandle` and the analyzer-tool improvements:
+
+1. Add Encode→Decode equivalence support to the audit pipeline so `Send*` IDA sources can be diffed against atlas `Decode×N` handlers (covers the `MonsterMovementHandle` deferral plus the other Phase-2 ❌ verdicts traced to "DecodeBuf placeholder" — `post-phase-b.md` "Analyzer false positives surfaced" §3).
+2. Implement registry qualified type names so `r.types["monster/clientbound.Spawn"]` ≠ `r.types["pet/clientbound.Spawn"]` (covers the registry struct-name collision FP — `post-phase-b.md` "Audit-tool follow-ups recommended" §1).
+3. Add `_pending.md` row for `MonsterMovementHandle` (cosmetic — see Documentation Inconsistency #3).
+4. Reconcile commit-count statements at `post-phase-b.md:18` and `:106` (cosmetic — see Documentation Inconsistency #1).
+5. Three real wire bugs surfaced and documented but **not fixed** in this PR (`MonsterDestroy` swallow optional, `MonsterControl` wire-shape divergence, `DropDestroy` explode-delay): each needs a fix commit + 4-variant hex test + constructor update in `services/atlas-channel` callers, per `post-phase-b.md` "Real wire bugs identified (none fixed in this PR)".

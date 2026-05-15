@@ -350,6 +350,7 @@ Phase 2a (task-065) audit of 9 monster clientbound packets in GMS v95. ✅ 3 / �
 | `CMob::OnStatReset@0x652780` | MonsterStatReset | ❌ | Same analyzer FP as StatSet. |
 | `CMob::OnDamaged@0x64ecb0` | MonsterDamage | ✅ | Wire shape matches. uniqueId + damageType + damage + (conditional hp/maxHp for bDamagedByMob). |
 | `CMob::OnHPIndicator@0x642ef0` | MonsterHealth | ✅ | Wire shape matches. uniqueId + hpPercent. |
+| `CMob::GenerateMovePath@???` | MonsterMovementHandle (sb) | (deferred) | Single packet not audited in this PR. `CMob::GenerateMovePath` is a 4 KB+ encode-side function that requires dedicated decompile + transcription. Atlas's `MonsterMovementHandle` serverbound decoder in `libs/atlas-packet/monster/serverbound/movement.go` remains unverified against v95 / v83 / v87 / JMS-v185. Follow-up: populate IDA exports for all 4 versions with `CMob::GenerateMovePath` entries. |
 
 ### Audit-tool follow-ups suggested by combat domain
 

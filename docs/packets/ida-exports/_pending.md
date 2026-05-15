@@ -361,3 +361,30 @@ Phase 2a (task-065) audit of 9 monster clientbound packets in GMS v95. ✅ 3 / �
 
 No combat encoder has 3+ nested region/version guards. monster/movement.go has two sequential `if (GMS>83 || JMS)` blocks (not nested). monster/spawn.go has one `(GMS>12 || JMS)` block. No hard cap triggered.
 
+
+## Still pending — combat domain (pet)
+
+Phase 2b (task-065) audit of 14 pet packets in GMS v95. ✅ 4 / ❌ 10.
+
+Pet sub-domain shares the same analyzer-FP pattern as monster — `DecodeBuf`/`EncodeBuf` placeholders in the IDA JSON don't expand atlas's full encode call list, and `model.Movement`/`Activated` sub-struct expansion fails under the registry struct-name collision (4 `Spawn`, 4 `Destroy`, 4 `Movement` types collide across monster/drop/reactor/pet, last-write-wins in `r.types`). For most ❌ entries below, the prefix fields (characterId, slot, active, count) align ✅ — the divergence begins inside the body sub-struct.
+
+| FName | Atlas writer/handler | Verdict | Notes |
+|---|---|---|---|
+| `CUserRemote::OnPetActivated@0x9547d0` | PetActivated | ❌ | Prefix (characterId+slot+active+show) ✅. Atlas writes `templateId+name+petId+x+y+stance+foothold+nameTag+chatBalloon` for active path, `despawnMode` for inactive — the IDA `DecodeBuf` placeholder for CPet::Init body doesn't expand. Wire likely ✅. |
+| `CPet::OnMove@0x69fb60` | PetMovement | ❌ | Prefix (characterId+slot) ✅. Body diverges due to Movement sub-struct expansion gap. Wire likely ✅. |
+| `CPet::OnAction@0x6a3860` | PetChat | ✅ | Wire matches. |
+| `CPet::OnActionCommand@0x6a3930` | PetCommandResponse | ❌ | Atlas writes `petPos.x+petPos.y` (int16×2) at end, IDA OnActionCommand reads conditional bytes via reaction-table lookup. Sub-op enum drift candidate — defer pending CPet::DoAction sub-op decompile. |
+| `CPet::OnLoadExceptionList@0x6a1510` | PetExcludeResponse | ❌ | Prefix + petLockerSN ✅. Atlas's loop (`for each excluded itemId: WriteInt`) vs IDA's loop body don't align in flat call list. Wire likely ✅. |
+| `CWvsContext::OnCashPetFoodResult@0x9f7180` | PetCashFoodResult | ✅ | Wire matches. |
+| `CWvsContext::SendActivatePetRequest@0x9f6980` | PetSpawn (sb) | ✅ | Wire matches (tick + nPos + bBossPet). |
+| `CVecCtrlPet::EndUpdateActive@0x99f5a0` | PetMovementRequest (sb) | ❌ | Movement body sub-struct expansion gap (same as PetMovement clientbound). Wire likely ✅. |
+| `CPet::DoAction@0x6a2340` | PetChatRequest (sb) | ❌ | Sub-op handler reachable via internal CPet logic. Wire layout: `petLockerSN(8) + actionType(1) + actionNo(1) + chatText(str)`. Atlas may write extra bytes. Defer pending atlas struct review. |
+| `CPet::ParseCommand@0x6a3cc0` | PetCommand (sb) | ❌ | Similar to DoAction — internal logic. Defer. |
+| `CPet::SendUpdateExceptionListRequest@0x6a0dd0` | PetExcludeItem (sb) | ❌ | Loop body expansion gap. Wire likely ✅. |
+| `CWvsContext::SendPetFoodItemUseRequest@0x9d9f20` | PetFood (sb) | ✅ | Wire matches (tick + nPOS + nItemID). |
+| `CWvsContext::SendStatChangeItemUseRequestByPetQ@0x9de400` | PetItemUse (sb) | ❌ | Atlas wire shape vs IDA needs cross-check. Trailing fields differ. Defer pending atlas review. |
+| `CPet::SendDropPickUpRequest@0x6a0820` | PetDropPickUp (sb) | ❌ | Complex conditional encoder. Atlas may have different field order or trailing items. Defer pending detailed cross-check. |
+
+Real wire bugs that look likely (need confirmation):
+- `PetCommandResponse` trailing petPos fields may be vestigial — IDA doesn't read them on every code path.
+- `PetItemUse` field order vs v95 IDA needs side-by-side.

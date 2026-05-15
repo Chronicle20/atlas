@@ -2577,6 +2577,362 @@
           "comment": "nHPpercentage (0..100)"
         }
       ]
+    },
+    "CUserRemote::OnPetActivated": {
+      "address": "0x9547d0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (v3, 0..2)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "active flag"
+        },
+        {
+          "op": "Decode1",
+          "comment": "show (active path only) — gated active != 0",
+          "guard": "active != 0"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "CPet::Init body (active path only): templateId + name + petLockerSN + x + y + stance + foothold + nameTag + chatBalloon",
+          "guard": "active != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "despawnMode (inactive path only)",
+          "guard": "active == 0"
+        }
+      ]
+    },
+    "CPet::OnMove": {
+      "address": "0x69fb60",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "Movement body via CMovePath::OnMovePacket (variable-length elements)"
+        }
+      ]
+    },
+    "CPet::OnAction": {
+      "address": "0x6a3860",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action type (v5)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action no (v6)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "chat text"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v10 (trailing byte flag)"
+        }
+      ]
+    },
+    "CPet::OnActionCommand": {
+      "address": "0x6a3930",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mode (v5 — 0/1 picks reaction table; 2+ falls through)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "reaction index — gated on mode == 0 (interaction) or mode == 1 (food)",
+          "guard": "mode <= 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag — gated same as reaction index",
+          "guard": "mode <= 1"
+        }
+      ]
+    },
+    "CPet::OnLoadExceptionList": {
+      "address": "0x6a1510",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCount (exception list size)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "excluded item id — per entry, loop nCount times",
+          "guard": "loop nCount"
+        }
+      ]
+    },
+    "CWvsContext::OnCashPetFoodResult": {
+      "address": "0x9f7180",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "result (v3: 0 = success, 1 = error notice)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "petSlotIndex — only on result == 0 (success path picks pet)",
+          "guard": "result == 0"
+        }
+      ]
+    },
+    "CWvsContext::SendActivatePetRequest": {
+      "address": "0x9f6980",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "get_update_time() (tick)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPos (pet inventory slot)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bBossPet flag"
+        }
+      ]
+    },
+    "CVecCtrlPet::EndUpdateActive": {
+      "address": "0x99f5a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER) from owner ZRef"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "CMovePath::Flush body (variable-length movement elements)"
+        }
+      ]
+    },
+    "CPet::DoAction": {
+      "address": "0x6a2340",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER) from this->m_liPetLockerSN"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action type"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action no"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chat text (ZXString)"
+        }
+      ]
+    },
+    "CPet::ParseCommand": {
+      "address": "0x6a3cc0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "command mode"
+        },
+        {
+          "op": "Encode1",
+          "comment": "reaction index"
+        },
+        {
+          "op": "Encode1",
+          "comment": "success flag"
+        }
+      ]
+    },
+    "CPet::SendUpdateExceptionListRequest": {
+      "address": "0x6a0dd0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nCount (exception list size)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId per entry — loop nCount times",
+          "guard": "loop nCount"
+        }
+      ]
+    },
+    "CWvsContext::SendPetFoodItemUseRequest": {
+      "address": "0x9d9f20",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "get_update_time() (tick)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS (item slot)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
+      "address": "0x9de400",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuf",
+          "comment": "liPetSN (8 bytes — _LARGE_INTEGER)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bBuffSkill"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time() (tick)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
+      ]
+    },
+    "CPet::SendDropPickUpRequest": {
+      "address": "0x6a0820",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuf",
+          "comment": "m_liPetLockerSN (8 bytes — _LARGE_INTEGER)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bFieldKey (or 0 if no field)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time() (tick)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.x"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.y"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwID (drop id)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCliCrc"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bPickupOthers"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bSweepForDrop"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bLongRange"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pet pos.x — conditional: only when dwID % 13 == 0",
+          "guard": "dwID % 13 == 0"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pet pos.y — conditional with above",
+          "guard": "dwID % 13 == 0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_dwPosCRC — conditional with above",
+          "guard": "dwID % 13 == 0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwRectCrc — conditional with above",
+          "guard": "dwID % 13 == 0"
+        }
+      ]
     }
   }
 }

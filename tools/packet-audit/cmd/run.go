@@ -482,10 +482,12 @@ func candidatesFromFName(fname string) []candidate {
 
 	// --- Combat: pet (clientbound) ---
 	// CSV maps SPAWN_PET → CUser::OnPetPacket (the dispatcher for self/foreign
-	// pet activation). PetChat in atlas corresponds to CSV PET_CHAT →
-	// CPet::OnAction (pet animation action), while PetCommandResponse
-	// corresponds to PET_COMMAND → CPet::OnActionCommand (chat-typed command).
-	case "CUser::OnPetPacket":
+	// pet activation). Atlas's Activated struct writes `ownerId` + slot + active —
+	// the ownerId is the characterId consumed by CUserPool::OnUserRemotePacket
+	// before dispatch to CUserRemote::OnPetActivated, so we route to the foreign
+	// leaf. Verified against v95 IDA OnPetPacket@0x8e02a0 (dispatcher) and
+	// CUserRemote::OnPetActivated@0x9547d0 (leaf).
+	case "CUserRemote::OnPetActivated":
 		return []candidate{{name: "Activated", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnMove":
 		return []candidate{{name: "Movement", pkg: "pet", dir: csvpkg.DirClientbound}}

@@ -63,6 +63,10 @@ const (
 	EventKindCompartmentReleased       EventKind = "compartment.released"
 	EventKindCompartmentError          EventKind = "compartment.error"
 
+	// Inventory (rollup of all compartments for a character).
+	EventKindInventoryCreated        EventKind = "inventory.created"
+	EventKindInventoryCreationFailed EventKind = "inventory.creation_failed"
+
 	// Storage.
 	EventKindStorageMesosUpdated        EventKind = "storage.mesos_updated"
 	EventKindStorageError               EventKind = "storage.error"
@@ -160,6 +164,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Character lifecycle.
 	sharedsaga.CreateCharacter:       {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
+	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
 	sharedsaga.WarpToRandomPortal:         {},

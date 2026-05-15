@@ -25,7 +25,11 @@ spec:
                   base=$(eval echo \$${base_var})
                   token=$(eval echo \$${token_var})
                   [ -z "$base" ] && continue
-                  if curl -fsS -X POST \
+                  # -k: PIHOLE_API_BASE_* points at internal Pi-hole admin URLs
+                  # behind a self-signed (homelab) cert that the Alpine curl image's
+                  # default CA bundle does not trust. Acceptable for homelab use —
+                  # the call only happens cluster-internally to add a DNS A-record.
+                  if curl -k -fsS -X POST \
                           -H "X-Pi-Auth: $token" \
                           -H "Content-Type: application/json" \
                           -d "{\"name\":\"$host\",\"address\":\"$TRAEFIK_LB_IP\"}" \

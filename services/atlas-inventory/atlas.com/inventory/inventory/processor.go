@@ -100,10 +100,17 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 				b.SetCompartment(c)
 			}
 			i = b.Build()
-			return mb.Put(inventory2.EnvEventTopicStatus, CreatedEventStatusProvider(characterId))
+			return mb.Put(inventory2.EnvEventTopicStatus, CreatedEventStatusProvider(transactionId, characterId))
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to create inventory for character [%d].", characterId)
+			// Emit creation-failed on a fresh buffer — the in-flight one is
+			// discarded because the transaction was rolled back.
+			if emitErr := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+				return buf.Put(inventory2.EnvEventTopicStatus, CreationFailedEventStatusProvider(transactionId, characterId, txErr.Error()))
+			}); emitErr != nil {
+				p.l.WithError(emitErr).Errorf("Unable to emit inventory creation_failed for character [%d].", characterId)
+			}
 			return Model{}, txErr
 		}
 		p.l.Infof("Created inventory for character [%d].", characterId)

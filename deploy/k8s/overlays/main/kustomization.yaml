@@ -162,7 +162,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
     newTag: main-779e558
   - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
-    newTag: latest
+    newTag: main-387a5e2
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
     newTag: main-779e558
   - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies

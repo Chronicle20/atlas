@@ -35,6 +35,7 @@ resources:
   - atlas-merchant.yaml
   - atlas-messages.yaml
   - atlas-messengers.yaml
+  - atlas-monster-book.yaml
   - atlas-monster-death.yaml
   - atlas-monsters.yaml
   - atlas-notes.yaml

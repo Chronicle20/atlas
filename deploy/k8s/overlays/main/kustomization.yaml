@@ -223,6 +223,8 @@ images:
     newTag: main-779e558
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-779e558
+  - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-779e558
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters

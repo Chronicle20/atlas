@@ -268,6 +268,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-monster-book",
+      "type": "go-service",
+      "path": "services/atlas-monster-book",
+      "module_path": "services/atlas-monster-book/atlas.com/monster-book",
+      "docker_image": "ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-monster-death",
       "type": "go-service",
       "path": "services/atlas-monster-death",

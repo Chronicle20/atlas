@@ -1,0 +1,29 @@
+{
+  "WriterName": "BuffCancel",
+  "IDAName": "CWvsContext::OnTemporaryStatReset",
+  "Address": "0x9f2ab0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/buff_cancel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "uFlagTemp: 16-byte UINT128 stat mask (DecodeBuffer 0x10)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nChangedStatPoint (only present when IsMovementAffectingStat(mask) is true)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

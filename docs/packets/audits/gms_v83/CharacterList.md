@@ -1,7 +1,7 @@
 # CharacterList (← `CLogin::OnSelectWorldResult`)
 
 - **IDA:** 0x5f9891
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/list.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/list.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ❌
@@ -54,11 +54,11 @@
 | 41 | int32 | int32 `AvatarLook::anPetID[2]` | ✅ |  |
 | 42 | byte | byte `viewAll/onFamily byte` | ✅ |  |
 | 43 | byte | byte `rankEnabled / hasRank byte` | ✅ |  |
-| 44 | byte | int32 `worldRank` | ❌ | width mismatch |
+| 44 | int32 | int32 `worldRank` | ✅ |  |
 | 45 | int32 | int32 `worldRankMove` | ✅ |  |
 | 46 | int32 | int32 `jobRank` | ✅ |  |
 | 47 | int32 | int32 `jobRankMove` | ✅ |  |
-| 48 | int32 | byte `m_bLoginOpt (hasPic)` | ❌ | width mismatch |
-| 49 | byte | int32 `m_nSlotCount` | ❌ | width mismatch |
-| 50 | int32 | int32 `m_nBuyCharCount` | ✅ |  |
+| 48 | byte | byte `m_bLoginOpt (hasPic)` | ✅ |  |
+| 49 | int32 | int32 `m_nSlotCount` | ✅ |  |
+| 50 | byte | int32 `m_nBuyCharCount` | ❌ | atlas: short — missing trailing field |
 

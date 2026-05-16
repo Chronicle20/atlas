@@ -95,7 +95,8 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 				continue
 			}
 			// Skip if we already have an Encode entry (Encode wins over Write).
-			if entry.Calls != nil && fd.Name.Name != "Encode" {
+			// EncodeForeign always proceeds since it registers under its own alt-key.
+			if entry.Calls != nil && fd.Name.Name != "Encode" && fd.Name.Name != "EncodeForeign" {
 				continue
 			}
 			switch fd.Name.Name {
@@ -105,6 +106,19 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 					body = fd.Body
 				}
 				entry.Calls = collectCallsWithCtx(body, fc.fset, reg, recvType)
+			case "EncodeForeign":
+				// Register under the "<Type>::EncodeForeign" key so callers can pick it
+				// explicitly without colliding with the primary Encode entry.
+				body := findReturnClosure(fd.Body)
+				if body == nil {
+					body = fd.Body
+				}
+				altKey := recvType + "::EncodeForeign"
+				reg.types[altKey] = &TypeEntry{
+					File:       entry.File,
+					StructDecl: entry.StructDecl,
+					Calls:      collectCallsWithCtx(body, fc.fset, reg, recvType),
+				}
 			case "Write":
 				// Write methods have a flat body (no closure return) and accept *response.Writer.
 				// Only register if no Encode method was already found.

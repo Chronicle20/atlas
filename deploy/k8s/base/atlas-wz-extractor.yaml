@@ -48,15 +48,22 @@ spec:
         # Kafka topic partition requirements: see services/atlas-wz-extractor/atlas.com/wz-extractor/docs/kafka.md
         # Topic provisioning is out-of-band (no KafkaTopic CRs in this repo); ensure
         # COMMAND_TOPIC_WZ_EXTRACTION is created with partitions=16, replication=3, retention=24h.
+        # Each worker holds a full-size RGBA map canvas (mapimage.Render at
+        # mapimage/renderer.go:83) while it composites. Typical maps are
+        # 20-100 MiB per canvas; the per-worker peak under PARALLELISM=16
+        # repeatedly OOM-killed the 8 GiB-limit container observed on
+        # atlas-pr-461 on 2026-05-16. PARALLELISM=4 matches the kafka
+        # partition count (16) across the 4 replicas → still 16 concurrent
+        # extractions cluster-wide, but bounded per-pod memory.
         - name: WZ_EXTRACT_PARALLELISM
-          value: "16"
+          value: "4"
         resources:
           requests:
             cpu: "2"
-            memory: "2Gi"
+            memory: "1Gi"
           limits:
             cpu: "8"
-            memory: "8Gi"
+            memory: "3Gi"
         volumeMounts:
           - mountPath: "/usr/wz-input"
             name: wz-input-storage

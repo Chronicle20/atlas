@@ -52,6 +52,10 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 1
+  # wz-extractor opts back into replicas=2 (see patch comment for why).
+  # Must be ordered AFTER the global replicas=1 patch above so it wins
+  # the merge.
+  - path: patches/wz-extractor-pr.yaml
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:

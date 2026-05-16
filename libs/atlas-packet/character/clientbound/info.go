@@ -88,7 +88,9 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteInt(sn)
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() < 87) || t.Region() == "JMS" {
+		// Monster book block present in v87 and earlier (GMS<=87); absent in v95+.
+		// IDA v87 CWvsContext::OnCharacterInfo@0xabb181: calls sub_6C10A8 (5×Decode4) before MedalInfo.
+		if (t.Region() == "GMS" && t.MajorVersion() <= 87) || t.Region() == "JMS" {
 			w.WriteInt(0) // monster book level
 			w.WriteInt(0) // normal card
 			w.WriteInt(0) // special card
@@ -152,7 +154,8 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 			m.wishList[i] = r.ReadUint32()
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() < 87) || t.Region() == "JMS" {
+		// Monster book block present in v87 and earlier (GMS<=87); absent in v95+.
+		if (t.Region() == "GMS" && t.MajorVersion() <= 87) || t.Region() == "JMS" {
 			_ = r.ReadUint32() // monster book level
 			_ = r.ReadUint32() // normal card
 			_ = r.ReadUint32() // special card

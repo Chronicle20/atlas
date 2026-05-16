@@ -1,0 +1,20 @@
+{
+  "WriterName": "AddCharacterError",
+  "IDAName": "CLogin::OnCreateNewCharacterResult#AddCharacterError",
+  "Address": "0x5fa26c",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/add_entry_error.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "result code: non-zero = error (10=limit, 26=accountTransfer, 30=cannotUse)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -25,7 +25,9 @@ func TestCharacterMove(t *testing.T) {
 			if p.FieldKey() != 42 {
 				t.Errorf("expected fieldKey 42, got %d", p.FieldKey())
 			}
-			if v.MajorVersion > 83 || v.Region == "JMS" {
+			// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: no dr0/dr1/dr2/dr3/dwKey/crc32.
+			// JMS movement is GMS v83-equivalent (fieldKey only before CMovePath).
+			if v.Region == "GMS" && v.MajorVersion > 83 {
 				if p.Dr0() != 100 {
 					t.Errorf("expected dr0 100, got %d", p.Dr0())
 				}
@@ -45,7 +47,7 @@ func TestCharacterMove(t *testing.T) {
 					t.Errorf("expected crc32 700, got %d", p.Crc32())
 				}
 			}
-			if (v.MajorVersion > 28 || v.Region == "JMS") && p.Crc() != 500 {
+			if v.Region == "GMS" && v.MajorVersion > 28 && p.Crc() != 500 {
 				t.Errorf("expected crc 500, got %d", p.Crc())
 			}
 		})

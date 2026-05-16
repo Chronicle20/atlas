@@ -1,7 +1,7 @@
 # WorldCharacterListRequest (← `CLogin::SendLoginPacket`)
 
 - **IDA:** 0x5dbef0
-- **Atlas file:** `../../libs/atlas-packet/login/serverbound/world_character_list_request.go`
+- **Atlas file:** `libs/atlas-packet/login/serverbound/world_character_list_request.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 3
 - **Verdict:** ✅

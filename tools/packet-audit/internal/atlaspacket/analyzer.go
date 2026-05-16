@@ -126,10 +126,12 @@ type callCtx struct {
 	rangeVars map[string]string
 	// fieldVars maps a local variable name to a resolved Go type name.
 	// Used when a field is bound to a variable before calling .Write on it.
-	fieldVars map[string]string
-	out       *[]Call
-	stack     *[]*GuardExpr
-	fset      *token.FileSet
+	fieldVars         map[string]string
+	out               *[]Call
+	stack             *[]*GuardExpr
+	suffixGuards      []*GuardExpr // implicit guards from preceding if-returns at this scope
+	unreachableSuffix bool         // true when both branches of a preceding if returned
+	fset              *token.FileSet
 }
 
 // resolveRecurse attempts to resolve a variable-name hint to an actual Go type
@@ -184,8 +186,57 @@ func (cc *callCtx) appendCall(c Call) {
 	*cc.out = append(*cc.out, c)
 }
 
+// pushSuffixGuard appends g to this scope's suffix-guard accumulator, used to
+// taint sibling calls after an if-block whose body or else terminates with return.
+// Nil guards are dropped — they would AND-out into the existing stack as no-ops.
+func (cc *callCtx) pushSuffixGuard(g *GuardExpr) {
+	if g == nil {
+		return
+	}
+	cc.suffixGuards = append(cc.suffixGuards, g)
+}
+
+// conjoin returns the active combined guard for the current call site, AND-ing the
+// explicit if-stack with any suffix guards accumulated from preceding if-returns
+// at this scope. Delegates to the package-level conjoin once the slices are merged.
 func (cc *callCtx) conjoin() *GuardExpr {
-	return conjoin(*cc.stack)
+	// Combine explicit stack and any accumulated suffix guards.
+	if len(cc.suffixGuards) == 0 {
+		return conjoin(*cc.stack)
+	}
+	combined := append([]*GuardExpr{}, *cc.stack...)
+	combined = append(combined, cc.suffixGuards...)
+	return conjoin(combined)
+}
+
+// blockTerminatesWithReturn reports whether b's final statement is an *ast.ReturnStmt,
+// either at top level or as the terminator of every branch of a terminal IfStmt.
+// Loops are not descended (design §3.3 — loop-internal early-return is out of scope).
+func blockTerminatesWithReturn(b *ast.BlockStmt) bool {
+	if b == nil || len(b.List) == 0 {
+		return false
+	}
+	last := b.List[len(b.List)-1]
+	switch s := last.(type) {
+	case *ast.ReturnStmt:
+		return true
+	case *ast.IfStmt:
+		if s.Else == nil {
+			return false
+		}
+		elseBlock, ok := s.Else.(*ast.BlockStmt)
+		if !ok {
+			// else if — descend into the inner IfStmt's body and walk its else recursively.
+			innerIf, ok := s.Else.(*ast.IfStmt)
+			if !ok {
+				return false
+			}
+			wrapped := &ast.BlockStmt{List: []ast.Stmt{innerIf}}
+			return blockTerminatesWithReturn(s.Body) && blockTerminatesWithReturn(wrapped)
+		}
+		return blockTerminatesWithReturn(s.Body) && blockTerminatesWithReturn(elseBlock)
+	}
+	return false
 }
 
 func (cc *callCtx) walk(node ast.Node) {
@@ -195,16 +246,47 @@ func (cc *callCtx) walk(node ast.Node) {
 		*cc.stack = append(*cc.stack, g)
 		cc.walk(n.Body)
 		*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+		thenReturns := blockTerminatesWithReturn(n.Body)
+		elseReturns := false
 		if n.Else != nil {
 			ng := negate(g)
 			*cc.stack = append(*cc.stack, ng)
 			cc.walk(n.Else)
 			*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+			switch e := n.Else.(type) {
+			case *ast.BlockStmt:
+				elseReturns = blockTerminatesWithReturn(e)
+			case *ast.IfStmt:
+				// else if — wrap and check.
+				elseReturns = blockTerminatesWithReturn(&ast.BlockStmt{List: []ast.Stmt{e}})
+			}
+		}
+		// Suffix-taint: when one branch returns, push an implicit guard for the surviving branch
+		// onto cc.suffixGuards so any sibling calls after this if-block inherit it.
+		switch {
+		case thenReturns && elseReturns:
+			// Both branches return — unreachable suffix. Mark and skip.
+			cc.unreachableSuffix = true // unreachableSuffix is read by the enclosing *ast.BlockStmt loop to skip dead code following a both-branch-return if. See the BlockStmt arm.
+		case thenReturns:
+			cc.pushSuffixGuard(negate(g))
+		case elseReturns && n.Else != nil:
+			cc.pushSuffixGuard(g)
 		}
 	case *ast.BlockStmt:
+		// Each block scope owns its own suffix-guard accumulator.
+		savedSuffix := cc.suffixGuards
+		savedUnreachable := cc.unreachableSuffix
+		cc.suffixGuards = nil
+		cc.unreachableSuffix = false
 		for _, s := range n.List {
+			if cc.unreachableSuffix {
+				// Dead code after both branches returned; skip remaining statements in this block.
+				break
+			}
 			cc.walk(s)
 		}
+		cc.suffixGuards = savedSuffix
+		cc.unreachableSuffix = savedUnreachable
 	case *ast.ExprStmt:
 		cc.walk(n.X)
 	case *ast.RangeStmt:
@@ -279,6 +361,22 @@ func (cc *callCtx) walk(node ast.Node) {
 				return
 			}
 		}
+		// Recurse marker: x.EncodeForeign(l, ctx) — routes to the alternate "<Type>::EncodeForeign" key.
+		if sel.Sel.Name == "EncodeForeign" {
+			recv := receiverTypeHint(sel.X)
+			if !isWriterReaderReceiver(recv) {
+				resolved := resolveRecurse(recv, cc)
+				// Annotate the recurse with the EncodeForeign variant so the diff
+				// engine resolves via the alternate registry key.
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved + "::EncodeForeign",
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
+		}
 		// Detect x.Write(w) pattern: a one-arg Write call whose receiver is not a
 		// writer/reader variable. This covers atlas's WorldRecommendation pattern
 		// where sub-structs expose Write(*response.Writer) instead of Encode().
@@ -310,6 +408,18 @@ func (cc *callCtx) walk(node ast.Node) {
 		// buffer verbatim. The wire shape is identical to inlining c.Encode's calls,
 		// so model this as KindRecurse rather than KindWrite EncodeBuf.
 		if p, ok := primFromName(sel.Sel.Name); ok {
+			// Check for WriteByteArray(<sub>.EncodeForeign(...)(...)) first, since
+			// wrappedRecurseType only detects Encode/Decode. Use the alt-key.
+			if recv, ok := wrappedEncodeForeignRecurseType(sel.Sel.Name, n.Args); ok {
+				resolved := resolveRecurse(recv, cc)
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved + "::EncodeForeign",
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
 			if recv, ok := wrappedRecurseType(sel.Sel.Name, n.Args); ok {
 				resolved := resolveRecurse(recv, cc)
 				cc.appendCall(Call{
@@ -354,6 +464,20 @@ func (cc *callCtx) walk(node ast.Node) {
 							cc.appendCall(Call{
 								Kind:        KindRecurse,
 								RecurseType: resolved,
+								Line:        cc.fset.Position(ce.Pos()).Line,
+								Guard:       cc.conjoin(),
+							})
+							return false
+						}
+					}
+					// Recurse marker: x.EncodeForeign(l, ctx) in nested contexts.
+					if sel.Sel.Name == "EncodeForeign" {
+						recv := receiverTypeHint(sel.X)
+						if !isWriterReaderReceiver(recv) {
+							resolved := resolveRecurse(recv, cc)
+							cc.appendCall(Call{
+								Kind:        KindRecurse,
+								RecurseType: resolved + "::EncodeForeign",
 								Line:        cc.fset.Position(ce.Pos()).Line,
 								Guard:       cc.conjoin(),
 							})
@@ -501,6 +625,36 @@ func wrappedRecurseType(outerMethod string, args []ast.Expr) (string, bool) {
 		}
 		if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
 			if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+				recv := receiverTypeHint(sel.X)
+				if !isWriterReaderReceiver(recv) {
+					return recv, true
+				}
+			}
+			return "", false
+		}
+		expr = ce.Fun
+	}
+}
+
+// wrappedEncodeForeignRecurseType detects WriteByteArray(<sub>.EncodeForeign(...)(...))
+// pattern — the foreign-receiver variant of wrappedRecurseType. Returns the
+// sub-receiver type hint (raw, without the "::EncodeForeign" suffix) and true
+// when the inner selector is EncodeForeign. The caller appends the suffix.
+func wrappedEncodeForeignRecurseType(outerMethod string, args []ast.Expr) (string, bool) {
+	if outerMethod != "WriteByteArray" && outerMethod != "ReadByteArray" {
+		return "", false
+	}
+	if len(args) != 1 {
+		return "", false
+	}
+	expr := args[0]
+	for {
+		ce, ok := expr.(*ast.CallExpr)
+		if !ok {
+			return "", false
+		}
+		if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
+			if sel.Sel.Name == "EncodeForeign" {
 				recv := receiverTypeHint(sel.X)
 				if !isWriterReaderReceiver(recv) {
 					return recv, true

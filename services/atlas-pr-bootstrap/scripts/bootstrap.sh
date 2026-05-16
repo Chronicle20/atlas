@@ -46,18 +46,78 @@ get_attr() {
         "$1" | jq -r ".data.attributes.$2"
 }
 
-# Polling helpers — return 0 when the target value is non-zero/non-null,
-# 1 otherwise. Designed for use with retry().
+# Polling helpers — return 0 when the target endpoint has *stopped*
+# reporting fresh writes, 1 otherwise. Designed for use with retry().
+#
+# Earlier version returned success as soon as the counter went non-zero
+# — i.e. on the *first* extracted file / written document. That race
+# let the next bootstrap step start while extraction/processing was
+# still streaming. atlas-data workers (MAP, MONSTER, the CHARACTER /
+# EQUIPMENT worker) open WZ XML files in their `Init*` calls and bail
+# with `return err` on ENOENT, so any worker whose XML had not yet been
+# extracted wrote ZERO documents. On 2026-05-16 the cold-start of PR
+# #461's env reproduced this exactly: atlas-data started MAP at
+# 12:09:37.209, hit ENOENT on Map.img.xml at 12:09:37.242, and the
+# extractor wrote that file 168 ms later at 12:09:37.410. Net loss:
+# 5,261 MAP + 1,568 MONSTER + 4,334 EQUIPMENT = 11,163 documents
+# (~23 % deficit vs. atlas-main on the same tenant).
+#
+# Fix: detect actual *completion*, not first progress. Both endpoints
+# expose `updatedAt` = MAX(updated_at) across underlying rows — it
+# advances on every write and stops advancing when writes stop. Require
+# the counter to be non-zero AND `updatedAt` to be unchanged for
+# STABLE_REQUIRED consecutive polls before declaring done. With the
+# existing `retry 240 10 …` call shape, STABLE_REQUIRED=3 gives a
+# ≥ 20 s no-write window (the first match arms the counter, the next
+# two confirm). That comfortably covers the worst inter-write gap
+# observed in practice (sub-second between Map.wz IMGs, ~2 s between
+# UI.wz IMGs) while still bounding overshoot at one stability window.
+#
+# State lives in globals — retry() invokes the helper in the current
+# shell (not a subshell), so updates accumulate across calls.
+
+EXTRACTION_LAST_UPDATED=""
+EXTRACTION_STABLE_COUNT=0
+DATA_PROCESSING_LAST_UPDATED=""
+DATA_PROCESSING_STABLE_COUNT=0
+STABLE_REQUIRED=3
+
 extraction_done() {
-    local count
+    local count updated
     count=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" fileCount)
-    [ -n "$count" ] && [ "$count" != "0" ] && [ "$count" != "null" ]
+    updated=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" updatedAt)
+    if [ -z "$count" ] || [ "$count" = "0" ] || [ "$count" = "null" ]; then
+        return 1
+    fi
+    if [ -z "$updated" ] || [ "$updated" = "null" ]; then
+        return 1
+    fi
+    if [ "$updated" = "$EXTRACTION_LAST_UPDATED" ]; then
+        EXTRACTION_STABLE_COUNT=$((EXTRACTION_STABLE_COUNT + 1))
+    else
+        EXTRACTION_LAST_UPDATED="$updated"
+        EXTRACTION_STABLE_COUNT=1
+    fi
+    [ "$EXTRACTION_STABLE_COUNT" -ge "$STABLE_REQUIRED" ]
 }
 
 data_processing_done() {
-    local count
+    local count updated
     count=$(get_attr "$ATLAS_UI_BASE/api/data/status" documentCount)
-    [ -n "$count" ] && [ "$count" != "0" ] && [ "$count" != "null" ]
+    updated=$(get_attr "$ATLAS_UI_BASE/api/data/status" updatedAt)
+    if [ -z "$count" ] || [ "$count" = "0" ] || [ "$count" = "null" ]; then
+        return 1
+    fi
+    if [ -z "$updated" ] || [ "$updated" = "null" ]; then
+        return 1
+    fi
+    if [ "$updated" = "$DATA_PROCESSING_LAST_UPDATED" ]; then
+        DATA_PROCESSING_STABLE_COUNT=$((DATA_PROCESSING_STABLE_COUNT + 1))
+    else
+        DATA_PROCESSING_LAST_UPDATED="$updated"
+        DATA_PROCESSING_STABLE_COUNT=1
+    fi
+    [ "$DATA_PROCESSING_STABLE_COUNT" -ge "$STABLE_REQUIRED" ]
 }
 
 ATLAS_STEP=wait-ready log info "waiting for atlas-tenants, atlas-configurations, atlas-data, atlas-wz-extractor"

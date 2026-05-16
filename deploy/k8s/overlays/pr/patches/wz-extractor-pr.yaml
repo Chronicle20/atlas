@@ -1,0 +1,38 @@
+# PR overrides for atlas-wz-extractor.
+#
+# Two of these (replicas, env) contradict cluster-wide defaults; both are
+# intentional for PR ergonomics:
+#
+# 1. replicas: 2 — restores HA on the wz-extractor specifically. The
+#    cluster-wide PR pin (kustomization.yaml `kind: Deployment, replicas=1`,
+#    PR #492) drops every Deployment to a single replica for pod-density
+#    relief. wz-extractor is the bottleneck of PR-env bring-up (every other
+#    service waits on its extract to finish before mounting atlas-data /
+#    atlas-assets), so we pay the +1 pod here to halve extract wall-clock.
+#    This patch must be ordered AFTER the global replicas=1 patch in
+#    kustomization.yaml `patches:` to win the merge.
+#
+# 2. WZ_EXTRACT_PARALLELISM: "2" — the base default (4) is tuned for main's
+#    4 replicas. PR runs with 2 replicas and a smaller mem limit, so we
+#    halve per-pod parallelism to stay safely under the reduced budget.
+#    Cluster-wide concurrency per PR env: 2 replicas × 2 workers = 4.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-wz-extractor
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: wz-extractor
+          env:
+            - name: WZ_EXTRACT_PARALLELISM
+              value: "2"
+          resources:
+            requests:
+              cpu: "1"
+              memory: "512Mi"
+            limits:
+              cpu: "4"
+              memory: "2Gi"

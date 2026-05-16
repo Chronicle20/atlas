@@ -92,7 +92,6 @@ const (
 // — no Kafka event advances the step. A missing entry is a bug: unknown
 // actions default-deny in StepAcceptsEvent, but the coverage test
 // (event_acceptance_test.go) catches missing entries before runtime.
-//
 var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Asset actions.
 	sharedsaga.AwardAsset:           {EventKindAssetCreated, EventKindAssetQuantityChanged},

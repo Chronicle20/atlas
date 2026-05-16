@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -334,7 +334,6 @@ func (p *ProcessorImpl) CreateFromPreset(ctx context.Context, in PresetCreateRes
 	}
 	return transactionId.String(), nil
 }
-
 
 // buildPresetCharacterCreationSaga constructs a CharacterCreation saga from a preset
 // configuration. Equipment goes through create_and_equip_asset steps; the legacy

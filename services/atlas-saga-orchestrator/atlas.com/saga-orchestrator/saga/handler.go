@@ -12,8 +12,8 @@ import (
 	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
-	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
@@ -24,10 +24,10 @@ import (
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
-	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/rates"
 	"atlas-saga-orchestrator/reactor"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
+	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/system_message"
@@ -2272,7 +2272,7 @@ func (h *HandlerImpl) handleStartInstanceTransport(s Saga, st Step[any]) error {
 		}).Warn("Instance transport failed - emitting failure event")
 
 		// Remove saga from cache since this is a terminal failure
-		GetCache().Remove(h.ctx,s.TransactionId())
+		GetCache().Remove(h.ctx, s.TransactionId())
 
 		// Emit saga failed event with the transport-specific error code
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
@@ -2443,7 +2443,7 @@ func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
 	}
 
 	// Update the saga in cache with the new steps
-	if err := GetCache().Put(h.ctx,updatedSaga); err != nil {
+	if err := GetCache().Put(h.ctx, updatedSaga); err != nil {
 		return err
 	}
 
@@ -2537,7 +2537,7 @@ func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
 			"error_code":     errorCode,
 		}).Warn("Party quest registration failed - emitting failure event")
 
-		GetCache().Remove(h.ctx,s.TransactionId())
+		GetCache().Remove(h.ctx, s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
@@ -2587,7 +2587,7 @@ func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) err
 
 		errorCode := party_quest.GetErrorCode(err)
 
-		GetCache().Remove(h.ctx,s.TransactionId())
+		GetCache().Remove(h.ctx, s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
@@ -2644,7 +2644,7 @@ func (h *HandlerImpl) handleLeavePartyQuest(s Saga, st Step[any]) error {
 	err := h.partyQuestP.LeavePartyQuest(payload.CharacterId, payload.WorldId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to leave party quest.")
-		GetCache().Remove(h.ctx,s.TransactionId())
+		GetCache().Remove(h.ctx, s.TransactionId())
 		return err
 	}
 
@@ -2802,7 +2802,7 @@ func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
 			"error_code":     errorCode,
 		}).Warn("Party quest bonus entry failed - emitting failure event")
 
-		GetCache().Remove(h.ctx,s.TransactionId())
+		GetCache().Remove(h.ctx, s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(

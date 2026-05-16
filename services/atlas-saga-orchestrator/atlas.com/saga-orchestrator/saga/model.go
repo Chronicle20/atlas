@@ -139,7 +139,7 @@ const (
 	CreateInvite                 = sharedsaga.CreateInvite
 
 	// Character creation actions
-	CreateCharacter      = sharedsaga.CreateCharacter
+	CreateCharacter       = sharedsaga.CreateCharacter
 	AwaitInventoryCreated = sharedsaga.AwaitInventoryCreated
 
 	// Transport actions
@@ -173,82 +173,82 @@ const (
 
 // Re-exported payload types from shared library
 type (
-	AwardItemActionPayload               = sharedsaga.AwardItemActionPayload
-	ItemPayload                          = sharedsaga.ItemPayload
-	WarpToRandomPortalPayload            = sharedsaga.WarpToRandomPortalPayload
-	WarpToPortalPayload                  = sharedsaga.WarpToPortalPayload
-	AwardExperiencePayload               = sharedsaga.AwardExperiencePayload
-	AwardLevelPayload                    = sharedsaga.AwardLevelPayload
-	AwardMesosPayload                    = sharedsaga.AwardMesosPayload
-	AwardCurrencyPayload                 = sharedsaga.AwardCurrencyPayload
-	AwardFamePayload                     = sharedsaga.AwardFamePayload
-	DestroyAssetPayload                  = sharedsaga.DestroyAssetPayload
-	DestroyAssetFromSlotPayload          = sharedsaga.DestroyAssetFromSlotPayload
-	EquipAssetPayload                    = sharedsaga.EquipAssetPayload
-	UnequipAssetPayload                  = sharedsaga.UnequipAssetPayload
-	CreateAndEquipAssetPayload           = sharedsaga.CreateAndEquipAssetPayload
-	ChangeJobPayload                     = sharedsaga.ChangeJobPayload
-	ChangeHairPayload                    = sharedsaga.ChangeHairPayload
-	ChangeFacePayload                    = sharedsaga.ChangeFacePayload
-	ChangeSkinPayload                    = sharedsaga.ChangeSkinPayload
-	SetHPPayload                         = sharedsaga.SetHPPayload
-	DeductExperiencePayload              = sharedsaga.DeductExperiencePayload
-	CancelAllBuffsPayload                = sharedsaga.CancelAllBuffsPayload
-	ResetStatsPayload                    = sharedsaga.ResetStatsPayload
-	RebalanceAPPayload                   = sharedsaga.RebalanceAPPayload
-	RebalanceTarget                      = sharedsaga.RebalanceTarget
-	RebalanceStat                        = sharedsaga.RebalanceStat
-	IncreaseBuddyCapacityPayload         = sharedsaga.IncreaseBuddyCapacityPayload
-	GainClosenessPayload                 = sharedsaga.GainClosenessPayload
-	CompleteQuestPayload                 = sharedsaga.CompleteQuestPayload
-	StartQuestPayload                    = sharedsaga.StartQuestPayload
-	ForfeitQuestPayload                  = sharedsaga.ForfeitQuestPayload
-	SetQuestProgressPayload              = sharedsaga.SetQuestProgressPayload
-	SendMessagePayload                   = sharedsaga.SendMessagePayload
-	FieldEffectPayload                   = sharedsaga.FieldEffectPayload
-	UiLockPayload                        = sharedsaga.UiLockPayload
-	PlayPortalSoundPayload               = sharedsaga.PlayPortalSoundPayload
-	ShowInfoPayload                      = sharedsaga.ShowInfoPayload
-	ShowInfoTextPayload                  = sharedsaga.ShowInfoTextPayload
-	UpdateAreaInfoPayload                = sharedsaga.UpdateAreaInfoPayload
-	ShowHintPayload                      = sharedsaga.ShowHintPayload
-	ShowGuideHintPayload                 = sharedsaga.ShowGuideHintPayload
-	ShowIntroPayload                     = sharedsaga.ShowIntroPayload
-	BlockPortalPayload                   = sharedsaga.BlockPortalPayload
-	UnblockPortalPayload                 = sharedsaga.UnblockPortalPayload
-	SpawnMonsterPayload                  = sharedsaga.SpawnMonsterPayload
-	SpawnReactorDropsPayload             = sharedsaga.SpawnReactorDropsPayload
-	ShowStoragePayload                   = sharedsaga.ShowStoragePayload
-	DepositToStoragePayload              = sharedsaga.DepositToStoragePayload
-	UpdateStorageMesosPayload            = sharedsaga.UpdateStorageMesosPayload
-	TransferToStoragePayload             = sharedsaga.TransferToStoragePayload
-	WithdrawFromStoragePayload           = sharedsaga.WithdrawFromStoragePayload
-	TransferToCashShopPayload            = sharedsaga.TransferToCashShopPayload
-	WithdrawFromCashShopPayload          = sharedsaga.WithdrawFromCashShopPayload
-	ReleaseFromCharacterPayload          = sharedsaga.ReleaseFromCharacterPayload
-	ReleaseFromStoragePayload            = sharedsaga.ReleaseFromStoragePayload
-	RequestGuildNamePayload              = sharedsaga.RequestGuildNamePayload
-	RequestGuildEmblemPayload            = sharedsaga.RequestGuildEmblemPayload
-	RequestGuildDisbandPayload           = sharedsaga.RequestGuildDisbandPayload
-	RequestGuildCapacityIncreasePayload  = sharedsaga.RequestGuildCapacityIncreasePayload
-	CreateInvitePayload                  = sharedsaga.CreateInvitePayload
-	CharacterCreatePayload               = sharedsaga.CharacterCreatePayload
-	AwaitInventoryCreatedPayload         = sharedsaga.AwaitInventoryCreatedPayload
-	StartInstanceTransportPayload        = sharedsaga.StartInstanceTransportPayload
-	SaveLocationPayload                  = sharedsaga.SaveLocationPayload
-	WarpToSavedLocationPayload           = sharedsaga.WarpToSavedLocationPayload
-	SelectGachaponRewardPayload          = sharedsaga.SelectGachaponRewardPayload
-	EmitGachaponWinPayload               = sharedsaga.EmitGachaponWinPayload
-	RegisterPartyQuestPayload            = sharedsaga.RegisterPartyQuestPayload
-	WarpPartyQuestMembersToMapPayload    = sharedsaga.WarpPartyQuestMembersToMapPayload
-	LeavePartyQuestPayload               = sharedsaga.LeavePartyQuestPayload
-	EnterPartyQuestBonusPayload          = sharedsaga.EnterPartyQuestBonusPayload
-	UpdatePqCustomDataPayload            = sharedsaga.UpdatePqCustomDataPayload
-	HitReactorPayload                    = sharedsaga.HitReactorPayload
-	BroadcastPqMessagePayload            = sharedsaga.BroadcastPqMessagePayload
-	StageClearAttemptPqPayload           = sharedsaga.StageClearAttemptPqPayload
-	FieldEffectWeatherPayload            = sharedsaga.FieldEffectWeatherPayload
-	ExperienceDistributions              = sharedsaga.ExperienceDistributions
+	AwardItemActionPayload              = sharedsaga.AwardItemActionPayload
+	ItemPayload                         = sharedsaga.ItemPayload
+	WarpToRandomPortalPayload           = sharedsaga.WarpToRandomPortalPayload
+	WarpToPortalPayload                 = sharedsaga.WarpToPortalPayload
+	AwardExperiencePayload              = sharedsaga.AwardExperiencePayload
+	AwardLevelPayload                   = sharedsaga.AwardLevelPayload
+	AwardMesosPayload                   = sharedsaga.AwardMesosPayload
+	AwardCurrencyPayload                = sharedsaga.AwardCurrencyPayload
+	AwardFamePayload                    = sharedsaga.AwardFamePayload
+	DestroyAssetPayload                 = sharedsaga.DestroyAssetPayload
+	DestroyAssetFromSlotPayload         = sharedsaga.DestroyAssetFromSlotPayload
+	EquipAssetPayload                   = sharedsaga.EquipAssetPayload
+	UnequipAssetPayload                 = sharedsaga.UnequipAssetPayload
+	CreateAndEquipAssetPayload          = sharedsaga.CreateAndEquipAssetPayload
+	ChangeJobPayload                    = sharedsaga.ChangeJobPayload
+	ChangeHairPayload                   = sharedsaga.ChangeHairPayload
+	ChangeFacePayload                   = sharedsaga.ChangeFacePayload
+	ChangeSkinPayload                   = sharedsaga.ChangeSkinPayload
+	SetHPPayload                        = sharedsaga.SetHPPayload
+	DeductExperiencePayload             = sharedsaga.DeductExperiencePayload
+	CancelAllBuffsPayload               = sharedsaga.CancelAllBuffsPayload
+	ResetStatsPayload                   = sharedsaga.ResetStatsPayload
+	RebalanceAPPayload                  = sharedsaga.RebalanceAPPayload
+	RebalanceTarget                     = sharedsaga.RebalanceTarget
+	RebalanceStat                       = sharedsaga.RebalanceStat
+	IncreaseBuddyCapacityPayload        = sharedsaga.IncreaseBuddyCapacityPayload
+	GainClosenessPayload                = sharedsaga.GainClosenessPayload
+	CompleteQuestPayload                = sharedsaga.CompleteQuestPayload
+	StartQuestPayload                   = sharedsaga.StartQuestPayload
+	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
+	SetQuestProgressPayload             = sharedsaga.SetQuestProgressPayload
+	SendMessagePayload                  = sharedsaga.SendMessagePayload
+	FieldEffectPayload                  = sharedsaga.FieldEffectPayload
+	UiLockPayload                       = sharedsaga.UiLockPayload
+	PlayPortalSoundPayload              = sharedsaga.PlayPortalSoundPayload
+	ShowInfoPayload                     = sharedsaga.ShowInfoPayload
+	ShowInfoTextPayload                 = sharedsaga.ShowInfoTextPayload
+	UpdateAreaInfoPayload               = sharedsaga.UpdateAreaInfoPayload
+	ShowHintPayload                     = sharedsaga.ShowHintPayload
+	ShowGuideHintPayload                = sharedsaga.ShowGuideHintPayload
+	ShowIntroPayload                    = sharedsaga.ShowIntroPayload
+	BlockPortalPayload                  = sharedsaga.BlockPortalPayload
+	UnblockPortalPayload                = sharedsaga.UnblockPortalPayload
+	SpawnMonsterPayload                 = sharedsaga.SpawnMonsterPayload
+	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
+	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
+	DepositToStoragePayload             = sharedsaga.DepositToStoragePayload
+	UpdateStorageMesosPayload           = sharedsaga.UpdateStorageMesosPayload
+	TransferToStoragePayload            = sharedsaga.TransferToStoragePayload
+	WithdrawFromStoragePayload          = sharedsaga.WithdrawFromStoragePayload
+	TransferToCashShopPayload           = sharedsaga.TransferToCashShopPayload
+	WithdrawFromCashShopPayload         = sharedsaga.WithdrawFromCashShopPayload
+	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
+	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
+	RequestGuildNamePayload             = sharedsaga.RequestGuildNamePayload
+	RequestGuildEmblemPayload           = sharedsaga.RequestGuildEmblemPayload
+	RequestGuildDisbandPayload          = sharedsaga.RequestGuildDisbandPayload
+	RequestGuildCapacityIncreasePayload = sharedsaga.RequestGuildCapacityIncreasePayload
+	CreateInvitePayload                 = sharedsaga.CreateInvitePayload
+	CharacterCreatePayload              = sharedsaga.CharacterCreatePayload
+	AwaitInventoryCreatedPayload        = sharedsaga.AwaitInventoryCreatedPayload
+	StartInstanceTransportPayload       = sharedsaga.StartInstanceTransportPayload
+	SaveLocationPayload                 = sharedsaga.SaveLocationPayload
+	WarpToSavedLocationPayload          = sharedsaga.WarpToSavedLocationPayload
+	SelectGachaponRewardPayload         = sharedsaga.SelectGachaponRewardPayload
+	EmitGachaponWinPayload              = sharedsaga.EmitGachaponWinPayload
+	RegisterPartyQuestPayload           = sharedsaga.RegisterPartyQuestPayload
+	WarpPartyQuestMembersToMapPayload   = sharedsaga.WarpPartyQuestMembersToMapPayload
+	LeavePartyQuestPayload              = sharedsaga.LeavePartyQuestPayload
+	EnterPartyQuestBonusPayload         = sharedsaga.EnterPartyQuestBonusPayload
+	UpdatePqCustomDataPayload           = sharedsaga.UpdatePqCustomDataPayload
+	HitReactorPayload                   = sharedsaga.HitReactorPayload
+	BroadcastPqMessagePayload           = sharedsaga.BroadcastPqMessagePayload
+	StageClearAttemptPqPayload          = sharedsaga.StageClearAttemptPqPayload
+	FieldEffectWeatherPayload           = sharedsaga.FieldEffectWeatherPayload
+	ExperienceDistributions             = sharedsaga.ExperienceDistributions
 )
 
 // ============================================================
@@ -830,10 +830,10 @@ type AcceptToCashShopPayload struct {
 	CompartmentType byte      `json:"compartmentType"` // Compartment type (1=Explorer, 2=Cygnus, 3=Legend)
 	CashId          int64     `json:"cashId"`          // Preserved CashId from source item
 	TemplateId      uint32    `json:"templateId"`      // Item template ID
-	Quantity        uint32    `json:"quantity"`         // Quantity
+	Quantity        uint32    `json:"quantity"`        // Quantity
 	CommodityId     uint32    `json:"commodityId"`     // Commodity ID
 	PurchasedBy     uint32    `json:"purchasedBy"`     // Who purchased the item
-	Flag            uint16    `json:"flag"`             // Item flag
+	Flag            uint16    `json:"flag"`            // Item flag
 }
 
 // ReleaseFromCashShopPayload represents the payload for the release_from_cash_shop action (internal step).

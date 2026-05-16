@@ -1,0 +1,20 @@
+{
+  "WriterName": "ServerListEnd",
+  "IDAName": "CLogin::OnWorldInformation#ServerListEnd",
+  "Address": "0x630e7c",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/login/clientbound/server_list_end.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nWorldID terminator (0xFF dispatch — end of world list)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

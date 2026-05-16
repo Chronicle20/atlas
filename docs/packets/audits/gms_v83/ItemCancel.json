@@ -1,0 +1,20 @@
+{
+  "WriterName": "ItemCancel",
+  "IDAName": "CWvsContext::SendStatChangeItemCancelRequest",
+  "Address": "0xa096af",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/item_cancel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nItemID (stat-change item ID to cancel)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

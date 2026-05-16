@@ -4,7 +4,7 @@
   "Address": "0x5dda00",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/list.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/list.go",
   "Rows": [
     {
       "Index": 0,
@@ -413,12 +413,12 @@
     },
     {
       "Index": 45,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "worldRank",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 46,
@@ -449,21 +449,21 @@
     },
     {
       "Index": 49,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_bLoginOpt (hasPic)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 50,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "m_nSlotCount",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 51,
@@ -473,16 +473,7 @@
       "IDAComment": "m_nBuyCharCount",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 52,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

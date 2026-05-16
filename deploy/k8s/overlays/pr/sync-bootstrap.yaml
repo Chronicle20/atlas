@@ -56,6 +56,20 @@ metadata:
     # 60 5` (5 minutes per dependency) before doing any work, so racing
     # with the Deployments coming up is fine — it just waits.
     #
+    # `sync-wave: "10"` pins this hook to the same wave as the Deployments
+    # (base/kustomization.yaml patches every Deployment to wave 10). Without
+    # this, the Sync hook defaults to wave 0 and Argo gates wave 10 on
+    # wave-0 completion — bootstrap polls for /api/tenants on a ClusterIP
+    # whose backing Deployment has not yet been applied and times out after
+    # 5 min. Cold-start incident 2026-05-16 task-063: PR 493 moved bootstrap
+    # from PostSync to Sync but did not pin the wave, so cold starts of any
+    # PR env deadlocked the same way PostSync did. Co-locating bootstrap
+    # with the Deployments restores PR 493's intended parallel-apply: the
+    # four provider services (tenants/configurations/data/wz-extractor) do
+    # not need tenant config to start, so they come up; bootstrap polls
+    # them via atlas-ingress, seeds config, and bumps the four panicking
+    # consumer services (channel/login/world/drops) via its RBAC.
+    #
     # `BeforeHookCreation` ensures Argo deletes any prior Job from a
     # previous (possibly failed) sync before applying a new one. Without
     # this, a Failed Job from a half-completed sync wedges all subsequent
@@ -63,6 +77,7 @@ metadata:
     # because Argo tries to patch the immutable Job spec.
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
 spec:
   backoffLimit: 3
   template:

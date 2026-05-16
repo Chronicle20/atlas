@@ -47,9 +47,15 @@ kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list \
     | xargs -r -n 1 kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --topic
 
 ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
+# Atlas consumer-group names contain spaces (e.g. "Party Quest Service [1756]",
+# "Channel Service - %s [1756]"). xargs's default delimiter is whitespace, which
+# would word-split each group name into 3-5 separate `--group` invocations and
+# nothing would match. -d '\n' restricts splitting to newlines, so each group
+# is passed intact. Observed 2026-05-16 cleaning up atlas-pr-461's leftover
+# 1756-suffixed groups after the PostDelete hook had previously failed.
 kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list \
     | grep -E -- "\\[${ATLAS_ENV}\\]\$" \
-    | xargs -r -n 1 kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --group
+    | xargs -r -d '\n' -n 1 kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --group
 
 ATLAS_STEP=drop-redis log info "deleting per-env Redis keys"
 redis-cli -u "redis://$REDIS_URL" --scan --pattern "${ATLAS_ENV}:*" \

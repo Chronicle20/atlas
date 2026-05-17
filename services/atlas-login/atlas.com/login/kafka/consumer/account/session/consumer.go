@@ -5,6 +5,7 @@ import (
 	"atlas-login/configuration"
 	consumer2 "atlas-login/kafka/consumer"
 	session2 "atlas-login/kafka/message/account/session"
+	"atlas-login/listener"
 	"atlas-login/session"
 	model2 "atlas-login/socket/model"
 	"atlas-login/socket/writer"
@@ -31,25 +32,34 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+				var handles []listener.HandlerHandle
 				var t string
 				t, _ = topic.EnvProvider(l)(session2.EnvEventStatusTopic)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedAccountSessionStatusEvent(tenant, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedAccountSessionStatusEvent(tenant, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLicenseAgreementAccountSessionStatusEvent(tenant, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleLicenseAgreementAccountSessionStatusEvent(tenant, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorAccountSessionStatusEvent(tenant, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorAccountSessionStatusEvent(tenant, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStateChangedAccountSessionStatusEvent(tenant, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStateChangedAccountSessionStatusEvent(tenant, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}

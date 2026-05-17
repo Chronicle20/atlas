@@ -87,3 +87,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/
 replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas-socket
 
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing
+
+replace github.com/Chronicle20/atlas/libs/atlas-outbox => ../../../../libs/atlas-outbox

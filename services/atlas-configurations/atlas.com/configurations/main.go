@@ -1,17 +1,18 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-configurations/logger"
 	"atlas-configurations/seeder"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 
 const serviceName = "atlas-configurations"
@@ -47,7 +48,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration))
+	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outbox.Migration))
 
 	// Run seed import
 	seedConfig := seeder.DefaultConfig()

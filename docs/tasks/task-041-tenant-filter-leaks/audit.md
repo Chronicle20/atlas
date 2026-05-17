@@ -739,3 +739,5 @@ Gate satisfied. Audit proceeds.
 
 No correctness FAIL on the tenant-isolation contract itself. No SEC- check classified as FAIL beyond FINDING-1 (which is a code-hygiene SEC-T7 issue, not a tenancy leak).
 
+
+PR: https://github.com/Chronicle20/atlas/pull/521

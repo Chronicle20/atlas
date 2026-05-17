@@ -23,6 +23,9 @@ services:
       LOG_LEVEL: debug
       SERVICE_ID: e7fb1d7e-47b8-46bd-97dc-867d93530856
       SERVICE_TYPE: login-service
+      EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS: atlas.configuration.service.status
+      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS: atlas.configuration.tenant.status
+      DRAIN_DEADLINE_MS: "2000"
     ports:
       - "1200:1200"
       - "8300:8300"

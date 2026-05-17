@@ -1,7 +1,7 @@
 # PR overrides for atlas-wz-extractor.
 #
-# Two of these (replicas, env) contradict cluster-wide defaults; both are
-# intentional for PR ergonomics:
+# Three of these (replicas, env, memory) contradict cluster-wide defaults;
+# all are intentional for PR ergonomics:
 #
 # 1. replicas: 2 — restores HA on the wz-extractor specifically. The
 #    cluster-wide PR pin (kustomization.yaml `kind: Deployment, replicas=1`,
@@ -16,6 +16,16 @@
 #    4 replicas. PR runs with 2 replicas and a smaller mem limit, so we
 #    halve per-pod parallelism to stay safely under the reduced budget.
 #    Cluster-wide concurrency per PR env: 2 replicas × 2 workers = 4.
+#
+# 3. memory limit: 4Gi — bumped from 2Gi on 2026-05-17 after PR #491's
+#    ephemeral OOMKilled the inner map-render pool. Until PR #516 lands
+#    (which routes the inner image-package pools through
+#    WZ_EXTRACT_PARALLELISM instead of runtime.NumCPU()), those pools
+#    still spin up NumCPU goroutines per pod regardless of the env var
+#    above — on an 8-CPU node that is 4× the budgeted concurrency, and
+#    each map render holds a full-resolution RGBA buffer. 4Gi is enough
+#    headroom for that worst case. Once #516 is deployed and verified,
+#    revert this to 2Gi to recover the pod-density budget.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,4 +45,4 @@ spec:
               memory: "512Mi"
             limits:
               cpu: "4"
-              memory: "2Gi"
+              memory: "4Gi"

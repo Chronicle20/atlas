@@ -102,13 +102,13 @@ One row per logical call site/function. File:line points to the representative l
 | atlas-ban | services/atlas-ban/atlas.com/ban/ban/provider.go:36 | byTypeProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/ban/provider.go:48 | activeIpBansProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/ban/provider.go:60 | activeByValueProvider | R | PASS-CB | — |
-| atlas-ban | services/atlas-ban/atlas.com/ban/ban/task.go:27 | ExpiredBanCleanup.Run | W | LEAK-F2 | Replace `t.db.Where(...)` with `t.db.WithContext(database.WithoutTenantFilter(t.ctx)).Where(...)`. Task currently relies on F2 (no tenant in context) to accidentally perform a global sweep. Make the cross-tenant intent explicit (matches comment at line 22–23) by adding `ctx context.Context` to the struct (parallel to `atlas-merchant/shop/task.go:14`) and using `WithoutTenantFilter`. |
+| atlas-ban | services/atlas-ban/atlas.com/ban/ban/task.go:27 | ExpiredBanCleanup.Run | W | LEAK-F2 | done: bd7f6832a — added `ctx` field to `ExpiredBanCleanup`, wrapped delete with `t.db.WithContext(database.WithoutTenantFilter(t.ctx))`, constructor + main.go updated. |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/administrator.go:22 | create | W | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/administrator.go:33 | purgeOlderThan | W | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/provider.go:13 | byAccountIdProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/provider.go:24 | byIpProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/provider.go:35 | byHwidProvider | R | PASS-CB | — |
-| atlas-ban | services/atlas-ban/atlas.com/ban/history/task.go:29 | HistoryPurge.Run | W | LEAK-F2 | Same as ban/task.go: add `ctx` field to struct, use `database.WithoutTenantFilter(t.ctx)` rather than relying on F2 (silent missing-context bypass). Comment at line 23–25 already states cross-tenant intent. |
+| atlas-ban | services/atlas-ban/atlas.com/ban/history/task.go:29 | HistoryPurge.Run | W | LEAK-F2 | done: 4993da0a3 — added `ctx` field to `HistoryPurge`, wrapped delete with `t.db.WithContext(database.WithoutTenantFilter(t.ctx))`, constructor + main.go updated. |
 
 ### atlas-buddies
 
@@ -121,7 +121,7 @@ One row per logical call site/function. File:line points to the representative l
 | atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/administrator.go:109 | updateBuddy (shop flag) | W | PASS-CB | — |
 | atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/administrator.go:137 | deleteList | W | PASS-CB | — |
 | atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/administrator.go:177 | saveList | W | PASS-CB | — |
-| atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/provider.go:13 | byCharacterIdEntityProvider | R | LEAK-F8 | `Preload("Buddies")` issues a secondary `SELECT … FROM buddies WHERE list_id = ?`. The `buddies` table has no `tenant_id` column (`services/atlas-buddies/atlas.com/buddies/buddy/entity.go`), so the callback skips it (F3 for the preload target = F8 for the parent). list_id is a UUID, which makes cross-tenant collision statistically unlikely but the access path is not gated by the callback. Fix: add `TenantId uuid.UUID` to `buddy.Entity` + idempotent migration with backfill from `lists.tenant_id`, per design §5 F3/F8 plan. |
+| atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/provider.go:13 | byCharacterIdEntityProvider | R | LEAK-F8 | done: e775ff0be — added `TenantId uuid.UUID` (indexed) to `buddy.Entity` + idempotent backfill in `Migration` from `lists.tenant_id` via `list_id` FK. Preload now covered by callback. |
 
 ### atlas-cashshop
 
@@ -456,10 +456,10 @@ One row per logical call site/function. File:line points to the representative l
 |---|---|---|---|---|---|
 | atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:29 | create | W | PASS-CB | — |
 | atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:111 | deleteById | W | PASS-CB | — |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:119 | replaceExcludes (delete) | W | LEAK-F8 | `excludes` table (`services/atlas-pets/atlas.com/pets/pet/exclude/entity.go`) has no `tenant_id`. Callback skips. Driving query `pet_id = ?` is gated only by `pet.id` which is auto-increment `uint32` — cross-tenant id collision is plausible. Fix: add `TenantId uuid.UUID` to `exclude.Entity` + idempotent migration backfilling from `pets.tenant_id` (FK = pet_id). Per design §5 F3/F8. |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:133 | replaceExcludes (create) | W | LEAK-F8 | Same root cause as above; insert path also writes rows without `tenant_id` because column does not exist. Fix bundled with the same migration. |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:13 | byIdEntityProvider | R | LEAK-F8 | `Preload("Excludes")` issues `SELECT * FROM excludes WHERE pet_id IN (?)`. Same root cause. Fix is the migration above — once `excludes.tenant_id` exists, callback covers it. (Counted under the same LEAK-F8 fix as administrator.go above; this is a single fix.) |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:24 | byOwnerEntityProvider | R | LEAK-F8 | Same as above (preload). |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:119 | replaceExcludes (delete) | W | LEAK-F8 | done: 9e51b335f — added `TenantId uuid.UUID` (indexed) to `exclude.Entity` + idempotent backfill in `Migration` from `pets.tenant_id` via `pet_id` FK. Delete now covered by callback. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:133 | replaceExcludes (create) | W | LEAK-F8 | done: 9e51b335f — covered by the same `exclude.Entity` tenant_id column + backfill. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:13 | byIdEntityProvider | R | LEAK-F8 | done: 9e51b335f — preload now covered by callback once `excludes.tenant_id` exists. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:24 | byOwnerEntityProvider | R | LEAK-F8 | done: 9e51b335f — same as above. |
 
 Note: the four LEAK-F8 pet rows collapse to one fix — add tenant_id to `exclude.Entity`. Counted as 1 LEAK-F8 in the Summary.
 

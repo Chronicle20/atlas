@@ -1,7 +1,9 @@
 package seeder
 
 import (
+	"atlas-configurations/services"
 	"atlas-configurations/templates"
+	"atlas-configurations/tenants"
 	"context"
 	"encoding/json"
 	"errors"
@@ -85,6 +87,20 @@ func (s *Seeder) Run() error {
 		"skipped":  result.Skipped,
 		"failed":   result.Failed,
 	}).Info("Template seeding complete")
+
+	// Backfill the transactional outbox from existing service+tenant rows
+	// so a fresh-cluster boot (or a cluster recovering from a wiped Kafka
+	// topic) has a complete snapshot to publish. Idempotent on (topic, key).
+	if n, err := services.Backfill(s.db); err != nil {
+		s.l.WithError(err).Warn("outbox service backfill failed")
+	} else if n > 0 {
+		s.l.WithField("count", n).Info("seeder.backfill.services")
+	}
+	if n, err := tenants.Backfill(s.db); err != nil {
+		s.l.WithError(err).Warn("outbox tenant backfill failed")
+	} else if n > 0 {
+		s.l.WithField("count", n).Info("seeder.backfill.tenants")
+	}
 
 	return nil
 }

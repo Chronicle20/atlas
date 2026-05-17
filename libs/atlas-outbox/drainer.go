@@ -25,6 +25,7 @@ type drainerConfig struct {
 	batchSize       int
 	sweeperInterval time.Duration
 	retention       time.Duration
+	dsn             string
 }
 
 type DrainerOption func(*drainerConfig)
@@ -45,12 +46,21 @@ func WithRetention(d time.Duration) DrainerOption {
 	return func(c *drainerConfig) { c.retention = d }
 }
 
+// WithDSN supplies a PostgreSQL DSN used to open a dedicated LISTEN
+// connection (via pq.Listener) so the leader wakes immediately when
+// Enqueue calls pg_notify, instead of waiting for the next poll tick.
+// When unset, the drainer falls back to ticker-only polling.
+func WithDSN(dsn string) DrainerOption {
+	return func(c *drainerConfig) { c.dsn = dsn }
+}
+
 type Drainer struct {
 	l    logrus.FieldLogger
 	db   *gorm.DB
 	pub  Publisher
 	cfg  drainerConfig
 	stop chan struct{}
+	ntfy *notifier
 }
 
 func NewDrainer(l logrus.FieldLogger, db *gorm.DB, pub Publisher, opts ...DrainerOption) *Drainer {
@@ -67,6 +77,17 @@ func NewDrainer(l logrus.FieldLogger, db *gorm.DB, pub Publisher, opts ...Draine
 }
 
 func (d *Drainer) Run(ctx context.Context) {
+	d.ensureNotifier()
+	defer func() {
+		if d.ntfy != nil {
+			d.ntfy.Close()
+			d.ntfy = nil
+		}
+	}()
+	// Attempt an immediate lock acquisition before entering the poll loop
+	// so a cold-start leader doesn't sit idle for a full poll interval
+	// before draining (and so NOTIFY wakeups land on an active leader).
+	d.tickOnce(ctx)
 	t := time.NewTicker(d.cfg.pollInterval)
 	defer t.Stop()
 	for {
@@ -76,29 +97,57 @@ func (d *Drainer) Run(ctx context.Context) {
 		case <-d.stop:
 			return
 		case <-t.C:
-			if !isPostgres(d.db) {
-				_ = d.publishBatch(ctx)
-				continue
-			}
-			lk, err := tryAdvisoryLock(ctx, d.db)
-			if err != nil {
-				d.l.WithError(err).Warn("outbox.lock_acquire_error")
-				continue
-			}
-			if !lk.Held() {
-				continue
-			}
-			d.l.Info("outbox.lock_acquired")
-			d.runLeader(ctx)
-			lk.Release(context.Background())
-			d.l.Info("outbox.lock_lost")
+			d.tickOnce(ctx)
 		}
 	}
 }
 
+func (d *Drainer) tickOnce(ctx context.Context) {
+	if !isPostgres(d.db) {
+		_ = d.publishBatch(ctx)
+		return
+	}
+	lk, err := tryAdvisoryLock(ctx, d.db)
+	if err != nil {
+		d.l.WithError(err).Warn("outbox.lock_acquire_error")
+		return
+	}
+	if !lk.Held() {
+		return
+	}
+	d.l.Info("outbox.lock_acquired")
+	d.runLeader(ctx)
+	lk.Release(context.Background())
+	d.l.Info("outbox.lock_lost")
+}
+
+// ensureNotifier opens the LISTEN connection eagerly at Run start so that
+// NOTIFY signals emitted before leadership is acquired still land in the
+// buffered channel and wake the new leader on the first runLeader entry.
+func (d *Drainer) ensureNotifier() {
+	if d.cfg.dsn == "" || !isPostgres(d.db) || d.ntfy != nil {
+		return
+	}
+	n, err := newNotifier(d.l, d.cfg.dsn)
+	if err != nil {
+		d.l.WithError(err).Warn("outbox.notify_listen_failed")
+		return
+	}
+	d.ntfy = n
+}
+
 func (d *Drainer) runLeader(ctx context.Context) {
+	// Drain any rows that accumulated before this replica became leader.
+	if err := d.publishBatch(ctx); err != nil {
+		d.l.WithError(err).Warn("outbox.publish_failed")
+		return
+	}
 	tk := time.NewTicker(d.cfg.pollInterval)
 	defer tk.Stop()
+	var notifyCh <-chan struct{}
+	if d.ntfy != nil {
+		notifyCh = d.ntfy.C()
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -106,6 +155,11 @@ func (d *Drainer) runLeader(ctx context.Context) {
 		case <-d.stop:
 			return
 		case <-tk.C:
+			if err := d.publishBatch(ctx); err != nil {
+				d.l.WithError(err).Warn("outbox.publish_failed")
+				return
+			}
+		case <-notifyCh:
 			if err := d.publishBatch(ctx); err != nil {
 				d.l.WithError(err).Warn("outbox.publish_failed")
 				return

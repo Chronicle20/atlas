@@ -142,6 +142,11 @@ func (d *Drainer) runLeader(ctx context.Context) {
 		d.l.WithError(err).Warn("outbox.publish_failed")
 		return
 	}
+	// Sweeper runs only while leader; cancel on leader exit.
+	sweepCtx, cancelSweep := context.WithCancel(ctx)
+	defer cancelSweep()
+	go d.runSweeper(sweepCtx)
+
 	tk := time.NewTicker(d.cfg.pollInterval)
 	defer tk.Stop()
 	var notifyCh <-chan struct{}
@@ -169,6 +174,41 @@ func (d *Drainer) runLeader(ctx context.Context) {
 }
 
 func (d *Drainer) Stop() { close(d.stop) }
+
+// SweepOnce deletes published rows whose sent_at is older than the
+// configured retention window. The drainer schedules this on its own
+// cadence; it is exposed for tests and for operator-driven sweeps.
+func (d *Drainer) SweepOnce(ctx context.Context) error {
+	cutoff := time.Now().Add(-d.cfg.retention)
+	res := d.db.WithContext(ctx).Where("sent_at IS NOT NULL AND sent_at < ?", cutoff).Delete(&Entity{})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		d.l.WithField("deleted", res.RowsAffected).Info("outbox.sweeper_run")
+	}
+	return nil
+}
+
+// runSweeper is launched from Run; it ticks on cfg.sweeperInterval and
+// invokes SweepOnce. Leader-only is enforced by the caller (Run only
+// starts this when leadership is held).
+func (d *Drainer) runSweeper(ctx context.Context) {
+	tk := time.NewTicker(d.cfg.sweeperInterval)
+	defer tk.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-d.stop:
+			return
+		case <-tk.C:
+			if err := d.SweepOnce(ctx); err != nil {
+				d.l.WithError(err).Warn("outbox.sweeper_failed")
+			}
+		}
+	}
+}
 
 func (d *Drainer) publishBatch(ctx context.Context) error {
 	var failedIDs []uint64

@@ -159,3 +159,58 @@ func TestAdaptHandler_ValidMessage_InvokesHandlerAndDoesNotErrorLog(t *testing.T
 		}
 	}
 }
+
+func TestAdaptHandler_OversizedPayload_TruncatesPreview(t *testing.T) {
+	l, buf := newCapturingLogger()
+
+	cfg := message.PersistentConfig[fakeEvent](func(_ logrus.FieldLogger, _ context.Context, _ fakeEvent) {
+		t.Fatal("handler must not be invoked on malformed message")
+	})
+	h := message.AdaptHandler[fakeEvent](cfg)
+
+	// 10 KB of 'A' bytes — not valid JSON, so unmarshal will fail and trigger
+	// the logging path.
+	body := bytes.Repeat([]byte("A"), 10000)
+	msg := kafka.Message{
+		Topic:     "EVENT_TOPIC_FAKE",
+		Partition: 3,
+		Offset:    9999,
+		Value:     body,
+	}
+
+	persistent, err := h(l, context.Background(), msg)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if !persistent {
+		t.Fatalf("expected persistent=true, got false")
+	}
+
+	entries := decodeLogLines(t, buf)
+	if len(entries) != 1 {
+		t.Fatalf("expected exactly 1 log entry, got %d", len(entries))
+	}
+	e := entries[0]
+	if e["level"] != "error" {
+		t.Fatalf("expected error-level entry, got level=%v", e["level"])
+	}
+	if size, _ := e["payload_size"].(float64); size != float64(len(body)) {
+		t.Errorf("expected payload_size=%d (full length), got %v", len(body), e["payload_size"])
+	}
+
+	preview, _ := e["payload_preview"].(string)
+	// payload_preview is %q-quoted, so the field value is a Go-quoted string
+	// literal. Strip the surrounding quotes to inspect the prefix bytes.
+	if len(preview) < 2 || preview[0] != '"' || preview[len(preview)-1] != '"' {
+		t.Fatalf("expected payload_preview to be a Go-quoted string, got %q", preview)
+	}
+	unquoted := preview[1 : len(preview)-1]
+	// Truncated to previewMax=256 raw bytes. With 'A' bytes there's no
+	// escaping, so the unquoted length must equal exactly 256.
+	if len(unquoted) != 256 {
+		t.Errorf("expected payload_preview unquoted length=256, got %d", len(unquoted))
+	}
+	if !strings.HasPrefix(unquoted, "AAAA") {
+		t.Errorf("expected preview to start with AAAA, got %q", unquoted[:min(8, len(unquoted))])
+	}
+}

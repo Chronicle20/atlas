@@ -79,7 +79,7 @@ func main() {
 		Run()
 
 	go tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, tdm.Context(), db, time.Minute*time.Duration(5)))
-	go tasks.Register(l, tdm.Context())(history.NewHistoryPurge(l, db, time.Hour*time.Duration(24)))
+	go tasks.Register(l, tdm.Context())(history.NewHistoryPurge(l, tdm.Context(), db, time.Hour*time.Duration(24)))
 
 	tdm.TeardownFunc(database.Teardown(l, db))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

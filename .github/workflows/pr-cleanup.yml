@@ -41,14 +41,20 @@ jobs:
           set -euo pipefail
           for svc in $(jq -r '.[]' /tmp/svcs.json); do
             echo "Cleaning up $svc tags matching pr-${PR_NUMBER}-*"
-            gh api "/users/chronicle20/packages/container/${svc}%2F${svc}/versions" \
-              --paginate \
-              --jq '.[] | select(.metadata.container.tags[]? | startswith("pr-'"${PR_NUMBER}"'-")) | .id' \
-              | while read -r vid; do
-                  gh api --method DELETE \
-                    "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" \
-                    || echo "skip: $svc/$vid"
-              done
+            # List versions separately from the delete loop so a 404 on the
+            # listing call (package never published — e.g. the first PR that
+            # adds a new service to services.json) cleanly skips the service
+            # instead of aborting under `set -euo pipefail`.
+            VIDS=$(gh api "/users/chronicle20/packages/container/${svc}%2F${svc}/versions" \
+                     --paginate \
+                     --jq '.[] | select(.metadata.container.tags[]? | startswith("pr-'"${PR_NUMBER}"'-")) | .id' \
+                     2>/dev/null) \
+              || { echo "  skip: package $svc not present on ghcr"; continue; }
+            for vid in $VIDS; do
+              gh api --method DELETE \
+                "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" \
+                || echo "  skip: $svc/$vid"
+            done
           done
 
   delete-bot-branch:

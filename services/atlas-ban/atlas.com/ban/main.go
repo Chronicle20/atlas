@@ -78,7 +78,7 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	go tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, db, time.Minute*time.Duration(5)))
+	go tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, tdm.Context(), db, time.Minute*time.Duration(5)))
 	go tasks.Register(l, tdm.Context())(history.NewHistoryPurge(l, db, time.Hour*time.Duration(24)))
 
 	tdm.TeardownFunc(database.Teardown(l, db))

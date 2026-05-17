@@ -3,7 +3,7 @@ package drop
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ import (
 // use different ids (1 and 2).
 func newDropsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&entity{ID: 1, TenantId: tidA, MonsterId: 100, ItemId: 2000000, Chance: 1000}).Error)
 	require.NoError(t, db.Create(&entity{ID: 2, TenantId: tidB, MonsterId: 100, ItemId: 2000001, Chance: 2000}).Error)
@@ -26,13 +26,13 @@ func newDropsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestMonsterDropProvider_GetByMonsterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newDropsDB(t)
 
-	rowsA, err := getByMonsterId(100)(db.WithContext(database.TenantContext(tidA)))()
+	rowsA, err := getByMonsterId(100)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	require.Len(t, rowsA, 1, "monster 100 has drops in both tenants — only tenant A's row should return")
 	assert.Equal(t, tidA, rowsA[0].TenantId)
 	assert.Equal(t, uint32(1000), rowsA[0].Chance)
 
-	rowsB, err := getByMonsterId(100)(db.WithContext(database.TenantContext(tidB)))()
+	rowsB, err := getByMonsterId(100)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	require.Len(t, rowsB, 1)
 	assert.Equal(t, tidB, rowsB[0].TenantId)
@@ -45,7 +45,7 @@ func TestMonsterDropAdministrator_BulkCreate_RowsLandUnderContextTenant(t *testi
 	// the F6 regression in libs/atlas-database, so this is the plan-prescribed
 	// no-op assertion: BulkCreate succeeds under a tenant context and the rows
 	// reflect that tenant.
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA := uuid.New()
 
 	mdl, err := NewMonsterDropBuilder(tidA, 0).
@@ -55,7 +55,7 @@ func TestMonsterDropAdministrator_BulkCreate_RowsLandUnderContextTenant(t *testi
 		Build()
 	require.NoError(t, err)
 
-	err = BulkCreateMonsterDrop(db.WithContext(database.TenantContext(tidA)), []Model{mdl})
+	err = BulkCreateMonsterDrop(db.WithContext(databasetest.TenantContext(tidA)), []Model{mdl})
 	require.NoError(t, err)
 
 	var rows []entity

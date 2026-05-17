@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 // to only its own row.
 func newAssetTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	storageId := uuid.New()
 	exp := time.Now().Add(24 * time.Hour)
@@ -37,13 +37,13 @@ func newAssetTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID) 
 func TestAssetProvider_GetByStorageId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, storageId := newAssetTenantDB(t)
 
-	gotA, err := GetByStorageId(db.WithContext(database.TenantContext(tidA)))(storageId)
+	gotA, err := GetByStorageId(db.WithContext(databasetest.TenantContext(tidA)))(storageId)
 	require.NoError(t, err)
 	require.Len(t, gotA, 1, "tenant A should only see its own asset")
 	assert.Equal(t, uint32(1), gotA[0].Id())
 	assert.Equal(t, uint32(10), gotA[0].Quantity())
 
-	gotB, err := GetByStorageId(db.WithContext(database.TenantContext(tidB)))(storageId)
+	gotB, err := GetByStorageId(db.WithContext(databasetest.TenantContext(tidB)))(storageId)
 	require.NoError(t, err)
 	require.Len(t, gotB, 1, "tenant B should only see its own asset")
 	assert.Equal(t, uint32(2), gotB[0].Id())
@@ -53,7 +53,7 @@ func TestAssetProvider_GetByStorageId_FiltersByTenant(t *testing.T) {
 func TestAssetAdministrator_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _, _ := newAssetTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("id = ?", 1).
 		Update("quantity", uint32(7777)).Error

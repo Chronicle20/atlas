@@ -6,6 +6,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -157,14 +158,14 @@ func TestDeleteByCharacterId_ScopedToTenant(t *testing.T) {
 	// tenant A's row is deleted. Uses NewInMemoryTenantDB for fresh per-test
 	// isolation (testDatabase above shares state across tests via a shared
 	// cache).
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA := uuid.New()
 	tidB := uuid.New()
 	now := time.Now()
 	createTestEntity(db, tidA, 1000, 2000, 1, now.AddDate(0, 0, -1))
 	createTestEntity(db, tidB, 1000, 2000, 1, now.AddDate(0, 0, -1))
 
-	err := deleteByCharacterId(db.WithContext(database.TenantContext(tidA)), 1000)
+	err := deleteByCharacterId(db.WithContext(databasetest.TenantContext(tidA)), 1000)
 	assert.NoError(t, err)
 
 	var rows []Entity

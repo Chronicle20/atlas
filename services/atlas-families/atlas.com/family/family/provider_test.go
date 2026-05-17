@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ import (
 // both read and write paths.
 func newFamiliesDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	senior := uint32(50)
 	require.NoError(t, db.Create(&Entity{
@@ -38,13 +38,13 @@ func newFamiliesDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestFamilyProvider_GetBySeniorId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newFamiliesDB(t)
 
-	rowsA, err := GetBySeniorIdProvider(50)(db.WithContext(database.TenantContext(tidA)))()
+	rowsA, err := GetBySeniorIdProvider(50)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	require.Len(t, rowsA, 1, "senior 50 has juniors in both tenants — only tenant A's row should return")
 	assert.Equal(t, tidA, rowsA[0].TenantId)
 	assert.Equal(t, uint32(101), rowsA[0].CharacterId)
 
-	rowsB, err := GetBySeniorIdProvider(50)(db.WithContext(database.TenantContext(tidB)))()
+	rowsB, err := GetBySeniorIdProvider(50)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	require.Len(t, rowsB, 1)
 	assert.Equal(t, tidB, rowsB[0].TenantId)
@@ -58,7 +58,7 @@ func TestFamilyAdministrator_BatchResetDailyRep_ScopedToTenant(t *testing.T) {
 	// BatchResetDailyRep updates every row with daily_rep > 0. Without tenant
 	// scoping it would reset both tenants' counters; with scoping only tenant
 	// A's row should be touched.
-	result, err := BatchResetDailyRep(db.WithContext(database.TenantContext(tidA)), log)()
+	result, err := BatchResetDailyRep(db.WithContext(databasetest.TenantContext(tidA)), log)()
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), result.AffectedCount, "only tenant A's row should be affected")
 

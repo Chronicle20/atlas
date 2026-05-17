@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 // NpcId. UUID primary keys are unique per row.
 func newShopsTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -39,12 +39,12 @@ func newShopsTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, 
 func TestShopsProvider_GetByNpcId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newShopsTenantDB(t)
 
-	gotA, err := getByNpcId(9201000)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByNpcId(9201000)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, idA, gotA.Id)
 
-	gotB, err := getByNpcId(9201000)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByNpcId(9201000)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantId)
 	assert.Equal(t, idB, gotB.Id)
@@ -55,7 +55,7 @@ func TestShopsAdministrator_UpdateShop_ScopedToTenant(t *testing.T) {
 
 	// updateShop loads-by-npcId then Save()s — the tenant callback must keep
 	// tenant B's matching-npcId row untouched.
-	_, err := updateShop(tidA, 9201000, true)(db.WithContext(database.TenantContext(tidA)))()
+	_, err := updateShop(tidA, 9201000, true)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 
 	var rows []Entity

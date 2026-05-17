@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ import (
 // never fires under sqlite.
 func newScriptTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, MigrateTable)
+	db := databasetest.NewInMemoryTenantDB(t, MigrateTable)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -36,12 +36,12 @@ func newScriptTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID,
 func TestScriptProvider_GetByReactorId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newScriptTenantDB(t)
 
-	gotA, err := getByReactorIdProvider("reactor-1")(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByReactorIdProvider("reactor-1")(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantID)
 	assert.Equal(t, idA, gotA.ID)
 
-	gotB, err := getByReactorIdProvider("reactor-1")(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByReactorIdProvider("reactor-1")(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantID)
 	assert.Equal(t, idB, gotB.ID)
@@ -50,7 +50,7 @@ func TestScriptProvider_GetByReactorId_FiltersByTenant(t *testing.T) {
 func TestScriptAdministrator_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _, idA, _ := newScriptTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("id = ?", idA).
 		Update("data", `{"reactorId":"reactor-1","hitRules":[],"actRules":[],"label":"tenantA-only"}`).Error

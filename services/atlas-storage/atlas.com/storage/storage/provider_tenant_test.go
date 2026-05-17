@@ -3,7 +3,7 @@ package storage
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -17,7 +17,7 @@ import (
 // allowed. UUID PK is set explicitly to skip the BeforeCreate generator path.
 func newStorageTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&Entity{
@@ -40,12 +40,12 @@ func TestStorageProvider_GetByWorldAndAccountId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newStorageTenantDB(t)
 
 	gotA, err := GetByWorldAndAccountId(testLogger(),
-		db.WithContext(database.TenantContext(tidA)))(0, 1000)
+		db.WithContext(databasetest.TenantContext(tidA)))(0, 1000)
 	require.NoError(t, err)
 	assert.Equal(t, idA, gotA.Id())
 
 	gotB, err := GetByWorldAndAccountId(testLogger(),
-		db.WithContext(database.TenantContext(tidB)))(0, 1000)
+		db.WithContext(databasetest.TenantContext(tidB)))(0, 1000)
 	require.NoError(t, err)
 	assert.Equal(t, idB, gotB.Id())
 }
@@ -53,7 +53,7 @@ func TestStorageProvider_GetByWorldAndAccountId_FiltersByTenant(t *testing.T) {
 func TestStorageAdministrator_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _, _, _ := newStorageTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("account_id = ?", 1000).
 		Update("mesos", uint32(9999)).Error

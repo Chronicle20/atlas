@@ -3,7 +3,7 @@ package account
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ import (
 // different ids (1 and 2).
 func newAccountsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&Entity{ID: 1, TenantId: tidA, Name: "hero", Password: "pwA", Gender: 0}).Error)
 	require.NoError(t, db.Create(&Entity{ID: 2, TenantId: tidB, Name: "hero", Password: "pwB", Gender: 0}).Error)
@@ -26,13 +26,13 @@ func newAccountsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestAccountProvider_EntityById_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newAccountsDB(t)
 
-	gotA, err := entityById(1)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := entityById(1)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, "pwA", gotA.Password)
 
 	// Tenant B asking for id 1 (which belongs to tenant A) must not see it.
-	_, err = entityById(1)(db.WithContext(database.TenantContext(tidB)))()
+	_, err = entityById(1)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.Error(t, err, "tenant B must not see tenant A's row by id")
 }
 
@@ -41,7 +41,7 @@ func TestAccountAdministrator_Update_ScopedToTenant(t *testing.T) {
 
 	// Tenant A updates its own row by id. The update path uses the same gorm
 	// context, so the tenant callback must scope the write to tenant A only.
-	err := update(db.WithContext(database.TenantContext(tidA)))(updatePic("tenantA-only"))(1)
+	err := update(db.WithContext(databasetest.TenantContext(tidA)))(updatePic("tenantA-only"))(1)
 	require.NoError(t, err)
 
 	var rows []Entity

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 // different ids (1 and 2).
 func newBansDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	expiresA := time.Now().Add(24 * time.Hour)
 	expiresB := time.Now().Add(48 * time.Hour)
@@ -29,12 +29,12 @@ func newBansDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestBanProvider_EntityById_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newBansDB(t)
 
-	gotA, err := entityById(1)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := entityById(1)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 
 	// Tenant B asking for id 1 (which belongs to tenant A) must not see it.
-	_, err = entityById(1)(db.WithContext(database.TenantContext(tidB)))()
+	_, err = entityById(1)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.Error(t, err, "tenant B must not see tenant A's row by id")
 }
 
@@ -45,7 +45,7 @@ func TestBanAdministrator_UpdateExpiresAt_ScopedToTenant(t *testing.T) {
 	// Tenant A updates ban id=1. The tenant callback must restrict the write to
 	// tenant A's row only — even if a malicious actor tries to target id=2, the
 	// matching tenant_id should prevent the write.
-	err := updateExpiresAt(db.WithContext(database.TenantContext(tidA)))(1, newExpiry)
+	err := updateExpiresAt(db.WithContext(databasetest.TenantContext(tidA)))(1, newExpiry)
 	require.NoError(t, err)
 
 	var rows []Entity

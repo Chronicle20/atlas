@@ -1,9 +1,10 @@
-package database
+package databasetest
 
 import (
 	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -17,14 +18,14 @@ import (
 // callbacks registered and every supplied Migrator applied. Use this in provider
 // tests instead of hand-rolling sqlite setup. A discard logger is attached so
 // callback warnings do not spam test output.
-func NewInMemoryTenantDB(t *testing.T, migrations ...Migrator) *gorm.DB {
+func NewInMemoryTenantDB(t *testing.T, migrations ...database.Migrator) *gorm.DB {
 	t.Helper()
 	l, _ := test.NewNullLogger()
 	l.SetLevel(logrus.DebugLevel)
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	registerTenantCallbacks(l, db)
+	database.RegisterTenantCallbacks(l, db)
 	for _, m := range migrations {
 		require.NoError(t, m(db))
 	}

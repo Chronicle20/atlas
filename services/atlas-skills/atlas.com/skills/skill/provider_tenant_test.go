@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 // each tenant to only its own row.
 func newSkillTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	exp := time.Now().Add(24 * time.Hour)
 	require.NoError(t, db.Create(&Entity{
@@ -34,13 +34,13 @@ func newSkillTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestSkillProvider_GetByCharacterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newSkillTenantDB(t)
 
-	gotA, err := getByCharacterId(500)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByCharacterId(500)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	require.Len(t, gotA, 1, "tenant A should only see its own skill row")
 	assert.Equal(t, tidA, gotA[0].TenantId)
 	assert.Equal(t, uint32(1001), gotA[0].Id)
 
-	gotB, err := getByCharacterId(500)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByCharacterId(500)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	require.Len(t, gotB, 1, "tenant B should only see its own skill row")
 	assert.Equal(t, tidB, gotB[0].TenantId)
@@ -50,7 +50,7 @@ func TestSkillProvider_GetByCharacterId_FiltersByTenant(t *testing.T) {
 func TestSkillAdministrator_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _ := newSkillTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("character_id = ?", 500).
 		Update("level", byte(99)).Error

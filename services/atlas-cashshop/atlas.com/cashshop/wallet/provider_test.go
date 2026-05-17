@@ -3,7 +3,7 @@ package wallet
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ import (
 // is no sqlite uniqueness conflict to worry about.
 func newWalletsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&Entity{Id: uuid.New(), TenantId: tidA, AccountId: 42, Credit: 100, Points: 10, Prepaid: 1}).Error)
 	require.NoError(t, db.Create(&Entity{Id: uuid.New(), TenantId: tidB, AccountId: 42, Credit: 500, Points: 50, Prepaid: 5}).Error)
@@ -26,12 +26,12 @@ func newWalletsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestWalletProvider_ByAccountId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newWalletsDB(t)
 
-	gotA, err := byAccountIdEntityProvider(42)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := byAccountIdEntityProvider(42)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, uint32(100), gotA.Credit, "should be tenant A's wallet")
 
-	gotB, err := byAccountIdEntityProvider(42)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := byAccountIdEntityProvider(42)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantId)
 	assert.Equal(t, uint32(500), gotB.Credit, "should be tenant B's wallet")
@@ -43,7 +43,7 @@ func TestWalletAdministrator_UpdateEntity_ScopedToTenant(t *testing.T) {
 	// updateEntity reads then writes under the same context. Both halves must
 	// scope to tenant A — read returns tenant A's row, save updates only that
 	// row.
-	_, err := updateEntity(db.WithContext(database.TenantContext(tidA)), 42, 999, 99, 9)
+	_, err := updateEntity(db.WithContext(databasetest.TenantContext(tidA)), 42, 999, 99, 9)
 	require.NoError(t, err)
 
 	var rows []Entity

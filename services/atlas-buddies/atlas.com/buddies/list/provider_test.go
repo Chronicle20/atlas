@@ -5,7 +5,7 @@ import (
 
 	"atlas-buddies/buddy"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +28,7 @@ func newListsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.U
 			capacity INTEGER NOT NULL
 		)`).Error
 	}
-	db := database.NewInMemoryTenantDB(t, listsMigration, buddy.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, listsMigration, buddy.Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	listAId, listBId := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&Entity{Id: listAId, TenantId: tidA, CharacterId: 7, Capacity: 20}).Error)
@@ -39,12 +39,12 @@ func newListsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.U
 func TestListProvider_ByCharacterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, _, _ := newListsDB(t)
 
-	gotA, err := byCharacterIdEntityProvider(7)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := byCharacterIdEntityProvider(7)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, byte(20), gotA.Capacity, "should be tenant A's row")
 
-	gotB, err := byCharacterIdEntityProvider(7)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := byCharacterIdEntityProvider(7)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantId)
 	assert.Equal(t, byte(50), gotB.Capacity, "should be tenant B's row")
@@ -56,7 +56,7 @@ func TestListAdministrator_UpdateCapacity_ScopedToTenant(t *testing.T) {
 	// updateCapacity calls byCharacterIdEntityProvider then db.Save. Both pieces
 	// run under the tenant context so the read must only return tenant A's row,
 	// and the save must only update tenant A's row.
-	err := updateCapacity(db.WithContext(database.TenantContext(tidA)), 7, 99)
+	err := updateCapacity(db.WithContext(databasetest.TenantContext(tidA)), 7, 99)
 	require.NoError(t, err)
 
 	var rows []Entity

@@ -6,7 +6,7 @@ import (
 
 	"atlas-pets/pet/exclude"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 // globally unique under sqlite so we use 1 and 2.
 func newPetTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration, exclude.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration, exclude.Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	slot := int8(-1)
 	exp := time.Now().Add(24 * time.Hour)
@@ -35,20 +35,20 @@ func newPetTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestPetProvider_GetById_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newPetTenantDB(t)
 
-	gotA, err := getById(1)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getById(1)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, uint32(1), gotA.Id)
 
 	// Tenant B asking for tenant A's row must miss.
-	_, err = getById(1)(db.WithContext(database.TenantContext(tidB)))()
+	_, err = getById(1)(db.WithContext(databasetest.TenantContext(tidB)))()
 	assert.Error(t, err)
 }
 
 func TestPetAdministrator_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _ := newPetTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("id = ?", 1).
 		Update("name", "tenantA-only").Error

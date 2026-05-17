@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +17,7 @@ import (
 // globally unique under sqlite, so the two rows use ids 1 and 2.
 func newMarriagesDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	now := time.Now()
 	require.NoError(t, db.Create(&Entity{
@@ -36,13 +36,13 @@ func TestMarriageProvider_GetActiveMarriageByCharacter_FiltersByTenant(t *testin
 	log := logrus.New()
 	log.SetLevel(logrus.FatalLevel)
 
-	gotA, err := GetActiveMarriageByCharacterProvider(db.WithContext(database.TenantContext(tidA)), log)(1001)()
+	gotA, err := GetActiveMarriageByCharacterProvider(db.WithContext(databasetest.TenantContext(tidA)), log)(1001)()
 	require.NoError(t, err)
 	require.NotNil(t, gotA)
 	assert.Equal(t, tidA, gotA.TenantId())
 	assert.Equal(t, uint32(1), gotA.Id())
 
-	gotB, err := GetActiveMarriageByCharacterProvider(db.WithContext(database.TenantContext(tidB)), log)(1001)()
+	gotB, err := GetActiveMarriageByCharacterProvider(db.WithContext(databasetest.TenantContext(tidB)), log)(1001)()
 	require.NoError(t, err)
 	require.NotNil(t, gotB)
 	assert.Equal(t, tidB, gotB.TenantId())
@@ -68,7 +68,7 @@ func TestMarriageAdministrator_UpdateMarriage_ScopedToTenant(t *testing.T) {
 		Build()
 	require.NoError(t, err)
 
-	_, err = UpdateMarriage(db.WithContext(database.TenantContext(tidA)), log)(marriageA)()
+	_, err = UpdateMarriage(db.WithContext(databasetest.TenantContext(tidA)), log)(marriageA)()
 	require.NoError(t, err)
 
 	var rows []Entity

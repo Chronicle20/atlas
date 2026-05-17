@@ -3,7 +3,7 @@ package card
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 // can coexist.
 func newTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&entity{
 		TenantId: tidA, CharacterId: 1001, CardId: 2380000, Level: 1, IsSpecial: false,
@@ -48,7 +48,7 @@ func TestCardAdministrator_UpsertCard_ScopedToTenant(t *testing.T) {
 	// upsertCard must increment only the tenant-A row, leaving tenant B's at
 	// level 1.
 	eid := uuid.New()
-	res, err := upsertCard(db.WithContext(database.TenantContext(tidA)), tidA, 1001, 2380000, eid)
+	res, err := upsertCard(db.WithContext(databasetest.TenantContext(tidA)), tidA, 1001, 2380000, eid)
 	require.NoError(t, err)
 	require.False(t, res.Inserted)
 	require.Equal(t, uint8(2), res.NewLevel)

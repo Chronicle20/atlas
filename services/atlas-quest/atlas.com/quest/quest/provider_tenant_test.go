@@ -6,7 +6,7 @@ import (
 
 	"atlas-quest/quest/progress"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ import (
 // sqlite so we use 1 and 2.
 func newQuestTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration, progress.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration, progress.Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	now := time.Now()
 	require.NoError(t, db.Create(&Entity{
@@ -35,12 +35,12 @@ func newQuestTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestQuestProvider_GetByCharacterAndQuest_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newQuestTenantDB(t)
 
-	gotA, err := byCharacterIdAndQuestIdEntityProvider(1000, 42)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := byCharacterIdAndQuestIdEntityProvider(1000, 42)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, uint32(1), gotA.ID)
 
-	gotB, err := byCharacterIdAndQuestIdEntityProvider(1000, 42)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := byCharacterIdAndQuestIdEntityProvider(1000, 42)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantId)
 	assert.Equal(t, uint32(2), gotB.ID)
@@ -49,7 +49,7 @@ func TestQuestProvider_GetByCharacterAndQuest_FiltersByTenant(t *testing.T) {
 func TestQuestAdministrator_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _ := newQuestTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("id = ?", 1).
 		Update("completed_count", uint32(9999)).Error

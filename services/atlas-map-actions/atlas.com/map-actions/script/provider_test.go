@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ import (
 // (capital D) — GORM normalizes to the tenant_id column the callback expects.
 func newScriptsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, MigrateTable)
+	db := databasetest.NewInMemoryTenantDB(t, MigrateTable)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -36,12 +36,12 @@ func newScriptsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid
 func TestScriptProvider_ByNameAndType_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newScriptsDB(t)
 
-	gotA, err := getByScriptNameAndTypeProvider("doorway")("map_entry")(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByScriptNameAndTypeProvider("doorway")("map_entry")(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantID)
 	assert.Equal(t, idA, gotA.ID)
 
-	gotB, err := getByScriptNameAndTypeProvider("doorway")("map_entry")(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByScriptNameAndTypeProvider("doorway")("map_entry")(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantID)
 	assert.Equal(t, idB, gotB.ID)
@@ -53,7 +53,7 @@ func TestScriptAdministrator_DeleteMapScript_ScopedToTenant(t *testing.T) {
 	// Tenant A asks to delete idB (which belongs to tenant B). With tenant
 	// scoping nothing should be deleted — tenant B's row survives. deleteMapScript
 	// is a soft delete, so we check that the row is still present and undeleted.
-	require.NoError(t, deleteMapScript(db.WithContext(database.TenantContext(tidA)))(idB))
+	require.NoError(t, deleteMapScript(db.WithContext(databasetest.TenantContext(tidA)))(idB))
 
 	var rows []Entity
 	require.NoError(t, db.Unscoped().Order("tenant_id").Find(&rows).Error)

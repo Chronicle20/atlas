@@ -5,7 +5,7 @@ import (
 	"time"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ import (
 // and delete-by-character-id write paths.
 func newVisitsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, MigrateTable)
+	db := databasetest.NewInMemoryTenantDB(t, MigrateTable)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -34,12 +34,12 @@ func newVisitsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.
 func TestVisitProvider_ByCharacterIdAndMapId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newVisitsDB(t)
 
-	gotA, err := getByCharacterIdAndMapIdProvider(1001)(_map.Id(100000000))(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByCharacterIdAndMapIdProvider(1001)(_map.Id(100000000))(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, idA, gotA.ID)
 
-	gotB, err := getByCharacterIdAndMapIdProvider(1001)(_map.Id(100000000))(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByCharacterIdAndMapIdProvider(1001)(_map.Id(100000000))(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantId)
 	assert.Equal(t, idB, gotB.ID)
@@ -50,7 +50,7 @@ func TestVisitAdministrator_DeleteByCharacterId_ScopedToTenant(t *testing.T) {
 
 	// Tenant A deletes by character_id alone. Without tenant scoping the
 	// underlying WHERE would purge both tenants' visits for character 1001.
-	affected, err := deleteByCharacterId(db.WithContext(database.TenantContext(tidA)))(1001)
+	affected, err := deleteByCharacterId(db.WithContext(databasetest.TenantContext(tidA)))(1001)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), affected, "only tenant A's visit should be deleted")
 

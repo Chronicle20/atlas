@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 // CharacterId. The primary key is a UUID, so we generate distinct ids per row.
 func newShopTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -49,13 +49,13 @@ func newShopTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, u
 func TestShopProvider_GetByCharacterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newShopTenantDB(t)
 
-	gotA, err := getByCharacterId(1001)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByCharacterId(1001)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	require.Len(t, gotA, 1)
 	assert.Equal(t, tidA, gotA[0].TenantId)
 	assert.Equal(t, idA, gotA[0].Id)
 
-	gotB, err := getByCharacterId(1001)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByCharacterId(1001)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	require.Len(t, gotB, 1)
 	assert.Equal(t, tidB, gotB[0].TenantId)
@@ -68,9 +68,9 @@ func TestShopAdministrator_Update_ScopedToTenant(t *testing.T) {
 	// Load tenant A's row via tenant context, mutate Title, and Save().
 	// The tenant callback must keep tenant B's row untouched.
 	var entityA Entity
-	require.NoError(t, db.WithContext(database.TenantContext(tidA)).Where("id = ?", idA).First(&entityA).Error)
+	require.NoError(t, db.WithContext(databasetest.TenantContext(tidA)).Where("id = ?", idA).First(&entityA).Error)
 	entityA.Title = "tenantA-only"
-	_, err := update(&entityA)(db.WithContext(database.TenantContext(tidA)))()
+	_, err := update(&entityA)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 
 	var rows []Entity

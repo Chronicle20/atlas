@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ import (
 // under sqlite, so the two rows use ids 1 and 2.
 func newNotesDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	now := time.Now()
 	require.NoError(t, db.Create(&Entity{
@@ -33,13 +33,13 @@ func newNotesDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestNoteProvider_GetByCharacterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newNotesDB(t)
 
-	gotA, err := getByCharacterIdProvider(1001)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByCharacterIdProvider(1001)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	require.Len(t, gotA, 1)
 	assert.Equal(t, tidA, gotA[0].TenantId)
 	assert.Equal(t, uint32(1), gotA[0].ID)
 
-	gotB, err := getByCharacterIdProvider(1001)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByCharacterIdProvider(1001)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	require.Len(t, gotB, 1)
 	assert.Equal(t, tidB, gotB[0].TenantId)
@@ -61,7 +61,7 @@ func TestNoteAdministrator_UpdateNote_ScopedToTenant(t *testing.T) {
 		Build()
 	require.NoError(t, err)
 
-	_, err = updateNote(db.WithContext(database.TenantContext(tidA)), tidA, modelA)
+	_, err = updateNote(db.WithContext(databasetest.TenantContext(tidA)), tidA, modelA)
 	require.NoError(t, err)
 
 	var rows []Entity

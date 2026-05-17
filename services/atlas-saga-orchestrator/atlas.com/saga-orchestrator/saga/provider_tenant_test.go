@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ import (
 // the tenant_id GORM callback.
 func newSagaTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	txA, txB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -43,13 +43,13 @@ func TestSagaStore_GetById_FiltersByTenant(t *testing.T) {
 	// Tenant A reads tenant A's saga.
 	var gotA Entity
 	require.NoError(t,
-		db.WithContext(database.TenantContext(tidA)).
+		db.WithContext(databasetest.TenantContext(tidA)).
 			Where("transaction_id = ?", txA).First(&gotA).Error)
 	assert.Equal(t, tidA, gotA.TenantId)
 
 	// Tenant A asking for tenant B's saga must miss (non-recovery path).
 	var gotMiss Entity
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Where("transaction_id = ?", txB).First(&gotMiss).Error
 	assert.Error(t, err, "tenant A must not see tenant B's saga via tenant-scoped read")
 }
@@ -57,7 +57,7 @@ func TestSagaStore_GetById_FiltersByTenant(t *testing.T) {
 func TestSagaStore_Update_ScopedToTenant(t *testing.T) {
 	db, tidA, _, txA, _ := newSagaTenantDB(t)
 
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("transaction_id = ?", txA).
 		Update("initiated_by", "tenantA-only").Error

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 // share the same QuestID. UUID primary keys are unique per row.
 func newQuestTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, MigrateTable)
+	db := databasetest.NewInMemoryTenantDB(t, MigrateTable)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	now := time.Now()
@@ -33,12 +33,12 @@ func newQuestTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, 
 func TestQuestProvider_GetByQuestId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newQuestTenantDB(t)
 
-	gotA, err := getByQuestIdProvider(1001)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByQuestIdProvider(1001)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantID)
 	assert.Equal(t, idA, gotA.ID)
 
-	gotB, err := getByQuestIdProvider(1001)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByQuestIdProvider(1001)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantID)
 	assert.Equal(t, idB, gotB.ID)
@@ -52,7 +52,7 @@ func TestQuestAdministrator_Update_ScopedToTenant(t *testing.T) {
 	// We exercise the raw write surface (since constructing a Model with a
 	// fully-validated StateMachine requires significant fixture setup
 	// orthogonal to tenant scoping).
-	err := db.WithContext(database.TenantContext(tidA)).
+	err := db.WithContext(databasetest.TenantContext(tidA)).
 		Model(&Entity{}).
 		Where("id = ?", idA).
 		Updates(map[string]interface{}{"data": `{"questId":1001,"label":"tenantA-only"}`}).Error

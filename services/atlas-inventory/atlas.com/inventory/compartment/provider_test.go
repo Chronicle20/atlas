@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 // observable through either read or write paths.
 func newCompartmentDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	db := database.NewInMemoryTenantDB(t, Migration)
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA, tidB := uuid.New(), uuid.New()
 	idA, idB := uuid.New(), uuid.New()
 	require.NoError(t, db.Create(&Entity{
@@ -32,13 +32,13 @@ func newCompartmentDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID, 
 func TestCompartmentProvider_GetByCharacterAndType_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB, idA, idB := newCompartmentDB(t)
 
-	gotA, err := getByCharacterAndType(1001, inventory.TypeValueEquip)(db.WithContext(database.TenantContext(tidA)))()
+	gotA, err := getByCharacterAndType(1001, inventory.TypeValueEquip)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidA, gotA.TenantId)
 	assert.Equal(t, idA, gotA.Id)
 	assert.Equal(t, uint32(24), gotA.Capacity)
 
-	gotB, err := getByCharacterAndType(1001, inventory.TypeValueEquip)(db.WithContext(database.TenantContext(tidB)))()
+	gotB, err := getByCharacterAndType(1001, inventory.TypeValueEquip)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
 	assert.Equal(t, tidB, gotB.TenantId)
 	assert.Equal(t, idB, gotB.Id)
@@ -52,7 +52,7 @@ func TestCompartmentAdministrator_UpdateCapacity_ScopedToTenant(t *testing.T) {
 	// tenant scoping the same character+type lookup would match tenant B's row
 	// too (Save uses primary-key match by id afterwards, but the First() lookup
 	// is what tenant scoping must protect here).
-	updated, err := updateCapacity(db.WithContext(database.TenantContext(tidA)), 1001, int8(inventory.TypeValueEquip), 48)
+	updated, err := updateCapacity(db.WithContext(databasetest.TenantContext(tidA)), 1001, int8(inventory.TypeValueEquip), 48)
 	require.NoError(t, err)
 	assert.Equal(t, idA, updated.Id())
 	assert.Equal(t, uint32(48), updated.Capacity())

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	pet2 "atlas-channel/kafka/message/pet"
+	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/pet"
 	"atlas-channel/server"
@@ -39,37 +40,54 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(pet2.EnvStatusEventTopic)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChanged(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChanged(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSlotChanged(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSlotChanged(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExcludeChanged(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleExcludeChanged(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}

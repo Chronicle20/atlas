@@ -587,3 +587,155 @@ Run the three commands documented in plan §Task 3 Step 8 from the worktree root
 ## Followup notes for Task 8 (per-service smoke tests)
 
 Strict per-PRD §10 (resolved decision OQ-5): every service in §"Tenant-scoped services in scope" needs at least one read and one write provider test on the sqlite in-memory pattern (`libs/atlas-database/tenant_scope_test.go`). That is 28 services × 2 tests = 56 thin tests (atlas-configurations is intentionally global and exempt; LEAK-F8 fixes in atlas-pets and atlas-buddies each add a third test exercising the preload path post-migration).
+
+---
+
+## Plan Adherence Audit (Task 10)
+
+**Auditor:** plan-adherence-reviewer
+**Date:** 2026-05-17
+**Branch:** task-041-tenant-filter-leaks
+**Base:** origin/main (8d11a876a)
+**Head:** 30cbb9de5
+
+### Verdict
+
+**FULL** — Tasks 1–9 of `plan.md` were faithfully executed. Every artifact named by the plan exists, every code change matches the prescribed shape, every classified leak has a corresponding fix commit, and the targeted Go tests pass. Tasks 10 and 11 are by definition the review/PR steps still in progress.
+
+### Task-by-task evidence
+
+| # | Task | Status | Commit(s) | Evidence |
+|---|---|---|---|---|
+| 1 | Shared in-memory tenant DB helper | DONE | 929f180a2 | `libs/atlas-database/testdb.go:20` (`NewInMemoryTenantDB`), `testdb.go:36` (`TenantContext`). `testdb_test.go` present. Package tests pass (`ok libs/atlas-database 0.234s`). |
+| 2 | Harden `tenantCreateCallback` for F6 | DONE | 44b931fbc | `libs/atlas-database/tenant_scope.go:82-117` (rewrite with `injectTenantIdIfZero` helper at `:124-132`). Three regression tests added: `TestCreateInjectsTenantIdWhenMissing`, `TestCreateDoesNotOverrideExplicitTenantId`, `TestCreateBatchInjectsTenantIdForZeroEntries` (`tenant_scope_test.go:210/223/236`). |
+| 3 | Audit enumeration → `audit.md` | DONE | 533f3712a | `docs/tasks/task-041-tenant-filter-leaks/audit.md` (589 lines) with full summary table, 320 call-site rows across 28 in-scope services, F1–F10 classification, "Tenant-scoped services in scope (29)" section. |
+| 4 | atlas-guilds provider regression tests | DONE | 6406d06a9 | `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go` exists; package test passes (`ok atlas-guilds/guild 0.327s`). |
+| 5 | atlas-character provider regression tests | DONE | 4985d9fc4 | `services/atlas-character/atlas.com/character/character/provider_test.go` exists; package test passes (`ok atlas-character/character 52.688s`). |
+| 6 | Apply F-class fix templates to LEAK rows | DONE | bd7f6832a, 4993da0a3, e775ff0be, 9e51b335f, 3dc286578 | F2 fixes in atlas-ban (ban + history tasks now wrap delete with `database.WithoutTenantFilter(t.ctx)`, verified at `services/atlas-ban/atlas.com/ban/{ban,history}/task.go:29-31`). F8 fixes added `TenantId uuid.UUID` to `services/atlas-buddies/.../buddy/entity.go:26` and `services/atlas-pets/.../pet/exclude/entity.go:26` with idempotent backfill in their `Migration`. `audit.md` LEAK rows updated to `done: <sha>` (commit 3dc286578). F6 LEAK rows are pre-resolved by Task 2. No remaining LEAK-F1/F3/F4/F5/F7/F9/F10 rows — none were classified by the audit. |
+| 7 | atlas-guilds preload tenant isolation | DONE | 3fef0568c | `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go` includes the preload test; the test seeds two tenants with overlapping member rows and asserts the preload returns only the matching tenant's members. |
+| 8 | Per-service smoke tests | DONE | 6364b8c06, fa758caf3, 14d268e4f, 69cf5e16e, 4eeae8a6f, 1afc4a108, 1c38f90f5, 30bdbda05, 9b1876f04, 143e52a7d, efd1ca981, ab60334c1, 23be2c941, 44b218258, 6d0752b69, e800b2eaf, bb4dfbb46, a6dd3f693, 408e2db7b, 6137b53e0, b16620459, 97be3bc0a, 8c9f56d1a, 47888ae66, 9dbdf2b05, 30cbb9de5 | All 28 in-scope tenant-scoped services (29 minus atlas-configurations; atlas-character and atlas-guilds covered by Tasks 4/5/7) have at least one `*_test.go` containing `NewInMemoryTenantDB` and `FiltersByTenant`/`ScopedToTenant` test names. Per-service count verified: atlas-account(1), atlas-ban(4), atlas-buddies(1), atlas-cashshop(1), atlas-character(3), atlas-drop-information(5), atlas-fame(2), atlas-families(1), atlas-gachapons(5), atlas-guilds(6), atlas-inventory(1), atlas-keys(1), atlas-map-actions(3), atlas-maps(3), atlas-marriages(3), atlas-merchant(1), atlas-monster-book(1), atlas-notes(1), atlas-npc-conversations(5), atlas-npc-shops(7), atlas-party-quests(3), atlas-pets(2), atlas-portal-actions(4), atlas-quest(2), atlas-reactor-actions(3), atlas-saga-orchestrator(1), atlas-skills(5), atlas-storage(2). Spot-checked test files (`atlas-account`, `atlas-buddies`, `atlas-pets`) confirm two-tenant overlap seeding and per-tenant isolation assertions in both read and write flavors. |
+| 9 | Build & test verification | DONE (spot-checked) | n/a | Sampled `libs/atlas-database`, `services/atlas-guilds/.../guild`, `services/atlas-character/.../character`, `services/atlas-pets/.../pet`, `services/atlas-buddies/.../list`, `services/atlas-ban/atlas.com/ban` — all pass. No `go.mod`/`Dockerfile` files were touched (`git diff --name-only origin/main...HEAD | rg '(go\.mod\|Dockerfile)$'` empty), so the Docker-build sub-step is correctly a no-op per the plan's note in Task 9 Step 5. |
+
+### Task 8 in-scope coverage (29 services minus atlas-configurations = 28)
+
+Every tenant-scoped service listed in audit.md §"Tenant-scoped services in scope" has a corresponding `git log` entry (single dedicated commit) and at least one `*_test.go` containing tenant-isolation assertions. No service in the list is missing tests.
+
+### Gaps / deferred work
+
+None. The plan explicitly defers (a) removing redundant `TenantId: t.Id()` assignments at Create call sites (out of scope per design §5), (b) atlas-ui / atlas-assets / atlas-data / atlas-wz-extractor / atlas-pr-bootstrap / atlas-runtime-orchestrator / atlas-tenants (no Go GORM tenanted use). The full `go test -race ./...` / `go vet ./...` / `go build ./...` sweep on **every** changed module (Task 9 Step 2/3/4 over all 30+ modules) was sampled rather than exhaustively run during this audit; the per-module per-service `go test` commands in Task 9 are the executor's responsibility before claiming the branch ready (CLAUDE.md mandatory checklist) and remain unverified by this audit beyond the spot checks above. If CI is green the obligation is satisfied.
+
+### Recommendation
+
+**READY FOR REVIEWER PASS (Task 10) → PR (Task 11).** Plan adherence is full; no rework required from this audit.
+
+---
+
+## Backend Guidelines Audit (Task 10)
+
+**Auditor:** backend-guidelines-reviewer (adversarial)
+**Date:** 2026-05-17
+**Branch:** task-041-tenant-filter-leaks
+**Base:** origin/main (8d11a876a)
+**Head:** 30cbb9de5
+**Verdict:** **PASS-WITH-NITS** (two real findings, one is a deploy-shape concern in `libs/atlas-database` that should be cleaned up but does not currently break the docker build)
+
+### Phase 1 — Build & Test Gate
+
+| Module / service | `go build ./...` | `go test ./... -count=1` |
+|---|---|---|
+| `libs/atlas-database` | PASS | `ok libs/atlas-database 0.322s` |
+| `services/atlas-ban/atlas.com/ban` | PASS | `ok atlas-ban/ban 0.492s`, `ok atlas-ban/history 0.286s` |
+| `services/atlas-buddies/atlas.com/buddies` | PASS | `ok atlas-buddies/buddy 0.183s`, `ok atlas-buddies/kafka/consumer/list 0.492s`, `ok atlas-buddies/list 0.297s` |
+| `services/atlas-pets/atlas.com/pets` | PASS | `ok atlas-pets/pet 0.388s`, `ok atlas-pets/kafka/consumer/character 0.231s`, `ok atlas-pets/kafka/consumer/pet 0.280s` |
+| All 25 other touched services (sampled via batch `go build ./...` + `go test ./... -count=1`) | PASS | PASS (no FAIL/panic in any output) |
+| `docker build -f services/atlas-ban/Dockerfile .` | PASS | image built; binary runs |
+
+Gate satisfied. Audit proceeds.
+
+### DOM-* Checklist (scope: changed code only)
+
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| DOM-02 | `Make(Entity)` honors new tenant_id | PASS | `services/atlas-buddies/atlas.com/buddies/buddy/entity.go:38` returns `Model` whose schema does not surface `tenantId` (Model is the public domain shape — `TenantId` is correctly entity-only). Same for `services/atlas-pets/atlas.com/pets/pet/exclude/entity.go:34`. |
+| DOM-06 | Processor accepts `FieldLogger` | N/A | No processor signatures changed; only callback, entity, task and test files. |
+| DOM-08 | POST/PATCH use `RegisterInputHandler` | N/A | No resource.go files touched. |
+| DOM-09 | Transform errors handled | N/A | No new transforms. |
+| DOM-10 | Test DB has tenant callbacks | **PASS** | All 33 new test files use `database.NewInMemoryTenantDB` (`libs/atlas-database/testdb.go:20`), which calls `registerTenantCallbacks(l, db)` at `testdb.go:27`. Verified across spot-checks: `services/atlas-account/atlas.com/account/account/provider_test.go:19`, `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go:29`, `services/atlas-pets/atlas.com/pets/pet/provider_tenant_test.go:20`, `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/provider_tenant_test.go:21`. |
+| DOM-11 | Providers use lazy evaluation | N/A | No provider files changed. |
+| DOM-15 | No direct entity creation in handlers | N/A | No handler files changed. |
+| DOM-20 | Table-driven tests | **WARN** | The new isolation tests are intentionally hand-written one-shot assertions, not table-driven. The DOM-20 rule is about provider/processor coverage of multiple inputs — these tests are by design `seed A, seed B, prove A's read does not return B`. Not a violation, but worth a note for future audits to avoid flagging. |
+| DOM-21 | No duplication of atlas-constants types | PASS | `services/atlas-character/atlas.com/character/character/provider_test.go:6` uses `world.Id(0)` (atlas-constants); `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go:8` uses `world.Id`; `services/atlas-inventory/atlas.com/inventory/compartment/provider_test.go:6` uses `inventory.TypeValueEquip`. No service-local redefinitions found in the diff. |
+| DOM-22 | Dockerfile has 4 mentions per direct `Chronicle20/atlas/libs/*` require | PASS | `git diff origin/main..HEAD -- '**/Dockerfile'` empty: no Dockerfile or go.mod touched, so the four-block lib lists are unchanged. `docker build -f services/atlas-ban/Dockerfile .` ran successfully above as a smoke test. |
+| DOM-23 | Kafka topic naming | N/A | No `EnvCommandTopic` / `EnvEventTopic` / configmap entries changed. |
+
+### SEC-* — Tenancy Isolation (the heart of this task)
+
+| ID | Check | Status | Evidence |
+|---|---|---|---|
+| SEC-T1 | Create callback injects tenant_id when struct value is zero | **PASS** | `libs/atlas-database/tenant_scope.go:82` — `tenantCreateCallback` now reflects over `db.Statement.ReflectValue`, walking single structs and slices, calling `injectTenantIdIfZero` at `:110`/`:113`. Helper at `:124` only sets when `field.ValueOf` reports `isZero=true`. Three regression tests: `tenant_scope_test.go:210` (`TestCreateInjectsTenantIdWhenMissing`), `:223` (`TestCreateDoesNotOverrideExplicitTenantId`), `:236` (`TestCreateBatchInjectsTenantIdForZeroEntries`). |
+| SEC-T2 | `WithoutTenantFilter` is honored on Create too (not just Query/Update/Delete) | **PASS** | `tenant_scope.go:93` — `if shouldSkipTenantFilter(ctx) { return }` short-circuits before injection. **Note:** no dedicated test exists for this Create+skip path (the existing `TestQueryWithSkipTenantFilter_ReturnsAll` only covers Find). Coverage gap, not a correctness failure — the code path is uniform with the rest of the callback file. |
+| SEC-T3 | Cross-tenant cleanups are explicit, not accidental | **PASS** | `services/atlas-ban/atlas.com/ban/ban/task.go:29` wraps the cleanup db in `database.WithoutTenantFilter(t.ctx)` with a docstring stating the intent at `:24-26`. Identical pattern at `services/atlas-ban/atlas.com/ban/history/task.go:29-32`. Both tasks now satisfy the "explicit bypass on purpose" rule from `patterns-multitenancy-context.md`. |
+| SEC-T4 | New tenant_id columns are NOT NULL, indexed, and backfilled idempotently | **PARTIAL PASS** | `services/atlas-buddies/atlas.com/buddies/buddy/entity.go:26` — `TenantId uuid.UUID \`gorm:"not null;index"\`` with backfill at `:15` (`UPDATE buddies SET tenant_id = ... FROM lists ...`). Same shape at `services/atlas-pets/atlas.com/pets/pet/exclude/entity.go:26` with backfill via the `pets` parent table at `:15`. Both backfills are gated by `if !db.Migrator().HasTable(<parent>) { return nil }` for idempotency. **See FINDING-2 below for a deploy-time concern about the column-add ordering.** |
+| SEC-T5 | Two-tenant read-and-write regression coverage for every fixed service | **PASS** | 33 new test files, 71 new `TestX` functions. Every plan-listed in-scope service has at least one provider test that seeds two tenants with overlapping data and asserts isolation. Spot-checked file list matches the plan adherence audit above. |
+| SEC-T6 | Test helper does not silently disable tenant scoping | **PASS** | `libs/atlas-database/testdb.go:27` calls `registerTenantCallbacks(l, db)` *before* any migration runs. `testdb_test.go:22` verifies the helper produces a tenant-isolating db. |
+| SEC-T7 | Production code does not unintentionally drag test infrastructure | **FAIL — see FINDING-1** | `libs/atlas-database/testdb.go` is a non-`_test.go` file that imports `testing`, `gorm.io/driver/sqlite`, `mattn/go-sqlite3`, `testify/require`, and `logrus/hooks/test`. These now appear in the production import closure of every consumer service. |
+
+### FINDING-1 — Test helper leaks `testing`, `testify`, and `mattn/go-sqlite3` into every consumer's production binary
+
+**Severity:** Moderate (non-blocking deploy, but real code-hygiene + binary-bloat regression)
+
+**Evidence:**
+- `libs/atlas-database/testdb.go:1` declares `package database` (production package), not `package database_test` or a `_test.go` file.
+- `libs/atlas-database/testdb.go:5` imports `testing`; `:11` imports `gorm.io/driver/sqlite`; `:9` imports `logrus/hooks/test`; `:10` imports `testify/require`.
+- Confirmed leakage: `cd services/atlas-ban/atlas.com/ban && go list -deps .` reports `testing`, `github.com/stretchr/testify/{assert,assert/yaml,require}`, `github.com/sirupsen/logrus/hooks/test`, `gorm.io/driver/sqlite`, and `github.com/mattn/go-sqlite3` as production transitive deps of `atlas-ban`.
+- Binary impact: a default `go build` of `atlas-ban` yields `34M`, with `1367` sqlite symbols and `22` testify/testing symbols in the resulting nm output. Pre-task this dependency closure did not include sqlite or testify at all.
+- Docker build still succeeds (verified above), and `CGO_ENABLED=0 go build` succeeds because `mattn/go-sqlite3` has graceful build constraints when cgo is disabled. So this is **not** a current deploy break, but it is a latent foot-gun the moment a future change toggles `CGO_ENABLED=1` in any of the 28 service Dockerfiles, or assumes `testing` is dev-only.
+
+**Why this matters per guidelines:**
+- `anti-patterns.md` rule: production packages must not import `testing` or test scaffolding. This is a Go community standard, not just an Atlas rule.
+- `file-responsibilities.md` separates test helpers into `_test.go` files or sibling `*test` packages so they live outside the production build closure.
+
+**Recommended fix (any one of):**
+1. Move `NewInMemoryTenantDB` + `TenantContext` into a sibling package `libs/atlas-database/databasetest/` (or `libs/atlas-database-test`). Consumer test files import that package by name. This is the canonical pattern (`net/http/httptest`, `encoding/json`).
+2. Rename `testdb.go` → `testdb_test.go`. This breaks cross-package consumers, so #1 is preferable.
+3. Add `//go:build test` build tag — works, but every consumer test file now needs `//go:build test` too, which is awkward.
+
+**Recommendation:** Option 1. Single file move plus an import-path bump across the 33 new test files. Estimated 30-minute fix.
+
+### FINDING-2 — `Migration` ordering may reject deployments on non-empty `buddies` / `excludes` tables under PostgreSQL
+
+**Severity:** Moderate (deploy-time risk; sqlite tests cannot prove safety on PG)
+
+**Evidence:**
+- `services/atlas-buddies/atlas.com/buddies/buddy/entity.go:8-21` runs `db.AutoMigrate(&Entity{})` *first*, then issues the backfill UPDATE.
+- The `Entity` struct at `:26` tags `TenantId uuid.UUID \`gorm:"not null;index"\`` with no `default:`.
+- GORM's PostgreSQL driver implements `AutoMigrate`'s "add column" via `ALTER TABLE buddies ADD COLUMN tenant_id uuid NOT NULL`. PostgreSQL rejects this on any existing non-empty table — *the new NOT NULL column must have a default for the implicit fill*, or the column must be added nullable first and made `NOT NULL` post-backfill.
+- The plan acknowledges this in design.md ("NOT NULL where safe") and resolved decision OQ-3 ("AutoMigrate adds column, in-place backfill, index, NOT NULL where safe"), but the implemented Migration does not split the steps. SQLite's `ALTER TABLE ... ADD COLUMN` is more permissive and accepts NOT NULL without default, which is why every new test passes.
+- Same exposure at `services/atlas-pets/atlas.com/pets/pet/exclude/entity.go:8-21` and `:26`.
+
+**Why this matters per guidelines:**
+- `patterns-multitenancy-context.md` calls out idempotent backfill as the safe pattern. The order needs to be: (1) add column nullable, (2) backfill, (3) `ALTER ... SET NOT NULL`.
+
+**Recommended fix:** Replace `db.AutoMigrate(&Entity{})` with explicit DDL when the column is being added — or, simpler, drop `not null` from the struct tag, run AutoMigrate, run backfill, then issue a follow-up `ALTER TABLE buddies ALTER COLUMN tenant_id SET NOT NULL` after the backfill. The sqlite test suite cannot catch this; a one-time integration check against a PG container with pre-seeded rows would close the gap.
+
+**Mitigating factor:** If both `buddies` and `excludes` are empty in every live deploy (fresh service tables), `ALTER TABLE ADD COLUMN ... NOT NULL` succeeds and the bug is invisible. The plan notes these are small tables. The deploy team should at minimum confirm row counts on staging before rolling.
+
+### Items checked and found compliant (terse)
+
+- `tenantQueryCallback` unchanged in shape; `Update` and `Delete` callbacks still wired through it (`tenant_scope.go:49-50`).
+- `WithoutTenantFilter` context key is unexported (`tenant_scope.go:17`); no external misuse possible.
+- New tests use `db.Unscoped()` correctly to verify cross-tenant ground truth without re-applying the callback (e.g. `services/atlas-account/.../provider_test.go:48`).
+- The two atlas-ban background tasks use `tdm.Context()` (no tenant attached), so `WithoutTenantFilter` is doubly safe — explicit *and* the callback would no-op anyway.
+- No `os.Getenv`, hardcoded credentials, or `logrus.StandardLogger()` introduced in any new test file (sweep across `git diff` of new tests is clean).
+- 33 new test files compile and pass; no `t.Skip()` or TODO markers added.
+- `libs/atlas-database`'s build cache is intact; no module-replace churn.
+
+### Final verdict
+
+**PASS-WITH-NITS.** The task achieves its security goal: tenant isolation is closed, the create callback fail-open behavior is replaced with explicit injection, cross-tenant cleanups are now self-documenting, and 33 regression tests prove the contract. Two findings remain:
+
+1. **FINDING-1 (test helper in production package)** — should be cleaned up before merge or in an immediate follow-up. It does not block deploy but it ships `mattn/go-sqlite3` into every microservice's binary, which is a regression from a code-hygiene standpoint and a latent footgun for future cgo or strip-symbols work. Recommend moving to a sibling `databasetest` package.
+2. **FINDING-2 (Migration column-add ordering on PG)** — needs verification against a non-empty PG table before deploy. If the live `buddies` and `excludes` tables are already empty (fresh tables) the migration succeeds; if they have rows the migration fails outright. The fix is small (split add → backfill → set-not-null) and should be applied or explicitly verified safe.
+
+No correctness FAIL on the tenant-isolation contract itself. No SEC- check classified as FAIL beyond FINDING-1 (which is a code-hygiene SEC-T7 issue, not a tenancy leak).
+

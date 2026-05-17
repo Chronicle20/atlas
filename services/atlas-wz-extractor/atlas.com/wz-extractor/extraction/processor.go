@@ -1,6 +1,7 @@
 package extraction
 
 import (
+	"atlas-wz-extractor/extraction/parallelism"
 	wzimage "atlas-wz-extractor/image"
 	"atlas-wz-extractor/wz"
 	wzxml "atlas-wz-extractor/xml"
@@ -8,14 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
-
-const envParallelism = "WZ_EXTRACT_PARALLELISM"
 
 type Processor interface {
 	// Extract preserves today's entry-point: list every WZ file under the
@@ -66,7 +63,7 @@ func (p *processorImpl) Extract(l logrus.FieldLogger, ctx context.Context, xmlOn
 		}
 	}
 
-	workers := ParallelismFromEnv(l)
+	workers := parallelism.FromEnv(l)
 	files := make([]string, 0, len(wzFiles))
 	for _, full := range wzFiles {
 		files = append(files, filepath.Base(full))
@@ -114,21 +111,6 @@ func (p *processorImpl) ExtractUnit(l logrus.FieldLogger, ctx context.Context, w
 	}
 
 	return nil
-}
-
-// ParallelismFromEnv reads WZ_EXTRACT_PARALLELISM with a runtime.NumCPU()
-// fallback. Invalid/zero values fall back to default and log a warning.
-func ParallelismFromEnv(l logrus.FieldLogger) int {
-	v := os.Getenv(envParallelism)
-	if v == "" {
-		return runtime.NumCPU()
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil || n <= 0 {
-		l.WithField("value", v).Warnf("invalid %s; using runtime.NumCPU()", envParallelism)
-		return runtime.NumCPU()
-	}
-	return n
 }
 
 // wipeCharacterCache removes the {imgOut}/character directory so a fresh

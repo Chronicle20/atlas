@@ -1,6 +1,7 @@
 package image
 
 import (
+	"atlas-wz-extractor/extraction/parallelism"
 	"atlas-wz-extractor/wz"
 	"atlas-wz-extractor/wz/canvas"
 	"atlas-wz-extractor/wz/property"
@@ -9,7 +10,6 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -414,10 +414,11 @@ type charPartJob struct {
 // skins) plus every .img in equipmentSubdirs, emitting per-template assets.
 //
 // Images are pre-parsed serially (because image parsing uses the shared
-// seek-based wz.Reader), then dispatched to a runtime.NumCPU() worker pool
-// for the CPU- and I/O-intensive canvas decode / PNG write phase.
-// Per-job errors are logged but do not abort the pool, preserving the
-// existing continue-on-error semantics.
+// seek-based wz.Reader), then dispatched to a worker pool sized from
+// WZ_EXTRACT_PARALLELISM (see extraction/parallelism) for the CPU- and
+// I/O-intensive canvas decode / PNG write phase. Per-job errors are
+// logged but do not abort the pool, preserving the existing continue-
+// on-error semantics.
 func extractCharacterParts(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	root := f.Root()
 	if root == nil {
@@ -451,11 +452,8 @@ func extractCharacterParts(l logrus.FieldLogger, f *wz.File, outputDir string) e
 		}
 	}
 
-	// Worker pool: runtime.NumCPU() goroutines consuming from jobCh.
-	workers := runtime.NumCPU()
-	if workers < 1 {
-		workers = 1
-	}
+	// Worker pool sized from WZ_EXTRACT_PARALLELISM (env var).
+	workers := parallelism.FromEnv(l)
 
 	jobCh := make(chan charPartJob, workers*2)
 	var wg sync.WaitGroup

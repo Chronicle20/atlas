@@ -214,3 +214,42 @@ func TestAdaptHandler_OversizedPayload_TruncatesPreview(t *testing.T) {
 		t.Errorf("expected preview to start with AAAA, got %q", unquoted[:min(8, len(unquoted))])
 	}
 }
+
+func TestAdaptHandler_ValidatorRejects_NoErrorLog(t *testing.T) {
+	l, buf := newCapturingLogger()
+
+	called := 0
+	validator := func(_ logrus.FieldLogger, _ context.Context, _ fakeEvent) bool { return false }
+	cfg := message.OneTimeConfig[fakeEvent](validator, func(_ logrus.FieldLogger, _ context.Context, _ fakeEvent) {
+		called++
+	})
+	h := message.AdaptHandler[fakeEvent](cfg)
+
+	payload, err := json.Marshal(fakeEvent{ID: 1})
+	if err != nil {
+		t.Fatalf("marshalling fixture: %v", err)
+	}
+	msg := kafka.Message{
+		Topic:     "EVENT_TOPIC_FAKE",
+		Partition: 0,
+		Offset:    1,
+		Value:     payload,
+	}
+
+	persistent, err := h(l, context.Background(), msg)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if !persistent {
+		t.Fatalf("expected (true, nil) on validator rejection (commit-and-skip), got persistent=false")
+	}
+	if called != 0 {
+		t.Fatalf("expected handler NOT to be invoked when validator rejects, was called %d times", called)
+	}
+
+	for _, e := range decodeLogLines(t, buf) {
+		if e["level"] == "error" {
+			t.Fatalf("expected no error-level log entry on validator rejection, got %v", e)
+		}
+	}
+}

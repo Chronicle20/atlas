@@ -208,7 +208,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-PLACEHOLDER_ATLAS_ENV
   - name: atlas-db-names
     literals:
-      - ATLAS_DB_NAMES=atlas-accounts atlas-ban atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
+      - ATLAS_DB_NAMES=atlas-accounts atlas-ban atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-monster-book atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
   - name: atlas-pr-bootstrap-tenant
     literals:
       - TENANT_ID=00000000-0000-0000-0000-000000000001

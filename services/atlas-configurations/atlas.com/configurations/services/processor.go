@@ -1,17 +1,56 @@
 package services
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"atlas-configurations/outbox"
 	"atlas-configurations/services/service"
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+// EnvServiceStatusTopic names the env var carrying the Kafka topic that
+// service config CRUD events are enqueued onto. When unset (e.g. in unit
+// tests that don't exercise the publish path), Enqueue is skipped.
+const EnvServiceStatusTopic = "EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"
+
+// serviceOutboxKey returns the outbox message key for a service. The
+// "service:" prefix prevents collisions with tenant keys on a shared
+// topic should the two ever be merged.
+func serviceOutboxKey(id uuid.UUID) []byte {
+	return []byte("service:" + id.String())
+}
+
+// enqueueServiceStatus inserts the outbox row for a service config change
+// inside the caller's transaction. When the topic env var is unset, the
+// call is a no-op so unit tests don't have to set it.
+func enqueueServiceStatus(tx *gorm.DB, id uuid.UUID, config any) error {
+	topic := os.Getenv(EnvServiceStatusTopic)
+	if topic == "" {
+		return nil
+	}
+	var value []byte
+	if config != nil {
+		v, err := outbox.NewServiceEnvelope(id, config, time.Now())
+		if err != nil {
+			return err
+		}
+		value = v
+	}
+	return outboxlib.Enqueue(tx, outboxlib.Message{
+		Topic: topic,
+		Key:   serviceOutboxKey(id),
+		Value: value,
+	})
+}
 
 type ServiceType string
 
@@ -127,7 +166,12 @@ func (p *Processor) Create(input service.InputRestModel) (uuid.UUID, error) {
 		serviceId = uuid.New()
 	}
 
-	err = database.ExecuteTransaction(p.db, create(p.ctx, serviceId, serviceType, *rm))
+	err = database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		if err := create(p.ctx, serviceId, serviceType, *rm)(db); err != nil {
+			return err
+		}
+		return enqueueServiceStatus(db, serviceId, input)
+	})
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -151,9 +195,20 @@ func (p *Processor) UpdateById(serviceId uuid.UUID, input service.InputRestModel
 		return err
 	}
 
-	return database.ExecuteTransaction(p.db, update(p.ctx, serviceId, serviceType, *rm))
+	return database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		if err := update(p.ctx, serviceId, serviceType, *rm)(db); err != nil {
+			return err
+		}
+		return enqueueServiceStatus(db, serviceId, input)
+	})
 }
 
 func (p *Processor) DeleteById(serviceId uuid.UUID) error {
-	return database.ExecuteTransaction(p.db, delete(p.ctx, serviceId))
+	return database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		if err := delete(p.ctx, serviceId)(db); err != nil {
+			return err
+		}
+		// Tombstone: nil config → nil value, suitable for log-compacted topic.
+		return enqueueServiceStatus(db, serviceId, nil)
+	})
 }

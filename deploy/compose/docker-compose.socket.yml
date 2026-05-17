@@ -42,6 +42,9 @@ services:
       LOG_LEVEL: debug
       SERVICE_ID: e7fb1d7e-47b8-46bd-97dc-867d93530000
       SERVICE_TYPE: channel-service
+      EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS: atlas.configuration.service.status
+      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS: atlas.configuration.tenant.status
+      DRAIN_DEADLINE_MS: "5000"
     ports:
       - "1201:1201"
       - "8301:8301"

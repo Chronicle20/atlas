@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-channel/account"
 	channel3 "atlas-channel/channel"
-	"atlas-channel/configuration"
+	"atlas-channel/configuration/projection"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
 	"atlas-channel/kafka/consumer/buddylist"
@@ -48,6 +48,7 @@ import (
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
 	"atlas-channel/kafka/consumer/system_message"
+	"atlas-channel/listener"
 	"atlas-channel/logger"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -56,10 +57,13 @@ import (
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
+
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
@@ -115,7 +119,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -126,7 +129,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
 )
 
 const serviceName = "atlas-channel"
@@ -143,12 +145,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
-	config, err := configuration.GetServiceConfig()
-	if err != nil {
-		l.WithError(err).Fatal("Unable to successfully load configuration.")
-	}
-	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, config.Id.String()))
+	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
+	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, serviceId.String()))
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()
@@ -204,187 +202,65 @@ func main() {
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
-	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
-
-	for _, ten := range config.Tenants {
-		tenantId := uuid.MustParse(ten.Id)
-		tenantConfig, err := configuration.GetTenantConfig(tenantId)
-		if err != nil {
-			continue
-		}
-
-		var t tenant.Model
-		t, err = tenant.Register(tenantId, tenantConfig.Region, tenantConfig.MajorVersion, tenantConfig.MinorVersion)
-		if err != nil {
-			continue
-		}
-		tctx := tenant.WithContext(sctx, t)
-
-		err = account.NewProcessor(l, tctx).InitializeRegistry()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
-		}
-
-		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
-		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
-			rw = socket2.ByteReadWriter{}
-		}
-
-		for _, w := range ten.Worlds {
-			for _, c := range w.Channels {
-				ch := channel2.NewModel(world.Id(w.Id), channel2.Id(c.Id))
-				sc := server.Register(t, ch, ten.IPAddress, c.Port)
-
-				fl := l.
-					WithField("tenant", t.Id().String()).
-					WithField("region", t.Region()).
-					WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion())).
-					WithField("world.id", sc.WorldId()).
-					WithField("channel.id", sc.ChannelId())
-
-				wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
-				if err = account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = asset.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = channel.InitHandlers(fl)(sc)(ten.IPAddress, c.Port)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = compartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = invite.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = _map.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = mbconsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register monster-book status handlers.")
-				}
-				if err = mistConsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = conversation.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = shop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = member.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = party.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = party_quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = session2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = fame.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = thread.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = chair.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = drop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = reactor.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = skill.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = buff.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = chalkboard.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = conversation_reward_notice.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = cashshopCompartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = instance_transport.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = saga.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-				if err = merchantConsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
-					fl.WithError(err).Fatal("Unable to register kafka handlers.")
-				}
-
-				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
-				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, ten.IPAddress, c.Port)
-			}
-		}
+	// Boot the configuration projection: subscribe to the two config-status
+	// topics, gate on caught-up so we don't drive the listener registry
+	// from a half-loaded state, then run the apply loop in a goroutine.
+	state := projection.NewState()
+	caughtUp := projection.NewCaughtUp()
+	sub := &projection.Subscriber{
+		State:        state,
+		CaughtUp:     caughtUp,
+		ServiceTopic: os.Getenv("EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"),
+		TenantTopic:  os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"),
+		ServiceId:    serviceId,
 	}
-	span.End()
-
-	//tt, err := config.FindTask(session.TimeoutTask)
-	if err != nil {
-		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
+	if err := sub.Start(tdm.Context(), l, consumerGroupId); err != nil {
+		l.WithError(err).Fatal("Unable to start configuration projection subscriber.")
 	}
-	//go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
+
+	ctxCaught, cancelCaught := context.WithTimeout(tdm.Context(), 30*time.Second)
+	if err := caughtUp.WaitCaughtUp(ctxCaught); err != nil {
+		cancelCaught()
+		l.WithError(err).Fatal("Configuration projection failed to catch up within 30s.")
+	}
+	cancelCaught()
+	l.Info("Configuration projection caught up; starting listener apply loop.")
+
+	listenerRegistry := listener.NewRegistry(l, listener.Dependencies{
+		UnregisterChannel: func(ch channel2.Model) error {
+			return channel3.NewProcessor(l, tdm.Context()).Unregister(ch)
+		},
+		SessionsForKey: func(key server.Key) []listener.Session {
+			// TODO: wire session.Processor lookup-by-key once available.
+			// Returning nil yields an empty drain phase 2, which is safe
+			// — phase 4 still cancels the ctx so handlers stop.
+			return nil
+		},
+		SendShutdownNotice: func(listener.Session) {},
+		DestroySession:     func(listener.Session) error { return nil },
+		RemoveHandler:      consumer.GetManager().RemoveHandler,
+	}, listener.Config{
+		DrainDeadline: parseDrainDeadline(),
+	})
+
+	// Drain every listener BEFORE other teardowns (producer close, session
+	// teardown, tracing flush) so in-flight kafka handlers and sockets stop
+	// touching state that those teardowns destroy.
+	tdm.TeardownFunc(func() {
+		l.Info("Draining all listeners.")
+		listenerRegistry.DrainAll()
+	})
+
+	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
+	go (&projection.ApplyLoop{
+		State:       state,
+		CaughtUp:    caughtUp,
+		Registry:    listenerRegistry,
+		AddBody:     build,
+		ServerModel: serverModelFn,
+		Interval:    250 * time.Millisecond,
+	}).Run(tdm.Context(), l)
+
 	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
 
 	tdm.TeardownFunc(session.Teardown(l))
@@ -400,6 +276,236 @@ func main() {
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")
+}
+
+// serverModelFn is the ServerModelFn the apply loop hands to listener.Add.
+// Idempotent: tenant.Register tolerates duplicate ids by overwriting the
+// registry entry, and server.Register replaces any prior entry at this key.
+func serverModelFn(key server.Key, cfg projection.ListenerConfig) server.Model {
+	t, err := tenant.Register(key.TenantId, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
+	if err != nil {
+		// tenant.Register only errors when Create errors; Create currently
+		// can't fail, but if it ever did we still need a Model. Fall back
+		// to a synthesized one so the listener can at least start.
+		t, _ = tenant.Create(key.TenantId, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
+	}
+	return server.Register(t, channel2.NewModel(key.WorldId, key.ChannelId), cfg.IPAddress, cfg.Port)
+}
+
+// buildListener returns the per-(t,w,c) AddBody the projection apply loop
+// invokes inside listener.Registry.Add. The closure captures shared
+// dependencies (validator/handler/writer maps, the projection state) so
+// each invocation can read the tenant's full socket config without
+// thrashing through the global consumer.GetManager() singleton's locks
+// any more than necessary.
+func buildListener(
+	l logrus.FieldLogger,
+	tdm *service.Manager,
+	state *projection.State,
+	validatorMap map[string]handler.MessageValidator,
+	handlerMap map[string]handler.MessageHandler,
+	writerList []string,
+) projection.AddBody {
+	return func(ctx context.Context, key server.Key, cfg projection.ListenerConfig, h *listener.Handle) ([]listener.HandlerHandle, error) {
+		_, tenants := state.Snapshot()
+		tenantCfg, ok := tenants[key.TenantId]
+		if !ok {
+			return nil, fmt.Errorf("tenant %s missing from projection state", key.TenantId)
+		}
+
+		t, err := tenant.Register(key.TenantId, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
+		if err != nil {
+			return nil, err
+		}
+		tctx := tenant.WithContext(ctx, t)
+
+		if err := account.NewProcessor(l, tctx).InitializeRegistry(); err != nil {
+			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
+		}
+
+		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+			rw = socket2.ByteReadWriter{}
+		}
+
+		sc := h.ServerModel
+
+		fl := l.
+			WithField("tenant", t.Id().String()).
+			WithField("region", t.Region()).
+			WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion())).
+			WithField("world.id", sc.WorldId()).
+			WithField("channel.id", sc.ChannelId())
+
+		wp := produceWriterProducer(fl)(tenantCfg.Socket.Writers, writerList, rw)
+
+		rh := consumer.GetManager().RegisterHandler
+		var handles []listener.HandlerHandle
+		register := func(hh []listener.HandlerHandle, err error) error {
+			if err != nil {
+				return err
+			}
+			handles = append(handles, hh...)
+			return nil
+		}
+
+		if err := register(account2.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(asset.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(buddylist.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(channel.InitHandlers(fl)(sc)(cfg.IPAddress, cfg.Port)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(character.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(expression.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(guild.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(compartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(invite.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(_map.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(message.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(monster.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(mistConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(conversation.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(shop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(member.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(party.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(party_quest.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(session2.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(fame.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(thread.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(chair.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(drop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(reactor.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(skill.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(buff.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(chalkboard.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(pet.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(consumable.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(conversation_reward_notice.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(system_message.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(cashshop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(cashshopCompartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(note3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(quest.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(instance_transport.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(saga.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(storage3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(gachapon.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+
+		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+
+		return handles, nil
+	}
+}
+
+// parseDrainDeadline reads DRAIN_DEADLINE_MS from env (default 5000ms,
+// clamped to a 10s ceiling). The listener.Registry enforces the same
+// ceiling internally; this parse exists so the operator log shows the
+// effective value we picked.
+func parseDrainDeadline() time.Duration {
+	const def = 5000 * time.Millisecond
+	const ceiling = 10 * time.Second
+	v := os.Getenv("DRAIN_DEADLINE_MS")
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return def
+	}
+	d := time.Duration(n) * time.Millisecond
+	if d > ceiling {
+		return ceiling
+	}
+	return d
 }
 
 func produceWriterProducer(l logrus.FieldLogger) func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {

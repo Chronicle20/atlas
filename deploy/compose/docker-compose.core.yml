@@ -144,6 +144,8 @@ services:
     environment:
       LOG_LEVEL: debug
       DB_NAME: atlas-configurations
+      EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS: atlas.configuration.service.status
+      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS: atlas.configuration.tenant.status
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/configurations/tenants >/dev/null 2>&1 || exit 1"]
       interval: 5s

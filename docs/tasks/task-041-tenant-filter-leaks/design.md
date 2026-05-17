@@ -84,14 +84,13 @@ Everything else: do the F-class fixes from Option A. Tests cover both per-query 
 **Pros:** Partial PRD compliance, full real-leak closure, modest churn.
 **Cons:** Mixed mental model (some providers filter explicitly, others rely on callback). Harder to write a single "rule" engineers can follow.
 
-### Recommendation
+### Decision
 
-**Option A**, with the caveat that the recommendation must be confirmed by the user before plan.md is written. Reasoning:
-- The callback is the existing, tested invariant. Discarding or duplicating it imposes ongoing maintenance cost without adding correctness.
-- Real leaks live in the F1–F10 list, not in `getById`'s body. Option B does not close any of them.
-- The PRD's acceptance criteria can be adapted to "every tenant-scoped GORM call site is either covered by the callback (verified by audit) or has an explicit predicate (where the callback cannot reach)" without changing the security outcome.
+**Option A** — locked. The callback is the existing, tested invariant; this task treats it as the baseline and closes the F1–F10 gaps it cannot reach.
 
-If the user prefers PRD literalness, Option C is the next-best fit. **Option B is not recommended.**
+Operating rule for the audit and all subsequent work: **tenant scoping is a per-provider decision, not a universal mandate.** Most providers default to tenant-scoped (callback covers them automatically). A subset is intentionally cross-tenant and stays that way using `WithoutTenantFilter`, with a justification comment and a verified bypass boundary. The audit captures which side every call site falls on.
+
+PRD acceptance criteria were adapted accordingly: a tenant-scoped call site is acceptable when it is either (a) covered by the callback (PASS-CB, verified by audit), (b) has an explicit predicate where the callback cannot reach (PASS-EXPLICIT, e.g., raw SQL), or (c) is intentionally cross-tenant (PASS-CROSS-TENANT, justified). Option B (defense-in-depth duplicate WHERE clauses) was rejected — it does not close F4/F6/F8/F9 and adds churn without correctness gain.
 
 ## 4. Audit methodology
 
@@ -129,58 +128,55 @@ Per gap class:
 
 ## 6. Test strategy
 
-PRD requires testcontainers Postgres. Sqlite-in-memory (used by existing `tenant_scope_test.go`) is **insufficient** because:
-- Postgres-specific behavior (lower(name) collation, uuid type) differs.
-- The PRD specifically calls out testcontainers.
+PRD §4.3 was amended during design: the project uses the existing in-memory sqlite pattern from `libs/atlas-database/tenant_scope_test.go` rather than introducing testcontainers. Rationale:
+- The leak under test is "does the WHERE clause filter rows by tenant_id" — sqlite reproduces this faithfully.
+- CLAUDE.md's verification loop runs plain `go test -race ./...`; keeping it fast (no Docker) matters for the inner loop.
+- No testcontainers tests exist anywhere in the repo today; adopting them is a separate decision.
+- Postgres-specific behavior (uuid type semantics, `LOWER(name)` collation, RETURNING) is not under test here. Revisit if those become load-bearing.
 
 Approach:
 
-1. **Shared harness in `libs/atlas-database`** — there is none today (only `database_layer_test.go`, builder tests, etc.; no testcontainers helper found). Add `libs/atlas-database/dbtest` (sub-package, build-tagged `//go:build integration` so unit tests stay fast) exposing:
-   ```go
-   type Harness struct { DB *gorm.DB; Cleanup func() }
-   func StartPostgres(t *testing.T, migrations ...Migrator) *Harness
-   ```
-   Internally: testcontainers-go postgres module, run all provided migrations, register tenant callbacks.
-2. **Provider-level tests** — for each fixed call site, a `provider_test.go` adjacent to it:
+1. **Reuse existing pattern** — `libs/atlas-database/tenant_scope_test.go` already shows the canonical setup: `gorm.Open(sqlite.Open(":memory:"), ...)`, `RegisterTenantCallbacks`, then `AutoMigrate` test entities. Provider tests in services follow the same shape, swapping in the service's real `Migration` and `tenant.WithContext` to switch tenants.
+2. **Shared helper (optional)** — if duplication becomes painful across services, lift the boilerplate into a small helper under `libs/atlas-database` (e.g., `NewInMemoryTenantDB(t *testing.T, migrations ...Migrator) *gorm.DB`). Do this only when at least three services would benefit; it is not a prerequisite.
+3. **Provider-level tests** — for each fixed call site, a `provider_test.go` adjacent to it:
    - Seed two tenants with overlapping primary keys / unique-by-tenant columns (e.g., same character name in both tenants, same guild id in both).
    - Run the provider with tenant A's context.
    - Assert tenant A's row only.
    - Assert mutation calls don't touch tenant B's rows.
-3. **Negative test for F6** — `provider_test.go` for at least one tenant-scoped Create, asserting the resulting row has `tenant_id == t.Id()` even when the input struct leaves `TenantId` zero.
-4. **Tenant callback regression test** — extend `tenant_scope_test.go` with Postgres-backed variants for the most subtle scenarios (Preload, Joins, UPDATE … RETURNING).
-5. **Build tag discipline** — `go test -race ./...` continues to work without Docker; `go test -tags=integration -race ./...` runs the testcontainers suite. CI runs both. (Decision point: does CI currently run testcontainers? — see Open Question OQ-4.)
+4. **Per-service smoke coverage** — for every service that touches a tenant-scoped entity, add at least one read and one write provider test (PRD §10 strict). Same shape as #3.
+5. **F6 regression test** — extend `tenant_scope_test.go` with a `TestCreateInjectsTenantIdWhenMissing` case: Create an entity whose `TenantId` is the zero UUID under a tenant context; assert the persisted row has `tenant_id = t.Id()`. Also add a counterpart `TestCreateDoesNotOverrideExplicitTenantId` covering the not-zero path.
+6. **Fixture construction** — use the project's Builder pattern (CLAUDE.md Test Helper Pattern). Do not create `*_testhelpers.go` files with test-only constructors.
 
 ## 7. Scope decisions
 
 **In scope (this PR):**
 - Audit pipeline + `audit.md`.
 - All F1/F2/F4/F6 fixes in atlas-guilds, atlas-character, and any other service surfaced by the audit.
-- F3/F8 column additions for child tables found leaky.
-- Hardened `tenantCreateCallback` (inject tenant_id when missing).
-- `libs/atlas-database/dbtest` shared harness.
-- Provider regression tests as enumerated in PRD §10.
+- F3/F8 column additions for child tables found leaky (single-PR idempotent migrations).
+- Hardened `tenantCreateCallback` (inject `tenant_id` when missing) bundled in this PR.
+- Optional shared sqlite test helper under `libs/atlas-database` if at least three services would benefit; otherwise services use the existing `tenant_scope_test.go` pattern in place.
+- Provider regression tests per PRD §10 strict: every fix + one read + one write per audited service.
 
 **Out of scope (separate task or explicitly deferred):**
-- Removing redundant `TenantId` assignments at Create call sites once the callback injects them.
+- Removing redundant `TenantId` assignments at Create call sites once the callback injects them (mechanical follow-up).
+- Testcontainers Postgres integration (OQ-4: sqlite is sufficient for the leak being tested).
 - A CI lint to enforce `WithContext` on every `p.db.*` call (PRD §2 explicitly defers).
 - Refactoring `EntityProvider`/`database.Query` abstractions.
 - Changes to atlas-tenants, atlas-data (read-only WZ), atlas-ui (no DB).
 - Backfill of `tenant_id` on entities whose tables genuinely never had it (decide in audit; default = leave alone with a justification comment).
 
-**Risk: PRD wording drift.** The PRD says "do not introduce a GORM callback". This design preserves the existing callback (which predates the PRD) and *extends* it (the F6 fix injects tenant_id on Create). This is a deviation from PRD §2 literal text. The user must confirm: either (a) accept the deviation (Option A as recommended), or (b) instruct the plan phase to use Option B / Option C. The recommendation rests on the existing callback being the cheapest, safest invariant; reversing it is non-trivial.
-
 ## 8. Resolution of PRD Open Questions
 
 - **§9 cross-tenant queries** — already mapped. atlas-merchant (3 sites), atlas-data (5 sites), atlas-saga-orchestrator (2 sites). Audit will verify each site's bypass scope; no new cross-tenant API needed unless a new gap is found.
 - **§9 atlas-asset-expiration / atlas-object-id allocator** — Postgres side is covered by the callback assuming entities have `tenant_id` and calls use `WithContext`. Redis side is not in scope (PRD §2). The audit verifies the Postgres side; allocator coordination is not changed.
-- **§9 testcontainers helper** — confirmed not to exist (`libs/atlas-database` contains `database_layer_test.go`, `builder.go`, etc., but no testcontainers harness). New sub-package proposed in §6.
+- **§9 testcontainers helper** — confirmed not to exist. Decision: not introducing one. The project's existing in-memory sqlite pattern (`libs/atlas-database/tenant_scope_test.go`) covers the WHERE-clause filtering being tested. See §6.
 
 ## 9. Service inventory implication
 
 The PRD lists ~31 likely-affected services. With the callback already in place, the audit will likely produce:
 - **Most services:** PASS-CB across the board after a mechanical context check. No code changes.
 - **A handful (atlas-merchant, atlas-data, atlas-saga-orchestrator, atlas-guilds child tables, possibly atlas-parties, atlas-messengers):** F-class gaps requiring targeted fixes.
-- **Test coverage burden:** PRD §4.3 mandates regression tests per fixed call site *plus* "at least one read and one write provider per other affected service". With Option A this could be ~30 services × 2 tests ≈ 60 test files. That's a budgeting concern — the plan phase should down-scope to one read + one write per service that currently has *any* DB-touching code, written against the shared harness.
+- **Test coverage burden:** PRD §10 (strict, OQ-5) mandates regression tests per fixed call site *plus* one read and one write provider per service that touches a tenant-scoped entity. ~30 services × 2 thin sqlite-backed tests ≈ 60 small test files. Accepted as the cost of thorough verification; the test scaffolding per service is small (~40 lines) because it reuses the `tenant_scope_test.go` pattern.
 
 ## 10. Migration / rollout notes
 
@@ -188,10 +184,12 @@ The PRD lists ~31 likely-affected services. With the callback already in place, 
 - F6 hardening (Create callback injecting tenant_id) is the most behavior-changing piece. It needs to land *with* the audit doc so reviewers can verify intent. The change is opt-in by entity (only entities with a `tenant_id` column are affected; entities without one are untouched).
 - No DB schema changes from this design — except F3/F8 column additions where audit deems necessary. Those each get their own `Migration` function and idempotent backfill.
 
-## 11. Open Questions for plan phase
+## 11. Resolved Decisions
 
-- **OQ-1 (BLOCKING)**: Confirm Option A (recommended), Option B (PRD-literal), or Option C (hybrid). All subsequent task decomposition depends on this.
-- **OQ-2**: Should the F6 callback hardening be a separate first task (lands early so subsequent Create-site sweeps can rely on it), or part of the bundled PR?
-- **OQ-3**: For F3/F8 column additions on child tables (e.g., `guild_members.tenant_id`), is backfill acceptable in the same PR or must we use a two-phase deploy (column add → backfill → enforce NOT NULL)?
-- **OQ-4**: Does CI run testcontainers tests today? If not, do we add the lane in this PR or follow up?
-- **OQ-5**: Down-scope of regression test coverage per service — accept the §9 proposal (one read + one write per service) or hold to PRD §4.3 literal "every fixed call site"?
+All five open questions were resolved during design before plan.md.
+
+- **OQ-1 — Option A.** Trust the existing tenant callback as the invariant. The audit closes F1–F10 gaps it cannot reach. No defense-in-depth duplicate WHERE clauses. Tenant scoping is a per-provider decision: most providers default to scoped (callback covers); a justified subset is intentionally cross-tenant via `WithoutTenantFilter`.
+- **OQ-2 — Bundled.** F6 hardening (`tenantCreateCallback`: warn → inject) lands in the same PR as the audit and its consumers. Single atomic change.
+- **OQ-3 — Single-PR migration.** F3/F8 child-table column additions use one idempotent `Migration` function per entity (AutoMigrate adds column, in-place backfill, index, NOT NULL where safe). No two-phase deploy. Table sizes in scope are small (guild members, titles, etc.).
+- **OQ-4 — Sqlite, defer testcontainers.** Use the existing in-memory sqlite pattern from `libs/atlas-database/tenant_scope_test.go`. CI continues to run plain `go test -race`. No new lane, no Docker dependency in the verification loop. Testcontainers can be revisited later if Postgres-specific behavior becomes load-bearing.
+- **OQ-5 — Strict per-PRD §10.** Regression test per fix, plus one read + one write provider per service that touches a tenant-scoped entity. ~30 services × 2 thin tests is acceptable budget against the sqlite harness.

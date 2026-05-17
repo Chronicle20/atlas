@@ -270,7 +270,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-8d4b4ac
   - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
-    newTag: main-8d4b4ac
+    newTag: main-7cb2fc9
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
     newTag: main-03b4138
 commonLabels:

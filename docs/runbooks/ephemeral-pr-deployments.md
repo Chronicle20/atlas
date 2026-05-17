@@ -192,6 +192,31 @@ kubectl delete application -n argocd atlas-pr-<N>
 
 Alternatively, manually re-create the cleanup Job from the rendered overlay (advanced; see plan §11.4).
 
+### Source branch missing — `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`
+
+The PostDelete hook re-renders the cleanup Job from the ApplicationSet's `targetRevision = bot/pr-<N>-resolved`. If that branch has been deleted before the Application finalizes, the render fails and `post-delete-finalizer.argocd.argoproj.io/cleanup` wedges forever. Symptoms:
+
+- `kubectl -n argocd get application atlas-pr-<N>` shows `deletionTimestamp` set and finalizers still present.
+- `status.conditions` carries `ComparisonError: failed to generate manifest for source 1 of 1: rpc error: ... unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`.
+- The namespace `atlas-pr-<N>` may already be gone.
+
+**Why this happens:** branch deletion is owned by the cluster-infra cleanup CronJob, which deletes the branch via GitHub API *immediately after* it successfully deletes the Application. The branch is intentionally NOT deleted by `pr-cleanup.yml` on PR close; if it were, the 24h `cleanup-grace` window between PR close and Application deletion would leave the source branch missing when the hook fires. Reproduced 2026-05-16 on PR #461 close (when `pr-cleanup.yml`'s `delete-bot-branch` job still existed).
+
+**Fix when wedged:**
+```sh
+# Cluster-side: drop finalizers so the Application can finalize.
+# Safe iff the namespace is already gone (verify with kubectl get ns atlas-pr-<N>).
+kubectl -n argocd patch application.argoproj.io atlas-pr-<N> \
+  --type=merge -p '{"metadata":{"finalizers":[]}}'
+
+# GitHub-side: the orphan bot branch will not be cleaned up by anything
+# now that the Application is gone. Delete it manually.
+gh api --method DELETE \
+  /repos/Chronicle20/atlas/git/refs/heads/bot/pr-<N>-resolved
+```
+
+**Prevent recurrence:** ensure the cluster-infra cleanup CronJob's branch-deletion step is in place (it runs after `kubectl delete application` succeeds and before the CronJob iteration exits). If you observe wedges despite the CronJob being deployed, the cron may be failing to delete the branch — check its logs and the GH PAT in its Secret.
+
 ## §9.5 Rotating credentials
 
 All Argo CD-related Secrets live in the `argocd` namespace and are templated by `argocd-secrets.yml.example` in the cluster-infra repo. To rotate:

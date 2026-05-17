@@ -57,34 +57,35 @@ jobs:
             done
           done
 
-  delete-bot-branch:
-    name: Delete bot/pr-<N>-resolved branch
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      # The update-pr-overlay job (pr-validation.yml) creates a derived
-      # branch `bot/pr-<N>-resolved` that the Argo CD ApplicationSet
-      # targets. It's not the head of any PR, so GitHub's
-      # "Automatically delete head branches" setting does not clean it
-      # up on PR close. Delete it here.
-      - name: Delete branch via API
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="bot/pr-${PR_NUMBER}-resolved"
-          echo "Deleting $BRANCH (if it exists)"
-          gh api --method DELETE \
-            "/repos/${{ github.repository }}/git/refs/heads/${BRANCH}" \
-            || echo "branch ${BRANCH} not present; skipping"
+  # Branch deletion intentionally NOT done here.
+  #
+  # `bot/pr-<N>-resolved` is the Argo CD ApplicationSet's
+  # targetRevision. Argo CD's PostDelete hook
+  # (`deploy/k8s/overlays/pr/postdelete-cleanup.yaml`, the
+  # `atlas-pr-cleanup` Job) fires only when the Application is deleted
+  # — which is up to 24h after this workflow runs, because of the
+  # `atlas.cleanup-grace: 24h` annotation honored by the hourly cleanup
+  # CronJob in cluster-infra. The hook handler re-renders the manifest
+  # from `bot/pr-<N>-resolved`. If we delete the branch here on PR
+  # close, that render fails with
+  # `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`,
+  # `post-delete-finalizer.argocd.argoproj.io/cleanup` can't complete,
+  # and the Application sits in Terminating until someone patches
+  # `metadata.finalizers: []`. Reproduced 2026-05-16 on PR #461 close.
+  #
+  # Branch lifetime is now coupled to Application lifetime: the
+  # cluster-infra cleanup CronJob deletes the branch via GitHub API
+  # immediately after it successfully deletes the Application. See
+  # `docs/runbooks/ephemeral-pr-deployments.md` §9.4.
 
   notify-argo:
     name: Notify Argo of PR close
     runs-on: ubuntu-latest
-    needs: [delete-images, delete-bot-branch]
+    needs: [delete-images]
     steps:
       - name: Log notice
         run: |
           echo "PR ${PR_NUMBER} closed at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "Argo CD's hourly cleanup CronJob will set cleanup-deadline within the hour."
           echo "Force-cleanup (bypassing grace) is documented in docs/runbooks/ephemeral-pr-deployments.md §9.2."
+          echo "bot/pr-${PR_NUMBER}-resolved will be deleted by cluster-infra's cleanup CronJob after the Application finalizes (runbook §9.4)."

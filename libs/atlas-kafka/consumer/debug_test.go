@@ -94,7 +94,6 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 	otel.SetTracerProvider(&MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
-	reader.msgCh <- kafka.Message{Value: []byte("warmup")}
 
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
 		return reader
@@ -115,6 +114,11 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 		close(handlerDone)
 		return true, nil
 	})
+
+	// Deliver the message only after the handler is registered, otherwise
+	// the consumer can dispatch with an empty handler set and the test
+	// times out on <-handlerDone.
+	reader.msgCh <- kafka.Message{Value: []byte("warmup")}
 
 	select {
 	case <-handlerDone:

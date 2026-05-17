@@ -330,9 +330,21 @@ func (p *Processor) DestroyById(sessionId uuid.UUID) {
 func (p *Processor) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
-	s.Disconnect()
+
+	// Emit logout and destroyed events BEFORE closing the socket so a
+	// crash-safe ordering exists: a downstream consumer that sees the
+	// destroyed event can no longer race with the socket-close path
+	// (FR-CHN-14). The two emit failures are demoted from hard error to
+	// logged warning so a flaky producer can't strand the connection in
+	// a half-closed state; the final Disconnect always runs.
 	p.sp.Destroy(s.SessionId(), s.AccountId())
-	return p.kp(session2.EnvEventTopicSessionStatus)(DestroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.Field().Channel()))
+	emitErr := p.kp(session2.EnvEventTopicSessionStatus)(DestroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.Field().Channel()))
+	if emitErr != nil {
+		p.l.WithError(emitErr).Warn("session.destroy.emit_destroyed_failed")
+	}
+
+	s.Disconnect()
+	return emitErr
 }
 
 func (p *Processor) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-configurations/logger"
+	"atlas-configurations/outbox"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
@@ -9,7 +10,7 @@ import (
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
@@ -48,7 +49,20 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outbox.Migration))
+	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration))
+
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Uses pq.Listener (via WithDSN) for sub-100ms wake-up on Enqueue, with
+	// the poll interval as the fallback. Leadership is gated by a postgres
+	// advisory lock — multiple atlas-configurations replicas can run safely;
+	// only the lock holder publishes.
+	publisher := outbox.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	go drainer.Run(tdm.Context())
+	tdm.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
 	// Run seed import
 	seedConfig := seeder.DefaultConfig()

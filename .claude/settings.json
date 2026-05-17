@@ -1,12 +1,9 @@
 {
   "permissions": {
     "allow": [],
-
     "deny": [],
     "ask": []
-
   },
-
   "hooks": {
     "SessionStart": [
       {

@@ -116,3 +116,46 @@ func TestAdaptHandler_MalformedJSON_LogsErrorAndCommits(t *testing.T) {
 		t.Errorf("expected the underlying unmarshal error to be present under the \"error\" field, entry: %v", e)
 	}
 }
+
+func TestAdaptHandler_ValidMessage_InvokesHandlerAndDoesNotErrorLog(t *testing.T) {
+	l, buf := newCapturingLogger()
+
+	called := 0
+	var received fakeEvent
+	cfg := message.PersistentConfig[fakeEvent](func(_ logrus.FieldLogger, _ context.Context, m fakeEvent) {
+		called++
+		received = m
+	})
+	h := message.AdaptHandler[fakeEvent](cfg)
+
+	payload, err := json.Marshal(fakeEvent{ID: 42})
+	if err != nil {
+		t.Fatalf("marshalling fixture: %v", err)
+	}
+	msg := kafka.Message{
+		Topic:     "EVENT_TOPIC_FAKE",
+		Partition: 0,
+		Offset:    1,
+		Value:     payload,
+	}
+
+	persistent, err := h(l, context.Background(), msg)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if !persistent {
+		t.Fatalf("expected persistent=true from PersistentConfig, got false")
+	}
+	if called != 1 {
+		t.Fatalf("expected handler called exactly once, got %d", called)
+	}
+	if received.ID != 42 {
+		t.Fatalf("expected ID=42, got %d", received.ID)
+	}
+
+	for _, e := range decodeLogLines(t, buf) {
+		if e["level"] == "error" {
+			t.Fatalf("expected no error-level log entries on happy path, got %v", e)
+		}
+	}
+}

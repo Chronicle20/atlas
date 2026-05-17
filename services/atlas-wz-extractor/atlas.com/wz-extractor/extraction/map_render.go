@@ -1,12 +1,12 @@
 package extraction
 
 import (
+	"atlas-wz-extractor/extraction/parallelism"
 	"atlas-wz-extractor/mapimage"
 	"atlas-wz-extractor/wz"
 	"context"
 	"errors"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,9 +15,14 @@ import (
 )
 
 // RenderMaps iterates every map image in Map.wz and invokes mapimage.Render
-// under a worker pool (runtime.NumCPU()). Empty and too-large maps are skipped
-// with a debug-level log; renderer errors are logged as warnings and the batch
-// continues.
+// under a bounded worker pool. The pool is sized from WZ_EXTRACT_PARALLELISM
+// (same env var as the outer file-level pool and the consumer's MaxInFlight)
+// so a single tuning knob bounds memory across all three stages — important
+// in the cgroup-constrained PR environment where each in-flight render
+// allocates a full-resolution RGBA buffer.
+//
+// Empty and too-large maps are skipped with a debug-level log; renderer
+// errors are logged as warnings and the batch continues.
 //
 // MaxPixels defaults to mapimage.DefaultMaxPixels; override via
 // WZ_EXTRACT_MAX_MAP_PIXELS=<int>.
@@ -41,10 +46,7 @@ func RenderMaps(ctx context.Context, l logrus.FieldLogger, f *wz.File, outputDir
 		RenderBackgrounds: false,
 	}
 
-	workers := runtime.NumCPU()
-	if workers < 1 {
-		workers = 1
-	}
+	workers := parallelism.FromEnv(l)
 
 	jobs := make(chan *wz.Image)
 	var wg sync.WaitGroup

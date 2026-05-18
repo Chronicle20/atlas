@@ -102,13 +102,13 @@ One row per logical call site/function. File:line points to the representative l
 | atlas-ban | services/atlas-ban/atlas.com/ban/ban/provider.go:36 | byTypeProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/ban/provider.go:48 | activeIpBansProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/ban/provider.go:60 | activeByValueProvider | R | PASS-CB | — |
-| atlas-ban | services/atlas-ban/atlas.com/ban/ban/task.go:27 | ExpiredBanCleanup.Run | W | LEAK-F2 | done: bd7f6832a — added `ctx` field to `ExpiredBanCleanup`, wrapped delete with `t.db.WithContext(database.WithoutTenantFilter(t.ctx))`, constructor + main.go updated. |
+| atlas-ban | services/atlas-ban/atlas.com/ban/ban/task.go:27 | ExpiredBanCleanup.Run | W | LEAK-F2 | done: 1ad15dc35 — added `ctx` field to `ExpiredBanCleanup`, wrapped delete with `t.db.WithContext(database.WithoutTenantFilter(t.ctx))`, constructor + main.go updated. |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/administrator.go:22 | create | W | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/administrator.go:33 | purgeOlderThan | W | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/provider.go:13 | byAccountIdProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/provider.go:24 | byIpProvider | R | PASS-CB | — |
 | atlas-ban | services/atlas-ban/atlas.com/ban/history/provider.go:35 | byHwidProvider | R | PASS-CB | — |
-| atlas-ban | services/atlas-ban/atlas.com/ban/history/task.go:29 | HistoryPurge.Run | W | LEAK-F2 | done: 4993da0a3 — added `ctx` field to `HistoryPurge`, wrapped delete with `t.db.WithContext(database.WithoutTenantFilter(t.ctx))`, constructor + main.go updated. |
+| atlas-ban | services/atlas-ban/atlas.com/ban/history/task.go:29 | HistoryPurge.Run | W | LEAK-F2 | done: aee5df176 — added `ctx` field to `HistoryPurge`, wrapped delete with `t.db.WithContext(database.WithoutTenantFilter(t.ctx))`, constructor + main.go updated. |
 
 ### atlas-buddies
 
@@ -121,7 +121,7 @@ One row per logical call site/function. File:line points to the representative l
 | atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/administrator.go:109 | updateBuddy (shop flag) | W | PASS-CB | — |
 | atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/administrator.go:137 | deleteList | W | PASS-CB | — |
 | atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/administrator.go:177 | saveList | W | PASS-CB | — |
-| atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/provider.go:13 | byCharacterIdEntityProvider | R | LEAK-F8 | done: e775ff0be — added `TenantId uuid.UUID` (indexed) to `buddy.Entity` + idempotent backfill in `Migration` from `lists.tenant_id` via `list_id` FK. Preload now covered by callback. |
+| atlas-buddies | services/atlas-buddies/atlas.com/buddies/list/provider.go:13 | byCharacterIdEntityProvider | R | LEAK-F8 | done: 73bd97655 — added `TenantId uuid.UUID` (indexed) to `buddy.Entity` + idempotent backfill in `Migration` from `lists.tenant_id` via `list_id` FK. Preload now covered by callback. |
 
 ### atlas-cashshop
 
@@ -456,10 +456,10 @@ One row per logical call site/function. File:line points to the representative l
 |---|---|---|---|---|---|
 | atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:29 | create | W | PASS-CB | — |
 | atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:111 | deleteById | W | PASS-CB | — |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:119 | replaceExcludes (delete) | W | LEAK-F8 | done: 9e51b335f — added `TenantId uuid.UUID` (indexed) to `exclude.Entity` + idempotent backfill in `Migration` from `pets.tenant_id` via `pet_id` FK. Delete now covered by callback. |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:133 | replaceExcludes (create) | W | LEAK-F8 | done: 9e51b335f — covered by the same `exclude.Entity` tenant_id column + backfill. |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:13 | byIdEntityProvider | R | LEAK-F8 | done: 9e51b335f — preload now covered by callback once `excludes.tenant_id` exists. |
-| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:24 | byOwnerEntityProvider | R | LEAK-F8 | done: 9e51b335f — same as above. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:119 | replaceExcludes (delete) | W | LEAK-F8 | done: 0b0273b1e — added `TenantId uuid.UUID` (indexed) to `exclude.Entity` + idempotent backfill in `Migration` from `pets.tenant_id` via `pet_id` FK. Delete now covered by callback. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/administrator.go:133 | replaceExcludes (create) | W | LEAK-F8 | done: 0b0273b1e — covered by the same `exclude.Entity` tenant_id column + backfill. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:13 | byIdEntityProvider | R | LEAK-F8 | done: 0b0273b1e — preload now covered by callback once `excludes.tenant_id` exists. |
+| atlas-pets | services/atlas-pets/atlas.com/pets/pet/provider.go:24 | byOwnerEntityProvider | R | LEAK-F8 | done: 0b0273b1e — same as above. |
 
 Note: the four LEAK-F8 pet rows collapse to one fix — add tenant_id to `exclude.Entity`. Counted as 1 LEAK-F8 in the Summary.
 
@@ -596,7 +596,7 @@ Strict per-PRD §10 (resolved decision OQ-5): every service in §"Tenant-scoped 
 **Date:** 2026-05-17
 **Branch:** task-041-tenant-filter-leaks
 **Base:** origin/main (8d11a876a)
-**Head:** 30cbb9de5
+**Head:** 7bcd41bfa
 
 ### Verdict
 
@@ -606,14 +606,14 @@ Strict per-PRD §10 (resolved decision OQ-5): every service in §"Tenant-scoped 
 
 | # | Task | Status | Commit(s) | Evidence |
 |---|---|---|---|---|
-| 1 | Shared in-memory tenant DB helper | DONE | 929f180a2 | `libs/atlas-database/testdb.go:20` (`NewInMemoryTenantDB`), `testdb.go:36` (`TenantContext`). `testdb_test.go` present. Package tests pass (`ok libs/atlas-database 0.234s`). |
-| 2 | Harden `tenantCreateCallback` for F6 | DONE | 44b931fbc | `libs/atlas-database/tenant_scope.go:82-117` (rewrite with `injectTenantIdIfZero` helper at `:124-132`). Three regression tests added: `TestCreateInjectsTenantIdWhenMissing`, `TestCreateDoesNotOverrideExplicitTenantId`, `TestCreateBatchInjectsTenantIdForZeroEntries` (`tenant_scope_test.go:210/223/236`). |
-| 3 | Audit enumeration → `audit.md` | DONE | 533f3712a | `docs/tasks/task-041-tenant-filter-leaks/audit.md` (589 lines) with full summary table, 320 call-site rows across 28 in-scope services, F1–F10 classification, "Tenant-scoped services in scope (29)" section. |
-| 4 | atlas-guilds provider regression tests | DONE | 6406d06a9 | `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go` exists; package test passes (`ok atlas-guilds/guild 0.327s`). |
-| 5 | atlas-character provider regression tests | DONE | 4985d9fc4 | `services/atlas-character/atlas.com/character/character/provider_test.go` exists; package test passes (`ok atlas-character/character 52.688s`). |
-| 6 | Apply F-class fix templates to LEAK rows | DONE | bd7f6832a, 4993da0a3, e775ff0be, 9e51b335f, 3dc286578 | F2 fixes in atlas-ban (ban + history tasks now wrap delete with `database.WithoutTenantFilter(t.ctx)`, verified at `services/atlas-ban/atlas.com/ban/{ban,history}/task.go:29-31`). F8 fixes added `TenantId uuid.UUID` to `services/atlas-buddies/.../buddy/entity.go:26` and `services/atlas-pets/.../pet/exclude/entity.go:26` with idempotent backfill in their `Migration`. `audit.md` LEAK rows updated to `done: <sha>` (commit 3dc286578). F6 LEAK rows are pre-resolved by Task 2. No remaining LEAK-F1/F3/F4/F5/F7/F9/F10 rows — none were classified by the audit. |
-| 7 | atlas-guilds preload tenant isolation | DONE | 3fef0568c | `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go` includes the preload test; the test seeds two tenants with overlapping member rows and asserts the preload returns only the matching tenant's members. |
-| 8 | Per-service smoke tests | DONE | 6364b8c06, fa758caf3, 14d268e4f, 69cf5e16e, 4eeae8a6f, 1afc4a108, 1c38f90f5, 30bdbda05, 9b1876f04, 143e52a7d, efd1ca981, ab60334c1, 23be2c941, 44b218258, 6d0752b69, e800b2eaf, bb4dfbb46, a6dd3f693, 408e2db7b, 6137b53e0, b16620459, 97be3bc0a, 8c9f56d1a, 47888ae66, 9dbdf2b05, 30cbb9de5 | All 28 in-scope tenant-scoped services (29 minus atlas-configurations; atlas-character and atlas-guilds covered by Tasks 4/5/7) have at least one `*_test.go` containing `NewInMemoryTenantDB` and `FiltersByTenant`/`ScopedToTenant` test names. Per-service count verified: atlas-account(1), atlas-ban(4), atlas-buddies(1), atlas-cashshop(1), atlas-character(3), atlas-drop-information(5), atlas-fame(2), atlas-families(1), atlas-gachapons(5), atlas-guilds(6), atlas-inventory(1), atlas-keys(1), atlas-map-actions(3), atlas-maps(3), atlas-marriages(3), atlas-merchant(1), atlas-monster-book(1), atlas-notes(1), atlas-npc-conversations(5), atlas-npc-shops(7), atlas-party-quests(3), atlas-pets(2), atlas-portal-actions(4), atlas-quest(2), atlas-reactor-actions(3), atlas-saga-orchestrator(1), atlas-skills(5), atlas-storage(2). Spot-checked test files (`atlas-account`, `atlas-buddies`, `atlas-pets`) confirm two-tenant overlap seeding and per-tenant isolation assertions in both read and write flavors. |
+| 1 | Shared in-memory tenant DB helper | DONE | 21484e58f | `libs/atlas-database/testdb.go:20` (`NewInMemoryTenantDB`), `testdb.go:36` (`TenantContext`). `testdb_test.go` present. Package tests pass (`ok libs/atlas-database 0.234s`). |
+| 2 | Harden `tenantCreateCallback` for F6 | DONE | 5e3cff505 | `libs/atlas-database/tenant_scope.go:82-117` (rewrite with `injectTenantIdIfZero` helper at `:124-132`). Three regression tests added: `TestCreateInjectsTenantIdWhenMissing`, `TestCreateDoesNotOverrideExplicitTenantId`, `TestCreateBatchInjectsTenantIdForZeroEntries` (`tenant_scope_test.go:210/223/236`). |
+| 3 | Audit enumeration → `audit.md` | DONE | fabf5e899 | `docs/tasks/task-041-tenant-filter-leaks/audit.md` (589 lines) with full summary table, 320 call-site rows across 28 in-scope services, F1–F10 classification, "Tenant-scoped services in scope (29)" section. |
+| 4 | atlas-guilds provider regression tests | DONE | 5c18c76fb | `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go` exists; package test passes (`ok atlas-guilds/guild 0.327s`). |
+| 5 | atlas-character provider regression tests | DONE | d0fe208cd | `services/atlas-character/atlas.com/character/character/provider_test.go` exists; package test passes (`ok atlas-character/character 52.688s`). |
+| 6 | Apply F-class fix templates to LEAK rows | DONE | 1ad15dc35, aee5df176, 73bd97655, 0b0273b1e, 5e2d96c2d | F2 fixes in atlas-ban (ban + history tasks now wrap delete with `database.WithoutTenantFilter(t.ctx)`, verified at `services/atlas-ban/atlas.com/ban/{ban,history}/task.go:29-31`). F8 fixes added `TenantId uuid.UUID` to `services/atlas-buddies/.../buddy/entity.go:26` and `services/atlas-pets/.../pet/exclude/entity.go:26` with idempotent backfill in their `Migration`. `audit.md` LEAK rows updated to `done: <sha>` (commit 5e2d96c2d). F6 LEAK rows are pre-resolved by Task 2. No remaining LEAK-F1/F3/F4/F5/F7/F9/F10 rows — none were classified by the audit. |
+| 7 | atlas-guilds preload tenant isolation | DONE | e2d12dc07 | `services/atlas-guilds/atlas.com/guilds/guild/provider_test.go` includes the preload test; the test seeds two tenants with overlapping member rows and asserts the preload returns only the matching tenant's members. |
+| 8 | Per-service smoke tests | DONE | ad3471fbd, d9fb0ed74, a61245996, a03c1c581, c57fcbe80, ca1b5d256, 34afb6061, fc1472aea, 956ca31fe, ec142a129, 079d09c51, 75198983f, ccd3ac5b8, 760186ed9, f69d608bc, a0e08d581, 688af4193, 25937940f, 3b2192f58, bb8c2fcb8, da82537cf, 087364e94, d633848a5, c83251e95, cd3052794, 7bcd41bfa | All 28 in-scope tenant-scoped services (29 minus atlas-configurations; atlas-character and atlas-guilds covered by Tasks 4/5/7) have at least one `*_test.go` containing `NewInMemoryTenantDB` and `FiltersByTenant`/`ScopedToTenant` test names. Per-service count verified: atlas-account(1), atlas-ban(4), atlas-buddies(1), atlas-cashshop(1), atlas-character(3), atlas-drop-information(5), atlas-fame(2), atlas-families(1), atlas-gachapons(5), atlas-guilds(6), atlas-inventory(1), atlas-keys(1), atlas-map-actions(3), atlas-maps(3), atlas-marriages(3), atlas-merchant(1), atlas-monster-book(1), atlas-notes(1), atlas-npc-conversations(5), atlas-npc-shops(7), atlas-party-quests(3), atlas-pets(2), atlas-portal-actions(4), atlas-quest(2), atlas-reactor-actions(3), atlas-saga-orchestrator(1), atlas-skills(5), atlas-storage(2). Spot-checked test files (`atlas-account`, `atlas-buddies`, `atlas-pets`) confirm two-tenant overlap seeding and per-tenant isolation assertions in both read and write flavors. |
 | 9 | Build & test verification | DONE (spot-checked) | n/a | Sampled `libs/atlas-database`, `services/atlas-guilds/.../guild`, `services/atlas-character/.../character`, `services/atlas-pets/.../pet`, `services/atlas-buddies/.../list`, `services/atlas-ban/atlas.com/ban` — all pass. No `go.mod`/`Dockerfile` files were touched (`git diff --name-only origin/main...HEAD | rg '(go\.mod\|Dockerfile)$'` empty), so the Docker-build sub-step is correctly a no-op per the plan's note in Task 9 Step 5. |
 
 ### Task 8 in-scope coverage (29 services minus atlas-configurations = 28)
@@ -636,7 +636,7 @@ None. The plan explicitly defers (a) removing redundant `TenantId: t.Id()` assig
 **Date:** 2026-05-17
 **Branch:** task-041-tenant-filter-leaks
 **Base:** origin/main (8d11a876a)
-**Head:** 30cbb9de5
+**Head:** 7bcd41bfa
 **Verdict:** **PASS-WITH-NITS** (two real findings, one is a deploy-shape concern in `libs/atlas-database` that should be cleaned up but does not currently break the docker build)
 
 ### Phase 1 — Build & Test Gate

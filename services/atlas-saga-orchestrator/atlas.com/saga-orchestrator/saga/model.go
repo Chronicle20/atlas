@@ -1335,6 +1335,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case AwaitInventoryCreated:
+		var payload AwaitInventoryCreatedPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	default:
 		return fmt.Errorf("unknown action: %s", s.action)
 	}

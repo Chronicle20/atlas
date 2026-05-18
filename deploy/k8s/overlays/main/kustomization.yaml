@@ -228,7 +228,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-c4718ea
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-c4718ea
+    newTag: main-3782b75
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
     newTag: main-e62b624
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations

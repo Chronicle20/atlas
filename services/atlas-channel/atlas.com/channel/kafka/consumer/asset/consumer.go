@@ -463,6 +463,15 @@ func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
+		// Cash item being moved back to the cash shop. The cash compartment
+		// ACCEPTED handler emits CashShopCashItemMovedToCashInventory, which the
+		// v83 client uses to both clear the source slot and update the cash UI.
+		// Firing a RemoveEntry first leaves the client trying to animate a move
+		// from an already-empty slot and crashes the game.
+		if e.Body.CashId != 0 {
+			return
+		}
+
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 		if !ok {
 			l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)

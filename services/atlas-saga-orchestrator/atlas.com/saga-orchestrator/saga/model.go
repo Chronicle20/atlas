@@ -140,6 +140,7 @@ const (
 
 	// Character creation actions
 	CreateCharacter       = sharedsaga.CreateCharacter
+	AwaitCharacterCreated = sharedsaga.AwaitCharacterCreated
 	AwaitInventoryCreated = sharedsaga.AwaitInventoryCreated
 
 	// Transport actions
@@ -233,6 +234,7 @@ type (
 	RequestGuildCapacityIncreasePayload = sharedsaga.RequestGuildCapacityIncreasePayload
 	CreateInvitePayload                 = sharedsaga.CreateInvitePayload
 	CharacterCreatePayload              = sharedsaga.CharacterCreatePayload
+	AwaitCharacterCreatedPayload        = sharedsaga.AwaitCharacterCreatedPayload
 	AwaitInventoryCreatedPayload        = sharedsaga.AwaitInventoryCreatedPayload
 	StartInstanceTransportPayload       = sharedsaga.StartInstanceTransportPayload
 	SaveLocationPayload                 = sharedsaga.SaveLocationPayload
@@ -1337,6 +1339,36 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case AwaitInventoryCreated:
 		var payload AwaitInventoryCreatedPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case AwaitCharacterCreated:
+		var payload AwaitCharacterCreatedPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RequestGuildName:
+		var payload RequestGuildNamePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RequestGuildEmblem:
+		var payload RequestGuildEmblemPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RequestGuildDisband:
+		var payload RequestGuildDisbandPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RequestGuildCapacityIncrease:
+		var payload RequestGuildCapacityIncreasePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

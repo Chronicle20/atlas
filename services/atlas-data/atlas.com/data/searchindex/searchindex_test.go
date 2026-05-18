@@ -54,7 +54,9 @@ func seed(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id
 	row := testEntity{
 		TenantId: tenantId, WidgetId: id, Name: name, Color: color, Flagged: flagged, UpdatedAt: time.Now(),
 	}
-	require.NoError(t, db.WithContext(ctx).Create(&row).Error)
+	// Bypass the tenant create-callback's auto-injection: this fixture deliberately
+	// writes the supplied tenantId (which may be uuid.Nil to seed a "global" row).
+	require.NoError(t, db.WithContext(database.WithoutTenantFilter(ctx)).Create(&row).Error)
 }
 
 func widgetSpec() QuerySpec[testEntity] {

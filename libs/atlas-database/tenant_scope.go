@@ -5,9 +5,11 @@ import (
 	"reflect"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 )
 
 type contextKey string
@@ -98,23 +100,33 @@ func tenantCreateCallback(l logrus.FieldLogger) func(db *gorm.DB) {
 		}
 
 		field := db.Statement.Schema.FieldsByDBName["tenant_id"]
-		if db.Statement.ReflectValue.IsValid() {
-			rv := db.Statement.ReflectValue
-			switch rv.Kind() {
-			case reflect.Struct:
-				val, _ := field.ValueOf(ctx, rv)
-				if val == nil || val == "" {
-					l.Warnf("Creating entity in %s with empty tenant_id while tenant %s is in context.", db.Statement.Schema.Table, t.Id().String())
-				}
-			case reflect.Slice, reflect.Array:
-				for i := 0; i < rv.Len(); i++ {
-					val, _ := field.ValueOf(ctx, rv.Index(i))
-					if val == nil || val == "" {
-						l.Warnf("Creating entity in %s with empty tenant_id while tenant %s is in context.", db.Statement.Schema.Table, t.Id().String())
-						break
-					}
-				}
+		if !db.Statement.ReflectValue.IsValid() {
+			return
+		}
+
+		rv := db.Statement.ReflectValue
+		switch rv.Kind() {
+		case reflect.Struct:
+			injectTenantIdIfZero(ctx, l, db.Statement.Schema.Table, field, rv, t.Id())
+		case reflect.Slice, reflect.Array:
+			for i := 0; i < rv.Len(); i++ {
+				injectTenantIdIfZero(ctx, l, db.Statement.Schema.Table, field, rv.Index(i), t.Id())
 			}
 		}
+	}
+}
+
+// injectTenantIdIfZero sets tenant_id from context onto a single reflected row
+// when its existing value is the zero UUID. Non-zero values are preserved. A
+// callback-set failure is logged at warn level and the row is left untouched —
+// the query will then proceed with whatever zero-value the caller supplied,
+// matching pre-task-041 behavior.
+func injectTenantIdIfZero(ctx context.Context, l logrus.FieldLogger, table string, field *schema.Field, rv reflect.Value, tenantId uuid.UUID) {
+	_, isZero := field.ValueOf(ctx, rv)
+	if !isZero {
+		return
+	}
+	if err := field.Set(ctx, rv, tenantId); err != nil {
+		l.WithError(err).Warnf("tenant:create: failed to inject tenant_id for %s; row will retain its zero value.", table)
 	}
 }

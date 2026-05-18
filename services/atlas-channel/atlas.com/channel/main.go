@@ -61,6 +61,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
@@ -243,9 +244,35 @@ func main() {
 		DrainDeadline: parseDrainDeadline(),
 	})
 
-	// Drain every listener BEFORE other teardowns (producer close, session
-	// teardown, tracing flush) so in-flight kafka handlers and sockets stop
-	// touching state that those teardowns destroy.
+	// Drop tenant-scoped caches once the last listener for a tenant drains
+	// so a later re-Add of the same tenant starts clean. Fires per-tenant,
+	// at most once per drain-to-zero transition (listener.Registry guards
+	// with a ref count).
+	listener.RegisterEvictor(func(t tenant.Model) {
+		tid := t.Id()
+		account.GetRegistry().EvictTenant(tid)
+		monsterDomain.GetStatusMirror().EvictTenant(tid)
+		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
+			inbox.EvictTenant(tid)
+		}
+		tenant.Unregister(tid)
+	})
+
+	// Process-level shutting-down flag; flipped on SIGTERM teardown so
+	// /readyz reports not-ready before drain begins. k8s removes the pod
+	// from service endpoints once readiness fails, giving in-flight
+	// requests a chance to land on a healthy peer.
+	var shuttingDown atomic.Bool
+	ready := func() bool { return caughtUp.CaughtUpNow() && !shuttingDown.Load() }
+
+	// Teardown order matters here:
+	//   1. Flip /readyz → 503 so k8s stops sending new traffic.
+	//   2. Drain every listener (in-flight kafka handlers stop touching state).
+	//   3. Producer close, session teardown, tracing flush.
+	tdm.TeardownFunc(func() {
+		shuttingDown.Store(true)
+		l.Info("Flipped /readyz to not-ready for graceful shutdown.")
+	})
 	tdm.TeardownFunc(func() {
 		l.Info("Draining all listeners.")
 		listenerRegistry.DrainAll()
@@ -272,6 +299,7 @@ func main() {
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(restserver.MountReadiness("/readyz", ready)).
 		Run()
 
 	tdm.Wait()

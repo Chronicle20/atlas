@@ -142,8 +142,12 @@ type AcceptedStatusEventBody struct {
 	PetId          uint32     `json:"petId"`
 }
 
-// ReleasedStatusEventBody is for assets released from inventory (e.g., to storage)
+// ReleasedStatusEventBody is for assets released from inventory (e.g., to storage
+// or the cash shop). Only the fields atlas-channel needs to dispatch the right
+// client packet are decoded here; the inventory producer embeds the full asset
+// payload but the rest is intentionally dropped.
 type ReleasedStatusEventBody struct {
+	CashId int64 `json:"cashId,string"`
 }
 
 // ExpiredStatusEventBody is for assets that have expired

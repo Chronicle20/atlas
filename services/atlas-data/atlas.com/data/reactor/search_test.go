@@ -43,7 +43,9 @@ func newSearchTenant(t *testing.T) tenant.Model {
 func seedIdx(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name string) {
 	t.Helper()
 	row := testSearchIndexEntity{TenantId: tenantId, ReactorId: id, Name: name, UpdatedAt: time.Now()}
-	require.NoError(t, db.WithContext(ctx).Create(&row).Error)
+	// Bypass the tenant create-callback's auto-injection: this fixture deliberately
+	// writes the supplied tenantId (which may be uuid.Nil to seed a "global" row).
+	require.NoError(t, db.WithContext(database.WithoutTenantFilter(ctx)).Create(&row).Error)
 }
 
 func searchSpec() searchindex.QuerySpec[SearchIndexEntity] {

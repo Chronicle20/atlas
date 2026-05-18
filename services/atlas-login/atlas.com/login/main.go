@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
@@ -119,9 +120,19 @@ func main() {
 		DrainDeadline: parseDrainDeadline(),
 	})
 
-	// Drain every listener BEFORE other teardowns (producer close, session
-	// teardown, tracing flush) so in-flight kafka handlers and sockets
-	// stop touching state that those teardowns destroy.
+	// Process-level shutting-down flag; flipped on SIGTERM teardown so
+	// /readyz reports not-ready before drain begins. k8s removes the pod
+	// from service endpoints once readiness fails, giving in-flight
+	// requests a chance to land on a healthy peer.
+	var shuttingDown atomic.Bool
+	ready := func() bool { return caughtUp.CaughtUpNow() && !shuttingDown.Load() }
+
+	// Teardown order: flip /readyz first, drain listeners next, then the
+	// downstream teardowns that destroy state in-flight handlers might touch.
+	tdm.TeardownFunc(func() {
+		shuttingDown.Store(true)
+		l.Info("Flipped /readyz to not-ready for graceful shutdown.")
+	})
 	tdm.TeardownFunc(func() {
 		l.Info("Draining all listeners.")
 		listenerRegistry.DrainAll()
@@ -179,6 +190,7 @@ func main() {
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(restserver.MountReadiness("/readyz", ready)).
 		Run()
 
 	tdm.Wait()

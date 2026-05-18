@@ -301,7 +301,7 @@ func (p *ProcessorImpl) AtomicUpdateSaga(transactionId uuid.UUID, updateFunc fun
 	}
 
 	// Update the cache atomically
-	return GetCache().Put(p.ctx,sagaCopy)
+	return GetCache().Put(p.ctx, sagaCopy)
 }
 
 // SafeSetStepStatus safely updates step status with validation and logging
@@ -514,7 +514,7 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	}
 
 	// Update the saga in the cache
-	if err := GetCache().Put(p.ctx,s); err != nil {
+	if err := GetCache().Put(p.ctx, s); err != nil {
 		return err
 	}
 
@@ -582,7 +582,7 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	}
 
 	// Update the saga in the cache
-	if err := GetCache().Put(p.ctx,s); err != nil {
+	if err := GetCache().Put(p.ctx, s); err != nil {
 		return err
 	}
 
@@ -664,7 +664,7 @@ func (p *ProcessorImpl) MarkEarliestPendingStepWithResult(transactionId uuid.UUI
 	}
 
 	// Update the saga in the cache
-	if err := GetCache().Put(p.ctx,s); err != nil {
+	if err := GetCache().Put(p.ctx, s); err != nil {
 		return err
 	}
 
@@ -751,7 +751,7 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	}
 
 	// Update the saga in the cache atomically
-	if err := GetCache().Put(p.ctx,s); err != nil {
+	if err := GetCache().Put(p.ctx, s); err != nil {
 		return err
 	}
 
@@ -833,7 +833,7 @@ func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[a
 	}
 
 	// Update the saga in the cache atomically
-	if err := GetCache().Put(p.ctx,s); err != nil {
+	if err := GetCache().Put(p.ctx, s); err != nil {
 		return err
 	}
 
@@ -1453,6 +1453,9 @@ func forwardCharacterCreationResult(l logrus.FieldLogger, s Saga) Saga {
 			p.CharacterId = characterId
 			updated, err = s.WithStepPayload(i, p)
 		case CreateSkillPayload:
+			p.CharacterId = characterId
+			updated, err = s.WithStepPayload(i, p)
+		case AwaitInventoryCreatedPayload:
 			p.CharacterId = characterId
 			updated, err = s.WithStepPayload(i, p)
 		default:

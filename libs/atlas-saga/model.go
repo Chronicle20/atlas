@@ -11,18 +11,18 @@ type Type string
 
 // Constants for different saga types
 const (
-	InventoryTransaction      Type = "inventory_transaction"
-	QuestReward               Type = "quest_reward"
-	TradeTransaction          Type = "trade_transaction"
-	CharacterCreation Type = "character_creation"
-	StorageOperation  Type = "storage_operation"
-	CashShopOperation         Type = "cash_shop_operation"
-	CharacterRespawn          Type = "character_respawn"
-	GachaponTransaction       Type = "gachapon_transaction"
-	FieldEffectUse            Type = "field_effect_use"
-	QuestStart                Type = "quest_start"
-	QuestComplete             Type = "quest_complete"
-	QuestRestoreItem          Type = "quest_restore_item"
+	InventoryTransaction Type = "inventory_transaction"
+	QuestReward          Type = "quest_reward"
+	TradeTransaction     Type = "trade_transaction"
+	CharacterCreation    Type = "character_creation"
+	StorageOperation     Type = "storage_operation"
+	CashShopOperation    Type = "cash_shop_operation"
+	CharacterRespawn     Type = "character_respawn"
+	GachaponTransaction  Type = "gachapon_transaction"
+	FieldEffectUse       Type = "field_effect_use"
+	QuestStart           Type = "quest_start"
+	QuestComplete        Type = "quest_complete"
+	QuestRestoreItem     Type = "quest_restore_item"
 )
 
 // Status represents the status of a saga step
@@ -90,8 +90,8 @@ const (
 	SendMessage Action = "send_message"
 
 	// UI/visual effect actions
-	FieldEffect    Action = "field_effect"
-	UiLock         Action = "ui_lock"
+	FieldEffect     Action = "field_effect"
+	UiLock          Action = "ui_lock"
 	PlayPortalSound Action = "play_portal_sound"
 	UpdateAreaInfo  Action = "update_area_info"
 	ShowInfo        Action = "show_info"
@@ -107,12 +107,12 @@ const (
 	SpawnReactorDrops Action = "spawn_reactor_drops"
 
 	// Storage actions
-	ShowStorage        Action = "show_storage"
-	DepositToStorage   Action = "deposit_to_storage"
-	UpdateStorageMesos Action = "update_storage_mesos"
-	TransferToStorage  Action = "transfer_to_storage"
-	WithdrawFromStorage Action = "withdraw_from_storage"
-	AcceptToStorage     Action = "accept_to_storage"
+	ShowStorage          Action = "show_storage"
+	DepositToStorage     Action = "deposit_to_storage"
+	UpdateStorageMesos   Action = "update_storage_mesos"
+	TransferToStorage    Action = "transfer_to_storage"
+	WithdrawFromStorage  Action = "withdraw_from_storage"
+	AcceptToStorage      Action = "accept_to_storage"
 	ReleaseFromCharacter Action = "release_from_character"
 	AcceptToCharacter    Action = "accept_to_character"
 	ReleaseFromStorage   Action = "release_from_storage"
@@ -133,6 +133,7 @@ const (
 	// Character creation actions
 	CreateCharacter       Action = "create_character"
 	AwaitCharacterCreated Action = "await_character_created"
+	AwaitInventoryCreated Action = "await_inventory_created"
 
 	// Transport actions
 	StartInstanceTransport Action = "start_instance_transport"
@@ -159,11 +160,11 @@ const (
 
 // Saga represents the entire saga transaction.
 type Saga struct {
-	TransactionId uuid.UUID   `json:"transactionId"`       // Unique ID for the transaction
-	SagaType      Type        `json:"sagaType"`            // Type of the saga (e.g., inventory_transaction)
-	InitiatedBy   string      `json:"initiatedBy"`         // Who initiated the saga (e.g., NPC ID, user)
-	Timeout       int64       `json:"timeout,omitempty"`   // Optional per-saga timeout in milliseconds; 0 → orchestrator default (30s)
-	Steps         []Step[any] `json:"steps"`               // List of steps in the saga
+	TransactionId uuid.UUID   `json:"transactionId"`     // Unique ID for the transaction
+	SagaType      Type        `json:"sagaType"`          // Type of the saga (e.g., inventory_transaction)
+	InitiatedBy   string      `json:"initiatedBy"`       // Who initiated the saga (e.g., NPC ID, user)
+	Timeout       int64       `json:"timeout,omitempty"` // Optional per-saga timeout in milliseconds; 0 → orchestrator default (30s)
+	Steps         []Step[any] `json:"steps"`             // List of steps in the saga
 }
 
 // Failing returns true if any step has failed status

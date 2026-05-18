@@ -58,6 +58,10 @@ commits = [
   # plan(task-063): implementation plan and context (initial commit).
   # Sanitized in commit 29312509d.
   "50434603f771f4e51554155bc38ebeb55d365711",
+  # plan(task-032): implementation plan and context (initial commit).
+  # Sanitized in commit 0c877d10f (chore(task-032): sanitize identifying
+  # paths from plan + context).
+  "5ad8559abd285dac85b20f53a0c2cde71270c69a",
 ]
 paths = [
   '''(^|/)\.git/''',

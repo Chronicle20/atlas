@@ -83,6 +83,24 @@ if [ -n "${ATLAS_SERVICES:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
     done
 fi
 
+if [ -n "${PR_NUMBER:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then  # ATLAS_STEP=drop-branch
+    ATLAS_STEP=drop-branch log info "deleting bot/pr-${PR_NUMBER}-resolved"
+    # Mounted via Secret atlas-pr-cleanup-gh-token (Contents: write on
+    # Chronicle20/atlas + Packages: write on chronicle20/*). 404 is the
+    # branch-already-deleted case — treat as success. Other errors are
+    # logged warn and do not fail the Job (consistent with the rest of
+    # cleanup's || true / xargs -r discipline).
+    if ! err=$(gh api --method DELETE \
+        -H "Authorization: Bearer ${GHCR_TOKEN}" \
+        "/repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-${PR_NUMBER}-resolved" \
+        2>&1); then
+        case "$err" in
+            *"Reference does not exist"*|*"Branch not found"*|*"404"*) ;;
+            *) log warn "branch delete: $err" ;;
+        esac
+    fi
+fi
+
 if [ -n "${PIHOLE_API_BASE_1:-}" ] && [ -n "${PIHOLE_TOKEN_1:-}" ]; then
     ATLAS_STEP=drop-dns log info "removing Pi-hole A records"
     for i in 1 2; do

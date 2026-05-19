@@ -38,3 +38,59 @@ setup() {
     [[ "$output" == *"ed86"* ]]
     [[ "$output" == *"a476"* ]]
 }
+
+@test "sweep-orphans.sh: phase names appear in --list output" {
+    # Mock infra commands to emit one fake resource each, so list mode
+    # produces the canonical "phase resource" lines and APPLY=0 means none
+    # of them get acted on.
+    SHIM_DIR="$(mktemp -d)"
+    cat > "$SHIM_DIR/kafka-topics.sh" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+    *--list*) echo "atlas-faketopic-ed86" ;;
+    *--delete*) echo "FAIL: delete invoked in list mode" >&2; exit 1 ;;
+esac
+EOF
+    cat > "$SHIM_DIR/kafka-consumer-groups.sh" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+    *--list*) echo "Fake Group [ed86]" ;;
+    *--delete*) echo "FAIL: delete invoked in list mode" >&2; exit 1 ;;
+esac
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+    *--scan*) echo "ed86:fake-key" ;;
+    *DEL*)    echo "FAIL: DEL invoked in list mode" >&2; exit 1 ;;
+esac
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "atlas-fake-ed86"
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+# Empty results — easier than mocking the rich gh api jq path.
+echo ""
+EOF
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+exit 1   # "Application not found" — drop-app-finalizers phase no-ops.
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env \
+        DB_HOST=fake DB_PORT=1 DB_USER=u DB_PASSWORD=p \
+        BOOTSTRAP_SERVERS=fake REDIS_URL=fake:6379 \
+        GHCR_TOKEN=fake ATLAS_SERVICES=atlas-fake \
+        bash "$SCRIPT" 491
+
+    [[ "$output" == *"drop-dbs atlas-fake-ed86"* ]]
+    [[ "$output" == *"drop-topics atlas-faketopic-ed86"* ]]
+    [[ "$output" == *"drop-groups Fake Group [ed86]"* ]]
+    [[ "$output" == *"drop-redis ed86:fake-key"* ]]
+    [[ "$output" != *"FAIL:"* ]]
+
+    rm -rf "$SHIM_DIR"
+}

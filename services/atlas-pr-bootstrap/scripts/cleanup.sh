@@ -4,14 +4,13 @@
 # 'cleanup-failed' state).
 #
 # Required env:
-#   ATLAS_ENV              — env hash
+#   PR_NUMBER              — PR number; ATLAS_ENV is derived as sha256("pr-N")[:4]
 #   DB_HOST/PORT/USER/PASS — Postgres connection details
 #   ATLAS_DB_NAMES    — space-separated list of base DB names
 #   BOOTSTRAP_SERVERS — kafka.home:9093
 #   REDIS_URL         — redis.home:6379
 #   PIHOLE_API_BASE_1, PIHOLE_TOKEN_1, PIHOLE_API_BASE_2, PIHOLE_TOKEN_2
 #   GHCR_TOKEN        — for image-tag delete
-#   PR_NUMBER         — for image-tag prefix
 #   ATLAS_SERVICES    — comma-separated list of service names for image cleanup
 
 set -euo pipefail
@@ -25,7 +24,16 @@ set -euo pipefail
 DB_USER="$(printf '%s' "${DB_USER:-}" | tr -d ' \r\n')"
 DB_PASSWORD="$(printf '%s' "${DB_PASSWORD:-}" | tr -d ' \r\n')"
 
-require_env ATLAS_ENV DB_HOST DB_PORT DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
+require_env PR_NUMBER DB_HOST DB_PORT DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL
+
+# Derive ATLAS_ENV from PR_NUMBER. Bug #4 (env-hash annotation drift): the
+# Application's atlas.env annotation can disagree with the formula's actual
+# output (observed on PRs 491/522, see task-070 recovery-log.md). Deriving
+# here guarantees cleanup targets the correct hash regardless. lib.sh's
+# compute_atlas_env is pinned by test/lib_test.bats against the formula
+# used by .github/workflows/pr-validation.yml and the ApplicationSet.
+ATLAS_ENV="$(compute_atlas_env "$PR_NUMBER")"
+ATLAS_STEP=init log info "derived ATLAS_ENV=${ATLAS_ENV} for PR ${PR_NUMBER}"
 
 ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
 # ATLAS_DB_NAMES is space-separated (matches kustomization.yaml's atlas-db-names

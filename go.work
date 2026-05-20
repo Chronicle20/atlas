@@ -76,4 +76,5 @@ use (
 	./services/atlas-wz-extractor/atlas.com/wz-extractor
 	./tools/cideps
 	./tools/packet-audit
+	./tools/seed-splitters
 )

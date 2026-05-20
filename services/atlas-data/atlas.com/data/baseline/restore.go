@@ -1,0 +1,162 @@
+package baseline
+
+import (
+	"archive/tar"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
+	minio "atlas-data/storage/minio"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+// ErrSchemaMismatch indicates the dump header schemaVersion does not match the
+// service's current SchemaVersion constant. Surfaced as 422 by the handler.
+var ErrSchemaMismatch = errors.New("dump schema mismatch")
+
+// ErrShaMismatch indicates the computed sha256 of the tar stream did not match
+// the sha256 sidecar object. Surfaced as 422 by the handler.
+var ErrShaMismatch = errors.New("sha256 mismatch")
+
+// Restorer applies a canonical baseline dump to a single target tenant.
+type Restorer struct {
+	DB *gorm.DB
+	MC *minio.Client
+	L  logrus.FieldLogger
+}
+
+// Restore is destructive: DELETE rows for target tenant, COPY-FROM with rewrite,
+// ANALYZE, UPSERT tenant_baselines.
+func (r Restorer) Restore(ctx context.Context, region string, major, minor int, target uuid.UUID) error {
+	sumBytes, err := readMinioObject(ctx, r.MC, r.MC.Cfg().BucketCanonical, ShaKey(region, major, minor))
+	if err != nil {
+		return err
+	}
+	expectedSum := strings.TrimSpace(string(sumBytes))
+
+	dumpRC, err := r.MC.Get(ctx, r.MC.Cfg().BucketCanonical, DumpKey(region, major, minor))
+	if err != nil {
+		return err
+	}
+	defer dumpRC.Close()
+	h := sha256.New()
+	tr := tar.NewReader(io.TeeReader(dumpRC, h))
+
+	// header.json first
+	hdrEntry, err := tr.Next()
+	if err != nil {
+		return err
+	}
+	if hdrEntry.Name != "header.json" {
+		return fmt.Errorf("expected header.json, got %s", hdrEntry.Name)
+	}
+	var hdr Header
+	if err := json.NewDecoder(tr).Decode(&hdr); err != nil {
+		return err
+	}
+	if hdr.SchemaVersion != SchemaVersion {
+		return fmt.Errorf("%w: dump=%s current=%s", ErrSchemaMismatch, hdr.SchemaVersion, SchemaVersion)
+	}
+
+	for {
+		e, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		table := strings.TrimSuffix(e.Name, ".binary")
+		if !contains(DumpTables, table) {
+			return fmt.Errorf("unexpected table %s", table)
+		}
+		if err := restoreOneTable(ctx, r.DB, table, tr, target); err != nil {
+			return err
+		}
+	}
+	actualSum := hex.EncodeToString(h.Sum(nil))
+	if actualSum != expectedSum {
+		return fmt.Errorf("%w: expected=%s got=%s", ErrShaMismatch, expectedSum, actualSum)
+	}
+
+	// ANALYZE all tables
+	for _, t := range DumpTables {
+		if err := r.DB.WithContext(ctx).Exec("ANALYZE " + t).Error; err != nil {
+			return err
+		}
+	}
+	// UPSERT tenant_baselines
+	if err := r.DB.WithContext(ctx).Exec(`
+        INSERT INTO tenant_baselines (tenant_id, region, major_version, minor_version, baseline_sha256, restored_at)
+        VALUES (?, ?, ?, ?, ?, now())
+        ON CONFLICT (tenant_id) DO UPDATE SET region=EXCLUDED.region, major_version=EXCLUDED.major_version,
+            minor_version=EXCLUDED.minor_version, baseline_sha256=EXCLUDED.baseline_sha256, restored_at=now()
+    `, target.String(), region, major, minor, expectedSum).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func restoreOneTable(ctx context.Context, db *gorm.DB, table string, r io.Reader, target uuid.UUID) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM "+table+" WHERE tenant_id = ?", target.String()).Error; err != nil {
+			return err
+		}
+		rw := Rewriter{TenantColIndex: tenantColIndex(table), Target: target}
+		// Pipe rw.Stream() into COPY FROM STDIN BINARY through the raw connection.
+		return copyInBinary(ctx, tx, table, r, rw)
+	})
+}
+
+func tenantColIndex(table string) int {
+	switch table {
+	case "documents":
+		// (id, tenant_id, type, document_id, content, updated_at)
+		return 1
+	case "monster_search_index":
+		return 0
+	case "npc_search_index":
+		return 0
+	case "reactor_search_index":
+		return 0
+	case "map_search_index":
+		return 0
+	case "item_string_search_index":
+		return 0
+	}
+	return 0
+}
+
+func contains(ss []string, s string) bool {
+	for _, x := range ss {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func readMinioObject(ctx context.Context, mc *minio.Client, bucket, key string) ([]byte, error) {
+	rc, err := mc.Get(ctx, bucket, key)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	return io.ReadAll(rc)
+}
+
+// copyInBinary pipes rw.Stream(in,…) into `COPY <table> FROM STDIN (FORMAT binary)`
+// through the underlying driver connection.
+//
+// STUB: not yet implemented; see task-071 follow-up (requires pgx CopyFrom against the gorm postgres connection).
+func copyInBinary(ctx context.Context, tx *gorm.DB, table string, in io.Reader, rw Rewriter) error {
+	return fmt.Errorf("copyInBinary: not yet implemented; see task-071 follow-up (requires pgx CopyFrom against the gorm postgres connection)")
+}

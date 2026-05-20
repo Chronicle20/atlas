@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-data/baseline"
 	"atlas-data/cash"
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
@@ -104,6 +105,7 @@ func main() {
 		npc.SpawnIndexMigration,
 		reactor.Migration,
 		item.StringMigration,
+		baseline.Migration,
 	))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
@@ -121,6 +123,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
 		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
+		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).
 		AddRouteInitializer(monster.InitResource(db)(GetServer())).
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).

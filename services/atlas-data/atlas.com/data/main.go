@@ -30,6 +30,7 @@ import (
 	"atlas-data/setup"
 	"atlas-data/skill"
 	minio "atlas-data/storage/minio"
+	"atlas-data/tenantpurge"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-data/wzinput"
 	"os"
@@ -124,6 +125,7 @@ func main() {
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
 		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
 		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
+		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).
 		AddRouteInitializer(monster.InitResource(db)(GetServer())).
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).

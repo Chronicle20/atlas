@@ -12,6 +12,26 @@ patches:
   - path: lb-pin.yaml
   - path: patches/atlas-env-env.yaml
   - path: patches/db-name-suffix.yaml
+  # Spread atlas-main pods evenly across schedulable nodes. Without this,
+  # the default scheduler clusters single-replica Deployments onto whichever
+  # node has the lowest CPU requests, which is how all of atlas-main once
+  # ended up on gaia (the underpowered control plane). Cross-Deployment
+  # spread via the atlas.env=main label — each pod placement decision
+  # considers ALL atlas-main pods, not just same-Deployment replicas.
+  # maxSkew=1 with ScheduleAnyway is soft: prefer balanced, but allow skew
+  # when capacity-constrained rather than leaving pods Pending.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                atlas.env: main
 configMapGenerator:
   - name: atlas-env
     behavior: replace
@@ -272,6 +292,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
     newTag: main-c4718ea
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-a2acfc9
+    newTag: main-be94f56
 commonLabels:
   atlas.env: main

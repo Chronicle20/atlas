@@ -56,6 +56,23 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 1
+  # Spread this PR env's pods evenly across schedulable nodes. Same
+  # rationale as the main overlay (avoid the scheduler piling all
+  # single-replica Deployments onto one node), with the env label sed-
+  # substituted at CI time so each PR env spreads only its own pods, not
+  # across other PR envs.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                atlas.env: "PLACEHOLDER_ATLAS_ENV"
   # wz-extractor opts back into replicas=2 (see patch comment for why).
   # Must be ordered AFTER the global replicas=1 patch above so it wins
   # the merge.

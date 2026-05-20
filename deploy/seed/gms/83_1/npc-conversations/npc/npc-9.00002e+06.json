@@ -1,0 +1,477 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9000020,
+      "startState": "checkLocation",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "defaultMapId": "104000000",
+                  "locationType": "WORLDTOUR"
+                },
+                "type": "local:get_saved_location"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "800000000"
+                  }
+                ],
+                "nextState": "atDestinationJapan"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "550000000"
+                  }
+                ],
+                "nextState": "atDestinationMalaysia"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "777777777"
+                  }
+                ],
+                "nextState": "atSourceJapan"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "541000000"
+                  }
+                ],
+                "nextState": "atSourceMalaysia"
+              },
+              {
+                "conditions": [],
+                "nextState": "atSourceJapan"
+              }
+            ]
+          },
+          "id": "checkLocation",
+          "type": "genericAction"
+        },
+        {
+          "id": "atDestinationJapan",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmReturnJapan",
+                "text": "Yes, I'm done with traveling. Can I go back to #m{context.returnMapId}#?"
+              },
+              {
+                "nextState": "continueExploring",
+                "text": "No, I'd like to continue exploring this place."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "How's the traveling? Are you enjoying it?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "atDestinationMalaysia",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmReturnMalaysia",
+                "text": "Yes, I'm done with traveling. Can I go back to #m{context.returnMapId}#?"
+              },
+              {
+                "nextState": "continueExploring",
+                "text": "No, I'd like to continue exploring this place."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "How's the traveling? Are you enjoying it?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performReturn",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright. I'll take you back to where you were before the visit to Japan. If you ever feel like traveling again down the road, please let me know!"
+          },
+          "id": "confirmReturnJapan",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performReturn",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright. I'll take you back to where you were before the visit to Malaysia. If you ever feel like traveling again down the road, please let me know!"
+          },
+          "id": "confirmReturnMalaysia",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "OK. If you ever change your mind, please let me know."
+          },
+          "id": "continueExploring",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "locationType": "WORLDTOUR"
+                },
+                "type": "warp_to_saved_location"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performReturn",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "selectDestinationJapan",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "If you're tired of the monotonous daily life, how about getting out for a change? there's nothing quite like soaking up a new culture, learning something new by the minute! It's time for you to get out and travel. We, at the Maple Travel Agency recommend you going on a #bWorld Tour#k! Are you worried about the travel expense? You shouldn't be! We, the #bMaple Travel Agency#k, have carefully come up with a plan to let you travel for ONLY #b3,000 mesos#k!"
+          },
+          "id": "atSourceJapan",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "selectDestinationMalaysia",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "If you're tired of the monotonous daily life, how about getting out for a change? there's nothing quite like soaking up a new culture, learning something new by the minute! It's time for you to get out and travel. We, at the Maple Travel Agency recommend you going on a #bWorld Tour#k! Are you worried about the travel expense? You shouldn't be! We, the #bMaple Travel Agency#k, have carefully come up with a plan to let you travel for ONLY #b10,000 mesos#k!"
+          },
+          "id": "atSourceMalaysia",
+          "type": "dialogue"
+        },
+        {
+          "id": "selectDestinationJapan",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "3000",
+                  "destination": "800000000"
+                },
+                "nextState": "describeJapan",
+                "text": "Yes, take me to Mushroom Shrine (Japan)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "We currently offer this place for you traveling pleasure: #bMushroom Shrine of Japan#k. I'll be there serving you as the travel guide. Rest assured, the number of destinations will be increase over time. Now, would you like to head over to the Mushroom Shrine?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectDestinationMalaysia",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "10000",
+                  "destination": "550000000"
+                },
+                "nextState": "describeMalaysia",
+                "text": "Yes, take me to Metropolis (Malaysia)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "We currently offer this place for you traveling pleasure: #bTrend Zone of Malaysia#k. #r#p9201135##k'll be there serving you as the travel guide. Rest assured, the number of destinations will be increase over time. Now, would you like to head over to the Metropolis?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMesoJapan",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Would you like to travel to #bMushroom Shrine of Japan#k? If you desire to feel the essence of Japan, there's nothing like visiting the Shrine, a Japanese cultural melting pot. Mushroom Shrine is a mythical place that serves the incomparable Mushroom God from ancient times."
+          },
+          "id": "describeJapan",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMesoMalaysia",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Would you like to travel to #bTrend Zone of Malaysia#k? If you desire to feel the heat of the tropics on an upbeat environment, the residents of Malaysia are eager to welcome you. Also, the metropolis itself is the heart of the local economy, that place is known to always offer something to do or to visit around."
+          },
+          "id": "describeMalaysia",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "3000"
+                  }
+                ],
+                "nextState": "insufficientMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "confirmTravelJapan"
+              }
+            ]
+          },
+          "id": "checkMesoJapan",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "10000"
+                  }
+                ],
+                "nextState": "insufficientMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "confirmTravelMalaysia"
+              }
+            ]
+          },
+          "id": "checkMesoMalaysia",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You don't have enough mesos to take the travel."
+          },
+          "id": "insufficientMeso",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "describeJapan",
+                "text": "Previous"
+              },
+              {
+                "nextState": "performTravelJapan",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Check out the female shaman serving the Mushroom God, and I strongly recommend trying Takoyaki, Yakisoba, and other delocious food sold in the streets of Japan. Now, let's head over to #bMushroom Shrine#k, a mythical place if there ever was one."
+          },
+          "id": "confirmTravelJapan",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "describeMalaysia",
+                "text": "Previous"
+              },
+              {
+                "nextState": "performTravelMalaysia",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Once there, I strongly suggest you to schedule a visit to Kampung Village. Why? Surely you've come to know about the fantasy theme park Spooky World? No? It's simply put the greatest theme park around there, it's worth a visit! Now, let's head over to the #bTrend Zone of Malaysia#k."
+          },
+          "id": "confirmTravelMalaysia",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-3000"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "locationType": "WORLDTOUR"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "800000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performTravelJapan",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-10000"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "locationType": "WORLDTOUR"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "550000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performTravelMalaysia",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9.00002e+06",
+    "type": "npc-conversation"
+  }
+}

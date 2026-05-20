@@ -1,0 +1,104 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2012014,
+      "startState": "checkItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4001019",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "askTeleport"
+              },
+              {
+                "conditions": [],
+                "nextState": "noScroll"
+              }
+            ]
+          },
+          "id": "checkItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performTeleport",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You can use #b#t4001019##k to activate #b#p2012014##k. Will you teleport to where #b#p2012015##k is?"
+          },
+          "id": "askTeleport",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There's a #b#p2012014##k that'll enable you to teleport to where #b#p2012015##k is, but you can't activate it without the scroll."
+          },
+          "id": "noScroll",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4001019",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "200082100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performTeleport",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.012014e+06",
+    "type": "npc-conversation"
+  }
+}

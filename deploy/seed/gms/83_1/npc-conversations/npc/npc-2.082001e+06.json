@@ -1,0 +1,206 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2082001,
+      "startState": "checkTicket",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031045",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkFlightAvailable"
+              },
+              {
+                "conditions": [],
+                "nextState": "noTicket"
+              }
+            ]
+          },
+          "id": "checkTicket",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "240000111",
+                    "type": "transportAvailable",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "askBoard"
+              },
+              {
+                "conditions": [],
+                "nextState": "flightNotArrived"
+              }
+            ]
+          },
+          "id": "checkFlightAvailable",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkFlightStillAvailable",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declined",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Do you wish to board the flight?"
+          },
+          "id": "askBoard",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "240000111",
+                    "type": "transportAvailable",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "boardFlight"
+              },
+              {
+                "conditions": [],
+                "nextState": "flightNotArrivedAfterYes"
+              }
+            ]
+          },
+          "id": "checkFlightStillAvailable",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "240000111",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              },
+              {
+                "params": {
+                  "itemId": "4031045",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "boardFlight",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The flight has not arrived yet. Come back soon."
+          },
+          "id": "flightNotArrived",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The flight has not arrived yet. Come back soon."
+          },
+          "id": "flightNotArrivedAfterYes",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Make sure you got an Orbis ticket to travel in this flight. Check your inventory."
+          },
+          "id": "noTicket",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Okay, talk to me if you change your mind!"
+          },
+          "id": "declined",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.082001e+06",
+    "type": "npc-conversation"
+  }
+}

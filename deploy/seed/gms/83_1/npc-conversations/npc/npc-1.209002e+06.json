@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1209002,
+      "startState": "intro",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please calm down, uncle. We are embarking to #bVictoria Island#k, we will be safe once we reach there. So, come on!"
+          },
+          "id": "intro",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.209002e+06",
+    "type": "npc-conversation"
+  }
+}

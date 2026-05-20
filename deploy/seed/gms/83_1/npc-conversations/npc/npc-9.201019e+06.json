@@ -1,0 +1,170 @@
+{
+  "data": {
+    "attributes": {
+      "name": "Intern Shakihands - Amoria Random Eye Change",
+      "npcId": 9201019,
+      "startState": "welcome",
+      "states": [
+        {
+          "id": "welcome",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "generateFaceStyles",
+                "text": "Plastic Surgery: #i5152021##t5152021#"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Hi, I pretty much shouldn't be doing this, but with a #b#t5152021##k, I will do it anyways for you. But don't forget, it will be random!"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "baseStyles": "20002,20005,20007,20011,20014,20027,20029,21001,21005,21007,21017,21018,21020,21022",
+                  "excludeEquipped": "true",
+                  "genderFilter": "true",
+                  "outputContextKey": "generatedFaces",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_styles"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "confirmSurgery"
+              }
+            ]
+          },
+          "id": "generateFaceStyles",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkCoupon",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152021##k?"
+          },
+          "id": "confirmSurgery",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152021",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "executeFaceChange"
+              },
+              {
+                "conditions": [],
+                "nextState": "noCoupon"
+              }
+            ]
+          },
+          "id": "checkCoupon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "5152021",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "outputContextKey": "selectedFace",
+                  "stylesContextKey": "generatedFaces"
+                },
+                "type": "local:select_random_cosmetic"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "faceSuccess"
+              }
+            ]
+          },
+          "id": "executeFaceChange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Enjoy your new and improved face!"
+          },
+          "id": "faceSuccess",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you..."
+          },
+          "id": "noCoupon",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.201019e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -37,6 +37,9 @@ func main() {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 			continue
 		}
+		if e.Name() == "schema.json" {
+			continue
+		}
 		names = append(names, e.Name())
 	}
 	sort.Strings(names)

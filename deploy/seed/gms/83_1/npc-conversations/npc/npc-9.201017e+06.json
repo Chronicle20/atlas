@@ -1,0 +1,500 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201017,
+      "startState": "welcome",
+      "states": [
+        {
+          "id": "welcome",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "beauty": "1"
+                },
+                "nextState": "prepareRegularLens",
+                "text": "Cosmetic Lenses: #i5152025##t5152025#"
+              },
+              {
+                "context": {
+                  "beauty": "2"
+                },
+                "nextState": "prepareVipLens",
+                "text": "Cosmetic Lenses: #i5152026##t5152026#"
+              },
+              {
+                "context": {
+                  "beauty": "3"
+                },
+                "nextState": "checkOnetimeLensItems",
+                "text": "One-time Cosmetic Lenses: #i5152106# (any color)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Hi, there~! I'm Dr.Roberts, in charge of the cosmetic lenses here at the Amoria Plastic Surgery Shop! With #b#t5152025##k or #b#t5152026##k, you can let us take care of the rest and have the kind of beautiful look you've always craved~! Remember, the first thing everyone notices about you is the eyes, and we can help you find the cosmetic lens that most fits you! Now, what would you like to use?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "colorOffsets": "0,100,300,400,500,700",
+                  "excludeEquipped": "true",
+                  "outputContextKey": "lensColors",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_colors"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "confirmRegularLens"
+              }
+            ]
+          },
+          "id": "prepareRegularLens",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkRegularLensCoupon",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "If you use the regular coupon, you'll be awarded a random pair of cosmetic lenses. Are you going to use a #b#t5152025##k and really make the change to your eyes?"
+          },
+          "id": "confirmRegularLens",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152025",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "applyRandomRegularLens"
+              },
+              {
+                "conditions": [],
+                "nextState": "noRegularLensCoupon"
+              }
+            ]
+          },
+          "id": "checkRegularLensCoupon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "outputContextKey": "selectedFace",
+                  "stylesContextKey": "lensColors"
+                },
+                "type": "local:select_random_cosmetic"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "performRegularLensChange"
+              }
+            ]
+          },
+          "id": "applyRandomRegularLens",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "5152025",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "lensSuccess"
+              }
+            ]
+          },
+          "id": "performRegularLensChange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm sorry, but I don't think you have our cosmetic lens coupon with you right now. Without the coupon, I'm afraid I can't do it for you.."
+          },
+          "id": "noRegularLensCoupon",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "colorOffsets": "0,100,300,400,500,700",
+                  "excludeEquipped": "true",
+                  "outputContextKey": "lensColors",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_colors"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "chooseVipLens"
+              }
+            ]
+          },
+          "id": "prepareVipLens",
+          "type": "genericAction"
+        },
+        {
+          "askStyle": {
+            "contextKey": "selectedFace",
+            "nextState": "checkVipLensCoupon",
+            "stylesContextKey": "lensColors",
+            "text": "With our specialized machine, you can see yourself after the treatment in advance. What kind of lens would you like to wear? Choose the style of your liking."
+          },
+          "id": "chooseVipLens",
+          "type": "askStyle"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152026",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performVipLensChange"
+              },
+              {
+                "conditions": [],
+                "nextState": "noVipLensCoupon"
+              }
+            ]
+          },
+          "id": "checkVipLensCoupon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "5152026",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "lensSuccess"
+              }
+            ]
+          },
+          "id": "performVipLensChange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm sorry, but I don't think you have our cosmetic lens coupon with you right now. Without the coupon, I'm afraid I can't do it for you.."
+          },
+          "id": "noVipLensCoupon",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152100",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152101",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152102",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152103",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152104",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152105",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152106",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152107",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "prepareOnetimeLens"
+              },
+              {
+                "conditions": [],
+                "nextState": "noOnetimeLens"
+              }
+            ]
+          },
+          "id": "checkOnetimeLensItems",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You don't have any One-Time Cosmetic Lens to use."
+          },
+          "id": "noOnetimeLens",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "excludeEquipped": "true",
+                  "outputContextKey": "onetimeLensColors",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_colors_for_onetime_lens"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "chooseOnetimeLens"
+              }
+            ]
+          },
+          "id": "prepareOnetimeLens",
+          "type": "genericAction"
+        },
+        {
+          "askStyle": {
+            "contextKey": "selectedFace",
+            "nextState": "calculateOnetimeLensCoupon",
+            "stylesContextKey": "onetimeLensColors",
+            "text": "What kind of lens would you like to wear? Please choose the style of your liking."
+          },
+          "id": "chooseOnetimeLens",
+          "type": "askStyle"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "outputContextKey": "lensItemId",
+                  "selectedFaceContextKey": "selectedFace"
+                },
+                "type": "local:calculate_lens_coupon"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "performOnetimeLensChange"
+              }
+            ]
+          },
+          "id": "calculateOnetimeLensCoupon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.lensItemId}",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "lensSuccess"
+              }
+            ]
+          },
+          "id": "performOnetimeLensChange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Enjoy your new and improved cosmetic lenses!"
+          },
+          "id": "lensSuccess",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.201017e+06",
+    "type": "npc-conversation"
+  }
+}

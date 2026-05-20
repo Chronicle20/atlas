@@ -3,17 +3,19 @@ package main
 import (
 	"atlas-drops-information/continent"
 	drop2 "atlas-drops-information/continent/drop"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-drops-information/logger"
 	"atlas-drops-information/monster/drop"
 	"atlas-drops-information/reactor"
 	drop3 "atlas-drops-information/reactor/drop"
 	"atlas-drops-information/seed"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-drops-information"
@@ -49,7 +51,12 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(drop.Migration, drop2.Migration, drop3.Migration))
+	db := database.Connect(l, database.SetMigrations(
+		drop.Migration,
+		drop2.Migration,
+		drop3.Migration,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	server.New(l).
 		WithContext(tdm.Context()).

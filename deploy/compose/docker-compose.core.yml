@@ -187,9 +187,9 @@ services:
       DB_NAME: atlas-drops
       SERVICE_ID: 00000000-0000-0000-0000-000000000000
       SERVICE_TYPE: drops-information-service
-      MONSTER_DROPS_PATH: /drops/monsters
-      CONTINENT_DROPS_PATH: /drops/continents
-      REACTOR_DROPS_PATH: /drops/reactors
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-drops:
     <<: *atlas-defaults

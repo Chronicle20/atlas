@@ -11,6 +11,7 @@ COPY libs/atlas-constants/go.mod libs/atlas-constants/go.sum libs/atlas-constant
 COPY libs/atlas-kafka/go.mod libs/atlas-kafka/go.sum libs/atlas-kafka/
 COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
+COPY libs/atlas-seeder/go.mod libs/atlas-seeder/go.sum libs/atlas-seeder/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
@@ -28,6 +29,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-kafka' >> go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
+    echo '    ./libs/atlas-seeder' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-database' >> go.work && \
@@ -44,6 +46,7 @@ COPY libs/atlas-constants libs/atlas-constants
 COPY libs/atlas-kafka libs/atlas-kafka
 COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
+COPY libs/atlas-seeder libs/atlas-seeder
 COPY libs/atlas-tenant libs/atlas-tenant
 COPY libs/atlas-tracing libs/atlas-tracing
 
@@ -62,6 +65,7 @@ RUN cd services/atlas-drop-information/atlas.com/dis && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-model=/app/libs/atlas-model \
       -replace=github.com/Chronicle20/atlas/libs/atlas-rest=/app/libs/atlas-rest \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-seeder=/app/libs/atlas-seeder \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
@@ -79,6 +83,5 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
-COPY services/atlas-drop-information/drops /drops
 
 CMD ["/server"]

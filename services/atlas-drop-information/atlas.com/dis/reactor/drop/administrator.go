@@ -25,3 +25,9 @@ func BulkCreateReactorDrop(db *gorm.DB, reactorDrops []Model) error {
 		return nil
 	})
 }
+
+// DeleteAll deletes all reactor drops for the tenant in context.
+func DeleteAll(db *gorm.DB) (int64, error) {
+	result := db.Unscoped().Where("1 = 1").Delete(&entity{})
+	return result.RowsAffected, result.Error
+}

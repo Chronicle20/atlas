@@ -217,19 +217,25 @@ jobs:
   # After build-docker-pr completes, create/update a derived branch
   # `bot/pr-<N>-resolved` that:
   #   1. Substitutes every PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER /
-  #      PLACEHOLDER_SHA token in deploy/k8s/overlays/pr/ with the actual
-  #      per-PR value (sed across the directory).
+  #      PLACEHOLDER_SHA token in deploy/k8s/overlays/pr/ AND
+  #      deploy/k8s/overlays/pr-cleanup/ with the actual per-PR value
+  #      (sed across both directories).
   #   2. Bumps deploy/k8s/overlays/pr/kustomization.yaml's `images:` block
   #      so only the just-built services point at pr-<N>-<sha>; unchanged
   #      services keep `newTag: latest` (which option-b's main-publish
   #      flow now keeps fresh under :latest manifest list).
   #   3. Force-pushes to bot/pr-<N>-resolved.
   #
-  # The Argo ApplicationSet targets bot/pr-<N>-resolved (not the PR head
-  # directly), so kustomize sees an already-resolved overlay with no
-  # placeholders. This sidesteps kustomize's substring-substitution
-  # limitations on the bracketed KAFKA_CONSUMER_GROUP form and the
-  # variable-dash DB_NAME form.
+  # The Argo ApplicationSet uses multi-source mode and targets
+  # bot/pr-<N>-resolved (not the PR head directly), with two `sources:`
+  # entries — one for each overlay. Kustomize sees already-resolved
+  # overlays with no placeholders. This sidesteps kustomize's
+  # substring-substitution limitations on the bracketed
+  # KAFKA_CONSUMER_GROUP form and the variable-dash DB_NAME form.
+  #
+  # The pr-cleanup/ overlay is intentionally separate because the
+  # PostDelete cleanup Job lives in `argocd` namespace, not atlas-pr-<N>
+  # (see pr-cleanup/kustomization.yaml header + task-070/design.md §3.1).
   #
   # GITHUB_TOKEN is used intentionally: its pushes do NOT trigger
   # downstream workflow runs, which is exactly what we want — the bot
@@ -284,18 +290,27 @@ jobs:
           SHORT_SHA: ${{ steps.tokens.outputs.short_sha }}
         run: |
           set -euo pipefail
-          # find + sed across every file under deploy/k8s/overlays/pr/.
+          # find + sed across every file under deploy/k8s/overlays/pr/ AND
+          # deploy/k8s/overlays/pr-cleanup/. The cleanup Job has its own
+          # overlay because it must land in `argocd` namespace, not
+          # atlas-pr-<N> (see pr-cleanup/kustomization.yaml header +
+          # task-070/design.md §3.1 Design A). Both overlays share the
+          # same PLACEHOLDER tokens and are resolved against the same
+          # bot/pr-<N>-resolved branch via Argo CD multi-source.
+          #
           # Order matters: PLACEHOLDER_ATLAS_ENV must be replaced before
           # any token whose name is a prefix of it (none today, but
           # defensive).
-          find deploy/k8s/overlays/pr -type f \( -name '*.yaml' -o -name '*.yml' \) \
+          find deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup \
+              -type f \( -name '*.yaml' -o -name '*.yml' \) \
             -exec sed -i \
               -e "s|PLACEHOLDER_ATLAS_ENV|${ATLAS_ENV}|g" \
               -e "s|PLACEHOLDER_PR_NUMBER|${PR_NUMBER}|g" \
               -e "s|PLACEHOLDER_SHA|${SHORT_SHA}|g" \
               {} +
           echo "=== Placeholders remaining (expect none) ==="
-          grep -rn 'PLACEHOLDER_' deploy/k8s/overlays/pr || echo "(clean)"
+          grep -rn 'PLACEHOLDER_' deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup \
+            || echo "(clean)"
 
       - name: Bump image tags for built services
         env:
@@ -333,8 +348,8 @@ jobs:
           git config user.name 'atlas-image-bot'
           git config user.email 'atlas-image-bot@users.noreply.github.com'
 
-          # Stage the substituted overlay + bumped image tags.
-          git add deploy/k8s/overlays/pr
+          # Stage the substituted overlays (pr + pr-cleanup) + bumped image tags.
+          git add deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup
 
           if git diff --cached --quiet; then
               echo "::warning::No changes to commit — PR overlay was already resolved? Skipping force-push."

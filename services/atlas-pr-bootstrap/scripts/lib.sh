@@ -57,3 +57,16 @@ http_ok_tenant() {
         "$url" || echo 000)
     [ "$status" = "200" ] || [ "$status" = "204" ]
 }
+
+# compute_atlas_env: derive the 4-hex-char per-env hash from a PR number.
+# MUST stay in sync with .github/workflows/pr-validation.yml's update-pr-overlay
+# step and the cluster-infra ApplicationSet template. test/lib_test.bats pins
+# the contract via the PR 491 / 522 recovery-log oracles.
+compute_atlas_env() {
+    local pr_number="$1"
+    if [ -z "$pr_number" ]; then
+        log error "compute_atlas_env: empty PR_NUMBER"
+        return 1
+    fi
+    printf "pr-%d" "$pr_number" | sha256sum | cut -c1-4
+}

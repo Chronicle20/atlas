@@ -25,7 +25,7 @@ import (
 	"atlas-data/quest"
 	"atlas-data/reactor"
 	"atlas-data/runtime/ingest"
-	restmode "atlas-data/runtime/rest"
+	restruntime "atlas-data/runtime/rest"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
@@ -72,18 +72,31 @@ func main() {
 	tdm := service.GetTeardownManager()
 
 	switch os.Getenv("MODE") {
-	case "rest":
-		if err := restmode.Run(tdm.Context(), l); err != nil {
-			l.WithError(err).Fatal("rest mode failed")
-		}
-		return
 	case "ingest":
 		if err := ingest.Run(tdm.Context(), l); err != nil {
 			l.WithError(err).Fatal("ingest mode failed")
 		}
 		return
 	}
-	// default ("all" or empty) falls through to existing main flow.
+	// default ("all" or empty) and MODE=rest fall through to the HTTP flow.
+	// MODE=rest additionally provisions a JobCreator + Watchdog so the
+	// /api/data/process handler can launch ingest Jobs.
+	var jc *restruntime.JobCreator
+	if os.Getenv("MODE") == "rest" {
+		var jcErr error
+		jc, jcErr = restruntime.NewJobCreatorInCluster()
+		if jcErr != nil {
+			l.WithError(jcErr).Warn("k8s in-cluster config unavailable; /api/data/process will return 503")
+			jc = nil
+		} else {
+			if active, rerr := restruntime.RecoverActiveJobs(tdm.Context(), jc.K8s, jc.Namespace); rerr != nil {
+				l.WithError(rerr).Warn("restart recovery failed")
+			} else if len(active) > 0 {
+				l.Infof("restart recovery: %d active ingest job(s): %v", len(active), active)
+			}
+			go restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: 1800}.Run(tdm.Context())
+		}
+	}
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
@@ -124,6 +137,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
 		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
+		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).
 		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).

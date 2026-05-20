@@ -26,6 +26,9 @@ spec:
           value: "debug"
         - name: DB_NAME
           value: "atlas-gachapons"
+        - name: SEED_CATALOG_ROOT
+          value: /var/run/seed-catalog
+          # TODO(task-072 Task 5.2): seed-catalog volume/sidecar component reference
         - name: DB_USER
           valueFrom:
             secretKeyRef:

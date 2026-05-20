@@ -23,6 +23,8 @@ import (
 	"atlas-data/pet"
 	"atlas-data/quest"
 	"atlas-data/reactor"
+	"atlas-data/runtime/ingest"
+	restmode "atlas-data/runtime/rest"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
@@ -64,6 +66,20 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	switch os.Getenv("MODE") {
+	case "rest":
+		if err := restmode.Run(tdm.Context(), l); err != nil {
+			l.WithError(err).Fatal("rest mode failed")
+		}
+		return
+	case "ingest":
+		if err := ingest.Run(tdm.Context(), l); err != nil {
+			l.WithError(err).Fatal("ingest mode failed")
+		}
+		return
+	}
+	// default ("all" or empty) falls through to existing main flow.
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

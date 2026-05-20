@@ -17,6 +17,7 @@ COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 COPY libs/atlas-database/go.mod libs/atlas-database/go.sum libs/atlas-database/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
+COPY libs/atlas-wz/go.mod libs/atlas-wz/
 # Copy service module definitions
 COPY services/atlas-data/atlas.com/data/go.mod services/atlas-data/atlas.com/data/go.sum services/atlas-data/atlas.com/data/
 
@@ -33,6 +34,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-database' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
+    echo '    ./libs/atlas-wz' >> go.work && \
     echo '    ./services/atlas-data/atlas.com/data' >> go.work && \
     echo ')' >> go.work
 
@@ -50,6 +52,7 @@ COPY libs/atlas-tracing libs/atlas-tracing
 COPY libs/atlas-database libs/atlas-database
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-wz libs/atlas-wz
 # Copy service source code
 COPY services/atlas-data/atlas.com/data services/atlas-data/atlas.com/data
 
@@ -65,6 +68,7 @@ RUN cd services/atlas-data/atlas.com/data && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-wz=/app/libs/atlas-wz \
     && go mod tidy
 
 # Build

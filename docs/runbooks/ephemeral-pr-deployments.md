@@ -264,7 +264,9 @@ All Argo CD-related Secrets live in the `argocd` namespace and are templated by 
 
 - **GitHub PAT for Argo source-repo creds:** `kubectl edit secret argocd-repo-creds-chronicle20-atlas -n argocd`, replace `password`. ApplicationSet picks up on next reconcile (~30s). This token does NOT need `Contents: Read and write` (the cleanup PAT above owns branch deletion).
 
-- **Pi-hole tokens:** `kubectl edit secret pihole-credentials -n argocd`. The PostSync register Job and the PostDelete cleanup Job both read at run-time; rotation takes effect on the next PR sync.
+- **Pi-hole tokens:** `kubectl edit secret pihole-credentials -n argocd`. Source Secret lives in `argocd` and is Reflector-replicated to every `atlas-pr-*` namespace. The PostSync register Job (in `atlas-pr-<N>`) reads the replica; the PostDelete cleanup Job (in `argocd`) reads the source directly. Rotation takes effect on the next PR sync.
+
+- **Database credentials (`db-credentials`):** source Secret lives in `atlas-main` and is Reflector-replicated to `atlas-pr-.*|argocd` (the per-PR namespaces AND `argocd` so the PostDelete cleanup Job can read it). `kubectl edit secret db-credentials -n atlas-main`; Reflector pushes the change to all replicas within seconds.
 
 - **ghcr-pat (legacy).** No longer used by the PostDelete Job (replaced by `atlas-pr-cleanup-gh-token`). If no other consumer needs it, remove it in a cluster-infra follow-up.
 

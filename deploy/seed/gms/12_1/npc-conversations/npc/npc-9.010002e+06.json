@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9010002,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hi, I'm #p9010002#."
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.010002e+06",
+    "type": "npc-conversation"
+  }
+}

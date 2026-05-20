@@ -1,0 +1,123 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092018,
+      "startState": "checkQuestAndItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<=",
+                    "referenceId": "2162",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031839",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": null
+              },
+              {
+                "conditions": [],
+                "nextState": "checkInventorySpace"
+              }
+            ]
+          },
+          "id": "checkQuestAndItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031839",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "giveItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "inventoryFull"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031839",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "confirmGave"
+              }
+            ]
+          },
+          "id": "giveItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "(You retrieved a Crumpled Paper standing out of the trash can. It's content seems important.)"
+          },
+          "id": "confirmGave",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "(You see a Crumpled Paper standing out of the trash can. It's content seems important, but you can't retrieve it since your inventory is full.)"
+          },
+          "id": "inventoryFull",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.092018e+06",
+    "type": "npc-conversation"
+  }
+}

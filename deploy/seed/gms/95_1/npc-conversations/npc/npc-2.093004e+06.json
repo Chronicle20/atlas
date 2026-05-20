@@ -1,0 +1,120 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2093004,
+      "startState": "askWarp",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMeso",
+                "text": "Yes"
+              },
+              {
+                "nextState": "decline",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Will you move to #b#m230000000##k now? The price is #b10000 mesos#k."
+          },
+          "id": "askWarp",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hmmm ... too busy to do it right now? If you feel like doing it, though, come back and find me."
+          },
+          "id": "decline",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "10000"
+                  }
+                ],
+                "nextState": "insufficientMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "performWarp"
+              }
+            ]
+          },
+          "id": "checkMeso",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I don't think you have enough money..."
+          },
+          "id": "insufficientMeso",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-10000"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "mapId": "230000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.093004e+06",
+    "type": "npc-conversation"
+  }
+}

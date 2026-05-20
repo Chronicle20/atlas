@@ -1,0 +1,179 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1094004,
+      "startState": "checkQuestStarted",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2186",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "askObtainGlasses"
+              },
+              {
+                "conditions": [],
+                "nextState": "questNotStarted"
+              }
+            ]
+          },
+          "id": "checkQuestStarted",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Just a pile of boxes, nothing special..."
+          },
+          "id": "questNotStarted",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkHasGlasses",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Do you want to obtain a glasses?"
+          },
+          "id": "askObtainGlasses",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031853",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "alreadyHaveGlasses"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031854",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "alreadyHaveGlasses"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031855",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "alreadyHaveGlasses"
+              },
+              {
+                "conditions": [],
+                "nextState": "selectRandomGlasses"
+              }
+            ]
+          },
+          "id": "checkHasGlasses",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You #balready have#k the glasses that was here!"
+          },
+          "id": "alreadyHaveGlasses",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "4031853,4031854,4031855",
+                  "outputContextKey": "selectedGlasses",
+                  "weights": "1,1,1"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "giveGlasses"
+              }
+            ]
+          },
+          "id": "selectRandomGlasses",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.selectedGlasses}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "giveGlasses",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.094004e+06",
+    "type": "npc-conversation"
+  }
+}

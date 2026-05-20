@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1300001,
+      "startState": "intro",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Let the ceremony begins, we cannot let the masses waiting! Hem~hem~heeh~~"
+          },
+          "id": "intro",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.300001e+06",
+    "type": "npc-conversation"
+  }
+}

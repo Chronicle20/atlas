@@ -1,0 +1,156 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 42500,
+          "period": 0,
+          "templateId": 1302008,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 352500,
+          "period": 0,
+          "templateId": 1302068,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 42500,
+          "period": 0,
+          "templateId": 1312005,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 42500,
+          "period": 0,
+          "templateId": 1322014,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 44500,
+          "period": 0,
+          "templateId": 1332009,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 42500,
+          "period": 0,
+          "templateId": 1332012,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 40500,
+          "period": 0,
+          "templateId": 1372003,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 22500,
+          "period": 0,
+          "templateId": 1382002,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 152500,
+          "period": 0,
+          "templateId": 1402002,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 47500,
+          "period": 0,
+          "templateId": 1412006,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 47500,
+          "period": 0,
+          "templateId": 1422001,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 62500,
+          "period": 0,
+          "templateId": 1432002,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 62500,
+          "period": 0,
+          "templateId": 1442001,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 152500,
+          "period": 0,
+          "templateId": 1452005,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 32500,
+          "period": 0,
+          "templateId": 1462000,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 22500,
+          "period": 0,
+          "templateId": 1472001,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        }
+      ],
+      "npcId": 9201059,
+      "recharger": false
+    },
+    "id": "9.201059e+06",
+    "type": "npc-shop"
+  }
+}

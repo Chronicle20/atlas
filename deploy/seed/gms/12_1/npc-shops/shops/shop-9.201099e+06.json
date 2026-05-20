@@ -1,0 +1,174 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 400,
+          "period": 0,
+          "templateId": 2050004,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 200,
+          "period": 0,
+          "templateId": 2050000,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 4500,
+          "period": 0,
+          "templateId": 2020012,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 5000,
+          "period": 0,
+          "templateId": 2020013,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 8100,
+          "period": 0,
+          "templateId": 2020014,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 9690,
+          "period": 0,
+          "templateId": 2020015,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 200,
+          "period": 0,
+          "templateId": 2050001,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 300,
+          "period": 0,
+          "templateId": 2050002,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 500,
+          "period": 0,
+          "templateId": 2050003,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 1650,
+          "period": 0,
+          "templateId": 2022000,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 5000,
+          "period": 0,
+          "templateId": 2002017,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 40,
+          "period": 0,
+          "templateId": 2060004,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 40,
+          "period": 0,
+          "templateId": 2061004,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 2000,
+          "period": 0,
+          "templateId": 2070010,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 1100,
+          "period": 0,
+          "templateId": 2022003,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 620,
+          "period": 0,
+          "templateId": 2000018,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 1000,
+          "period": 0,
+          "templateId": 2022002,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 400,
+          "period": 0,
+          "templateId": 2030020,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        }
+      ],
+      "npcId": 9201099,
+      "recharger": true
+    },
+    "id": "9.201099e+06",
+    "type": "npc-shop"
+  }
+}

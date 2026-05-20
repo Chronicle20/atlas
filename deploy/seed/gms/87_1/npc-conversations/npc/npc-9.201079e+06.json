@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201079,
+      "startState": "warpToFoyer",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "682000100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToFoyer",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9.201079e+06",
+    "type": "npc-conversation"
+  }
+}

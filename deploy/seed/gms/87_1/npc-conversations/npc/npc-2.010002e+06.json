@@ -1,0 +1,150 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2010002,
+      "startState": "selectService",
+      "states": [
+        {
+          "id": "selectService",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "generateFaceStyles",
+                "text": "Plastic Surgery: #i5152005##t5152005#"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Well well well, welcome to the Orbis Plastic Surgery! Would you like to transform your face into something new? With a #b#t5152005##k, you can let us take care of the rest and have the face you've always wanted~!"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "baseStyles": "20000,20001,20003,20004,20005,20006,20007,20008,20012,20014,20022,20028,20031,21000,21001,21002,21003,21004,21005,21006,21007,21008,21012,21014,21023,21026",
+                  "excludeEquipped": "true",
+                  "genderFilter": "true",
+                  "outputContextKey": "availableFaceStyles",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_styles"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "selectFaceStyle"
+              }
+            ]
+          },
+          "id": "generateFaceStyles",
+          "type": "genericAction"
+        },
+        {
+          "askStyle": {
+            "contextKey": "selectedFace",
+            "nextState": "checkFaceCoupon",
+            "stylesContextKey": "availableFaceStyles",
+            "text": "I can totally transform your face into something new... how about giving us a try? For #b#t5152005##k, you can get the face of your liking...take your time in choosing the face of your preference."
+          },
+          "id": "selectFaceStyle",
+          "type": "askStyle"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152005",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performFaceChange"
+              },
+              {
+                "conditions": [],
+                "nextState": "noFaceCoupon"
+              }
+            ]
+          },
+          "id": "checkFaceCoupon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "5152005",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "faceChangeSuccess"
+              }
+            ]
+          },
+          "id": "performFaceChange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Enjoy your new and improved face!"
+          },
+          "id": "faceChangeSuccess",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you..."
+          },
+          "id": "noFaceCoupon",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.010002e+06",
+    "type": "npc-conversation"
+  }
+}

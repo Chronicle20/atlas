@@ -1,0 +1,206 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2012025,
+      "startState": "checkTicket",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031576",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkTransport"
+              },
+              {
+                "conditions": [],
+                "nextState": "noTicket"
+              }
+            ]
+          },
+          "id": "checkTicket",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "200000151",
+                    "type": "transportAvailable",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "askBoard"
+              },
+              {
+                "conditions": [],
+                "nextState": "notBoarding"
+              }
+            ]
+          },
+          "id": "checkTransport",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkTransportAgain",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineBoard",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "This will not be a short flight, so you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the genie?"
+          },
+          "id": "askBoard",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Make sure you got an Ariant ticket to travel in this genie. Check your inventory."
+          },
+          "id": "noTicket",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "This genie is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the guide at the ticketing booth."
+          },
+          "id": "notBoarding",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Okay, talk to me if you change your mind!"
+          },
+          "id": "declineBoard",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "200000151",
+                    "type": "transportAvailable",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performBoard"
+              },
+              {
+                "conditions": [],
+                "nextState": "missedBoarding"
+              }
+            ]
+          },
+          "id": "checkTransportAgain",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031576",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "200000152",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performBoard",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "This genie is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the guide at the ticketing booth."
+          },
+          "id": "missedBoarding",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.012025e+06",
+    "type": "npc-conversation"
+  }
+}

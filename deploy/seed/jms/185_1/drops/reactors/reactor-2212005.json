@@ -1,0 +1,38 @@
+{
+  "jsonapi": {
+    "version": "1.1"
+  },
+  "data": {
+    "type": "reactors",
+    "id": "2212005",
+    "relationships": {
+      "drops": {
+        "data": [
+          {
+            "type": "drops",
+            "id": "2212005:4031136:3439"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "drops",
+      "id": "2212005:4031136:3439",
+      "attributes": {
+        "itemId": 4031136,
+        "chance": 8,
+        "questId": 3439
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2212005"
+          }
+        }
+      }
+    }
+  ]
+}

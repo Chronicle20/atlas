@@ -1,0 +1,115 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2082003,
+      "startState": "askTransform",
+      "states": [
+        {
+          "id": "askTransform",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "applyBuff",
+                "text": "I want to become a dragon."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "If you had wings, I'm sure you could go there.  But, that alone won't be enough.  If you want to fly though the wind that's sharper than a blade, you'll need tough scales as well.  I'm the only Halfling left that knows the way back... If you want to go there, I can transform you.  No matter what you are, for this moment, you will become a #bDragon#k..."
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "2210016"
+                },
+                "type": "apply_consumable_effect"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "startTransport"
+              }
+            ]
+          },
+          "id": "applyBuff",
+          "type": "genericAction"
+        },
+        {
+          "id": "startTransport",
+          "transportAction": {
+            "alreadyInTransitState": "transportAlreadyInTransit",
+            "capacityFullState": "transportCapacityFull",
+            "failureState": "transportFailed",
+            "routeName": "temple-of-time-flight",
+            "routeNotFoundState": "transportFailed",
+            "serviceErrorState": "transportFailed"
+          },
+          "type": "transportAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm sorry, the flight service is currently unavailable. Please try again later."
+          },
+          "id": "transportFailed",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There are too many dragons in the sky right now. Please wait a moment and try again."
+          },
+          "id": "transportCapacityFull",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You seem to already be flying. Please wait until you arrive at your destination."
+          },
+          "id": "transportAlreadyInTransit",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.082003e+06",
+    "type": "npc-conversation"
+  }
+}

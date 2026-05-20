@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1300014,
+      "startState": "noOp",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "noOp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.300014e+06",
+    "type": "npc-conversation"
+  }
+}

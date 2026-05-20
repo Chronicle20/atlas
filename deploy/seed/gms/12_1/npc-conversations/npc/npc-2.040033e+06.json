@@ -1,0 +1,167 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2040033,
+      "startState": "checkItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031128",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "hasLetter"
+              },
+              {
+                "conditions": [],
+                "nextState": "noLetter"
+              }
+            ]
+          },
+          "id": "checkItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkPet",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Eh, that's my brother's letter! Probably scolding me for thinking I'm not working and stuff...Eh? Ahhh...you followed my brother's advice and trained your pet and got up here, huh? Nice!! Since you worked hard to get here, I'll boost your intimacy level with your pet."
+          },
+          "id": "hasLetter",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "My brother told me to take care of the pet obstacle course, but ... since I'm so far away from him, I can't help but wanting to goof around ...hehe, since I don't see him in sight, might as well just chill for a few minutes."
+          },
+          "id": "noLetter",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "petCount",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "noPet"
+              },
+              {
+                "conditions": [],
+                "nextState": "rewardPlayer"
+              }
+            ]
+          },
+          "id": "checkPet",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "hasLetter",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Hmmm ... did you really get here with your pet? These obstacles are for pets. What are you here for without it?? Get outta here!"
+          },
+          "id": "noPet",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031128",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "4",
+                  "petIndex": "0"
+                },
+                "type": "gain_closeness"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "rewardDialogue"
+              }
+            ]
+          },
+          "id": "rewardPlayer",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "hasLetter",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "What do you think? Don't you think you have gotten much closer with your pet? If you have time, train your pet again on this obstacle course...of course, with my brother's permission."
+          },
+          "id": "rewardDialogue",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.040033e+06",
+    "type": "npc-conversation"
+  }
+}

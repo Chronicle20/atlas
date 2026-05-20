@@ -1,0 +1,97 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092010,
+      "startState": "checkItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4220153",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "askTakeMap"
+              },
+              {
+                "conditions": [],
+                "nextState": "noMapMessage"
+              }
+            ]
+          },
+          "id": "checkItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "(Scratch scratch...)"
+          },
+          "id": "noMapMessage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "takeMap",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Hey, nice #bTreasure Map#k you have there? #rCan I keep it#k for the Nautilus crew, if you don't need it any longer?"
+          },
+          "id": "askTakeMap",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4220153",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "takeMap",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.09201e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9270024,
+      "startState": "start",
+      "states": [
+        {
+          "id": "start",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "checkVipCoupon",
+                "text": "Let me get my dream face! (Uses #i5152038# #t5152038#)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Let's see...I can totally transform your face into something new. Don't you want to try it? For #b#t5152038##k, you can get the face of your liking. Take your time in choosing the face of your preference..."
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "5152038",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "noCoupon"
+              },
+              {
+                "conditions": [],
+                "nextState": "generateFaceStyles"
+              }
+            ]
+          },
+          "id": "checkVipCoupon",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you..."
+          },
+          "id": "noCoupon",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "baseStyles": "20005,20012,20013,20020,20021,20026,21006,21009,21011,21012,21021,21025",
+                  "excludeEquipped": "true",
+                  "genderFilter": "true",
+                  "outputContextKey": "generatedFaces",
+                  "preserveColor": "true",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_styles"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "chooseFace"
+              }
+            ]
+          },
+          "id": "generateFaceStyles",
+          "type": "genericAction"
+        },
+        {
+          "askStyle": {
+            "contextKey": "selectedFace",
+            "nextState": "applyFace",
+            "stylesContextKey": "generatedFaces",
+            "text": "Let's see... I can totally transform your face into something new. Don't you want to try it? For #b#t5152038##k, you can get the face of your liking. Take your time in choosing the face of your preference..."
+          },
+          "id": "chooseFace",
+          "type": "askStyle"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "5152038",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "success"
+              }
+            ]
+          },
+          "id": "applyFace",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Enjoy your new and improved face!"
+          },
+          "id": "success",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.270024e+06",
+    "type": "npc-conversation"
+  }
+}

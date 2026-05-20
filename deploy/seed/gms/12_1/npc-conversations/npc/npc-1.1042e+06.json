@@ -1,0 +1,115 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1104200,
+      "startState": "warningAboutEleanor",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "askIfReady",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "#b#p1104002##k... The black witch... Trapped me here... There's no time now, she's already on her way to #rattack Ereve#k!"
+          },
+          "id": "warningAboutEleanor",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMapCapacity",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Fellow Knight, you must reach to #rEreve#k right now, #rthe Empress is in danger#k!! Even in this condition, I can still Magic Warp you there. When you're ready talk to me. #bAre you ready to face Eleanor?#k"
+          },
+          "id": "askIfReady",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "913030000",
+                    "type": "mapCapacity",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "warpToEleanor"
+              },
+              {
+                "conditions": [],
+                "nextState": "mapOccupied"
+              }
+            ]
+          },
+          "id": "checkMapCapacity",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "913030000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToEleanor",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There's someone already challenging her. Please wait awhile."
+          },
+          "id": "mapOccupied",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.1042e+06",
+    "type": "npc-conversation"
+  }
+}

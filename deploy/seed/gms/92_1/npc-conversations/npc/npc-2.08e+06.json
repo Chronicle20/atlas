@@ -1,0 +1,1947 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2080000,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "7301",
+                    "type": "questStatus",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "mainMenuWithQuest"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "7303",
+                    "type": "questStatus",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "mainMenuWithQuest"
+              },
+              {
+                "conditions": [],
+                "nextState": "mainMenu"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "id": "mainMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "stimulatorInfo",
+                "text": "What's a stimulator?"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectWarriorWeapon",
+                "text": "Create a Warrior weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectBowmanWeapon",
+                "text": "Create a Bowman weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectMagicianWeapon",
+                "text": "Create a Magician weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectThiefWeapon",
+                "text": "Create a Thief weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectPirateWeapon",
+                "text": "Create a Pirate Weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectWarriorWeaponStim",
+                "text": "Create a Warrior weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectBowmanWeaponStim",
+                "text": "Create a Bowman weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectMagicianWeaponStim",
+                "text": "Create a Magician weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectThiefWeaponStim",
+                "text": "Create a Thief weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectPirateWeaponStim",
+                "text": "Create a Pirate Weapon with a Stimulator"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "A dragon's power is not to be underestimated. If you like, I can add its power to one of your weapons. However, the weapon must be powerful enough to hold its potential..."
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "mainMenuWithQuest",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "stimulatorInfo",
+                "text": "What's a stimulator?"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectWarriorWeapon",
+                "text": "Create a Warrior weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectBowmanWeapon",
+                "text": "Create a Bowman weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectMagicianWeapon",
+                "text": "Create a Magician weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectThiefWeapon",
+                "text": "Create a Thief weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "false"
+                },
+                "nextState": "selectPirateWeapon",
+                "text": "Create a Pirate Weapon"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectWarriorWeaponStim",
+                "text": "Create a Warrior weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectBowmanWeaponStim",
+                "text": "Create a Bowman weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectMagicianWeaponStim",
+                "text": "Create a Magician weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectThiefWeaponStim",
+                "text": "Create a Thief weapon with a Stimulator"
+              },
+              {
+                "context": {
+                  "stimulator": "true"
+                },
+                "nextState": "selectPirateWeaponStim",
+                "text": "Create a Pirate Weapon with a Stimulator"
+              },
+              {
+                "nextState": "cornianDaggerInfo",
+                "text": "Make #t4001078#"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "A dragon's power is not to be underestimated. If you like, I can add its power to one of your weapons. However, the weapon must be powerful enough to hold its potential..."
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "A stimulator is a special potion that I can add into the process of creating certain items. It gives it stats as though it had dropped from a monster. However, it is possible to have no change, and it is also possible for the item to be below average. There's also a 10% chance of not getting any item when using a stimulator, so please choose wisely."
+          },
+          "id": "stimulatorInfo",
+          "type": "dialogue"
+        },
+        {
+          "id": "selectWarriorWeapon",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1302059",
+                  "mat1": "1302056",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Carbella - Lv. 110 One-Handed Sword"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1312031",
+                  "mat1": "1312030",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Axe - Lv. 110 One-Handed Axe"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1322052",
+                  "mat1": "1322045",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Mace - Lv. 110 One-Handed BW"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1402036",
+                  "mat1": "1402035",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Claymore - Lv. 110 Two-Handed Sword"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1412026",
+                  "mat1": "1412021",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Battle Axe - Lv. 110 Two-Handed Axe"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1422028",
+                  "mat1": "1422027",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Flame - Lv. 110 Two-Handed BW"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1432038",
+                  "mat1": "1432030",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Faltizan - Lv. 110 Spear"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1442045",
+                  "mat1": "1442044",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8"
+                },
+                "nextState": "confirmCraft4Mat",
+                "text": "Dragon Chelbird - Lv. 110 Polearm"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Warrior weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectWarriorWeaponStim",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1302059",
+                  "mat1": "1302056",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130002"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Carbella - Lv. 110 One-Handed Sword"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1312031",
+                  "mat1": "1312030",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130003"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Axe - Lv. 110 One-Handed Axe"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1322052",
+                  "mat1": "1322045",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130004"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Mace - Lv. 110 One-Handed BW"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1402036",
+                  "mat1": "1402035",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130005"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Claymore - Lv. 110 Two-Handed Sword"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1412026",
+                  "mat1": "1412021",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130006"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Battle Axe - Lv. 110 Two-Handed Axe"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1422028",
+                  "mat1": "1422027",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130007"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Flame - Lv. 110 Two-Handed BW"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1432038",
+                  "mat1": "1432030",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130008"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Faltizan - Lv. 110 Spear"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1442045",
+                  "mat1": "1442044",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "8",
+                  "stimId": "4130009"
+                },
+                "nextState": "confirmCraft4MatStim",
+                "text": "Dragon Chelbird - Lv. 110 Polearm"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Warrior weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectBowmanWeapon",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1452044",
+                  "mat1": "1452019",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "3",
+                  "matQty5": "5"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Shiner Bow - Lv. 110 Bow"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1462039",
+                  "mat1": "1462015",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "5",
+                  "matQty5": "3"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Shiner Cross - Lv. 110 Crossbow"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Bowman weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectBowmanWeaponStim",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1452044",
+                  "mat1": "1452019",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "3",
+                  "matQty5": "5",
+                  "stimId": "4130012"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Shiner Bow - Lv. 110 Bow"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1462039",
+                  "mat1": "1462015",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "5",
+                  "matQty5": "3",
+                  "stimId": "4130013"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Shiner Cross - Lv. 110 Crossbow"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Bowman weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectMagicianWeapon",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1372032",
+                  "mat1": "1372010",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005001",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "6",
+                  "matQty5": "2"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Wand - Lv. 108 Wand"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1382036",
+                  "mat1": "1382035",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005001",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "6",
+                  "matQty5": "2"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Staff - Lv. 110 Staff"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Magician weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectMagicianWeaponStim",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1372032",
+                  "mat1": "1372010",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005001",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "6",
+                  "matQty5": "2",
+                  "stimId": "4130010"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Wand - Lv. 108 Wand"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1382036",
+                  "mat1": "1382035",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005001",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "6",
+                  "matQty5": "2",
+                  "stimId": "4130011"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Staff - Lv. 110 Staff"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Magician weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectThiefWeapon",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1332049",
+                  "mat1": "1332051",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "5",
+                  "matQty5": "3"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Kanzir - Lv. 110 STR Dagger"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1332050",
+                  "mat1": "1332052",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005002",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "3",
+                  "matQty5": "5"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Kreda - Lv. 110 LUK Dagger"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1472051",
+                  "mat1": "1472053",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005002",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "2",
+                  "matQty5": "6"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Green Sleve - Lv. 110 Claw"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Thief weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectThiefWeaponStim",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1332049",
+                  "mat1": "1332051",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "5",
+                  "matQty5": "3",
+                  "stimId": "4130014"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Kanzir - Lv. 110 STR Dagger"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1332050",
+                  "mat1": "1332052",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005002",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "3",
+                  "matQty5": "5",
+                  "stimId": "4130014"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Kreda - Lv. 110 LUK Dagger"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1472051",
+                  "mat1": "1472053",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005002",
+                  "mat5": "4005003",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "2",
+                  "matQty5": "6",
+                  "stimId": "4130015"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Green Sleve - Lv. 110 Claw"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Thief weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectPirateWeapon",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1482013",
+                  "mat1": "1482012",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "5",
+                  "matQty5": "3"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragon Slash Claw - Lv. 110 Knuckle"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1492013",
+                  "mat1": "1492012",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "3",
+                  "matQty5": "5"
+                },
+                "nextState": "confirmCraft5Mat",
+                "text": "Dragonfire Revolver - Lv. 110 Gun"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Pirate weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectPirateWeaponStim",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1482013",
+                  "mat1": "1482012",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "5",
+                  "matQty5": "3",
+                  "stimId": "4130016"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragon Slash Claw - Lv. 110 Knuckle"
+              },
+              {
+                "context": {
+                  "cost": "120000",
+                  "itemId": "1492013",
+                  "mat1": "1492012",
+                  "mat2": "4000244",
+                  "mat3": "4000245",
+                  "mat4": "4005000",
+                  "mat5": "4005002",
+                  "matQty1": "1",
+                  "matQty2": "20",
+                  "matQty3": "25",
+                  "matQty4": "3",
+                  "matQty5": "5",
+                  "stimId": "4130017"
+                },
+                "nextState": "confirmCraft5MatStim",
+                "text": "Dragonfire Revolver - Lv. 110 Gun"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Very well, then which Pirate weapon shall receive a dragon's power?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventorySpace",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.mat1}# {context.matQty1} #t{context.mat1}#\r\n#i{context.mat2}# {context.matQty2} #t{context.mat2}#\r\n#i{context.mat3}# {context.matQty3} #t{context.mat3}#\r\n#i{context.mat4}# {context.matQty4} #t{context.mat4}#\r\n#i4031138# {context.cost} meso"
+          },
+          "id": "confirmCraft4Mat",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventorySpaceStim4",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.stimId}# 1 #t{context.stimId}#\r\n#i{context.mat1}# {context.matQty1} #t{context.mat1}#\r\n#i{context.mat2}# {context.matQty2} #t{context.mat2}#\r\n#i{context.mat3}# {context.matQty3} #t{context.mat3}#\r\n#i{context.mat4}# {context.matQty4} #t{context.mat4}#\r\n#i4031138# {context.cost} meso"
+          },
+          "id": "confirmCraft4MatStim",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventorySpace5",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.mat1}# {context.matQty1} #t{context.mat1}#\r\n#i{context.mat2}# {context.matQty2} #t{context.mat2}#\r\n#i{context.mat3}# {context.matQty3} #t{context.mat3}#\r\n#i{context.mat4}# {context.matQty4} #t{context.mat4}#\r\n#i{context.mat5}# {context.matQty5} #t{context.mat5}#\r\n#i4031138# {context.cost} meso"
+          },
+          "id": "confirmCraft5Mat",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventorySpaceStim5",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.stimId}# 1 #t{context.stimId}#\r\n#i{context.mat1}# {context.matQty1} #t{context.mat1}#\r\n#i{context.mat2}# {context.matQty2} #t{context.mat2}#\r\n#i{context.mat3}# {context.matQty3} #t{context.mat3}#\r\n#i{context.mat4}# {context.matQty4} #t{context.mat4}#\r\n#i{context.mat5}# {context.matQty5} #t{context.mat5}#\r\n#i4031138# {context.cost} meso"
+          },
+          "id": "confirmCraft5MatStim",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkMeso4"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkMeso5"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpace5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkMesoStim4"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpaceStim4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkMesoStim5"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpaceStim5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost}"
+                  }
+                ],
+                "nextState": "checkMaterials4"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientMeso"
+              }
+            ]
+          },
+          "id": "checkMeso4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost}"
+                  }
+                ],
+                "nextState": "checkMaterials5"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientMeso"
+              }
+            ]
+          },
+          "id": "checkMeso5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost}"
+                  }
+                ],
+                "nextState": "checkMaterialsStim4"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientMeso"
+              }
+            ]
+          },
+          "id": "checkMesoStim4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost}"
+                  }
+                ],
+                "nextState": "checkMaterialsStim5"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientMeso"
+              }
+            ]
+          },
+          "id": "checkMesoStim5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat1}",
+                    "type": "item",
+                    "value": "{context.matQty1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat2}",
+                    "type": "item",
+                    "value": "{context.matQty2}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat3}",
+                    "type": "item",
+                    "value": "{context.matQty3}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat4}",
+                    "type": "item",
+                    "value": "{context.matQty4}"
+                  }
+                ],
+                "nextState": "performCraft4"
+              },
+              {
+                "conditions": [],
+                "nextState": "missingMaterials"
+              }
+            ]
+          },
+          "id": "checkMaterials4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat1}",
+                    "type": "item",
+                    "value": "{context.matQty1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat2}",
+                    "type": "item",
+                    "value": "{context.matQty2}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat3}",
+                    "type": "item",
+                    "value": "{context.matQty3}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat4}",
+                    "type": "item",
+                    "value": "{context.matQty4}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat5}",
+                    "type": "item",
+                    "value": "{context.matQty5}"
+                  }
+                ],
+                "nextState": "performCraft5"
+              },
+              {
+                "conditions": [],
+                "nextState": "missingMaterials"
+              }
+            ]
+          },
+          "id": "checkMaterials5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.stimId}",
+                    "type": "item",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat1}",
+                    "type": "item",
+                    "value": "{context.matQty1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat2}",
+                    "type": "item",
+                    "value": "{context.matQty2}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat3}",
+                    "type": "item",
+                    "value": "{context.matQty3}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat4}",
+                    "type": "item",
+                    "value": "{context.matQty4}"
+                  }
+                ],
+                "nextState": "performCraftStim4"
+              },
+              {
+                "conditions": [],
+                "nextState": "missingMaterials"
+              }
+            ]
+          },
+          "id": "checkMaterialsStim4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.stimId}",
+                    "type": "item",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat1}",
+                    "type": "item",
+                    "value": "{context.matQty1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat2}",
+                    "type": "item",
+                    "value": "{context.matQty2}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat3}",
+                    "type": "item",
+                    "value": "{context.matQty3}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat4}",
+                    "type": "item",
+                    "value": "{context.matQty4}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.mat5}",
+                    "type": "item",
+                    "value": "{context.matQty5}"
+                  }
+                ],
+                "nextState": "performCraftStim5"
+              },
+              {
+                "conditions": [],
+                "nextState": "missingMaterials"
+              }
+            ]
+          },
+          "id": "checkMaterialsStim5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.mat1}",
+                  "quantity": "{context.matQty1}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat2}",
+                  "quantity": "{context.matQty2}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat3}",
+                  "quantity": "{context.matQty3}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat4}",
+                  "quantity": "{context.matQty4}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "performCraft4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.mat1}",
+                  "quantity": "{context.matQty1}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat2}",
+                  "quantity": "{context.matQty2}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat3}",
+                  "quantity": "{context.matQty3}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat4}",
+                  "quantity": "{context.matQty4}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat5}",
+                  "quantity": "{context.matQty5}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "performCraft5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.stimId}",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat1}",
+                  "quantity": "{context.matQty1}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat2}",
+                  "quantity": "{context.matQty2}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat3}",
+                  "quantity": "{context.matQty3}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat4}",
+                  "quantity": "{context.matQty4}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccessStim"
+              }
+            ]
+          },
+          "id": "performCraftStim4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.stimId}",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat1}",
+                  "quantity": "{context.matQty1}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat2}",
+                  "quantity": "{context.matQty2}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat3}",
+                  "quantity": "{context.matQty3}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat4}",
+                  "quantity": "{context.matQty4}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.mat5}",
+                  "quantity": "{context.matQty5}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccessStim"
+              }
+            ]
+          },
+          "id": "performCraftStim5",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "confirmCornianDagger",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Oh, are you trying to sneak into these lizards to save Moira? I will support your cause wherever I can. Bring me a couple of resources and I will make you an almost identical piece of #t4001078#."
+          },
+          "id": "cornianDaggerInfo",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkCornianDaggerSpace",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t4001078#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 1 #t4011001#\r\n#i4011002# 1 #t4011002#\r\n#i4001079# 1 #t4001079#\r\n#i4031138# 25000 meso"
+          },
+          "id": "confirmCornianDagger",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4001078",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkCornianDaggerMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkCornianDaggerSpace",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "25000"
+                  }
+                ],
+                "nextState": "checkCornianDaggerMaterials"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientMeso"
+              }
+            ]
+          },
+          "id": "checkCornianDaggerMeso",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4011001",
+                    "type": "item",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4011002",
+                    "type": "item",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4001079",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "craftCornianDagger"
+              },
+              {
+                "conditions": [],
+                "nextState": "missingMaterials"
+              }
+            ]
+          },
+          "id": "checkCornianDaggerMaterials",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4011001",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "4011002",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "4001079",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-25000"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "4001078",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "craftCornianDagger",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Check your inventory for a free slot first."
+          },
+          "id": "noInventorySpace",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "My fee is for the good of all of Leafre. If you cannot pay it, then begone."
+          },
+          "id": "insufficientMeso",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm afraid that without the correct items, the dragon's essence would... not make for a very reliable weapon. Please bring the correct items next time."
+          },
+          "id": "missingMaterials",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The process is complete. Treat your weapon well, lest you bring the wrath of the dragons upon you."
+          },
+          "id": "craftSuccess",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The process is complete. Treat your weapon well, lest you bring the wrath of the dragons upon you."
+          },
+          "id": "craftSuccessStim",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.08e+06",
+    "type": "npc-conversation"
+  }
+}

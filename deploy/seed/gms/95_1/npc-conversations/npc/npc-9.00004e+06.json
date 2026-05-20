@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9000040,
+      "startState": "medalSystemUnavailable",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The medal ranking system is currently unavailable..."
+          },
+          "id": "medalSystemUnavailable",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.00004e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,326 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9010022,
+      "startState": "checkLevel",
+      "states": [
+        {
+          "genericAction": {
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "20"
+                  }
+                ],
+                "nextState": "tooLowLevel"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "25"
+                  }
+                ],
+                "nextState": "mirror_20_24"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "30"
+                  }
+                ],
+                "nextState": "mirror_25_29"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "31"
+                  }
+                ],
+                "nextState": "mirror_30"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "51"
+                  }
+                ],
+                "nextState": "mirror_31_50"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "71"
+                  }
+                ],
+                "nextState": "mirror_51_70"
+              },
+              {
+                "conditions": [],
+                "nextState": "mirror_71_plus"
+              }
+            ]
+          },
+          "id": "checkLevel",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "",
+                "text": "OK"
+              },
+              {
+                "nextState": "",
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There is no place for you to transport to from here."
+          },
+          "id": "tooLowLevel",
+          "type": "dialogue"
+        },
+        {
+          "askSlideMenu": {
+            "choices": [
+              {
+                "nextState": "warpAriant",
+                "text": "Ariant Coliseum"
+              },
+              {
+                "nextState": "",
+                "text": "Exit"
+              }
+            ],
+            "menuType": 0,
+            "title": ""
+          },
+          "id": "mirror_20_24",
+          "type": "askSlideMenu"
+        },
+        {
+          "askSlideMenu": {
+            "choices": [
+              {
+                "nextState": "warpAriant",
+                "text": "Ariant Coliseum"
+              },
+              {
+                "nextState": "warpMuLung",
+                "text": "Mu Lung Dojo"
+              },
+              {
+                "nextState": "",
+                "text": "Exit"
+              }
+            ],
+            "menuType": 0,
+            "title": ""
+          },
+          "id": "mirror_25_29",
+          "type": "askSlideMenu"
+        },
+        {
+          "askSlideMenu": {
+            "choices": [
+              {
+                "nextState": "warpAriant",
+                "text": "Ariant Coliseum"
+              },
+              {
+                "nextState": "warpMuLung",
+                "text": "Mu Lung Dojo"
+              },
+              {
+                "nextState": "warpMC1",
+                "text": "Monster Carnival 1"
+              },
+              {
+                "nextState": "",
+                "text": "Exit"
+              }
+            ],
+            "menuType": 0,
+            "title": ""
+          },
+          "id": "mirror_30",
+          "type": "askSlideMenu"
+        },
+        {
+          "askSlideMenu": {
+            "choices": [
+              {
+                "nextState": "",
+                "text": "Exit"
+              },
+              {
+                "nextState": "warpMuLung",
+                "text": "Mu Lung Dojo"
+              },
+              {
+                "nextState": "warpMC1",
+                "text": "Monster Carnival 1"
+              }
+            ],
+            "menuType": 0,
+            "title": ""
+          },
+          "id": "mirror_31_50",
+          "type": "askSlideMenu"
+        },
+        {
+          "askSlideMenu": {
+            "choices": [
+              {
+                "nextState": "warpMuLung",
+                "text": "Mu Lung Dojo"
+              },
+              {
+                "nextState": "warpMC2",
+                "text": "Monster Carnival 2"
+              },
+              {
+                "nextState": "",
+                "text": "Exit"
+              }
+            ],
+            "menuType": 0,
+            "title": ""
+          },
+          "id": "mirror_51_70",
+          "type": "askSlideMenu"
+        },
+        {
+          "askSlideMenu": {
+            "choices": [
+              {
+                "nextState": "",
+                "text": "Exit"
+              },
+              {
+                "nextState": "warpMuLung",
+                "text": "Mu Lung Dojo"
+              }
+            ],
+            "menuType": 0,
+            "title": ""
+          },
+          "id": "mirror_71_plus",
+          "type": "askSlideMenu"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "locationType": "MIRROR"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "980010000",
+                  "portalId": "3"
+                },
+                "type": "warp_to_map"
+              }
+            ]
+          },
+          "id": "warpAriant",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "locationType": "MIRROR"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "925020000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ]
+          },
+          "id": "warpMuLung",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "locationType": "MIRROR"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "locationType": "MONSTER_CARNIVAL"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "980000000",
+                  "portalId": "3"
+                },
+                "type": "warp_to_map"
+              }
+            ]
+          },
+          "id": "warpMC1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "locationType": "MIRROR"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "locationType": "MONSTER_CARNIVAL"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "980030000",
+                  "portalId": "3"
+                },
+                "type": "warp_to_map"
+              }
+            ]
+          },
+          "id": "warpMC2",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9.010022e+06",
+    "type": "npc-conversation"
+  }
+}

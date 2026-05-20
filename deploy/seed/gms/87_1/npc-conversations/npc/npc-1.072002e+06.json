@@ -1,0 +1,246 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1072002,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100001",
+                    "type": "questStatus",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "alreadyCompleted"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100000",
+                    "type": "questStatus",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "quest100000Completed"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100000",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "quest100000Started"
+              },
+              {
+                "conditions": [],
+                "nextState": "notReady"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You're truly a hero!"
+          },
+          "id": "alreadyCompleted",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performQuestActions",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright I'll let you in! Defeat the monsters inside, collect 30 Dark Marbles, then strike up a conversation with a colleague of mine inside. He'll give you #bThe Proof of a Hero#k, the proof that you've passed the test. Best of luck to you."
+          },
+          "id": "quest100000Completed",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "proveSkills",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Oh, isn't this a letter from #bAthena#k?"
+          },
+          "id": "quest100000Started",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I can show you the way once your ready for it."
+          },
+          "id": "notReady",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "quest100000Started",
+                "text": "Previous"
+              },
+              {
+                "nextState": "giveChance",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "So you want to prove your skills? Very well..."
+          },
+          "id": "proveSkills",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performQuestActions",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "I will give you a chance if you're ready."
+          },
+          "id": "giveChance",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "100000"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "questId": "100001"
+                },
+                "type": "start_quest"
+              },
+              {
+                "params": {
+                  "itemId": "4031010",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "instructionsGiven"
+              }
+            ]
+          },
+          "id": "performQuestActions",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "warpToDungeon",
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You will have to collect me #b30 #t4031013##k. Good luck."
+          },
+          "id": "instructionsGiven",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "108000100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToDungeon",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.072002e+06",
+    "type": "npc-conversation"
+  }
+}

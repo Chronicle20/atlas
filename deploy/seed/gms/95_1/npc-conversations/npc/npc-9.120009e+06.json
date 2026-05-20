@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9120009,
+      "startState": "openStorage",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "accountId": "{context.accountId}"
+                },
+                "type": "open_storage"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "openStorage",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9.120009e+06",
+    "type": "npc-conversation"
+  }
+}

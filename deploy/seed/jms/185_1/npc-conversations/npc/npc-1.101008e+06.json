@@ -1,0 +1,403 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1101008,
+      "startState": "askTopic",
+      "states": [
+        {
+          "id": "askTopic",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "aboutNpc",
+                "text": "About you"
+              },
+              {
+                "nextState": "hintMiniMap",
+                "text": "Mini Map"
+              },
+              {
+                "nextState": "hintQuestWindow",
+                "text": "Quest Window"
+              },
+              {
+                "nextState": "hintInventory",
+                "text": "Inventory"
+              },
+              {
+                "nextState": "hintAttackHunting",
+                "text": "Regular Attack Hunting"
+              },
+              {
+                "nextState": "hintPickUpItems",
+                "text": "How to Pick Up Items"
+              },
+              {
+                "nextState": "hintEquipItems",
+                "text": "How to Equip Items"
+              },
+              {
+                "nextState": "hintSkillWindow",
+                "text": "Skill Window"
+              },
+              {
+                "nextState": "hintQuickSlots",
+                "text": "How to Use Quick Slots"
+              },
+              {
+                "nextState": "hintBreakBoxes",
+                "text": "How to Break Boxes"
+              },
+              {
+                "nextState": "hintSitChair",
+                "text": "How to Sit in a Chair"
+              },
+              {
+                "nextState": "hintWorldMap",
+                "text": "World Map"
+              },
+              {
+                "nextState": "hintQuestNotifications",
+                "text": "Quest Notifications"
+              },
+              {
+                "nextState": "hintEnhancingStats",
+                "text": "Enhancing Stats"
+              },
+              {
+                "nextState": "aboutCygnusKnights",
+                "text": "Who are the Cygnus Knights?"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Wait! You'll figure the stuff out by the time you reach Lv. 10 anyway, but if you absolutely want to prepare beforehand, you may view the following information.\r\n\r\n Tell me, what would you like to know?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "closingAdvice",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I serve under Shinsoo, the guardian of Empress Cygnus. My master, Shinsoo, has ordered me to guide everyone who comes to Maple World to join Cygnus Knights. I will be assisting and following you around until you become a Knight or reach Lv. 11. Please let me know if you have any questions."
+          },
+          "id": "aboutNpc",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "aboutNpc",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "There is no need for you to check this info now. These are basics that you'll pick up as you play. You can always ask me questions that come up after you've reached Lv. 10, so just relax."
+          },
+          "id": "closingAdvice",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The Black Mage is trying to revive and conquer our peaceful Maple World. As a response to this threat, Empress Cygnus has formed a knighthood, now known as Cygnus Knights. You can become a Knight when you reach Lv. 10."
+          },
+          "id": "aboutCygnusKnights",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "1"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintMiniMap",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "2"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintQuestWindow",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "3"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintInventory",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "4"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintAttackHunting",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "5"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintPickUpItems",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "6"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintEquipItems",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "7"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintSkillWindow",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "8"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintQuickSlots",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "9"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintBreakBoxes",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "10"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintSitChair",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "11"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintWorldMap",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "12"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintQuestNotifications",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "hintId": "13"
+                },
+                "type": "show_guide_hint"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "hintEnhancingStats",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.101008e+06",
+    "type": "npc-conversation"
+  }
+}

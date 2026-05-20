@@ -1,0 +1,160 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201123,
+      "startState": "checkJob",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "checkRequirements"
+              },
+              {
+                "conditions": [],
+                "nextState": "notBeginner"
+              }
+            ]
+          },
+          "id": "checkJob",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "level",
+                    "value": "10"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "strength",
+                    "value": "35"
+                  }
+                ],
+                "nextState": "offerWarp"
+              },
+              {
+                "conditions": [],
+                "nextState": "requirementsNotMet"
+              }
+            ]
+          },
+          "id": "checkRequirements",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineMessage",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Hey #h #, I can send you to #b#m102000003##k if you want to be a #bWarrior#k. Do you want to go now?"
+          },
+          "id": "offerWarp",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "102000003",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Come back to me if you decided to be a #bWarrior#k."
+          },
+          "id": "declineMessage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "If you want to be a #bWarrior#k, train yourself further until you reach #blevel 10, 35 STR#k."
+          },
+          "id": "requirementsNotMet",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You're much stronger now. Keep training!"
+          },
+          "id": "notBeginner",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.201123e+06",
+    "type": "npc-conversation"
+  }
+}

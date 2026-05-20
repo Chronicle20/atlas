@@ -1,0 +1,186 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9100100,
+      "startState": "checkTicket",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5220000",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "askUseTicket"
+              },
+              {
+                "conditions": [],
+                "nextState": "infoMenu"
+              }
+            ]
+          },
+          "id": "checkTicket",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "doGachapon",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You may use the Henesys Gachapon. Would you like to use your Gachapon ticket?"
+          },
+          "id": "askUseTicket",
+          "type": "dialogue"
+        },
+        {
+          "gachaponAction": {
+            "failureState": "gachaponFailed",
+            "gachaponId": "henesys",
+            "ticketItemId": 5220000
+          },
+          "id": "doGachapon",
+          "type": "gachaponAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please have at least one slot in your #rEQUIP, USE, SET-UP, #kand #rETC#k inventories free."
+          },
+          "id": "gachaponFailed",
+          "type": "dialogue"
+        },
+        {
+          "id": "infoMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "whatIsGachapon",
+                "text": "What is Gachapon?"
+              },
+              {
+                "nextState": "whereTickets",
+                "text": "Where can you buy Gachapon tickets?"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Welcome to the Henesys Gachapon. How may I help you?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "gachaponDetailsFromInfo",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Play Gachapon to earn rare scrolls, equipment, chairs, mastery books, and other cool items! All you need is a #bGachapon Ticket#k to be the winner of a random mix of items."
+          },
+          "id": "whatIsGachapon",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "gachaponDetailsFromTickets",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Gachapon Tickets are available in the #rCash Shop#k and can be purchased using NX or Maple Points. Click on the red SHOP at the lower right hand corner of the screen to visit the #rCash Shop#k where you can purchase tickets."
+          },
+          "id": "whereTickets",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "whatIsGachapon",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "You'll find a variety of items from the Henesys Gachapon, but you'll most likely find items and scrolls related to Henesys."
+          },
+          "id": "gachaponDetailsFromInfo",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "whereTickets",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "You'll find a variety of items from the Henesys Gachapon, but you'll most likely find items and scrolls related to Henesys."
+          },
+          "id": "gachaponDetailsFromTickets",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.1001e+06",
+    "type": "npc-conversation"
+  }
+}

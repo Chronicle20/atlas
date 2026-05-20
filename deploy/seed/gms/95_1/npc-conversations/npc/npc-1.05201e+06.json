@@ -1,0 +1,121 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1052010,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2057",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "giveQuestItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "selectRandomOre"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031041",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpToSubway"
+              }
+            ]
+          },
+          "id": "giveQuestItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "4010001,4010002,4010003,4010004,4010005,4010006,4010007",
+                  "outputContextKey": "selectedOre",
+                  "weights": "1,1,1,1,1,1,1"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "giveRandomOre"
+              }
+            ]
+          },
+          "id": "selectRandomOre",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.selectedOre}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpToSubway"
+              }
+            ]
+          },
+          "id": "giveRandomOre",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "103000100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToSubway",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.05201e+06",
+    "type": "npc-conversation"
+  }
+}

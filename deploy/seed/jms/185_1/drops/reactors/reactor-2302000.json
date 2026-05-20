@@ -1,0 +1,162 @@
+{
+  "jsonapi": {
+    "version": "1.1"
+  },
+  "data": {
+    "type": "reactors",
+    "id": "2302000",
+    "relationships": {
+      "drops": {
+        "data": [
+          {
+            "type": "drops",
+            "id": "2302000:2000001"
+          },
+          {
+            "type": "drops",
+            "id": "2302000:2022040"
+          },
+          {
+            "type": "drops",
+            "id": "2302000:4031274:3083"
+          },
+          {
+            "type": "drops",
+            "id": "2302000:4031275:3083"
+          },
+          {
+            "type": "drops",
+            "id": "2302000:4031276:3083"
+          },
+          {
+            "type": "drops",
+            "id": "2302000:4031277:3083"
+          },
+          {
+            "type": "drops",
+            "id": "2302000:4031278:3083"
+          }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "drops",
+      "id": "2302000:2000001",
+      "attributes": {
+        "itemId": 2000001,
+        "chance": 3
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "2302000:2022040",
+      "attributes": {
+        "itemId": 2022040,
+        "chance": 6
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "2302000:4031274:3083",
+      "attributes": {
+        "itemId": 4031274,
+        "chance": 5,
+        "questId": 3083
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "2302000:4031275:3083",
+      "attributes": {
+        "itemId": 4031275,
+        "chance": 5,
+        "questId": 3083
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "2302000:4031276:3083",
+      "attributes": {
+        "itemId": 4031276,
+        "chance": 5,
+        "questId": 3083
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "2302000:4031277:3083",
+      "attributes": {
+        "itemId": 4031277,
+        "chance": 5,
+        "questId": 3083
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    },
+    {
+      "type": "drops",
+      "id": "2302000:4031278:3083",
+      "attributes": {
+        "itemId": 4031278,
+        "chance": 5,
+        "questId": 3083
+      },
+      "relationships": {
+        "reactors": {
+          "data": {
+            "type": "reactors",
+            "id": "2302000"
+          }
+        }
+      }
+    }
+  ]
+}

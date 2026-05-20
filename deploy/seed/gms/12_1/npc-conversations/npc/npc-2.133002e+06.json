@@ -1,0 +1,76 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2133002,
+      "startState": "askExit",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performExit",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to exit this instance? Your party members may have to abandon it as well, so take that in mind."
+          },
+          "id": "askExit",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4001163",
+                  "removeAll": "true"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "4001169",
+                  "removeAll": "true"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "2270004",
+                  "removeAll": "true"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "930000800",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performExit",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.133002e+06",
+    "type": "npc-conversation"
+  }
+}

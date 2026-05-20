@@ -1,0 +1,91 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9102101,
+      "startState": "askPullOut",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "giveItem",
+                "text": "Yes"
+              },
+              {
+                "nextState": "didntTouch",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "#b(I can see something covered in grass. Should I pull it out?)"
+          },
+          "id": "askPullOut",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "#b(I didn't think much of it, so I didn't touch it.)"
+          },
+          "id": "didntTouch",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031922",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "foundPoop"
+              }
+            ]
+          },
+          "id": "giveItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "#b(Yuck... it's pet poop!)"
+          },
+          "id": "foundPoop",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.102101e+06",
+    "type": "npc-conversation"
+  }
+}

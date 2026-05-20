@@ -1,0 +1,89 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1013200,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "22015",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "rescuePiglet"
+              },
+              {
+                "conditions": [],
+                "nextState": "tooFar"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "#b(You are too far from the Piglet. Go closer to grab it.)"
+          },
+          "id": "tooFar",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4032449",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              },
+              {
+                "params": {
+                  "force": "true",
+                  "questId": "22015"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "message": "You have rescued the Piglet.",
+                  "messageType": "BLUE_TEXT"
+                },
+                "type": "send_message"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "rescuePiglet",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.0132e+06",
+    "type": "npc-conversation"
+  }
+}

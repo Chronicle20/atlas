@@ -1,0 +1,156 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1100008,
+      "startState": "welcome",
+      "states": [
+        {
+          "id": "welcome",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "checkMesos",
+                "text": " Ereve (1000 mesos)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "This ship will head towards #bEreve#k, an island where you'll find crimson leaves soaking up the sun, the gentle breeze that glides past the stream, and the Empress of Maple Cygnus. If you're interested in joining the Cygnus Knights, Then you should definitly pay a visit here. Are you interested in visiting Ereve?, The Trip will cost you #b1000#k Mesos"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "1000"
+                  }
+                ],
+                "nextState": "insufficientMesos"
+              },
+              {
+                "conditions": [],
+                "nextState": "deductMeso"
+              }
+            ]
+          },
+          "id": "checkMesos",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hmm... Are you sure you have #b1000#k Mesos? Check your Inventory and make sure you have enough. You must pay the fee or I can't let you get on..."
+          },
+          "id": "insufficientMesos",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-1000"
+                },
+                "type": "award_mesos"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "startTransport"
+              }
+            ]
+          },
+          "id": "deductMeso",
+          "type": "genericAction"
+        },
+        {
+          "id": "startTransport",
+          "transportAction": {
+            "alreadyInTransitState": "transportAlreadyInTransit",
+            "capacityFullState": "transportCapacityFull",
+            "failureState": "transportFailed",
+            "routeName": "sky-ferry-orbis-to-ereve",
+            "routeNotFoundState": "transportFailed",
+            "serviceErrorState": "transportFailed"
+          },
+          "type": "transportAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Sorry, the ferry service is currently unavailable. Please try again later."
+          },
+          "id": "transportFailed",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Sorry, the ferry is currently full. Please wait a moment and try again."
+          },
+          "id": "transportCapacityFull",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You seem to already be on a transport. Please wait until you arrive at your destination."
+          },
+          "id": "transportAlreadyInTransit",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.100008e+06",
+    "type": "npc-conversation"
+  }
+}

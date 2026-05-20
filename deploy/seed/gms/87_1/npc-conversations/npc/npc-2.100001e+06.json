@@ -1,0 +1,546 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2100001,
+      "startState": "askRefine",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "selectOreType",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineMessage",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Are you here to refine the ores of a mineral or a jewel? It doesn't matter how many ores you have, if you don't have them refined by a master like me, then they won't see the light of day. What do you think, do you want to refine them right now?"
+          },
+          "id": "askRefine",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "If you aren't in a hurry, then please come back in a bit. As you can see, there's so much work going on right now that I can't possibly give them to you on time."
+          },
+          "id": "declineMessage",
+          "type": "dialogue"
+        },
+        {
+          "id": "selectOreType",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "oreType": "mineral"
+                },
+                "nextState": "selectMineral",
+                "text": "Refine mineral ore"
+              },
+              {
+                "context": {
+                  "oreType": "jewel"
+                },
+                "nextState": "selectJewel",
+                "text": "Refine jewel ores"
+              },
+              {
+                "context": {
+                  "oreType": "crystal"
+                },
+                "nextState": "selectCrystal",
+                "text": "Refine crystal ores"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "I like your attitude! Let's just take care of this right now. What kind of ores would you like to refine? #b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectMineral",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "270",
+                  "itemId": "4011000",
+                  "matId": "4010000",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Bronze Plate"
+              },
+              {
+                "context": {
+                  "cost": "270",
+                  "itemId": "4011001",
+                  "matId": "4010001",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Steel Plate"
+              },
+              {
+                "context": {
+                  "cost": "270",
+                  "itemId": "4011002",
+                  "matId": "4010002",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Mithril Plate"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4011003",
+                  "matId": "4010003",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Adamantium Plate"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4011004",
+                  "matId": "4010004",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Silver Plate"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4011005",
+                  "matId": "4010005",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Orihalcon Plate"
+              },
+              {
+                "context": {
+                  "cost": "720",
+                  "itemId": "4011006",
+                  "matId": "4010006",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Gold Plate"
+              },
+              {
+                "context": {
+                  "cost": "270",
+                  "itemId": "4011008",
+                  "matId": "4010007",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Lithium"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Which mineral would you like to refine?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectJewel",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021000",
+                  "matId": "4020000",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Garnet"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021001",
+                  "matId": "4020001",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Amethyst"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021002",
+                  "matId": "4020002",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Aquamarine"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021003",
+                  "matId": "4020003",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Emerald"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021004",
+                  "matId": "4020004",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Opal"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021005",
+                  "matId": "4020005",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Sapphire"
+              },
+              {
+                "context": {
+                  "cost": "450",
+                  "itemId": "4021006",
+                  "matId": "4020006",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Topaz"
+              },
+              {
+                "context": {
+                  "cost": "900",
+                  "itemId": "4021007",
+                  "matId": "4020007",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Diamond"
+              },
+              {
+                "context": {
+                  "cost": "2700",
+                  "itemId": "4021008",
+                  "matId": "4020008",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Black Crystal"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Which jewel would you like to refine?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectCrystal",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "4500",
+                  "itemId": "4005000",
+                  "matId": "4004000",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Power Crystal"
+              },
+              {
+                "context": {
+                  "cost": "4500",
+                  "itemId": "4005001",
+                  "matId": "4004001",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "Wisdom Crystal"
+              },
+              {
+                "context": {
+                  "cost": "4500",
+                  "itemId": "4005002",
+                  "matId": "4004002",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "DEX Crystal"
+              },
+              {
+                "context": {
+                  "cost": "4500",
+                  "itemId": "4005003",
+                  "matId": "4004003",
+                  "matQty": "10"
+                },
+                "nextState": "askQuantity",
+                "text": "LUK Crystal"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "A crystal? That's a rare item indeed. Don't worry, I can refine it just as well as others. Which crystal would you like to refine? #b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmCraft",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantity",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventory",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# {context.matQty} * {context.quantity} #t{context.matId}#\r\n#i4031138# {context.cost} * {context.quantity} meso"
+          },
+          "id": "confirmCraft",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  }
+                ],
+                "nextState": "checkMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "notEnoughSpace"
+              }
+            ]
+          },
+          "id": "checkInventory",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm afraid you are short in inventory slots for this."
+          },
+          "id": "notEnoughSpace",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  }
+                ],
+                "nextState": "checkMaterials"
+              },
+              {
+                "conditions": [],
+                "nextState": "notEnoughMeso"
+              }
+            ]
+          },
+          "id": "checkMeso",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm afraid you cannot afford my services."
+          },
+          "id": "notEnoughMeso",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "{context.matQty} * {context.quantity}"
+                  }
+                ],
+                "nextState": "performCraft"
+              },
+              {
+                "conditions": [],
+                "nextState": "notEnoughMaterials"
+              }
+            ]
+          },
+          "id": "checkMaterials",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please check and see if you have all the necessary items with you. If so, then please check your etc. inventory and see if you have an empty space."
+          },
+          "id": "notEnoughMaterials",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "{context.matQty} * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "performCraft",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There, finished. What do you think, a piece of art, isn't it? Well, if you need anything else, you know where to find me."
+          },
+          "id": "craftSuccess",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.100001e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111010,
+      "startState": "checkQuestAndItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3309",
+                    "type": "questStatus",
+                    "value": "1"
+                  },
+                  {
+                    "operator": "=",
+                    "referenceId": "4031708",
+                    "type": "item",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "checkInventorySpace"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkQuestAndItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031708",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "giveItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "noSpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031708",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "giveItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Have a ETC slot available to get the Alcadno's secret document."
+          },
+          "id": "noSpace",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.11101e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,452 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "aboutCannoneer",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Good to see you, #h0#. So...you're the one that helped Cutter return. I saw you were hurt when you first arrived...are you okay now? You must be made of stern stuff. No wonder Cutter regards you so highly. My name is Kyrin. I'm captain of the Nautilus, as well as the Job Instructor for Pirates."
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "aboutPirates",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Cutter told you that he wants you to become a #bCannoneer#k, right? I agree with him, but I'm worried that your heart might not be in it. Maybe if you knew more about the pirates, you would be more interested. Let me tell you a little about us."
+            },
+            "id": "aboutCannoneer",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "aboutCannoneer",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "aboutJobInstructor",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "I brought the pirates together to start working against the Black Mage, the great evil that threatens all of Maple World. Turns out the hero business is more profitable than looting and pillaging!"
+            },
+            "id": "aboutPirates",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "aboutPirates",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "heroGleam",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "If you become a Pirate, you can help investigate the Black Mage's plots, and assist in the defense of Maple World. Keep in mind that I won't make you do anything...I'm primarily a Job Instructor, and just guide the pirates in a general sense."
+            },
+            "id": "aboutJobInstructor",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "aboutJobInstructor",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askJoin",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "But, I know you would help us fight the Black Mage. You have that gleam in your eye that all heroes do. Anyway, I've said my piece."
+            },
+            "id": "heroGleam",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkQuestCompleted",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "checkDeclineCompleted",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Now, it's all up to you. Do you wish to join the pirates? I would be quite pleased if you became a Cannoneer. "
+            },
+            "id": "askJoin",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2570",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "declineMessage"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkDeclineCompleted",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Oh. So...you want to be something else? I understand...but Cutter might not..."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2570",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "alreadyCompleted"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "doJobAdvancement"
+                }
+              ]
+            },
+            "id": "checkQuestCompleted",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "statsAdvice",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Well, you are truly one of us now. Open up your Skill window and check out your new Pirate abilities. I also gave you a few extra SP, so you can go ahead and boost some of your new skills. You'll get more skills at higher levels, so I suggest you have a plan for your training."
+            },
+            "id": "alreadyCompleted",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1532000",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1002610",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1052095",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "jobId": "501"
+                  },
+                  "type": "change_job"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "questId": "29900"
+                  },
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "1",
+                    "masterLevel": "1",
+                    "skillId": "109"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "1",
+                    "skillId": "110"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {
+                    "level": "1",
+                    "masterLevel": "1",
+                    "skillId": "111"
+                  },
+                  "type": "create_skill"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "nowPirate"
+                }
+              ]
+            },
+            "id": "doJobAdvancement",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "statsAdvice",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Well, you are truly one of us now. Open up your Skill window and check out your new Pirate abilities. I also gave you a few extra SP, so you can go ahead and boost some of your new skills. You'll get more skills at higher levels, so I suggest you have a plan for your training."
+            },
+            "id": "nowPirate",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "nowPirate",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "giftSlots",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Skills alone do not make you a great pirate. You have to distribute your stats like a pirate, too! If you're hoping to become a Cannoneer, invest heavily in STR so you can hold that heavy cannon of yours. And if you just have no idea, use the #bauto-distribute#k option. Simple, and effective."
+            },
+            "id": "statsAdvice",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "statsAdvice",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "keepHpUp",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Oh, I gave you a little gift, too. I expanded a few slots in your Equip and ETC Item tabs, so you should have plenty of room for your spoils!"
+            },
+            "id": "giftSlots",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "giftSlots",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "farewell",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Now, there is one last thing that you need to remember. More than anything else, you need to keep your HP up. If you fall in battle, you'll lose some of your EXP. And I'm SURE you don't want that, right?"
+            },
+            "id": "keepHpUp",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "keepHpUp",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "startFollowupQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Well, that's it! I have taught you everything you need to know. I also gave you a few decent weapons, so make good use of them. Now, go forth, grow stronger, and kick around the Black Mage's minions, if you get the chance!"
+            },
+            "id": "farewell",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "questId": "2945"
+                  },
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startFollowupQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "npcId": 1090000,
+      "questId": 2570,
+      "questName": "Kyrin's Recommendation (Cannoneer Job Advancement)",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2570",
+    "type": "quest-conversation"
+  }
+}

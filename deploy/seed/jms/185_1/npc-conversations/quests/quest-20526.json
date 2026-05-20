@@ -1,0 +1,363 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "greeting",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkEgg",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey there! How's Mimiana's egg?"
+            },
+            "id": "greeting",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "4220137",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noEgg"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1902005",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noSpaceMount"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "completeQuest"
+                }
+              ]
+            },
+            "id": "checkEgg",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "I see, you lost your egg... You need to be more careful when raising a baby Mimiana!"
+            },
+            "id": "noEgg",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please, make a space on your EQUIP tab for your Mimiana!"
+            },
+            "id": "noSpaceMount",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1902005",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4220137",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "actorId": "0",
+                    "actorType": "NPC",
+                    "amount": "-10000000"
+                  },
+                  "type": "award_mesos"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "complete"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Okay, you now may mount Mimiana again. Take good care of it this time."
+            },
+            "id": "complete",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 20526,
+      "questName": "Mimiana Recovery",
+      "startStateMachine": {
+        "startState": "intro1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You lost your Mimiana?! Geez, you have to be zealous for them, as they are a gift of the Empress to us! You have to be teached once again: The riding for Knights are a bit different from the rides available for regular folks. The takes place through a creature that is of the Mimi race that can be found on this island; they are called #bMimianas#k. Instead of riding monsters, the Knights ride Mimiana. There's one thing that you should never, ever forget."
+            },
+            "id": "intro1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Dont't think of this as just a form of mount or transportation. These mounts can be your friend, your comrade, your colleague... all of the above. Even a friend close enough to entrust your life! That's why the Knights of Ereve actually grow their own mounts."
+            },
+            "id": "intro2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkSpace",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Now, here's a Mimiana egg. Are you ready to raise a Mimiana and have it as your traveling companion for the rest of its life?"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4220137",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "startQuest"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4220137",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "startQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noSpace"
+                }
+              ]
+            },
+            "id": "checkSpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Make up a room on your ETC tab so I can give you the Mimiana egg."
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "giveEgg"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4220137",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "explain"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "awardEgg"
+                }
+              ]
+            },
+            "id": "giveEgg",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4220137",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "explain"
+                }
+              ]
+            },
+            "id": "awardEgg",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Mimiana's egg can be raised by #bsharing your daily experiences with it#k. Once Mimiana fully grows up, please come see me. One more thing, I talked with #p2060005# beforehand and retrieved the #b#t4032117##k for you. The price to charge remains the same: #r10,000,000 mesos#k."
+            },
+            "id": "explain",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "20526",
+    "type": "quest-conversation"
+  }
+}

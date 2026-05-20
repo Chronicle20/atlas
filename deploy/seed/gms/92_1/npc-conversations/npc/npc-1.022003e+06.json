@@ -1,0 +1,1920 @@
+{
+  "data": {
+    "attributes": {
+      "name": "Mr. Thunder - Perion Crafting NPC (Simplified)",
+      "npcId": 1022003,
+      "startState": "welcome",
+      "states": [
+        {
+          "id": "welcome",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "mineralMenu",
+                "text": "Refine a mineral ore"
+              },
+              {
+                "nextState": "jewelMenu",
+                "text": "Refine a jewel ore"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Hm? Who might you be? Oh, you've heard about my forging skills? In that case, I'd be glad to process some of your ores... for a fee."
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "mineralMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "300",
+                  "itemId": "4011000",
+                  "itemName": "Bronze Plate",
+                  "matId": "4010000",
+                  "matName": "Bronze Ore"
+                },
+                "nextState": "askQuantityBronze",
+                "text": "Bronze (300 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "300",
+                  "itemId": "4011001",
+                  "itemName": "Steel Plate",
+                  "matId": "4010001",
+                  "matName": "Steel Ore"
+                },
+                "nextState": "askQuantitySteel",
+                "text": "Steel (300 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "300",
+                  "itemId": "4011002",
+                  "itemName": "Mithril Plate",
+                  "matId": "4010002",
+                  "matName": "Mithril Ore"
+                },
+                "nextState": "askQuantityMithril",
+                "text": "Mithril (300 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4011003",
+                  "itemName": "Adamantium Plate",
+                  "matId": "4010003",
+                  "matName": "Adamantium Ore"
+                },
+                "nextState": "askQuantityAdamantium",
+                "text": "Adamantium (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4011004",
+                  "itemName": "Silver Plate",
+                  "matId": "4010004",
+                  "matName": "Silver Ore"
+                },
+                "nextState": "askQuantitySilver",
+                "text": "Silver (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4011005",
+                  "itemName": "Orihalcon Plate",
+                  "matId": "4010005",
+                  "matName": "Orihalcon Ore"
+                },
+                "nextState": "askQuantityOrihalcon",
+                "text": "Orihalcon (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "800",
+                  "itemId": "4011006",
+                  "itemName": "Gold Plate",
+                  "matId": "4010006",
+                  "matName": "Gold Ore"
+                },
+                "nextState": "askQuantityGold",
+                "text": "Gold (800 mesos)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "So, what kind of mineral ore would you like to refine? Each refining requires 10 ore pieces and creates 1 refined mineral."
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "jewelMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021000",
+                  "itemName": "Garnet",
+                  "matId": "4020000",
+                  "matName": "Garnet Ore"
+                },
+                "nextState": "askQuantityGarnet",
+                "text": "Garnet (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021001",
+                  "itemName": "Amethyst",
+                  "matId": "4020001",
+                  "matName": "Amethyst Ore"
+                },
+                "nextState": "askQuantityAmethyst",
+                "text": "Amethyst (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021002",
+                  "itemName": "Aquamarine",
+                  "matId": "4020002",
+                  "matName": "Aquamarine Ore"
+                },
+                "nextState": "askQuantityAquamarine",
+                "text": "Aquamarine (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021003",
+                  "itemName": "Emerald",
+                  "matId": "4020003",
+                  "matName": "Emerald Ore"
+                },
+                "nextState": "askQuantityEmerald",
+                "text": "Emerald (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021004",
+                  "itemName": "Opal",
+                  "matId": "4020004",
+                  "matName": "Opal Ore"
+                },
+                "nextState": "askQuantityOpal",
+                "text": "Opal (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021005",
+                  "itemName": "Sapphire",
+                  "matId": "4020005",
+                  "matName": "Sapphire Ore"
+                },
+                "nextState": "askQuantitySapphire",
+                "text": "Sapphire (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "500",
+                  "itemId": "4021006",
+                  "itemName": "Topaz",
+                  "matId": "4020006",
+                  "matName": "Topaz Ore"
+                },
+                "nextState": "askQuantityTopaz",
+                "text": "Topaz (500 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "1000",
+                  "itemId": "4021007",
+                  "itemName": "Diamond",
+                  "matId": "4020007",
+                  "matName": "Diamond Ore"
+                },
+                "nextState": "askQuantityDiamond",
+                "text": "Diamond (1000 mesos)"
+              },
+              {
+                "context": {
+                  "cost": "3000",
+                  "itemId": "4021008",
+                  "itemName": "Black Crystal",
+                  "matId": "4020008",
+                  "matName": "Black Crystal Ore"
+                },
+                "nextState": "askQuantityBlackCrystal",
+                "text": "Black Crystal (3000 mesos)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "So, what kind of jewel ore would you like to refine? Each refining requires 10 ore pieces and creates 1 refined jewel."
+          },
+          "type": "listSelection"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmBronze",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityBronze",
+          "type": "askNumber"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmSteel",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantitySteel",
+          "type": "askNumber"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmMithril",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityMithril",
+          "type": "askNumber"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmAdamantium",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityAdamantium",
+          "type": "askNumber"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmSilver",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantitySilver",
+          "type": "askNumber"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmOrihalcon",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityOrihalcon",
+          "type": "askNumber"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmGold",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityGold",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBronze",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmBronze",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftBronze"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftBronze",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftBronze",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftSteel",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmSteel",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftSteel"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftSteel",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftSteel",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMithril",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmMithril",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftMithril"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftMithril",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftMithril",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftAdamantium",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmAdamantium",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftAdamantium"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftAdamantium",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftAdamantium",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftSilver",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmSilver",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftSilver"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftSilver",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftSilver",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftOrihalcon",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmOrihalcon",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftOrihalcon"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftOrihalcon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftOrihalcon",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftGold",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmGold",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftGold"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftGold",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftGold",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmGarnet",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityGarnet",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftGarnet",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmGarnet",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftGarnet"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftGarnet",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftGarnet",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmAmethyst",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityAmethyst",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftAmethyst",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmAmethyst",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftAmethyst"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftAmethyst",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftAmethyst",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmAquamarine",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityAquamarine",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftAquamarine",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmAquamarine",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftAquamarine"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftAquamarine",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftAquamarine",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmEmerald",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityEmerald",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftEmerald",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmEmerald",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftEmerald"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftEmerald",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftEmerald",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmOpal",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityOpal",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftOpal",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmOpal",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftOpal"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftOpal",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftOpal",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmSapphire",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantitySapphire",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftSapphire",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmSapphire",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftSapphire"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftSapphire",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftSapphire",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmTopaz",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityTopaz",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftTopaz",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmTopaz",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftTopaz"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftTopaz",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftTopaz",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmDiamond",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityDiamond",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftDiamond",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmDiamond",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftDiamond"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftDiamond",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftDiamond",
+          "type": "genericAction"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 100,
+            "min": 1,
+            "nextState": "confirmBlackCrystal",
+            "text": "So, you want me to make some #t{context.itemId}#s? In that case, how many do you want me to make?"
+          },
+          "id": "askQuantityBlackCrystal",
+          "type": "askNumber"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBlackCrystal",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make {context.quantity} #t{context.itemId}#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i{context.matId}# 10 #t{context.matId}# per item\r\n#i4031138# {context.cost} meso per item"
+          },
+          "id": "confirmBlackCrystal",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.itemId}",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost} * {context.quantity}"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.matId}",
+                    "type": "item",
+                    "value": "10 * {context.quantity}"
+                  }
+                ],
+                "nextState": "executeCraftBlackCrystal"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientResources"
+              }
+            ]
+          },
+          "id": "craftBlackCrystal",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.matId}",
+                  "quantity": "10 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "amount": "-{context.cost} * {context.quantity}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "itemId": "{context.itemId}",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "craftSuccess"
+              }
+            ]
+          },
+          "id": "executeCraftBlackCrystal",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm afraid you're missing something for the item you want. See you another time, yes?"
+          },
+          "id": "insufficientResources",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There, finished. What do you think, a piece of art, isn't it? Well, if you need anything else, you know where to find me."
+          },
+          "id": "craftSuccess",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.022003e+06",
+    "type": "npc-conversation"
+  }
+}

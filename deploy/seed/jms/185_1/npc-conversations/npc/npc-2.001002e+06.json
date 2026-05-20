@@ -1,0 +1,55 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2001002,
+      "startState": "askWarp",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "We have a beautiful christmas tree.\r\nDo you want to see/decorate it?"
+          },
+          "id": "askWarp",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "209000002",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.001002e+06",
+    "type": "npc-conversation"
+  }
+}

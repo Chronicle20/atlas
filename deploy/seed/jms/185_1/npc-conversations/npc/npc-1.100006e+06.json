@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1100006,
+      "startState": "welcomeMessage",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Ah, such lovely winds. This should be a perfect voyage as long as no stupid customer falls off for attempting some weird skill. Of course, I'm talking about you. Please refrain from using your skills."
+          },
+          "id": "welcomeMessage",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.100006e+06",
+    "type": "npc-conversation"
+  }
+}

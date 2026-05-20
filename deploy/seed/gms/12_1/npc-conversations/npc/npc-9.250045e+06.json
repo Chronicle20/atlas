@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9250045,
+      "startState": "dispose",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "dispose",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9.250045e+06",
+    "type": "npc-conversation"
+  }
+}

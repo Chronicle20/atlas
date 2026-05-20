@@ -1,0 +1,31 @@
+{
+  "data": {
+    "type": "monster-drop",
+    "id": "9300094",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 2280004,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 10000
+        },
+        {
+          "itemId": 2280005,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 10000
+        },
+        {
+          "itemId": 2280006,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 10000
+        }
+      ]
+    }
+  }
+}

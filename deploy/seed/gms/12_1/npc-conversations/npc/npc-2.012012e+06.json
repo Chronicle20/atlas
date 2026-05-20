@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "name": "Lisa",
+      "npcId": 2012012,
+      "startState": "intro",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Can you help me find the Ancient Book? I lost it somewhere in El Nath..."
+          },
+          "id": "intro",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.012012e+06",
+    "type": "npc-conversation"
+  }
+}

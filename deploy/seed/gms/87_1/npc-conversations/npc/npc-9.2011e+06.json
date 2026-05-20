@@ -1,0 +1,72 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201100,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "8224",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "questCompleted"
+              },
+              {
+                "conditions": [],
+                "nextState": "questNotCompleted"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Well met, fellow clan member. If you need anything we can be of help, try talking to one of our members."
+          },
+          "id": "questCompleted",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hello there, stranger. We are the renowned Raven Claw clan of mercenaries, and I'm their leader."
+          },
+          "id": "questNotCompleted",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9.2011e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2022004,
+      "startState": "congratulations",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "warpToElNath",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You did a great job back there, #h0#, well done. Now I will transport you back to El Nath. Have the pendant in your possession and talk to me when you feel ready to receive the new skill."
+          },
+          "id": "congratulations",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "211000000",
+                  "portalName": "in01"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToElNath",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.022004e+06",
+    "type": "npc-conversation"
+  }
+}

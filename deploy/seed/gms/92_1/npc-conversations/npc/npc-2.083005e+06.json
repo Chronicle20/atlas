@@ -1,0 +1,88 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2083005,
+      "startState": "checkQuest",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "6280",
+                    "type": "questStatus",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031454",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "fillCup"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031454",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "4031455",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "showMessage"
+              }
+            ]
+          },
+          "id": "fillCup",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "(You poured some water from the fountain into the cup.)"
+          },
+          "id": "showMessage",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.083005e+06",
+    "type": "npc-conversation"
+  }
+}

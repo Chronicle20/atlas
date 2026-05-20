@@ -1,0 +1,75 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111006,
+      "startState": "checkQuest",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "3320",
+                    "type": "questStatus",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "warpToDransLab"
+              },
+              {
+                "conditions": [],
+                "nextState": "questNotStarted"
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "926120200",
+                  "portalId": "1"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToDransLab",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "uuuuhuk...Why only Ghost are around here?..."
+          },
+          "id": "questNotStarted",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.111006e+06",
+    "type": "npc-conversation"
+  }
+}

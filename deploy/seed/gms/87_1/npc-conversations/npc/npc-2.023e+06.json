@@ -1,0 +1,331 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2023000,
+      "startState": "checkLocation",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "211000000"
+                  }
+                ],
+                "nextState": "introElNath"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "220000000"
+                  }
+                ],
+                "nextState": "introLudibrium"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "221000000"
+                  }
+                ],
+                "nextState": "introOmegaSector"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "240000000"
+                  }
+                ],
+                "nextState": "introLeafre"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkLocation",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "10000",
+                  "destination": "211040200",
+                  "portalId": "0"
+                },
+                "nextState": "confirmElNath",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hello there! This taxi will take you to dangerous places in Ossyria faster than an arrow! We go from #m211000000# to #b#m211040200##k on this Ossyria Continent! It'll cost you #b10000 meso#k. I know it's a bit expensive, but it's well worth passing all the dangerous areas!"
+          },
+          "id": "introElNath",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMeso",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineMessage",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to pay #b10000 mesos#k to travel to the #b#m211040200##k?"
+          },
+          "id": "confirmElNath",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "25000",
+                  "destination": "220050300",
+                  "portalId": "1"
+                },
+                "nextState": "confirmLudibrium",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hello there! This taxi will take you to dangerous places in Ossyria faster than an arrow! We go from #m220000000# to #b#m220050300##k on this Ossyria Continent! It'll cost you #b25000 meso#k. I know it's a bit expensive, but it's well worth passing all the dangerous areas!"
+          },
+          "id": "introLudibrium",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMeso",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineMessage",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to pay #b25000 mesos#k to travel to the #b#m220050300##k?"
+          },
+          "id": "confirmLudibrium",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "25000",
+                  "destination": "220000000",
+                  "portalId": "0"
+                },
+                "nextState": "confirmOmegaSector",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hello there! This taxi will take you to dangerous places in Ossyria faster than an arrow! We go from #m221000000# to #b#m220000000##k on this Ossyria Continent! It'll cost you #b25000 meso#k. I know it's a bit expensive, but it's well worth passing all the dangerous areas!"
+          },
+          "id": "introOmegaSector",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMeso",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineMessage",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to pay #b25000 mesos#k to travel to the #b#m220000000##k?"
+          },
+          "id": "confirmOmegaSector",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "65000",
+                  "destination": "240030000",
+                  "portalId": "0"
+                },
+                "nextState": "confirmLeafre",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hello there! This taxi will take you to dangerous places in Ossyria faster than an arrow! We go from #m240000000# to #b#m240030000##k on this Ossyria Continent! It'll cost you #b65000 meso#k. I know it's a bit expensive, but it's well worth passing all the dangerous areas!"
+          },
+          "id": "introLeafre",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMeso",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineMessage",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to pay #b65000 mesos#k to travel to the #b#m240030000##k?"
+          },
+          "id": "confirmLeafre",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hmm, please think this over. It's not cheap, but you will NOT be disappointed with our premier service!"
+          },
+          "id": "declineMessage",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "meso",
+                    "value": "{context.cost}"
+                  }
+                ],
+                "nextState": "doWarp"
+              },
+              {
+                "conditions": [],
+                "nextState": "notEnoughMeso"
+              }
+            ]
+          },
+          "id": "checkMeso",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You don't seem to have enough mesos. I am terribly sorry, but I cannot help you unless you pay up. Bring in the mesos by hunting more and come back when you have enough."
+          },
+          "id": "notEnoughMeso",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-{context.cost}"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "mapId": "{context.destination}",
+                  "portalId": "{context.portalId}"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "doWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.023e+06",
+    "type": "npc-conversation"
+  }
+}

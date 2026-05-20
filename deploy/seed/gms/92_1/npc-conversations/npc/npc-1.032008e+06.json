@@ -1,0 +1,164 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1032008,
+      "startState": "checkTicket",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "4031045",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "noTicket"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkBoarding"
+              }
+            ]
+          },
+          "id": "checkTicket",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "101000300",
+                    "type": "transportAvailable",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "boatUnavailable"
+              },
+              {
+                "conditions": [],
+                "nextState": "askToBoard"
+              }
+            ]
+          },
+          "id": "checkBoarding",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Make sure you got a Orbis ticket to travel in this boat. Check your inventory."
+          },
+          "id": "noTicket",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The boat to Orbis is already travelling, please be patient for the next one."
+          },
+          "id": "boatUnavailable",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "confirmBoarding",
+                "text": "Yes"
+              },
+              {
+                "nextState": "decline",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Do you want to go to Orbis?"
+          },
+          "id": "askToBoard",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Okay, talk to me if you change your mind!"
+          },
+          "id": "decline",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031045",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "101000301",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "confirmBoarding",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.032008e+06",
+    "type": "npc-conversation"
+  }
+}

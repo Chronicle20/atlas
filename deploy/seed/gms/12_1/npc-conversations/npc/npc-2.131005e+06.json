@@ -1,0 +1,171 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2131005,
+      "startState": "selectExchange",
+      "states": [
+        {
+          "id": "selectExchange",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "checkItems",
+                "text": "Hey, take these snail shells. You can hold your water with these."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "I wish I had something to hold this water in...#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "4000436",
+                    "type": "item",
+                    "value": "100"
+                  }
+                ],
+                "nextState": "notEnoughItems"
+              },
+              {
+                "conditions": [],
+                "nextState": "askQuantity"
+              }
+            ]
+          },
+          "id": "checkItems",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You don't have enough... I need at least 100."
+          },
+          "id": "notEnoughItems",
+          "type": "dialogue"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 300,
+            "min": 1,
+            "nextState": "checkInventorySpace",
+            "text": "Hey, that's a good idea! I can give you #i4310000#Perfect Pitch for each 100 #i4000436##t4000436# you give me. How many do you want?"
+          },
+          "id": "askQuantity",
+          "type": "askNumber"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4310000",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  }
+                ],
+                "nextState": "performExchange"
+              },
+              {
+                "conditions": [],
+                "nextState": "noSpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please make some space in ETC tab."
+          },
+          "id": "noSpace",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4310000",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              },
+              {
+                "params": {
+                  "itemId": "4000436",
+                  "quantity": "{context.quantity} * 100"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "exchangeSuccess"
+              }
+            ]
+          },
+          "id": "performExchange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Thanks!"
+          },
+          "id": "exchangeSuccess",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.131005e+06",
+    "type": "npc-conversation"
+  }
+}

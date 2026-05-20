@@ -1,0 +1,70 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2030014,
+      "startState": "checkItemAndExchange",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031450",
+                    "type": "item",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "2280011",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performExchange"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkItemAndExchange",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "2280011",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              },
+              {
+                "params": {
+                  "itemId": "4031450",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performExchange",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.030014e+06",
+    "type": "npc-conversation"
+  }
+}

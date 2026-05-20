@@ -1,0 +1,132 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1072005,
+      "startState": "checkItems",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031013",
+                    "type": "item",
+                    "value": "30"
+                  }
+                ],
+                "nextState": "hasItems"
+              },
+              {
+                "conditions": [],
+                "nextState": "needsItems"
+              }
+            ]
+          },
+          "id": "checkItems",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "completeQuest",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Ohhhhh.. you collected all 30 Dark Marbles!! It should have been difficult.. just incredible! Alright. You've passed the test and for that, I'll reward you #bThe Proof of a Hero#k. Take that and go back to Ellinia."
+          },
+          "id": "hasItems",
+          "type": "dialogue"
+        },
+        {
+          "id": "needsItems",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "warpOut",
+                "text": "I would like to leave"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "You will have to collect me #b30 #t4031013##k. Good luck."
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031013",
+                  "removeAll": "true"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "questId": "100007"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "questId": "100008"
+                },
+                "type": "start_quest"
+              },
+              {
+                "params": {
+                  "itemId": "4031012",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpOut"
+              }
+            ]
+          },
+          "id": "completeQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "101020000",
+                  "portalId": "1"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpOut",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1.072005e+06",
+    "type": "npc-conversation"
+  }
+}

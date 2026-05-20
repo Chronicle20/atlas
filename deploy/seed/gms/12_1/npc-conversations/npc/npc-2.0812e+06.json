@@ -1,0 +1,897 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2081200,
+      "startState": "checkRequirements",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "120"
+                  }
+                ],
+                "nextState": "notQualifiedDialogue"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "jobId",
+                    "value": "200"
+                  }
+                ],
+                "nextState": "notQualifiedDialogue"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "jobId",
+                    "value": "300"
+                  }
+                ],
+                "nextState": "notQualifiedDialogue"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkQuestStatus"
+              }
+            ]
+          },
+          "id": "checkRequirements",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please don't bother me right now, I am trying to concentrate."
+          },
+          "id": "notQualifiedDialogue",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "6914",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "questNotCompleteDialogue"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkJobState"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You have not yet passed my trials. I can not advance you until you do so."
+          },
+          "id": "questNotCompleteDialogue",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "211"
+                  }
+                ],
+                "nextState": "readyToAdvanceDialogueFPMage"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "221"
+                  }
+                ],
+                "nextState": "readyToAdvanceDialogueILMage"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "231"
+                  }
+                ],
+                "nextState": "readyToAdvanceDialoguePriest"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "212"
+                  }
+                ],
+                "nextState": "alreadyFourthJobMenu"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "222"
+                  }
+                ],
+                "nextState": "alreadyFourthJobMenu"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "232"
+                  }
+                ],
+                "nextState": "alreadyFourthJobMenu"
+              },
+              {
+                "conditions": [],
+                "nextState": "notQualifiedDialogue"
+              }
+            ]
+          },
+          "id": "checkJobState",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventoryFPMage",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?"
+          },
+          "id": "readyToAdvanceDialogueFPMage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventoryILMage",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?"
+          },
+          "id": "readyToAdvanceDialogueILMage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventoryPriest",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?"
+          },
+          "id": "readyToAdvanceDialoguePriest",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "2280003",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performAdvancementFPMage"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientInventoryDialogue"
+              }
+            ]
+          },
+          "id": "checkInventoryFPMage",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "2280003",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performAdvancementILMage"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientInventoryDialogue"
+              }
+            ]
+          },
+          "id": "checkInventoryILMage",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "2280003",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performAdvancementPriest"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientInventoryDialogue"
+              }
+            ]
+          },
+          "id": "checkInventoryPriest",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please have one slot available on #bUSE#k inventory to receive a skill book."
+          },
+          "id": "insufficientInventoryDialogue",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "jobId": "212"
+                },
+                "type": "change_job"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2121001"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2121002"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2121006"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "itemId": "2280003",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performAdvancementFPMage",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "jobId": "222"
+                },
+                "type": "change_job"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2221001"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2221002"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2221006"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "itemId": "2280003",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performAdvancementILMage",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "jobId": "232"
+                },
+                "type": "change_job"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2321001"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2321002"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2321005"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "itemId": "2280003",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performAdvancementPriest",
+          "type": "genericAction"
+        },
+        {
+          "id": "alreadyFourthJobMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "checkWhichFourthJob",
+                "text": "Teach me the skills of my class."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "If I must, I can teach you the art of your class."
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "212"
+                  }
+                ],
+                "nextState": "checkFPArchMageSkill1"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "222"
+                  }
+                ],
+                "nextState": "checkILArchMageSkill1"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "232"
+                  }
+                ],
+                "nextState": "checkBishopSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkWhichFourthJob",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2121007",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachFPArchMageSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkFPArchMageSkill2"
+              }
+            ]
+          },
+          "id": "checkFPArchMageSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2121007"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkFPArchMageSkill2"
+              }
+            ]
+          },
+          "id": "teachFPArchMageSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2121005",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachFPArchMageSkill2"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkFPArchMageSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2121005"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "teachFPArchMageSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2221007",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachILArchMageSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkILArchMageSkill2"
+              }
+            ]
+          },
+          "id": "checkILArchMageSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2221007"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkILArchMageSkill2"
+              }
+            ]
+          },
+          "id": "teachILArchMageSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2221005",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachILArchMageSkill2"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkILArchMageSkill3"
+              }
+            ]
+          },
+          "id": "checkILArchMageSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2221005"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkILArchMageSkill3"
+              }
+            ]
+          },
+          "id": "teachILArchMageSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2221003",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachILArchMageSkill3"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkILArchMageSkill3",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2221003"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "teachILArchMageSkill3",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2321008",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachBishopSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkBishopSkill2"
+              }
+            ]
+          },
+          "id": "checkBishopSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2321008"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkBishopSkill2"
+              }
+            ]
+          },
+          "id": "teachBishopSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2321006",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachBishopSkill2"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkBishopSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "2321006"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "teachBishopSkill2",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "It is done. Leave me now."
+          },
+          "id": "completionDialogue",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2.0812e+06",
+    "type": "npc-conversation"
+  }
+}

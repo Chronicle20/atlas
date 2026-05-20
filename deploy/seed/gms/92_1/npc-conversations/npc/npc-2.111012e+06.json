@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111012,
+      "startState": "end",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "end",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.111012e+06",
+    "type": "npc-conversation"
+  }
+}

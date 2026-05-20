@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1209004,
+      "startState": "intro",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I hope for this travel to be a safe one, and that we get to live on a more peaceful place there... Hey, darling, let's go."
+          },
+          "id": "intro",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1.209004e+06",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 105,
+          "period": 0,
+          "templateId": 2022258,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        }
+      ],
+      "npcId": 1093000,
+      "recharger": false
+    },
+    "id": "1.093e+06",
+    "type": "npc-shop"
+  }
+}

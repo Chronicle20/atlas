@@ -1,0 +1,117 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2041001,
+      "startState": "askLeave",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "goodbye",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Do you wish to leave the train?"
+          },
+          "id": "askLeave",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMapAndWarp",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright, see you next time. Take care."
+          },
+          "id": "goodbye",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "200000122"
+                  }
+                ],
+                "nextState": "warpToOrbisStation"
+              },
+              {
+                "conditions": [],
+                "nextState": "warpToLudiStation"
+              }
+            ]
+          },
+          "id": "checkMapAndWarp",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "200000121",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToOrbisStation",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "220000110",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToLudiStation",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2.041001e+06",
+    "type": "npc-conversation"
+  }
+}

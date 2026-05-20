@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seed-catalog-config
+data:
+  GITSYNC_REPO: "https://github.com/Chronicle20/atlas"
+  GITSYNC_REF: "main"
+  GITSYNC_ROOT: "/git"
+  GITSYNC_DIR: "deploy/seed"
+  GITSYNC_PERIOD: "60s"

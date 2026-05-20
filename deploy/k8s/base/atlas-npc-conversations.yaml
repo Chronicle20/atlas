@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-npc-conversations
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-npc-conversations
     spec:
+      volumes: []
       containers:
       - name: npc-conversations
         image: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:
@@ -36,8 +40,6 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: SEED_CATALOG_ROOT
-          value: "/var/run/seed-catalog"
 ---
 apiVersion: v1
 kind: Service

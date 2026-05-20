@@ -1,0 +1,11 @@
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: seed-catalog
+    mountPath: /var/run/seed-catalog
+    readOnly: true
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SEED_CATALOG_ROOT
+    value: /var/run/seed-catalog

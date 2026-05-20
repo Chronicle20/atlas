@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-drop-information
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-drop-information
     spec:
+      volumes: []
       containers:
       - name: atlas-drop-information
         image: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:
@@ -40,8 +44,6 @@ spec:
           value: 00000000-0000-0000-0000-000000000000
         - name: SERVICE_TYPE
           value: drops-information-service
-        - name: SEED_CATALOG_ROOT
-          value: "/var/run/seed-catalog"
 ---
 apiVersion: v1
 kind: Service

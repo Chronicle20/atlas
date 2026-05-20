@@ -26,6 +26,9 @@ spec:
           value: "debug"
         - name: DB_NAME
           value: "atlas-npc-shops"
+        - name: SEED_CATALOG_ROOT
+          value: /var/run/seed-catalog
+          # TODO: mount the shared seed-catalog volume here
         - name: DB_USER
           valueFrom:
             secretKeyRef:

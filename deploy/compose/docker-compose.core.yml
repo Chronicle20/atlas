@@ -408,6 +408,9 @@ services:
     environment:
       LOG_LEVEL: debug
       DB_NAME: atlas-npc-shops
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-parties:
     <<: *atlas-defaults

@@ -2,6 +2,7 @@ package seeder
 
 import (
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -18,6 +19,13 @@ func tenantGMS83(t *testing.T) tenant.Model {
 		t.Fatalf("tenant: %v", err)
 	}
 	return tm
+}
+
+// goodFixtureRoot returns the absolute path to testdata/good for use in tests.
+func goodFixtureRoot(t *testing.T) string {
+	t.Helper()
+	wd, _ := os.Getwd()
+	return filepath.Join(wd, "testdata", "good")
 }
 
 // newTestSource returns a FilesystemCatalogSource whose fallback root points at

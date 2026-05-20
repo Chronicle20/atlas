@@ -71,25 +71,13 @@ spec:
   ports:
     - protocol: TCP
       port: 8080
----
-# KEDA ScaledObject for RPS-based autoscaling (design §4.6).
-# Requires keda.sh CRDs installed in the cluster. Argo will skip the resource
-# gracefully if the CRD is absent (kustomize will still produce valid YAML).
-apiVersion: keda.sh/v1alpha1
-kind: ScaledObject
-metadata:
-  name: atlas-renders
-spec:
-  scaleTargetRef:
-    name: atlas-renders
-  pollingInterval: 15
-  cooldownPeriod: 120
-  minReplicaCount: 2
-  maxReplicaCount: 10
-  triggers:
-    - type: prometheus
-      metadata:
-        serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
-        metricName: atlas_renders_requests_total
-        threshold: "50"
-        query: sum(rate(atlas_renders_requests_total[1m]))
+#
+# KEDA autoscaling (design §4.6) is intentionally NOT included here. The
+# bee cluster does not have the `keda.sh/ScaledObject` CRD installed, and
+# Argo CD does NOT skip unknown CRDs gracefully — the sync errors out for
+# the whole Application with "could not find keda.sh/ScaledObject".
+#
+# Follow-up: install KEDA cluster-wide (cluster-infra concern), then add
+# back this manifest. Until then the Deployment runs at its base replica
+# count (2) without RPS-driven autoscaling. atlas-renders is stateless
+# and tolerates manual scaling via `kubectl scale deploy/atlas-renders`.

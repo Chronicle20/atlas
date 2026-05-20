@@ -16,13 +16,12 @@ import {
   type PortalScriptsSeedStatus,
   type QuestConversationsSeedStatus,
   type ReactorScriptsSeedStatus,
-  type WzExtractionStatus,
   type WzInputStatus,
 } from '@/services/api/seed.service';
+import type { Scope } from '@/components/features/setup/ScopeToggle';
 import { useTenant } from '@/context/tenant-context';
 
 const wzInputStatusKey = (tenantId: string) => ['wzInputStatus', tenantId] as const;
-const extractionStatusKey = (tenantId: string) => ['extractionStatus', tenantId] as const;
 const dataStatusKey = (tenantId: string) => ['dataStatus', tenantId] as const;
 const dropsSeedStatusKey = (tenantId: string) => ['dropsSeedStatus', tenantId] as const;
 const gachaponsSeedStatusKey = (tenantId: string) => ['gachaponsSeedStatus', tenantId] as const;
@@ -129,37 +128,29 @@ export function useSeedMapActionScripts(): UseMutationResult<unknown, Error, voi
   });
 }
 
-export function useUploadWzFiles(): UseMutationResult<void, Error, File> {
+export interface UploadWzFilesInput {
+  file: File;
+  scope: Scope;
+}
+
+export function useUploadWzFiles(): UseMutationResult<void, Error, UploadWzFilesInput> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (file: File) => seedService.uploadWzFiles(activeTenant!, file),
+    mutationFn: ({ file, scope }: UploadWzFilesInput) =>
+      seedService.uploadWzFiles(activeTenant!, file, scope),
     onSuccess: () => {
       if (!activeTenant) return;
       void queryClient.invalidateQueries({ queryKey: wzInputStatusKey(activeTenant.id) });
-      void queryClient.invalidateQueries({ queryKey: extractionStatusKey(activeTenant.id) });
     },
   });
 }
 
-export function useRunWzExtraction(): UseMutationResult<void, Error, void> {
+export function useRunDataProcessing(): UseMutationResult<void, Error, Scope> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => seedService.runWzExtraction(activeTenant!),
-    onSuccess: () => {
-      if (!activeTenant) return;
-      void queryClient.invalidateQueries({ queryKey: extractionStatusKey(activeTenant.id) });
-      void queryClient.invalidateQueries({ queryKey: dataStatusKey(activeTenant.id) });
-    },
-  });
-}
-
-export function useRunDataProcessing(): UseMutationResult<void, Error, void> {
-  const { activeTenant } = useTenant();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => seedService.runDataProcessing(activeTenant!),
+    mutationFn: (scope: Scope) => seedService.runDataProcessing(activeTenant!, scope),
     onSuccess: () => {
       if (!activeTenant) return;
       void queryClient.invalidateQueries({ queryKey: dataStatusKey(activeTenant.id) });
@@ -172,17 +163,6 @@ export function useWzInputStatus(): UseQueryResult<WzInputStatus, Error> {
   return useQuery({
     queryKey: activeTenant ? wzInputStatusKey(activeTenant.id) : ['wzInputStatus', 'none'],
     queryFn: () => seedService.getWzInputStatus(activeTenant!),
-    enabled: !!activeTenant,
-    staleTime: 0,
-    refetchInterval: 5000,
-  });
-}
-
-export function useExtractionStatus(): UseQueryResult<WzExtractionStatus, Error> {
-  const { activeTenant } = useTenant();
-  return useQuery({
-    queryKey: activeTenant ? extractionStatusKey(activeTenant.id) : ['extractionStatus', 'none'],
-    queryFn: () => seedService.getExtractionStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

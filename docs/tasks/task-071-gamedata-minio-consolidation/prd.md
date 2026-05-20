@@ -1,8 +1,10 @@
 # Game Data + Asset Pipeline Consolidation onto MinIO — Product Requirements Document
 
-Version: v4
+Version: v5
 Status: Draft
 Created: 2026-05-19
+Updated: 2026-05-19 — v5 applies third-round adversarial-review fixes: (a) Argo sync ordering corrected — `atlas-minio-init` runs as a **PreSync hook** (was incorrectly PostSync, causing app CrashLoopBackOff on every deploy); (b) init Job authentication path spec'd — mounts the cluster's existing `minio-root-creds` Secret cross-namespace via a `Reflector`-replicated copy; (c) Job creation failure modes pinned (timeout, RBAC, quota, image-pull, OOM) with a watchdog timeout on `GET /api/data/process`; (d) restore idempotence rewritten — always destructive (DELETE-then-COPY), caller short-circuits, no API-side "skip when non-empty" gate; (e) explicit note that `COMMAND_TOPIC_DATA` is retired but the emit-side `DATA_UPDATED` topic stays (downstream services subscribe to it); (f) §8.2 acknowledges the shared `atlas-data-ingest` IAM identity has cross-tenant write capability — v1 trust boundary documented; (g) `emptyDir.sizeLimit: 4Gi` on the Job pod; (h) schema-version CI fingerprint check; (i) cutover smoke-test list enumerated in §10; (j) `baselineRestoredAt` storage spec'd (new `tenant_baselines` Postgres table); (k) atlas-renders Dockerfile lib-location note added; (l) MinIO image pin (user direction: both k8s + compose pin to a specific tag); (m) MinIO console stays ClusterIP-only (user direction). HPA metric for atlas-renders deferred to design phase per user direction. v4 changes carried forward.
+
 Updated: 2026-05-19 — v4 applies second-round adversarial-review fixes: (a) Kafka removed from atlas-data ingest entirely; REST creates a k8s Job parameterized via env vars, Job runs workers as goroutines internally — `COMMAND_TOPIC_DATA` retired; (b) bucket keys adopt REST-plural convention (`tenants/<id>/regions/<region>/versions/<version>/...`), with atlas-ingress bridging today's UI URL shape; (c) `seed-canonical.sh` removed — SetupPage UI is the single canonical-baseline workflow for both operators and local-dev devs; (d) MinIO IAM provisioning specified via a new `atlas-minio-init` Job that creates three scoped identities; (e) ANALYZE added to baseline restore; (f) atlas-renders specified at ≥ 2 replicas with HPA; (g) JSON manifest serialization must sort map keys; ingest binary's Go minor version pinned in Dockerfile for determinism; (h) all the smaller fixes (SSIM tolerance, REST restart recovery, MinIO 503 behavior, best-effort render PUT, trace propagation, Job TTL, routes.conf regression test, concurrent-process 202 response, search-index lock-and-cleanup serialization). v3 changes carried forward.
 
 Updated: 2026-05-19 — v3 applies first-round adversarial-review fixes: (a) one-version-per-tenant constraint made explicit and idempotence rewritten; (b) baseline dump format pinned to per-table `COPY (SELECT ...) TO STDOUT (FORMAT binary)` with header metadata; (c) map rendering moves from eager (ingest) to lazy (atlas-renders), halving ingest wall-clock; (d) explicit `scope=tenant|shared` toggle replaces "canonical-UUID writes implicitly to shared/"; (e) PR-env tenant cleanup pulled into scope; (f) cutover sequencing pinned to "publish baseline from ephemeral test env before merge"; (g) determinism guarantee scoped to a pinned PNG encoder; (h) tenant/<id> scope retained per user direction with the operational cost acknowledged; (i) `client_max_body_size` carried to new ingress route; (j) rolling-deploy strategy = drain old atlas-data pods (downtime acceptable). v2 changes carried forward: atlas-canonical bucket vs shared scope naming; `MODE=rest|ingest|all` switch; SetupPage UI diff.
@@ -163,7 +165,9 @@ Notes for the ingress configuration:
 
 ### 4.4 Ingest topology: REST / Job / compose-collapsed
 
-The atlas-data binary has three runtime modes selected by `MODE` env. **Kafka leaves atlas-data's ingest path entirely** in v4 (it remained in v3 ambiguously); work is dispatched directly to worker goroutines within whichever process is running, parameterized by an `(tenantId, scope, region, version)` tuple supplied at process or HTTP-handler entry. `COMMAND_TOPIC_DATA` is retired.
+The atlas-data binary has three runtime modes selected by `MODE` env. **Kafka leaves atlas-data's ingest *input* path entirely** in v4; work is dispatched directly to worker goroutines within whichever process is running, parameterized by an `(tenantId, scope, region, version)` tuple supplied at process or HTTP-handler entry. **`COMMAND_TOPIC_DATA` (the input dispatch topic) is retired.**
+
+**The emit-side `DATA_UPDATED` topic stays.** atlas-data continues to publish a `DATA_UPDATED` event after each worker completes; downstream services (atlas-channel, atlas-character-factory, etc.) subscribe to it for cache invalidation and re-fetch. The cutover removes Kafka from atlas-data's input dispatch, not from its observable side effects. An implementer should not delete the emit-side Kafka producer when removing the consumer.
 
 | `MODE` | Process responsibilities | Used by |
 |---|---|---|
@@ -177,9 +181,24 @@ The same compiled binary serves all three modes. The worker code path is identic
 
 - `atlas-data` Deployment runs `MODE=rest` with REST-shaped resource limits (small CPU + memory).
 - A `Role`/`RoleBinding` grants the atlas-data ServiceAccount `create`, `get`, `list`, `watch`, `delete` on `batch.Job` in its own namespace only.
-- A `Job` template (PodTemplate, env, resource limits CPU `2-8` / memory `1-3Gi`) is baked into the atlas-data ConfigMap (`atlas-data-ingest-job-template`). The REST handler instantiates Jobs from the template, setting env: `MODE=ingest`, `TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, `SCOPE`. Job has `ttlSecondsAfterFinished: 3600` so completed Jobs garbage-collect.
+- A `Job` template (PodTemplate, env, resource limits CPU `2-8` / memory `1-3Gi`) is baked into the atlas-data ConfigMap (`atlas-data-ingest-job-template`). The REST handler instantiates Jobs from the template, setting env: `MODE=ingest`, `TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, `SCOPE`, `traceparent`. Job has `ttlSecondsAfterFinished: 3600` (completed Jobs garbage-collect after one hour) and `backoffLimit: 0` (no retries — failure surfaces immediately rather than silently re-running).
+- Job pod mounts an `emptyDir` at `/scratch` with `sizeLimit: 4Gi`. Workers download `.wz` archives there and delete each after processing. 4Gi accommodates parallel processing of the v83 set (~1 GB on disk × 2-3× peak parallelism) with headroom; if a future game version's `.wz` set grows substantially, bump the limit explicitly. The Job pod sets `medium: ""` (node disk, not tmpfs) — tmpfs would charge memory limit and OOM the pod.
+- Job pod mounts the `atlas-minio-credentials` Secret and reads the `atlas-data-ingest-access-key` / `atlas-data-ingest-secret-key` entries as env (not the REST pod's keys — that identity has narrower permissions).
 - The Job pod (`MODE=ingest`) reads those env vars at startup, runs every worker (data archives, icons, atlases, map layer extraction), and exits 0 on success / non-zero on failure. Progress is written to Redis (per §6.4) at each worker milestone.
 - atlas-data REST tracks the Job via a label selector `atlas-data-ingest=true,scope=<scope-key>,version=<major>.<minor>`. `GET /api/data/process` reads the Redis progress hash; if a Job exists for the scope but Redis is empty, REST infers "Job is starting up." If REST itself restarts mid-Job, recovery is automatic: on startup it re-resolves in-flight Jobs by listing the label selector across all namespaces it's responsible for.
+
+**Job creation failure modes** (REST's `POST /api/data/process`):
+
+| Failure | REST behavior | Operator-visible result |
+|---|---|---|
+| k8s API timeout / 5xx on Job creation | Retry once with exponential backoff; on second failure, return `500 Internal Server Error` with the underlying error. | UI surfaces a clear "ingest could not be scheduled" toast. Retry-Safe. |
+| RBAC denied (Role/RoleBinding misconfigured) | Return `500` with the specific RBAC error in the response body. | Same as above; operator fixes the manifest. |
+| `ResourceQuota` blocks Job creation | Return `503 Service Unavailable` with `Retry-After: 60`. | UI surfaces "ingest queue is full, retry in a moment." Operator investigates quota. |
+| Job created successfully, but pod fails image-pull (`ErrImagePull` / `ImagePullBackOff`) | REST returns `202` with the Job ID. `GET /api/data/process` reports the Job status (k8s tells us `phase: Pending` with the pull error in `containerStatuses[].state.waiting.message`). | UI surfaces "ingest failed: image pull error." Operator investigates registry. |
+| Job pod starts, runs, then OOMs / panics mid-ingest | Job status transitions to `Failed`. REST's `GET /api/data/process` detects (`backoffLimit` exceeded or `lastConditionType == Failed`) and propagates as a structured error. Partial Postgres writes survive (they're per-row transactions); next ingest call DELETEs + restarts. | UI surfaces "ingest failed: <Job pod's tail log>." |
+| Job hangs (no Redis progress for > 5 min and no Job status change) | Watchdog in atlas-data REST: if a Job's last Redis progress update is older than 5 minutes AND the Job is `Active`, REST marks it as stuck, deletes it (the per-tenant Redis lock TTL expires concurrently), and `GET /api/data/process` returns the stuck state with a clear error. | UI surfaces "ingest appears stuck and was cancelled." Operator investigates pod logs. |
+
+The watchdog timeout (5 min) is configurable via env `INGEST_WATCHDOG_TIMEOUT_SECONDS` on the REST pod.
 - **Trace propagation**: the Job template injects the current `traceparent` from REST's request span as an env var. The Job pod restores it at startup, so ingest spans link back to the originating REST request.
 
 **Docker-compose shape:**
@@ -203,11 +222,12 @@ Pulled into this task's scope. Without it, every closed PR env leaves behind `do
 - The atlas-data handler performs, in this order:
   1. `DELETE FROM documents WHERE tenant_id = <id>`.
   2. `DELETE FROM <search-index> WHERE tenant_id = <id>` for each of the 5 search-index tables.
-  3. `mc rm --recursive` (Go SDK equivalent) on:
+  3. `DELETE FROM tenant_baselines WHERE tenant_id = <id>`.
+  4. `mc rm --recursive` (Go SDK equivalent) on:
      - `atlas-wz/tenants/<tenantId>/`
      - `atlas-assets/tenants/<tenantId>/`
      - `atlas-renders/tenants/<tenantId>/`
-  4. Logs the purge with `tenantId`, row counts, and bytes freed.
+  5. Logs the purge with `tenantId`, row counts, and bytes freed.
 - Idempotent: re-invoking on an already-purged tenant returns `204 No Content`.
 - Refuses to purge the canonical UUID (`00000000-…`); returns `403 Forbidden`.
 - Atomic-ish: the Postgres deletes are one transaction; the MinIO deletes are best-effort with retry. A partial MinIO failure logs the residual keys; a follow-up cron sweeps orphans (out of scope; tracked).
@@ -236,7 +256,7 @@ The dominant cost in `atlas-pr-bootstrap` today is WZ extraction + data processi
 2. Asset reads automatically fall back to the canonical MinIO prefix via §4.2's scope lookup. No per-tenant assets are written by PR envs.
 3. Domain seed steps (drops, gachapons, etc.) run as today.
 
-**Idempotence**: `baseline/restore` short-circuits when the PR tenant already has a non-empty `documents` count for the target `(region, version)`.
+**Idempotence**: `baseline/restore` is **always destructive** (DELETE-then-COPY per §6.1) — it does NOT short-circuit on "tenant already has documents." Callers that want to skip a redundant restore are responsible for short-circuiting themselves before calling. `atlas-pr-bootstrap`'s `bootstrap.sh` does exactly this: checks `documentCount > 0` against `GET /api/data/status` before issuing `baseline/restore`. This keeps the API algebraically idempotent (calling it N times with the same inputs has the same end state) without forbidding legitimate re-restores when a newer baseline is published.
 
 **Determinism check**: `baseline/publish` also writes `documents.dump.sha256` next to the dump. PR-env consumers verify the hash before restoring; mismatch (e.g., from a corrupted dump) fails loudly.
 
@@ -341,13 +361,14 @@ Nothing outside SetupPage and its hooks/services moves.
 - In `baseline` mode: skip `wz-upload` and `wz-extract` steps; call `POST /api/data/baseline/restore` instead of `POST /api/data/process`; same stable-poll pattern against `GET /api/data/status`.
 - In `full` mode: existing flow, but pointed at the new endpoints (`PATCH /api/data/wz` instead of `PATCH /api/wz/input`; the `POST /api/data/process` step does both extraction and ingest in one call). The `wz-extract` step disappears.
 - The `wait-ready` step drops `atlas-wz-extractor` from its readiness list and adds `atlas-renders`.
-- The canonical-baseline producer workflow (`bootstrap-canonical.sh`) is a new sibling script. Run once per game version against the cluster's canonical tenant; emits the dump to `atlas-canonical/baseline/...`. Not invoked from PostSync; run by an operator on demand or wired into a separate Argo Application.
+- **Canonical-baseline producer workflow is the SetupPage UI**, not a separate script (per §4.8). An operator opens SetupPage, flips the scope toggle to Canonical, uploads + processes + publishes. No `bootstrap-canonical.sh` exists. Earlier drafts proposed a script; v3+ folded it into the UI to keep operators and dev devs on the same flow. The k8s deploy includes no Argo Application for canonical publishing; that step is operator-on-demand via the UI.
+- The `cleanup.sh` step `tenant-purge` calls `DELETE /api/data/tenants/<tenantId>` per §4.4a. Acquires the per-scope Redis lock to refuse cleanup-during-ingest.
 
 ### 4.10 docker-compose changes
 
 Compose currently runs three services with bind-mounted host directories (`tmp/data`, `tmp/assets`, `tmp/wz-input`). The new compose stack:
 
-- **Adds `minio`**: `minio/minio:latest` with a named volume, ports `9000:9000` and `9001:9001` (console). Single-node single-drive matching the cluster pattern. Default creds match `~/source/k3s/bee/minio.yml` for parity (`minioadmin` / `minioadmin12345`).
+- **Adds `minio`**: `minio/minio:<pinned-tag>` (a specific release tag like `RELEASE.2026-01-15T...Z`, chosen in design phase). Both `~/source/k3s/bee/minio.yml` and the new compose entry use the **same pinned tag**; the existing `:latest` in `minio.yml` is updated to the pin as part of this task's deploy work. Bumps happen via a deliberate PR with a determinism re-test. Named volume, ports `9000:9000` and `9001:9001` (console, dev-only). Single-node single-drive matching the cluster pattern. Default creds match `minio.yml` for parity (`minioadmin` / `minioadmin12345`).
 - **Adds `minio-init`** as a short-lived sidecar: runs `mc alias set`, `mc mb` for `atlas-wz`, `atlas-assets`, `atlas-renders`, `atlas-canonical`, and `mc anonymous set download` on the public buckets. Healthcheck-gated so other services wait for buckets to exist.
 - **Adds `atlas-renders`**: new service-equivalent, no volumes.
 - **Removes `atlas-wz-extractor`** service definition.
@@ -427,10 +448,10 @@ Request body:
 
 Behavior:
 - Acquires a Redis lock on `(tenantId, region, version)` for the duration of the restore — concurrent calls for the same target tenant serialize.
-- Idempotent: if the PR tenant already has documents for that version, returns `204 No Content` with `X-Atlas-Baseline-Status: already-restored`. (Note: one version per tenant, per §6.1; presence of *any* documents under that tenant_id counts.)
-- Else fetches the dump, verifies the SHA-256 of the `.tar`, validates `header.json.schemaVersion` against the compiled-in schema version, then for each table: DELETE rows for the target tenant, then COPY with tenant_id substitution.
+- **Always destructive**: fetches the dump, verifies the SHA-256 of the `.tar`, validates `header.json.schemaVersion` against the compiled-in schema version, then for each table: DELETE rows for the target tenant, COPY with tenant_id substitution. Per §6.1's "one version per tenant" invariant, any prior data on the target tenant is overwritten regardless of source. Then `ANALYZE` on all 6 tables. Then UPSERT `tenant_baselines` row (see §6.5) with the resolved `(region, version, restoredAt)`.
+- The handler does **not** short-circuit when the target tenant already has documents. Callers (PR bootstrap, SetupPage) are responsible for checking `documentCount > 0` and skipping if they want to.
 
-Responses: `202 Accepted` (running) / `204 No Content` (already restored) / `404 Not Found` (no baseline published) / `409 Conflict` (lock held) / `422 Unprocessable Entity` (hash mismatch or schema-version mismatch).
+Responses: `202 Accepted` (running) / `404 Not Found` (no baseline published) / `409 Conflict` (lock held) / `422 Unprocessable Entity` (hash mismatch or schema-version mismatch) / `500 Internal Server Error` (MinIO fetch failure mid-stream).
 
 #### `DELETE /api/data/tenants/<tenantId>`
 
@@ -457,7 +478,24 @@ Existing endpoint, unchanged shape; data source moves to Redis.
 
 #### `GET /api/data/status`
 
-Existing endpoint. Continues to report `documentCount` and `updatedAt`. PR-env bootstrap polls this for stability after a baseline restore.
+Existing endpoint. Continues to report `documentCount` and `updatedAt`. **New**: `baselineRestoredAt` (nullable timestamp from `tenant_baselines.restored_at`), `baselineSha256` (nullable; the dump hash this tenant was restored from — operators use it to verify "is this tenant on the current canonical baseline?"). PR-env bootstrap polls `documentCount + updatedAt` for stability after a baseline restore.
+
+Response (JSON:API):
+
+```json
+{
+  "data": {
+    "type": "dataStatus",
+    "id": "<tenantId>",
+    "attributes": {
+      "documentCount": 14523,
+      "updatedAt": "2026-05-19T18:00:00Z",
+      "baselineRestoredAt": "2026-05-19T17:55:00Z",
+      "baselineSha256": "a3f1...e9"
+    }
+  }
+}
+```
 
 ### 5.3 Retired endpoints
 
@@ -515,7 +553,22 @@ Wrapped in a single `.tar` so the SHA-256 covers the whole bundle. Each `*.binar
 
 Across the 6 tables we accept multi-transaction restore (not one big transaction) to keep each table's WAL footprint bounded. Failure mid-restore leaves the tenant in a partial state; recovery is "call restore again" (idempotent via the Redis lock + the per-table DELETE-then-INSERT semantics).
 
-**Post-restore statistics refresh:** after all 6 tables are restored, the handler runs `ANALYZE documents; ANALYZE map_search_index; ANALYZE npc_search_index; ANALYZE monster_search_index; ANALYZE reactor_search_index; ANALYZE item_string_search_index;` before returning `204` / `202`. Without this, the trigram GIN indexes are valid but the query planner's statistics are stale, and `?search=` endpoints may pick full-table-scan plans for minutes-to-hours until autovacuum gets to ANALYZE the tables. Cost: a few seconds per table; negligible relative to the restore itself.
+**Post-restore statistics refresh:** after all 6 tables are restored, the handler runs `ANALYZE documents; ANALYZE map_search_index; ANALYZE npc_search_index; ANALYZE monster_search_index; ANALYZE reactor_search_index; ANALYZE item_string_search_index;` before returning `202`. Without this, the trigram GIN indexes are valid but the query planner's statistics are stale, and `?search=` endpoints may pick full-table-scan plans for minutes-to-hours until autovacuum gets to ANALYZE the tables. Cost: a few seconds per table; negligible relative to the restore itself.
+
+**New table: `tenant_baselines`.** Records the most-recent baseline restore for each tenant so `GET /api/data/status` can surface `baselineRestoredAt` without scanning the documents table.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `tenant_id` | UUID | PRIMARY KEY | One row per tenant. |
+| `region` | TEXT | NOT NULL | Restored region. |
+| `major_version` | INTEGER | NOT NULL | |
+| `minor_version` | INTEGER | NOT NULL | |
+| `baseline_sha256` | TEXT | NOT NULL | Hash of the dump that was restored. Lets ops verify "is this tenant on the current baseline?". |
+| `restored_at` | TIMESTAMPTZ | NOT NULL, DEFAULT now() | |
+
+Written by `POST /api/data/baseline/restore` (UPSERT on `tenant_id`). Cleared by `DELETE /api/data/tenants/<id>`.
+
+**Schema-version CI fingerprint check.** A CI step computes an MD5 fingerprint of `information_schema.columns` joined for the 6 dumped tables (`documents`, the 5 search-index tables) plus `tenant_baselines`, and compares it against a checked-in constant `SCHEMA_FINGERPRINT_V<N>` in atlas-data. A migration that adds/drops/changes a column without bumping the constant (and incrementing the `header.json.schemaVersion`) fails CI. This catches the case where a developer's migration silently invalidates published baselines.
 
 ### 6.2 Sprite atlas manifest schema
 
@@ -611,7 +664,8 @@ TTL refreshed by the running worker; lock freed on completion or failure.
 - No PVC. Prohibited from importing `libs/atlas-wz/wz` or `libs/atlas-wz/crypto`. Permitted to import `libs/atlas-wz/manifest` and `libs/atlas-wz/maplayout` (pure type packages).
 - **Lint:** the prohibition is enforced by a CI step that runs `go list -deps ./services/atlas-renders/...` and greps for the disallowed subpackages. Plain text grep is insufficient because transitive imports must be caught. The lint is at subpackage granularity, not module granularity.
 - Env: `MINIO_ENDPOINT`, `MINIO_BUCKET_ASSETS`, `MINIO_BUCKET_RENDERS`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `REST_PORT`, `LOG_LEVEL`, `JAEGER_HOST_PORT`, `ATLAS_LRU_SIZE`, `MAP_LRU_SIZE`.
-- **Deployment shape:** at least **2 replicas** in k8s, with HPA on CPU (`targetCPUUtilizationPercentage: 70`, `min: 2, max: 8`). Character render is on the hot path for the character grid; a single-pod deploy is a SPOF. The HPA scales out under render-burst (cold-cache rolling deploys, popular-character pile-ups) and back down when idle.
+- **Deployment shape:** at least **2 replicas** in k8s, `min: 2, max: 8`. Autoscaling metric is **TBD in design phase** — character render is memory- and network-bound (MinIO GETs + atlas LRU), not CPU-bound, so a CPU-based HPA scales too late. Preferred metric is a per-pod request-rate via the Prometheus Adapter or a KEDA `ScaledObject` against `atlas_renders_requests_total`. If neither is available in the cluster (verified during design), fall back to a combined CPU + memory HPA with conservative thresholds. The PRD intentionally does not pin a metric here; design phase confirms what the cluster supports.
+- **Dockerfile**: services/atlas-renders/Dockerfile maintains the same `libs/atlas-wz` import in all four locations CLAUDE.md mandates (go.mod COPY, go.work synthesis, source COPY, `go mod edit -replace`), even though atlas-renders only imports the `manifest/` and `maplayout/` subpackages. The four-location pattern is per-module, not per-subpackage; `docker build -f services/atlas-renders/Dockerfile .` from the worktree root must succeed.
 
 ### 7.3 Retired: `atlas-wz-extractor`
 
@@ -639,7 +693,7 @@ Deleted in full. Replaced by atlas-ingress routing to MinIO + atlas-renders.
 ### 7.6 `atlas-pr-bootstrap`
 
 - `scripts/bootstrap.sh` rewritten per §4.8.
-- New `scripts/bootstrap-canonical.sh` for operator workflows.
+- (No `bootstrap-canonical.sh` script — canonical publish is the SetupPage UI flow per §4.8.)
 - Dockerfile may need updates if WZ canonical zip baking changes (out of scope unless required).
 
 ### 7.7 `atlas-ui`
@@ -661,16 +715,28 @@ Per §4.9.
 - New `atlas-renders.yaml` Deployment (≥ 2 replicas) + Service + HPA per §7.2.
 - `atlas-data.yaml`: drop `/usr/data` mount + PVC; add MinIO env from `atlas-minio-credentials` Secret; set `MODE=rest`; add ServiceAccount + `Role`/`RoleBinding` granting `create/get/list/watch/delete` on `batch.Job` in its own namespace.
 - New `atlas-data-ingest-job-template.yaml` ConfigMap: holds the Job spec atlas-data renders when ingest is requested. Resource limits CPU `2-8` / memory `1-3Gi`. Job pod runs the same atlas-data image with `MODE=ingest` + env (`TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, `SCOPE`, `traceparent`). `ttlSecondsAfterFinished: 3600` so completed Jobs garbage-collect.
-- **New `atlas-minio-init.yaml` Job** for IAM + bucket provisioning. Runs once at install (Argo PostSync hook) and is idempotent on re-run. Does:
-  1. Creates buckets `atlas-wz`, `atlas-assets`, `atlas-renders`, `atlas-canonical` (idempotent — `mc mb --ignore-existing`).
-  2. Applies anonymous-read policy on `atlas-assets`, `atlas-renders`, `atlas-canonical`. `atlas-wz` stays private.
-  3. Creates three MinIO users with random access/secret keys: `atlas-data`, `atlas-data-ingest`, `atlas-renders`.
-  4. Creates and attaches three scoped policies:
-     - `atlas-data-policy`: PUT/GET/DELETE on `atlas-wz/*`; GET on `atlas-canonical/baseline/*` (for restore); PUT on `atlas-canonical/baseline/*` (for publish).
-     - `atlas-data-ingest-policy`: PUT/GET/DELETE on `atlas-wz/*` and `atlas-assets/*`.
+- **New `atlas-minio-init.yaml` Job** for IAM + bucket provisioning. Runs as an **Argo `PreSync` hook** (not PostSync — apps depend on the Secret this Job writes; PostSync would crash-loop them until the next reconcile). Idempotent on re-run. Does:
+  1. **Authenticates to MinIO using root creds.** The cluster's existing `minio-root-creds` Secret lives in the `minio` namespace; the atlas namespace can't mount cross-namespace directly. Use [`mittwald/kubernetes-replicator`](https://github.com/mittwald/kubernetes-replicator) (already deployed for similar use cases) to mirror the Secret into the atlas namespace under `minio-root-creds-mirror`. The init Job mounts the mirror. If kubernetes-replicator isn't installed, alternative: a `SealedSecret` checked into the manifests with the root creds (acceptable for the local-cluster threat model documented in `minio.yml`). **Pick one in design.**
+  2. Creates buckets `atlas-wz`, `atlas-assets`, `atlas-renders`, `atlas-canonical` (idempotent — `mc mb --ignore-existing`).
+  3. Applies anonymous-read policy on `atlas-assets`, `atlas-renders`, `atlas-canonical`. `atlas-wz` stays private. Existing `atlas-canonical` policy preserved (the bucket already has `mc anonymous set download` from cluster install; the init Job is idempotent on policy too).
+  4. Creates three MinIO users with random access/secret keys: `atlas-data`, `atlas-data-ingest`, `atlas-renders`.
+  5. Creates and attaches three scoped policies:
+     - `atlas-data-policy`: PUT/GET/DELETE on `atlas-wz/*`; GET + PUT on `atlas-canonical/baseline/*` (for restore + publish).
+     - `atlas-data-ingest-policy`: PUT/GET/DELETE on `atlas-wz/*` and `atlas-assets/*`. (Note: this identity has **cross-tenant write** access — see §8.2 for the documented trust boundary.)
      - `atlas-renders-policy`: GET on `atlas-assets/*`; PUT/GET on `atlas-renders/*`.
-  5. Writes the three (access, secret) key pairs to a Kubernetes Secret `atlas-minio-credentials` with one key pair per service.
-  6. Subsequent runs detect existing users + policies and only refresh policies if their definitions drifted; access keys are NOT rotated by re-runs (separate rotation job).
+  6. Writes the three (access, secret) key pairs to a Kubernetes Secret `atlas-minio-credentials` (in the atlas namespace) with one access-key + secret-key pair per service, named `<service>-access-key` / `<service>-secret-key`. atlas-data and atlas-renders Deployments mount the relevant pair via `envFrom: secretKeyRef`.
+  7. Subsequent runs detect existing users + policies and refresh policies if their definitions drifted; access keys are NOT rotated by re-runs (separate rotation job).
+
+**Argo sync wave ordering** (in lieu of PreSync if the cluster prefers waves over hooks):
+
+| Wave | Resource |
+|---|---|
+| -2 | `atlas-minio-init` Job |
+| -1 | (Job completion barrier) |
+| 0 | atlas-data Deployment + Service, atlas-renders Deployment + Service, atlas-ingress, ConfigMaps |
+| 1 | HPAs, Jobs templates (ConfigMap data only — actual Job creation is runtime) |
+
+Either path works; design phase picks one based on the cluster's existing Argo conventions.
 - Remove `atlas-wz-extractor.yaml`, `atlas-assets.yaml`.
 - Drop PVC defs for `atlas-data-pvc`, `atlas-assets-pvc`, `atlas-wz-input-pvc`.
 - atlas-ingress manifest updated to reflect new routes.conf (including the `client_max_body_size 4G` and Cache-Control header injection per §4.3).
@@ -694,7 +760,8 @@ Per §4.9.
 - `atlas-assets` and `atlas-renders` are anonymous-read only; reads happen through atlas-ingress, which does not pass through any authentication. The MinIO console is not externally exposed.
 - IAM creds in a Kubernetes Secret. Default `minio.yml` creds suitable only for local dev.
 - No PII or character data in MinIO. Only WZ-derived game data and images.
-- atlas-pr-bootstrap's `baseline/restore` endpoint requires the requester to assert a tenantId; the server validates the tenant exists in atlas-tenants before writing rows. Cross-tenant data leakage is impossible by construction (tenant_id is the row key, restored values are stamped server-side).
+- atlas-pr-bootstrap's `baseline/restore` endpoint requires the requester to assert a tenantId; the server validates the tenant exists in atlas-tenants before writing rows. **Cross-tenant data leakage at the Postgres layer** is impossible by construction (tenant_id is the row key, restored values are stamped server-side).
+- **Trust boundary for the shared `atlas-data-ingest` MinIO identity**: this identity holds PUT/GET/DELETE on `atlas-wz/*` and `atlas-assets/*` (i.e. across all tenants). The trust assumption is that the Job container behaves as its env says — its tenant_id and scope are passed in as env vars, and the worker code honors them when computing bucket keys. A bug or a malicious image could in principle write to another tenant's prefix. This matches today's RWX-PVC model (one extractor pod with a single mount serving all tenants) and is not a regression. **For a future production-multi-tenant world, per-tenant MinIO identities provisioned at tenant-creation time would close this gap** — tracked as a follow-up, not blocking v1. The v1 trust boundary is documented so design phase can decide whether to harden earlier.
 
 ### 8.3 Observability
 
@@ -724,6 +791,8 @@ Per §4.9.
 
 ## 9. Open Questions
 
+- **HPA metric for atlas-renders**: user direction is to defer this to design phase. Design must verify whether the cluster has a Prometheus Adapter or KEDA available (preferred metric: per-pod request-rate against `atlas_renders_requests_total`); if not, fall back to a combined CPU + memory HPA. Document the choice in design.md.
+- **atlas-minio-init authentication**: choose between `mittwald/kubernetes-replicator` mirroring `minio-root-creds` from the `minio` namespace into the atlas namespace, vs. a `SealedSecret` checked into the manifests. Design phase verifies which mechanism the cluster already supports.
 - **MinIO single-drive durability**: the cluster MinIO is single-node single-drive on Longhorn. With this task, MinIO becomes the canonical store for game-data artifacts. Should the design phase add an erasure-coded or replicated MinIO topology? Recovery story today is "re-extract from raw `.wz`", which still works post-cutover.
 - **Baseline-restore atomicity**: resolved per §6.1 — one transaction per table, not one transaction overall. Restore is idempotent (DELETE-then-COPY); failure mid-restore is recoverable by re-calling restore.
 - **Map.wz render coverage**: now resolved by going lazy. Maps that fail to composite return 500 from atlas-renders and the UI displays its existing failure placeholder; no eager-render success-rate concern blocks ingest.
@@ -731,7 +800,7 @@ Per §4.9.
 - **Atlas size budget**: rough estimate is 20–30k equip atlases per version at a few KB each, plus ~5k icons, plus map renders (potentially MB each). Validate against an actual v83 Character.wz + Map.wz before committing the design.
 - **Manifest schema versioning policy**: documented as additive-only in §6.2. Confirm in design.
 - **Service-worker cache invalidation**: `public/sw-character-cache.js` caches renders by URL. If a render's bytes change (e.g., from an atlas re-pack), the URL stays the same and the SW serves stale bytes. Design must specify the cache-busting strategy (version in URL? content hash in URL? SW cache versioning?).
-- **`docker-compose` MinIO healthcheck timing**: `minio-init` must run after MinIO is ready but before atlas-data starts. Design must specify the healthcheck or `depends_on: condition: service_healthy` chain.
+- **`docker-compose` MinIO healthcheck timing**: `minio-init` must run after MinIO is ready but before atlas-data starts. Design must specify the healthcheck or `depends_on: condition: service_completed_successfully` chain.
 - **PR-env failure modes**: what happens if `baseline/restore` is invoked but no canonical baseline exists yet? Block bootstrap with a clear error (defaulting decision favors visible failure over silent slow paths), or fall back to `full` mode automatically? Design pick. Resolved partially: the cutover itself sidesteps the cold-cluster case by publishing the baseline from the cutover PR's own ephemeral env (§2 goals) before merge.
 - **`tools/task-numbers.sh` `next` exits 1 with `set -e`**, and the scan misses remote-tracking branches (caught the collision with task-032-dynamic-service-config in this task's creation). Out of scope here; tracked for a separate task.
 
@@ -756,8 +825,25 @@ Per §4.9.
 - [ ] Job template has `ttlSecondsAfterFinished: 3600`.
 - [ ] Manifest JSON serialization sorts map keys (verified by a "pack twice, byte-compare manifest" test).
 - [ ] atlas-data Dockerfile pins the Go minor version (not `golang:latest`); a CI step asserts the pin.
+- [ ] atlas-renders Dockerfile lists `libs/atlas-wz` in all four CLAUDE.md-mandated locations; `docker build -f services/atlas-renders/Dockerfile .` from the worktree root succeeds.
+- [ ] `atlas-minio-init` Job runs as a `PreSync` hook (or sync wave -2); cold-deploy of the cutover PR does not produce CrashLoopBackOff on atlas-data or atlas-renders waiting for the `atlas-minio-credentials` Secret.
+- [ ] CI schema-version fingerprint check fails when a migration changes any of the 6 dumped tables or `tenant_baselines` without bumping `SCHEMA_FINGERPRINT_V<N>`.
+- [ ] `tenant_baselines` table created via migration; populated by `baseline/restore`; cleared by `DELETE /api/data/tenants/<id>`.
+- [ ] MinIO image tag pinned in `~/source/k3s/bee/minio.yml` AND `deploy/compose/docker-compose.core.yml`; both reference the same tag.
+- [ ] Cutover smoke-test list (run end-to-end in the cutover PR's ephemeral env before merge):
+  - Operator flow: select Canonical scope → upload WZ zip → process → publish baseline. Verify dump in `atlas-canonical/baseline/regions/<region>/versions/<v>/`.
+  - Switch to a fresh tenant context → click Restore Canonical Baseline → verify `documentCount` matches the canonical tenant's pre-publish row count.
+  - Render a character (cold compositor cache): SSIM ≥ 0.995 vs. pre-cutover baseline. Re-render (warm cache): served from MinIO via atlas-ingress with `Cache-Control` header.
+  - Render a map (cold composite): atlas-renders produces the PNG and PUTs to `atlas-renders/tenants/<id>/...`. Re-request (warm): MinIO 200 in < 50 ms.
+  - Fetch an icon: per-tenant probe returns 404, fallback to shared returns 200, both within atlas-ingress's regex routing.
+  - Tenant cleanup: `DELETE /api/data/tenants/<id>` purges Postgres rows + MinIO prefixes + `tenant_baselines` row.
+  - Production-tenant flow: teardown the existing production tenant, restore from canonical baseline, smoke-test the resulting deployment as a normal Atlas client.
+  - REST-restart-mid-Job: kill the atlas-data REST pod during an active ingest; verify recovery via Job label-selector on restart.
+  - Concurrent ingest: two `POST /api/data/process` calls for the same `(scope, region, version)` — second returns 202 with the existing Job ID, no second Job is created.
+  - Watchdog: induce a stuck Job (sleep in worker); verify `GET /api/data/process` surfaces the stuck state after `INGEST_WATCHDOG_TIMEOUT_SECONDS`.
+  - Failure-path: MinIO temporarily unavailable mid-render → atlas-renders returns 503 with `Retry-After`. MinIO unavailable mid-PUT → render still streamed, `atlas_renders_minio_put_failures_total` increments.
 - [ ] `docker-compose` updated: adds MinIO + bucket init, removes extractor + assets, adds atlas-renders. `docker compose up` (plus a one-time `seed-canonical.sh`) produces a working local stack.
-- [ ] `atlas-pr-bootstrap`'s `bootstrap.sh` updated for `BOOTSTRAP_MODE=baseline` (default) and `BOOTSTRAP_MODE=full`. Auto-detection: if PR diff touches `libs/atlas-wz/` or `services/atlas-data/atlas.com/data/`, force `full`. New `bootstrap-canonical.sh` for operator publish. `cleanup.sh` calls `DELETE /api/data/tenants/<tenantId>` for the PR tenant. `baseline` mode end-to-end ≤ 60 s against a pre-published baseline (verified in a compose smoke test).
+- [ ] `atlas-pr-bootstrap`'s `bootstrap.sh` updated for `BOOTSTRAP_MODE=baseline` (default) and `BOOTSTRAP_MODE=full`. Auto-detection: if PR diff touches `libs/atlas-wz/` or `services/atlas-data/atlas.com/data/`, force `full`. `cleanup.sh` calls `DELETE /api/data/tenants/<tenantId>` for the PR tenant. `baseline` mode end-to-end ≤ 60 s against a pre-published baseline (verified in a compose smoke test). Canonical publish is the SetupPage UI flow; no `bootstrap-canonical.sh` script.
 - [ ] `POST /api/data/baseline/publish` produces a deterministic dump (re-run yields identical SHA-256 for unchanged inputs). Dump format matches §6.1.
 - [ ] `POST /api/data/baseline/restore` is idempotent: second call returns `204 No Content`; concurrent calls for the same target tenant serialize via Redis lock (no double-insert).
 - [ ] `DELETE /api/data/tenants/<tenantId>` purges Postgres rows + MinIO prefixes; refuses canonical UUID with 403; integration-tested via `atlas-pr-bootstrap cleanup.sh`.
@@ -782,7 +868,7 @@ Per §4.9.
 | `atlas-renders` (new) | Composites character renders from MinIO atlases. No WZ parser. |
 | `atlas-ingress` | routes.conf updated for MinIO upstream and character-render path detection. |
 | `atlas-ui` | SetupPage drops the "Run Extraction" row, repoints the upload row to `/api/data/wz`, adds two conditional rows for baseline restore/publish. URL builders unchanged. |
-| `atlas-pr-bootstrap` | `bootstrap.sh` rewritten for `BOOTSTRAP_MODE` (baseline-mode default). New `bootstrap-canonical.sh`. `cleanup.sh` gains `tenant-purge` step calling `DELETE /api/data/tenants/<tenantId>`. |
+| `atlas-pr-bootstrap` | `bootstrap.sh` rewritten for `BOOTSTRAP_MODE` (baseline-mode default; full-mode auto-detected from PR diff). `cleanup.sh` gains `tenant-purge` step calling `DELETE /api/data/tenants/<tenantId>`. Canonical publish is the SetupPage UI flow; no separate script. |
 | `libs/atlas-wz` (new) | Shared parser + canvas + atlas packer + map render. |
 | `deploy/k8s` | Three PVCs deleted; two Deployments deleted; one added (`atlas-renders`). |
 | `deploy/compose` | MinIO + init added; extractor + assets removed; atlas-renders added; volume mounts removed from atlas-data. |

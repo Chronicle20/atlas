@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2101005,
+      "startState": "welcome",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I thought #rAriant#k was amazing, but Valvendale is just SUPERB! There are so many different landscapes and forms of life. Like #b#ethose weird slimes outside of town#n#k... those are just WEIRD!"
+          },
+          "id": "welcome",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2101005",
+    "type": "npc-conversation"
+  }
+}

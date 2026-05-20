@@ -3,7 +3,7 @@
     "version": "1.1"
   },
   "data": {
-    "type": "reactors",
+    "type": "reactor-drop",
     "id": "2212001",
     "relationships": {
       "drops": {
@@ -31,7 +31,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2212001"
           }
         }
@@ -48,7 +48,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2212001"
           }
         }

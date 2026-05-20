@@ -3,7 +3,7 @@
     "version": "1.1"
   },
   "data": {
-    "type": "reactors",
+    "type": "reactor-drop",
     "id": "2612004",
     "relationships": {
       "drops": {
@@ -72,7 +72,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -88,7 +88,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -104,7 +104,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -120,7 +120,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -136,7 +136,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -152,7 +152,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -168,7 +168,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -184,7 +184,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -200,7 +200,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -216,7 +216,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -232,7 +232,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }
@@ -248,7 +248,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2612004"
           }
         }

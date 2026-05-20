@@ -1,0 +1,330 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201021,
+      "startState": "checkCurrentMap",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "680000401"
+                  }
+                ],
+                "nextState": "menuFromPinata"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "680000400"
+                  }
+                ],
+                "nextState": "menuFromHuntingGround"
+              },
+              {
+                "conditions": [],
+                "nextState": "menuFromOther"
+              }
+            ]
+          },
+          "id": "checkCurrentMap",
+          "type": "genericAction"
+        },
+        {
+          "id": "menuFromPinata",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selection": "2"
+                },
+                "nextState": "warpBackToHuntingGround",
+                "text": "Please warp me back to the training grounds."
+              },
+              {
+                "nextState": "goodbye",
+                "text": "Exit"
+              }
+            ],
+            "title": "Hello, do you want to go back now? Returning here again will cost you #rother 7 keys#k."
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "menuFromHuntingGround",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selection": "1"
+                },
+                "nextState": "checkKeys",
+                "text": "I have 7 keys. Bring me to smash boxes"
+              },
+              {
+                "context": {
+                  "selection": "2"
+                },
+                "nextState": "warpOut",
+                "text": "Please warp me out."
+              },
+              {
+                "nextState": "goodbye",
+                "text": "Exit"
+              }
+            ],
+            "title": "Hello, where would you like to go?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "menuFromOther",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selection": "0"
+                },
+                "nextState": "checkPass",
+                "text": "Untamed Hearts Hunting Ground"
+              },
+              {
+                "context": {
+                  "selection": "2"
+                },
+                "nextState": "warpOut",
+                "text": "Please warp me out."
+              },
+              {
+                "nextState": "goodbye",
+                "text": "Exit"
+              }
+            ],
+            "title": "Hello, where would you like to go?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Goodbye then."
+          },
+          "id": "goodbye",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4000313",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "warpToHuntingGround"
+              },
+              {
+                "conditions": [],
+                "nextState": "noPass"
+              }
+            ]
+          },
+          "id": "checkPass",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "It seems like you lost your #b#t4000313##k. I'm sorry, but I can't let you proceed to the hunting grounds without that."
+          },
+          "id": "noPass",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "680000400",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToHuntingGround",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031217",
+                    "type": "item",
+                    "value": "7"
+                  }
+                ],
+                "nextState": "consumeKeysAndWarp"
+              },
+              {
+                "conditions": [],
+                "nextState": "noKeys"
+              }
+            ]
+          },
+          "id": "checkKeys",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "It seems like you don't have 7 Keys. Kill the cakes and candles in the Untamed Heart Hunting Ground to get keys."
+          },
+          "id": "noKeys",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031217",
+                  "quantity": "7"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "680000401",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "consumeKeysAndWarp",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "680000500",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpOutFarewell"
+              }
+            ]
+          },
+          "id": "warpOut",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Goodbye. I hope you enjoyed the wedding!"
+          },
+          "id": "warpOutFarewell",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "680000400",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpBackToHuntingGround",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9201021",
+    "type": "npc-conversation"
+  }
+}

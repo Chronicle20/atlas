@@ -3,7 +3,7 @@
     "version": "1.1"
   },
   "data": {
-    "type": "reactors",
+    "type": "reactor-drop",
     "id": "2112010",
     "relationships": {
       "drops": {
@@ -39,7 +39,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2112010"
           }
         }
@@ -55,7 +55,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2112010"
           }
         }
@@ -71,7 +71,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2112010"
           }
         }
@@ -87,7 +87,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2112010"
           }
         }

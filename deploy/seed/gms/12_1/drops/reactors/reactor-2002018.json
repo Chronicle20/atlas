@@ -3,7 +3,7 @@
     "version": "1.1"
   },
   "data": {
-    "type": "reactors",
+    "type": "reactor-drop",
     "id": "2002018",
     "relationships": {
       "drops": {
@@ -123,7 +123,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -139,7 +139,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -155,7 +155,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -171,7 +171,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -187,7 +187,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -203,7 +203,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -219,7 +219,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -235,7 +235,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -251,7 +251,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -267,7 +267,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -283,7 +283,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -299,7 +299,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -315,7 +315,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -331,7 +331,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -347,7 +347,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -363,7 +363,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -379,7 +379,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -395,7 +395,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -411,7 +411,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -427,7 +427,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -443,7 +443,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -459,7 +459,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -475,7 +475,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -491,7 +491,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }
@@ -508,7 +508,7 @@
       "relationships": {
         "reactors": {
           "data": {
-            "type": "reactors",
+            "type": "reactor-drop",
             "id": "2002018"
           }
         }

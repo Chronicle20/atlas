@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2040041,
+      "startState": "intro",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Try to find the right combination of numbers to reach the top."
+          },
+          "id": "intro",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2040041",
+    "type": "npc-conversation"
+  }
+}

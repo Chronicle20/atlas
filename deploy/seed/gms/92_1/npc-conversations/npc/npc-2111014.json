@@ -1,0 +1,54 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111014,
+      "startState": "checkQuest",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3311",
+                    "type": "questStatus",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "showDiary"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The diary of Dr. De Lang. A lot of formulas and pompous scientific texts can be found all way through the pages."
+          },
+          "id": "showDiary",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2111014",
+    "type": "npc-conversation"
+  }
+}

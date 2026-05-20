@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9000007,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Just a kid... Don't talk to me..."
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9000007",
+    "type": "npc-conversation"
+  }
+}

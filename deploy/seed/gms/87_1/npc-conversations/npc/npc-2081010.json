@@ -1,0 +1,55 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2081010,
+      "startState": "askExit",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "warp",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Do you want to exit the area? If you quit, you will need to start this task from the scratch."
+          },
+          "id": "askExit",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "240010400",
+                  "portalName": "st00"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2081010",
+    "type": "npc-conversation"
+  }
+}

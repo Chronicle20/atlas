@@ -50,8 +50,10 @@ func main() {
 		if err != nil {
 			fail("read %s: %v", name, err)
 		}
+		dec := json.NewDecoder(bytes.NewReader(b))
+		dec.UseNumber()
 		var attrs map[string]any
-		if err := json.Unmarshal(b, &attrs); err != nil {
+		if err := dec.Decode(&attrs); err != nil {
 			fail("parse %s: %v", name, err)
 		}
 		idVal, ok := attrs[*idField]

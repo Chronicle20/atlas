@@ -32,6 +32,13 @@ func (i *Image) Name() string {
 	return i.name
 }
 
+// File returns the WZ file that backs this image, or nil for in-memory images
+// constructed via NewParsedImage. Required by callers that need to dereference
+// canvas data (ReadCanvasData lives on *File).
+func (i *Image) File() *File {
+	return i.wzFile
+}
+
 // Properties returns the parsed properties of this image. Parses on first access (lazy).
 func (i *Image) Properties() []property.Property {
 	if !i.parsed {

@@ -223,12 +223,48 @@ data:
       proxy_pass http://$u$request_uri;
     }
 
-    location ~ ^/api/assets(/.*)?$ {
-      set $u "atlas-assets.${POD_NAMESPACE}.svc.cluster.local:8080";
-      # When proxy_pass contains a URI, nginx does not automatically forward the
-      # original query string — character renders rely on ?skin=&hair=&items=...
-      # so we must re-append it explicitly.
-      proxy_pass http://$u$1$is_args$args;
+    # 1. Character render (most specific; must match before generic assets).
+    location "~ ^/api/assets/(?<tenant>[^/]+)/(?<region>[^/]+)/(?<v>[0-9]+\.[0-9]+)/character/(?<hash>[a-f0-9]{32,64})\.png$" {
+      set $major ""; set $minor "";
+      if ($v ~ ^(?<maj>[0-9]+)\.(?<min>[0-9]+)$) { set $major $maj; set $minor $min; }
+      set $u "atlas-renders.${POD_NAMESPACE}.svc.cluster.local:8080";
+      proxy_set_header TENANT_ID     $tenant;
+      proxy_set_header REGION        $region;
+      proxy_set_header MAJOR_VERSION $major;
+      proxy_set_header MINOR_VERSION $minor;
+      proxy_pass http://$u/api/wz/character/render/$tenant/$region/$v/$hash.png$is_args$args;
+      add_header Cache-Control "public, max-age=86400, immutable" always;
+    }
+
+    # 2. Map render (composite-on-miss; MinIO serves cache hits).
+    location ~ ^/api/assets/(?<t>[^/]+)/(?<r>[^/]+)/(?<v>[0-9]+\.[0-9]+)/map/(?<mapid>[0-9]+)/render\.png$ {
+      set $u "minio.${POD_NAMESPACE}.svc.cluster.local:9000";
+      rewrite ^ /atlas-renders/tenants/$t/regions/$r/versions/$v/map/$mapid/render.png break;
+      proxy_intercept_errors on;
+      error_page 404 = @maprender_miss;
+      proxy_pass http://$u;
+      add_header Cache-Control "public, max-age=86400, immutable" always;
+    }
+    location @maprender_miss {
+      set $u "atlas-renders.${POD_NAMESPACE}.svc.cluster.local:8080";
+      proxy_pass http://$u/api/wz/map/render/$t/$r/$v/$mapid/render.png;
+      add_header Cache-Control "public, max-age=86400, immutable" always;
+    }
+
+    # 3. Generic assets — per-tenant → shared fallback against MinIO.
+    location ~ ^/api/assets/(?<t>[^/]+)/(?<r>[^/]+)/(?<v>[0-9]+\.[0-9]+)/(?<rest>.+)$ {
+      set $u "minio.${POD_NAMESPACE}.svc.cluster.local:9000";
+      rewrite ^ /atlas-assets/tenants/$t/regions/$r/versions/$v/$rest break;
+      proxy_intercept_errors on;
+      error_page 404 = @shared_fallback;
+      proxy_pass http://$u;
+      add_header Cache-Control "public, max-age=86400" always;
+    }
+    location @shared_fallback {
+      set $u "minio.${POD_NAMESPACE}.svc.cluster.local:9000";
+      rewrite ^ /atlas-assets/shared/regions/$r/versions/$v/$rest break;
+      proxy_pass http://$u;
+      add_header Cache-Control "public, max-age=86400" always;
     }
 
     location ~ ^/api/accounts(/.*)?$ {
@@ -256,18 +292,19 @@ data:
       proxy_pass http://$u$request_uri;
     }
 
-    location ~ ^/api/data(/.*)?$ {
+    # 4. WZ upload route (large body, no buffering). Prefix match wins over the regex catch-all below.
+    location /api/data/wz {
       set $u "atlas-data.${POD_NAMESPACE}.svc.cluster.local:8080";
-      proxy_pass http://$u$request_uri;
-    }
-
-    location ~ ^/api/wz(/.*)?$ {
-      set $u "atlas-wz-extractor.${POD_NAMESPACE}.svc.cluster.local:8080";
       client_max_body_size 4G;
       proxy_request_buffering off;
       proxy_read_timeout 3600;
       proxy_send_timeout 3600;
       send_timeout 3600;
+      proxy_pass http://$u$request_uri;
+    }
+
+    location ~ ^/api/data(/.*)?$ {
+      set $u "atlas-data.${POD_NAMESPACE}.svc.cluster.local:8080";
       proxy_pass http://$u$request_uri;
     }
 

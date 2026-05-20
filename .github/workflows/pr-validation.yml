@@ -297,6 +297,14 @@ jobs:
           echo "=== Placeholders remaining (expect none) ==="
           grep -rn 'PLACEHOLDER_' deploy/k8s/overlays/pr || echo "(clean)"
 
+      - name: Stamp CATALOG_REVISION (PR)
+        run: |
+          set -e
+          SHA="${{ github.event.pull_request.head.sha }}"
+          for dir in deploy/seed/*/*/; do
+            printf '%s' "$SHA" > "${dir}CATALOG_REVISION"
+          done
+
       - name: Bump image tags for built services
         env:
           SERVICES_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
@@ -333,8 +341,8 @@ jobs:
           git config user.name 'atlas-image-bot'
           git config user.email 'atlas-image-bot@users.noreply.github.com'
 
-          # Stage the substituted overlay + bumped image tags.
-          git add deploy/k8s/overlays/pr
+          # Stage the substituted overlay + bumped image tags + stamped CATALOG_REVISION.
+          git add deploy/k8s/overlays/pr deploy/seed
 
           if git diff --cached --quiet; then
               echo "::warning::No changes to commit — PR overlay was already resolved? Skipping force-push."

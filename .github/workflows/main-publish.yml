@@ -275,6 +275,13 @@ jobs:
           curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64" \
             -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
+      - name: Stamp CATALOG_REVISION
+        run: |
+          set -e
+          for dir in deploy/seed/*/*/; do
+            printf '%s' "$GITHUB_SHA" > "${dir}CATALOG_REVISION"
+          done
+
       - name: Bump newTag for every built service
         env:
           SERVICES_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
@@ -317,7 +324,7 @@ jobs:
           git config user.name 'atlas-image-bot'
           git config user.email 'atlas-image-bot@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add "$OVERLAY"
+          git add "$OVERLAY" deploy/seed
           # Loop prevention is handled at the workflow trigger level via
           # paths-ignore on main-publish.yml's `on.push` — the squash-merge
           # commit will only touch deploy/k8s/overlays/main/kustomization.yaml,

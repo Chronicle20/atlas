@@ -17,6 +17,7 @@ resources:
   - atlas-configurations.yaml
   - atlas-consumables.yaml
   - atlas-data.yaml
+  - atlas-data-ingest-job-template.yaml
   - atlas-drop-information.yaml
   - atlas-drops.yaml
   - atlas-effective-stats.yaml
@@ -32,6 +33,7 @@ resources:
   - atlas-login.yaml
   - atlas-map-actions.yaml
   - atlas-maps.yaml
+  - atlas-minio-init.yaml
   - atlas-merchant.yaml
   - atlas-messages.yaml
   - atlas-messengers.yaml
@@ -49,6 +51,7 @@ resources:
   - atlas-query-aggregator.yaml
   - atlas-quest.yaml
   - atlas-rates.yaml
+  - atlas-renders.yaml
   - atlas-reactor-actions.yaml
   - atlas-reactors.yaml
   - atlas-saga-orchestrator.yaml

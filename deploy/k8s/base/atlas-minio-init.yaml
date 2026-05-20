@@ -1,0 +1,88 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlas-minio-init
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: atlas-minio-init
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: atlas-minio-init
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: atlas-minio-init
+subjects:
+  - kind: ServiceAccount
+    name: atlas-minio-init
+---
+# Cross-namespace Secret mirror: the operator's root creds Secret in the minio
+# namespace is replicated into this namespace by kubernetes-replicator (see
+# design §6.3). The annotation here tells the replicator which source Secret
+# to mirror.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-root-creds
+  annotations:
+    replicator.v1.mittwald.de/replicate-from: minio/minio-root-creds
+type: Opaque
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-minio-init
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      name: atlas-minio-init
+    spec:
+      serviceAccountName: atlas-minio-init
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: minio/mc:latest
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-root-creds
+                  key: rootUser
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-root-creds
+                  key: rootPassword
+            - name: MINIO_ENDPOINT
+              value: "http://minio.minio.svc.cluster.local:9000"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              mc alias set src "$MINIO_ENDPOINT" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+              for b in atlas-wz atlas-assets atlas-renders atlas-canonical; do
+                mc mb --ignore-existing "src/$b"
+              done
+              mc anonymous set download src/atlas-assets
+              mc anonymous set download src/atlas-renders
+              mc anonymous set download src/atlas-canonical
+              for svc in atlas-data atlas-renders; do
+                mc admin user add src "$svc" "$svc-12345" || true
+                mc admin policy attach src readwrite --user "$svc" || true
+              done
+              echo "minio-init complete"

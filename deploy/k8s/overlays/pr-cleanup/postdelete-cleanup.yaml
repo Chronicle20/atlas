@@ -45,8 +45,11 @@ spec:
             - secretRef:
                 name: pihole-credentials
             - secretRef:
-                # New least-privilege PAT (Contents: write on
-                # Chronicle20/atlas + Packages: write on chronicle20/*).
+                # New least-privilege PAT. Fine-grained, scoped to
+                # Chronicle20/atlas with Contents: Read-and-write +
+                # Metadata: Read + account-level Packages: Read-and-write
+                # (or a classic PAT with repo + delete:packages — see
+                # docs/runbooks/ephemeral-pr-deployments.md §9.5).
                 # Replaces ghcr-pat (which carried only packages scope and
                 # 403'd on bot-branch DELETE). Created in cluster-infra
                 # sibling PR; same key name (GHCR_TOKEN) so cleanup.sh

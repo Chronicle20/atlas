@@ -233,17 +233,36 @@ If the PostDelete render fails with `unable to resolve 'bot/pr-<N>-resolved' to 
 
 All Argo CD-related Secrets live in the `argocd` namespace and are templated by `argocd-secrets.yml.example` in the cluster-infra repo. To rotate:
 
-- **`atlas-pr-cleanup-gh-token` (PR-env cleanup PAT).** Used by the PostDelete Job for bot-branch deletion and ghcr image-tag deletion. Fine-grained PAT, scopes: `Contents: write` on `Chronicle20/atlas`, `Packages: write` on `chronicle20/*`, `Metadata: read` on `Chronicle20/atlas`. Expiry ≤ 90 days; operator calendars the next rotation.
+- **`atlas-pr-cleanup-gh-token` (PR-env cleanup PAT).** Used by the PostDelete Job for bot-branch deletion and ghcr image-tag deletion. Fine-grained PAT minted under the `Chronicle20` user account.
+
+  Mint the token at *Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token*:
+
+  - **Resource owner:** `Chronicle20`.
+  - **Repository access:** *Only selected repositories* → `Chronicle20/atlas`.
+  - **Repository permissions:**
+    - **Contents** → *Read and write* — enables `DELETE /repos/Chronicle20/atlas/git/refs/heads/bot/pr-<N>-resolved`.
+    - **Metadata** → *Read-only* (mandatory; auto-selected).
+    - everything else → *No access*.
+  - **Account permissions:**
+    - **Packages** → *Read and write* — enables `DELETE /users/chronicle20/packages/container/<svc>/versions/<vid>` against ghcr.
+    - everything else → *No access*.
+  - **Expiration:** ≤ 90 days; operator calendars the next rotation.
+
+  Rotation procedure:
+
   ```sh
-  # 1. Mint a new PAT on github.com → Settings → Developer settings → Fine-grained PAT.
+  # 1. Mint a new PAT with the scope set above.
   # 2. Update the cluster secret.
   kubectl -n argocd edit secret atlas-pr-cleanup-gh-token   # set key GHCR_TOKEN
   # 3. Update the repo secret used by .github/workflows/pr-cleanup.yml's image-delete step.
   gh secret set GHCR_TOKEN --repo Chronicle20/atlas --body "$NEW_PAT"
   ```
+
   The nightly smoke test (§4.5 / `pr-env-smoke.yml`) will catch a missed half-rotation within 24h.
 
-- **GitHub PAT for Argo source-repo creds:** `kubectl edit secret argocd-repo-creds-chronicle20-atlas -n argocd`, replace `password`. ApplicationSet picks up on next reconcile (~30s). This token does NOT need `Contents: write` (the cleanup PAT above owns branch deletion).
+  **If your GitHub plan does not expose Account-level `Packages` on fine-grained PATs:** mint a classic PAT instead (*Tokens (classic) → Generate new token (classic)*) with the `repo` scope and `delete:packages` (which auto-selects `read:packages`). Classic PATs are broader (whole-user repo write) but reliably support GHCR package deletion. Document the choice when rotating so the next operator knows which type to renew.
+
+- **GitHub PAT for Argo source-repo creds:** `kubectl edit secret argocd-repo-creds-chronicle20-atlas -n argocd`, replace `password`. ApplicationSet picks up on next reconcile (~30s). This token does NOT need `Contents: Read and write` (the cleanup PAT above owns branch deletion).
 
 - **Pi-hole tokens:** `kubectl edit secret pihole-credentials -n argocd`. The PostSync register Job and the PostDelete cleanup Job both read at run-time; rotation takes effect on the next PR sync.
 

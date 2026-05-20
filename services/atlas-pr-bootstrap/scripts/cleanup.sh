@@ -85,8 +85,10 @@ fi
 
 if [ -n "${PR_NUMBER:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then  # ATLAS_STEP=drop-branch
     ATLAS_STEP=drop-branch log info "deleting bot/pr-${PR_NUMBER}-resolved"
-    # Mounted via Secret atlas-pr-cleanup-gh-token (Contents: write on
-    # Chronicle20/atlas + Packages: write on chronicle20/*). 404 is the
+    # Mounted via Secret atlas-pr-cleanup-gh-token. Fine-grained PAT
+    # with repo Contents: Read-and-write on Chronicle20/atlas +
+    # account-level Packages: Read-and-write (or a classic PAT with
+    # repo + delete:packages — see runbook §9.5). 404 is the
     # branch-already-deleted case — treat as success. Other errors are
     # logged warn and do not fail the Job (consistent with the rest of
     # cleanup's || true / xargs -r discipline).

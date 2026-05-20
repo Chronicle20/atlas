@@ -31,7 +31,11 @@ resources:
   - wave0-create-dbs.yaml
   - sync-bootstrap.yaml
   - postsync-pihole-add.yaml
-  - postdelete-cleanup.yaml
+  # Note: the PostDelete cleanup Job intentionally does NOT live here.
+  # It moved to deploy/k8s/overlays/pr-cleanup/ (its own kustomization)
+  # so kustomize's overlay-level `namespace:` directive doesn't override
+  # the Job's `namespace: argocd`. See pr-cleanup/kustomization.yaml
+  # header and task-070/design.md §3.1 (Design A).
 
 patches:
   - path: patches/ingress-host.yaml

@@ -1,8 +1,9 @@
 # Game Data + Asset Pipeline Consolidation onto MinIO — Product Requirements Document
 
-Version: v1
+Version: v2
 Status: Draft
 Created: 2026-05-19
+Updated: 2026-05-19 — v2 clarifies atlas-canonical bucket vs `shared` scope naming; splits ingest into a k8s Job (`MODE=ingest`) with REST creating it (`MODE=rest`) and compose collapsing to one process (`MODE=all`); enumerates SetupPage UI changes that v1 incorrectly claimed were absent.
 
 ---
 
@@ -69,30 +70,45 @@ Non-goals:
 - The existing parser code in `services/atlas-wz-extractor/atlas.com/wz-extractor/{wz,crypto,image,xml}` is moved into the library where useful, deleted where not. The XML emitter is deleted, not moved.
 - Determinism guarantee: `atlas.Pack` produces byte-identical output for identical inputs, including byte-identical PNG encoding (fixed compression level, fixed filter set, sorted child ordering at every level of the layout). This is load-bearing for §4.4's canonical-baseline reuse.
 
-### 4.2 MinIO bucket layout, access policy, and canonical/tenant split
+### 4.2 MinIO bucket layout, access policy, and shared/tenant scope split
 
-Three buckets in the existing `minio` namespace, all served by the existing `minio` Service (cluster DNS `minio.minio.svc.cluster.local:9000`).
+Four buckets in the existing `minio` namespace, all served by the existing `minio` Service (cluster DNS `minio.minio.svc.cluster.local:9000`).
 
 | Bucket | Access | Purpose |
 |---|---|---|
-| `atlas-wz` | private | Raw `.wz` uploads. Key prefix: `<scope>/<region>/<major>.<minor>/<filename>.wz` |
-| `atlas-assets` | anonymous-read | Pre-materialized visual artifacts (icons, atlases, manifests, map renders). |
-| `atlas-renders` | anonymous-read | Composited character paperdoll PNGs. |
+| `atlas-canonical` | anonymous-read | **Operator-published, immutable-per-version artifacts.** Holds bundled `.wz` archives and Postgres baseline dumps. Pre-exists today (currently `atlas.zip` at the root); this task reorganizes its contents by `(region, version)` and adds the baseline dump key. |
+| `atlas-wz` | private | **Non-canonical, per-tenant raw `.wz` uploads** (e.g. a tenant testing a custom Item.wz). Key: `<tenantId>/<region>/<major>.<minor>/<filename>.wz`. |
+| `atlas-assets` | anonymous-read | **Extraction outputs** (icons, atlases, manifests, map renders). Key prefix scoped: `shared/...` or `tenant/<tenantId>/...`. |
+| `atlas-renders` | anonymous-read | **Runtime-composited character paperdolls.** Always per-tenant (a paperdoll references tenant-scoped equip IDs, so cross-tenant reuse is impossible by construction). Key: `<tenantId>/<region>/<version>/character/<hash>.png`. |
 
-`<scope>` is one of:
+**Terminology — keep these distinct in your head:**
 
-- `canonical` — shared across all tenants on the same `(region, version)`. Operator-published once per game version.
-- `tenant/<tenantId>` — per-tenant overrides. Currently unused; reserved for future per-tenant WZ customization.
+- `atlas-canonical` is the **bucket name**. It holds operator-published immutable inputs and outputs (raw `.wz` bundles and baseline Postgres dumps).
+- `shared` is the **scope prefix** inside `atlas-assets`. Artifacts under `shared/` are produced by ingesting the canonical-tenant's WZ archives and are valid for every tenant pinned to the same `(region, version)`.
+- `tenant/<tenantId>` is the **per-tenant scope prefix** inside `atlas-assets`. Reserved for future per-tenant overrides; not exercised by this task.
 
-Asset and render reads follow a per-tenant-then-canonical lookup order. atlas-renders, when building the path to fetch an atlas, first probes `atlas-assets/tenant/<tenantId>/<region>/<version>/...` and falls back to `atlas-assets/canonical/<region>/<version>/...` if the per-tenant key is absent. Probes use HEAD requests; an in-pod LRU records the resolved scope per `(tenant, region, version, partClass)` so the fallback decision is made at most once per cold pod per part class.
+v1 of this PRD overloaded "canonical" for both the bucket and the scope, which is confusing because `atlas-canonical` is a literal bucket already in your cluster. v2 separates them: bucket = `atlas-canonical`, scope = `shared` vs `tenant/<id>`.
 
-For atlas-ingress-served icons (where the URL is built by the UI and the ingress proxies directly to MinIO), the fallback is resolved at the ingress layer via `try_files`-equivalent. See §4.3 for the ingress configuration.
+**Asset lookup order**: atlas-renders, when building the path to fetch an atlas for a given loadout layer, first probes `atlas-assets/tenant/<tenantId>/<region>/<version>/atlases/<partClass>/<id>.png` and falls back to `atlas-assets/shared/<region>/<version>/atlases/<partClass>/<id>.png` on 404. Probes use HEAD; an in-pod LRU records the resolved scope per `(tenant, region, version, partClass)` so the fallback decision is made at most once per cold pod per part class.
+
+For atlas-ingress-served icons (URLs built directly by the UI), the fallback is resolved at the ingress layer. See §4.3.
+
+**`atlas-canonical` bucket layout** (this task):
+
+```
+atlas-canonical/
+  wz/<region>/<major>.<minor>/atlas.zip                          # bundled .wz, versioned
+  baseline/<region>/<major>.<minor>/documents.dump               # Postgres dump from canonical-tenant ingest
+  baseline/<region>/<major>.<minor>/documents.dump.sha256
+```
+
+The pre-existing top-level `atlas-canonical/atlas.zip` is migrated to `atlas-canonical/wz/<region>/<version>/atlas.zip` during cutover; `deploy/k8s/overlays/pr/sync-bootstrap.yaml`'s init container URL is updated in the same PR.
 
 ### 4.3 atlas-ingress routing changes
 
 atlas-ingress (`deploy/shared/routes.conf`) is the single boundary the UI talks to. The two routes that change:
 
-- `/api/assets/(.*)` → atlas-ingress nginx serves from MinIO directly. For each request, it first probes `atlas-assets/tenant/<tenantId>/<region>/<version>/<rest>` and falls back to `atlas-assets/canonical/<region>/<version>/<rest>`. Implementation: nginx `try_files`-style cascade via two `proxy_pass` locations and an `error_page 404 = @canonical` fallback.
+- `/api/assets/(.*)` → atlas-ingress nginx serves from MinIO directly. For each request, it first probes `atlas-assets/tenant/<tenantId>/<region>/<version>/<rest>` and falls back to `atlas-assets/shared/<region>/<version>/<rest>`. Implementation: nginx `try_files`-style cascade via two `proxy_pass` locations and an `error_page 404 = @canonical` fallback.
 - `/api/wz/character/render/(.*)` → atlas-renders Service. The UI continues to build `/api/assets/...` URLs for renders (preserving today's behavior); the ingress detects the `/character/<hash>.png` segment in the assets path and routes it to atlas-renders, which produces the PNG on miss and writes it back to MinIO before responding.
 
 The path detection lives in the ingress regex. The two relevant patterns:
@@ -108,15 +124,15 @@ location ~ ^/api/assets/(?<tenant>[^/]+)/(?<region>[^/]+)/(?<ver>[0-9]+\.[0-9]+)
 }
 
 # Everything else under /api/assets/ is static, served from MinIO with
-# per-tenant→canonical fallback.
+# per-tenant→shared fallback.
 location ~ ^/api/assets/(?<rest>.+)$ {
   rewrite ^ /atlas-assets/tenant/$rest break;
   proxy_intercept_errors on;
-  error_page 404 = @canonical;
+  error_page 404 = @shared;
   proxy_pass http://minio:9000;
 }
-location @canonical {
-  rewrite ^/api/assets/(?<rest>.+)$ /atlas-assets/canonical/$rest break;
+location @shared {
+  rewrite ^/api/assets/(?<rest>.+)$ /atlas-assets/shared/$rest break;
   proxy_pass http://minio:9000;
 }
 ```
@@ -125,17 +141,50 @@ Note: the per-tenant prefix lookup uses the `tenant/<tenantId>` MinIO key shape;
 
 `/api/wz/*` routes other than character render disappear because they were extractor endpoints. The atlas-renders service does not expose anything under `/api/wz/` other than the rendered PNG path (preserved verbatim from task-043).
 
-### 4.4 PR-env bootstrap optimization (canonical baseline + dump restore)
+### 4.4 Ingest topology: REST / Job / compose-collapsed
+
+The atlas-data binary has three runtime modes selected by `MODE` env:
+
+| `MODE` | Process responsibilities | Used by |
+|---|---|---|
+| `rest` | HTTP API only. No Kafka consumers. `POST /api/data/process` creates a Kubernetes Job from a baked template. | k8s production REST Deployment |
+| `ingest` | Kafka consumers + workers + MinIO writers + Postgres writers. No HTTP. Runs to completion, pod exits. | k8s Job created on demand by REST |
+| `all` | HTTP API + Kafka consumers + workers in one process. `POST /api/data/process` publishes a command that the same process consumes inline. | docker-compose; local dev |
+
+The same compiled binary serves all three modes. Mode selection is the only difference at runtime; the Go code paths and Kafka topics are identical across modes.
+
+**Kubernetes shape:**
+
+- `atlas-data` Deployment runs `MODE=rest` with REST-shaped resource limits (small CPU + memory).
+- A `Role`/`RoleBinding` grants the atlas-data ServiceAccount `create`, `get`, `list`, `watch`, `delete` on `batch.Job` in its own namespace only.
+- A `Job` template (PodTemplate, env, resource limits — CPU `2-8`, memory `1-3Gi` matching today's atlas-wz-extractor profile) is baked into the atlas-data ConfigMap or chart. The REST handler instantiates Jobs from the template, parameterized with the current `(tenantId, scope, region, version)`.
+- The Job pod runs `MODE=ingest`, parses the Kafka command(s) for its scope/version, runs every worker (data archives, icons, atlases, map renders), and exits 0 on success.
+- atlas-data REST polls the Job status (or watches via the API) for the `GET /api/data/process` status response.
+
+**Docker-compose shape:**
+
+- atlas-data runs `MODE=all` with one process. No Job, no k8s API dependency. Ingest workers consume Kafka commands published by the REST handler in the same process.
+- Resource limits in compose are not finely tuned; a developer running local ingest accepts that the same process serves REST and parser concurrently.
+
+**Behavioral parity:**
+
+- The REST contract is identical across all three modes. A client cannot tell whether `POST /api/data/process` was satisfied by an in-process worker or a separately-scheduled Job.
+- The Kafka command topic (`COMMAND_TOPIC_DATA`) is the same. In `MODE=all` the publisher and consumer are the same process; in `MODE=rest` + `MODE=ingest` they are different pods.
+- The Postgres + MinIO writes are the same; the worker code path is the same.
+
+**Map.wz rendering happens in the ingest workers**, which means in production it runs **inside the Job pod**, not the REST pod. In compose it runs inside the single `MODE=all` process. v1 of this PRD said "atlas-data ingest workers" without distinguishing the deploy topology, which left ambiguous whether REST or Job ran the heavy work. v2 makes the answer explicit: **Job (k8s) / in-process (compose); never the REST pod.**
+
+### 4.5 PR-env bootstrap optimization (canonical baseline + dump restore)
 
 The dominant cost in `atlas-pr-bootstrap` today is WZ extraction + data processing — ~10 minutes per PR env. Both are deterministic functions of `.wz` content; the output is identical for every PR using the same canonical WZ. This task introduces a baseline-reuse mechanism that bypasses extraction entirely for the canonical path.
 
 **Canonical baseline producer**: a new operator workflow (run once per game version on the cluster's primary tenant or a dedicated "canonical tenant"):
 
-1. Upload `.wz` files via `PATCH /api/data/wz` with `?scope=canonical`.
-2. Trigger `POST /api/data/process?scope=canonical`. atlas-data ingest writes:
+1. Upload `.wz` files via `PATCH /api/data/wz` while authenticated as the canonical tenant (UUID `00000000-0000-0000-0000-000000000000`).
+2. Trigger `POST /api/data/process` for that tenant. atlas-data ingest writes:
    - `documents` rows in Postgres under `tenant_id = '00000000-0000-0000-0000-000000000000'` (the reserved canonical tenant UUID).
    - Search-index rows under the same tenant.
-   - Icons, atlases, manifests, map renders to `atlas-assets/canonical/<region>/<version>/...`.
+   - Icons, atlases, manifests, map renders to `atlas-assets/shared/<region>/<version>/...`.
 3. After successful ingest, atlas-data emits a `pg_dump`-formatted snapshot of the canonical tenant's documents + search indexes to `atlas-canonical/baseline/<region>/<version>/documents.dump` in the existing `atlas-canonical` bucket. Triggered by `POST /api/data/baseline/publish`.
 
 **PR-env consumer**: `atlas-pr-bootstrap` replaces today's "upload → extract → process" sequence with:
@@ -160,12 +209,12 @@ Expected PR-env bootstrap times:
 | `baseline` (default) | n/a | ~10–30 s (Postgres restore + seeds) |
 | `full` | ~10 min | ~10–20 min (extraction + atlas packing; slightly slower than today due to atlas work) |
 
-### 4.5 Ingest model in atlas-data
+### 4.6 Ingest model in atlas-data
 
 `atlas-data` gains an ingest pathway. The existing `POST /api/data/process` Kafka-dispatched worker pool is reused as the orchestration spine; workers source files from MinIO rather than `OUTPUT_XML_DIR`.
 
-- **Upload**: `PATCH /api/data/wz` accepts a zip of `.wz` files for the requesting tenant (headers `TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`; optional `?scope=canonical` for operator-published baselines). Streams entries into `atlas-wz/<scope>/<region>/<version>/<filename>.wz`. Validation matches the current `atlas-wz-extractor` rules: no path separators, no zip-slip, no symlinks, `.wz` extension only.
-- **Trigger**: `POST /api/data/process` (existing endpoint). Lists the `atlas-wz` bucket prefix for that tenant+scope+version and dispatches per-archive Kafka commands. Optional `?scope=canonical` runs against the canonical scope and uses the canonical tenant UUID.
+- **Upload**: `PATCH /api/data/wz` accepts a zip of `.wz` files for the requesting tenant (headers `TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`). Streams entries into `atlas-wz/<tenantId>/<region>/<version>/<filename>.wz`. Validation matches the current `atlas-wz-extractor` rules: no path separators, no zip-slip, no symlinks, `.wz` extension only. The canonical-tenant UUID is a regular tenant value from the bucket's point of view; uploads from it land at `atlas-wz/00000000-0000-0000-0000-000000000000/<region>/<version>/...`.
+- **Trigger**: `POST /api/data/process` (existing endpoint). Lists the `atlas-wz` bucket prefix for the requesting tenant + version and dispatches per-archive Kafka commands. Ingest workers determine the output scope from the requesting `TENANT_ID`: if it matches the canonical UUID, outputs land under `atlas-assets/shared/<region>/<version>/...`; otherwise under `atlas-assets/tenant/<tenantId>/<region>/<version>/...`. No explicit `?scope=` query param.
 - **Worker**: each Kafka-dispatched worker downloads its assigned `.wz` archive to per-pod scratch (`emptyDir`), parses via `libs/atlas-wz`, and:
   1. **Data archives** (Item.wz, Mob.wz, Npc.wz, Map.wz, Skill.wz, Quest.wz, String.wz, etc.): walks the WZ tree, transforms each image into the existing typed domain model, and writes `documents` rows to Postgres (+ search index rows) in the existing transaction shape. **No `.img.xml` intermediate.**
   2. **Icon archives** (Item.wz, Npc.wz, Mob.wz, Reactor.wz, Skill.wz, UI.wz): extracts entity icons via the existing `image.ExtractIcons` logic, ported to `libs/atlas-wz`, and PUTs PNGs to `atlas-assets/<scope>/<region>/<version>/<category>/<id>/icon.png` and (for items/skills/etc.) directly to atlas-ingress-shaped key paths.
@@ -176,7 +225,7 @@ Expected PR-env bootstrap times:
 - **Progress visibility**: `GET /api/data/process` returns the existing JSON:API shape enriched with per-worker status from Redis. Same shape as today, different data source.
 - **Baseline publish / restore**: `POST /api/data/baseline/publish` and `POST /api/data/baseline/restore` per §4.4.
 
-### 4.6 Character render service (`atlas-renders`)
+### 4.7 Character render service (`atlas-renders`)
 
 Repackaged as a standalone Deployment. Code in `services/atlas-renders/atlas.com/renders/`.
 
@@ -191,16 +240,42 @@ Repackaged as a standalone Deployment. Code in `services/atlas-renders/atlas.com
   - Atlases and manifests are immutable per content. A re-extraction for the same `(scope, region, version)` writes byte-identical bytes when inputs are unchanged (per §4.1 determinism guarantee).
   - Rendered character PNGs are loadout-hash-keyed; the cache survives future re-extractions until the version itself is decommissioned. No wipe-on-extract behavior. (This supersedes task-043's wipe-on-extract behavior; that wipe is removed.)
 
-### 4.7 atlas-ui changes
+### 4.8 atlas-ui changes
 
-- **`src/lib/utils/asset-url.ts`**: no shape change. URLs continue to be `${VITE_ASSET_BASE_URL || '/api/assets'}/<tenant>/<region>/<version>/<category>/<id>/icon.png` and the corresponding map-image and character-render shapes. The default `/api/assets` prefix resolves through atlas-ingress to MinIO (per §4.3); production overrides via `VITE_ASSET_BASE_URL` continue to work.
-- **`src/services/api/characterRender.service.ts`**: no change. URL stays `/api/assets/.../character/<hash>.png?...`; the ingress detects the `/character/` segment and routes to atlas-renders.
-- **`public/sw-character-cache.js`** (existing service worker): no change. It caches by URL, and URLs are unchanged.
-- **`useItemData`, `useMobData`, `useSkillData`, `useNpcData`** hooks: no change. They depend on `getAssetIconUrl` which is unchanged.
-- **No env var renames**. `VITE_ASSET_BASE_URL` stays the only knob; in production the variable is empty and `/api/assets` is used.
-- **No new components, no new pages.** This task is invisible to atlas-ui's source other than possibly a CHANGELOG note in its `CLAUDE.md`.
+**Asset URL builder, character-render URL builder, and service worker are unchanged.** URLs stay `${VITE_ASSET_BASE_URL || '/api/assets'}/<tenant>/<region>/<version>/<category>/<id>/icon.png` and `/api/assets/.../character/<hash>.png?...`. atlas-ingress (§4.3) translates them to MinIO + atlas-renders behind the scenes. `public/sw-character-cache.js` caches by URL and is unaffected. Data hooks (`useItemData`, `useMobData`, `useSkillData`, `useNpcData`) and `VITE_ASSET_BASE_URL` are untouched.
 
-### 4.8 atlas-pr-bootstrap changes
+**SetupPage (`src/pages/SetupPage.tsx`) changes — this is the source change v1 incorrectly claimed was absent.** Today the page exposes three buttons against three endpoints:
+
+| Today's row | Endpoint | Fate |
+|---|---|---|
+| Upload WZ | `PATCH /api/wz/input` → atlas-wz-extractor | **Renamed.** Endpoint moves to `PATCH /api/data/wz` (atlas-data). Row label and badge source stay; the underlying React Query hook (`useWzInputStatus`, `useUploadWzFiles`) is repointed to atlas-data. |
+| Run Extraction | `POST /api/wz/extractions` → atlas-wz-extractor | **Deleted.** No standalone extraction artifact exists anymore. The `useExtractionStatus`, `useRunExtraction` hooks and the `extraction.service.ts` module are removed. The "stale uploads" warning banner that compares `wzInput.updatedAt` to `extraction.updatedAt` is deleted with it. |
+| Process Data | `POST /api/data/process` → atlas-data | **Kept.** Endpoint unchanged. Semantics expand to "parse WZ + write Postgres + atlas-pack + map-render + write MinIO," but the client doesn't see the difference. |
+
+The card description rewrites from *"Upload a WZ zip, extract it into XMLs, then ingest the XMLs into atlas-data. Each step is independent."* to something like *"Upload a WZ zip and ingest it into atlas-data."*
+
+**Two new conditional rows** for the baseline workflows:
+
+| New row | Endpoint | Visibility |
+|---|---|---|
+| Restore Canonical Baseline | `POST /api/data/baseline/restore` | Visible when the active tenant has `documentCount == 0` for the current `(region, version)`. Primary path for spinning up a new tenant against a published baseline; this is the same endpoint PR-bootstrap hits. |
+| Publish Canonical Baseline | `POST /api/data/baseline/publish` | Visible only when the active tenant is the canonical tenant (UUID `00000000-0000-0000-0000-000000000000`). Operator workflow. |
+
+Both rows follow the existing `<SetupRow>` shape. Status badges come from `GET /api/data/status` (existing) augmented with `baselineRestoredAt` (new field; nullable timestamp).
+
+**Net source changes in atlas-ui:**
+
+- `src/pages/SetupPage.tsx` — remove Extract row, add two conditional rows, rewrite card description.
+- `src/services/api/extraction.service.ts` — delete.
+- `src/lib/hooks/api/useExtraction.ts` (or equivalent) — delete.
+- `src/services/api/wzInput.service.ts` — repoint endpoint URL from `/api/wz/input` to `/api/data/wz`.
+- `src/services/api/baseline.service.ts` — new; `restore()` and `publish()`.
+- `src/lib/hooks/api/useBaseline.ts` — new; `useBaselineRestore()`, `useBaselinePublish()` mutations.
+- Tests under `__tests__/` updated to match.
+
+The component-level changes are bounded; nothing outside SetupPage and its hooks/services moves.
+
+### 4.9 atlas-pr-bootstrap changes
 
 - `scripts/bootstrap.sh` is rewritten to use `BOOTSTRAP_MODE` (`baseline` default, `full` opt-in).
 - In `baseline` mode: skip `wz-upload` and `wz-extract` steps; call `POST /api/data/baseline/restore` instead of `POST /api/data/process`; same stable-poll pattern against `GET /api/data/status`.
@@ -208,16 +283,16 @@ Repackaged as a standalone Deployment. Code in `services/atlas-renders/atlas.com
 - The `wait-ready` step drops `atlas-wz-extractor` from its readiness list and adds `atlas-renders`.
 - The canonical-baseline producer workflow (`bootstrap-canonical.sh`) is a new sibling script. Run once per game version against the cluster's canonical tenant; emits the dump to `atlas-canonical/baseline/...`. Not invoked from PostSync; run by an operator on demand or wired into a separate Argo Application.
 
-### 4.9 docker-compose changes
+### 4.10 docker-compose changes
 
 Compose currently runs three services with bind-mounted host directories (`tmp/data`, `tmp/assets`, `tmp/wz-input`). The new compose stack:
 
 - **Adds `minio`**: `minio/minio:latest` with a named volume, ports `9000:9000` and `9001:9001` (console). Single-node single-drive matching the cluster pattern. Default creds match `~/source/k3s/bee/minio.yml` for parity (`minioadmin` / `minioadmin12345`).
 - **Adds `minio-init`** as a short-lived sidecar: runs `mc alias set`, `mc mb` for `atlas-wz`, `atlas-assets`, `atlas-renders`, `atlas-canonical`, and `mc anonymous set download` on the public buckets. Healthcheck-gated so other services wait for buckets to exist.
-- **Adds `atlas-renders`**: new Deployment-equivalent service, no volumes.
+- **Adds `atlas-renders`**: new service-equivalent, no volumes.
 - **Removes `atlas-wz-extractor`** service definition.
 - **Removes `atlas-assets`** service definition.
-- **Updates `atlas-data`**: drops `ZIP_DIR` env and the `../../tmp/data` mount. Adds `MINIO_ENDPOINT=http://minio:9000`, `MINIO_BUCKET_WZ=atlas-wz`, `MINIO_BUCKET_ASSETS=atlas-assets`, `MINIO_BUCKET_CANONICAL=atlas-canonical`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`.
+- **Updates `atlas-data`**: drops `ZIP_DIR` env and the `../../tmp/data` mount. Adds `MODE=all` (the compose-only "REST + workers in one process" topology), `MINIO_ENDPOINT=http://minio:9000`, `MINIO_BUCKET_WZ=atlas-wz`, `MINIO_BUCKET_ASSETS=atlas-assets`, `MINIO_BUCKET_CANONICAL=atlas-canonical`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`. No `INGEST_JOB_TEMPLATE_CM` env (not used in `MODE=all`).
 - **Updates `atlas-ingress`**: routes.conf reflects §4.3.
 - **Removes `tmp/data`, `tmp/assets`, `tmp/wz-input`** directories from documentation and `.gitignore` cleanup (they're not in source, but referenced by mounts).
 - A `compose/seed-canonical.sh` companion script runs `bootstrap-canonical.sh` against the local stack to populate the canonical baseline. Documented in `services/atlas-data/README.md` and the new top-level local-dev doc.
@@ -231,7 +306,7 @@ After cutover, `docker compose up` for the full local stack:
 
 The WZ upload path (compose-only, for testing extraction itself) still works: the dev hits `PATCH /api/data/wz` against MinIO via atlas-data.
 
-### 4.10 Retired artifacts and code paths
+### 4.11 Retired artifacts and code paths
 
 After cutover:
 
@@ -257,7 +332,7 @@ Request:
 - `Content-Type: multipart/form-data`
 - Part `zip_file` — flat `.wz` entries.
 - Tenant headers: `TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`.
-- Optional `?scope=canonical` (operator workflows only).
+- (No `?scope=` param. Output scope is derived from the requesting `TENANT_ID` — canonical UUID writes to `shared/`, all others write to `tenant/<id>/`.)
 
 Validation: no path separators, no zip-slip, no symlinks, `.wz` extension only.
 
@@ -297,7 +372,7 @@ Responses: `202 Accepted` (running) / `204 No Content` (already restored) / `404
 
 #### `POST /api/data/process`
 
-Existing endpoint. Workers now read from MinIO (`atlas-wz` bucket) rather than `ZIP_DIR`. Accepts optional `?scope=canonical` for operator-published baselines. Response contract unchanged.
+Existing endpoint. Workers now read from MinIO (`atlas-wz` bucket) rather than `ZIP_DIR`. Output scope is derived from the requesting tenant (canonical UUID → `shared/`; else → `tenant/<id>/`). Response contract unchanged.
 
 #### `GET /api/data/process`
 
@@ -328,7 +403,7 @@ One handler: `/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png`. 
 
 `documents` table unchanged. Five trigram search-index tables unchanged. Ingest writes the same rows by the same DDL.
 
-**Canonical tenant**: the reserved UUID `00000000-0000-0000-0000-000000000000` is the operator-controlled canonical tenant. atlas-data treats it as read-mostly: operator workflows can write via `?scope=canonical`; runtime tenants never write to it. The reserved UUID is already used in compose (`atlas-drops`, `atlas-drop-information` use it as a SERVICE_ID); reusing it for the canonical tenant is intentional — it's the conventional "zero" value.
+**Canonical tenant**: the reserved UUID `00000000-0000-0000-0000-000000000000` is the operator-controlled canonical tenant. atlas-data ingest writes its outputs to the `shared/` scope in `atlas-assets` (and the corresponding `documents` rows in Postgres). Runtime tenants never write to the canonical UUID's row range; the application layer enforces this via a tenant-permission check on `PATCH /api/data/wz`, `POST /api/data/process`, and `POST /api/data/baseline/publish`. The reserved UUID is already used in compose (`atlas-drops`, `atlas-drop-information` use it as a SERVICE_ID); reusing it for the canonical tenant is intentional — it's the conventional "zero" value.
 
 **Baseline restore semantics**: `INSERT INTO documents (...) SELECT ..., '<pr-tenant>' AS tenant_id, ... FROM canonical_documents` — driven by a server-side `documents.dump` (Postgres custom format). Restore uses `pg_restore` semantics: drops + recreates the tenant's existing rows for the affected version before insert, to keep restore deterministic.
 
@@ -366,7 +441,7 @@ One handler: `/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png`. 
 ### 6.3 MinIO object key conventions
 
 ```
-atlas-wz/<scope>/<region>/<major>.<minor>/<filename>.wz
+atlas-wz/<tenantId>/<region>/<major>.<minor>/<filename>.wz
 
 atlas-assets/<scope>/<region>/<major>.<minor>/<category>/<id>/icon.png
 atlas-assets/<scope>/<region>/<major>.<minor>/atlases/<partClass>/<id>.png
@@ -380,7 +455,7 @@ atlas-canonical/baseline/<region>/<major>.<minor>/documents.dump
 atlas-canonical/baseline/<region>/<major>.<minor>/documents.dump.sha256
 ```
 
-`<scope>` = `canonical` or `tenant/<tenantId>`.
+`<scope>` = `shared` or `tenant/<tenantId>`. (The `shared` prefix is populated by canonical-tenant ingest; v1 of this PRD called it `canonical/`, but that overloaded the `atlas-canonical` bucket name.)
 
 `<category>` for icons: `npc`, `mob`, `reactor`, `item`, `skill`, `world-icon`.
 
@@ -399,12 +474,16 @@ TTL refreshed by the running worker; lock freed on completion or failure.
 ### 7.1 `atlas-data`
 
 - Adds dependency on `libs/atlas-wz` and the MinIO Go SDK.
-- New env: `MINIO_ENDPOINT`, `MINIO_BUCKET_WZ`, `MINIO_BUCKET_ASSETS`, `MINIO_BUCKET_CANONICAL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`.
+- New env: `MODE` (`rest|ingest|all`), `MINIO_ENDPOINT`, `MINIO_BUCKET_WZ`, `MINIO_BUCKET_ASSETS`, `MINIO_BUCKET_CANONICAL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`. In k8s: `INGEST_JOB_TEMPLATE_CM` (ConfigMap name holding the Job template).
 - Removes `ZIP_DIR`.
 - New endpoints: `PATCH /api/data/wz`, `GET /api/data/wz`, `POST /api/data/baseline/publish`, `POST /api/data/baseline/restore`.
 - Workers refactored to source files from MinIO; per-domain processors now consume WZ data via `libs/atlas-wz` instead of `.img.xml`.
-- Adds atlas packing for Character.wz and map rendering for Map.wz to the ingest worker set.
+- Adds atlas packing for Character.wz and map rendering for Map.wz to the ingest worker set (running inside the Job in k8s; in-process in compose).
+- In `MODE=rest`: HTTP API runs; Kafka consumers do **not** start. `POST /api/data/process` instantiates a Job from the baked template, parameterized with `(tenantId, region, version)`. The Job pod runs `MODE=ingest`. REST polls Job status for `GET /api/data/process`.
+- In `MODE=ingest`: Kafka consumers start; HTTP server does **not** start. Workers run, then the process exits.
+- In `MODE=all`: HTTP + Kafka consumers in one process; `POST /api/data/process` publishes a command that the same process consumes inline. Today's behavior.
 - Drops `/usr/data` mount from Dockerfile.
+- Adds k8s `Role`/`RoleBinding` for Job creation in atlas-data's own namespace (`MODE=rest` only).
 
 ### 7.2 New service: `atlas-renders`
 
@@ -453,11 +532,12 @@ Per §4.9.
 ### 7.10 Deploy / k8s
 
 - New `atlas-renders.yaml` Deployment + Service.
-- `atlas-data.yaml`: drop `/usr/data` mount + PVC; add MinIO env from secret.
+- `atlas-data.yaml`: drop `/usr/data` mount + PVC; add MinIO env from secret; set `MODE=rest`; add ServiceAccount + `Role`/`RoleBinding` granting `create/get/list/watch/delete` on `batch.Job` in its own namespace.
+- New `atlas-data-ingest-job-template.yaml` ConfigMap: holds the Job spec atlas-data renders when ingest is requested. Resource limits CPU `2-8` / memory `1-3Gi` (today's atlas-wz-extractor profile). The Job pod runs the same atlas-data image with `MODE=ingest` and a single env override (`(tenantId, region, version)`).
 - Remove `atlas-wz-extractor.yaml`, `atlas-assets.yaml`.
 - Drop PVC defs for `atlas-data-pvc`, `atlas-assets-pvc`, `atlas-wz-input-pvc`.
 - atlas-ingress manifest updated to reflect new routes.conf.
-- Note: cluster-level MinIO ingress (allowing direct browser access to MinIO bypassing atlas-ingress) is **not** added in this task; all asset traffic flows through atlas-ingress. Direct-from-browser-to-MinIO is a future optimization deferred behind a CDN decision.
+- Note: cluster-level MinIO ingress (direct browser access bypassing atlas-ingress) is **not** added in this task; all asset traffic flows through atlas-ingress. Direct-from-browser-to-MinIO is a future optimization deferred behind a CDN decision.
 
 ## 8. Non-Functional Requirements
 
@@ -524,7 +604,8 @@ Per §4.9.
 - [ ] `services/atlas-assets/` deleted.
 - [ ] `atlas-data-pvc`, `atlas-assets-pvc`, `atlas-wz-input-pvc` removed from all `deploy/k8s/` overlays.
 - [ ] atlas-ingress (`deploy/shared/routes.conf`) updated: `/api/assets/...` routes to MinIO with per-tenant→canonical fallback; `/api/assets/.../character/...` routes to atlas-renders. `/api/wz/input`, `/api/wz/extractions` removed.
-- [ ] atlas-ui has no source changes beyond optional CHANGELOG / `CLAUDE.md` note. URL shapes preserved.
+- [ ] atlas-ui SetupPage updated: extraction row deleted; upload row repointed to `/api/data/wz`; two conditional rows added for `baseline/restore` (visible when `documentCount == 0`) and `baseline/publish` (visible only for canonical-tenant context). URL builders for assets and character render unchanged.
+- [ ] atlas-data binary respects `MODE=rest|ingest|all`. In `MODE=rest`, `POST /api/data/process` creates a Job from the baked template; in `MODE=ingest`, the process runs workers and exits; in `MODE=all`, REST + workers coexist in one process. End-to-end ingest tested in all three modes.
 - [ ] `docker-compose` updated: adds MinIO + bucket init, removes extractor + assets, adds atlas-renders. `docker compose up` (plus a one-time `seed-canonical.sh`) produces a working local stack.
 - [ ] `atlas-pr-bootstrap`'s `bootstrap.sh` updated for `BOOTSTRAP_MODE=baseline` (default) and `BOOTSTRAP_MODE=full`. New `bootstrap-canonical.sh` for operator publish. `baseline` mode end-to-end ≤ 60 s against a pre-published canonical baseline (verified in a compose smoke test).
 - [ ] `POST /api/data/baseline/publish` produces a deterministic dump (re-run yields identical SHA-256 for unchanged inputs).
@@ -541,12 +622,12 @@ Per §4.9.
 
 | Service | Change |
 |---|---|
-| `atlas-data` | Gains WZ parser via `libs/atlas-wz`. New ingest endpoints, new baseline publish/restore endpoints. Workers read from MinIO. PVC dropped. |
+| `atlas-data` | Gains WZ parser via `libs/atlas-wz`. New ingest endpoints, new baseline publish/restore endpoints. New `MODE` env: `rest` (k8s REST pod, creates Jobs), `ingest` (k8s Job, no HTTP), `all` (compose). Workers read from MinIO. PVC dropped. RBAC for Job creation. |
 | `atlas-wz-extractor` | Deleted. Parser → `libs/atlas-wz`. Render → `atlas-renders`. XML, map, PVC paths deleted outright. |
 | `atlas-assets` | Deleted. atlas-ingress routes `/api/assets/...` to MinIO with per-tenant→canonical fallback. |
 | `atlas-renders` (new) | Composites character renders from MinIO atlases. No WZ parser. |
 | `atlas-ingress` | routes.conf updated for MinIO upstream and character-render path detection. |
-| `atlas-ui` | No source changes. URL shapes preserved. |
+| `atlas-ui` | SetupPage drops the "Run Extraction" row, repoints the upload row to `/api/data/wz`, adds two conditional rows for baseline restore/publish. URL builders unchanged. |
 | `atlas-pr-bootstrap` | `bootstrap.sh` rewritten for `BOOTSTRAP_MODE`. New `bootstrap-canonical.sh`. |
 | `libs/atlas-wz` (new) | Shared parser + canvas + atlas packer + map render. |
 | `deploy/k8s` | Three PVCs deleted; two Deployments deleted; one added (`atlas-renders`). |

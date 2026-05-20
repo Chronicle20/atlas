@@ -267,6 +267,11 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 
 	canvas := image.NewNRGBA(image.Rect(0, 0, CanvasWidth, CanvasHeight))
 	placements := make([]placement, 0, 32)
+	// owners records (templateID, vslot, ownerKind) for every placed template
+	// so applyVslotOcclusion below can resolve cross-template slot conflicts
+	// (e.g. a full helmet's "CpH1H2H3H4H5HfHsHbAe" claim suppressing hair
+	// parts mapped to those codes via the smap).
+	owners := make([]vslotOwner, 0, 8)
 
 	// 2. Body skin. The body img id is the WZ skin id directly (e.g. 2000
 	//    for female skin 0). Heads live under skin+10000 (12000 for skin 0).
@@ -287,12 +292,14 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 	if err := appendBodyParts(&placements, bodyAtlas, bodyID, stance, q.Frame, bodyAnchor); err != nil {
 		return nil, "", false, err
 	}
+	owners = appendOwner(owners, bodyID, bodyAtlas.Manifest.Vslot, ownerBody)
 
 	// 3. Head template. The head atlas always renders at `front/0` per donor
 	//    appendTemplateParts (compositor.go:194-199). It joins via the shared
 	//    `neck` joint against the body parts already placed.
 	if headAtlas, herr := fetchAtlas(ctx, s, tenantID, region, version, bodyPartClass, headID); herr == nil {
 		_ = appendTemplateParts(&placements, headAtlas, headID, bodyPartClass, "front", 0, true, bodyAnchor)
+		owners = appendOwner(owners, headID, headAtlas.Manifest.Vslot, ownerHead)
 	} else {
 		l.WithError(herr).Debugf("no head atlas for skin id %d (continuing)", headID)
 	}
@@ -314,6 +321,7 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 		}
 		rstance, rframe := resolveTemplateStance(atl.Manifest, stance, q.Frame)
 		_ = appendTemplateParts(&placements, atl, uint32(id), pc, rstance, rframe, true, bodyAnchor)
+		owners = appendOwner(owners, uint32(id), atl.Manifest.Vslot, ownerEquipment)
 	}
 
 	// 5. Hair + face. Hair attaches via the head's brow joint; face uses
@@ -322,6 +330,7 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 		if atl, ferr := fetchAtlas(ctx, s, tenantID, region, version, hairPartClass, uint32(q.Hair)); ferr == nil {
 			rstance, rframe := resolveTemplateStance(atl.Manifest, stance, q.Frame)
 			_ = appendTemplateParts(&placements, atl, uint32(q.Hair), hairPartClass, rstance, rframe, true, bodyAnchor)
+			owners = appendOwner(owners, uint32(q.Hair), atl.Manifest.Vslot, ownerHair)
 		} else {
 			l.WithError(ferr).Warnf("missing hair atlas id=%d", q.Hair)
 		}
@@ -330,19 +339,37 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 		if atl, ferr := fetchAtlas(ctx, s, tenantID, region, version, facePartClass, uint32(q.Face)); ferr == nil {
 			rstance, rframe := resolveTemplateStance(atl.Manifest, stance, q.Frame)
 			_ = appendTemplateParts(&placements, atl, uint32(q.Face), facePartClass, rstance, rframe, true, bodyAnchor)
+			owners = appendOwner(owners, uint32(q.Face), atl.Manifest.Vslot, ownerFace)
 		} else {
 			l.WithError(ferr).Warnf("missing face atlas id=%d", q.Face)
 		}
 	}
 
-	// 6. Sort by Z descending so back-most renders first (lower atlases.Z =
+	// 6. vslot/smap occlusion. Resolve the smap sidecar's scope and fetch
+	//    the layer-name → slot-codes map; if either step fails we log and
+	//    continue without occlusion (the visible regression is that bangs
+	//    paint over a full helmet, matching the pre-task baseline). Owners
+	//    must be sorted by precedence (equipment < hair < face < head <
+	//    body) before applyVslotOcclusion runs. Donor:
+	//    characterimage/compositor.go:232-235.
+	smapScope, scopeErr := s.ResolveSmapScope(ctx, tenantID, region, version)
+	if scopeErr != nil {
+		l.WithError(scopeErr).Warn("smap scope resolve failed; vslot occlusion disabled (full helmets will not hide bangs)")
+	} else if smap, smapErr := s.GetSmap(ctx, smapScope, region, version); smapErr != nil {
+		l.WithError(smapErr).Warn("smap fetch failed; vslot occlusion disabled (full helmets will not hide bangs)")
+	} else {
+		sort.SliceStable(owners, func(i, j int) bool { return owners[i].kind < owners[j].kind })
+		placements = applyVslotOcclusion(placements, smap, owners)
+	}
+
+	// 7. Sort by Z descending so back-most renders first (lower atlases.Z =
 	//    more frontward per the donor's zmap convention). Donor:
 	//    characterimage/compositor.go:241-243.
 	sort.SliceStable(placements, func(i, j int) bool {
 		return placements[i].sprite.Z > placements[j].sprite.Z
 	})
 
-	// 7. Blit each placement at `(anchor - origin)` top-left, cropping the
+	// 8. Blit each placement at `(anchor - origin)` top-left, cropping the
 	//    sprite's subrect out of the per-templateId atlas image. Donor:
 	//    characterimage/compositor.go:244-252.
 	for _, p := range placements {

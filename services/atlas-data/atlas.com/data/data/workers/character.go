@@ -88,6 +88,49 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	if err := emitCharacterAtlases(ctx, l, mc, file, p); err != nil {
 		return fmt.Errorf("emit character atlases: %w", err)
 	}
+
+	// Cross-archive sidecar: Base.wz/smap.img drives the equipment-vs-hair
+	// occlusion filter (full helmets hiding bangs). The fetch is best-effort
+	// because Base.wz is not always available in test fixtures — but without
+	// smap.json downstream, atlas-renders disables occlusion and bangs paint
+	// over helmets. The warning logged below makes that consequence visible.
+	if err := emitSmapSidecar(ctx, l, mc, p); err != nil {
+		l.WithError(err).Warn("smap sidecar emit failed; vslot-based occlusion will be disabled in atlas-renders")
+	}
+	return nil
+}
+
+// emitSmapSidecar fetches Base.wz, calls charparts.ExtractSmap, and PUTs the
+// resulting layer-name → slot-codes map as character-meta/smap.json under the
+// worker's scope/region/version prefix. atlas-renders reads this sidecar to
+// drive the vslot/smap occlusion filter that hides hair bangs behind a full
+// helmet.
+//
+// Errors from the cross-archive fetch and from a missing smap.img are wrapped
+// and returned so the caller logs them as warnings — none of them are fatal
+// to the Character ingest (the atlas PNG+JSON pairs were already emitted).
+func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
+	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")
+	if err != nil {
+		return fmt.Errorf("fetch Base.wz: %w", err)
+	}
+	defer cleanup()
+
+	smap, err := charparts.ExtractSmap(base)
+	if err != nil {
+		return fmt.Errorf("extract smap: %w", err)
+	}
+
+	data, err := charparts.MarshalSmap(smap)
+	if err != nil {
+		return fmt.Errorf("marshal smap: %w", err)
+	}
+
+	key := fmt.Sprintf("%s/character-meta/smap.json", minioAssetPrefix(p))
+	if err := putJSON(ctx, mc, key, data); err != nil {
+		return fmt.Errorf("put %s: %w", key, err)
+	}
+	l.Infof("Character smap sidecar emitted: key=%s entries=%d", key, len(smap))
 	return nil
 }
 

@@ -92,6 +92,34 @@ func serializeArchive(l logrus.FieldLogger, p Params, file *wz.File) (string, er
 	return root, nil
 }
 
+// fetchArchive downloads <BucketWZ>/<scope>/regions/<region>/versions/<x.y>/<archive>
+// from MinIO into ScratchDir and opens it as a wz.File. Returns the parsed
+// file along with a cleanup func the caller MUST invoke (defer) to close the
+// file and remove the scratch download. Unlike fetchAndSerializeArchive, this
+// helper skips the XML serialization step — workers that only need to read a
+// single .img out of the archive (smap.img from Base.wz, gauge data from
+// UI.wz) avoid the cost of materializing the whole tree to disk.
+func fetchArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (*wz.File, func(), error) {
+	if mc == nil {
+		return nil, func() {}, fmt.Errorf("minio client unavailable")
+	}
+	key := fmt.Sprintf("%s/regions/%s/versions/%d.%d/%s", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion, archive)
+	localPath, err := mc.DownloadToScratch(ctx, mc.Cfg().BucketWZ, key, p.ScratchDir)
+	if err != nil {
+		return nil, func() {}, fmt.Errorf("download %s: %w", key, err)
+	}
+	f, err := wz.Open(l, localPath)
+	if err != nil {
+		_ = os.Remove(localPath)
+		return nil, func() {}, fmt.Errorf("open %s: %w", localPath, err)
+	}
+	cleanup := func() {
+		f.Close()
+		_ = os.Remove(localPath)
+	}
+	return f, cleanup, nil
+}
+
 // fetchAndSerializeArchive downloads <BucketWZ>/<scope>/regions/<region>/versions/<x.y>/<archive>
 // from MinIO into ScratchDir, opens it as a wz.File, and serializes it next to
 // the current worker's other archives so domain readers can resolve

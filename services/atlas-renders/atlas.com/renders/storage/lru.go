@@ -25,13 +25,20 @@ type Caches struct {
 	Atlas *lru.Cache[string, AtlasEntry]
 	Map   *lru.Cache[string, MapEntry]
 	Scope *lru.Cache[string, string]
+	// Smap caches the per-(scope, region, version) character-meta/smap.json
+	// payload (layer-name → slot-codes string). The atlas-data Character
+	// worker emits one smap.json per ingest; on read it's a near-singleton —
+	// a 16-entry cache covers multi-tenant deployments comfortably.
+	Smap *lru.Cache[string, map[string]string]
 }
 
-// NewCaches allocates the three LRU caches. Sizes are tunables; the design
-// suggests 256/64/1024 for atlas/map/scope respectively.
+// NewCaches allocates the four LRU caches. Sizes are tunables; the design
+// suggests 256/64/1024 for atlas/map/scope and a small 16 for smap (one
+// payload per active tenant version).
 func NewCaches(atlasSize, mapSize, scopeSize int) *Caches {
 	a, _ := lru.New[string, AtlasEntry](atlasSize)
 	m, _ := lru.New[string, MapEntry](mapSize)
 	s, _ := lru.New[string, string](scopeSize)
-	return &Caches{Atlas: a, Map: m, Scope: s}
+	sm, _ := lru.New[string, map[string]string](16)
+	return &Caches{Atlas: a, Map: m, Scope: s, Smap: sm}
 }

@@ -12,6 +12,7 @@ import (
 
 	minio "atlas-data/storage/minio"
 
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -83,16 +84,36 @@ func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) e
 	}
 	defer conn.Close()
 	return conn.Raw(func(driverConn any) error {
-		return runCopyOut(driverConn, table, tw)
+		return runCopyOut(ctx, driverConn, table, tw)
 	})
 }
 
 // runCopyOut writes `COPY (SELECT * FROM <table> WHERE tenant_id = <canonical> ORDER BY id) TO STDOUT (FORMAT binary)`
 // into a tar entry <table>.binary.
 //
-// STUB: not yet implemented; see task-071 follow-up (requires pgx CopyTo against the gorm postgres connection).
-func runCopyOut(driverConn any, table string, tw *tar.Writer) error {
-	return fmt.Errorf("runCopyOut: not yet implemented; see task-071 follow-up (requires pgx CopyTo against the gorm postgres connection)")
+// The full canonical subset of one table is buffered in memory (bounded by the
+// PRD-mandated ~150 MB cap on canonical data) so the tar entry can be written
+// with a known Size header.
+func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Writer) error {
+	pgxConn, ok := driverConn.(*stdlib.Conn)
+	if !ok {
+		return fmt.Errorf("expected *stdlib.Conn, got %T", driverConn)
+	}
+	var buf bytes.Buffer
+	sql := fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY id) TO STDOUT (FORMAT binary)`,
+		table, CanonicalTenantUUID)
+	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, sql); err != nil {
+		return err
+	}
+	if err := tw.WriteHeader(&tar.Header{
+		Name: table + ".binary",
+		Size: int64(buf.Len()),
+		Mode: 0o644,
+	}); err != nil {
+		return err
+	}
+	_, err := tw.Write(buf.Bytes())
+	return err
 }
 
 func strReader(s string) io.Reader { return bytes.NewReader([]byte(s)) }

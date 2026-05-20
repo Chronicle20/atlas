@@ -9,11 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	minio "atlas-data/storage/minio"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -35,6 +37,10 @@ type Restorer struct {
 
 // Restore is destructive: DELETE rows for target tenant, COPY-FROM with rewrite,
 // ANALYZE, UPSERT tenant_baselines.
+//
+// The sha256 of the downloaded dump is verified against the sidecar BEFORE any
+// DB mutation. The dump is staged to a temp file so the tar reader can be
+// rewound after hashing without re-downloading.
 func (r Restorer) Restore(ctx context.Context, region string, major, minor int, target uuid.UUID) error {
 	sumBytes, err := readMinioObject(ctx, r.MC, r.MC.Cfg().BucketCanonical, ShaKey(region, major, minor))
 	if err != nil {
@@ -42,15 +48,34 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 	}
 	expectedSum := strings.TrimSpace(string(sumBytes))
 
+	// 1) Download and hash BEFORE any mutation.
 	dumpRC, err := r.MC.Get(ctx, r.MC.Cfg().BucketCanonical, DumpKey(region, major, minor))
 	if err != nil {
 		return err
 	}
 	defer dumpRC.Close()
-	h := sha256.New()
-	tr := tar.NewReader(io.TeeReader(dumpRC, h))
 
-	// header.json first
+	tmp, err := os.CreateTemp("", "baseline-*.tar")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(io.MultiWriter(tmp, h), dumpRC); err != nil {
+		return err
+	}
+	actualSum := hex.EncodeToString(h.Sum(nil))
+	if actualSum != expectedSum {
+		return fmt.Errorf("%w: expected=%s got=%s", ErrShaMismatch, expectedSum, actualSum)
+	}
+	if _, err := tmp.Seek(0, 0); err != nil {
+		return err
+	}
+
+	// 2) Validate header.
+	tr := tar.NewReader(tmp)
 	hdrEntry, err := tr.Next()
 	if err != nil {
 		return err
@@ -66,6 +91,7 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 		return fmt.Errorf("%w: dump=%s current=%s", ErrSchemaMismatch, hdr.SchemaVersion, SchemaVersion)
 	}
 
+	// 3) Mutations only after both gates pass.
 	for {
 		e, err := tr.Next()
 		if err == io.EOF {
@@ -81,10 +107,6 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 		if err := restoreOneTable(ctx, r.DB, table, tr, target); err != nil {
 			return err
 		}
-	}
-	actualSum := hex.EncodeToString(h.Sum(nil))
-	if actualSum != expectedSum {
-		return fmt.Errorf("%w: expected=%s got=%s", ErrShaMismatch, expectedSum, actualSum)
 	}
 
 	// ANALYZE all tables
@@ -154,9 +176,35 @@ func readMinioObject(ctx context.Context, mc *minio.Client, bucket, key string) 
 }
 
 // copyInBinary pipes rw.Stream(in,…) into `COPY <table> FROM STDIN (FORMAT binary)`
-// through the underlying driver connection.
-//
-// STUB: not yet implemented; see task-071 follow-up (requires pgx CopyFrom against the gorm postgres connection).
+// through the underlying pgx connection borrowed from the gorm transaction.
 func copyInBinary(ctx context.Context, tx *gorm.DB, table string, in io.Reader, rw Rewriter) error {
-	return fmt.Errorf("copyInBinary: not yet implemented; see task-071 follow-up (requires pgx CopyFrom against the gorm postgres connection)")
+	sqlDB, err := tx.DB()
+	if err != nil {
+		return err
+	}
+	conn, err := sqlDB.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return conn.Raw(func(driverConn any) error {
+		pgxConn, ok := driverConn.(*stdlib.Conn)
+		if !ok {
+			return fmt.Errorf("expected *stdlib.Conn, got %T", driverConn)
+		}
+		pr, pw := io.Pipe()
+		errc := make(chan error, 1)
+		go func() {
+			defer pw.Close()
+			errc <- rw.Stream(in, pw)
+		}()
+		sql := fmt.Sprintf(`COPY %s FROM STDIN (FORMAT binary)`, table)
+		if _, err := pgxConn.Conn().PgConn().CopyFrom(ctx, pr, sql); err != nil {
+			// Drain the rewriter goroutine so it doesn't deadlock writing to pw.
+			_ = pr.CloseWithError(err)
+			<-errc
+			return err
+		}
+		return <-errc
+	})
 }

@@ -431,6 +431,9 @@ services:
     image: atlas-party-quests:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-party-quests
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-pets:
     <<: *atlas-defaults

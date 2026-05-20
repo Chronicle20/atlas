@@ -36,8 +36,8 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: REACTOR_ACTIONS_DIR
-          value: "/scripts/reactors"
+        - name: SEED_CATALOG_ROOT
+          value: "/var/run/seed-catalog"
 ---
 apiVersion: v1
 kind: Service

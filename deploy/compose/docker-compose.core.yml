@@ -498,7 +498,9 @@ services:
     image: atlas-reactor-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-reactor-actions
-      REACTOR_ACTIONS_DIR: /scripts/reactors
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-reactors:
     <<: *atlas-defaults

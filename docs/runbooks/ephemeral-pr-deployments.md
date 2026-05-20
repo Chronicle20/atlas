@@ -66,6 +66,31 @@ curl -fsSL -o /opt/wz/atlas.zip \
 The main bootstrap container then reads `/opt/wz/atlas.zip` via the
 `WZ_CANONICAL` env (default unchanged).
 
+### Bootstrap mode (task-071: MinIO-backed ingest)
+
+As of task-071, `bootstrap.sh` runs WZ ingest entirely through atlas-data
+— the donor `atlas-wz-extractor` step is gone, and WZ assets land in
+MinIO (`atlas-canonical`, `atlas-wz`, `atlas-assets`, `atlas-renders`
+buckets) instead of an extracted XML tree on disk.
+
+The `BOOTSTRAP_MODE` env controls the data-ingest step:
+
+- `baseline` — call `POST /api/data/baseline/restore`. atlas-data pulls
+  a pre-built document dump from MinIO at
+  `atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump`
+  and replays it directly into Postgres. Fast (~60 s); requires the
+  operator to have published a baseline first via `POST /api/data/baseline/publish`.
+- `full` — `PATCH /api/data/wz` uploads the canonical zip to MinIO,
+  then `POST /api/data/process` invokes WZ ingest. ~10 minutes; used
+  when no baseline exists for the region/version pair.
+- `auto` (default) — probes
+  `HEAD $MINIO_ENDPOINT/atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump.sha256`
+  and resolves to `baseline` on 200 or `full` on absence (with a WARN
+  log so operators can correlate slow PR envs with missing baselines).
+
+To force a particular mode, override `BOOTSTRAP_MODE` on the bootstrap
+Job (Helm value or `kubectl set env`).
+
 ### Refreshing the canonical zip
 
 A re-upload (`mc cp ... atlas.zip`) is picked up by every subsequent PR sync;
@@ -284,3 +309,7 @@ gh pr edit <N> --add-label deploy-env
 Within ~30s, Argo CD's PR generator polls GitHub and creates the Application.
 
 To stop a PR's env without closing the PR: remove the label, then force-delete the Application (§9.2).
+
+### Known follow-ups (post task-071)
+
+- `cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment (cleanup keys off `ATLAS_ENV` for DB and Kafka drops; per-tenant MinIO cleanup needs the UUID). MinIO per-tenant prefixes (under `atlas-wz/tenants/<id>/`, `atlas-assets/tenants/<id>/`, `atlas-renders/tenants/<id>/`) therefore leak across PR teardowns. Postgres state continues to clear via the per-env database drop. Resolving this requires the cleanup Helm chart to inject `TENANT_ID`; until then operators may run `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` manually as needed.

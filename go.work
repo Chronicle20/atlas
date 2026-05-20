@@ -18,6 +18,7 @@ use (
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./libs/atlas-tracing
+	./libs/atlas-wz
 	./services/atlas-account/atlas.com/account
 	./services/atlas-asset-expiration/atlas.com/asset-expiration
 	./services/atlas-ban/atlas.com/ban

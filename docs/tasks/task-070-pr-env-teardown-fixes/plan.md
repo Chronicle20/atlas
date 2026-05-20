@@ -67,7 +67,7 @@ Three sites must agree (today they do; the test in Task 1 pins it):
 - Modify: `services/atlas-pr-bootstrap/scripts/lib.sh`
 - Create: `services/atlas-pr-bootstrap/test/lib_test.bats`
 
-- [ ] **Step 1.1: Compute the PR-1 oracle value**
+- [x] **Step 1.1: Compute the PR-1 oracle value**
 
 Run:
 ```sh
@@ -75,7 +75,7 @@ printf "pr-1" | sha256sum | cut -c1-4
 ```
 Capture the output (4 hex chars). Note it for Step 1.2; refer to it below as `<PR1_HASH>`.
 
-- [ ] **Step 1.2: Write the failing test**
+- [x] **Step 1.2: Write the failing test**
 
 Create `services/atlas-pr-bootstrap/test/lib_test.bats`:
 
@@ -114,14 +114,14 @@ setup() {
 
 Substitute the value captured in Step 1.1 for `<PR1_HASH>`.
 
-- [ ] **Step 1.3: Run test, confirm it fails**
+- [x] **Step 1.3: Run test, confirm it fails**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/lib_test.bats
 ```
 Expected: 4 failures (function not defined → bats reports an error per test).
 
-- [ ] **Step 1.4: Implement `compute_atlas_env` in `lib.sh`**
+- [x] **Step 1.4: Implement `compute_atlas_env` in `lib.sh`**
 
 Append to `services/atlas-pr-bootstrap/scripts/lib.sh` (after the existing `http_ok_tenant` function, before EOF):
 
@@ -140,14 +140,14 @@ compute_atlas_env() {
 }
 ```
 
-- [ ] **Step 1.5: Run test, confirm it passes**
+- [x] **Step 1.5: Run test, confirm it passes**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/lib_test.bats
 ```
 Expected: `4 tests, 0 failures`.
 
-- [ ] **Step 1.6: Commit**
+- [x] **Step 1.6: Commit**
 
 ```sh
 git add services/atlas-pr-bootstrap/scripts/lib.sh services/atlas-pr-bootstrap/test/lib_test.bats
@@ -170,7 +170,7 @@ git branch --show-current      # task-070-pr-env-teardown-fixes
 
 This is the load-bearing change. After this lands, annotation drift cannot cause cleanup to target the wrong env.
 
-- [ ] **Step 2.1: Rewrite the first failing test**
+- [x] **Step 2.1: Rewrite the first failing test**
 
 Open `services/atlas-pr-bootstrap/test/cleanup_test.bats`. Replace the two existing tests with:
 
@@ -211,14 +211,14 @@ setup() {
 }
 ```
 
-- [ ] **Step 2.2: Run tests, confirm the new behavior fails**
+- [x] **Step 2.2: Run tests, confirm the new behavior fails**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/cleanup_test.bats
 ```
 Expected: the "no longer requires ATLAS_ENV" test FAILS (today the script still requires ATLAS_ENV).
 
-- [ ] **Step 2.3: Update `cleanup.sh` to derive `ATLAS_ENV`**
+- [x] **Step 2.3: Update `cleanup.sh` to derive `ATLAS_ENV`**
 
 Open `services/atlas-pr-bootstrap/scripts/cleanup.sh`. Replace the `require_env` line (currently line 28):
 
@@ -251,14 +251,14 @@ To:
 ```
 And remove the standalone `#   PR_NUMBER         — for image-tag prefix` later in the header (now covered by the line above).
 
-- [ ] **Step 2.4: Run tests, confirm pass**
+- [x] **Step 2.4: Run tests, confirm pass**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/cleanup_test.bats
 ```
 Expected: `3 tests, 0 failures`.
 
-- [ ] **Step 2.5: Commit**
+- [x] **Step 2.5: Commit**
 
 ```sh
 git add services/atlas-pr-bootstrap/scripts/cleanup.sh services/atlas-pr-bootstrap/test/cleanup_test.bats
@@ -282,7 +282,7 @@ Verify branch/worktree as in Task 1.6.
 
 Folds the cluster-infra CronJob's bot-branch deletion into the PostDelete Job, using the new `atlas-pr-cleanup-gh-token` Secret (added to the manifest in Task 4).
 
-- [ ] **Step 3.1: Add a bats test for the 404 (branch-already-gone) path**
+- [x] **Step 3.1: Add a bats test for the 404 (branch-already-gone) path**
 
 Append to `services/atlas-pr-bootstrap/test/cleanup_test.bats`:
 
@@ -323,14 +323,14 @@ EOF
 
 (These are static-grep assertions because a full mock-gh run would also need shims for kafka/psql/redis to even reach the branch-delete phase. The smoke test in Task 10 exercises the live path.)
 
-- [ ] **Step 3.2: Run tests, confirm they fail**
+- [x] **Step 3.2: Run tests, confirm they fail**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/cleanup_test.bats
 ```
 Expected: the two new tests FAIL (the strings `drop-branch` and `GHCR_TOKEN` near `drop-branch` are not in `cleanup.sh` yet).
 
-- [ ] **Step 3.3: Add the branch-delete phase to `cleanup.sh`**
+- [x] **Step 3.3: Add the branch-delete phase to `cleanup.sh`**
 
 Open `services/atlas-pr-bootstrap/scripts/cleanup.sh`. Insert the following block between the `drop-images` block (ends at line 76 with `fi`) and the `drop-dns` block (starts at line 78):
 
@@ -354,14 +354,14 @@ if [ -n "${PR_NUMBER:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
 fi
 ```
 
-- [ ] **Step 3.4: Run tests, confirm pass**
+- [x] **Step 3.4: Run tests, confirm pass**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/cleanup_test.bats
 ```
 Expected: `5 tests, 0 failures`.
 
-- [ ] **Step 3.5: Commit**
+- [x] **Step 3.5: Commit**
 
 ```sh
 git add services/atlas-pr-bootstrap/scripts/cleanup.sh services/atlas-pr-bootstrap/test/cleanup_test.bats
@@ -385,7 +385,7 @@ Verify branch/worktree.
 
 This is the structural fix for bug #1 (finalizer-ordering wedge). The Job moves out of `atlas-pr-<N>` (which Argo CD is pruning) into `argocd` (long-lived).
 
-- [ ] **Step 4.1: Apply the four changes**
+- [x] **Step 4.1: Apply the four changes**
 
 Open `deploy/k8s/overlays/pr/postdelete-cleanup.yaml`. Make exactly these four edits:
 
@@ -460,7 +460,7 @@ With:
               value: "PLACEHOLDER_PR_NUMBER"
 ```
 
-- [ ] **Step 4.2: Validate YAML parses**
+- [x] **Step 4.2: Validate YAML parses**
 
 ```sh
 yq '.' deploy/k8s/overlays/pr/postdelete-cleanup.yaml >/dev/null
@@ -468,7 +468,7 @@ echo "yaml ok"
 ```
 Expected: `yaml ok` with no errors.
 
-- [ ] **Step 4.3: Sanity-check sed substitution still resolves**
+- [x] **Step 4.3: Sanity-check sed substitution still resolves**
 
 The bot-branch resolver in `pr-validation.yml` sed-substitutes `PLACEHOLDER_PR_NUMBER`. Confirm only the one placeholder remains in this file:
 
@@ -477,7 +477,7 @@ grep -n PLACEHOLDER deploy/k8s/overlays/pr/postdelete-cleanup.yaml
 ```
 Expected: exactly one line — the `value: "PLACEHOLDER_PR_NUMBER"` line. `PLACEHOLDER_ATLAS_ENV` must NOT appear.
 
-- [ ] **Step 4.4: Commit**
+- [x] **Step 4.4: Commit**
 
 ```sh
 git add deploy/k8s/overlays/pr/postdelete-cleanup.yaml
@@ -505,7 +505,7 @@ Verify branch/worktree.
 
 Bug #2: the 24h `atlas.cleanup-grace` mechanism never fired because the ApplicationSet deletes the Application immediately on PR close. Comments in this workflow still describe the (dead) grace contract.
 
-- [ ] **Step 5.1: Rewrite the misleading comment block + step output**
+- [x] **Step 5.1: Rewrite the misleading comment block + step output**
 
 Open `.github/workflows/pr-cleanup.yml`.
 
@@ -547,7 +547,7 @@ Open `.github/workflows/pr-cleanup.yml`.
           echo "  §9.11 (full orphan sweep)."
 ```
 
-- [ ] **Step 5.2: Commit**
+- [x] **Step 5.2: Commit**
 
 ```sh
 git add .github/workflows/pr-cleanup.yml
@@ -571,7 +571,7 @@ Verify branch/worktree.
 
 Codifies the May-19 manual recovery as a runnable script. Task 6 is structure + arg parsing; Task 7 implements each phase.
 
-- [ ] **Step 6.1: Write failing tests for arg parsing**
+- [x] **Step 6.1: Write failing tests for arg parsing**
 
 Create `services/atlas-pr-bootstrap/test/sweep_test.bats`:
 
@@ -618,14 +618,14 @@ setup() {
 }
 ```
 
-- [ ] **Step 6.2: Run tests, confirm they fail**
+- [x] **Step 6.2: Run tests, confirm they fail**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/sweep_test.bats
 ```
 Expected: all 5 tests FAIL (script does not exist).
 
-- [ ] **Step 6.3: Implement the skeleton**
+- [x] **Step 6.3: Implement the skeleton**
 
 Create `services/atlas-pr-bootstrap/scripts/sweep-orphans.sh`:
 
@@ -747,14 +747,14 @@ Make it executable:
 chmod +x services/atlas-pr-bootstrap/scripts/sweep-orphans.sh
 ```
 
-- [ ] **Step 6.4: Run tests, confirm pass**
+- [x] **Step 6.4: Run tests, confirm pass**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/sweep_test.bats
 ```
 Expected: `5 tests, 0 failures`.
 
-- [ ] **Step 6.5: Commit**
+- [x] **Step 6.5: Commit**
 
 ```sh
 git add services/atlas-pr-bootstrap/scripts/sweep-orphans.sh services/atlas-pr-bootstrap/test/sweep_test.bats
@@ -775,7 +775,7 @@ Verify branch/worktree.
 
 Replace each stub with a real implementation. Each phase mirrors the equivalent in `cleanup.sh` but adds list-mode output.
 
-- [ ] **Step 7.1: Implement `sweep_pg`**
+- [x] **Step 7.1: Implement `sweep_pg`**
 
 Replace `sweep_pg()             { :; }` with:
 
@@ -803,7 +803,7 @@ sweep_pg() {
 }
 ```
 
-- [ ] **Step 7.2: Implement `sweep_kafka`**
+- [x] **Step 7.2: Implement `sweep_kafka`**
 
 Replace `sweep_kafka()          { :; }` with:
 
@@ -844,7 +844,7 @@ sweep_kafka() {
 }
 ```
 
-- [ ] **Step 7.3: Implement `sweep_redis`**
+- [x] **Step 7.3: Implement `sweep_redis`**
 
 Replace `sweep_redis()          { :; }` with:
 
@@ -871,7 +871,7 @@ sweep_redis() {
 }
 ```
 
-- [ ] **Step 7.4: Implement `sweep_ghcr`**
+- [x] **Step 7.4: Implement `sweep_ghcr`**
 
 Replace `sweep_ghcr()           { :; }` with:
 
@@ -904,7 +904,7 @@ sweep_ghcr() {
 }
 ```
 
-- [ ] **Step 7.5: Implement `sweep_pihole`**
+- [x] **Step 7.5: Implement `sweep_pihole`**
 
 Replace `sweep_pihole()         { :; }` with:
 
@@ -945,7 +945,7 @@ sweep_pihole() {
 }
 ```
 
-- [ ] **Step 7.6: Implement `sweep_app_finalizer`**
+- [x] **Step 7.6: Implement `sweep_app_finalizer`**
 
 Replace `sweep_app_finalizer()  { :; }` with:
 
@@ -968,7 +968,7 @@ sweep_app_finalizer() {
 }
 ```
 
-- [ ] **Step 7.7: Implement `sweep_branch`**
+- [x] **Step 7.7: Implement `sweep_branch`**
 
 Replace `sweep_branch()         { :; }` with:
 
@@ -994,7 +994,7 @@ sweep_branch() {
 }
 ```
 
-- [ ] **Step 7.8: Add a list-mode bats test that exercises a real but mocked phase**
+- [x] **Step 7.8: Add a list-mode bats test that exercises a real but mocked phase**
 
 Append to `services/atlas-pr-bootstrap/test/sweep_test.bats`:
 
@@ -1056,14 +1056,14 @@ EOF
 }
 ```
 
-- [ ] **Step 7.9: Run tests, confirm pass**
+- [x] **Step 7.9: Run tests, confirm pass**
 
 ```sh
 bats services/atlas-pr-bootstrap/test/sweep_test.bats
 ```
 Expected: `6 tests, 0 failures`.
 
-- [ ] **Step 7.10: Commit**
+- [x] **Step 7.10: Commit**
 
 ```sh
 git add services/atlas-pr-bootstrap/scripts/sweep-orphans.sh services/atlas-pr-bootstrap/test/sweep_test.bats
@@ -1086,7 +1086,7 @@ Verify branch/worktree.
 
 Reflect the new contract (immediate teardown, no grace) and document the sweep tool.
 
-- [ ] **Step 8.1: Rewrite §9.2 "Force-cleanup of a PR env"**
+- [x] **Step 8.1: Rewrite §9.2 "Force-cleanup of a PR env"**
 
 Replace lines 155-168 (the §9.2 section) with:
 
@@ -1113,7 +1113,7 @@ kubectl -n argocd logs -l app=atlas-pr-cleanup --tail=200
 If you specifically need to force-delete an Application that is stuck (i.e., the ApplicationSet's generator still points at it), see §9.4.
 ```
 
-- [ ] **Step 8.2: Rewrite §9.4 "Re-running a failed PostDelete"**
+- [x] **Step 8.2: Rewrite §9.4 "Re-running a failed PostDelete"**
 
 Replace lines 184-218 (the §9.4 section + its sub-section) with:
 
@@ -1161,7 +1161,7 @@ gh api --method DELETE \
 If the PostDelete render fails with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`, the Application targets a branch that no longer exists. Diagnose: `kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions[] | select(.message | contains("ComparisonError"))'`. Recovery is the same finalizer patch (step 2 above) followed by the sweep (step 1) — the branch is already gone so `drop-branch` is a no-op.
 ```
 
-- [ ] **Step 8.3: Rewrite §9.5 "Rotating credentials"**
+- [x] **Step 8.3: Rewrite §9.5 "Rotating credentials"**
 
 Replace lines 220-230 (the §9.5 section) with:
 
@@ -1187,7 +1187,7 @@ All Argo CD-related Secrets live in the `argocd` namespace and are templated by 
 - **ghcr-pat (legacy).** No longer used by the PostDelete Job (replaced by `atlas-pr-cleanup-gh-token`). If no other consumer needs it, remove it in a cluster-infra follow-up.
 ```
 
-- [ ] **Step 8.4: Add §9.11 "Orphan sweep"**
+- [x] **Step 8.4: Add §9.11 "Orphan sweep"**
 
 Append to the end of `docs/runbooks/ephemeral-pr-deployments.md`:
 
@@ -1247,7 +1247,7 @@ sum by (kind) (atlas_pr_orphan_envs_total)
 Alert wiring is out of scope for task-070 — this is observable but not paged.
 ```
 
-- [ ] **Step 8.5: Commit**
+- [x] **Step 8.5: Commit**
 
 ```sh
 git add docs/runbooks/ephemeral-pr-deployments.md
@@ -1270,13 +1270,13 @@ Verify branch/worktree.
 
 End-to-end regression. Gated on a self-hosted runner being labeled `atlas-cluster`. If no such runner exists at execution time, the workflow file lands with `if: false` on the assertion job so it can be turned on later without re-merging.
 
-- [ ] **Step 9.1: Check whether a self-hosted runner is available**
+- [x] **Step 9.1: Check whether a self-hosted runner is available**
 
 The plan executor should verify (manually, against the GitHub repo Settings → Actions → Runners) whether a `self-hosted` runner with the `atlas-cluster` label exists. If yes, set `RUNNER_AVAILABLE=yes` for Step 9.2; if no, set `RUNNER_AVAILABLE=no`.
 
 Record the decision in the commit message.
 
-- [ ] **Step 9.2: Create the workflow**
+- [x] **Step 9.2: Create the workflow**
 
 Create `.github/workflows/pr-env-smoke.yml`:
 
@@ -1494,7 +1494,7 @@ If `RUNNER_AVAILABLE=yes` (from Step 9.1), change the two `if: false` lines to:
 ```
 (for `assert-reclamation`).
 
-- [ ] **Step 9.3: Lint with `actionlint` (if available)**
+- [x] **Step 9.3: Lint with `actionlint` (if available)**
 
 ```sh
 command -v actionlint && actionlint .github/workflows/pr-env-smoke.yml || echo "actionlint not installed; skip"
@@ -1502,7 +1502,7 @@ command -v actionlint && actionlint .github/workflows/pr-env-smoke.yml || echo "
 
 Expected: no errors. If `actionlint` is not on PATH, skip.
 
-- [ ] **Step 9.4: Commit**
+- [x] **Step 9.4: Commit**
 
 ```sh
 git add .github/workflows/pr-env-smoke.yml
@@ -1526,7 +1526,7 @@ Verify branch/worktree.
 
 PRD §4.4 part B — time-boxed best-effort investigation of why `atlas.env` on PRs 491/522 disagreed with the formula. Half-day timebox; if inconclusive, document and move on (the defensive fix in Task 2 already makes drift harmless).
 
-- [ ] **Step 10.1: Run the four investigation probes**
+- [x] **Step 10.1: Run the four investigation probes**
 
 For each probe, capture command + output. The investigator can run these against the live cluster via the existing `mcp__kubernetes__*` MCP tools or `kubectl`. If a current PR-env Application is not available, the investigation can be done dry by reading the cluster-infra ApplicationSet template + git history alone.
 
@@ -1560,7 +1560,7 @@ git log --all --diff-filter=M -p -- 'overlays/atlas-pr-applicationset/*.yaml' \
 ```
 Look for any prior formula that would emit `f78b`/`d496` for PRs 491/522.
 
-- [ ] **Step 10.2: Write the deliverable**
+- [x] **Step 10.2: Write the deliverable**
 
 Create `docs/tasks/task-070-pr-env-teardown-fixes/env-drift-investigation.md`:
 
@@ -1640,7 +1640,7 @@ Root cause: <found / inconclusive>
 
 Fill in each placeholder with actual probe output. If a probe is impractical (no live cluster, no cluster-infra access), state that explicitly and skip — do not invent results.
 
-- [ ] **Step 10.3: Commit**
+- [x] **Step 10.3: Commit**
 
 ```sh
 git add docs/tasks/task-070-pr-env-teardown-fixes/env-drift-investigation.md
@@ -1662,13 +1662,13 @@ Verify branch/worktree.
 
 PRD §4.4 Part A asks us to audit `bootstrap.sh` (and any other consumer of `ATLAS_ENV`) and decide whether they also need defensive derivation.
 
-- [ ] **Step 11.1: Audit `bootstrap.sh`**
+- [x] **Step 11.1: Audit `bootstrap.sh`**
 
 Confirm `bootstrap.sh` reads `ATLAS_ENV` from its environment (line 14 `require_env ATLAS_ENV ...`). That environment is populated by kustomize's `atlas-env` ConfigMap, which is built at PreSync time from already-substituted placeholders (`atlas-env-tokens.yaml`).
 
 Decision: **no code change.** The Bootstrap path is unaffected by annotation drift — the ConfigMap is the contract surface at create time, and it is built from `PLACEHOLDER_ATLAS_ENV` via `pr-validation.yml`'s `update-pr-overlay` step (which uses the canonical formula and is pinned by Task 1's oracle).
 
-- [ ] **Step 11.2: Record the decision in `context.md`**
+- [x] **Step 11.2: Record the decision in `context.md`**
 
 (Already added during Task 12 below; this step is a pointer.)
 
@@ -1681,11 +1681,11 @@ Decision: **no code change.** The Bootstrap path is unaffected by annotation dri
 
 Capture the cross-cutting decisions and the cluster-infra sibling-PR requirements so execution agents (and code review) don't have to re-derive them.
 
-- [ ] **Step 12.1: Write the document**
+- [x] **Step 12.1: Write the document**
 
 (The plan executor writes this directly; the content is below.)
 
-- [ ] **Step 12.2: Commit**
+- [x] **Step 12.2: Commit**
 
 ```sh
 git add docs/tasks/task-070-pr-env-teardown-fixes/context.md
@@ -1700,14 +1700,14 @@ Verify branch/worktree.
 
 **Files:** none changed; verification only.
 
-- [ ] **Step 13.1: Run all bats tests**
+- [x] **Step 13.1: Run all bats tests**
 
 ```sh
 bats services/atlas-pr-bootstrap/test
 ```
 Expected: all tests pass (Tasks 1, 2, 3, 6, 7 each added or modified tests).
 
-- [ ] **Step 13.2: ShellCheck the changed/new scripts**
+- [x] **Step 13.2: ShellCheck the changed/new scripts**
 
 ```sh
 shellcheck services/atlas-pr-bootstrap/scripts/lib.sh \
@@ -1716,7 +1716,7 @@ shellcheck services/atlas-pr-bootstrap/scripts/lib.sh \
 ```
 Expected: no errors (warnings about external commands like `kafka-topics.sh` are acceptable; fix anything else).
 
-- [ ] **Step 13.3: Validate YAML files parse**
+- [x] **Step 13.3: Validate YAML files parse**
 
 ```sh
 yq '.' deploy/k8s/overlays/pr/postdelete-cleanup.yaml >/dev/null
@@ -1725,7 +1725,7 @@ yq '.' .github/workflows/pr-env-smoke.yml >/dev/null
 echo "yaml ok"
 ```
 
-- [ ] **Step 13.4: Kustomize-build the PR overlay (with placeholders substituted)**
+- [x] **Step 13.4: Kustomize-build the PR overlay (with placeholders substituted)**
 
 The overlay can't be built with `PLACEHOLDER_*` tokens still present (kustomize rejects unquoted ints from substring substitution). Simulate `pr-validation.yml`'s sed pass against a temp copy:
 
@@ -1745,14 +1745,14 @@ rm -rf "$TMP"
 
 Expected: `kustomize ok`. If kustomize is not installed, skip with a note.
 
-- [ ] **Step 13.5: Final commit-history sanity check**
+- [x] **Step 13.5: Final commit-history sanity check**
 
 ```sh
 git log --oneline main..task-070-pr-env-teardown-fixes
 ```
 Expected: 10+ commits covering Tasks 1 through 12. No commits on main.
 
-- [ ] **Step 13.6: Update plan checkboxes**
+- [x] **Step 13.6: Update plan checkboxes**
 
 Open this plan (`docs/tasks/task-070-pr-env-teardown-fixes/plan.md`) and mark every `- [ ]` as `- [x]`. Commit:
 
@@ -1762,6 +1762,27 @@ git commit -m "docs(task-070): mark plan tasks complete"
 ```
 
 Verify branch/worktree.
+
+---
+
+## Execution note (added during /execute-task)
+
+Task 13 verification (kustomize-build of the substituted PR overlay) discovered that Task 4's `namespace: argocd` change on `postdelete-cleanup.yaml` does not survive kustomize-build. The `pr/` overlay's `namespace: atlas-pr-PLACEHOLDER_PR_NUMBER` directive overrides per-resource namespaces unconditionally in kustomize 5.4 (inline JSON6902 patches, inline strategic merge patches, and external SMP path-based patches all fail to override; the namespace transformer runs last). Task 4 alone would leave the Job in `atlas-pr-<N>`, recreating bug #1.
+
+To make the structural fix real, the executor implemented **Design A** — a clean two-overlay split:
+
+- Moved `postdelete-cleanup.yaml` into a new `deploy/k8s/overlays/pr-cleanup/` kustomization with no namespace directive, so the Job's `metadata.namespace: argocd` is respected.
+- Dropped the file from `pr/kustomization.yaml`'s `resources:` list.
+- Extended `.github/workflows/pr-validation.yml` to substitute placeholders + stage both overlays for the bot-branch force-push.
+- Documented the cluster-infra sibling requirement: ApplicationSet template must switch to Argo CD multi-source (≥2.6) referencing both overlay paths. Pre-flight verification steps recorded in `context.md`.
+
+Three commits added beyond the original plan:
+
+- `refactor(deploy): split pr-cleanup into separate kustomization overlay`
+- `ci(pr-validation): substitute placeholders + stage pr-cleanup overlay`
+- `docs(task-070): document Design A overlay split + multi-source contract`
+
+Rollout sequence is now three steps (cluster-infra Secret+SA, then this branch, then the multi-source template flip) instead of two. The flip is the actual cutover; landing this branch alone is a no-op for currently-live PR envs.
 
 ---
 

@@ -356,6 +356,8 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: latest
+  - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills

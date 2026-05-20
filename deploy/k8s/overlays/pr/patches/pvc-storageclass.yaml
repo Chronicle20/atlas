@@ -6,13 +6,10 @@
 # recurring-job controller.
 #
 # See task-063 plan.md Phase 0 Task 0.6 for the rationale.
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: atlas-data-pvc
-spec:
-  storageClassName: longhorn-pr
+#
+# task-071 removed atlas-data-pvc from base (atlas-data is now MinIO-backed).
+# atlas-wz-input-pvc + atlas-assets-pvc remain in base until Task 17 cutover
+# deletes atlas-wz-extractor and atlas-assets.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

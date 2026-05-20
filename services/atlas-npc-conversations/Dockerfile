@@ -14,6 +14,7 @@ COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
+COPY libs/atlas-seeder/go.mod libs/atlas-seeder/go.sum libs/atlas-seeder/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
@@ -34,6 +35,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-redis' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-script-core' >> go.work && \
+    echo '    ./libs/atlas-seeder' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
@@ -53,6 +55,7 @@ COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-redis libs/atlas-redis
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-script-core libs/atlas-script-core
+COPY libs/atlas-seeder libs/atlas-seeder
 COPY libs/atlas-tenant libs/atlas-tenant
 COPY libs/atlas-tracing libs/atlas-tracing
 
@@ -72,6 +75,7 @@ RUN cd services/atlas-npc-conversations/atlas.com/npc && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-redis=/app/libs/atlas-redis \
       -replace=github.com/Chronicle20/atlas/libs/atlas-rest=/app/libs/atlas-rest \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-seeder=/app/libs/atlas-seeder \
       -replace=github.com/Chronicle20/atlas/libs/atlas-saga=/app/libs/atlas-saga \
       -replace=github.com/Chronicle20/atlas/libs/atlas-script-core=/app/libs/atlas-script-core \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
@@ -91,6 +95,5 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
-COPY services/atlas-npc-conversations/conversations /conversations
 
 CMD ["/server"]

@@ -36,10 +36,8 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: NPC_CONVERSATIONS_PATH
-          value: "/conversations/npc"
-        - name: QUEST_CONVERSATIONS_PATH
-          value: "/conversations/quests"
+        - name: SEED_CATALOG_ROOT
+          value: "/var/run/seed-catalog"
 ---
 apiVersion: v1
 kind: Service

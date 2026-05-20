@@ -394,8 +394,9 @@ services:
     environment:
       LOG_LEVEL: debug
       DB_NAME: atlas-npc-conversations
-      NPC_CONVERSATIONS_PATH: /conversations/npc
-      QUEST_CONVERSATIONS_PATH: /conversations/quests
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-npc-shops:
     <<: *atlas-defaults

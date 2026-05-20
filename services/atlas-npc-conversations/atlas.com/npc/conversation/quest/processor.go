@@ -37,9 +37,6 @@ type Processor interface {
 	// DeleteAllForTenant deletes all quest conversations for the current tenant
 	DeleteAllForTenant() (int64, error)
 
-	// Seed clears existing quest conversations and loads them from the quest-conversations directory
-	Seed() (SeedResult, error)
-
 	// GetStateMachineForCharacter returns the appropriate state machine for a character's quest status
 	// Returns startStateMachine for NOT_STARTED quests, endStateMachine for STARTED quests
 	// Returns error for COMPLETED quests or if quest conversation not found
@@ -129,55 +126,6 @@ func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 		return 0, err
 	}
 	return count, nil
-}
-
-// Seed clears existing quest conversations and loads them from the quest-conversations directory
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding quest conversations for tenant [%s]", p.t.Id())
-
-	result := SeedResult{}
-
-	// Delete all existing quest conversations for this tenant
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing quest conversations: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load quest conversation files from the filesystem
-	models, loadErrors := LoadQuestConversationFiles()
-
-	// Track load errors
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each quest conversation
-	for _, rm := range models {
-		// Extract domain model from REST model
-		m, err := Extract(rm)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("quest_%d: failed to extract model: %v", rm.QuestId, err))
-			result.FailedCount++
-			continue
-		}
-
-		// Create the quest conversation
-		_, err = p.Create(m)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("quest_%d: failed to create: %v", rm.QuestId, err))
-			result.FailedCount++
-			continue
-		}
-
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 // GetStateMachineForCharacter returns the appropriate state machine for a character's quest status

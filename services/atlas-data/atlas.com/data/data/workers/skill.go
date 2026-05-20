@@ -15,7 +15,6 @@ type Skill struct{}
 func (Skill) Name() string        { return "SKILL" }
 func (Skill) ArchiveName() string { return "Skill.wz" }
 
-func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, img *wz.Image, p Params) error {
-	l.Infof("TODO Task 8: implement SKILL worker (archive=%s scope=%s region=%s version=%d.%d)", "Skill.wz", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion)
+func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, file *wz.File, p Params) error {
 	return nil
 }

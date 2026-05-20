@@ -15,7 +15,6 @@ type Quest struct{}
 func (Quest) Name() string        { return "QUEST" }
 func (Quest) ArchiveName() string { return "Quest.wz" }
 
-func (Quest) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, img *wz.Image, p Params) error {
-	l.Infof("TODO Task 8: implement QUEST worker (archive=%s scope=%s region=%s version=%d.%d)", "Quest.wz", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion)
+func (Quest) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, file *wz.File, p Params) error {
 	return nil
 }

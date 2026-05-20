@@ -39,12 +39,7 @@ func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client) func(ctx co
 					wzFile.Close()
 					_ = os.Remove(localPath)
 				}()
-				// The plan's contract passes img *wz.Image, but WZ archive roots
-				// are directories with many .img children, not a single image.
-				// Stubs ignore the parameter; real workers in follow-up commits
-				// should accept the root *wz.File or *wz.Directory directly.
-				// Pass nil for now and surface this deviation in the task report.
-				return w.Run(gctx, l, db, mc, nil, p)
+				return w.Run(gctx, l, db, mc, wzFile, p)
 			})
 		}
 		return g.Wait()

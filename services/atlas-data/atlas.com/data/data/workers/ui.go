@@ -15,7 +15,6 @@ type UI struct{}
 func (UI) Name() string        { return "UI" }
 func (UI) ArchiveName() string { return "UI.wz" }
 
-func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, img *wz.Image, p Params) error {
-	l.Infof("TODO Task 8: implement UI worker (archive=%s scope=%s region=%s version=%d.%d)", "UI.wz", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion)
+func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, file *wz.File, p Params) error {
 	return nil
 }

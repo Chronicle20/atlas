@@ -33,11 +33,11 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 }
 
 func paramsFromEnv() (workers.Params, error) {
-	major, err := strconv.ParseUint(os.Getenv("MAJOR_VERSION"), 10, 32)
+	major, err := strconv.ParseUint(os.Getenv("MAJOR_VERSION"), 10, 16)
 	if err != nil {
 		return workers.Params{}, fmt.Errorf("MAJOR_VERSION: %w", err)
 	}
-	minor, err := strconv.ParseUint(os.Getenv("MINOR_VERSION"), 10, 32)
+	minor, err := strconv.ParseUint(os.Getenv("MINOR_VERSION"), 10, 16)
 	if err != nil {
 		return workers.Params{}, fmt.Errorf("MINOR_VERSION: %w", err)
 	}
@@ -48,8 +48,8 @@ func paramsFromEnv() (workers.Params, error) {
 	return workers.Params{
 		ScopeKey:     os.Getenv("SCOPE"),
 		Region:       os.Getenv("REGION"),
-		MajorVersion: uint32(major),
-		MinorVersion: uint32(minor),
+		MajorVersion: uint16(major),
+		MinorVersion: uint16(minor),
 		ScratchDir:   scratch,
 	}, nil
 }

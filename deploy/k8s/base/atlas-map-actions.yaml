@@ -36,8 +36,8 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: MAP_SCRIPTS_DIR
-          value: "/scripts/map"
+        - name: SEED_CATALOG_ROOT
+          value: "/var/run/seed-catalog"
 ---
 apiVersion: v1
 kind: Service

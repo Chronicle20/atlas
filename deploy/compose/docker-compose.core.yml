@@ -297,7 +297,9 @@ services:
     image: atlas-map-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-map-actions
-      MAP_SCRIPTS_DIR: /scripts/map
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-maps:
     <<: *atlas-defaults

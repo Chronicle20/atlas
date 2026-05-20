@@ -15,6 +15,7 @@ COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-seeder/go.mod libs/atlas-seeder/go.sum libs/atlas-seeder/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 COPY libs/atlas-saga/go.mod libs/atlas-saga/
 # Copy service module definitions
@@ -33,6 +34,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
+    echo '    ./libs/atlas-seeder' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-map-actions/atlas.com/map-actions' >> go.work && \
     echo '    ./libs/atlas-saga' >> go.work && \
@@ -52,6 +54,7 @@ COPY libs/atlas-tenant libs/atlas-tenant
 COPY libs/atlas-tracing libs/atlas-tracing
 
 COPY libs/atlas-retry libs/atlas-retry
+COPY libs/atlas-seeder libs/atlas-seeder
 COPY libs/atlas-service libs/atlas-service
 COPY libs/atlas-saga libs/atlas-saga
 # Copy service source code
@@ -68,6 +71,7 @@ RUN cd services/atlas-map-actions/atlas.com/map-actions && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
       -replace=github.com/Chronicle20/atlas/libs/atlas-saga=/app/libs/atlas-saga \
       -replace=github.com/Chronicle20/atlas/libs/atlas-script-core=/app/libs/atlas-script-core \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-seeder=/app/libs/atlas-seeder \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
@@ -85,6 +89,5 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
-COPY services/atlas-map-actions/scripts /scripts
 
 CMD ["/server"]

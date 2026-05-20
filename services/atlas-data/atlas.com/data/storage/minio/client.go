@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	miniogo "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -59,3 +60,32 @@ func (c *Client) RemovePrefix(ctx context.Context, bucket, prefix string) error 
 }
 
 func (c *Client) Cfg() Config { return c.cfg }
+
+// Stats reports aggregate information about objects under a prefix.
+type Stats struct {
+	Count     int
+	Size      int64
+	UpdatedAt string // RFC3339 of the latest LastModified, or empty if no objects
+}
+
+// PrefixStats walks every object under bucket/prefix and returns the count,
+// total size, and most recent LastModified timestamp.
+func (c *Client) PrefixStats(ctx context.Context, bucket, prefix string) (Stats, error) {
+	var s Stats
+	ch := c.mc.ListObjects(ctx, bucket, miniogo.ListObjectsOptions{Prefix: prefix, Recursive: true})
+	var latest time.Time
+	for obj := range ch {
+		if obj.Err != nil {
+			return Stats{}, obj.Err
+		}
+		s.Count++
+		s.Size += obj.Size
+		if obj.LastModified.After(latest) {
+			latest = obj.LastModified
+		}
+	}
+	if !latest.IsZero() {
+		s.UpdatedAt = latest.UTC().Format(time.RFC3339)
+	}
+	return s, nil
+}

@@ -28,7 +28,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
+	minio "atlas-data/storage/minio"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"atlas-data/wzinput"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -86,6 +88,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
+	// MinIO client (best-effort: nil on failure, /api/data/wz handlers respond 503).
+	mc, err := minio.NewClient(minio.FromEnv())
+	if err != nil {
+		l.WithError(err).Warn("minio client init failed; /api/data/wz will return 503")
+		mc = nil
+	}
+
 	db := database.Connect(l, database.SetMigrations(
 		document.Migration,
 		_map.Migration,
@@ -111,6 +120,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
+		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).
 		AddRouteInitializer(monster.InitResource(db)(GetServer())).
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).

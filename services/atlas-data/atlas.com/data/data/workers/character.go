@@ -1,10 +1,15 @@
 package workers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
 
+	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas/pngenc"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/charparts"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -23,14 +28,11 @@ func (Character) Name() string        { return "CHARACTER" }
 func (Character) ArchiveName() string { return "Character.wz" }
 
 // Character.wz holds equipment (top-level subdirs) plus cosmetic Face and Hair
-// trees. Atlas-style sprite packing (per partClass sprite sheets and
-// manifests) is a STATED LIMITATION: the per-stance/per-frame sprite assembly
-// in the deleted atlas-wz-extractor image/character_parts.go is ~500 LOC of
-// link-resolution and joint logic that does not have a current
-// libs/atlas-wz/*-shaped wrapper. Cleanly re-implementing it here would
-// double the size of this worker, so it is deferred. Equipment, Face, and
-// Hair documents are still fully populated below; only the atlases/<part>
-// MinIO PNG+JSON outputs are missing.
+// trees. After registering the per-domain documents, the worker walks the WZ
+// in memory via libs/atlas-wz/charparts to emit per-(partClass, id) atlas
+// sprite sheets + manifests under
+// <scope>/regions/<region>/versions/<major>.<minor>/atlases/<partClass>/<id>.{png,json}.
+// atlas-renders' composite handler consumes those keys via Storage.GetAtlas.
 func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, file *wz.File, p Params) error {
 	ctx, _, err := withTenant(ctx, p)
 	if err != nil {
@@ -78,5 +80,82 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 			l.WithError(err).Warnf("templates.RegisterCharacterTemplate failed")
 		}
 	}
+
+	// Atlas emission. atlas-renders' composite handler fetches each part atlas
+	// via Storage.GetAtlas(scope, region, version, partClass, id); without the
+	// PNG+JSON pair the handler returns 500. Per-(partClass, id) failures are
+	// logged and skipped so one bad template can't poison the entire ingest.
+	if err := emitCharacterAtlases(ctx, l, mc, file, p); err != nil {
+		return fmt.Errorf("emit character atlases: %w", err)
+	}
+	return nil
+}
+
+// emitCharacterAtlases walks Character.wz via charparts.WalkCharacter, packs
+// each PartSet into a deterministic atlas sheet + manifest, and uploads the
+// (PNG, JSON) pair to MinIO under the canonical
+// <prefix>/atlases/<partClass>/<id>.{png,json} keyspace. Per-template failures
+// are logged and skipped; the only fatal errors are upload failures (so
+// callers can rerun the worker without partial bucket state for the working
+// templates).
+func emitCharacterAtlases(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, file *wz.File, p Params) error {
+	sets, err := charparts.WalkCharacter(file, nil)
+	if err != nil {
+		return fmt.Errorf("character walk: %w", err)
+	}
+	prefix := minioAssetPrefix(p)
+	var emitted, skipped int
+	for _, set := range sets {
+		inputs := charparts.ToAtlasInputs(set)
+		if len(inputs) == 0 {
+			skipped++
+			continue
+		}
+		sheet, m, err := atlas.Pack(inputs)
+		if err != nil {
+			l.WithError(err).Warnf("atlas.Pack partClass=%s id=%d", set.PartClass, set.ID)
+			skipped++
+			continue
+		}
+		// Pack copies Input.Name into Sprite.Part verbatim. The dotted form
+		// "stance.frame.part" lets us split each Sprite back into the donor's
+		// (stance, frame, part) tags so the on-disk manifest matches the
+		// composite handler's lookup expectations.
+		for i := range m.Sprites {
+			stance, frame, part, ok := charparts.DecodePartName(m.Sprites[i].Part)
+			if !ok {
+				// Defensive: keep the dotted form as Part so the entry isn't
+				// silently lost. atlas.Pack only inserts Names we wrote, so
+				// this branch indicates a future schema drift.
+				continue
+			}
+			m.Sprites[i].Stance = stance
+			m.Sprites[i].Frame = frame
+			m.Sprites[i].Part = part
+		}
+		m.ID = set.ID
+		m.PartClass = set.PartClass
+		m.Vslot = set.Info.Vslot
+
+		pngKey := fmt.Sprintf("%s/atlases/%s/%d.png", prefix, set.PartClass, set.ID)
+		var pngBuf bytes.Buffer
+		if err := pngenc.Encode(&pngBuf, sheet); err != nil {
+			return fmt.Errorf("pngenc.Encode %s: %w", pngKey, err)
+		}
+		if err := putBytes(ctx, mc, pngKey, pngBuf.Bytes(), "image/png"); err != nil {
+			return fmt.Errorf("put atlas png %s: %w", pngKey, err)
+		}
+
+		manKey := fmt.Sprintf("%s/atlases/%s/%d.json", prefix, set.PartClass, set.ID)
+		manBytes, err := manifest.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("manifest.Marshal %s: %w", manKey, err)
+		}
+		if err := putJSON(ctx, mc, manKey, manBytes); err != nil {
+			return fmt.Errorf("put atlas json %s: %w", manKey, err)
+		}
+		emitted++
+	}
+	l.Infof("Character atlas emit: emitted=%d skipped=%d total=%d", emitted, skipped, len(sets))
 	return nil
 }

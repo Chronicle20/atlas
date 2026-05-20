@@ -448,8 +448,10 @@ services:
     image: atlas-portal-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-portal-actions
-      PORTAL_SCRIPTS_DIR: /scripts/portals
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
       QUERY_AGGREGATOR_URL: http://atlas-query-aggregator:8080
+    volumes:
+      - ../seed:/var/run/seed-catalog:ro
 
   atlas-portals:
     <<: *atlas-defaults

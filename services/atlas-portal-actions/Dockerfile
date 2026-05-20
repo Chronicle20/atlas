@@ -19,6 +19,7 @@ COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-saga/go.mod libs/atlas-saga/
+COPY libs/atlas-seeder/go.mod libs/atlas-seeder/go.sum libs/atlas-seeder/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 # Copy service module definitions
 COPY services/atlas-portal-actions/atlas.com/portal/go.mod services/atlas-portal-actions/atlas.com/portal/go.sum* services/atlas-portal-actions/atlas.com/portal/
@@ -38,6 +39,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-saga' >> go.work && \
+    echo '    ./libs/atlas-seeder' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-portal-actions/atlas.com/portal' >> go.work && \
     echo ')' >> go.work
@@ -58,6 +60,7 @@ COPY libs/atlas-tracing libs/atlas-tracing
 
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-saga libs/atlas-saga
+COPY libs/atlas-seeder libs/atlas-seeder
 COPY libs/atlas-service libs/atlas-service
 # Copy service source code
 COPY services/atlas-portal-actions/atlas.com/portal services/atlas-portal-actions/atlas.com/portal
@@ -74,6 +77,7 @@ RUN cd services/atlas-portal-actions/atlas.com/portal && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
       -replace=github.com/Chronicle20/atlas/libs/atlas-saga=/app/libs/atlas-saga \
       -replace=github.com/Chronicle20/atlas/libs/atlas-script-core=/app/libs/atlas-script-core \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-seeder=/app/libs/atlas-seeder \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
@@ -91,6 +95,5 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
-COPY services/atlas-portal-actions/scripts /scripts
 
 CMD ["/server"]

@@ -36,8 +36,8 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: PORTAL_SCRIPTS_DIR
-          value: "/scripts/portals"
+        - name: SEED_CATALOG_ROOT
+          value: "/var/run/seed-catalog"
         - name: QUERY_AGGREGATOR_URL
           value: "http://atlas-query-aggregator:8080"
 ---

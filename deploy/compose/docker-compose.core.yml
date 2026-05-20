@@ -14,6 +14,10 @@ x-atlas-defaults: &atlas-defaults
     atlas-tenants:
       condition: service_healthy
 
+x-seed-catalog: &seed-catalog
+  volumes:
+    - ../seed:/var/run/seed-catalog:ro
+
 services:
   atlas-account:
     <<: *atlas-defaults
@@ -176,7 +180,7 @@ services:
       - ../../tmp/data:/usr/data
 
   atlas-drop-information:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-drop-information
     build:
       context: ../..
@@ -188,8 +192,6 @@ services:
       SERVICE_ID: 00000000-0000-0000-0000-000000000000
       SERVICE_TYPE: drops-information-service
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-drops:
     <<: *atlas-defaults
@@ -233,7 +235,7 @@ services:
       DB_NAME: atlas-fame
 
   atlas-gachapons:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-gachapons
     build:
       context: ../..
@@ -242,8 +244,6 @@ services:
     environment:
       DB_NAME: atlas-gachapons
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-guilds:
     <<: *atlas-defaults
@@ -289,7 +289,7 @@ services:
       DB_NAME: atlas-keys
 
   atlas-map-actions:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-map-actions
     build:
       context: ../..
@@ -298,8 +298,6 @@ services:
     environment:
       DB_NAME: atlas-map-actions
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-maps:
     <<: *atlas-defaults
@@ -385,7 +383,7 @@ services:
       DB_NAME: atlas-notes
 
   atlas-npc-conversations:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-npc-conversations
     build:
       context: ../..
@@ -395,11 +393,9 @@ services:
       LOG_LEVEL: debug
       DB_NAME: atlas-npc-conversations
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-npc-shops:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-npc-shops
     build:
       context: ../..
@@ -409,8 +405,6 @@ services:
       LOG_LEVEL: debug
       DB_NAME: atlas-npc-shops
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-parties:
     <<: *atlas-defaults
@@ -423,7 +417,7 @@ services:
       LOG_LEVEL: debug
 
   atlas-party-quests:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-party-quests
     build:
       context: ../..
@@ -432,8 +426,6 @@ services:
     environment:
       DB_NAME: atlas-party-quests
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-pets:
     <<: *atlas-defaults
@@ -447,7 +439,7 @@ services:
       DB_NAME: atlas-pets
 
   atlas-portal-actions:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-portal-actions
     build:
       context: ../..
@@ -457,8 +449,6 @@ services:
       DB_NAME: atlas-portal-actions
       SEED_CATALOG_ROOT: /var/run/seed-catalog
       QUERY_AGGREGATOR_URL: http://atlas-query-aggregator:8080
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-portals:
     <<: *atlas-defaults
@@ -499,7 +489,7 @@ services:
     image: atlas-rates:${ATLAS_IMAGE_TAG:-local}
 
   atlas-reactor-actions:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-reactor-actions
     build:
       context: ../..
@@ -508,8 +498,6 @@ services:
     environment:
       DB_NAME: atlas-reactor-actions
       SEED_CATALOG_ROOT: /var/run/seed-catalog
-    volumes:
-      - ../seed:/var/run/seed-catalog:ro
 
   atlas-reactors:
     <<: *atlas-defaults

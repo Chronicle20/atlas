@@ -2,8 +2,8 @@
 # atlas-env, atlas-env-tokens, and atlas-db-names ConfigMaps this Job used to
 # `envFrom` are gone by the time the hook fires, and the pod would wedge in
 # CreateContainerConfigError. All ConfigMap-sourced values are now inlined
-# below, with the bot-substituted PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER
-# tokens (resolved by pr-validation.yml's update-pr-overlay).
+# below, with the bot-substituted PLACEHOLDER_PR_NUMBER token
+# (resolved by pr-validation.yml's update-pr-overlay).
 #
 # Secrets (db-credentials, pihole-credentials, ghcr-pat) are namespace-replicas
 # created by the Reflector controller from source Secrets in atlas-main /
@@ -19,6 +19,13 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: atlas-pr-cleanup
+  # Long-lived namespace. Until task-070, this Job ran in atlas-pr-<N> —
+  # the same namespace Argo CD's resources-finalizer prunes during
+  # Application deletion. The PostDelete hook fires AFTER prune, so by
+  # the time it tried to create the Job, the namespace was gone and the
+  # hook wedged with `DeletionError: namespaces "atlas-pr-<N>" not found`.
+  # The cluster-infra sibling PR adds the ServiceAccount + Role.
+  namespace: argocd
   annotations:
     argocd.argoproj.io/hook: PostDelete
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
@@ -27,6 +34,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      serviceAccountName: atlas-pr-cleanup
       containers:
         - name: cleanup
           image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
@@ -37,11 +45,21 @@ spec:
             - secretRef:
                 name: pihole-credentials
             - secretRef:
-                name: ghcr-pat
+                # New least-privilege PAT. Fine-grained, scoped to
+                # Chronicle20/atlas with Contents: Read-and-write +
+                # Metadata: Read + account-level Packages: Read-and-write
+                # (or a classic PAT with repo + delete:packages — see
+                # docs/runbooks/ephemeral-pr-deployments.md §9.5).
+                # Replaces ghcr-pat (which carried only packages scope and
+                # 403'd on bot-branch DELETE). Created in cluster-infra
+                # sibling PR; same key name (GHCR_TOKEN) so cleanup.sh
+                # doesn't change.
+                name: atlas-pr-cleanup-gh-token
           env:
-            # Per-PR token, bot-substituted at update-pr-overlay time.
-            - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+            # PR_NUMBER is the sole per-PR substitution. ATLAS_ENV is
+            # derived inside cleanup.sh via lib.sh::compute_atlas_env, so
+            # any drift on the Application's atlas.env annotation is
+            # harmless (bug #4 defensive fix; see task-070/design.md §3.4).
             - name: PR_NUMBER
               value: "PLACEHOLDER_PR_NUMBER"
             # Cluster-static infra (same in main env and every PR env).

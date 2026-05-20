@@ -1,0 +1,46 @@
+# Per-PR PostDelete cleanup overlay.
+#
+# This overlay is INTENTIONALLY separate from `deploy/k8s/overlays/pr/`. The
+# cleanup Job has a different lifecycle than the rest of a PR env:
+#
+#   - per-PR resources (services, ConfigMaps, etc.) live in
+#     `atlas-pr-<N>` namespace and are pruned by Argo CD's
+#     resources-finalizer when the Application is deleted.
+#   - the PostDelete cleanup Job runs AFTER prune, so it MUST live in a
+#     namespace that survives the prune — `argocd`.
+#
+# `deploy/k8s/overlays/pr/kustomization.yaml` has an overlay-level
+# `namespace: atlas-pr-<N>` directive that kustomize applies
+# unconditionally to every loaded resource (overriding any per-resource
+# `metadata.namespace`). Including this Job in that overlay would force
+# it back into `atlas-pr-<N>`, recreating bug #1 (finalizer-ordering
+# wedge: DeletionError: namespaces "atlas-pr-<N>" not found).
+#
+# By living in its own kustomization with no namespace directive, this
+# overlay outputs the Job with `namespace: argocd` exactly as written in
+# `postdelete-cleanup.yaml`. The cluster-infra `ApplicationSet(atlas-pr)`
+# template uses Argo CD multi-source mode (Argo CD ≥ 2.6) to apply both
+# `pr/` and `pr-cleanup/` against the same `bot/pr-<N>-resolved` branch.
+#
+# `PLACEHOLDER_PR_NUMBER` is sed-substituted at update-pr-overlay time by
+# `.github/workflows/pr-validation.yml`, matching the substitution pass
+# that runs over `pr/`. See task-070/design.md §3.1 (Design A) and
+# context.md "Sibling PR (cluster-infra)" for the coordinated rollout.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - postdelete-cleanup.yaml
+
+# Per-PR identification labels mirror the pr/ overlay so operators can
+# query cleanup Jobs across PR envs:
+#   kubectl -n argocd get jobs -l atlas.pr-number=<N>
+#   kubectl -n argocd logs -l app=atlas-pr-cleanup,atlas.pr-number=<N>
+#
+# Both values quoted so post-sed all-digit hashes (e.g. ATLAS_ENV="1756"
+# for PR #461) and all-digit PR numbers (e.g. "500") parse as strings.
+# Kustomize rejects commonLabels values that YAML parses as integers.
+commonLabels:
+  atlas.env: "PLACEHOLDER_ATLAS_ENV"
+  atlas.pr-number: "PLACEHOLDER_PR_NUMBER"
+  app: atlas-pr-cleanup

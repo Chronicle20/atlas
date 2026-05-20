@@ -27,20 +27,15 @@ export function ScopeToggle({ value, onChange, region, version }: ScopeTogglePro
           type="button"
           role="radio"
           aria-checked={value === 'shared'}
-          variant={value === 'shared' ? 'default' : 'outline'}
+          variant={value === 'shared' ? 'destructive' : 'outline'}
           size="sm"
           onClick={() => onChange('shared')}
-          className={
-            value === 'shared'
-              ? 'bg-amber-600 text-white hover:bg-amber-700'
-              : undefined
-          }
         >
           Canonical (shared)
         </Button>
       </div>
       {value === 'shared' && (
-        <p className="text-sm text-amber-700 dark:text-amber-400">
+        <p className="text-sm text-destructive">
           This will replace the shared canonical baseline for {region} v{version}.
         </p>
       )}

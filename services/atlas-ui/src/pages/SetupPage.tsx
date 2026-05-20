@@ -100,8 +100,8 @@ export function SetupPage() {
   const reactorScriptsSeed = useReactorScriptsSeedStatus();
   const mapActionScriptsSeed = useMapActionScriptsSeedStatus();
 
-  const restoreMutation = useRestoreBaseline(activeTenant!);
-  const publishMutation = usePublishBaseline(activeTenant!);
+  const restoreMutation = useRestoreBaseline(activeTenant);
+  const publishMutation = usePublishBaseline(activeTenant);
 
   const wzInputData = wzInput.data;
   const dataStatusData = dataStatus.data;

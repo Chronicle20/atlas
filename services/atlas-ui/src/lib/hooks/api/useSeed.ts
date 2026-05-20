@@ -22,7 +22,7 @@ import type { Scope } from '@/components/features/setup/ScopeToggle';
 import { useTenant } from '@/context/tenant-context';
 
 const wzInputStatusKey = (tenantId: string) => ['wzInputStatus', tenantId] as const;
-const dataStatusKey = (tenantId: string) => ['dataStatus', tenantId] as const;
+export const dataStatusKey = (tenantId: string) => ['dataStatus', tenantId] as const;
 const dropsSeedStatusKey = (tenantId: string) => ['dropsSeedStatus', tenantId] as const;
 const gachaponsSeedStatusKey = (tenantId: string) => ['gachaponsSeedStatus', tenantId] as const;
 const npcConversationsSeedStatusKey = (tenantId: string) => ['npcConversationsSeedStatus', tenantId] as const;

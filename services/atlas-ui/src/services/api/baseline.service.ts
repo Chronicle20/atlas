@@ -8,6 +8,16 @@ export interface BaselineRestoreInput {
   tenantId: string;
 }
 
+async function decodeErrorMessage(response: Response, fallback: string): Promise<string> {
+  try {
+    const parsed = (await response.json()) as { error?: string };
+    if (parsed.error) return parsed.error;
+  } catch {
+    // non-JSON body; keep the status fallback
+  }
+  return fallback;
+}
+
 export class BaselineService {
   async restore(tenant: Tenant, body: BaselineRestoreInput): Promise<void> {
     const headers = tenantHeaders(tenant);
@@ -17,7 +27,10 @@ export class BaselineService {
       headers,
       body: JSON.stringify(body),
     });
-    if (!r.ok) throw new Error(`restore failed: ${r.status}`);
+    if (!r.ok) {
+      const message = await decodeErrorMessage(r, `restore failed: ${r.status}`);
+      throw new Error(message);
+    }
   }
 
   async publish(
@@ -34,7 +47,10 @@ export class BaselineService {
       headers,
       body: JSON.stringify({ region, majorVersion, minorVersion }),
     });
-    if (!r.ok) throw new Error(`publish failed: ${r.status}`);
+    if (!r.ok) {
+      const message = await decodeErrorMessage(r, `publish failed: ${r.status}`);
+      throw new Error(message);
+    }
   }
 }
 

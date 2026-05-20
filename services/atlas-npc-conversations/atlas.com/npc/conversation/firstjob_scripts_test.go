@@ -29,11 +29,11 @@ func TestFirstJobScriptsUseRebalanceAP(t *testing.T) {
 	root := filepath.Join("..", "..", "..", "..", "..", "deploy", "seed", "gms", "83_1", "npc-conversations")
 
 	cases := []scriptCase{
-		{name: "Bowman", relPath: filepath.Join("npc", "npc-1.0121e+06.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
-		{name: "Warrior", relPath: filepath.Join("npc", "npc-1.022e+06.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"strength"}},
-		{name: "Magician", relPath: filepath.Join("npc", "npc-1.032001e+06.json"), advanceState: "performFirstJobAdvancement", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"intelligence"}},
-		{name: "Thief", relPath: filepath.Join("npc", "npc-1.052001e+06.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
-		{name: "Pirate", relPath: filepath.Join("npc", "npc-1.09e+06.json"), advanceState: "firstJobPerformAdvance", targets: []expectedTarget{{"dexterity", 20}}, bannedStats: []string{"dexterity"}},
+		{name: "Bowman", relPath: filepath.Join("npc", "npc-1012100.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
+		{name: "Warrior", relPath: filepath.Join("npc", "npc-1022000.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"strength"}},
+		{name: "Magician", relPath: filepath.Join("npc", "npc-1032001.json"), advanceState: "performFirstJobAdvancement", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"intelligence"}},
+		{name: "Thief", relPath: filepath.Join("npc", "npc-1052001.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
+		{name: "Pirate", relPath: filepath.Join("npc", "npc-1090000.json"), advanceState: "firstJobPerformAdvance", targets: []expectedTarget{{"dexterity", 20}}, bannedStats: []string{"dexterity"}},
 		{name: "Dawn Warrior", relPath: filepath.Join("quests", "quest-20101.json"), advanceState: "performJobChange", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"str"}},
 		{name: "Blaze Wizard", relPath: filepath.Join("quests", "quest-20102.json"), advanceState: "performJobChange", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"int"}},
 		{name: "Wind Archer", relPath: filepath.Join("quests", "quest-20103.json"), advanceState: "performJobChange", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dex"}},

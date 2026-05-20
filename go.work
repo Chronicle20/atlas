@@ -74,6 +74,7 @@ use (
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
 	./services/atlas-wz-extractor/atlas.com/wz-extractor
+	./tools/catalog-lint
 	./tools/cideps
 	./tools/packet-audit
 	./tools/seed-splitters

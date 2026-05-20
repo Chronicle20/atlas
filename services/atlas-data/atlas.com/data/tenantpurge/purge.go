@@ -5,16 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"atlas-data/canonical"
 	minio "atlas-data/storage/minio"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
-
-// CanonicalTenantUUID is the reserved UUID for canonical-scope rows. Purging it
-// is forbidden because it would erase the canonical document set.
-const CanonicalTenantUUID = "00000000-0000-0000-0000-000000000000"
 
 // ErrCanonicalRefused is returned when the request targets the canonical tenant.
 var ErrCanonicalRefused = errors.New("canonical tenant cannot be purged")
@@ -32,7 +29,7 @@ var PurgeTables = []string{
 
 // Purge deletes all Postgres rows and best-effort MinIO objects for tenantID.
 func Purge(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, tenantID uuid.UUID) error {
-	if tenantID.String() == CanonicalTenantUUID {
+	if tenantID.String() == canonical.TenantUUID {
 		return ErrCanonicalRefused
 	}
 	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

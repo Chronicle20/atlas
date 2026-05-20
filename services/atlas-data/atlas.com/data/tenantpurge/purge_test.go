@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"atlas-data/canonical"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
@@ -11,7 +13,7 @@ import (
 )
 
 func TestPurgeRefusesCanonical(t *testing.T) {
-	err := Purge(context.Background(), logrus.New(), nil, nil, uuid.MustParse(CanonicalTenantUUID))
+	err := Purge(context.Background(), logrus.New(), nil, nil, uuid.MustParse(canonical.TenantUUID))
 	if err == nil || err != ErrCanonicalRefused {
 		t.Fatalf("expected ErrCanonicalRefused, got %v", err)
 	}

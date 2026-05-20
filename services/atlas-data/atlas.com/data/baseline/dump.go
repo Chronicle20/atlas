@@ -9,9 +9,6 @@ import (
 // SchemaVersion bumps in lockstep with the schema-version fingerprint check.
 const SchemaVersion = "v1"
 
-// CanonicalTenantUUID is the reserved UUID for canonical-scope rows.
-const CanonicalTenantUUID = "00000000-0000-0000-0000-000000000000"
-
 // DumpTables is the ordered list of tables included in a baseline dump.
 var DumpTables = []string{
 	"documents",

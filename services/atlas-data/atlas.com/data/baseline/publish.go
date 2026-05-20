@@ -10,6 +10,7 @@ import (
 	"io"
 	"time"
 
+	"atlas-data/canonical"
 	minio "atlas-data/storage/minio"
 
 	"github.com/jackc/pgx/v5/stdlib"
@@ -101,7 +102,7 @@ func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Write
 	}
 	var buf bytes.Buffer
 	sql := fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY id) TO STDOUT (FORMAT binary)`,
-		table, CanonicalTenantUUID)
+		table, canonical.TenantUUID)
 	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, sql); err != nil {
 		return err
 	}

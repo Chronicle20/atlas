@@ -4,13 +4,37 @@ import (
 	"context"
 	"testing"
 
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
+// testTemplate returns a minimal JobTemplateSpec used by tests in lieu of the
+// production ConfigMap-loaded template.
+func testTemplate() *batchv1.JobTemplateSpec {
+	backoff := int32(0)
+	ttl := int32(3600)
+	return &batchv1.JobTemplateSpec{
+		Spec: batchv1.JobSpec{
+			BackoffLimit:            &backoff,
+			TTLSecondsAfterFinished: &ttl,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyNever,
+					Containers: []corev1.Container{{
+						Name:  "ingest",
+						Image: "atlas-data:test",
+					}},
+				},
+			},
+		},
+	}
+}
+
 func TestJobCreatorCreate(t *testing.T) {
 	cs := fake.NewSimpleClientset()
-	jc := &JobCreator{K8s: cs, Namespace: "test-ns", Template: defaultTemplate()}
+	jc := &JobCreator{K8s: cs, Namespace: "test-ns", Template: testTemplate()}
 	name, err := jc.Create(context.Background(), "tenants/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "GMS", 83, 1, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "trace-1")
 	if err != nil {
 		t.Fatal(err)
@@ -55,7 +79,7 @@ func TestJobCreatorCreate(t *testing.T) {
 }
 
 func TestRenderJobSharedScopeOmitsTenantLabel(t *testing.T) {
-	job := renderJob(defaultTemplate(), "ns", "shared", "GMS", 83, 1, "", "")
+	job := renderJob(testTemplate(), "ns", "shared", "GMS", 83, 1, "", "")
 	if _, ok := job.Labels["tenant"]; ok {
 		t.Fatalf("did not expect tenant label for shared scope")
 	}

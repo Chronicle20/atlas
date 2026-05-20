@@ -26,6 +26,7 @@ import (
 	"atlas-data/reactor"
 	"atlas-data/runtime/ingest"
 	restruntime "atlas-data/runtime/rest"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
@@ -83,8 +84,9 @@ func main() {
 	// /api/data/process handler can launch ingest Jobs.
 	var jc *restruntime.JobCreator
 	if os.Getenv("MODE") == "rest" {
+		rdb := redis.Connect(l)
 		var jcErr error
-		jc, jcErr = restruntime.NewJobCreatorInCluster()
+		jc, jcErr = restruntime.NewJobCreatorInClusterWithRedis(rdb)
 		if jcErr != nil {
 			l.WithError(jcErr).Warn("k8s in-cluster config unavailable; /api/data/process will return 503")
 			jc = nil
@@ -94,7 +96,7 @@ func main() {
 			} else if len(active) > 0 {
 				l.Infof("restart recovery: %d active ingest job(s): %v", len(active), active)
 			}
-			go restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: 1800}.Run(tdm.Context())
+			go restruntime.Watchdog{L: l, JobCreator: jc, Redis: rdb, TimeoutSecs: 1800}.Run(tdm.Context())
 		}
 	}
 

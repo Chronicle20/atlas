@@ -8,32 +8,52 @@ import (
 	"strings"
 	"time"
 
+	goredis "github.com/redis/go-redis/v9"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	clientrest "k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
 )
 
 // labelIngest marks Jobs that this service manages and that RecoverActiveJobs
 // + the Watchdog use to scope their list queries.
 const labelIngest = "atlas-data-ingest"
 
+// jobTemplateConfigMapName is the canonical name of the ConfigMap that holds
+// the JobTemplateSpec atlas-data renders into ingest Jobs.
+const jobTemplateConfigMapName = "atlas-data-ingest-job-template"
+
+// jobTemplateConfigMapKey is the key inside the ConfigMap holding the YAML
+// definition of a batchv1.Job whose spec is copied into rendered Jobs.
+const jobTemplateConfigMapKey = "job.yaml"
+
 // JobCreator constructs k8s Jobs that run atlas-data in MODE=ingest.
 //
-// Template is a JobTemplateSpec used as the base for every Job. In production
-// it should be loaded from a ConfigMap (see Task 14); for now it is a minimal
-// hardcoded template if no ConfigMap is wired in.
+// Template is a JobTemplateSpec used as the base for every Job and must be
+// loaded from the atlas-data-ingest-job-template ConfigMap. Redis is used to
+// publish a heartbeat key per (scope, region, version) so the Watchdog can
+// notice stuck Jobs.
 type JobCreator struct {
 	K8s       kubernetes.Interface
 	Namespace string
 	Template  *batchv1.JobTemplateSpec
+	Redis     *goredis.Client
 }
 
 // NewJobCreatorInCluster builds a JobCreator using the pod's in-cluster
-// ServiceAccount. Returns an error if the in-cluster config is unavailable
-// (e.g. running outside Kubernetes).
+// ServiceAccount and loads the Job template from the
+// atlas-data-ingest-job-template ConfigMap. Returns an error if the in-cluster
+// config is unavailable (e.g. running outside Kubernetes) or the ConfigMap is
+// missing/invalid.
 func NewJobCreatorInCluster() (*JobCreator, error) {
+	return NewJobCreatorInClusterWithRedis(nil)
+}
+
+// NewJobCreatorInClusterWithRedis is like NewJobCreatorInCluster but also
+// attaches a Redis client used to publish per-Job heartbeat keys.
+func NewJobCreatorInClusterWithRedis(rdb *goredis.Client) (*JobCreator, error) {
 	cfg, err := clientrest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("in-cluster config: %w", err)
@@ -44,57 +64,99 @@ func NewJobCreatorInCluster() (*JobCreator, error) {
 	}
 	ns := os.Getenv("POD_NAMESPACE")
 	if ns == "" {
+		if nsBytes, rerr := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); rerr == nil {
+			ns = strings.TrimSpace(string(nsBytes))
+		}
+	}
+	if ns == "" {
 		ns = "default"
+	}
+	tmpl, err := loadTemplateFromConfigMap(context.Background(), cs, ns, jobTemplateConfigMapName)
+	if err != nil {
+		return nil, fmt.Errorf("load job template ConfigMap: %w", err)
 	}
 	return &JobCreator{
 		K8s:       cs,
 		Namespace: ns,
-		Template:  defaultTemplate(),
+		Template:  tmpl,
+		Redis:     rdb,
 	}, nil
 }
 
-// defaultTemplate returns a minimal JobTemplateSpec. The container image is
-// taken from INGEST_IMAGE; in production the entire template should come from
-// the ingest-job-template ConfigMap (Task 14 follow-up).
-func defaultTemplate() *batchv1.JobTemplateSpec {
-	backoff := int32(0)
-	ttl := int32(3600)
-	return &batchv1.JobTemplateSpec{
-		Spec: batchv1.JobSpec{
-			BackoffLimit:            &backoff,
-			TTLSecondsAfterFinished: &ttl,
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{{
-						Name:  "ingest",
-						Image: os.Getenv("INGEST_IMAGE"),
-					}},
-				},
-			},
-		},
+// loadTemplateFromConfigMap reads the configured ConfigMap and unmarshals its
+// "job.yaml" key as a batchv1.Job, returning the Job's Spec wrapped in a
+// JobTemplateSpec. Returns an error if the ConfigMap is missing, lacks the
+// expected key, or contains an invalid Job document.
+func loadTemplateFromConfigMap(ctx context.Context, cs kubernetes.Interface, namespace, name string) (*batchv1.JobTemplateSpec, error) {
+	if cs == nil {
+		return nil, fmt.Errorf("kubernetes client unavailable")
 	}
+	cm, err := cs.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("get ConfigMap %s/%s: %w", namespace, name, err)
+	}
+	raw, ok := cm.Data[jobTemplateConfigMapKey]
+	if !ok || strings.TrimSpace(raw) == "" {
+		return nil, fmt.Errorf("ConfigMap %s/%s missing key %q", namespace, name, jobTemplateConfigMapKey)
+	}
+	var job batchv1.Job
+	if err := yaml.Unmarshal([]byte(raw), &job); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", jobTemplateConfigMapKey, err)
+	}
+	if len(job.Spec.Template.Spec.Containers) == 0 {
+		return nil, fmt.Errorf("ConfigMap %s/%s: %s has no containers", namespace, name, jobTemplateConfigMapKey)
+	}
+	for _, c := range job.Spec.Template.Spec.Containers {
+		if strings.TrimSpace(c.Image) == "" {
+			return nil, fmt.Errorf("ConfigMap %s/%s: container %q missing image", namespace, name, c.Name)
+		}
+	}
+	return &batchv1.JobTemplateSpec{Spec: job.Spec}, nil
 }
 
 // Create renders and submits a Kubernetes Job for the given ingest run.
 // Returns the generated Job name.
 //
 // scope must be either "shared" or "tenants/<tenantId>".
-func (j *JobCreator) Create(ctx context.Context, scope, region string, major, minor int, tenantId, traceparent string) (string, error) {
+func (j *JobCreator) Create(ctx context.Context, scope, region string, major, minor uint16, tenantId, traceparent string) (string, error) {
 	if j == nil || j.K8s == nil {
 		return "", fmt.Errorf("job creator unavailable")
+	}
+	if j.Template == nil {
+		return "", fmt.Errorf("job template unavailable")
 	}
 	job := renderJob(j.Template, j.Namespace, scope, region, major, minor, tenantId, traceparent)
 	created, err := j.K8s.BatchV1().Jobs(j.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("create job: %w", err)
 	}
+	if j.Redis != nil {
+		key := redisJobKey(scope, region, major, minor)
+		_ = j.Redis.Set(ctx, key, created.Name, time.Hour).Err()
+		_ = j.Redis.Set(ctx, key+":updatedAt", time.Now().UTC().Format(time.RFC3339), time.Hour).Err()
+	}
 	return created.Name, nil
+}
+
+// redisJobKey produces the Redis key used to publish per-Job heartbeat data.
+func redisJobKey(scope, region string, major, minor uint16) string {
+	return fmt.Sprintf("atlas-data:ingest:%s:%s:%d.%d", scope, region, major, minor)
+}
+
+// redisJobKeyFromLabels reconstructs the per-Job Redis key from a Job's
+// labels. Returns the empty string if any required label is missing (so the
+// caller can fall back to the Job's creationTimestamp).
+func redisJobKeyFromLabels(j *batchv1.Job) string {
+	scope, region, version := j.Labels["scope"], j.Labels["region"], j.Labels["version"]
+	if scope == "" || region == "" || version == "" {
+		return ""
+	}
+	return fmt.Sprintf("atlas-data:ingest:%s:%s:%s", scope, region, version)
 }
 
 // renderJob produces a *batchv1.Job derived from template, scoped/labeled and
 // with the ingest-specific env vars injected into every container.
-func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region string, major, minor int, tenantId, traceparent string) *batchv1.Job {
+func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region string, major, minor uint16, tenantId, traceparent string) *batchv1.Job {
 	var spec batchv1.JobSpec
 	if template != nil {
 		spec = *template.Spec.DeepCopy()
@@ -154,7 +216,7 @@ func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region strin
 // jobName produces a deterministic-ish but unique Job name suffixed with a
 // short random token. k8s names must match DNS-1123 (lowercase alphanumeric
 // and dashes).
-func jobName(scope, region string, major, minor int) string {
+func jobName(scope, region string, major, minor uint16) string {
 	scopeSeg := "shared"
 	if strings.HasPrefix(scope, "tenants/") {
 		id := strings.TrimPrefix(scope, "tenants/")

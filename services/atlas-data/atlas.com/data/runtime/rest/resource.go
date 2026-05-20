@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"atlas-data/rest"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // InitResource installs POST/GET /data/process. When jc is nil (k8s unavailable)
@@ -21,7 +23,7 @@ func InitResource(jc *JobCreator) func(si jsonapi.ServerInformation) server.Rout
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/data").Subrouter()
 			r.HandleFunc("/process", rest.RegisterHandler(l)(si)("process_create", processCreate(jc))).Methods(http.MethodPost)
-			r.HandleFunc("/process", rest.RegisterHandler(l)(si)("process_status", processStatus())).Methods(http.MethodGet)
+			r.HandleFunc("/process", rest.RegisterHandler(l)(si)("process_status", processStatus(jc))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -51,8 +53,8 @@ func processCreate(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.Handl
 				r.Context(),
 				scope,
 				t.Region(),
-				int(t.MajorVersion()),
-				int(t.MinorVersion()),
+				t.MajorVersion(),
+				t.MinorVersion(),
 				t.Id().String(),
 				r.Header.Get("traceparent"),
 			)
@@ -71,13 +73,53 @@ func processCreate(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.Handl
 	}
 }
 
-func processStatus() func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+// processStatusJob is the JSON shape returned per ingest Job from
+// processStatus.
+type processStatusJob struct {
+	Name      string `json:"name"`
+	Scope     string `json:"scope"`
+	Region    string `json:"region"`
+	Version   string `json:"version"`
+	Tenant    string `json:"tenant,omitempty"`
+	Active    int32  `json:"active"`
+	Succeeded int32  `json:"succeeded"`
+	Failed    int32  `json:"failed"`
+	StartTime string `json:"startTime,omitempty"`
+}
+
+func processStatus(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// TODO Task 12 follow-up: query active jobs by label selector and
-			// surface their statuses keyed by (scope, region, version).
+			if jc == nil || jc.K8s == nil {
+				http.Error(w, "k8s unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			list, err := jc.K8s.BatchV1().Jobs(jc.Namespace).List(r.Context(), metav1.ListOptions{
+				LabelSelector: labelIngest + "=true",
+			})
+			if err != nil {
+				http.Error(w, fmt.Sprintf("list jobs: %v", err), http.StatusInternalServerError)
+				return
+			}
+			out := make([]processStatusJob, 0, len(list.Items))
+			for _, j := range list.Items {
+				e := processStatusJob{
+					Name:      j.Name,
+					Scope:     j.Labels["scope"],
+					Region:    j.Labels["region"],
+					Version:   j.Labels["version"],
+					Tenant:    j.Labels["tenant"],
+					Active:    j.Status.Active,
+					Succeeded: j.Status.Succeeded,
+					Failed:    j.Status.Failed,
+				}
+				if j.Status.StartTime != nil {
+					e.StartTime = j.Status.StartTime.UTC().Format(time.RFC3339)
+				}
+				out = append(out, e)
+			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"jobs": []any{}})
+			_ = json.NewEncoder(w).Encode(map[string]any{"jobs": out})
 		}
 	}
 }

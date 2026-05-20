@@ -73,6 +73,12 @@ patches:
   # Must be ordered AFTER the global replicas=1 patch above so it wins
   # the merge.
   - path: patches/wz-extractor-pr.yaml
+  # Override GITSYNC_REF so the git-sync sidecar tracks the PR's SHA
+  # instead of main. CI sed-substitutes PLACEHOLDER_SHA at apply time.
+  - path: patches/seed-catalog-ref.yaml
+    target:
+      kind: ConfigMap
+      name: seed-catalog-config
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:

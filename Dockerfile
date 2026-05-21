@@ -28,7 +28,9 @@ WORKDIR /app
 # Layer: repo go.work (cheap; invalidates when libs or services are added/removed).
 COPY go.work go.work.sum ./
 
-# Layer: all 17 atlas libs' go.mod/go.sum (lib-mod-only layer; shared across every target).
+# Layer: all 17 atlas libs' go.mod (and go.sum where present — atlas-retry and
+# atlas-service have no external deps so no go.sum exists). Lib-mod-only layer;
+# shared across every target.
 COPY libs/atlas-constants/go.mod   libs/atlas-constants/go.sum   libs/atlas-constants/
 COPY libs/atlas-database/go.mod    libs/atlas-database/go.sum    libs/atlas-database/
 COPY libs/atlas-kafka/go.mod       libs/atlas-kafka/go.sum       libs/atlas-kafka/
@@ -39,10 +41,10 @@ COPY libs/atlas-opcodes/go.mod     libs/atlas-opcodes/go.sum     libs/atlas-opco
 COPY libs/atlas-packet/go.mod      libs/atlas-packet/go.sum      libs/atlas-packet/
 COPY libs/atlas-redis/go.mod       libs/atlas-redis/go.sum       libs/atlas-redis/
 COPY libs/atlas-rest/go.mod        libs/atlas-rest/go.sum        libs/atlas-rest/
-COPY libs/atlas-retry/go.mod       libs/atlas-retry/go.sum       libs/atlas-retry/
+COPY libs/atlas-retry/go.mod       libs/atlas-retry/
 COPY libs/atlas-saga/go.mod        libs/atlas-saga/go.sum        libs/atlas-saga/
 COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
-COPY libs/atlas-service/go.mod     libs/atlas-service/go.sum     libs/atlas-service/
+COPY libs/atlas-service/go.mod     libs/atlas-service/
 COPY libs/atlas-socket/go.mod      libs/atlas-socket/go.sum      libs/atlas-socket/
 COPY libs/atlas-tenant/go.mod      libs/atlas-tenant/go.sum      libs/atlas-tenant/
 COPY libs/atlas-tracing/go.mod     libs/atlas-tracing/go.sum     libs/atlas-tracing/

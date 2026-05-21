@@ -41,3 +41,15 @@ docker run --rm \
   -v "$TMPDIR/nginx.conf:/etc/nginx/nginx.conf:ro" \
   -v "$ROUTES:/etc/nginx/conf.d/routes.conf:ro" \
   nginx:alpine nginx -t
+
+# String-level guard: any cross-namespace upstream MUST be fully qualified
+# with `.svc.cluster.local`. The bare-hostname pattern (e.g. `minio:9000`)
+# resolved to the ingress pod's OWN namespace and broke every UI image
+# request on PR-544 — see commit history. nginx -t doesn't catch this
+# because it's about routing intent, not syntax.
+if grep -nE 'set \$u +"minio:[0-9]+"' "$ROUTES" >/dev/null; then
+  echo "error: routes.conf uses bare \`minio:<port>\` upstream — MinIO is in the \`minio\` namespace, not the ingress's namespace. Use \`minio.minio.svc.cluster.local:<port>\`." >&2
+  grep -nE 'set \$u +"minio:[0-9]+"' "$ROUTES" >&2
+  exit 1
+fi
+echo "routes.conf MinIO upstream cross-namespace check: OK"

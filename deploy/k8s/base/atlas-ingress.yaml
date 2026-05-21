@@ -238,7 +238,7 @@ data:
 
     # 2. Map render (composite-on-miss; MinIO serves cache hits).
     location ~ ^/api/assets/(?<t>[^/]+)/(?<r>[^/]+)/(?<v>[0-9]+\.[0-9]+)/map/(?<mapid>[0-9]+)/render\.png$ {
-      set $u "minio.${POD_NAMESPACE}.svc.cluster.local:9000";
+      set $u "minio.minio.svc.cluster.local:9000";
       rewrite ^ /atlas-renders/tenants/$t/regions/$r/versions/$v/map/$mapid/render.png break;
       proxy_intercept_errors on;
       error_page 404 = @maprender_miss;
@@ -253,7 +253,7 @@ data:
 
     # 3. Generic assets — per-tenant → shared fallback against MinIO.
     location ~ ^/api/assets/(?<t>[^/]+)/(?<r>[^/]+)/(?<v>[0-9]+\.[0-9]+)/(?<rest>.+)$ {
-      set $u "minio.${POD_NAMESPACE}.svc.cluster.local:9000";
+      set $u "minio.minio.svc.cluster.local:9000";
       rewrite ^ /atlas-assets/tenants/$t/regions/$r/versions/$v/$rest break;
       proxy_intercept_errors on;
       error_page 404 = @shared_fallback;
@@ -261,7 +261,7 @@ data:
       add_header Cache-Control "public, max-age=86400" always;
     }
     location @shared_fallback {
-      set $u "minio.${POD_NAMESPACE}.svc.cluster.local:9000";
+      set $u "minio.minio.svc.cluster.local:9000";
       rewrite ^ /atlas-assets/shared/regions/$r/versions/$v/$rest break;
       proxy_pass http://$u;
       add_header Cache-Control "public, max-age=86400" always;

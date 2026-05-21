@@ -155,7 +155,7 @@ func extractEntityIcon(f *wz.File, id uint32, finder canvasFinder) (image.Image,
 
 	imagesByName := make(map[string]*wz.Image)
 	for _, img := range root.Images() {
-		imagesByName[img.Name()] = img
+		imagesByName[normalizeId(img.Name())] = img
 	}
 
 	target := strconv.FormatUint(uint64(id), 10)
@@ -216,15 +216,12 @@ func findInfoLink(props []property.Property) string {
 	return ""
 }
 
-// findImageById looks up an image by its numeric id, padding with leading
-// zeros as needed. WZ image names are zero-padded to 7 digits (e.g.
-// "6110300" for mob 6110300).
+// findImageById looks up an image by its numeric id. The `images` map is
+// keyed by normalizeId(img.Name()), so any of the forms a UOL might use
+// (raw id, zero-padded, with or without `.img`) reduces to the same key
+// after normalization.
 func findImageById(images map[string]*wz.Image, id string) *wz.Image {
-	if img, ok := images[id]; ok {
-		return img
-	}
-	padded := fmt.Sprintf("%07s", id)
-	if img, ok := images[padded]; ok {
+	if img, ok := images[normalizeId(id)]; ok {
 		return img
 	}
 	return nil
@@ -394,8 +391,12 @@ func findFirstCanvas(props []property.Property) *property.CanvasProperty {
 	return nil
 }
 
-// normalizeId strips leading zeros from a WZ entity id.
+// normalizeId strips a trailing ".img" suffix (present on top-level WZ image
+// names like "0100100.img") and leading zeros from a WZ entity id. Callers
+// pass raw image / sub-property names; this canonicalizes both forms so the
+// comparison against a uint32-string target (e.g. "100100") matches.
 func normalizeId(id string) string {
+	id = strings.TrimSuffix(id, ".img")
 	trimmed := strings.TrimLeft(id, "0")
 	if trimmed == "" {
 		return "0"

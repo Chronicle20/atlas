@@ -55,19 +55,25 @@ func (Mob) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 
 	// Emit per-mob icons to MinIO (best-effort; missing icons are not fatal).
 	prefix := minioAssetPrefix(p)
+	var scanned, extracted, uploaded int
 	for _, img := range file.Root().Images() {
 		id, ok := imgID(img.Name())
 		if !ok {
 			continue
 		}
+		scanned++
 		icon, err := icons.ExtractMobIcon(file, id)
 		if err != nil || icon == nil {
 			continue
 		}
+		extracted++
 		key := fmt.Sprintf("%s/mob/%d/icon.png", prefix, id)
 		if err := putPNG(ctx, mc, key, icon); err != nil {
 			l.WithError(err).Warnf("upload mob icon %d", id)
+			continue
 		}
+		uploaded++
 	}
+	l.Infof("mob icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
 }

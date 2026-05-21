@@ -52,21 +52,27 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 
 	// Emit per-item icons (Consume/Cash/Etc/Install/Pet share Item.wz layout).
 	prefix := minioAssetPrefix(p)
+	var scanned, extracted, uploaded int
 	for _, sub := range file.Root().Directories() {
 		for _, img := range sub.Images() {
 			id, ok := imgID(img.Name())
 			if !ok {
 				continue
 			}
+			scanned++
 			icon, err := icons.ExtractItemIcon(file, id)
 			if err != nil || icon == nil {
 				continue
 			}
+			extracted++
 			key := fmt.Sprintf("%s/item/%d/icon.png", prefix, id)
 			if err := putPNG(ctx, mc, key, icon); err != nil {
 				l.WithError(err).Warnf("upload item icon %d", id)
+				continue
 			}
+			uploaded++
 		}
 	}
+	l.Infof("item icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
 }

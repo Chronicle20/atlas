@@ -40,19 +40,25 @@ func (Npc) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		return err
 	}
 	prefix := minioAssetPrefix(p)
+	var scanned, extracted, uploaded int
 	for _, img := range file.Root().Images() {
 		id, ok := imgID(img.Name())
 		if !ok {
 			continue
 		}
+		scanned++
 		icon, err := icons.ExtractNpcIcon(file, id)
 		if err != nil || icon == nil {
 			continue
 		}
+		extracted++
 		key := fmt.Sprintf("%s/npc/%d/icon.png", prefix, id)
 		if err := putPNG(ctx, mc, key, icon); err != nil {
 			l.WithError(err).Warnf("upload npc icon %d", id)
+			continue
 		}
+		uploaded++
 	}
+	l.Infof("npc icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
 }

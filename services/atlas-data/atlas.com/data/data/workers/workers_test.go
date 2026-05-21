@@ -3,8 +3,8 @@ package workers
 import "testing"
 
 func TestRegisteredSize(t *testing.T) {
-	if len(Registered) != 10 {
-		t.Fatalf("registered = %d, want 10", len(Registered))
+	if len(Registered) != 11 {
+		t.Fatalf("registered = %d, want 11", len(Registered))
 	}
 }
 

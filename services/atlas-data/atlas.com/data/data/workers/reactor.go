@@ -32,19 +32,25 @@ func (Reactor) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *m
 		return err
 	}
 	prefix := minioAssetPrefix(p)
+	var scanned, extracted, uploaded int
 	for _, img := range file.Root().Images() {
 		id, ok := imgID(img.Name())
 		if !ok {
 			continue
 		}
+		scanned++
 		icon, err := icons.ExtractReactorIcon(file, id)
 		if err != nil || icon == nil {
 			continue
 		}
+		extracted++
 		key := fmt.Sprintf("%s/reactor/%d/icon.png", prefix, id)
 		if err := putPNG(ctx, mc, key, icon); err != nil {
 			l.WithError(err).Warnf("upload reactor icon %d", id)
+			continue
 		}
+		uploaded++
 	}
+	l.Infof("reactor icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
 }

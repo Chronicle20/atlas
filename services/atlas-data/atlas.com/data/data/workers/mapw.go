@@ -53,20 +53,25 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 	// Emit per-map layers + minimap + layout JSON to MinIO.
 	prefix := minioAssetPrefix(p)
 	idx := mapimage.NewIndex(file)
+	var scanned, layoutsWritten, layersWritten, minimapsWritten, extractLayersErrs, extractMinimapErrs int
 	for _, img := range idx.Maps() {
 		mapId, ok := imgID(img.Name())
 		if !ok {
 			continue
 		}
+		scanned++
 		layers, layout, err := mapimage.ExtractLayers(idx, img)
 		if err != nil {
+			extractLayersErrs++
 			l.WithError(err).Debugf("extract layers map %d", mapId)
 		} else {
 			for _, lo := range layers {
 				key := fmt.Sprintf("%s/map/%d/layers/%s.png", prefix, mapId, lo.Name)
 				if err := putPNG(ctx, mc, key, lo.Image); err != nil {
 					l.WithError(err).Warnf("upload layer %s map %d", lo.Name, mapId)
+					continue
 				}
+				layersWritten++
 			}
 			data, mErr := maplayout.Marshal(layout)
 			if mErr != nil {
@@ -75,12 +80,15 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 				key := fmt.Sprintf("%s/map/%d/layout.json", prefix, mapId)
 				if err := putJSON(ctx, mc, key, data); err != nil {
 					l.WithError(err).Warnf("upload layout map %d", mapId)
+				} else {
+					layoutsWritten++
 				}
 			}
 		}
 		mm, err := mapimage.ExtractMinimap(img)
 		if err != nil {
 			if !errors.Is(err, mapimage.ErrNoMinimap) {
+				extractMinimapErrs++
 				l.WithError(err).Debugf("extract minimap map %d", mapId)
 			}
 			continue
@@ -88,7 +96,11 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		key := fmt.Sprintf("%s/map/%d/minimap.png", prefix, mapId)
 		if err := putPNG(ctx, mc, key, mm); err != nil {
 			l.WithError(err).Warnf("upload minimap map %d", mapId)
+			continue
 		}
+		minimapsWritten++
 	}
+	l.Infof("map assets: scanned=%d layouts=%d layers=%d minimaps=%d extractLayersErrs=%d extractMinimapErrs=%d",
+		scanned, layoutsWritten, layersWritten, minimapsWritten, extractLayersErrs, extractMinimapErrs)
 	return nil
 }

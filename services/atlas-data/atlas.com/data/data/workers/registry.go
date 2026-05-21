@@ -12,4 +12,5 @@ var Registered = []Worker{
 	Map{},
 	Character{},
 	UI{},
+	Commodity{},
 }

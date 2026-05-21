@@ -55,6 +55,7 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	// Emit per-skill icons. Skill IDs live as SubProperty children of the
 	// "skill" SubProperty in each per-job .img.
 	prefix := minioAssetPrefix(p)
+	var scanned, extracted, uploaded int
 	for _, img := range file.Root().Images() {
 		// MobSkill.img and others don't have job ids; skip them.
 		if _, ok := imgID(img.Name()); !ok {
@@ -73,16 +74,21 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 			if err != nil {
 				continue
 			}
+			scanned++
 			icon, err := icons.ExtractSkillIcon(file, uint32(skillId))
 			if err != nil || icon == nil {
 				continue
 			}
+			extracted++
 			key := fmt.Sprintf("%s/skill/%d/icon.png", prefix, skillId)
 			if err := putPNG(ctx, mc, key, icon); err != nil {
 				l.WithError(err).Warnf("upload skill icon %d", skillId)
+				continue
 			}
+			uploaded++
 		}
 	}
+	l.Infof("skill icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
 }
 

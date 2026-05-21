@@ -16,7 +16,12 @@ import (
 // produced here mirror the layout written by atlas-data ingest:
 //
 //	<scope>/regions/<region>/versions/<version>/map/<mapID>/layout.json
-//	<scope>/regions/<region>/versions/<version>/map/<mapID>/layers/<layerID>.png
+//	<scope>/regions/<region>/versions/<version>/map/<mapID>/layers/<layer.Source>.png
+//
+// Layer PNGs are named by maplayout.Layer.Source — that field exists exactly
+// to decouple the on-disk key from the in-memory numeric ID. atlas-data
+// writes "layer-0.png", "layer-1.png" etc.; an earlier version of this
+// function used "%d.png" off layer.ID and silently 404'd every layer.
 func (s *Storage) GetMap(ctx context.Context, scope, region, version string, mapID uint32) (*MapEntry, error) {
 	cacheKey := fmt.Sprintf("%s|%s|%s|%d", scope, region, version, mapID)
 	if entry, ok := s.Caches.Map.Get(cacheKey); ok {
@@ -40,7 +45,11 @@ func (s *Storage) GetMap(ctx context.Context, scope, region, version string, map
 
 	entry := MapEntry{Layout: layout, Layers: make(map[int][]byte, len(layout.Layers))}
 	for _, layer := range layout.Layers {
-		layerKey := fmt.Sprintf("%s/regions/%s/versions/%s/map/%d/layers/%d.png", scope, region, version, mapID, layer.ID)
+		source := layer.Source
+		if source == "" {
+			source = fmt.Sprintf("layer-%d", layer.ID)
+		}
+		layerKey := fmt.Sprintf("%s/regions/%s/versions/%s/map/%d/layers/%s.png", scope, region, version, mapID, source)
 		layerRC, err := s.MC.Get(ctx, s.Cfg.BucketAssets, layerKey)
 		if err != nil {
 			return nil, fmt.Errorf("get layer %s: %w", layerKey, err)

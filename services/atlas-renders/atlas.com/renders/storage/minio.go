@@ -26,9 +26,24 @@ func NewMC(cfg Config) (*MC, error) {
 	return &MC{mc: mc}, nil
 }
 
+// Get returns a reader for the object at (bucket, key). The minio-go client
+// lazily defers the actual request: mc.GetObject succeeds with a non-nil
+// *Object even when the key doesn't exist, and the NoSuchKey error only
+// surfaces on the FIRST Read. Callers that copy directly into an
+// http.ResponseWriter after setting the Content-Type header would otherwise
+// send a 200 + 0-byte response on a cache miss (observed against the
+// renders bucket on PR-544). Stat first so a missing object surfaces as an
+// error here instead of later as silent corruption.
 func (m *MC) Get(ctx context.Context, bucket, key string) (io.ReadCloser, error) {
 	obj, err := m.mc.GetObject(ctx, bucket, key, miniogo.GetObjectOptions{})
-	return obj, err
+	if err != nil {
+		return nil, err
+	}
+	if _, statErr := obj.Stat(); statErr != nil {
+		_ = obj.Close()
+		return nil, statErr
+	}
+	return obj, nil
 }
 
 func (m *MC) Put(ctx context.Context, bucket, key string, r io.Reader, size int64, contentType string) error {

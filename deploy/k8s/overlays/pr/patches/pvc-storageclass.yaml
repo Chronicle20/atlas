@@ -7,20 +7,7 @@
 #
 # See task-063 plan.md Phase 0 Task 0.6 for the rationale.
 #
-# task-071 removed atlas-data-pvc from base (atlas-data is now MinIO-backed).
-# atlas-wz-input-pvc + atlas-assets-pvc remain in base until Task 17 cutover
-# deletes atlas-wz-extractor and atlas-assets.
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: atlas-wz-input-pvc
-spec:
-  storageClassName: longhorn-pr
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: atlas-assets-pvc
-spec:
-  storageClassName: longhorn-pr
+# task-071 removed all PVCs from base: atlas-data, atlas-wz-extractor, and
+# atlas-assets are MinIO-backed now. This patch file is intentionally empty
+# (kustomize accepts a documentless patch); it stays in place so the
+# kustomization.yaml `patches:` reference doesn't error.

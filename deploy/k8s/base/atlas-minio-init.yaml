@@ -133,6 +133,9 @@ metadata:
   name: atlas-minio-credentials
 type: Opaque
 stringData:
-  endpoint: "http://minio.minio.svc.cluster.local:9000"
+  # minio-go SDK rejects fully-qualified endpoint URLs ("Endpoint url cannot
+  # have fully qualified paths."). Pass bare host:port; the Secure boolean
+  # drives http vs https.
+  endpoint: "minio.minio.svc.cluster.local:9000"
   accessKey: atlas-data
   secretKey: atlas-data-12345

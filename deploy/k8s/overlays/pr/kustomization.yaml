@@ -73,10 +73,10 @@ patches:
             labelSelector:
               matchLabels:
                 atlas.env: "PLACEHOLDER_ATLAS_ENV"
-  # wz-extractor opts back into replicas=2 (see patch comment for why).
-  # Must be ordered AFTER the global replicas=1 patch above so it wins
-  # the merge.
-  - path: patches/wz-extractor-pr.yaml
+  # wz-extractor-pr patch unregistered with the base manifest in task-071
+  # (atlas-wz-extractor depends on atlas-data-pvc which no longer exists).
+  # File preserved for git history.
+  # - path: patches/wz-extractor-pr.yaml
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:

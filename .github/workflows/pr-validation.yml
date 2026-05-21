@@ -122,51 +122,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
   # ============================================
-  # Build Docker Images (validation only, no push)
+  # Build Docker Images
+  #
+  # Single matrix job. Always builds (Dockerfile validation on every PR);
+  # pushes to ghcr only when the PR carries the `deploy-env` label, since
+  # the Argo ApplicationSet filters out PRs without that label and any
+  # pushed pr-<N>-<sha> tag would be orphaned. Cache scope key is
+  # preserved from the prior push job so the first post-collapse
+  # labeled-PR run hits the existing GHA cache warm.
   # ============================================
   build-docker:
     name: Build Docker - ${{ matrix.service.name }}
     needs: [detect-changes, test-go-services, test-go-libraries, test-ui]
     if: |
       always() &&
-      needs.detect-changes.outputs.docker-services-matrix != '[]' &&
-      (needs.test-go-services.result == 'success' || needs.test-go-services.result == 'skipped') &&
-      (needs.test-go-libraries.result == 'success' || needs.test-go-libraries.result == 'skipped') &&
-      (needs.test-ui.result == 'success' || needs.test-ui.result == 'skipped')
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.docker-services-matrix) }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
-        uses: ./.github/actions/docker-build
-        with:
-          context: ${{ matrix.service.docker_context }}
-          dockerfile: ${{ matrix.service.path }}/Dockerfile
-          image-name: ${{ matrix.service.docker_image }}
-          tags: pr-${{ github.event.pull_request.number }}
-          push: 'false'
-
-  # ============================================
-  # Build and Push Per-PR Docker Images
-  # ============================================
-  build-docker-pr:
-    name: Build PR Image - ${{ matrix.service.name }}
-    needs: [detect-changes, test-go-services, test-go-libraries, test-ui]
-    # Only build per-PR images when the PR opts into a deployable env via
-    # the `deploy-env` label. Without the label, the Argo ApplicationSet
-    # filters the PR out and no environment ever syncs, so the per-PR
-    # ghcr tags would be orphaned. Skipping the build here saves CI time
-    # and ghcr quota.
-    if: |
-      always() &&
-      github.event_name == 'pull_request' &&
-      contains(github.event.pull_request.labels.*.name, 'deploy-env') &&
       needs.detect-changes.outputs.docker-services-matrix != '[]' &&
       (needs.test-go-services.result == 'success' || needs.test-go-services.result == 'skipped') &&
       (needs.test-go-libraries.result == 'success' || needs.test-go-libraries.result == 'skipped') &&
@@ -184,37 +153,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
       - name: Compute short SHA
         id: sha
-        run: echo "short=$(git rev-parse --short=7 ${{ github.event.pull_request.head.sha }})" >> $GITHUB_OUTPUT
+        run: |
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          echo "short=$(git rev-parse --short=7 "$SHA")" >> $GITHUB_OUTPUT
 
-      - name: Build and push PR image (amd64)
-        uses: docker/build-push-action@v6
+      - name: Compute push flag and tag
+        id: pushtag
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SHORT_SHA: ${{ steps.sha.outputs.short }}
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+          HAS_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'deploy-env') }}
+        run: |
+          set -euo pipefail
+          if [ "$HAS_LABEL" = "true" ]; then
+            echo "push=true" >> "$GITHUB_OUTPUT"
+            echo "tag=pr-${PR_NUMBER}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          else
+            echo "push=false" >> "$GITHUB_OUTPUT"
+            if [ "$IS_PR" = "true" ]; then
+              echo "tag=pr-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+            else
+              echo "tag=pr-dispatch" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Build Docker image
+        uses: ./.github/actions/docker-build
         with:
           context: ${{ matrix.service.docker_context }}
-          file: ${{ matrix.service.path }}/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ matrix.service.docker_image }}:pr-${{ github.event.pull_request.number }}-${{ steps.sha.outputs.short }}
+          dockerfile: ${{ matrix.service.path }}/Dockerfile
+          image-name: ${{ matrix.service.docker_image }}
+          tags: ${{ steps.pushtag.outputs.tag }}
+          push: ${{ steps.pushtag.outputs.push }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GHCR_TOKEN }}
           cache-from: type=gha,scope=${{ matrix.service.name }}-amd64
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-amd64
-          provenance: false
-          sbom: false
 
   # ============================================
   # PR-env resolved overlay (bot branch)
   #
-  # After build-docker-pr completes, create/update a derived branch
+  # After build-docker completes, create/update a derived branch
   # `bot/pr-<N>-resolved` that:
   #   1. Substitutes every PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER /
   #      PLACEHOLDER_SHA token in deploy/k8s/overlays/pr/ AND
@@ -244,12 +226,12 @@ jobs:
   # ============================================
   update-pr-overlay:
     name: Resolve PR overlay
-    needs: [detect-changes, build-docker-pr]
+    needs: [detect-changes, build-docker]
     if: |
       always() &&
       github.event_name == 'pull_request' &&
       contains(github.event.pull_request.labels.*.name, 'deploy-env') &&
-      needs.build-docker-pr.result == 'success'
+      needs.build-docker.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -323,7 +305,7 @@ jobs:
           NEW_TAG="pr-${PR_NUMBER}-${SHORT_SHA}"
 
           # The detect-changes matrix is the exact list of services
-          # that build-docker-pr pushed pr-<N>-<sha> tags for. For each,
+          # that build-docker pushed pr-<N>-<sha> tags for. For each,
           # bump the corresponding entry in the overlay's `images:` block.
           # Services NOT in this list keep their existing tag (typically
           # `latest` for first-build PRs, or a previous `pr-<N>-<sha>`
@@ -375,7 +357,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, build-docker-pr, update-pr-overlay]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay]
     if: always()
     runs-on: ubuntu-latest
 
@@ -390,7 +372,6 @@ jobs:
           SERVICES_RESULT="${{ needs.test-go-services.result }}"
           UI_RESULT="${{ needs.test-ui.result }}"
           DOCKER_RESULT="${{ needs.build-docker.result }}"
-          DOCKER_PR_RESULT="${{ needs.build-docker-pr.result }}"
           OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
@@ -399,13 +380,12 @@ jobs:
           echo "| Go Services | $SERVICES_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| UI | $UI_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker PR Push | $DOCKER_PR_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$DOCKER_PR_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

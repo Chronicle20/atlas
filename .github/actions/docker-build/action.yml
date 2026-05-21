@@ -48,6 +48,14 @@ inputs:
     description: 'Cache destinations'
     required: false
     default: ''
+  provenance:
+    description: 'Generate provenance attestation. "false" produces a single-platform image (not a manifest list).'
+    required: false
+    default: 'false'
+  sbom:
+    description: 'Generate SBOM attestation. "false" produces a single-platform image (not a manifest list).'
+    required: false
+    default: 'false'
 
 outputs:
   image-digest:
@@ -118,6 +126,8 @@ runs:
         build-args: ${{ inputs.build-args }}
         cache-from: ${{ inputs.cache-from }}
         cache-to: ${{ inputs.cache-to }}
+        provenance: ${{ inputs.provenance }}
+        sbom: ${{ inputs.sbom }}
 
     - name: Image summary
       shell: bash

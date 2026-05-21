@@ -25,7 +25,8 @@ func (Commodity) Name() string        { return "COMMODITY" }
 func (Commodity) ArchiveName() string { return "Etc.wz" }
 
 func (Commodity) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, file *wz.File, p Params) error {
-	if _, _, err := withTenant(ctx, p); err != nil {
+	ctx, _, err := withTenant(ctx, p)
+	if err != nil {
 		return err
 	}
 	root, err := serializeArchive(l, p, file)

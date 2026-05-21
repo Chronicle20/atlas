@@ -35,6 +35,7 @@ import (
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-data/wzinput"
 	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -132,11 +133,20 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
+	// task-071: PATCH /api/data/wz streams the canonical WZ zip — production
+	// atlas.zip is ~1.6 GB. atlas-rest's default 5-second ReadTimeout cuts
+	// uploads off mid-stream (observed on PR-544: 550 MB / 1.67 GB before
+	// `read tcp ... i/o timeout`). atlas-ingress already allows 3600s on
+	// the matching route; align the server with that so the upload has time
+	// to complete. Other atlas-data endpoints don't keep connections open
+	// long; raising the global timeout is safe.
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		SetReadTimeout(time.Hour).
+		SetWriteTimeout(time.Hour).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
 		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
 		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).

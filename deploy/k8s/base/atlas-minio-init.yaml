@@ -1,13 +1,27 @@
+#
+# The SA / Role / RoleBinding / mirrored Secret below MUST be annotated as
+# PreSync hooks with an earlier sync-wave than the Job — otherwise Argo's
+# regular-sync phase doesn't run until the PreSync Job completes, but the
+# Job can't start because its ServiceAccount is in regular sync. Deadlock.
+# Observed on the bee cluster, PR-544 deploy stuck 13h.
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: atlas-minio-init
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-3"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: atlas-minio-init
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-3"
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -17,6 +31,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: atlas-minio-init
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-3"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -25,17 +43,31 @@ subjects:
   - kind: ServiceAccount
     name: atlas-minio-init
 ---
-# Cross-namespace Secret mirror: the operator's root creds Secret in the minio
-# namespace is replicated into this namespace by kubernetes-replicator (see
-# design §6.3). The annotation here tells the replicator which source Secret
-# to mirror.
+# MinIO root credentials for the init Job.
+#
+# Design §6.3 originally specified kubernetes-replicator to mirror the cluster's
+# minio/minio-root-creds Secret into every atlas-pr-* namespace. The bee
+# cluster does not have kubernetes-replicator installed (uses Reflector
+# instead, with source-side annotations on the source Secret, which the
+# cluster's minio Secret does not carry). Rather than block on a cluster-infra
+# change, this manifest declares the dev credentials inline.
+#
+# Follow-up (production): add Reflector annotations to minio/minio-root-creds
+# (reflection-allowed + reflection-auto-namespaces=atlas-pr-.*) and remove
+# the inline stringData below. The Job's env-refs already match the source
+# Secret's key names.
 apiVersion: v1
 kind: Secret
 metadata:
   name: minio-root-creds
   annotations:
-    replicator.v1.mittwald.de/replicate-from: minio/minio-root-creds
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-3"
 type: Opaque
+stringData:
+  MINIO_ROOT_USER: minioadmin
+  MINIO_ROOT_PASSWORD: minioadmin12345
 ---
 apiVersion: batch/v1
 kind: Job
@@ -61,12 +93,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: minio-root-creds
-                  key: rootUser
+                  key: MINIO_ROOT_USER
             - name: MINIO_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: minio-root-creds
-                  key: rootPassword
+                  key: MINIO_ROOT_PASSWORD
             - name: MINIO_ENDPOINT
               value: "http://minio.minio.svc.cluster.local:9000"
           command:
@@ -86,3 +118,21 @@ spec:
                 mc admin policy attach src readwrite --user "$svc" || true
               done
               echo "minio-init complete"
+---
+# Per-service MinIO credentials consumed by atlas-data + atlas-renders +
+# the ingest Job template. The init Job above provisions these users in
+# MinIO (`mc admin user add … atlas-data atlas-data-12345`); this Secret
+# is the k8s-side mirror so Deployments can mount the credentials.
+#
+# Follow-up: derive the password from a higher-entropy source and rotate
+# via secret-store-csi-driver or external-secrets. Inline values match
+# the init Job's `mc admin user add` literals.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: atlas-minio-credentials
+type: Opaque
+stringData:
+  endpoint: "http://minio.minio.svc.cluster.local:9000"
+  accessKey: atlas-data
+  secretKey: atlas-data-12345

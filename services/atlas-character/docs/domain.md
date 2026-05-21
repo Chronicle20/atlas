@@ -70,7 +70,7 @@ Represents AP distribution request.
 | Amount | int8 | Points to distribute |
 
 ### Invariants
-- Character name must match pattern `[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}`
+- Character name must match anchored pattern `^[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}$` (length and character set apply to the whole name)
 - Character name must be unique within tenant
 - Level must be between 1 and 200
 - Gender must be 0 or 1

@@ -223,7 +223,7 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 
 	// Verify the name wasn't changed
 	if unchangedCharacter.Name() != "TestChar" {
-		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
+		t.Errorf("Character should not have been updated. Expected name 'TestChar', got '%s'", unchangedCharacter.Name())
 	}
 }
 
@@ -688,7 +688,7 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 
 	// Verify the name wasn't changed
 	if unchangedCharacter.Name() != "TestChar" {
-		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
+		t.Errorf("Character should not have been updated. Expected name 'TestChar', got '%s'", unchangedCharacter.Name())
 	}
 }
 
@@ -745,7 +745,7 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 
 	// Verify the name wasn't changed
 	if unchangedCharacter.Name() != "TestChar" {
-		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
+		t.Errorf("Character should not have been updated. Expected name 'TestChar', got '%s'", unchangedCharacter.Name())
 	}
 }
 

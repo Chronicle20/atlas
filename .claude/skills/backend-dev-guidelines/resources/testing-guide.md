@@ -276,7 +276,7 @@ func TestMain(m *testing.M) {
 
 ### Pattern B: Per-test producer injection
 
-If your processor exposes a `WithProducer(...)` builder method (see `atlas-marriages`, `atlas-merchant`, `atlas-invites`, `atlas-monster-book` for examples), inject a no-op `producer.Provider` directly:
+If your processor exposes a `WithProducer(...)` builder method (see `atlas-marriages` for the canonical example), inject a no-op `producer.Provider` directly:
 
 ```go
 mockProducer := func(token string) kafkaProducer.MessageProducer {

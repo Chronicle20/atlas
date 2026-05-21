@@ -96,8 +96,18 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     && go build -C "$MOD_DIR" -o /server
 
 # Stash this service's config.yaml in a known location for the runtime stage to COPY.
+# Not every service ships a config.yaml (most don't); when absent, emit an empty
+# placeholder so the runtime-stage COPY has a stable source path. The legacy
+# per-service Dockerfiles for services without a config simply omit the COPY;
+# emitting an empty /config.yaml is behaviorally equivalent (no service reads
+# from /config.yaml unless it explicitly opens it, and the ones that do — e.g.
+# atlas-account, atlas-ban — get the real file).
 RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1) \
-    && cp "${MOD_DIR}config.yaml" /app/config.yaml
+    && if [ -f "${MOD_DIR}config.yaml" ]; then \
+         cp "${MOD_DIR}config.yaml" /app/config.yaml; \
+       else \
+         : > /app/config.yaml; \
+       fi
 
 FROM alpine:3.23
 

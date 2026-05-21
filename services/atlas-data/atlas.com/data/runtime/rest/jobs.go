@@ -188,6 +188,16 @@ func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region strin
 	if traceparent != "" {
 		envs = append(envs, corev1.EnvVar{Name: "TRACEPARENT", Value: traceparent})
 	}
+	// Inherit DB_NAME from the running atlas-data pod so ingest Jobs hit the
+	// same database. The Job template hardcodes DB_NAME="atlas-data" as a
+	// sensible default for single-env clusters, but PR overlays patch the
+	// Deployment env to suffix it per-env (e.g. atlas-data-bbb1). Kustomize
+	// can't reach into the ConfigMap-embedded Job template to apply that same
+	// patch, so we propagate the live value here. k8s env-list semantics are
+	// last-wins, so appending overrides the template's default.
+	if v := os.Getenv("DB_NAME"); v != "" {
+		envs = append(envs, corev1.EnvVar{Name: "DB_NAME", Value: v})
+	}
 
 	for i := range spec.Template.Spec.Containers {
 		spec.Template.Spec.Containers[i].Env = append(spec.Template.Spec.Containers[i].Env, envs...)

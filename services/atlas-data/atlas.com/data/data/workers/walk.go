@@ -45,14 +45,15 @@ func registerAllInDirectory(l logrus.FieldLogger, ctx context.Context, dir strin
 	})
 }
 
-// imgID parses a WZ image name like "01000000.img" into the numeric id. Returns
-// (0, false) when the name does not match.
+// imgID parses a WZ image name into a numeric id. wz.Directory.parseDirectory
+// strips the ".img" suffix when constructing the tree (directory.go:127), so
+// names reach this helper *without* the suffix — e.g. "0100100", not
+// "0100100.img". For tolerance with raw WZ paths fed from XML-derived code,
+// the suffix is also accepted. Returns (0, false) for non-numeric names like
+// "MobSkill" or "BFSkill".
 func imgID(name string) (uint32, bool) {
-	if !strings.HasSuffix(name, ".img") {
-		return 0, false
-	}
-	idStr := strings.TrimSuffix(name, ".img")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	name = strings.TrimSuffix(name, ".img")
+	id, err := strconv.ParseUint(name, 10, 32)
 	if err != nil {
 		return 0, false
 	}

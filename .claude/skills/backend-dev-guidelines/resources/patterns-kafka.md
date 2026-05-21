@@ -37,3 +37,18 @@ func (p *ProcessorImpl) OperationAndEmit(params...) error {
 - Curried builder for consumers
 - Attach header parsers for span + tenant
 - Decode → handle → call processor
+
+## Producer Stubbing in Tests
+Any test package that exercises an emit path (`*AndEmit()` or `message.Emit(...)`) MUST stub the producer. The default writer factory retries failed sends 10× with exponential backoff (~42s per message) when `BOOTSTRAP_SERVERS` is unset, which compounds catastrophically across a test suite.
+
+Install the no-op writer in `TestMain`:
+```go
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+
+func TestMain(m *testing.M) {
+    producertest.InstallNoop()
+    os.Exit(m.Run())
+}
+```
+
+For per-test injection (when the processor exposes `WithProducer(...)`), pass a no-op `producer.Provider` directly. See [Stubbing the Kafka Producer in Tests](testing-guide.md#stubbing-the-kafka-producer-in-tests).

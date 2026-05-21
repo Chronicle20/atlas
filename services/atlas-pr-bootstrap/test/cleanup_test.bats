@@ -126,3 +126,67 @@ EOF
         "$PROJECT_ROOT/scripts/cleanup.sh"
     [ "$status" -eq 0 ]
 }
+
+# fixture_env returns the ATLAS_ENV hash cleanup.sh derives for PR_NUMBER=99
+# (compute_atlas_env "99" → first 4 hex chars of sha256("pr-99")). Keeping this
+# computed instead of hardcoded means the rpk tests below stay correct if the
+# formula in lib.sh ever changes.
+fixture_env() {
+    . "$PROJECT_ROOT/scripts/lib.sh"
+    compute_atlas_env 99
+}
+
+@test "cleanup.sh deletes only -ATLAS_ENV-suffixed topics via rpk" {
+    local env_hash
+    env_hash="$(fixture_env)"
+    make_stubs "{\"topics\":[{\"name\":\"foo-${env_hash}\"},{\"name\":\"bar\"},{\"name\":\"baz-${env_hash}\"}]}"
+    run run_cleanup
+    [ "$status" -eq 0 ]
+
+    # rpk topic list was invoked once
+    [ "$(grep -c '^rpk topic list ' "$STUB_LOG")" -eq 1 ]
+
+    # rpk topic delete was invoked for foo-<env> and baz-<env>, and not for bar
+    grep -F 'rpk topic delete' "$STUB_LOG" | grep -F "foo-${env_hash}"
+    grep -F 'rpk topic delete' "$STUB_LOG" | grep -F "baz-${env_hash}"
+    if grep -F 'rpk topic delete' "$STUB_LOG" | grep -wF 'bar'; then
+        echo "ERROR: topic 'bar' (no ATLAS_ENV suffix) was deleted" >&2
+        return 1
+    fi
+}
+
+@test "cleanup.sh deletes consumer groups with spaces in their names" {
+    # Group list has one name matching [<env>] suffix (with spaces) and one
+    # not matching. Only the matching one should be deleted.
+    local env_hash
+    env_hash="$(fixture_env)"
+    make_stubs \
+        '{"topics":[]}' \
+        "{\"groups\":[{\"name\":\"Party Quest Service [${env_hash}]\"},{\"name\":\"Other [other]\"}]}"
+    run run_cleanup
+    [ "$status" -eq 0 ]
+
+    # rpk group list invoked once
+    [ "$(grep -c '^rpk group list ' "$STUB_LOG")" -eq 1 ]
+
+    # rpk group delete was called for the spaced name as one argument
+    grep -F 'rpk group delete' "$STUB_LOG" | grep -F "Party Quest Service [${env_hash}]"
+
+    # The other-env group must not be deleted
+    if grep -F 'rpk group delete' "$STUB_LOG" | grep -F 'Other [other]'; then
+        echo "ERROR: group with non-matching env suffix was deleted" >&2
+        return 1
+    fi
+}
+
+@test "cleanup.sh skips rpk topic delete when no topic matches" {
+    make_stubs '{"topics":[{"name":"prod-foo"},{"name":"prod-bar"}]}'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+    [ "$(grep -c '^rpk topic list ' "$STUB_LOG")" -eq 1 ]
+    # No delete because no topic name ends with -<env_hash>
+    if grep -F 'rpk topic delete' "$STUB_LOG"; then
+        echo "ERROR: rpk topic delete invoked despite no matching topics" >&2
+        return 1
+    fi
+}

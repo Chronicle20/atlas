@@ -32,7 +32,7 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 		Body: character2.CreateCharacterCommandBody{
 			AccountId:    1000,
 			WorldId:      world.Id(0),
-			Name:         "TestKafkaChar",
+			Name:         "TestKafka",
 			Level:        1,
 			Strength:     4,
 			Dexterity:    4,
@@ -94,7 +94,7 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 	createdCharacter := characters[0]
 
 	// Verify the character properties
-	if createdCharacter.Name() != "TestKafkaChar" {
+	if createdCharacter.Name() != "TestKafka" {
 		t.Errorf("Expected name 'TestKafkaChar', got '%s'", createdCharacter.Name())
 	}
 	if createdCharacter.AccountId() != 1000 {
@@ -239,7 +239,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 	input := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
-		SetName("DuplicateTest").
+		SetName("DupeTest").
 		SetLevel(1).
 		SetExperience(0).
 		Build()
@@ -260,7 +260,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 		Body: character2.CreateCharacterCommandBody{
 			AccountId:    2000, // Different account
 			WorldId:      world.Id(0),
-			Name:         "DuplicateTest", // Same name
+			Name:         "DupeTest", // Same name
 			Level:        1,
 			Strength:     4,
 			Dexterity:    4,
@@ -317,7 +317,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 	if len(characters1) != 1 {
 		t.Fatalf("Expected 1 character for account 1000, got %d", len(characters1))
 	}
-	if characters1[0].Name() != "DuplicateTest" {
+	if characters1[0].Name() != "DupeTest" {
 		t.Errorf("Expected character name 'DuplicateTest', got '%s'", characters1[0].Name())
 	}
 

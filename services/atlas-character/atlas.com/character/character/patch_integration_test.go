@@ -109,7 +109,7 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("PartialUpdateTest").
+		SetName("PartialUpd").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -133,7 +133,7 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 	// Test partial update with only name change
 	updatePayload := character.RestModel{
 		Id:   createdCharacter.Id(),
-		Name: "NewPartialName",
+		Name: "NewName",
 		// Other fields are not set (zero values)
 	}
 
@@ -151,7 +151,7 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 	}
 
 	// Verify only the name was updated
-	if updatedCharacter.Name() != "NewPartialName" {
+	if updatedCharacter.Name() != "NewName" {
 		t.Errorf("Expected name 'NewPartialName', got '%s'", updatedCharacter.Name())
 	}
 
@@ -181,7 +181,7 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -222,7 +222,7 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 	}
 
 	// Verify the name wasn't changed
-	if unchangedCharacter.Name() != "TestCharacter" {
+	if unchangedCharacter.Name() != "TestChar" {
 		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
 	}
 }
@@ -238,7 +238,7 @@ func TestPatchCharacterWithInvalidHair(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -294,7 +294,7 @@ func TestPatchCharacterNotFound(t *testing.T) {
 	// Test with non-existent character ID
 	updatePayload := character.RestModel{
 		Id:   99999, // Non-existent character ID
-		Name: "ShouldNotUpdate",
+		Name: "NoUpdate",
 	}
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -323,7 +323,7 @@ func TestPatchCharacterWithInvalidGender(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -380,7 +380,7 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -532,7 +532,7 @@ func TestPatchCharacterWithInvalidFace(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -589,7 +589,7 @@ func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -646,7 +646,7 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -687,7 +687,7 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 	}
 
 	// Verify the name wasn't changed
-	if unchangedCharacter.Name() != "TestCharacter" {
+	if unchangedCharacter.Name() != "TestChar" {
 		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
 	}
 }
@@ -703,7 +703,7 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(1).
 		SetStrength(4).
 		SetDexterity(4).
@@ -744,7 +744,7 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 	}
 
 	// Verify the name wasn't changed
-	if unchangedCharacter.Name() != "TestCharacter" {
+	if unchangedCharacter.Name() != "TestChar" {
 		t.Errorf("Character should not have been updated. Expected name 'TestCharacter', got '%s'", unchangedCharacter.Name())
 	}
 }

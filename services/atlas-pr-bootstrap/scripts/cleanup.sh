@@ -50,9 +50,13 @@ for db in "${dbs[@]}"; do
 done
 
 ATLAS_STEP=drop-topics log info "deleting per-env Kafka topics"
-kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list \
-    | grep -E -- "-${ATLAS_ENV}\$" \
-    | xargs -r -n 1 kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --topic
+# grep returns 1 when no topic matches; that's expected on a fresh env and
+# must not fail the pipeline (set -o pipefail is on). The `|| true` keeps
+# the script idempotent when there's nothing to clean up.
+rpk topic list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+    | jq -r '.topics[].name' \
+    | { grep -E -- "-${ATLAS_ENV}\$" || true; } \
+    | xargs -r -n 1 rpk topic delete -X brokers="$BOOTSTRAP_SERVERS"
 
 ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
 # Atlas consumer-group names contain spaces (e.g. "Party Quest Service [1756]",
@@ -61,9 +65,10 @@ ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
 # nothing would match. -d '\n' restricts splitting to newlines, so each group
 # is passed intact. Observed 2026-05-16 cleaning up atlas-pr-461's leftover
 # 1756-suffixed groups after the PostDelete hook had previously failed.
-kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list \
-    | grep -E -- "\\[${ATLAS_ENV}\\]\$" \
-    | xargs -r -d '\n' -n 1 kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --group
+rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+    | jq -r '.groups[].name' \
+    | { grep -E -- "\\[${ATLAS_ENV}\\]\$" || true; } \
+    | xargs -r -d '\n' -n 1 rpk group delete -X brokers="$BOOTSTRAP_SERVERS"
 
 ATLAS_STEP=drop-redis log info "deleting per-env Redis keys"
 redis-cli -u "redis://$REDIS_URL" --scan --pattern "${ATLAS_ENV}:*" \

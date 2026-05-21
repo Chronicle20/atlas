@@ -127,9 +127,9 @@ jobs:
   # Single matrix job. Always builds (Dockerfile validation on every PR);
   # pushes to ghcr only when the PR carries the `deploy-env` label, since
   # the Argo ApplicationSet filters out PRs without that label and any
-  # pushed pr-<N>-<sha> tag would be orphaned. Cache scope key matches
-  # the prior `build-docker-pr` job so the first post-collapse labeled-PR
-  # run hits the existing GHA cache warm.
+  # pushed pr-<N>-<sha> tag would be orphaned. Cache scope key is
+  # preserved from the prior push job so the first post-collapse
+  # labeled-PR run hits the existing GHA cache warm.
   # ============================================
   build-docker:
     name: Build Docker - ${{ matrix.service.name }}

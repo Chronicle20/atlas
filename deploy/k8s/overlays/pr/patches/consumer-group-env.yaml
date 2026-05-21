@@ -721,18 +721,6 @@ spec:
               value: "World Orchestrator [PLACEHOLDER_ATLAS_ENV]"
             - name: ATLAS_ENV
               value: "PLACEHOLDER_ATLAS_ENV"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: atlas-wz-extractor
-spec:
-  template:
-    spec:
-      containers:
-        - name: wz-extractor
-          env:
-            - name: KAFKA_CONSUMER_GROUP
-              value: "wz-extractor-extraction [PLACEHOLDER_ATLAS_ENV]"
-            - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+# atlas-wz-extractor consumer-group patch removed in task-071: the
+# Deployment is unregistered from the base because it depends on the
+# atlas-data-pvc which task-071 also removed (MinIO replaces it).

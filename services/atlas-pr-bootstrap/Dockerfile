@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.24
 # Atlas PR-env bootstrap/cleanup image. Two entrypoints share this image:
 #   /atlas/bootstrap.sh (PostSync) and /atlas/cleanup.sh (PostDelete).
 # Single-stage Alpine. rpk (Redpanda CLI; Kafka admin protocol compatible)

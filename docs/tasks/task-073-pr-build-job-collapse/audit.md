@@ -1,9 +1,70 @@
 # Plan Audit — task-073-pr-build-job-collapse
 
 **Plan Path:** `docs/tasks/task-073-pr-build-job-collapse/plan.md`
-**Audit Date:** 2026-05-21
+**Audit Date:** 2026-05-21 (rebase update added 2026-05-21)
 **Branch:** `task-073-pr-build-job-collapse`
 **Base Branch:** `main`
+
+## Rebase update (2026-05-21)
+
+The branch was rebased onto `origin/main` after PR #541 (task-070,
+`fix(pr-env): teardown contract + sweep + smoke regression`) landed.
+Conflict resolution preserved the original audit findings; commit SHAs
+changed but the per-task evidence (file paths, line anchors) remains
+accurate against the rebased tree. Post-rebase commit topology:
+
+- `bd186f8b9` ci(pr-validation): collapse build-docker + build-docker-pr into one job
+- `f7b58a6d2` ci(pr-validation): drop literal build-docker-pr from banner
+- `d48594e0e` ci(docker-build): accept provenance/sbom inputs (default false)
+- `5abf890ab` test(atlas-pr-bootstrap): add bats stub harness for cleanup.sh
+- `2688e5b22` feat(atlas-pr-bootstrap): switch cleanup.sh drop-topics/groups to rpk
+- `27e55896b` feat(atlas-pr-bootstrap): replace Kafka tarball + JRE with rpk static binary
+- `c2a35daa8` docs(atlas-pr-bootstrap): document rpk and apk runtime deps
+- `dbc2d4443` test(atlas-pr-bootstrap): fix bootstrap_test env arg order
+- `c2eb301db` audit(task-073): plan adherence — READY FOR PR (this file, pre-rebase)
+
+Rebase deltas (vs. pre-rebase audit):
+
+- `cleanup.sh` rpk swap now lands on top of task-070's `compute_atlas_env`
+  derivation and `drop-branch` phase. Both changes are textually
+  compatible; the rebased file derives `ATLAS_ENV` from `PR_NUMBER` and
+  then runs the rpk-migrated topic/group cleanup.
+- `cleanup_test.bats` was rewritten as part of conflict resolution to:
+  (a) keep task-070's PR_NUMBER-required and branch-delete cases,
+  (b) keep our stub harness (`make_stubs`, `run_cleanup`),
+  (c) compute the fixture env-hash via `compute_atlas_env 99` inside a
+  new `fixture_env` helper so the rpk-suffix fixtures match cleanup.sh's
+  derived hash. All 20 bats cases in `services/atlas-pr-bootstrap/test/`
+  pass post-rebase (10 from this branch's relevant scope + 10 from
+  task-070's sweep/lib tests).
+- `pr-validation.yml` collapse landed on top of task-070's
+  `update-pr-overlay` extension to also substitute placeholders into
+  `deploy/k8s/overlays/pr-cleanup/`. Both changes are textually
+  compatible.
+
+**Pre-existing on main, surfaced by the rebase but explicitly out of scope:**
+task-070 introduced `scripts/sweep-orphans.sh` and `test/sweep_test.bats`,
+which still call `kafka-topics.sh` / `kafka-consumer-groups.sh`. The
+runbook (`docs/runbooks/ephemeral-pr-deployments.md:366`) references
+`/atlas/sweep-orphans.sh` as an in-cluster invocation, but neither main's
+Dockerfile nor our rewritten Dockerfile `COPY`s `sweep-orphans.sh` into
+the image — that runbook path was already aspirational pre-rebase, so our
+T8 image slim does not regress sweep-orphans runtime behavior (zero in
+both states). Migrating sweep-orphans to `rpk` is a follow-up task
+(suggested ticket: "task-NNN: migrate sweep-orphans.sh to rpk and COPY
+into atlas-pr-bootstrap image") and is intentionally out of this PR's
+scope.
+
+**Post-rebase verification:**
+
+- `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/pr-validation.yml'))"` → `OK`
+- `python3 -c "import yaml; yaml.safe_load(open('.github/actions/docker-build/action.yml'))"` → `OK`
+- `grep -rn 'build-docker-pr' .github/ services/atlas-pr-bootstrap/` → zero matches
+- `grep -rnE 'kafka-topics|kafka-consumer-groups|kafka-run-class|openjdk' services/atlas-pr-bootstrap/` → matches only in `scripts/sweep-orphans.sh` and `test/sweep_test.bats` (both pre-existing on main, out of scope per above)
+- `bats services/atlas-pr-bootstrap/test/` → 20/20 green
+- `docker build -f services/atlas-pr-bootstrap/Dockerfile services/atlas-pr-bootstrap` → succeeds
+
+Original audit text below applies; only commit SHAs are stale.
 
 ## Executive Summary
 

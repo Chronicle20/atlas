@@ -292,8 +292,14 @@ data:
       proxy_pass http://$u$request_uri;
     }
 
-    # 4. WZ upload route (large body, no buffering). Prefix match wins over the regex catch-all below.
-    location /api/data/wz {
+    # 4. WZ upload route (large body, no buffering). The `^~` modifier is
+    # load-bearing: without it, the regex catch-all `location ~ ^/api/data(/.*)?$`
+    # below wins (nginx evaluates regexes before plain prefixes), the request
+    # routes through it without the `client_max_body_size 4G` override, and
+    # nginx 413s the atlas.zip upload at its default 1 MB limit. `^~` makes
+    # the prefix match short-circuit regex evaluation when it's the longest
+    # prefix.
+    location ^~ /api/data/wz {
       set $u "atlas-data.${POD_NAMESPACE}.svc.cluster.local:8080";
       client_max_body_size 4G;
       proxy_request_buffering off;

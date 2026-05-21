@@ -40,6 +40,12 @@ type JobCreator struct {
 	Namespace string
 	Template  *batchv1.JobTemplateSpec
 	Redis     *goredis.Client
+	// ControllerImage is the container image the running atlas-data pod uses.
+	// Rendered Jobs inherit it so MODE=ingest binaries match the code that
+	// rendered them. Empty string falls back to the template's image (intended
+	// for tests and single-image clusters; in PR/prod the template ships
+	// `:latest` which is too stale to use).
+	ControllerImage string
 }
 
 // NewJobCreatorInCluster builds a JobCreator using the pod's in-cluster
@@ -75,12 +81,42 @@ func NewJobCreatorInClusterWithRedis(rdb *goredis.Client) (*JobCreator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load job template ConfigMap: %w", err)
 	}
+	img, ierr := discoverControllerImage(context.Background(), cs, ns)
+	if ierr != nil {
+		// Non-fatal: log path elsewhere. Empty ControllerImage leaves the
+		// template's image untouched (sufficient for tests).
+		_ = ierr
+	}
 	return &JobCreator{
-		K8s:       cs,
-		Namespace: ns,
-		Template:  tmpl,
-		Redis:     rdb,
+		K8s:             cs,
+		Namespace:       ns,
+		Template:        tmpl,
+		Redis:           rdb,
+		ControllerImage: img,
 	}, nil
+}
+
+// discoverControllerImage looks up the controller pod by its HOSTNAME (which
+// k8s sets to the pod name by default) and returns the image of the container
+// whose name matches the atlas-data primary container. This lets rendered Jobs
+// inherit the same image tag the controller is running, side-stepping the
+// kustomize-can't-patch-ConfigMap-strings problem that would otherwise pin
+// Jobs to the template's `:latest`.
+func discoverControllerImage(ctx context.Context, cs kubernetes.Interface, namespace string) (string, error) {
+	host := os.Getenv("HOSTNAME")
+	if host == "" {
+		return "", fmt.Errorf("HOSTNAME unset; cannot self-identify pod")
+	}
+	pod, err := cs.CoreV1().Pods(namespace).Get(ctx, host, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("get self pod %s/%s: %w", namespace, host, err)
+	}
+	for _, c := range pod.Spec.Containers {
+		if strings.TrimSpace(c.Image) != "" {
+			return c.Image, nil
+		}
+	}
+	return "", fmt.Errorf("self pod %s/%s has no containers with image", namespace, host)
 }
 
 // loadTemplateFromConfigMap reads the configured ConfigMap and unmarshals its
@@ -125,7 +161,7 @@ func (j *JobCreator) Create(ctx context.Context, scope, region string, major, mi
 	if j.Template == nil {
 		return "", fmt.Errorf("job template unavailable")
 	}
-	job := renderJob(j.Template, j.Namespace, scope, region, major, minor, tenantId, traceparent)
+	job := renderJob(j.Template, j.Namespace, scope, region, major, minor, tenantId, traceparent, j.ControllerImage)
 	created, err := j.K8s.BatchV1().Jobs(j.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("create job: %w", err)
@@ -156,7 +192,7 @@ func redisJobKeyFromLabels(j *batchv1.Job) string {
 
 // renderJob produces a *batchv1.Job derived from template, scoped/labeled and
 // with the ingest-specific env vars injected into every container.
-func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region string, major, minor uint16, tenantId, traceparent string) *batchv1.Job {
+func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region string, major, minor uint16, tenantId, traceparent, controllerImage string) *batchv1.Job {
 	var spec batchv1.JobSpec
 	if template != nil {
 		spec = *template.Spec.DeepCopy()
@@ -201,6 +237,14 @@ func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region strin
 
 	for i := range spec.Template.Spec.Containers {
 		spec.Template.Spec.Containers[i].Env = append(spec.Template.Spec.Containers[i].Env, envs...)
+		// Override the template's hardcoded `:latest` image with the controller
+		// pod's own image so the ingest binary matches the code that rendered
+		// it. Kustomize image substitution can't reach into the ConfigMap-
+		// embedded Job template, so this Go-side override is the only way to
+		// keep tag-pinned PR environments coherent.
+		if controllerImage != "" {
+			spec.Template.Spec.Containers[i].Image = controllerImage
+		}
 	}
 
 	labels := map[string]string{

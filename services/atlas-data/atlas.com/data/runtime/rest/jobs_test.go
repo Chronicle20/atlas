@@ -79,7 +79,7 @@ func TestJobCreatorCreate(t *testing.T) {
 }
 
 func TestRenderJobSharedScopeOmitsTenantLabel(t *testing.T) {
-	job := renderJob(testTemplate(), "ns", "shared", "GMS", 83, 1, "", "")
+	job := renderJob(testTemplate(), "ns", "shared", "GMS", 83, 1, "", "", "")
 	if _, ok := job.Labels["tenant"]; ok {
 		t.Fatalf("did not expect tenant label for shared scope")
 	}

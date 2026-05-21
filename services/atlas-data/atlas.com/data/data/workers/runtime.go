@@ -62,6 +62,18 @@ func withTenant(ctx context.Context, p Params) (context.Context, tenant.Model, e
 	return tenant.WithContext(ctx, t), t, nil
 }
 
+// WithTenant is the exported entry the dispatcher (data.RunWorkers) calls
+// before invoking each Worker.Run, so worker bodies receive an
+// already-tenanted ctx. Individual workers MAY still call the unexported
+// withTenant defensively — when ctx already carries the tenant, that's a
+// no-op except for the local `t` it returns. The discarded-return bug that
+// shipped in the Commodity worker (df89b8bee) is impossible to trigger when
+// the dispatcher pre-injects, because downstream MustFromContext sees the
+// dispatcher's tenant regardless of how the worker handles the return.
+func WithTenant(ctx context.Context, p Params) (context.Context, tenant.Model, error) {
+	return withTenant(ctx, p)
+}
+
 // archiveDir returns the directory where SerializeArchive writes the XML tree
 // for a given archive name (e.g. "Item.wz"). Workers compute domain-specific
 // subpaths under this root.

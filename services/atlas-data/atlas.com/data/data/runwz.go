@@ -17,12 +17,19 @@ import (
 
 // RunWorkers fans out the registered Worker set over the WZ archives stored in
 // MinIO at "<scope>/regions/<region>/versions/<major>.<minor>/<archive>".
-// Worker bodies are stubs in this commit; see plan task-071 §8.
+// Each worker is invoked with a context that already carries the per-tenant
+// model so worker bodies don't have to redo (and possibly mis-handle) the
+// injection. See workers.WithTenant — pre-injecting here means the discard
+// pattern that bit Commodity (df89b8bee) is impossible to trigger downstream.
 func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client) func(ctx context.Context, p workers.Params) error {
 	return func(ctx context.Context, p workers.Params) error {
 		maxParallel := envInt("INGEST_MAX_PARALLEL", 4)
 		sem := semaphore.NewWeighted(int64(maxParallel))
 		g, gctx := errgroup.WithContext(ctx)
+		tenantedCtx, _, terr := workers.WithTenant(gctx, p)
+		if terr != nil {
+			return fmt.Errorf("ingest withTenant: %w", terr)
+		}
 		for _, w := range workers.Registered {
 			w := w
 			g.Go(func() error {
@@ -39,7 +46,7 @@ func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client) func(ctx co
 					wzFile.Close()
 					_ = os.Remove(localPath)
 				}()
-				return w.Run(gctx, l, db, mc, wzFile, p)
+				return w.Run(tenantedCtx, l, db, mc, wzFile, p)
 			})
 		}
 		return g.Wait()

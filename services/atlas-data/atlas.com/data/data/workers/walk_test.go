@@ -1,6 +1,44 @@
 package workers
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+)
+
+// TestRootImagesYieldsImgIDParseableNames composes the wz iteration contract
+// (parseDirectory strips ".img"; in-memory NewParsedImage preserves whatever
+// it was given) with imgID's parse semantics. PR-544's "scanned=0 across
+// every worker" symptom was exactly this composition failing: real WZ data
+// reached the worker with `.img` stripped, imgID rejected names without
+// `.img`, every per-id loop hit `continue`. This test fails the moment
+// either side regresses; together with TestImgID and the wz package's
+// iteration_contract_test, it pins both endpoints AND their composition.
+func TestRootImagesYieldsImgIDParseableNames(t *testing.T) {
+	root := wz.NewDirectory("Mob", nil, []*wz.Image{
+		wz.NewParsedImage("0100100", nil),     // shipping form (no .img)
+		wz.NewParsedImage("0100101", nil),     // shipping form (no .img)
+		wz.NewParsedImage("MobSkill", nil),    // sibling Mob.wz non-id image
+		wz.NewParsedImage("0100102.img", nil), // legacy XML-walker form
+	})
+	file := wz.NewFileWithRoot("Mob", root)
+
+	var got []uint32
+	for _, img := range file.Root().Images() {
+		if id, ok := imgID(img.Name()); ok {
+			got = append(got, id)
+		}
+	}
+	want := []uint32{100100, 100101, 100102}
+	if len(got) != len(want) {
+		t.Fatalf("imgID-parseable ids = %v, want %v", got, want)
+	}
+	for i, v := range want {
+		if got[i] != v {
+			t.Errorf("ids[%d] = %d, want %d", i, got[i], v)
+		}
+	}
+}
 
 // TestImgID pins the suffix-tolerance contract that the per-id icon and map
 // emit loops depend on. The wz library's parseDirectory strips ".img" from

@@ -35,6 +35,48 @@ func TestRegisteredUniqueNames(t *testing.T) {
 	}
 }
 
+// TestRegisteredCoversExpectedDomains locks in the worker inventory the new
+// MinIO-backed pipeline ships with. Removing or renaming a worker is a
+// deliberate code change that must also touch this list — that's the point.
+//
+// Why this exists: COMMODITY was missing for the entire task-071 cycle
+// (8,941 atlas-data documents absent from PR-544 vs main) because nothing
+// enforced the inventory. Adding the legacy MONSTER worker (now folded into
+// MOB), PET / CONSUME / CASH / ETC / SETUP (folded into ITEM), or FACE /
+// HAIR / CHARACTER_CREATION (folded into CHARACTER), or MOB_SKILL (folded
+// into SKILL) requires updating both the worker registry AND the comment
+// below, so the "umbrella" boundary stays auditable.
+func TestRegisteredCoversExpectedDomains(t *testing.T) {
+	expected := map[string]string{
+		// name -> short comment of what the worker covers
+		"MAP":       "Map.wz: maps + spawn indexes + per-map render assets",
+		"MOB":       "Mob.wz: monsters (was MONSTER) + mob icons",
+		"NPC":       "Npc.wz: NPCs + npc icons",
+		"REACTOR":   "Reactor.wz: reactors + reactor icons",
+		"SKILL":     "Skill.wz: skills + skill icons + MOB_SKILL (folded)",
+		"QUEST":     "Quest.wz: quests",
+		"STRING":    "String.wz: string registries",
+		"CHARACTER": "Character.wz: equipment + FACE + HAIR + CHARACTER_CREATION (folded) + character atlases",
+		"UI":        "UI.wz: world icons + gauge metadata",
+		"ITEM":      "Item.wz: CONSUME + CASH + ETC + SETUP + PET (folded) + item icons",
+		"COMMODITY": "Etc.wz/Commodity.img.xml: cash-shop commodities",
+	}
+	present := map[string]bool{}
+	for _, w := range Registered {
+		present[w.Name()] = true
+	}
+	for name := range expected {
+		if !present[name] {
+			t.Errorf("Registered missing worker: %s (%s)", name, expected[name])
+		}
+	}
+	for n := range present {
+		if _, ok := expected[n]; !ok {
+			t.Errorf("Registered has unexpected worker %q — add to expected map or remove from Registered", n)
+		}
+	}
+}
+
 // TestWithTenantPreInjection locks in the dispatcher contract that
 // data.RunWorkers MUST establish before invoking any Worker.Run: the
 // context passed to Run carries the tenant from Params, so downstream

@@ -12,7 +12,8 @@
 #
 # Adding a new shared lib requires appending two COPY lines to this
 # file (one to the mod-only block, one to the source block) AND adding
-# the lib to /go.work. That's it — no per-service edits.
+# the lib name to the synthesized go.work `for L in ...` loop below.
+# That's it — no per-service edits.
 ARG GO_VERSION=1.25.5
 ARG ALPINE_VERSION=3.21
 
@@ -24,9 +25,6 @@ RUN test -n "${SERVICE}" || (echo "ERROR: build arg SERVICE is required (e.g., a
 RUN apk add --no-cache git
 
 WORKDIR /app
-
-# Layer: repo go.work (cheap; invalidates when libs or services are added/removed).
-COPY go.work go.work.sum ./
 
 # Layer: all 17 atlas libs' go.mod (and go.sum where present — atlas-retry and
 # atlas-service have no external deps so no go.sum exists). Lib-mod-only layer;
@@ -72,13 +70,29 @@ COPY libs/atlas-socket      libs/atlas-socket
 COPY libs/atlas-tenant      libs/atlas-tenant
 COPY libs/atlas-tracing     libs/atlas-tracing
 
+# Synthesize a minimal go.work containing only the 17 libs + the target service.
+# The repo-root go.work also lists ~50 sibling services + 2 tools/* modules
+# whose go.mod files are not in the build context; copying it directly fails
+# workspace-load. Equivalent to what the legacy per-service Dockerfiles did.
+RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
+    && test -n "$MOD_DIR" || (echo "ERROR: no module dir under services/${SERVICE}/atlas.com/" >&2 && exit 1) \
+    && test -f "${MOD_DIR}/go.mod" || (echo "ERROR: ${MOD_DIR}/go.mod missing" >&2 && exit 1) \
+    && { \
+         printf 'go 1.25.5\n\nuse (\n'; \
+         for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
+                  atlas-object-id atlas-opcodes atlas-packet atlas-redis atlas-rest \
+                  atlas-retry atlas-saga atlas-script-core atlas-service atlas-socket \
+                  atlas-tenant atlas-tracing; do \
+           printf '    ./libs/%s\n' "$L"; \
+         done; \
+         printf '    ./%s\n)\n' "$MOD_DIR"; \
+       } > go.work
+
 # Discover the inner module dir (services/${SERVICE}/atlas.com/<inner>) and build.
 # Atlas convention: exactly one inner directory per service.
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1) \
-    && test -n "$MOD_DIR" || (echo "ERROR: no module dir under services/${SERVICE}/atlas.com/" >&2 && exit 1) \
-    && test -f "${MOD_DIR}go.mod" || (echo "ERROR: ${MOD_DIR}go.mod missing" >&2 && exit 1) \
     && go build -C "$MOD_DIR" -o /server
 
 # Stash this service's config.yaml in a known location for the runtime stage to COPY.

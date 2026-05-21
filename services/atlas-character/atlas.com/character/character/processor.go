@@ -190,7 +190,7 @@ func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 }
 
 func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
-	m, err := regexp.MatchString("[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}", name)
+	m, err := regexp.MatchString("^[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}$", name)
 	if err != nil {
 		return false, err
 	}
@@ -217,7 +217,7 @@ func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameVa
 	if len(name) < 3 || len(name) > 12 {
 		return NameValidityResult{Valid: false, Reason: "length", Detail: "Name must be 3-12 characters."}, nil
 	}
-	m, err := regexp.MatchString("[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}", name)
+	m, err := regexp.MatchString("^[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}$", name)
 	if err != nil {
 		return NameValidityResult{}, err
 	}

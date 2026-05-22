@@ -88,7 +88,6 @@ go_services = [
   "atlas-tenants",
   "atlas-transports",
   "atlas-world",
-  "atlas-wz-extractor",
 ]
 
 # One target per Go service, expanded from the list above at parse time.

@@ -4,12 +4,6 @@ kind: Kustomization
 resources:
   - atlas-account.yaml
   - atlas-asset-expiration.yaml
-  # atlas-assets.yaml — superseded by MinIO + atlas-renders. The Deployment
-  # mounts atlas-assets-pvc which is still defined here for now, but the
-  # service itself adds no value once atlas-renders is live. File preserved
-  # in-tree for git history until the final task-071 cutover commit deletes
-  # it outright.
-  # - atlas-assets.yaml
   - atlas-ban.yaml
   - atlas-buddies.yaml
   - atlas-buffs.yaml
@@ -66,11 +60,6 @@ resources:
   - atlas-transports.yaml
   - atlas-ui.yaml
   - atlas-world.yaml
-  # atlas-wz-extractor.yaml — its Deployment depends on atlas-data-pvc which
-  # task-071 removed when atlas-data switched to MinIO. The pod is
-  # un-schedulable now; unregister so it stops blocking the PR env. File
-  # preserved in-tree until the final task-071 cutover commit deletes it.
-  # - atlas-wz-extractor.yaml
   - env-configmap.yaml
   - namespace.yaml
 

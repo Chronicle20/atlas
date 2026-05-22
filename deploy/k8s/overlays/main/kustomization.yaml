@@ -181,8 +181,6 @@ images:
     newTag: main-7d17831
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
     newTag: main-615bc6e
-  - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
-    newTag: main-387a5e2
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
     newTag: main-615bc6e
   - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
@@ -288,8 +286,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
     newTag: main-615bc6e
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
-    newTag: main-615bc6e
-  - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
     newTag: main-615bc6e
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
     newTag: main-49bcbb0

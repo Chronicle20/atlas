@@ -28,19 +28,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas-assets
-spec:
-  template:
-    spec:
-      containers:
-        - name: nginx
-          env:
-            - name: ATLAS_ENV
-              value: "main"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: atlas-ban
 spec:
   template:
@@ -697,19 +684,6 @@ spec:
     spec:
       containers:
         - name: world
-          env:
-            - name: ATLAS_ENV
-              value: "main"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: atlas-wz-extractor
-spec:
-  template:
-    spec:
-      containers:
-        - name: wz-extractor
           env:
             - name: ATLAS_ENV
               value: "main"

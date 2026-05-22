@@ -41,17 +41,6 @@ services:
       LOG_LEVEL: debug
       EXPIRATION_CHECK_INTERVAL_SECONDS: "60"
 
-  atlas-assets:
-    <<: *atlas-defaults
-    container_name: atlas-assets
-    # Service-local build context: Dockerfile COPYs nginx.conf relative to its directory.
-    build:
-      context: ../../services/atlas-assets
-      dockerfile: Dockerfile
-    image: atlas-assets:${ATLAS_IMAGE_TAG:-local}
-    volumes:
-      - ../../tmp/assets:/usr/assets
-
   atlas-ban:
     <<: *atlas-defaults
     container_name: atlas-ban
@@ -696,21 +685,3 @@ services:
       SERVICE_ID: 00000000-0000-0000-0000-000000000000
       SERVICE_TYPE: world-service
 
-  atlas-wz-extractor:
-    <<: *atlas-defaults
-    container_name: atlas-wz-extractor
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        SERVICE: atlas-wz-extractor
-    image: atlas-wz-extractor:${ATLAS_IMAGE_TAG:-local}
-    environment:
-      LOG_LEVEL: debug
-      INPUT_WZ_DIR: /usr/wz-input
-      OUTPUT_IMG_DIR: /usr/assets
-      OUTPUT_XML_DIR: /usr/data
-    volumes:
-      - ../../tmp/wz-input:/usr/wz-input
-      - ../../tmp/data:/usr/data
-      - ../../tmp/assets:/usr/assets

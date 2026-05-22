@@ -669,7 +669,7 @@ func TestUpdatePreservesUnchangedValues(t *testing.T) {
 
 	// Update only the name
 	updateInput := character.RestModel{
-		Name: "PreserveTestUpdated",
+		Name: "PreserveNew",
 	}
 
 	transactionId := uuid.New()
@@ -684,7 +684,7 @@ func TestUpdatePreservesUnchangedValues(t *testing.T) {
 		t.Fatalf("Failed to retrieve updated character: %v", err)
 	}
 
-	if updated.Name() != "PreserveTestUpdated" {
+	if updated.Name() != "PreserveNew" {
 		t.Fatalf("Expected name to be 'PreserveTestUpdated', got '%s'", updated.Name())
 	}
 	if updated.Level() != 25 {

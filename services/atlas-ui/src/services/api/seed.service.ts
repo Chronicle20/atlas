@@ -15,15 +15,11 @@ export interface WzInputStatus {
   updatedAt: string | null;
 }
 
-export interface WzExtractionStatus {
-  fileCount: number;
-  totalBytes: number;
-  updatedAt: string | null;
-}
-
 export interface DataStatus {
   documentCount: number;
   updatedAt: string | null;
+  baselineRestoredAt: string | null;
+  baselineSha256: string | null;
 }
 
 export interface DropsSeedStatus {
@@ -123,13 +119,16 @@ class SeedService {
     return api.post<SeedResult>('/api/maps/actions/seed', {});
   }
 
-  async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
+  async uploadWzFiles(tenant: Tenant, file: File, scope: 'tenant' | 'shared' = 'tenant'): Promise<void> {
     const formData = new FormData();
     formData.append('zip_file', file);
 
     const headers = tenantHeaders(tenant);
+    if (scope === 'shared') {
+      headers.set('X-Atlas-Operator', '1');
+    }
 
-    const response = await fetch('/api/wz/input', {
+    const response = await fetch(`/api/data/wz?scope=${scope}`, {
       method: 'PATCH',
       headers,
       body: formData,
@@ -151,28 +150,19 @@ class SeedService {
     }
   }
 
-  async runWzExtraction(tenant: Tenant): Promise<void> {
+  async runDataProcessing(tenant: Tenant, scope: 'tenant' | 'shared' = 'tenant'): Promise<void> {
     const headers = tenantHeaders(tenant);
-    const response = await fetch('/api/wz/extractions', { method: 'POST', headers });
-    if (!response.ok) {
-      throw new Error(`Extraction failed: ${response.status} ${response.statusText}`);
+    if (scope === 'shared') {
+      headers.set('X-Atlas-Operator', '1');
     }
-  }
-
-  async runDataProcessing(tenant: Tenant): Promise<void> {
-    const headers = tenantHeaders(tenant);
-    const response = await fetch('/api/data/process', { method: 'POST', headers });
+    const response = await fetch(`/api/data/process?scope=${scope}`, { method: 'POST', headers });
     if (!response.ok) {
       throw new Error(`Data processing failed: ${response.status} ${response.statusText}`);
     }
   }
 
   async getWzInputStatus(tenant: Tenant): Promise<WzInputStatus> {
-    return fetchJsonApi<WzInputStatus>('/api/wz/input', tenant);
-  }
-
-  async getExtractionStatus(tenant: Tenant): Promise<WzExtractionStatus> {
-    return fetchJsonApi<WzExtractionStatus>('/api/wz/extractions', tenant);
+    return fetchJsonApi<WzInputStatus>('/api/data/wz', tenant);
   }
 
   async getDataStatus(tenant: Tenant): Promise<DataStatus> {

@@ -1,0 +1,99 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-renders
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-renders
+  template:
+    metadata:
+      labels:
+        app: atlas-renders
+    spec:
+      containers:
+        - name: renders
+          image: ghcr.io/chronicle20/atlas-renders/atlas-renders:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: atlas-env
+          env:
+            - name: LOG_LEVEL
+              value: "debug"
+            - name: REST_PORT
+              value: "8080"
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-minio-credentials
+                  key: endpoint
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-minio-credentials
+                  key: accessKey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-minio-credentials
+                  key: secretKey
+          resources:
+            requests:
+              cpu: "500m"
+              # Bumped from 256Mi for the lazy map-render path: each pod
+              # holds an open *wz.File whose parsed property trees grow as
+              # distinct .imgs are touched (asymptote ~100-200 MB for
+              # Map.wz across a working set of popular maps). See
+              # docs/tasks/task-071-.../lazy-map-render.md.
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          volumeMounts:
+            # Lazy map-render needs Map.wz on a local filesystem so
+            # wz.Open can read canvas data via positional ReadAt. emptyDir
+            # is fine: each pod re-downloads on first miss (~10s on the
+            # cluster network for the 606 MiB Map.wz measured on PR-544).
+            - name: wz-scratch
+              mountPath: /scratch/wz
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: wz-scratch
+          emptyDir:
+            sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-renders
+spec:
+  selector:
+    app: atlas-renders
+  ports:
+    - protocol: TCP
+      port: 8080
+#
+# KEDA autoscaling (design §4.6) is intentionally NOT included here. The
+# bee cluster does not have the `keda.sh/ScaledObject` CRD installed, and
+# Argo CD does NOT skip unknown CRDs gracefully — the sync errors out for
+# the whole Application with "could not find keda.sh/ScaledObject".
+#
+# Follow-up: install KEDA cluster-wide (cluster-infra concern), then add
+# back this manifest. Until then the Deployment runs at its base replica
+# count (2) without RPS-driven autoscaling. atlas-renders is stateless
+# and tolerates manual scaling via `kubectl scale deploy/atlas-renders`.

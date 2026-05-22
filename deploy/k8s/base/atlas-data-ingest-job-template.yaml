@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-data-ingest-job-template
+data:
+  job.yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      generateName: atlas-data-ingest-
+      labels:
+        atlas-data-ingest: "true"
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: atlas-data
+          containers:
+            - name: ingest
+              image: ghcr.io/chronicle20/atlas-data/atlas-data:latest
+              env:
+                - name: MODE
+                  value: "ingest"
+                - name: LOG_LEVEL
+                  value: "debug"
+                - name: DB_NAME
+                  value: "atlas-data"
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: DB_USER
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-credentials
+                      key: DB_PASSWORD
+                - name: MINIO_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: atlas-minio-credentials
+                      key: endpoint
+                - name: MINIO_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: atlas-minio-credentials
+                      key: accessKey
+                - name: MINIO_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: atlas-minio-credentials
+                      key: secretKey
+              envFrom:
+                - configMapRef:
+                    name: atlas-env
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "2Gi"
+                limits:
+                  cpu: "4"
+                  memory: "8Gi"
+              volumeMounts:
+                - name: scratch
+                  mountPath: /scratch
+          volumes:
+            - name: scratch
+              emptyDir:
+                sizeLimit: 16Gi

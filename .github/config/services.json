@@ -22,12 +22,6 @@
       "docker_context": "."
     },
     {
-      "name": "atlas-assets",
-      "type": "static-service",
-      "path": "services/atlas-assets",
-      "docker_image": "ghcr.io/chronicle20/atlas-assets/atlas-assets"
-    },
-    {
       "name": "atlas-ban",
       "type": "go-service",
       "path": "services/atlas-ban",
@@ -403,6 +397,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-renders",
+      "type": "go-service",
+      "path": "services/atlas-renders",
+      "module_path": "services/atlas-renders/atlas.com/renders",
+      "docker_image": "ghcr.io/chronicle20/atlas-renders/atlas-renders",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-saga-orchestrator",
       "type": "go-service",
       "path": "services/atlas-saga-orchestrator",
@@ -448,14 +450,6 @@
       "path": "services/atlas-world",
       "module_path": "services/atlas-world/atlas.com/world",
       "docker_image": "ghcr.io/chronicle20/atlas-world/atlas-world",
-      "docker_context": "."
-    },
-    {
-      "name": "atlas-wz-extractor",
-      "type": "go-service",
-      "path": "services/atlas-wz-extractor",
-      "module_path": "services/atlas-wz-extractor/atlas.com/wz-extractor",
-      "docker_image": "ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor",
       "docker_context": "."
     },
     {

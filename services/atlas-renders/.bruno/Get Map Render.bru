@@ -1,0 +1,11 @@
+meta {
+  name: Get Map Render
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/wz/map/render/{{TENANT_ID}}/{{REGION}}/{{MAJOR_VERSION}}.{{MINOR_VERSION}}/{{mapId}}/render.png
+  body: none
+  auth: none
+}

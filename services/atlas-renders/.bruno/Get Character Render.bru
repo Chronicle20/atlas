@@ -1,0 +1,11 @@
+meta {
+  name: Get Character Render
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/wz/character/render/{{TENANT_ID}}/{{REGION}}/{{MAJOR_VERSION}}.{{MINOR_VERSION}}/abcdef0123456789abcdef0123456789.png
+  body: none
+  auth: none
+}

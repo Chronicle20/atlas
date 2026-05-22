@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Imports a new Chronicle20/atlas-<name> service repo into
+# services/atlas-<name>. After this script completes, manually:
+#   1. Append a "{name,type:go-service,path,module_path,docker_image,
+#      docker_context}" row to .github/config/services.json under
+#      .services[].
+#   2. Append "    ./services/atlas-<name>/atlas.com/<inner>" to
+#      /go.work's `use (...)` block (where <inner> is the inner module
+#      directory the imported repo uses).
+#   3. Run `docker buildx bake atlas-<name>` to verify the shared
+#      Dockerfile builds it.
+#
+# No per-service Dockerfile is needed — the shared repo-root Dockerfile
+# parameterized by ARG SERVICE handles it. See CLAUDE.md
+# "Build & Verification" for the post-task-074 workflow.
+
 
 # -------------------------------
 # Configuration

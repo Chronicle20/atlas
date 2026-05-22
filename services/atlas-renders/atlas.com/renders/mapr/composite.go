@@ -1,74 +1,99 @@
 package mapr
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/draw"
-	"image/png"
 
-	"atlas-renders/storage"
-
+	"github.com/Chronicle20/atlas/libs/atlas-wz/mapimage"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/maplayout"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 )
 
-// Composite stacks pre-composited per-layer PNGs in layout.ZMap order onto a
-// world-sized canvas. The layer PNGs are produced by atlas-data ingest
-// (libs/atlas-wz/mapimage.ExtractLayers) and are already world-anchored —
-// i.e. sized to the map bounds with sprites placed at their world positions.
-// So the render-time job here is purely a stacked draw.Over.
+// CompositeFromWZ composites a map render directly from a parsed *wz.File
+// holding Map.wz. The flow is:
 //
-// STATED LIMITATION: this composite intentionally omits the Map.img back[]
-// (background tile/skybox) imagery. Backgrounds are not currently persisted
-// alongside layout.json by ingest; when that pipeline is extended the
-// background can be blitted before the foreground zmap stack here. The
-// resulting render today is the foreground world only on a transparent
-// canvas.
-func Composite(l logrus.FieldLogger, m *storage.MapEntry) (image.Image, error) {
-	if m == nil {
-		return nil, fmt.Errorf("composite: nil map entry")
-	}
-	bounds := image.Rect(m.Layout.Bounds.Left, m.Layout.Bounds.Top, m.Layout.Bounds.Right, m.Layout.Bounds.Bottom)
-	if bounds.Empty() {
-		return nil, fmt.Errorf("map %d: empty bounds", m.Layout.MapID)
+//  1. Build a per-Map.wz Index for Back/Tile/Obj/Map lookup.
+//  2. Locate the requested mapId's .img in idx.Maps().
+//  3. Call mapimage.ExtractLayers to lazily parse + composite each numbered
+//     layer (0..7) into a world-sized RGBA image. Sprite resolution lazily
+//     walks the Tile/Obj sub-trees.
+//  4. Stack the produced layer images in layout.ZMap order with draw.Over
+//     onto a canvas sized to the layout bounds. When layout.ZMap is empty
+//     (atlas-data ingest does not populate it; the only stable order
+//     available is the layer declaration), fall back to layer declaration
+//     order from layout.Layers.
+//
+// STATED LIMITATION (carried from the pre-refactor composite): backgrounds
+// (Map.img back[]) are not blitted. The composite produced here is the
+// foreground world on a transparent canvas, same as before.
+//
+// Returns an error if the map's .img is not found, if ExtractLayers fails
+// (most often "resolve bounds: no bounds" for stub/test maps), or if the
+// resulting canvas has empty bounds.
+func CompositeFromWZ(l logrus.FieldLogger, file *wz.File, layout maplayout.Layout, mapID uint32) (image.Image, error) {
+	if file == nil {
+		return nil, fmt.Errorf("composite: nil wz file")
 	}
 
+	idx := mapimage.NewIndex(file)
+	mapImg, ok := idx.Maps()[fmt.Sprintf("%09d", mapID)]
+	if !ok {
+		// Fallback: try the non-padded form. WZ image names in v83 are
+		// zero-padded to 9 digits ("00100000000" → "100000000" after strip),
+		// but be defensive in case future revisions diverge.
+		for name, img := range idx.Maps() {
+			if name == fmt.Sprintf("%d", mapID) {
+				mapImg = img
+				ok = true
+				break
+			}
+		}
+	}
+	if !ok {
+		return nil, fmt.Errorf("map %d: image not found in Map.wz", mapID)
+	}
+
+	layers, _, err := mapimage.ExtractLayers(idx, mapImg)
+	if err != nil {
+		return nil, fmt.Errorf("map %d extract layers: %w", mapID, err)
+	}
+
+	bounds := image.Rect(layout.Bounds.Left, layout.Bounds.Top, layout.Bounds.Right, layout.Bounds.Bottom)
+	if bounds.Empty() {
+		return nil, fmt.Errorf("map %d: empty bounds", mapID)
+	}
 	canvas := image.NewNRGBA(bounds)
 
-	// Index layers by name for zmap lookup.
-	layerByName := make(map[string]int, len(m.Layout.Layers))
-	for _, layer := range m.Layout.Layers {
-		layerByName[layer.Name] = layer.ID
+	// Build a name → LayerOutput lookup so the zmap-order traversal can
+	// fetch each layer's image by name. layout.Layers + layers may not be
+	// in 1:1 order if ExtractLayers and ExtractLayout disagree on which
+	// layers have content; trust ExtractLayers' output for sourcing.
+	byName := make(map[string]image.Image, len(layers))
+	for _, lo := range layers {
+		byName[lo.Name] = lo.Image
 	}
 
-	// Walk zmap back-to-front and blit each referenced layer PNG.
-	order := m.Layout.ZMap
+	order := layout.ZMap
 	if len(order) == 0 {
-		// No explicit zmap — fall back to layer declaration order.
-		order = make([]string, 0, len(m.Layout.Layers))
-		for _, layer := range m.Layout.Layers {
+		order = make([]string, 0, len(layout.Layers))
+		for _, layer := range layout.Layers {
 			order = append(order, layer.Name)
 		}
 	}
-
 	for _, name := range order {
-		layerID, ok := layerByName[name]
+		img, ok := byName[name]
 		if !ok {
-			l.Warnf("map %d: zmap references unknown layer %q", m.Layout.MapID, name)
+			// Layout listed this layer but ExtractLayers didn't produce it;
+			// happens when a layer has zero tiles+objs. Skip silently.
 			continue
 		}
-		pngBytes, ok := m.Layers[layerID]
-		if !ok {
-			continue
-		}
-		img, err := png.Decode(bytes.NewReader(pngBytes))
-		if err != nil {
-			l.WithError(err).Warnf("map %d layer %d: decode failed", m.Layout.MapID, layerID)
-			continue
-		}
-		// Layer PNGs are world-sized; place at the canvas origin.
 		draw.Draw(canvas, bounds, img, img.Bounds().Min, draw.Over)
 	}
 
+	if l != nil {
+		l.Debugf("composite: map %d stacked %d layer(s)", mapID, len(byName))
+	}
 	return canvas, nil
 }

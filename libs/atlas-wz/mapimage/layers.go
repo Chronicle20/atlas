@@ -25,6 +25,66 @@ type LayerOutput struct {
 // MapleStory map images use eight layers; matches donor renderer.go.
 const maxLayers = 8
 
+// ExtractLayout walks a parsed Map.img and returns only the metadata portion
+// of the layout — bounds, footholds, portals, NPCs, and the per-layer
+// Layer{ID,Name,Z,Source} records — without resolving sprites or compositing
+// pixels. Intended for the ingest path where layer image emission has been
+// moved to render time (atlas-renders).
+//
+// The Layer records still reference `layer-N` names so the on-disk JSON
+// schema stays compatible with consumers that expect them; atlas-renders no
+// longer reads `layers/<source>.png` from MinIO (those uploads have been
+// removed) but uses the field to drive its own layer iteration order.
+func ExtractLayout(img *wz.Image) (maplayout.Layout, error) {
+	if img == nil {
+		return maplayout.Layout{}, fmt.Errorf("layout: nil image")
+	}
+	root := img.Properties()
+	info := childrenOf(root, "info")
+
+	bounds, err := resolveBounds(info, root)
+	if err != nil {
+		return maplayout.Layout{}, fmt.Errorf("resolve bounds: %w", err)
+	}
+	if bounds.W <= 0 || bounds.H <= 0 {
+		return maplayout.Layout{}, fmt.Errorf("invalid bounds %dx%d", bounds.W, bounds.H)
+	}
+
+	layout := maplayout.Layout{
+		Version:   maplayout.SchemaVersion,
+		MapID:     parseMapID(img.Name()),
+		Bounds:    maplayout.Bounds{Left: bounds.X, Top: bounds.Y, Right: bounds.X + bounds.W, Bottom: bounds.Y + bounds.H},
+		Footholds: extractFootholds(root),
+		Portals:   extractPortals(root),
+		NPCs:      extractNPCs(root),
+	}
+
+	layerMetas := make([]maplayout.Layer, 0, maxLayers)
+	for layer := 0; layer < maxLayers; layer++ {
+		layerSub := findSub(root, strconv.Itoa(layer))
+		if layerSub == nil {
+			continue
+		}
+		layerProps := layerSub.Children()
+		objs := loadObjEntries(layerProps)
+		layerInfo := childrenOf(layerProps, "info")
+		tS := stringVal(layerInfo, "tS", "")
+		tiles := loadTileEntries(layerProps, tS)
+		if len(objs) == 0 && len(tiles) == 0 {
+			continue
+		}
+		name := fmt.Sprintf("layer-%d", layer)
+		layerMetas = append(layerMetas, maplayout.Layer{
+			ID:     layer,
+			Name:   name,
+			Z:      layer,
+			Source: name,
+		})
+	}
+	layout.Layers = layerMetas
+	return layout, nil
+}
+
 // ExtractLayers walks a parsed Map.img and returns one composited image per
 // numbered layer (0..7) that has at least one tile or obj, plus a
 // maplayout.Layout containing bounds/footholds/portals/NPCs/zmap.

@@ -92,14 +92,27 @@ func serveRender(l logrus.FieldLogger, s *storage.Storage, w http.ResponseWriter
 		return
 	}
 
-	mapEntry, err := s.GetMap(r.Context(), scope, region, version, mapID)
+	layout, err := s.GetMapLayout(r.Context(), scope, region, version, mapID)
 	if err != nil {
-		l.WithError(err).Warn("get map data failed")
+		l.WithError(err).Warn("get map layout failed")
 		http.Error(w, "map data not found", http.StatusNotFound)
 		return
 	}
 
-	img, err := Composite(l, mapEntry)
+	// Lazy: download + parse Map.wz on first miss for this (scope, region,
+	// version). Subsequent map renders share the open file.
+	if s.WZ == nil {
+		http.Error(w, "wz cache unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	wzFile, err := s.WZ.Get(r.Context(), scope, region, version, "Map.wz")
+	if err != nil {
+		l.WithError(err).Warn("wz cache get Map.wz failed")
+		http.Error(w, "wz cache: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	img, err := CompositeFromWZ(l, wzFile, *layout, mapID)
 	if err != nil {
 		l.WithError(err).Warn("map composite failed")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

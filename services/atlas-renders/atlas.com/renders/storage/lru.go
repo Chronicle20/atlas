@@ -12,10 +12,11 @@ type AtlasEntry struct {
 	Manifest manifest.Manifest
 }
 
-// MapEntry is a hot-cached map composite source: the per-layer PNG bytes plus
-// the parsed Map.img layout describing how to blit them.
+// MapEntry is a hot-cached map layout. atlas-renders now composites layers
+// directly from Map.wz at render time (see Storage.WZ / wzcache.go), so this
+// entry no longer carries pre-rendered layer bytes — the layout alone
+// suffices for cache hits.
 type MapEntry struct {
-	Layers map[int][]byte
 	Layout maplayout.Layout
 }
 

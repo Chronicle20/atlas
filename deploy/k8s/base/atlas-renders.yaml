@@ -44,10 +44,22 @@ spec:
           resources:
             requests:
               cpu: "500m"
-              memory: "256Mi"
+              # Bumped from 256Mi for the lazy map-render path: each pod
+              # holds an open *wz.File whose parsed property trees grow as
+              # distinct .imgs are touched (asymptote ~100-200 MB for
+              # Map.wz across a working set of popular maps). See
+              # docs/tasks/task-071-.../lazy-map-render.md.
+              memory: "512Mi"
             limits:
               cpu: "2"
-              memory: "1Gi"
+              memory: "2Gi"
+          volumeMounts:
+            # Lazy map-render needs Map.wz on a local filesystem so
+            # wz.Open can read canvas data via positional ReadAt. emptyDir
+            # is fine: each pod re-downloads on first miss (~10s on the
+            # cluster network for the 606 MiB Map.wz measured on PR-544).
+            - name: wz-scratch
+              mountPath: /scratch/wz
           livenessProbe:
             httpGet:
               path: /healthz
@@ -60,6 +72,10 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: wz-scratch
+          emptyDir:
+            sizeLimit: 2Gi
 ---
 apiVersion: v1
 kind: Service

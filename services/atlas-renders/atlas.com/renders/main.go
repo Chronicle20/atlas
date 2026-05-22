@@ -19,7 +19,7 @@ import (
 
 func main() {
 	l := newLogger()
-	s, err := storage.New(storage.ConfigFromEnv())
+	s, err := storage.New(l, storage.ConfigFromEnv())
 	if err != nil {
 		l.WithError(err).Warn("storage init failed; render handlers will 503")
 		s = nil

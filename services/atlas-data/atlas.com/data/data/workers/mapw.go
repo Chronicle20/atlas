@@ -50,29 +50,25 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		return err
 	}
 
-	// Emit per-map layers + minimap + layout JSON to MinIO.
+	// Emit per-map layout JSON + minimap PNG to MinIO. Per-layer composites
+	// are NOT produced here anymore — atlas-renders fetches Map.wz from MinIO
+	// and composites on first request (see docs/tasks/task-071-.../lazy-map-render.md).
+	// Dropping the layer composite pass takes Map worker wall-clock from
+	// ~30 min to ~2-5 min on a v83 GMS dataset (PR-544 evidence).
 	prefix := minioAssetPrefix(p)
 	idx := mapimage.NewIndex(file)
-	var scanned, layoutsWritten, layersWritten, minimapsWritten, extractLayersErrs, extractMinimapErrs int
+	var scanned, layoutsWritten, minimapsWritten, extractLayoutErrs, extractMinimapErrs int
 	for _, img := range idx.Maps() {
 		mapId, ok := imgID(img.Name())
 		if !ok {
 			continue
 		}
 		scanned++
-		layers, layout, err := mapimage.ExtractLayers(idx, img)
+		layout, err := mapimage.ExtractLayout(img)
 		if err != nil {
-			extractLayersErrs++
-			l.WithError(err).Debugf("extract layers map %d", mapId)
+			extractLayoutErrs++
+			l.WithError(err).Debugf("extract layout map %d", mapId)
 		} else {
-			for _, lo := range layers {
-				key := fmt.Sprintf("%s/map/%d/layers/%s.png", prefix, mapId, lo.Name)
-				if err := putPNG(ctx, mc, key, lo.Image); err != nil {
-					l.WithError(err).Warnf("upload layer %s map %d", lo.Name, mapId)
-					continue
-				}
-				layersWritten++
-			}
 			data, mErr := maplayout.Marshal(layout)
 			if mErr != nil {
 				l.WithError(mErr).Warnf("marshal layout map %d", mapId)
@@ -100,7 +96,7 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		}
 		minimapsWritten++
 	}
-	l.Infof("map assets: scanned=%d layouts=%d layers=%d minimaps=%d extractLayersErrs=%d extractMinimapErrs=%d",
-		scanned, layoutsWritten, layersWritten, minimapsWritten, extractLayersErrs, extractMinimapErrs)
+	l.Infof("map assets: scanned=%d layouts=%d minimaps=%d extractLayoutErrs=%d extractMinimapErrs=%d",
+		scanned, layoutsWritten, minimapsWritten, extractLayoutErrs, extractMinimapErrs)
 	return nil
 }

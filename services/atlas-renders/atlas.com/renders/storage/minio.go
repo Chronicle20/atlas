@@ -63,6 +63,14 @@ func (m *MC) Stat(ctx context.Context, bucket, key string) (bool, error) {
 	return false, err
 }
 
+// FGet downloads (bucket, key) to localPath. Used by the WZ archive cache
+// where the file must live on a local filesystem so wz.Open can read it via
+// positional ReadAt for the lifetime of the *wz.File. Returns an error if
+// the object doesn't exist (no silent zero-byte file).
+func (m *MC) FGet(ctx context.Context, bucket, key, localPath string) error {
+	return m.mc.FGetObject(ctx, bucket, key, localPath, miniogo.GetObjectOptions{})
+}
+
 // HasAny returns true if any object exists under the supplied prefix. The
 // scope resolver uses this as a one-item ListObjects probe.
 func (m *MC) HasAny(ctx context.Context, bucket, prefix string) (bool, error) {

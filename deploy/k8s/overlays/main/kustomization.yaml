@@ -275,6 +275,8 @@ images:
     newTag: main-324205c
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: main-324205c
+  - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
+    newTag: main-324205c
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
     newTag: main-324205c
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills

@@ -97,7 +97,18 @@ func main() {
 			} else if len(active) > 0 {
 				l.Infof("restart recovery: %d active ingest job(s): %v", len(active), active)
 			}
-			go restruntime.Watchdog{L: l, JobCreator: jc, Redis: rdb, TimeoutSecs: 1800}.Run(tdm.Context())
+			// TimeoutSecs is the maximum heartbeat staleness the Watchdog
+			// tolerates before deleting a Job. The ingest pod now refreshes
+			// its heartbeat every 30s (runtime/ingest/heartbeat.go), so any
+			// timeout > ~60s would suffice in the happy path. Pick 7200 (2 h)
+			// as a generous belt-and-braces margin for a wedged heartbeat
+			// goroutine or a transient Redis blip on the writer side, and to
+			// absorb future archive growth without a code change. The legacy
+			// value (1800) was a self-inflicted half-hour cap: with no in-pod
+			// heartbeat, every Job's heartbeat went stale at creation+timeout
+			// regardless of actual progress (PR-544: Map worker killed at
+			// 30:28 mid-loop, ~80 maps left without layout.json/minimap.png).
+			go restruntime.Watchdog{L: l, JobCreator: jc, Redis: rdb, TimeoutSecs: 7200}.Run(tdm.Context())
 		}
 	}
 

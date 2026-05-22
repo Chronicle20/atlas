@@ -11,6 +11,7 @@ import (
 	minio "atlas-data/storage/minio"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,6 +30,19 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 	if err != nil {
 		return fmt.Errorf("minio init: %w", err)
 	}
+
+	// Refresh the Watchdog heartbeat every 30s while workers run. The REST pod
+	// writes the key once at Job creation (runtime/rest/jobs.go:172) and never
+	// refreshes — without this goroutine, Map.wz processing exceeds the 30-min
+	// Watchdog cutoff and the Job is deleted mid-execution. See heartbeat.go
+	// for the PR-544 evidence trail.
+	if key := redisJobKeyFromEnv(); key != "" {
+		rdb := redis.Connect(l)
+		go runHeartbeat(ctx, l, rdb, key)
+	} else {
+		l.Info("ingest heartbeat skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")
+	}
+
 	return data.RunWorkers(l, db, mc)(ctx, p)
 }
 

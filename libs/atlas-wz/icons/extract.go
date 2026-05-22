@@ -48,7 +48,12 @@ func ExtractItemIcon(f *wz.File, id uint32) (image.Image, error) {
 
 	for _, dir := range root.Directories() {
 		for _, img := range dir.Images() {
-			props := img.Properties()
+			// best-effort: skip images whose .img cannot be parsed; the
+			// Properties() impl already warns via the lib's logger.
+			props, err := img.Properties()
+			if err != nil {
+				continue
+			}
 			if len(props) == 0 {
 				continue
 			}
@@ -115,7 +120,12 @@ func ExtractSkillIcon(f *wz.File, id uint32) (image.Image, error) {
 	target := strconv.FormatUint(uint64(id), 10)
 
 	for _, img := range root.Images() {
-		props := img.Properties()
+		// best-effort: skip images whose .img cannot be parsed; the
+		// Properties() impl already warns via the lib's logger.
+		props, err := img.Properties()
+		if err != nil {
+			continue
+		}
 		if len(props) == 0 {
 			continue
 		}
@@ -163,7 +173,10 @@ func extractEntityIcon(f *wz.File, id uint32, finder canvasFinder) (image.Image,
 		if normalizeId(img.Name()) != target {
 			continue
 		}
-		props := img.Properties()
+		props, err := img.Properties()
+		if err != nil {
+			return nil, fmt.Errorf("icons: parse %s: %w", img.Name(), err)
+		}
 		if len(props) == 0 {
 			return nil, ErrNotFound
 		}
@@ -191,7 +204,12 @@ func resolveLinkedCanvas(images map[string]*wz.Image, props []property.Property,
 		if linked == nil {
 			return nil
 		}
-		linkedProps := linked.Properties()
+		// best-effort: stop following the chain if the linked .img cannot
+		// be parsed; the Properties() impl already warns via the lib logger.
+		linkedProps, err := linked.Properties()
+		if err != nil {
+			return nil
+		}
 		cp := finder(linkedProps)
 		if cp != nil {
 			return cp

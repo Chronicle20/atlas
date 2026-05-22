@@ -78,7 +78,11 @@ func TestPropertiesFastPathSkipsLock(t *testing.T) {
 	// or fall through to the nil-handler branch. Either way, exercising
 	// it here a few times rapidly is the regression signal.
 	for i := 0; i < 1024; i++ {
-		if got := img.Properties(); got != nil {
+		got, err := img.Properties()
+		if err != nil {
+			t.Fatalf("Properties() unexpected err = %v", err)
+		}
+		if got != nil {
 			t.Fatalf("Properties() = %v on fresh NewParsedImage, want nil", got)
 		}
 	}

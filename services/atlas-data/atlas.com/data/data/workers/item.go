@@ -74,7 +74,11 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 				seen[id] = struct{}{}
 			}
 			// Multi-item: top-level numeric SUB-properties name the ids.
-			for _, prop := range img.Properties() {
+			props, err := img.Properties()
+			if err != nil {
+				return fmt.Errorf("item worker: parse %s: %w", img.Name(), err)
+			}
+			for _, prop := range props {
 				sp, ok := prop.(*property.SubProperty)
 				if !ok {
 					continue

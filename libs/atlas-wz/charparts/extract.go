@@ -237,7 +237,11 @@ func extractTemplate(f *wz.File, img *wz.Image, partClass string) (PartSet, bool
 	}
 	id := uint32(idU)
 
-	props := img.Properties()
+	props, err := img.Properties()
+	if err != nil {
+		// best-effort: skip templates whose .img cannot be parsed
+		return PartSet{}, false
+	}
 	info := extractInfoBlock(props)
 	lookup := buildPathLookup(props)
 

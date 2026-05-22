@@ -73,7 +73,11 @@ func SerializeImage(img *wz.Image, outputPath string) error {
 		XMLName: stdxml.Name{Local: "imgdir"},
 		Name:    img.Name() + ".img",
 	}
-	root.Children = propertiesToElements(img.Properties())
+	props, err := img.Properties()
+	if err != nil {
+		return fmt.Errorf("wztoxml adapter: %s: %w", img.Name(), err)
+	}
+	root.Children = propertiesToElements(props)
 	if err := e.Encode(root); err != nil {
 		return fmt.Errorf("encode xml for [%s]: %w", img.Name(), err)
 	}

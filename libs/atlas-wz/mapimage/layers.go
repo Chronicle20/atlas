@@ -46,7 +46,10 @@ func ExtractLayout(img *wz.Image) (maplayout.Layout, error) {
 	if img == nil {
 		return maplayout.Layout{}, fmt.Errorf("layout: nil image")
 	}
-	root := img.Properties()
+	root, err := img.Properties()
+	if err != nil {
+		return maplayout.Layout{}, fmt.Errorf("layers properties: %w", err)
+	}
 	info := childrenOf(root, "info")
 
 	bounds, err := resolveBounds(info, root)
@@ -132,7 +135,10 @@ func ExtractLayers(idx *Index, img *wz.Image) ([]LayerOutput, maplayout.Layout, 
 	if img == nil {
 		return nil, maplayout.Layout{}, fmt.Errorf("layers: nil image")
 	}
-	root := img.Properties()
+	root, err := img.Properties()
+	if err != nil {
+		return nil, maplayout.Layout{}, fmt.Errorf("layers properties: %w", err)
+	}
 	info := childrenOf(root, "info")
 
 	bounds, err := resolveBounds(info, root)

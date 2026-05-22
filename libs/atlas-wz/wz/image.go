@@ -14,6 +14,7 @@ type Image struct {
 	dataSize   int32
 	properties []property.Property
 	parsed     bool
+	parseErr   error
 }
 
 // NewParsedImage constructs an Image whose properties are already populated
@@ -39,37 +40,44 @@ func (i *Image) File() *File {
 	return i.wzFile
 }
 
-// Properties returns the parsed properties of this image. Parses on first
-// access (lazy).
+// Properties returns the parsed properties of this image plus any error
+// observed during lazy parsing. Parses on first access; subsequent calls
+// return the cached result.
 //
-// Goroutine safety: parse() Seek+Reads the shared *os.File. Two goroutines
-// racing on different *wz.Image instances backed by the same *wz.File
-// would otherwise corrupt each other's reads. The file-wide parseMu in
-// File guards every Seek-based parse, and the double-check inside the
-// critical section makes the lazy initialisation idempotent (a goroutine
-// that lost the race for the lock returns the freshly-parsed properties
-// without re-parsing).
+// Returning the error surface forces every caller to make an explicit
+// decision about parse failures instead of silently consuming an empty
+// property slice. See task-076 F6: a previous version logged the error
+// and dropped it, which made downstream zero-row imports indistinguishable
+// from "parsed and genuinely empty."
+//
+// Goroutine safety: parse() Seek+Reads the shared *os.File; the file-wide
+// parseMu in *File serialises every Seek-based parse. The double-check
+// inside the critical section makes the lazy initialisation idempotent.
 //
 // In-memory images created via NewParsedImage have parsed=true and
-// wzFile=nil, so they short-circuit before any lock acquisition.
-func (i *Image) Properties() []property.Property {
+// wzFile=nil, so they short-circuit without lock acquisition and always
+// return a nil error.
+func (i *Image) Properties() ([]property.Property, error) {
 	if i.parsed {
-		return i.properties
+		return i.properties, i.parseErr
 	}
 	if i.wzFile == nil {
 		i.parsed = true
-		return i.properties
+		return i.properties, nil
 	}
 	unlock := i.wzFile.LockParse()
 	defer unlock()
 	if i.parsed {
-		return i.properties
+		return i.properties, i.parseErr
 	}
 	if err := i.parse(); err != nil {
 		i.wzFile.l.WithError(err).Warnf("Unable to parse image [%s].", i.name)
+		i.parsed = true
+		i.parseErr = err
+		return i.properties, err
 	}
 	i.parsed = true
-	return i.properties
+	return i.properties, nil
 }
 
 func (i *Image) parse() error {

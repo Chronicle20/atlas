@@ -18,6 +18,10 @@ set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
 
+# lib.sh resets options to `set -uo pipefail` (the shared sourcers need
+# try-all semantics). bootstrap.sh wants strict-fail; restore -e here.
+set -e
+
 require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 WZ_CANONICAL="${WZ_CANONICAL:-/opt/wz/atlas.zip}"
 BOOTSTRAP_MODE="${BOOTSTRAP_MODE:-auto}"

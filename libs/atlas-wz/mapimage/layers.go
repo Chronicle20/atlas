@@ -294,12 +294,17 @@ func extractFootholds(root []property.Property) []maplayout.Foothold {
 	return out
 }
 
-// extractPortals walks portal/<i>/ entries into a flat list.
+// extractPortals walks portal/<i>/ entries into a flat list. Dedup by
+// (name, target, x, y) — v83 WZ data for some maps (Henesys 100000000)
+// includes shadow entries (pn="", pn="0") that collide with player-
+// visible portals on the same coordinate. Without dedup these surface as
+// duplicate entries in atlas-portals' response. See task-076 F20.
 func extractPortals(root []property.Property) []maplayout.Portal {
 	portal := findSub(root, "portal")
 	if portal == nil {
 		return nil
 	}
+	seen := make(map[string]struct{})
 	var out []maplayout.Portal
 	for _, p := range portal.Children() {
 		sub, ok := p.(*property.SubProperty)
@@ -308,13 +313,19 @@ func extractPortals(root []property.Property) []maplayout.Portal {
 		}
 		ch := sub.Children()
 		target := uint32(intVal(ch, "tm", 0))
-		out = append(out, maplayout.Portal{
+		entry := maplayout.Portal{
 			Name:   stringVal(ch, "pn", ""),
 			Type:   intVal(ch, "pt", 0),
 			Target: target,
 			X:      intVal(ch, "x", 0),
 			Y:      intVal(ch, "y", 0),
-		})
+		}
+		key := fmt.Sprintf("%s|%d|%d|%d", entry.Name, entry.Target, entry.X, entry.Y)
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, entry)
 	}
 	return out
 }

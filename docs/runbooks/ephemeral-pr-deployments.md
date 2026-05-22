@@ -220,6 +220,26 @@ If something in that chain fails, the Application sits in `Terminating` with fin
 
 ### Diagnose
 
+**Read the summary line first.** As of task-075, `cleanup.sh` runs every
+phase regardless of any single phase's outcome. The final log line is
+the authoritative status:
+
+```
+{"ts":…,"level":"info","atlas.env":"…","atlas.step":"done","msg":"cleanup complete phases_run=7 phases_failed=0"}
+```
+
+or, on partial failure:
+
+```
+{"ts":…,"level":"error","atlas.env":"…","atlas.step":"done","msg":"cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=[\"drop-topics\",\"drop-redis\"]"}
+```
+
+Use the `failed_phases` array to scope your re-run — only the listed
+phases need a manual recovery pass.  Every other phase ran to
+completion (look for its `phase complete` log line). Pre-task-075
+runbooks said "assume every phase after the failed one was skipped"; that
+assumption no longer applies.
+
 ```sh
 kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions'
 kubectl -n argocd get jobs -l app=atlas-pr-cleanup,atlas.pr-number=<N>
@@ -357,41 +377,85 @@ For PR-envs whose teardown wedged or pre-dated the task-070 fixes, `services/atl
 
 ### One-shot from a workstation
 
-```sh
-export DB_HOST=postgres.home DB_PORT=5432 DB_USER=postgres DB_PASSWORD=...
-export ATLAS_DB_NAMES="atlas-accounts atlas-bans ..."    # same list as deploy/k8s/overlays/pr/postdelete-cleanup.yaml
-export BOOTSTRAP_SERVERS=kafka.home:9093
-export REDIS_URL=redis.home:6379
-export GHCR_TOKEN=$(cat ~/.config/atlas/gh.env | grep GH_TOKEN | cut -d= -f2)
-export ATLAS_SERVICES="atlas-account,atlas-asset-expiration,..."
-export PIHOLE_API_BASE_1=https://pihole1.home PIHOLE_TOKEN_1=...
-export PIHOLE_API_BASE_2=https://pihole2.home PIHOLE_TOKEN_2=...
+For one-off recovery you can run the image directly from a workstation
+with cluster credentials (kubeconfig pointing at the prod cluster's
+`argocd` namespace). The Job manifest form below mirrors the
+PostDelete cleanup Job's shape (envFrom the cluster-infra-owned
+ConfigMap; PR_NUMBER as the only per-invocation override). It is
+preferred over `kubectl run --rm -i` — non-TTY pods don't always stream
+logs reliably, and a Job leaves an inspectable record.
 
-# List what would be deleted for PRs 491 and 522:
-./services/atlas-pr-bootstrap/scripts/sweep-orphans.sh 491 522
+Apply this manifest (substitute `PR_NUMBER`):
 
-# Reclaim:
-./services/atlas-pr-bootstrap/scripts/sweep-orphans.sh --apply 491 522
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: atlas-pr-cleanup-oneshot-
+  namespace: argocd
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: atlas-pr-cleanup
+      containers:
+        - name: cleanup
+          image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+          command: ["/atlas/cleanup.sh"]
+          envFrom:
+            - secretRef: { name: db-credentials }
+            - secretRef: { name: pihole-credentials }
+            - secretRef: { name: atlas-pr-cleanup-gh-token }
+            - configMapRef: { name: atlas-pr-cleanup-env }
+          env:
+            - name: PR_NUMBER
+              value: "<PR_NUMBER>"
 ```
+
+Pipe through `kubectl -n argocd create -f -` (no `apply`; oneshot
+Jobs use `generateName`). Tail logs with:
+
+```bash
+kubectl -n argocd logs -l app.kubernetes.io/part-of=atlas-pr-cleanup --tail=-1 -f
+```
+
+The workstation no longer needs to export `DB_HOST`, `BOOTSTRAP_SERVERS`,
+`ATLAS_DB_NAMES`, `ATLAS_SERVICES`, etc. — those come from the
+cluster-infra-owned `atlas-pr-cleanup-env` ConfigMap. `PR_NUMBER` is
+the only value you supply.
 
 ### In-cluster (preferred for production cluster credentials)
 
-Run inside a one-shot debug pod that already has the right Secrets mounted:
+`/atlas/sweep-orphans.sh` is part of the published bootstrap image as of
+task-075. The legacy `kubectl create configmap` + script-mount workaround
+is no longer needed.
 
-```sh
-kubectl -n argocd run sweep-$(date +%s) --rm -it --restart=Never \
+```bash
+kubectl -n argocd run sweep-orphans \
+    --rm -i --restart=Never \
+    --serviceaccount=atlas-pr-cleanup \
     --image=ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest \
     --overrides='{
-      "spec":{"containers":[{
-        "name":"sweep","image":"ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest",
-        "envFrom":[
-          {"secretRef":{"name":"db-credentials"}},
-          {"secretRef":{"name":"pihole-credentials"}},
-          {"secretRef":{"name":"atlas-pr-cleanup-gh-token"}}],
-        "command":["/atlas/sweep-orphans.sh","--apply","<N>"],
-        "stdin":true,"tty":true
-      }]}}'
+      "spec": {
+        "containers": [{
+          "name": "sweep-orphans",
+          "image": "ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest",
+          "command": ["/atlas/sweep-orphans.sh", "--apply", "<PR_NUMBER>"],
+          "envFrom": [
+            {"secretRef": {"name": "db-credentials"}},
+            {"secretRef": {"name": "pihole-credentials"}},
+            {"secretRef": {"name": "atlas-pr-cleanup-gh-token"}},
+            {"configMapRef": {"name": "atlas-pr-cleanup-env"}}
+          ]
+        }]
+      }
+    }'
 ```
+
+Drop `--apply` (or pass `--list` explicitly) to enumerate without
+deleting. The script's Kafka phases use rpk as of task-075; the previous
+"kafka-topics.sh not on PATH; skipping" warning is gone.
 
 Idempotent — re-running on an already-clean PR exits 0 with all enumerations empty. The script tolerates absent infrastructure (it skips any phase whose required env var is unset), so partial-credential invocations also work for diagnosing one subsystem at a time.
 
@@ -408,3 +472,54 @@ Alert wiring is out of scope for task-070 — this is observable but not paged.
 ### Known follow-ups (post task-071)
 
 - `cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment (cleanup keys off `ATLAS_ENV` for DB and Kafka drops; per-tenant MinIO cleanup needs the UUID). MinIO per-tenant prefixes (under `atlas-wz/tenants/<id>/`, `atlas-assets/tenants/<id>/`, `atlas-renders/tenants/<id>/`) therefore leak across PR teardowns. Postgres state continues to clear via the per-env database drop. Resolving this requires the cleanup Helm chart to inject `TENANT_ID`; until then operators may run `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` manually as needed. Extending `sweep-orphans.sh` (§9.11) with a MinIO phase would be the cleaner long-term fix.
+
+## §9.12 Diagnosing partial-cleanup failure
+
+As of task-075 the PostDelete Job runs every phase regardless of any
+single phase's outcome. The summary line names which phases failed:
+
+```
+cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=["drop-topics","drop-redis"]
+```
+
+Re-run only the failed phases via the §9.11 sweep-orphans path with
+`--apply`, or manually:
+
+| Phase | Manual re-run |
+|---|---|
+| `drop-dbs` | `psql -h postgres.home -U <user> -c 'DROP DATABASE IF EXISTS "atlas-<base>-<env>";'` (per leaked DB) |
+| `drop-topics` | `rpk topic list -X brokers=kafka.home:9093 --format json \| jq -r '.[].name' \| grep -- '-<env>$' \| xargs -r -n1 rpk topic delete -X brokers=kafka.home:9093` |
+| `drop-groups` | `rpk group list -X brokers=kafka.home:9093 --format json \| jq -r '.[].name' \| grep -- '\[<env>\]$' \| xargs -r -d '\n' -n1 rpk group delete -X brokers=kafka.home:9093` |
+| `drop-redis` | `redis-cli -u redis://redis.home:6379 --scan --pattern '<env>:*' \| xargs -r -n 1000 redis-cli -u redis://redis.home:6379 DEL` |
+| `drop-images` | See §9.5 GHCR token; the image-cleanup phase of `/atlas/sweep-orphans.sh --apply <PR>` is the canonical re-run path |
+| `drop-dns` | Pi-hole admin UI on each replica; remove A records ending `… <PR_NUMBER>.atlas.home` |
+| `drop-branch` | `gh api --method DELETE /repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-<PR>-resolved` |
+
+The full re-run path (`/atlas/sweep-orphans.sh --apply <PR>`) is
+idempotent and is the recommended recovery — it touches every phase
+again with `WHERE NOT EXISTS`-equivalent semantics. The per-phase
+recipes above are for cases where the operator wants to address a
+single phase in isolation (e.g. the rpk broker is the only thing that
+was unavailable during cleanup).
+
+## §9.13 Coordination with cluster-infra
+
+This repo (`Chronicle20/atlas`) deploys per-PR resources into
+`atlas-pr-<N>` namespaces. Long-lived `argocd`-namespace dependencies
+are owned by the cluster-infra repo. The atlas repo expects these to
+already exist in `argocd`:
+
+- `ServiceAccount atlas-pr-cleanup` + `Role` / `RoleBinding` granting
+  the PostDelete Job permission to query+patch Applications.
+- `Secret atlas-pr-cleanup-gh-token` (fine-grained PAT for GHCR + bot
+  branch delete).
+- `ConfigMap atlas-pr-cleanup-env` — shape mirrored from
+  `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml`.
+
+When a new service is added to `.github/config/services.json`,
+`gen-cleanup-env.sh` regenerates the example artifact and CI fails
+the PR until the artifact is committed. Once that PR merges,
+cluster-infra mirrors the new shape into the live ConfigMap. Order
+of merges matters: cluster-infra changes land BEFORE the consuming
+atlas PR, otherwise the next PostDelete Job wedges with
+`CreateContainerConfigError: configmap "atlas-pr-cleanup-env" not found`.

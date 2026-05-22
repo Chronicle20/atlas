@@ -6,6 +6,10 @@
 # ~30 MB vs. ~235 MB and no JVM startup latency per cleanup invocation.
 FROM alpine:3.23
 
+# Bumping RPK_VERSION invalidates test/fixtures/rpk-*.json — rpk's
+# --format json schema is a stability boundary, not a CLI flag. After
+# bumping, regenerate per test/fixtures/README.md and re-run
+# `bats services/atlas-pr-bootstrap/test/`.
 ARG RPK_VERSION=24.3.1
 
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
@@ -34,8 +38,9 @@ WORKDIR /atlas
 COPY scripts/lib.sh /atlas/lib.sh
 COPY scripts/bootstrap.sh /atlas/bootstrap.sh
 COPY scripts/cleanup.sh /atlas/cleanup.sh
+COPY scripts/sweep-orphans.sh /atlas/sweep-orphans.sh
 COPY canonical/ /atlas/canonical/
 
-RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh
+RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh /atlas/sweep-orphans.sh
 
 ENTRYPOINT ["/atlas/bootstrap.sh"]

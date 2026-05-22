@@ -63,7 +63,7 @@ func main() {
 	handlerMap := produceHandlers()
 	writerList := produceWriters()
 
-	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, config.Id.String()))
+	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, config.Id.String())
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)

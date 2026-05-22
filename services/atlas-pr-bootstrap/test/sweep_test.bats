@@ -44,18 +44,17 @@ setup() {
     # produces the canonical "phase resource" lines and APPLY=0 means none
     # of them get acted on.
     SHIM_DIR="$(mktemp -d)"
-    cat > "$SHIM_DIR/kafka-topics.sh" <<'EOF'
+    cat > "$SHIM_DIR/rpk" <<'EOF'
 #!/usr/bin/env bash
-case "$*" in
-    *--list*) echo "atlas-faketopic-ed86" ;;
-    *--delete*) echo "FAIL: delete invoked in list mode" >&2; exit 1 ;;
-esac
-EOF
-    cat > "$SHIM_DIR/kafka-consumer-groups.sh" <<'EOF'
-#!/usr/bin/env bash
-case "$*" in
-    *--list*) echo "Fake Group [ed86]" ;;
-    *--delete*) echo "FAIL: delete invoked in list mode" >&2; exit 1 ;;
+case "$1 $2" in
+    "topic list")
+        echo '[{"name":"atlas-faketopic-ed86","partitions":1,"replicas":1}]'
+        ;;
+    "group list")
+        echo '[{"name":"Fake Group [ed86]","members":0}]'
+        ;;
+    "topic delete"|"group delete")
+        echo "FAIL: delete invoked in list mode" >&2; exit 1 ;;
 esac
 EOF
     cat > "$SHIM_DIR/redis-cli" <<'EOF'
@@ -71,12 +70,11 @@ echo "atlas-fake-ed86"
 EOF
     cat > "$SHIM_DIR/gh" <<'EOF'
 #!/usr/bin/env bash
-# Empty results — easier than mocking the rich gh api jq path.
 echo ""
 EOF
     cat > "$SHIM_DIR/kubectl" <<'EOF'
 #!/usr/bin/env bash
-exit 1   # "Application not found" — drop-app-finalizers phase no-ops.
+exit 1
 EOF
     chmod +x "$SHIM_DIR"/*
 
@@ -91,6 +89,47 @@ EOF
     [[ "$output" == *"drop-groups Fake Group [ed86]"* ]]
     [[ "$output" == *"drop-redis ed86:fake-key"* ]]
     [[ "$output" != *"FAIL:"* ]]
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "sweep-orphans.sh: --apply deletes spaced group names intact" {
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/rpk-calls.log"
+    cat > "$SHIM_DIR/rpk" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "rpk \$*" >> "$CALL_LOG"
+case "\$1 \$2" in
+    "topic list") echo '[]' ;;
+    "group list") echo '[{"name":"Party Quest Service [ed86]","members":0}]' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+echo ""
+EOF
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        DB_HOST=fake DB_PORT=1 DB_USER=u DB_PASSWORD=p \
+        BOOTSTRAP_SERVERS=fake REDIS_URL=fake:6379 \
+        GHCR_TOKEN=fake ATLAS_SERVICES=atlas-fake \
+        bash "$SCRIPT" --apply 491
+
+    grep -F "rpk group delete -X brokers=fake Party Quest Service [ed86]" "$CALL_LOG"
 
     rm -rf "$SHIM_DIR"
 }

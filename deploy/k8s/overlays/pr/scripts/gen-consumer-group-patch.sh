@@ -27,12 +27,13 @@ mkdir -p "$(dirname "$OUT")"
         #   2) const consumerGroupIdTemplate = "Channel Service - %s"
         # `|| true` keeps `set -e` happy when grep matches nothing.
         #
-        # Note: pattern 2 services (atlas-channel, atlas-login) use the
-        # template at runtime via fmt.Sprintf(...). When KAFKA_CONSUMER_GROUP
-        # is set as an env var, consumergroup.Resolve() returns the env value
-        # verbatim, including any literal "%s" — so the emitted patch carries
-        # the raw template. Phase 7's downstream tasks (ApplicationSet
-        # templating) are expected to substitute or strip "%s" if needed.
+        # Note: pattern 2 services (atlas-channel, atlas-login) carry
+        # the template at runtime. The emitted patch's
+        # KAFKA_CONSUMER_GROUP value still contains a literal "%s" —
+        # that "%s" is intentional and is now substituted at
+        # consumer-registration time by libs/atlas-kafka/consumergroup
+        # `Resolve(template, channelId)` (task-075). DO NOT strip the
+        # "%s" here; the Go side needs it intact.
         literal=$(grep -E 'consumerGroupId.*=.*consumergroup\.Resolve\("[^"]+"\)' "$f" | head -1 | sed -E 's/.*consumergroup\.Resolve\("([^"]+)"\).*/\1/' || true)
         if [ -z "$literal" ]; then
             literal=$(grep -E 'consumerGroupId(Template)? *= *"' "$f" | head -1 | sed -E 's/.*"([^"]*)".*/\1/' || true)

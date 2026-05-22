@@ -19,7 +19,7 @@
 #
 # DRY_RUN_NO_INFRA=1 short-circuits external-command phases (testing only).
 
-set -euo pipefail
+set -uo pipefail
 
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
@@ -122,33 +122,36 @@ sweep_kafka() {
     local pr_number="$1"
     local env_hash="$2"
     [ -z "${BOOTSTRAP_SERVERS:-}" ] && return 0
-    if ! command -v kafka-topics.sh >/dev/null 2>&1; then
-        ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log warn "kafka-topics.sh not on PATH; skipping"
+    if ! command -v rpk >/dev/null 2>&1; then
+        ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log warn "rpk not on PATH; skipping"
         return 0
     fi
+
     ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log info "scanning Kafka topics"
     local topics
-    topics=$(kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list 2>/dev/null \
-        | grep -E -- "-${env_hash}\$" || true)
+    topics=$(rpk topic list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+        | jq -r "$RPK_TOPICS_JQ" \
+        | { grep -E -- "-${env_hash}\$" || true; })
     while IFS= read -r t; do
         [ -z "$t" ] && continue
         echo "drop-topics ${t}"
         if [ "$APPLY" = "1" ]; then
-            kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --topic "$t" || \
+            rpk topic delete -X brokers="$BOOTSTRAP_SERVERS" "$t" || \
                 ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log warn "delete topic $t failed"
         fi
     done <<<"$topics"
 
     ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log info "scanning Kafka consumer groups"
     local groups
-    groups=$(kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list 2>/dev/null \
-        | grep -E -- "\\[${env_hash}\\]\$" || true)
+    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+        | jq -r "$RPK_GROUPS_JQ" \
+        | { grep -E -- "\\[${env_hash}\\]\$" || true; })
     while IFS= read -r g; do
         [ -z "$g" ] && continue
         echo "drop-groups ${g}"
         if [ "$APPLY" = "1" ]; then
-            kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --group "$g" || \
-                ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log warn "delete group failed"
+            rpk group delete -X brokers="$BOOTSTRAP_SERVERS" "$g" || \
+                ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log warn "delete group $g failed"
         fi
     done <<<"$groups"
 }

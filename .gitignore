@@ -1,4 +1,7 @@
-dev/
+dev/*
+# Exception: cluster-infra coordination artifacts are checked in (used by CI
+# drift check; see deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh).
+!dev/cluster-infra-coordination/
 .worktrees/
 services/atlas-configurations/atlas.com/configurations/atlas-configurations
 services/atlas-login/atlas.com/login/atlas-login

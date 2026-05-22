@@ -148,7 +148,7 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
-	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, config.Id.String()))
+	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, config.Id.String())
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

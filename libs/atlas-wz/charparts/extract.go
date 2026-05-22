@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/canvas"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
@@ -91,17 +92,17 @@ var subdirToPartClass = map[string]string{
 }
 
 // accessoryPartClassFor classifies an Accessory subdirectory .img by its id
-// range. v83 Character.wz/Accessory stores eye/face/earring accessories under
-// the single dir; atlas-renders splits them via classifications 101xxxx
-// (FaceAccessory), 102xxxx (EyeAccessory), 103xxxx (Earrings).
+// range. v83 Character.wz/Accessory stores eye/face/earring accessories
+// under the single dir; atlas-renders splits them via the constants
+// exported by libs/atlas-constants/item (DOM-21 single-source).
+// See task-076 F16.
 func accessoryPartClassFor(id uint32) (string, bool) {
-	c := id / 10000
-	switch c {
-	case 101:
+	switch item.Classification(id / 10000) {
+	case item.ClassificationFaceAccessory:
 		return "FaceAccessory", true
-	case 102:
+	case item.ClassificationEyeAccessory:
 		return "EyeAccessory", true
-	case 103:
+	case item.ClassificationEarring:
 		return "Earrings", true
 	}
 	return "", false

@@ -564,9 +564,10 @@ func weaponHasStand2(ctx context.Context, l logrus.FieldLogger, s *storage.Stora
 
 // fetchAtlas resolves the per-(partClass, tenant) scope and fetches the atlas
 // + manifest. Both lookups are LRU-backed via Storage so the cost amortises
-// across renders.
+// across renders. ResolveScope takes the full bucket subpath; character
+// atlases live under "atlases/<partClass>/" so we pass that prefix.
 func fetchAtlas(ctx context.Context, s *storage.Storage, tenantID, region, version, partClass string, id uint32) (*storage.AtlasEntry, error) {
-	scope, err := s.ResolveScope(ctx, tenantID, region, version, partClass)
+	scope, err := s.ResolveScope(ctx, tenantID, region, version, "atlases/"+partClass)
 	if err != nil {
 		return nil, fmt.Errorf("resolve scope %s: %w", partClass, err)
 	}

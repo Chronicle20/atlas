@@ -5,15 +5,22 @@ import (
 	"fmt"
 )
 
-// ResolveScope returns "tenants/<id>" or "shared" based on a HEAD probe.
-// Result is cached per (tenant, region, version, partClass).
-func (s *Storage) ResolveScope(ctx context.Context, tenantID, region, version, partClass string) (string, error) {
-	cacheKey := tenantID + "|" + region + "|" + version + "|" + partClass
+// ResolveScope returns "tenants/<id>" or "shared" based on a HEAD probe of
+// (tenant, region, version, subPath). `subPath` is the per-domain bucket
+// suffix the caller wants to look up: character handlers pass
+// "atlases/<partClass>", the map handler passes "map/<mapID>", etc.
+//
+// An earlier version hardcoded "atlases/" into the probe prefix, which
+// silently routed every non-character ResolveScope call to "shared" — see
+// map render 404s on PR-544 against tenant data that did exist.
+//
+// Result is cached per (tenant, region, version, subPath).
+func (s *Storage) ResolveScope(ctx context.Context, tenantID, region, version, subPath string) (string, error) {
+	cacheKey := tenantID + "|" + region + "|" + version + "|" + subPath
 	if v, ok := s.Caches.Scope.Get(cacheKey); ok {
 		return v, nil
 	}
-	// Probe the first id under tenant/<>/atlases/<partClass>/. Use ListObjects with limit 1.
-	prefix := fmt.Sprintf("tenants/%s/regions/%s/versions/%s/atlases/%s/", tenantID, region, version, partClass)
+	prefix := fmt.Sprintf("tenants/%s/regions/%s/versions/%s/%s/", tenantID, region, version, subPath)
 	has, err := s.MC.HasAny(ctx, s.Cfg.BucketAssets, prefix)
 	if err != nil {
 		return "", err

@@ -113,33 +113,41 @@ jobs:
           fi
 
   # ============================================
-  # Build and Push AMD64 Images (bake — single job)
+  # Build and Push AMD64 Images (bake — sharded matrix)
   # ============================================
   build-amd64:
-    name: Build AMD64 (bake)
+    name: Build AMD64 (bake — shard ${{ matrix.shard }}/3)
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Derive bake inputs
+      - name: Derive bake inputs for this shard
         id: bake-inputs
         env:
           MATRIX_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          TARGETS=$(echo "$MATRIX_JSON" | jq -c '[.[].name]')
+          TARGETS=$(echo "$MATRIX_JSON" | jq -c --argjson s "$SHARD" \
+            '[to_entries[] | select(.key % 4 == $s) | .value.name]')
           IMAGE_MAP=$(echo "$MATRIX_JSON" | jq -c 'map({(.name): .docker_image}) | add')
-          echo "targets=$TARGETS"       >> "$GITHUB_OUTPUT"
+          echo "targets=$TARGETS"          >> "$GITHUB_OUTPUT"
           echo "image-name-map=$IMAGE_MAP" >> "$GITHUB_OUTPUT"
+          echo "Shard ${SHARD} got $(echo "$TARGETS" | jq 'length') target(s)"
 
       - name: Build and push AMD64 images (bake)
+        if: steps.bake-inputs.outputs.targets != '[]'
         uses: ./.github/actions/docker-build
         with:
           targets: ${{ steps.bake-inputs.outputs.targets }}
@@ -149,36 +157,44 @@ jobs:
           platform: linux/amd64
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GHCR_TOKEN }}
-          cache-scope: atlas-bake-amd64
+          cache-scope: atlas-bake-amd64-shard${{ matrix.shard }}
 
   # ============================================
-  # Build and Push ARM64 Images (bake — single job)
+  # Build and Push ARM64 Images (bake — sharded matrix)
   # ============================================
   build-arm64:
-    name: Build ARM64 (bake)
+    name: Build ARM64 (bake — shard ${{ matrix.shard }}/3)
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Derive bake inputs
+      - name: Derive bake inputs for this shard
         id: bake-inputs
         env:
           MATRIX_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          TARGETS=$(echo "$MATRIX_JSON" | jq -c '[.[].name]')
+          TARGETS=$(echo "$MATRIX_JSON" | jq -c --argjson s "$SHARD" \
+            '[to_entries[] | select(.key % 4 == $s) | .value.name]')
           IMAGE_MAP=$(echo "$MATRIX_JSON" | jq -c 'map({(.name): .docker_image}) | add')
-          echo "targets=$TARGETS"       >> "$GITHUB_OUTPUT"
+          echo "targets=$TARGETS"          >> "$GITHUB_OUTPUT"
           echo "image-name-map=$IMAGE_MAP" >> "$GITHUB_OUTPUT"
+          echo "Shard ${SHARD} got $(echo "$TARGETS" | jq 'length') target(s)"
 
       - name: Build and push ARM64 images (bake)
+        if: steps.bake-inputs.outputs.targets != '[]'
         uses: ./.github/actions/docker-build
         with:
           targets: ${{ steps.bake-inputs.outputs.targets }}
@@ -188,7 +204,7 @@ jobs:
           platform: linux/arm64
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GHCR_TOKEN }}
-          cache-scope: atlas-bake-arm64
+          cache-scope: atlas-bake-arm64-shard${{ matrix.shard }}
 
   # ============================================
   # Create and Push Multi-Arch Manifests

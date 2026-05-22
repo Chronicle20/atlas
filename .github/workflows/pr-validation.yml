@@ -122,17 +122,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
   # ============================================
-  # Build Docker Images (bake — single job)
+  # Build Docker Images (bake — sharded matrix)
   #
   # Always runs Dockerfile validation; pushes to ghcr only when the PR
   # carries the `deploy-env` label. The full set of services to build
   # is sourced from detect-changes.outputs.docker-services-matrix and
-  # collapsed into one `docker buildx bake` invocation; the per-PR tag
-  # (pr-<N>-<sha> when push=true, pr-<N>/pr-dispatch otherwise) is
-  # computed once and applied to every target.
+  # split into 4 round-robin shards so each shard runs on its own
+  # ubuntu-latest runner (restoring most of the parallelism that the
+  # original per-service matrix had, while keeping the one-Dockerfile +
+  # bake architecture). The per-PR tag (pr-<N>-<sha> when push=true,
+  # pr-<N>/pr-dispatch otherwise) is computed once per shard and applied
+  # to that shard's targets.
   # ============================================
   build-docker:
-    name: Build Docker (bake)
+    name: Build Docker (bake — shard ${{ matrix.shard }}/3)
     needs: [detect-changes, test-go-services, test-go-libraries, test-ui]
     if: |
       always() &&
@@ -144,6 +147,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
 
     steps:
       - name: Checkout
@@ -176,20 +183,26 @@ jobs:
             fi
           fi
 
-      - name: Derive bake inputs from docker-services-matrix
+      - name: Derive bake inputs for this shard
         id: bake-inputs
         env:
           MATRIX_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          # targets = [.name, .name, ...]
-          TARGETS=$(echo "$MATRIX_JSON" | jq -c '[.[].name]')
-          # image-name-map = {name: docker_image}
+          # Round-robin assignment: shard S gets indices where (index % 4) == S.
+          # Round-robin (vs contiguous slicing) spreads alphabetically-clustered
+          # build-time outliers evenly across shards.
+          TARGETS=$(echo "$MATRIX_JSON" | jq -c --argjson s "$SHARD" \
+            '[to_entries[] | select(.key % 4 == $s) | .value.name]')
+          # image-name-map is the full map; the action looks up only the shard's targets.
           IMAGE_MAP=$(echo "$MATRIX_JSON" | jq -c 'map({(.name): .docker_image}) | add')
-          echo "targets=$TARGETS"       >> "$GITHUB_OUTPUT"
+          echo "targets=$TARGETS"          >> "$GITHUB_OUTPUT"
           echo "image-name-map=$IMAGE_MAP" >> "$GITHUB_OUTPUT"
+          echo "Shard ${SHARD} got $(echo "$TARGETS" | jq 'length') target(s)"
 
       - name: Build Docker images (bake)
+        if: steps.bake-inputs.outputs.targets != '[]'
         uses: ./.github/actions/docker-build
         with:
           targets: ${{ steps.bake-inputs.outputs.targets }}
@@ -199,7 +212,7 @@ jobs:
           platform: linux/amd64
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GHCR_TOKEN }}
-          cache-scope: atlas-bake-amd64
+          cache-scope: atlas-bake-amd64-shard${{ matrix.shard }}
 
   # ============================================
   # PR-env resolved overlay (bot branch)

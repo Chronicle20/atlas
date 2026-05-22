@@ -341,6 +341,20 @@ jobs:
           echo "=== Resulting images: block (head) ==="
           yq '.images[0:5]' "$OVERLAY"
 
+      - name: Regenerate cluster-infra coordination ConfigMap artifact
+        run: |
+          set -euo pipefail
+          deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh
+          # The output file is checked in. If a service was added or
+          # removed since the last regen, this run's output diverges
+          # from the committed copy and CI fails — forcing the PR
+          # author to commit the regen alongside their services.json
+          # change.
+          if ! git diff --exit-code dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml; then
+              echo '::error::dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml is stale. Run deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh and commit the result.' >&2
+              exit 1
+          fi
+
       - name: Force-push bot/pr-<N>-resolved
         env:
           PR_NUMBER: ${{ steps.tokens.outputs.pr_number }}

@@ -116,11 +116,10 @@ exit 1
 EOF
     chmod +x "$SHIM_DIR/gh"
 
-    # Inject failing kafka-topics.sh / kafka-consumer-groups.sh / psql /
-    # redis-cli so cleanup short-circuits on the very first phase BEFORE
-    # branch-delete, while we only need to assert that the function exists
-    # and is exercised by the unit (the e2e is in the smoke test). For this
-    # unit assertion, we run a bash-side check on the script body instead:
+    # The full end-to-end branch-delete path is exercised by the smoke
+    # test; here we only need to assert that the phase exists in the
+    # script body. Run a bash-side grep on cleanup.sh instead of wiring
+    # up an rpk/psql/redis-cli stub fleet for a single phase.
     run grep -q "drop-branch" "$PROJECT_ROOT/scripts/cleanup.sh"
     [ "$status" -eq 0 ]
 

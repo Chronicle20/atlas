@@ -1,0 +1,51 @@
+{
+  "task": "task-071-gamedata-minio-consolidation",
+  "round": 3,
+  "scope": "services/atlas-ui/ diff 19d00ed0..2527c4541",
+  "date": "2026-05-22",
+  "build": { "status": "PASS" },
+  "tests": { "status": "PASS", "files": 76, "passed": 712, "failed": 0 },
+  "overall": "PASS",
+  "files_audited": [
+    { "path": "services/atlas-ui/public/sw-character-cache.js", "kind": "service-worker" },
+    { "path": "services/atlas-ui/src/components/features/setup/ScopeToggle.tsx", "kind": "component-new" },
+    { "path": "services/atlas-ui/src/components/features/setup/__tests__/ScopeToggle.test.tsx", "kind": "test-new" },
+    { "path": "services/atlas-ui/src/lib/hooks/api/useBaseline.ts", "kind": "hook-new" },
+    { "path": "services/atlas-ui/src/lib/hooks/api/__tests__/useBaseline.test.tsx", "kind": "test-new" },
+    { "path": "services/atlas-ui/src/lib/hooks/api/useSeed.ts", "kind": "hook" },
+    { "path": "services/atlas-ui/src/pages/SetupPage.tsx", "kind": "page" },
+    { "path": "services/atlas-ui/src/services/api/baseline.service.ts", "kind": "service-new" },
+    { "path": "services/atlas-ui/src/services/api/__tests__/baseline.service.test.ts", "kind": "test-new" },
+    { "path": "services/atlas-ui/src/services/api/seed.service.ts", "kind": "service" }
+  ],
+  "files_mentioned_but_absent": [
+    "services/atlas-ui/src/lib/asset-url.ts",
+    "services/atlas-ui/src/pages/MapDetailPage.tsx"
+  ],
+  "checks": [
+    { "id": "FE-01", "status": "PASS", "evidence": "grep ': any|as any' against 7 non-test changed files returns zero. One non-blocking 'as never' cast at SetupPage.tsx:452 (N-01)." },
+    { "id": "FE-02", "status": "PASS", "evidence": "Zero className concatenations in ScopeToggle.tsx / SetupPage.tsx." },
+    { "id": "FE-03", "status": "PASS", "evidence": "No @/lib/api/client imports in component or page files; only hooks." },
+    { "id": "FE-04", "status": "PASS", "evidence": "Zero z.object/z.string/z.number matches in changed files." },
+    { "id": "FE-05", "status": "PASS", "evidence": "All 5 animate-spin in SetupPage.tsx (lines 344,371,399,428,460) are inside Button action slots gated by *.isPending." },
+    { "id": "FE-06", "status": "PASS", "evidence": "ScopeToggle.tsx:30 variant='destructive', :38 text-destructive. Regression-guarded by ScopeToggle.test.tsx:45-50." },
+    { "id": "FE-07", "status": "PASS", "evidence": "Only stateful update is setScope(...) at SetupPage.tsx:77. No mutate-then-setState." },
+    { "id": "FE-08", "status": "PASS", "evidence": "ScopeToggle.tsx:12 and SetupPage.tsx:74 use export function." },
+    { "id": "FE-09", "status": "PASS", "evidence": "useBaseline.ts:6,22 accept Tenant|null; mutationFn throws at :10-12,:26-28; onSuccess short-circuits at :16,:32. Tested by useBaseline.test.tsx:36-48,88-95." },
+    { "id": "FE-10", "status": "PASS", "evidence": "dataStatusKey exported at useSeed.ts:25 as ['dataStatus', tenantId] as const. useBaseline.ts:17,33 invalidate exactly that key." },
+    { "id": "FE-11", "status": "PASS", "evidence": "baseline.service.ts:11-19 decodes {error}; SetupPage.tsx:160-163,178-181,197-200 surfaces via toast.error. createErrorFromUnknown not used (consistent with sibling direct-fetch services)." },
+    { "id": "FE-12", "status": "PASS", "evidence": "Tenant model {id, attributes:{...}} at tenants.service.ts:15-18; consumed correctly by SetupPage.tsx:170-173,190-192,221-224 and seed.service.ts:70-87." },
+    { "id": "FE-13", "status": "PASS", "evidence": "BaselineService at baseline.service.ts:21-55 follows the direct-fetch pattern used by all atlas-ui services (zero BaseService subclasses in repo). tenantHeaders preserves the four-header contract." },
+    { "id": "FE-14", "status": "PASS", "evidence": "useSeed.ts:24-33 all use 'as const'." },
+    { "id": "FE-15", "status": "N/A", "evidence": "No form in this diff." },
+    { "id": "FE-16", "status": "N/A", "evidence": "No schema needed (no form)." },
+    { "id": "FE-17", "status": "PASS", "evidence": "Three new test files: ScopeToggle.test.tsx (5 cases), useBaseline.test.tsx (6 cases), baseline.service.test.ts (6 cases). All with substantive behavioral assertions including a semantic-color regression guard." },
+    { "id": "FE-18", "status": "PASS", "evidence": "All new tests use vi.fn/vi.mock/vi.stubGlobal; grep for jest.fn/jest.mock returns zero. useBaseline.test.tsx mocks match the real baselineService shape." }
+  ],
+  "blocking": [],
+  "non_blocking": [
+    { "id": "N-01", "file": "services/atlas-ui/src/pages/SetupPage.tsx", "line": 452, "note": "'as never' cast on row.status.data to bridge heterogeneous formatBadge union. Not 'any', but a fragile type-system escape. Consider discriminated union for seedRows." },
+    { "id": "N-02", "file": "services/atlas-ui/src/lib/hooks/api/useSeed.ts", "line": [141, 153], "note": "activeTenant! non-null assertion in useUploadWzFiles / useRunDataProcessing. Preexisting before task-071; new useBaseline.ts establishes the right pattern (Tenant|null + internal guard)." },
+    { "id": "N-03", "file": "services/atlas-ui/src/lib/headers.tsx", "line": [3, 10], "note": "tenant?.id optional-chaining in tenantHeaders even though param is typed as non-null Tenant. Preexisting." }
+  ]
+}

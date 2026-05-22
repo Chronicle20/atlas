@@ -26,15 +26,22 @@ type LayerOutput struct {
 const maxLayers = 8
 
 // ExtractLayout walks a parsed Map.img and returns only the metadata portion
-// of the layout — bounds, footholds, portals, NPCs, and the per-layer
-// Layer{ID,Name,Z,Source} records — without resolving sprites or compositing
-// pixels. Intended for the ingest path where layer image emission has been
-// moved to render time (atlas-renders).
+// of the layout — bounds, footholds, portals, NPCs, the per-layer
+// Layer{ID,Name,Z,Source} records, and the ZMap render order — without
+// resolving sprites or compositing pixels. Intended for the ingest path
+// where layer image emission has been moved to render time (atlas-renders).
 //
-// The Layer records still reference `layer-N` names so the on-disk JSON
-// schema stays compatible with consumers that expect them; atlas-renders no
+// The Layer records reference `layer-N` names so the on-disk JSON schema
+// stays compatible with consumers that expect them; atlas-renders no
 // longer reads `layers/<source>.png` from MinIO (those uploads have been
 // removed) but uses the field to drive its own layer iteration order.
+//
+// ZMap is populated from the parent Map.wz file's top-level `zmap` image
+// when img.File() is available. zmap is shared across every map in the
+// archive — it defines the canonical render order. atlas-renders falls
+// back to layer-declaration order when ZMap is empty, so callers that
+// pass an image with no backing File still get correct rendering, just
+// with `"zmap":null` in the on-disk JSON.
 func ExtractLayout(img *wz.Image) (maplayout.Layout, error) {
 	if img == nil {
 		return maplayout.Layout{}, fmt.Errorf("layout: nil image")
@@ -57,6 +64,7 @@ func ExtractLayout(img *wz.Image) (maplayout.Layout, error) {
 		Footholds: extractFootholds(root),
 		Portals:   extractPortals(root),
 		NPCs:      extractNPCs(root),
+		ZMap:      lookupZMap(img),
 	}
 
 	layerMetas := make([]maplayout.Layer, 0, maxLayers)
@@ -83,6 +91,28 @@ func ExtractLayout(img *wz.Image) (maplayout.Layout, error) {
 	}
 	layout.Layers = layerMetas
 	return layout, nil
+}
+
+// lookupZMap returns the canonical render order from the parent Map.wz's
+// top-level `zmap` image, if accessible. Returns nil when the file backing
+// the per-map image is nil (in-memory test inputs constructed via
+// NewParsedImage) or when no zmap.img exists at the root. Caller treats a
+// nil/empty result as a signal to fall back to layer-declaration order.
+func lookupZMap(img *wz.Image) []string {
+	f := img.File()
+	if f == nil {
+		return nil
+	}
+	root := f.Root()
+	if root == nil {
+		return nil
+	}
+	for _, zimg := range root.Images() {
+		if zimg.Name() == "zmap" {
+			return extractZmap(zimg)
+		}
+	}
+	return nil
 }
 
 // ExtractLayers walks a parsed Map.img and returns one composited image per

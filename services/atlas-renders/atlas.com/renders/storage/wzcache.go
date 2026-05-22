@@ -34,8 +34,15 @@ type WZCache struct {
 	l            logrus.FieldLogger
 }
 
+// wzEntry holds the cached *wz.File for one (scope, region, version,
+// archive) tuple. mu serialises the per-key download path so concurrent
+// Get() calls for the same key collapse to a single download. Unlike a
+// sync.Once-gated entry, a failed attempt leaves file=nil and err set;
+// the NEXT Get() call sees a non-nil err, re-acquires the lock, and
+// retries the download. Without that retry, a transient MinIO blip on
+// the first request would wedge the cache permanently until pod restart.
 type wzEntry struct {
-	once sync.Once
+	mu   sync.Mutex
 	file *wz.File
 	err  error
 }
@@ -75,28 +82,37 @@ func (c *WZCache) Get(ctx context.Context, scope, region, version, archive strin
 	}
 	c.mu.Unlock()
 
-	e.once.Do(func() {
-		bucketKey := fmt.Sprintf("%s/regions/%s/versions/%s/%s", scope, region, version, archive)
-		localPath := filepath.Join(c.scratchDir, sanitizeScope(scope), region, version, archive)
-		if err := os.MkdirAll(filepath.Dir(localPath), 0o755); err != nil {
-			e.err = fmt.Errorf("mkdir %s: %w", filepath.Dir(localPath), err)
-			return
-		}
-		c.l.Infof("wzcache: downloading %s/%s -> %s", c.bucket, bucketKey, localPath)
-		if err := c.mc.FGet(ctx, c.bucket, bucketKey, localPath); err != nil {
-			e.err = fmt.Errorf("download %s/%s: %w", c.bucket, bucketKey, err)
-			return
-		}
-		f, err := wz.Open(c.l, localPath)
-		if err != nil {
-			_ = os.Remove(localPath)
-			e.err = fmt.Errorf("open %s: %w", localPath, err)
-			return
-		}
-		e.file = f
-		c.l.Infof("wzcache: opened %s for %s", archive, key)
-	})
-	return e.file, e.err
+	// Per-key serialisation: concurrent Get() callers for the same archive
+	// collapse to a single download. A previous failure leaves e.err set
+	// and e.file nil — the next attempt clears e.err and retries, so a
+	// transient MinIO failure does not wedge the cache permanently.
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.file != nil {
+		return e.file, nil
+	}
+
+	bucketKey := fmt.Sprintf("%s/regions/%s/versions/%s/%s", scope, region, version, archive)
+	localPath := filepath.Join(c.scratchDir, sanitizeScope(scope), region, version, archive)
+	if err := os.MkdirAll(filepath.Dir(localPath), 0o755); err != nil {
+		e.err = fmt.Errorf("mkdir %s: %w", filepath.Dir(localPath), err)
+		return nil, e.err
+	}
+	c.l.Infof("wzcache: downloading %s/%s -> %s", c.bucket, bucketKey, localPath)
+	if err := c.mc.FGet(ctx, c.bucket, bucketKey, localPath); err != nil {
+		e.err = fmt.Errorf("download %s/%s: %w", c.bucket, bucketKey, err)
+		return nil, e.err
+	}
+	f, err := wz.Open(c.l, localPath)
+	if err != nil {
+		_ = os.Remove(localPath)
+		e.err = fmt.Errorf("open %s: %w", localPath, err)
+		return nil, e.err
+	}
+	e.file = f
+	e.err = nil
+	c.l.Infof("wzcache: opened %s for %s", archive, key)
+	return e.file, nil
 }
 
 // Close releases all cached *wz.File handles. Intended for graceful shutdown.

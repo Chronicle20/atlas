@@ -7,11 +7,24 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
 
 // File represents a parsed WZ file.
+//
+// The lazy parse path (per-Image Properties() / parse()) drives Seek+Read on
+// the underlying *os.File. Multiple goroutines hitting different *wz.Image
+// instances backed by the same *wz.File would otherwise race the seek
+// cursor. atlas-renders' WZCache (storage/wzcache.go) intentionally shares a
+// single *wz.File across concurrent map renders, so this mutex is
+// load-bearing — without it the parser produces torn property trees under
+// load.
+//
+// parseMu serialises any Reader.Seek-based parsing. ReadCanvasData uses
+// positional ReadAt and stays outside this mutex; canvas decompression is
+// the hot path during compositing and benefits from staying concurrent.
 type File struct {
 	l             logrus.FieldLogger
 	path          string
@@ -23,6 +36,15 @@ type File struct {
 	versionHash   uint32
 	gameVersion   int
 	encryptionKey *crypto.WzKey
+	parseMu       sync.Mutex
+}
+
+// LockParse acquires the file-wide parse mutex and returns an unlock func
+// for `defer`. Used by lazy-parse paths (Image.parse) to serialise
+// Seek+Read sequences across goroutines.
+func (wz *File) LockParse() func() {
+	wz.parseMu.Lock()
+	return wz.parseMu.Unlock
 }
 
 // NewFileWithRoot constructs an in-memory File backed only by the given root

@@ -30,7 +30,8 @@ func (UI) ArchiveName() string { return "UI.wz" }
 // icons alone. This worker emits only the world-icon subset, which is the
 // asset class actually consumed by the cross-cluster channel selector.
 func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, file *wz.File, p Params) error {
-	if _, _, err := withTenant(ctx, p); err != nil {
+	ctx, _, err := withTenant(ctx, p)
+	if err != nil {
 		return err
 	}
 	root := file.Root()

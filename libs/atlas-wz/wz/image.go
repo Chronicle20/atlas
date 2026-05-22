@@ -39,14 +39,36 @@ func (i *Image) File() *File {
 	return i.wzFile
 }
 
-// Properties returns the parsed properties of this image. Parses on first access (lazy).
+// Properties returns the parsed properties of this image. Parses on first
+// access (lazy).
+//
+// Goroutine safety: parse() Seek+Reads the shared *os.File. Two goroutines
+// racing on different *wz.Image instances backed by the same *wz.File
+// would otherwise corrupt each other's reads. The file-wide parseMu in
+// File guards every Seek-based parse, and the double-check inside the
+// critical section makes the lazy initialisation idempotent (a goroutine
+// that lost the race for the lock returns the freshly-parsed properties
+// without re-parsing).
+//
+// In-memory images created via NewParsedImage have parsed=true and
+// wzFile=nil, so they short-circuit before any lock acquisition.
 func (i *Image) Properties() []property.Property {
-	if !i.parsed {
-		if err := i.parse(); err != nil {
-			i.wzFile.l.WithError(err).Warnf("Unable to parse image [%s].", i.name)
-		}
-		i.parsed = true
+	if i.parsed {
+		return i.properties
 	}
+	if i.wzFile == nil {
+		i.parsed = true
+		return i.properties
+	}
+	unlock := i.wzFile.LockParse()
+	defer unlock()
+	if i.parsed {
+		return i.properties
+	}
+	if err := i.parse(); err != nil {
+		i.wzFile.l.WithError(err).Warnf("Unable to parse image [%s].", i.name)
+	}
+	i.parsed = true
 	return i.properties
 }
 

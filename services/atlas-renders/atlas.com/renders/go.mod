@@ -3,6 +3,7 @@ module atlas-renders
 go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-wz v0.0.0
 	github.com/google/uuid v1.6.0
@@ -27,6 +28,8 @@ require (
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-constants => ../../../../libs/atlas-constants
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../../../../libs/atlas-model
 

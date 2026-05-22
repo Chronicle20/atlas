@@ -11,6 +11,7 @@ import (
 
 	"atlas-renders/storage"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/sirupsen/logrus"
@@ -51,71 +52,66 @@ var droppedSlots = map[int]struct{}{
 	-26: {}, -27: {}, -28: {}, -29: {}, -30: {},
 }
 
-// twoHandedSet covers the WZ item-classifications that drive the donor's
-// stand2 override (`item.IsTwoHanded` returns true for these). Bows (145),
-// crossbows (146), claws (147), guns (149), knuckles (148), polearms (144),
-// 2H sword (140), 2H axe (141), 2H mace (142), and spears (143).
+// isTwoHandedItem reports whether an equipped weapon id forces the stand2
+// stance. Delegates to libs/atlas-constants/item.IsTwoHanded so the
+// authoritative weapon-classification taxonomy lives in one place. Returns
+// false for any non-weapon id (the input check the library makes).
 //
-// Donor uses libs/atlas-constants/item.IsTwoHanded; we replicate inline so
-// atlas-renders does not pick up a new transitive dependency for one check.
+// Note: the previous inline implementation treated classification 147
+// (Claws) as two-handed; that was an inadvertent over-inclusion. v83 claws
+// are one-handed; item.IsTwoHanded reflects that.
 func isTwoHandedItem(id int) bool {
-	c := id / 10000
-	switch c {
-	case 140, 141, 142, 143, 144, 145, 146, 147, 148, 149:
-		return true
+	if id <= 0 {
+		return false
 	}
-	return false
+	return item.IsTwoHanded(item.Id(uint32(id)))
 }
 
 // partClassFor returns the atlas-renders MinIO partClass for a v83 item id.
-// The classification ranges follow donor handler.go's slotForItem (which
-// emits slot codes — we map those slot codes to the partClass directories
-// listed in plan.md Task 8.5: Coat, Longcoat, Pants, Shoes, Glove, Cape,
-// Shield, Cap, Mask, EyeAccessory, FaceAccessory, Earrings, Weapon).
+// Switch keys off the typed item.Classification rather than ad-hoc
+// /10000 arithmetic so the categories stay in lockstep with the shared
+// taxonomy in libs/atlas-constants/item.
 //
-// Caps, capes, weapons etc. follow the canonical MapleStory id schema:
-//
-//	100xxxx → Cap
-//	101xxxx → FaceAccessory
-//	102xxxx → EyeAccessory
-//	103xxxx → Earrings
-//	104xxxx → Coat
-//	105xxxx → Longcoat (overall)
-//	106xxxx → Pants
-//	107xxxx → Shoes
-//	108xxxx → Glove
-//	109xxxx → Shield
-//	110xxx-114xxx → Cape
-//	130xxx-149xxx → Weapon
+// The partClass strings ("Cap", "Coat", "Weapon", …) are atlas-renders
+// MinIO directory names and stay local; only the classification side is
+// delegated.
 func partClassFor(id int) (string, bool) {
 	if id <= 0 {
 		return "", false
 	}
-	c := id / 10000
-	switch {
-	case c == 100:
+	c := item.GetClassification(item.Id(uint32(id)))
+	switch c {
+	case item.ClassificationHat:
 		return "Cap", true
-	case c == 101:
+	case item.ClassificationFaceAccessory:
 		return "FaceAccessory", true
-	case c == 102:
+	case item.ClassificationEyeAccessory:
 		return "EyeAccessory", true
-	case c == 103:
+	case item.ClassificationEarring:
 		return "Earrings", true
-	case c == 104:
+	case item.ClassificationTop:
 		return "Coat", true
-	case c == 105:
+	case item.ClassificationOverall:
 		return "Longcoat", true
-	case c == 106:
+	case item.ClassificationBottom:
 		return "Pants", true
-	case c == 107:
+	case item.ClassificationShoes:
 		return "Shoes", true
-	case c == 108:
+	case item.ClassificationGloves:
 		return "Glove", true
-	case c == 109:
+	case item.ClassificationShield:
 		return "Shield", true
-	case c >= 110 && c <= 114:
+	case item.ClassificationCape,
+		item.ClassificationRing,
+		item.ClassificationPendant,
+		item.ClassificationBelt,
+		item.ClassificationMedal:
 		return "Cape", true
-	case c >= 130 && c <= 149:
+	}
+	// Weapons span classifications 130-149 inclusive; the shared library
+	// represents this range via WeaponType. Anything that has a known
+	// weapon type is a weapon for compositing purposes.
+	if item.GetWeaponType(item.Id(uint32(id))) != item.WeaponTypeNone {
 		return "Weapon", true
 	}
 	return "", false
@@ -163,33 +159,47 @@ func ItemsToSlotMap(items []int) map[int]int {
 	return out
 }
 
-// slotForItemID is the donor's slotForItem reproduced here so atlas-renders
-// has no service-to-service import dependency. The output slot is a synthetic
-// negative integer used purely for two-handed-weapon detection at slot -11.
+// slotForItemID maps an equipped item id to its canonical equipment-slot
+// integer. The synthetic negative slot scheme follows the v83 client
+// convention; -11 is the weapon slot and is the signal compositing code
+// inspects to decide stand2 vs stand1.
+//
+// The classification side switches on the typed item.Classification from
+// libs/atlas-constants/item; the slot numbers themselves are atlas-renders
+// concerns that stay local. Anything with a known WeaponType lands on the
+// weapon slot regardless of subclass (1H / 2H / claw / gun / etc).
 func slotForItemID(id int) (int, bool) {
-	c := id / 10000
-	switch {
-	case c == 100:
+	if id <= 0 {
+		return 0, false
+	}
+	c := item.GetClassification(item.Id(uint32(id)))
+	switch c {
+	case item.ClassificationHat:
 		return -1, true
-	case c == 101:
+	case item.ClassificationFaceAccessory:
 		return -2, true
-	case c == 102:
+	case item.ClassificationEyeAccessory:
 		return -3, true
-	case c == 103:
+	case item.ClassificationEarring:
 		return -4, true
-	case c == 104, c == 105:
+	case item.ClassificationTop, item.ClassificationOverall:
 		return -5, true
-	case c == 106:
+	case item.ClassificationBottom:
 		return -6, true
-	case c == 107:
+	case item.ClassificationShoes:
 		return -7, true
-	case c == 108:
+	case item.ClassificationGloves:
 		return -8, true
-	case c == 109:
+	case item.ClassificationShield:
 		return -10, true
-	case c >= 110 && c <= 114:
+	case item.ClassificationCape,
+		item.ClassificationRing,
+		item.ClassificationPendant,
+		item.ClassificationBelt,
+		item.ClassificationMedal:
 		return -9, true
-	case c >= 130 && c <= 149:
+	}
+	if item.GetWeaponType(item.Id(uint32(id))) != item.WeaponTypeNone {
 		return -11, true
 	}
 	return 0, false

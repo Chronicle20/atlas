@@ -127,3 +127,19 @@ summarize_phases() {
     ATLAS_STEP=done log error "cleanup completed with errors phases_run=$total phases_failed=$failed failed_phases=$failed_json"
     return 1
 }
+
+# ----------------------------------------------------------------------------
+# rpk JSON-output schema constants. See test/fixtures/rpk-*.json.
+#
+# rpk 24.3.1 emits a flat array for both topic list and group list:
+#   [{"name":"…","partitions":…}, …]
+# The pre-fix queries (.topics[].name / .groups[].name) assumed an
+# object wrapping the array and failed with "Cannot index array with
+# string …" — see prd.md §1 / Bug 1.
+#
+# Bumping ARG RPK_VERSION in the Dockerfile invalidates the fixtures.
+# Regenerate against the new rpk and re-run bats; the schema may move
+# again.
+# ----------------------------------------------------------------------------
+readonly RPK_TOPICS_JQ='.[].name'
+readonly RPK_GROUPS_JQ='.[].name'

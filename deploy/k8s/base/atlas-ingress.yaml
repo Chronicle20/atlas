@@ -238,6 +238,8 @@ data:
 
     # 2. Map render (composite-on-miss; MinIO serves cache hits).
     location ~ ^/api/assets/(?<t>[^/]+)/(?<r>[^/]+)/(?<v>[0-9]+\.[0-9]+)/map/(?<mapid>[0-9]+)/render\.png$ {
+      set $major ""; set $minor "";
+      if ($v ~ ^(?<maj>[0-9]+)\.(?<min>[0-9]+)$) { set $major $maj; set $minor $min; }
       set $u "minio.minio.svc.cluster.local:9000";
       rewrite ^ /atlas-renders/tenants/$t/regions/$r/versions/$v/map/$mapid/render.png break;
       proxy_intercept_errors on;
@@ -246,6 +248,21 @@ data:
       add_header Cache-Control "public, max-age=86400, immutable" always;
     }
     location @maprender_miss {
+      # atlas-renders' tenant middleware requires these four headers
+      # (services/atlas-renders/atlas.com/renders/main.go:50-66). Without
+      # them every cache-miss request 400s. Match shape with the
+      # character-render block above.
+      proxy_set_header TENANT_ID     $t;
+      proxy_set_header REGION        $r;
+      proxy_set_header MAJOR_VERSION $major;
+      proxy_set_header MINOR_VERSION $minor;
+      # The outer location enables proxy_intercept_errors on to catch the
+      # MinIO 404 and route here. Without explicitly turning it off,
+      # nginx inherits that setting and re-intercepts any 4xx
+      # atlas-renders legitimately returns (404 when ingest hasn't yet
+      # produced a layout.json for the map), rewriting it as a generic
+      # 400 because @maprender_miss has no error_page handler.
+      proxy_intercept_errors off;
       set $u "atlas-renders.${POD_NAMESPACE}.svc.cluster.local:8080";
       proxy_pass http://$u/api/wz/map/render/$t/$r/$v/$mapid/render.png;
       add_header Cache-Control "public, max-age=86400, immutable" always;

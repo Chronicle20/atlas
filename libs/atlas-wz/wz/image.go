@@ -111,7 +111,14 @@ func (i *Image) parse() error {
 }
 
 // parsePropertyList reads a list of key-value property entries.
-// imageOffset is the base offset for resolving offset-referenced strings within the image.
+// imageOffset is the base offset for resolving offset-referenced strings
+// within the image.
+//
+// Invariant: caller holds wz.parseMu. Entered via Image.parse() which
+// acquires the lock unconditionally. Future contributors must not call
+// this from outside that path without first acquiring the lock — the
+// underlying wz.reader is shared across all Image instances backed by
+// the same *File and is not safe to Seek concurrently.
 func (wz *File) parsePropertyList(imageOffset int64) ([]property.Property, error) {
 	r := wz.reader
 

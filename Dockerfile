@@ -48,8 +48,11 @@ COPY libs/atlas-tenant/go.mod      libs/atlas-tenant/go.sum      libs/atlas-tena
 COPY libs/atlas-tracing/go.mod     libs/atlas-tracing/go.sum     libs/atlas-tracing/
 COPY libs/atlas-wz/go.mod          libs/atlas-wz/go.sum          libs/atlas-wz/
 
-# Layer: this service's tree (per-target; brings in its go.mod and source).
-COPY services/${SERVICE}/atlas.com/ services/${SERVICE}/atlas.com/
+# Layer: this service's tree (per-target; brings in its go.mod, source, and
+# any auxiliary files like seed-data/. Widened from atlas.com/ alone so
+# services that ship runtime data (e.g. atlas-configurations seed templates)
+# don't need a per-service Dockerfile branch.
+COPY services/${SERVICE}/ services/${SERVICE}/
 
 # Layer: all 17 atlas libs' source trees (shared across every target; invalidates
 # when any lib source changes — same invalidation profile as today).
@@ -111,6 +114,16 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1) \
          : > /app/config.yaml; \
        fi
 
+# Stash this service's seed-data dir at a stable build-env path so the runtime
+# stage can COPY unconditionally. Currently only atlas-configurations ships
+# seed-data; every other service gets an empty /app/seed-data which the
+# seeder code treats as a no-op.
+RUN if [ -d "services/${SERVICE}/seed-data" ]; then \
+         cp -r "services/${SERVICE}/seed-data" /app/seed-data; \
+       else \
+         mkdir -p /app/seed-data; \
+       fi
+
 FROM alpine:3.23
 
 EXPOSE 8080
@@ -121,5 +134,6 @@ WORKDIR /
 
 COPY --from=build-env /server /
 COPY --from=build-env /app/config.yaml /
+COPY --from=build-env /app/seed-data /seed-data
 
 CMD ["/server"]

@@ -3,6 +3,7 @@ package projection
 import (
 	"context"
 	"errors"
+	"sync"
 
 	consumer2 "atlas-channel/kafka/consumer"
 
@@ -41,7 +42,11 @@ type Subscriber struct {
 // consumer + handler for each on the shared atlas-kafka manager. Returns
 // the first error encountered; partial registration is tolerated by the
 // caller (the gate will not flip and the apply loop will see no ops).
-func (s *Subscriber) Start(ctx context.Context, l logrus.FieldLogger, groupId string) error {
+//
+// wg is the teardown manager's WaitGroup — the consumer manager calls
+// Add/Done on it to track in-flight consumers during shutdown. Must not
+// be nil; the atlas-kafka library calls Add unconditionally.
+func (s *Subscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *sync.WaitGroup, groupId string) error {
 	brokers := consumer2.LookupBrokers()
 
 	// Snapshot end offsets so CaughtUp has bars to clear.
@@ -62,7 +67,7 @@ func (s *Subscriber) Start(ctx context.Context, l logrus.FieldLogger, groupId st
 
 	// Register the two consumers on the shared manager. Start from the
 	// earliest offset so log-compacted history is replayed.
-	cmf := consumer.GetManager().AddConsumer(l, ctx, nil)
+	cmf := consumer.GetManager().AddConsumer(l, ctx, wg)
 	if s.ServiceTopic != "" {
 		cmf(consumer.NewConfig(brokers, "configuration_service_status", s.ServiceTopic, groupId),
 			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),

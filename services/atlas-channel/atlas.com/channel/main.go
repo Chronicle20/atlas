@@ -225,7 +225,7 @@ func main() {
 		TenantTopic:  tenantTopic,
 		ServiceId:    serviceId,
 	}
-	if err := sub.Start(tdm.Context(), l, consumerGroupId); err != nil {
+	if err := sub.Start(tdm.Context(), l, tdm.WaitGroup(), consumerGroupId); err != nil {
 		l.WithError(err).Fatal("Unable to start configuration projection subscriber.")
 	}
 

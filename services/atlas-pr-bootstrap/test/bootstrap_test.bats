@@ -11,7 +11,7 @@ setup() {
 }
 
 @test "bootstrap.sh fails without ATLAS_UI_BASE" {
-    run env ATLAS_ENV=test -u ATLAS_UI_BASE bash "$PROJECT_ROOT/scripts/bootstrap.sh"
+    run env -u ATLAS_UI_BASE ATLAS_ENV=test bash "$PROJECT_ROOT/scripts/bootstrap.sh"
     [ "$status" -ne 0 ]
     [[ "$output" == *"missing required env: ATLAS_UI_BASE"* ]]
 }

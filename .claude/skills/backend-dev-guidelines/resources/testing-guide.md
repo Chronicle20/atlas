@@ -18,6 +18,7 @@ description: Testing patterns and practices for Atlas Golang microservices.
 - Prefer table-driven tests.
 - Mock Kafka producers and DB providers.
 - Verify tenant + span propagation.
+- **Tests that exercise an emit path (`*AndEmit()` or `message.Emit(...)`) MUST stub the producer.** See [Stubbing the Kafka Producer](#stubbing-the-kafka-producer-in-tests) below.
 
 ## Example
 ```go
@@ -237,6 +238,62 @@ fi
 ### 6. Ignoring Race Conditions
 **Problem:** Tests pass normally but fail with `-race` flag.
 **Solution:** Periodically run tests with `-race` to catch concurrency issues.
+
+### 7. Unstubbed Kafka Producer in Tests
+**Problem:** Tests call `*AndEmit()` or `message.Emit(...)` paths without injecting a stub producer. With no `BOOTSTRAP_SERVERS` set, every emit fails and the `atlas-kafka` retry loop runs 10 attempts with exponential backoff (100ms → 10s, ~42s per message) before bubbling up an error. A service with N emit calls in tests loses N × 42s per run.
+**Symptoms:** A package whose tests take tens of seconds to several minutes, with no failures.
+**Solution:** See [Stubbing the Kafka Producer in Tests](#stubbing-the-kafka-producer-in-tests).
+
+---
+
+## Stubbing the Kafka Producer in Tests
+
+**Why:** The production `producer.Manager` falls through to the default writer factory when no overrides are installed. That writer tries to write to `BOOTSTRAP_SERVERS`, retries 10× with exponential backoff on failure, and ultimately returns an error after ~42s per message. Any test that invokes an emit path (`*AndEmit()` or `message.Emit(...)`) without a stub will pay that cost. Beyond raw slowness, tests that *rely* on the slow producer to halt downstream code paths are also brittle — fix the underlying defect or the test asserts the wrong thing.
+
+**Two acceptable patterns:**
+
+### Pattern A: Package-wide `TestMain` (preferred default)
+
+Add one `testmain_test.go` per test package that exercises emits:
+
+```go
+package mypackage
+
+import (
+    "os"
+    "testing"
+
+    "github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+)
+
+func TestMain(m *testing.M) {
+    producertest.InstallNoop()
+    os.Exit(m.Run())
+}
+```
+
+`producertest.InstallNoop()` resets the producer manager singleton and installs a writer factory that discards every message. Calls to `Produce`, `Emit`, and `*AndEmit` succeed instantly. If the package already has a `TestMain` (e.g., for miniredis setup), add `producertest.InstallNoop()` as the first line of that `TestMain` instead of creating a second file.
+
+### Pattern B: Per-test producer injection
+
+If your processor exposes a `WithProducer(...)` builder method (see `atlas-marriages` for the canonical example), inject a no-op `producer.Provider` directly:
+
+```go
+mockProducer := func(token string) kafkaProducer.MessageProducer {
+    return func(provider model.Provider[[]kafka.Message]) error {
+        return nil
+    }
+}
+processor := NewProcessor(l, ctx, db).WithProducer(mockProducer)
+```
+
+This is the stricter option — it scopes the no-op to one test, so other tests in the same package can install a different producer (e.g., one that captures messages for assertion, or one that returns errors to exercise the error path).
+
+### What NOT to do
+
+- **Do NOT roll your own no-op writer in a service-local `testkafka` package.** Use `producertest.InstallNoop()` so the stub stays consistent across services.
+- **Do NOT rely on `BOOTSTRAP_SERVERS` being unset to "trigger" handler error paths.** That couples your test to environmental misconfiguration. If you need to verify error handling on the emit path, inject a failing producer via Pattern B.
+- **Do NOT assert state that depends on a slow producer to "pin" a saga or in-flight workflow in cache.** The producer is fast under the stub; refactor the test to use an action that genuinely stays pending (async handlers that fire-and-forget to Kafka and return `nil` without auto-completing the step).
 
 ---
 

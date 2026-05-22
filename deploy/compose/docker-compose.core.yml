@@ -24,7 +24,9 @@ services:
     container_name: atlas-account
     build:
       context: ../..
-      dockerfile: services/atlas-account/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-account
     image: atlas-account:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -35,29 +37,22 @@ services:
     container_name: atlas-asset-expiration
     build:
       context: ../..
-      dockerfile: services/atlas-asset-expiration/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-asset-expiration
     image: atlas-asset-expiration:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
       EXPIRATION_CHECK_INTERVAL_SECONDS: "60"
-
-  atlas-assets:
-    <<: *atlas-defaults
-    container_name: atlas-assets
-    # Service-local build context: Dockerfile COPYs nginx.conf relative to its directory.
-    build:
-      context: ../../services/atlas-assets
-      dockerfile: Dockerfile
-    image: atlas-assets:${ATLAS_IMAGE_TAG:-local}
-    volumes:
-      - ../../tmp/assets:/usr/assets
 
   atlas-ban:
     <<: *atlas-defaults
     container_name: atlas-ban
     build:
       context: ../..
-      dockerfile: services/atlas-ban/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-ban
     image: atlas-ban:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-ban
@@ -67,7 +62,9 @@ services:
     container_name: atlas-buddies
     build:
       context: ../..
-      dockerfile: services/atlas-buddies/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-buddies
     image: atlas-buddies:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -78,7 +75,9 @@ services:
     container_name: atlas-buffs
     build:
       context: ../..
-      dockerfile: services/atlas-buffs/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-buffs
     image: atlas-buffs:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -88,7 +87,9 @@ services:
     container_name: atlas-cashshop
     build:
       context: ../..
-      dockerfile: services/atlas-cashshop/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-cashshop
     image: atlas-cashshop:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -99,7 +100,9 @@ services:
     container_name: atlas-chairs
     build:
       context: ../..
-      dockerfile: services/atlas-chairs/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-chairs
     image: atlas-chairs:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -109,7 +112,9 @@ services:
     container_name: atlas-chalkboards
     build:
       context: ../..
-      dockerfile: services/atlas-chalkboards/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-chalkboards
     image: atlas-chalkboards:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -119,7 +124,9 @@ services:
     container_name: atlas-character
     build:
       context: ../..
-      dockerfile: services/atlas-character/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-character
     image: atlas-character:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -131,7 +138,9 @@ services:
     container_name: atlas-character-factory
     build:
       context: ../..
-      dockerfile: services/atlas-character-factory/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-character-factory
     image: atlas-character-factory:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -143,7 +152,9 @@ services:
     container_name: atlas-configurations
     build:
       context: ../..
-      dockerfile: services/atlas-configurations/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-configurations
     image: atlas-configurations:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -160,7 +171,9 @@ services:
     container_name: atlas-consumables
     build:
       context: ../..
-      dockerfile: services/atlas-consumables/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-consumables
     image: atlas-consumables:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -170,7 +183,9 @@ services:
     container_name: atlas-data
     build:
       context: ../..
-      dockerfile: services/atlas-data/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-data
     image: atlas-data:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -184,7 +199,9 @@ services:
     container_name: atlas-drop-information
     build:
       context: ../..
-      dockerfile: services/atlas-drop-information/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-drop-information
     image: atlas-drop-information:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -198,7 +215,9 @@ services:
     container_name: atlas-drops
     build:
       context: ../..
-      dockerfile: services/atlas-drops/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-drops
     image: atlas-drops:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -210,7 +229,9 @@ services:
     container_name: atlas-effective-stats
     build:
       context: ../..
-      dockerfile: services/atlas-effective-stats/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-effective-stats
     image: atlas-effective-stats:${ATLAS_IMAGE_TAG:-local}
 
   atlas-expressions:
@@ -218,7 +239,9 @@ services:
     container_name: atlas-expressions
     build:
       context: ../..
-      dockerfile: services/atlas-expressions/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-expressions
     image: atlas-expressions:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -228,7 +251,9 @@ services:
     container_name: atlas-fame
     build:
       context: ../..
-      dockerfile: services/atlas-fame/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-fame
     image: atlas-fame:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -239,7 +264,9 @@ services:
     container_name: atlas-gachapons
     build:
       context: ../..
-      dockerfile: services/atlas-gachapons/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-gachapons
     image: atlas-gachapons:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-gachapons
@@ -250,7 +277,9 @@ services:
     container_name: atlas-guilds
     build:
       context: ../..
-      dockerfile: services/atlas-guilds/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-guilds
     image: atlas-guilds:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -261,7 +290,9 @@ services:
     container_name: atlas-inventory
     build:
       context: ../..
-      dockerfile: services/atlas-inventory/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-inventory
     image: atlas-inventory:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -272,7 +303,9 @@ services:
     container_name: atlas-invites
     build:
       context: ../..
-      dockerfile: services/atlas-invites/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-invites
     image: atlas-invites:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -282,7 +315,9 @@ services:
     container_name: atlas-keys
     build:
       context: ../..
-      dockerfile: services/atlas-keys/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-keys
     image: atlas-keys:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -293,7 +328,9 @@ services:
     container_name: atlas-map-actions
     build:
       context: ../..
-      dockerfile: services/atlas-map-actions/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-map-actions
     image: atlas-map-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-map-actions
@@ -304,7 +341,9 @@ services:
     container_name: atlas-maps
     build:
       context: ../..
-      dockerfile: services/atlas-maps/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-maps
     image: atlas-maps:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -315,7 +354,9 @@ services:
     container_name: atlas-merchant
     build:
       context: ../..
-      dockerfile: services/atlas-merchant/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-merchant
     image: atlas-merchant:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-merchant
@@ -325,7 +366,9 @@ services:
     container_name: atlas-messages
     build:
       context: ../..
-      dockerfile: services/atlas-messages/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-messages
     image: atlas-messages:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -335,7 +378,9 @@ services:
     container_name: atlas-messengers
     build:
       context: ../..
-      dockerfile: services/atlas-messengers/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-messengers
     image: atlas-messengers:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -345,7 +390,9 @@ services:
     container_name: atlas-monster-book
     build:
       context: ../..
-      dockerfile: services/atlas-monster-book/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-monster-book
     image: atlas-monster-book:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -356,7 +403,9 @@ services:
     container_name: atlas-monster-death
     build:
       context: ../..
-      dockerfile: services/atlas-monster-death/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-monster-death
     image: atlas-monster-death:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -366,7 +415,9 @@ services:
     container_name: atlas-monsters
     build:
       context: ../..
-      dockerfile: services/atlas-monsters/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-monsters
     image: atlas-monsters:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: info
@@ -376,7 +427,9 @@ services:
     container_name: atlas-notes
     build:
       context: ../..
-      dockerfile: services/atlas-notes/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-notes
     image: atlas-notes:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -387,7 +440,9 @@ services:
     container_name: atlas-npc-conversations
     build:
       context: ../..
-      dockerfile: services/atlas-npc-conversations/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-npc-conversations
     image: atlas-npc-conversations:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -399,7 +454,9 @@ services:
     container_name: atlas-npc-shops
     build:
       context: ../..
-      dockerfile: services/atlas-npc-shops/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-npc-shops
     image: atlas-npc-shops:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -411,7 +468,9 @@ services:
     container_name: atlas-parties
     build:
       context: ../..
-      dockerfile: services/atlas-parties/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-parties
     image: atlas-parties:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -421,7 +480,9 @@ services:
     container_name: atlas-party-quests
     build:
       context: ../..
-      dockerfile: services/atlas-party-quests/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-party-quests
     image: atlas-party-quests:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-party-quests
@@ -432,7 +493,9 @@ services:
     container_name: atlas-pets
     build:
       context: ../..
-      dockerfile: services/atlas-pets/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-pets
     image: atlas-pets:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -443,7 +506,9 @@ services:
     container_name: atlas-portal-actions
     build:
       context: ../..
-      dockerfile: services/atlas-portal-actions/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-portal-actions
     image: atlas-portal-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-portal-actions
@@ -455,7 +520,9 @@ services:
     container_name: atlas-portals
     build:
       context: ../..
-      dockerfile: services/atlas-portals/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-portals
     image: atlas-portals:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -465,7 +532,9 @@ services:
     container_name: atlas-query-aggregator
     build:
       context: ../..
-      dockerfile: services/atlas-query-aggregator/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-query-aggregator
     image: atlas-query-aggregator:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -475,7 +544,9 @@ services:
     container_name: atlas-quest
     build:
       context: ../..
-      dockerfile: services/atlas-quest/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-quest
     image: atlas-quest:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-quest
@@ -485,7 +556,9 @@ services:
     container_name: atlas-rates
     build:
       context: ../..
-      dockerfile: services/atlas-rates/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-rates
     image: atlas-rates:${ATLAS_IMAGE_TAG:-local}
 
   atlas-reactor-actions:
@@ -493,7 +566,9 @@ services:
     container_name: atlas-reactor-actions
     build:
       context: ../..
-      dockerfile: services/atlas-reactor-actions/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-reactor-actions
     image: atlas-reactor-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-reactor-actions
@@ -504,7 +579,9 @@ services:
     container_name: atlas-reactors
     build:
       context: ../..
-      dockerfile: services/atlas-reactors/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-reactors
     image: atlas-reactors:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -514,7 +591,9 @@ services:
     container_name: atlas-saga-orchestrator
     build:
       context: ../..
-      dockerfile: services/atlas-saga-orchestrator/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-saga-orchestrator
     image: atlas-saga-orchestrator:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -528,7 +607,9 @@ services:
     container_name: atlas-skills
     build:
       context: ../..
-      dockerfile: services/atlas-skills/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-skills
     image: atlas-skills:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -539,7 +620,9 @@ services:
     container_name: atlas-storage
     build:
       context: ../..
-      dockerfile: services/atlas-storage/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-storage
     image: atlas-storage:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-storage
@@ -552,7 +635,9 @@ services:
     container_name: atlas-tenants
     build:
       context: ../..
-      dockerfile: services/atlas-tenants/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-tenants
     image: atlas-tenants:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: info
@@ -569,7 +654,9 @@ services:
     container_name: atlas-transports
     build:
       context: ../..
-      dockerfile: services/atlas-transports/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-transports
     image: atlas-transports:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: info
@@ -579,7 +666,9 @@ services:
     container_name: atlas-ui
     build:
       context: ../..
-      dockerfile: services/atlas-ui/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-ui
     image: atlas-ui:${ATLAS_IMAGE_TAG:-local}
     environment:
       VITE_ROOT_API_URL: http://atlas-ingress:8080
@@ -591,26 +680,12 @@ services:
     container_name: atlas-world
     build:
       context: ../..
-      dockerfile: services/atlas-world/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-world
     image: atlas-world:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
       SERVICE_ID: 00000000-0000-0000-0000-000000000000
       SERVICE_TYPE: world-service
 
-  atlas-wz-extractor:
-    <<: *atlas-defaults
-    container_name: atlas-wz-extractor
-    build:
-      context: ../..
-      dockerfile: services/atlas-wz-extractor/Dockerfile
-    image: atlas-wz-extractor:${ATLAS_IMAGE_TAG:-local}
-    environment:
-      LOG_LEVEL: debug
-      INPUT_WZ_DIR: /usr/wz-input
-      OUTPUT_IMG_DIR: /usr/assets
-      OUTPUT_XML_DIR: /usr/data
-    volumes:
-      - ../../tmp/wz-input:/usr/wz-input
-      - ../../tmp/data:/usr/data
-      - ../../tmp/assets:/usr/assets

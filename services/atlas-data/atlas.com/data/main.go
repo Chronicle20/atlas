@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-data/baseline"
 	"atlas-data/cash"
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
@@ -23,11 +24,18 @@ import (
 	"atlas-data/pet"
 	"atlas-data/quest"
 	"atlas-data/reactor"
+	"atlas-data/runtime/ingest"
+	restruntime "atlas-data/runtime/rest"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
+	minio "atlas-data/storage/minio"
+	"atlas-data/tenantpurge"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"atlas-data/wzinput"
 	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -65,9 +73,55 @@ func main() {
 
 	tdm := service.GetTeardownManager()
 
+	switch os.Getenv("MODE") {
+	case "ingest":
+		if err := ingest.Run(tdm.Context(), l); err != nil {
+			l.WithError(err).Fatal("ingest mode failed")
+		}
+		return
+	}
+	// default ("all" or empty) and MODE=rest fall through to the HTTP flow.
+	// MODE=rest additionally provisions a JobCreator + Watchdog so the
+	// /api/data/process handler can launch ingest Jobs.
+	var jc *restruntime.JobCreator
+	if os.Getenv("MODE") == "rest" {
+		rdb := redis.Connect(l)
+		var jcErr error
+		jc, jcErr = restruntime.NewJobCreatorInClusterWithRedis(rdb)
+		if jcErr != nil {
+			l.WithError(jcErr).Warn("k8s in-cluster config unavailable; /api/data/process will return 503")
+			jc = nil
+		} else {
+			if active, rerr := restruntime.RecoverActiveJobs(tdm.Context(), jc.K8s, jc.Namespace); rerr != nil {
+				l.WithError(rerr).Warn("restart recovery failed")
+			} else if len(active) > 0 {
+				l.Infof("restart recovery: %d active ingest job(s): %v", len(active), active)
+			}
+			// TimeoutSecs is the maximum heartbeat staleness the Watchdog
+			// tolerates before deleting a Job. The ingest pod now refreshes
+			// its heartbeat every 30s (runtime/ingest/heartbeat.go), so any
+			// timeout > ~60s would suffice in the happy path. Pick 7200 (2 h)
+			// as a generous belt-and-braces margin for a wedged heartbeat
+			// goroutine or a transient Redis blip on the writer side, and to
+			// absorb future archive growth without a code change. The legacy
+			// value (1800) was a self-inflicted half-hour cap: with no in-pod
+			// heartbeat, every Job's heartbeat went stale at creation+timeout
+			// regardless of actual progress (PR-544: Map worker killed at
+			// 30:28 mid-loop, ~80 maps left without layout.json/minimap.png).
+			go restruntime.Watchdog{L: l, JobCreator: jc, Redis: rdb, TimeoutSecs: 7200}.Run(tdm.Context())
+		}
+	}
+
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
+	}
+
+	// MinIO client (best-effort: nil on failure, /api/data/wz handlers respond 503).
+	mc, err := minio.NewClient(minio.FromEnv())
+	if err != nil {
+		l.WithError(err).Warn("minio client init failed; /api/data/wz will return 503")
+		mc = nil
 	}
 
 	db := database.Connect(l, database.SetMigrations(
@@ -79,6 +133,7 @@ func main() {
 		npc.SpawnIndexMigration,
 		reactor.Migration,
 		item.StringMigration,
+		baseline.Migration,
 	))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
@@ -89,12 +144,25 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
+	// task-071: PATCH /api/data/wz streams the canonical WZ zip — production
+	// atlas.zip is ~1.6 GB. atlas-rest's default 5-second ReadTimeout cuts
+	// uploads off mid-stream (observed on PR-544: 550 MB / 1.67 GB before
+	// `read tcp ... i/o timeout`). atlas-ingress already allows 3600s on
+	// the matching route; align the server with that so the upload has time
+	// to complete. Other atlas-data endpoints don't keep connections open
+	// long; raising the global timeout is safe.
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		SetReadTimeout(time.Hour).
+		SetWriteTimeout(time.Hour).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
+		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
+		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).
+		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
+		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).
 		AddRouteInitializer(monster.InitResource(db)(GetServer())).
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).

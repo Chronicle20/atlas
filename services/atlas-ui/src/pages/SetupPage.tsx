@@ -1,5 +1,5 @@
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +14,9 @@ import {
   Package,
   HelpCircle,
   FileArchive,
-  FileCode,
   FileText,
-  AlertTriangle,
+  RotateCcw,
+  Send,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import {
@@ -29,10 +29,8 @@ import {
   useSeedReactorScripts,
   useSeedMapActionScripts,
   useUploadWzFiles,
-  useRunWzExtraction,
   useRunDataProcessing,
   useWzInputStatus,
-  useExtractionStatus,
   useDataStatus,
   useDropsSeedStatus,
   useGachaponsSeedStatus,
@@ -54,6 +52,9 @@ import type {
   MapActionScriptsSeedStatus,
 } from "@/services/api/seed.service";
 import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
+import { ScopeToggle, type Scope } from "@/components/features/setup/ScopeToggle";
+import { useRestoreBaseline, usePublishBaseline } from "@/lib/hooks/api/useBaseline";
+import { useTenant } from "@/context/tenant-context";
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "0 B";
@@ -72,6 +73,8 @@ function formatBytes(bytes: number): string {
 
 export function SetupPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { activeTenant } = useTenant();
+  const [scope, setScope] = useState<Scope>('tenant');
 
   const seedDrops = useSeedDrops();
   const seedGachapons = useSeedGachapons();
@@ -83,11 +86,9 @@ export function SetupPage() {
   const seedMapActionScripts = useSeedMapActionScripts();
 
   const uploadWz = useUploadWzFiles();
-  const runExtraction = useRunWzExtraction();
   const runProcessing = useRunDataProcessing();
 
   const wzInput = useWzInputStatus();
-  const extraction = useExtractionStatus();
   const dataStatus = useDataStatus();
 
   const dropsSeed = useDropsSeedStatus();
@@ -99,36 +100,21 @@ export function SetupPage() {
   const reactorScriptsSeed = useReactorScriptsSeedStatus();
   const mapActionScriptsSeed = useMapActionScriptsSeedStatus();
 
+  const restoreMutation = useRestoreBaseline(activeTenant);
+  const publishMutation = usePublishBaseline(activeTenant);
+
   const wzInputData = wzInput.data;
-  const extractionData = extraction.data;
   const dataStatusData = dataStatus.data;
 
-  const anyMutationPending =
-    uploadWz.isPending || runExtraction.isPending || runProcessing.isPending;
+  const anyMutationPending = uploadWz.isPending || runProcessing.isPending;
 
-  const extractDisabledReason = !wzInputData
+  const ingestDisabledReason = !wzInputData
     ? null
     : wzInputData.fileCount === 0
       ? "Upload WZ files first"
       : null;
-  const extractDisabled =
-    !wzInputData || wzInputData.fileCount === 0 || anyMutationPending;
-
-  const ingestDisabledReason = !extractionData
-    ? null
-    : extractionData.fileCount === 0
-      ? "Run extraction first"
-      : null;
   const ingestDisabled =
-    !extractionData ||
-    extractionData.fileCount === 0 ||
-    runExtraction.isPending ||
-    runProcessing.isPending;
-
-  const staleWarning =
-    wzInputData?.updatedAt &&
-    extractionData?.updatedAt &&
-    wzInputData.updatedAt > extractionData.updatedAt;
+    !wzInputData || wzInputData.fileCount === 0 || anyMutationPending;
 
   const handleSeed = (mutation: { mutate: () => void; }, label: string) => {
     mutation.mutate();
@@ -145,14 +131,14 @@ export function SetupPage() {
     }
 
     const size = file.size;
-    uploadWz.mutate(file, {
+    uploadWz.mutate({ file, scope }, {
       onSuccess: () => {
         toast.success(`WZ files uploaded (${formatBytes(size)})`);
       },
       onError: (error) => {
         const err = error as Error & { status?: number };
         if (err.status === 409) {
-          toast.error("Another upload or extraction is in progress for this tenant. Try again in a moment.");
+          toast.error("Another upload or processing job is in progress for this tenant. Try again in a moment.");
         } else if (err.status === 400) {
           toast.error(`Upload rejected: ${err.message}`);
         } else {
@@ -166,19 +152,8 @@ export function SetupPage() {
     }
   };
 
-  const handleRunExtraction = () => {
-    runExtraction.mutate(undefined, {
-      onSuccess: () => {
-        toast.success("Extraction complete");
-      },
-      onError: (error) => {
-        toast.error(`Extraction failed: ${error.message}`);
-      },
-    });
-  };
-
   const handleRunProcessing = () => {
-    runProcessing.mutate(undefined, {
+    runProcessing.mutate(scope, {
       onSuccess: () => {
         toast.success("Data processing started");
       },
@@ -186,6 +161,45 @@ export function SetupPage() {
         toast.error(`Data processing failed: ${error.message}`);
       },
     });
+  };
+
+  const handleRestoreBaseline = () => {
+    if (!activeTenant) return;
+    restoreMutation.mutate(
+      {
+        region: activeTenant.attributes.region,
+        majorVersion: activeTenant.attributes.majorVersion,
+        minorVersion: activeTenant.attributes.minorVersion,
+        tenantId: activeTenant.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Canonical baseline restored");
+        },
+        onError: (error) => {
+          toast.error(`Baseline restore failed: ${error.message}`);
+        },
+      },
+    );
+  };
+
+  const handlePublishBaseline = () => {
+    if (!activeTenant) return;
+    publishMutation.mutate(
+      {
+        region: activeTenant.attributes.region,
+        majorVersion: activeTenant.attributes.majorVersion,
+        minorVersion: activeTenant.attributes.minorVersion,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Canonical baseline published");
+        },
+        onError: (error) => {
+          toast.error(`Baseline publish failed: ${error.message}`);
+        },
+      },
+    );
   };
 
   const wzInputBadge = !wzInputData ? (
@@ -196,13 +210,18 @@ export function SetupPage() {
     `${formatCount(wzInputData.fileCount)} ${pluralize(wzInputData.fileCount, ".wz file", ".wz files")}, ${formatBytes(wzInputData.totalBytes)}`
   );
 
-  const extractionBadge = !extractionData
-    ? "—"
-    : `${formatCount(extractionData.fileCount)} ${pluralize(extractionData.fileCount, "XML extracted", "XMLs extracted")}`;
-
   const dataStatusBadge = !dataStatusData
     ? "—"
     : `${formatCount(dataStatusData.documentCount)} ${pluralize(dataStatusData.documentCount, "document loaded", "documents loaded")}`;
+
+  const showRestoreRow = dataStatusData?.documentCount === 0;
+  const showPublishRow =
+    scope === 'shared' && !!dataStatusData && dataStatusData.documentCount > 0;
+
+  const tenantRegion = activeTenant?.attributes.region ?? "";
+  const tenantVersion = activeTenant
+    ? `${activeTenant.attributes.majorVersion}.${activeTenant.attributes.minorVersion}`
+    : "";
 
   const seedRows = [
     {
@@ -281,14 +300,14 @@ export function SetupPage() {
     <div className="flex flex-col space-y-6 p-10 pb-16 overflow-y-auto">
       <div className="items-center justify-between space-y-2">
         <h2 className="text-2xl font-bold tracking-tight">Bootstrap</h2>
-        <p className="text-muted-foreground">Upload game data, run extraction and ingest, then seed service databases.</p>
+        <p className="text-muted-foreground">Upload a WZ zip and process it into atlas-data, then seed service databases.</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Game Data</CardTitle>
           <CardDescription>
-            Upload a WZ zip, extract it into XMLs, then ingest the XMLs into atlas-data. Each step is independent.
+            Upload a WZ zip and process it into atlas-data. Choose the tenant scope, or canonical (shared) when publishing a baseline.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -301,6 +320,15 @@ export function SetupPage() {
             aria-label="Upload WZ zip archive"
           />
 
+          <div className="mb-4">
+            <ScopeToggle
+              value={scope}
+              onChange={setScope}
+              region={tenantRegion}
+              version={tenantVersion}
+            />
+          </div>
+
           <SetupRow
             icon={<FileArchive className="h-5 w-5" />}
             label="Upload WZ"
@@ -309,7 +337,7 @@ export function SetupPage() {
               <Button
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploadWz.isPending}
+                disabled={uploadWz.isPending || !activeTenant}
               >
                 {uploadWz.isPending ? (
                   <>
@@ -327,57 +355,21 @@ export function SetupPage() {
           />
 
           <SetupRow
-            icon={<FileCode className="h-5 w-5" />}
-            label="Extract"
-            badge={extractionBadge}
-            action={
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleRunExtraction}
-                disabled={extractDisabled}
-                title={extractDisabledReason ?? (runExtraction.isPending ? "Extracting…" : undefined)}
-              >
-                {runExtraction.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Extracting…
-                  </>
-                ) : (
-                  "Run Extraction"
-                )}
-              </Button>
-            }
-          />
-
-          {staleWarning && (
-            <div
-              role="status"
-              className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-700 dark:text-yellow-400"
-            >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                Uploaded WZ files are newer than the last extraction. Re-run extraction before ingest to avoid stale data.
-              </span>
-            </div>
-          )}
-
-          <SetupRow
             icon={<FileText className="h-5 w-5" />}
-            label="Ingest"
+            label="Process Data"
             badge={dataStatusBadge}
             action={
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleRunProcessing}
-                disabled={ingestDisabled}
-                title={ingestDisabledReason ?? (runProcessing.isPending ? "Ingesting…" : undefined)}
+                disabled={ingestDisabled || !activeTenant}
+                title={ingestDisabledReason ?? (runProcessing.isPending ? "Processing…" : undefined)}
               >
                 {runProcessing.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Ingesting…
+                    Processing…
                   </>
                 ) : (
                   "Process Data"
@@ -385,6 +377,64 @@ export function SetupPage() {
               </Button>
             }
           />
+
+          {showPublishRow && (
+            <SetupRow
+              icon={<Send className="h-5 w-5" />}
+              label="Publish Canonical Baseline"
+              badge={
+                dataStatusData?.baselineSha256
+                  ? `sha256:${dataStatusData.baselineSha256.slice(0, 12)}…`
+                  : "—"
+              }
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePublishBaseline}
+                  disabled={publishMutation.isPending || !activeTenant}
+                >
+                  {publishMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Publishing…
+                    </>
+                  ) : (
+                    "Publish Baseline"
+                  )}
+                </Button>
+              }
+            />
+          )}
+
+          {showRestoreRow && (
+            <SetupRow
+              icon={<RotateCcw className="h-5 w-5" />}
+              label="Restore Canonical Baseline"
+              badge={
+                dataStatusData?.baselineRestoredAt
+                  ? `restored ${dataStatusData.baselineRestoredAt}`
+                  : "no baseline restored"
+              }
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRestoreBaseline}
+                  disabled={restoreMutation.isPending || !activeTenant}
+                >
+                  {restoreMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Restoring…
+                    </>
+                  ) : (
+                    "Restore Baseline"
+                  )}
+                </Button>
+              }
+            />
+          )}
         </CardContent>
       </Card>
 

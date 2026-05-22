@@ -17,7 +17,9 @@ services:
     container_name: atlas-login
     build:
       context: ../..
-      dockerfile: services/atlas-login/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-login
     image: atlas-login:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
@@ -36,7 +38,9 @@ services:
     container_name: atlas-channel
     build:
       context: ../..
-      dockerfile: services/atlas-channel/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-channel
     image: atlas-channel:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug

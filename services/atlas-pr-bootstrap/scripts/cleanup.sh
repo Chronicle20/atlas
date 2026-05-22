@@ -4,14 +4,13 @@
 # 'cleanup-failed' state).
 #
 # Required env:
-#   ATLAS_ENV              — env hash
+#   PR_NUMBER              — PR number; ATLAS_ENV is derived as sha256("pr-N")[:4]
 #   DB_HOST/PORT/USER/PASS — Postgres connection details
 #   ATLAS_DB_NAMES    — space-separated list of base DB names
 #   BOOTSTRAP_SERVERS — kafka.home:9093
 #   REDIS_URL         — redis.home:6379
 #   PIHOLE_API_BASE_1, PIHOLE_TOKEN_1, PIHOLE_API_BASE_2, PIHOLE_TOKEN_2
 #   GHCR_TOKEN        — for image-tag delete
-#   PR_NUMBER         — for image-tag prefix
 #   ATLAS_SERVICES    — comma-separated list of service names for image cleanup
 
 set -euo pipefail
@@ -25,7 +24,16 @@ set -euo pipefail
 DB_USER="$(printf '%s' "${DB_USER:-}" | tr -d ' \r\n')"
 DB_PASSWORD="$(printf '%s' "${DB_PASSWORD:-}" | tr -d ' \r\n')"
 
-require_env ATLAS_ENV DB_HOST DB_PORT DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
+require_env PR_NUMBER DB_HOST DB_PORT DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL
+
+# Derive ATLAS_ENV from PR_NUMBER. Bug #4 (env-hash annotation drift): the
+# Application's atlas.env annotation can disagree with the formula's actual
+# output (observed on PRs 491/522, see task-070 recovery-log.md). Deriving
+# here guarantees cleanup targets the correct hash regardless. lib.sh's
+# compute_atlas_env is pinned by test/lib_test.bats against the formula
+# used by .github/workflows/pr-validation.yml and the ApplicationSet.
+ATLAS_ENV="$(compute_atlas_env "$PR_NUMBER")"
+ATLAS_STEP=init log info "derived ATLAS_ENV=${ATLAS_ENV} for PR ${PR_NUMBER}"
 
 ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
 # ATLAS_DB_NAMES is space-separated (matches kustomization.yaml's atlas-db-names
@@ -42,9 +50,13 @@ for db in "${dbs[@]}"; do
 done
 
 ATLAS_STEP=drop-topics log info "deleting per-env Kafka topics"
-kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list \
-    | grep -E -- "-${ATLAS_ENV}\$" \
-    | xargs -r -n 1 kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --topic
+# grep returns 1 when no topic matches; that's expected on a fresh env and
+# must not fail the pipeline (set -o pipefail is on). The `|| true` keeps
+# the script idempotent when there's nothing to clean up.
+rpk topic list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+    | jq -r '.topics[].name' \
+    | { grep -E -- "-${ATLAS_ENV}\$" || true; } \
+    | xargs -r -n 1 rpk topic delete -X brokers="$BOOTSTRAP_SERVERS"
 
 ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
 # Atlas consumer-group names contain spaces (e.g. "Party Quest Service [1756]",
@@ -53,9 +65,10 @@ ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
 # nothing would match. -d '\n' restricts splitting to newlines, so each group
 # is passed intact. Observed 2026-05-16 cleaning up atlas-pr-461's leftover
 # 1756-suffixed groups after the PostDelete hook had previously failed.
-kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list \
-    | grep -E -- "\\[${ATLAS_ENV}\\]\$" \
-    | xargs -r -d '\n' -n 1 kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --group
+rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+    | jq -r '.groups[].name' \
+    | { grep -E -- "\\[${ATLAS_ENV}\\]\$" || true; } \
+    | xargs -r -d '\n' -n 1 rpk group delete -X brokers="$BOOTSTRAP_SERVERS"
 
 ATLAS_STEP=drop-redis log info "deleting per-env Redis keys"
 redis-cli -u "redis://$REDIS_URL" --scan --pattern "${ATLAS_ENV}:*" \
@@ -73,6 +86,26 @@ if [ -n "${ATLAS_SERVICES:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
                     "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" || true
             done
     done
+fi
+
+if [ -n "${PR_NUMBER:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then  # ATLAS_STEP=drop-branch
+    ATLAS_STEP=drop-branch log info "deleting bot/pr-${PR_NUMBER}-resolved"
+    # Mounted via Secret atlas-pr-cleanup-gh-token. Fine-grained PAT
+    # with repo Contents: Read-and-write on Chronicle20/atlas +
+    # account-level Packages: Read-and-write (or a classic PAT with
+    # repo + delete:packages — see runbook §9.5). 404 is the
+    # branch-already-deleted case — treat as success. Other errors are
+    # logged warn and do not fail the Job (consistent with the rest of
+    # cleanup's || true / xargs -r discipline).
+    if ! err=$(gh api --method DELETE \
+        -H "Authorization: Bearer ${GHCR_TOKEN}" \
+        "/repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-${PR_NUMBER}-resolved" \
+        2>&1); then
+        case "$err" in
+            *"Reference does not exist"*|*"Branch not found"*|*"404"*) ;;
+            *) log warn "branch delete: $err" ;;
+        esac
+    fi
 fi
 
 if [ -n "${PIHOLE_API_BASE_1:-}" ] && [ -n "${PIHOLE_TOKEN_1:-}" ]; then

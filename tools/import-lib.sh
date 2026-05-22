@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Imports a new Chronicle20/atlas-<name> lib repo into libs/<name>. After
+# this script completes, manually:
+#   1. Append "    ./libs/<name>" to /go.work's `use (...)` block.
+#   2. Append two COPY lines to the repo-root Dockerfile:
+#        - one in the mod-only block:
+#            COPY libs/<name>/go.mod libs/<name>/go.sum libs/<name>/
+#        - one in the source block:
+#            COPY libs/<name> libs/<name>
+#   3. Run `docker buildx bake atlas-account` to verify resolution.
+#
+# Adding the lib to /go.work and the shared Dockerfile is the single
+# place lib dependencies are declared today (post-task-074 consolidation
+# — see CLAUDE.md "Build & Verification").
+
 
 # -------------------------------
 # Configuration

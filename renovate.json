@@ -10,6 +10,11 @@
   "platformAutomerge": true,
   "enabledManagers": ["gomod", "npm", "dockerfile"],
   "postUpdateOptions": ["goModTidy"],
+  "minimumReleaseAge": "3 days",
+  "vulnerabilityAlerts": {
+    "minimumReleaseAge": "0 days",
+    "labels": ["security"]
+  },
   "packageRules": [
     {
       "description": "Group Go version updates across all services",

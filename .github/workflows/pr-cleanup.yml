@@ -59,23 +59,21 @@ jobs:
 
   # Branch deletion intentionally NOT done here.
   #
-  # `bot/pr-<N>-resolved` is the Argo CD ApplicationSet's
-  # targetRevision. Argo CD's PostDelete hook
-  # (`deploy/k8s/overlays/pr/postdelete-cleanup.yaml`, the
-  # `atlas-pr-cleanup` Job) fires only when the Application is deleted
-  # — which is up to 24h after this workflow runs, because of the
-  # `atlas.cleanup-grace: 24h` annotation honored by the hourly cleanup
-  # CronJob in cluster-infra. The hook handler re-renders the manifest
-  # from `bot/pr-<N>-resolved`. If we delete the branch here on PR
-  # close, that render fails with
-  # `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`,
-  # `post-delete-finalizer.argocd.argoproj.io/cleanup` can't complete,
-  # and the Application sits in Terminating until someone patches
-  # `metadata.finalizers: []`. Reproduced 2026-05-16 on PR #461 close.
+  # `bot/pr-<N>-resolved` is the Argo CD ApplicationSet's targetRevision.
+  # Argo CD's PostDelete Job
+  # (`deploy/k8s/overlays/pr/postdelete-cleanup.yaml`) fires *immediately*
+  # on PR close / `deploy-env` label removal. The Job's cleanup.sh deletes
+  # the bot branch as its last step using the dedicated
+  # atlas-pr-cleanup-gh-token PAT (Contents: write on Chronicle20/atlas).
   #
-  # Branch lifetime is now coupled to Application lifetime: the
-  # cluster-infra cleanup CronJob deletes the branch via GitHub API
-  # immediately after it successfully deletes the Application. See
+  # If we deleted the branch here on PR close, the Application's
+  # PostDelete render — which targets bot/pr-<N>-resolved — would fail
+  # with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`,
+  # `post-delete-finalizer.argocd.argoproj.io/cleanup` couldn't complete,
+  # and the Application would wedge in Terminating. Reproduced 2026-05-16
+  # on PR #461.
+  #
+  # Branch lifetime is now coupled to PostDelete Job lifetime — see
   # `docs/runbooks/ephemeral-pr-deployments.md` §9.4.
 
   notify-argo:
@@ -86,6 +84,10 @@ jobs:
       - name: Log notice
         run: |
           echo "PR ${PR_NUMBER} closed at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "Argo CD's hourly cleanup CronJob will set cleanup-deadline within the hour."
-          echo "Force-cleanup (bypassing grace) is documented in docs/runbooks/ephemeral-pr-deployments.md §9.2."
-          echo "bot/pr-${PR_NUMBER}-resolved will be deleted by cluster-infra's cleanup CronJob after the Application finalizes (runbook §9.4)."
+          echo "Argo CD's ApplicationSet will delete the Application immediately."
+          echo "The PostDelete Job runs in the argocd namespace and reclaims"
+          echo "per-env state (DBs, topics, groups, Redis keys, ghcr tags,"
+          echo "bot branch) within ~10 minutes."
+          echo "Recovery procedure if the teardown wedges:"
+          echo "  docs/runbooks/ephemeral-pr-deployments.md §9.4 (force-cleanup),"
+          echo "  §9.11 (full orphan sweep)."

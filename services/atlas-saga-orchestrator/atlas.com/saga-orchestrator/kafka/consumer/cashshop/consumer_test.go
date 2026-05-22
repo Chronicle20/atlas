@@ -51,7 +51,7 @@ func TestHandleWalletUpdatedEvent_CompletesAwardCurrencyStep(t *testing.T) {
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("test").
 		AddStep("s1", saga.Pending, saga.AwardCurrency, saga.AwardCurrencyPayload{CharacterId: 1, AccountId: 10, CurrencyType: 1, Amount: 100}).
-		AddStep("s2", saga.Pending, saga.SendMessage, saga.SendMessagePayload{CharacterId: 1, Message: "pinned"}).
+		AddStep("s2", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{CharacterId: 1, Item: saga.ItemPayload{TemplateId: 2000000, Quantity: 1}}).
 		Build()
 	require.NoError(t, err)
 	putTestSaga(t, ctx, s)

@@ -15,9 +15,13 @@ Before claiming a branch is "done," "ready for PR," or invoking `superpowers:fin
 1. `go test -race ./...` clean in every changed module.
 2. `go vet ./...` clean in every changed module.
 3. `go build ./...` clean in every changed service.
-4. **`docker build -f services/<svc>/Dockerfile .` from the worktree root for every service whose `go.mod` or `Dockerfile` was touched.** This is mandatory, not optional. Each service's Dockerfile maintains a hand-edited list of `Chronicle20/atlas/libs/atlas-*` libs in four places (the go.mod stage `COPY`s, the synthesized `go.work use(...)` block, the source `COPY`s, and the explicit `go mod edit -replace=...` flags). Adding a new lib dependency requires updating all four locations, and `go build`/`go test` against the workspace `go.work` will NOT catch the drift — only `docker build` will. CI catches it too, but each round-trip wastes a CI cycle and turns "verified" into a lie.
+4. **`docker buildx bake atlas-<svc>` from the worktree root for every service whose `go.mod` was touched.** This is mandatory, not optional. The shared `Dockerfile` at the repo root is parameterized by `ARG SERVICE`; `docker-bake.hcl` enumerates one target per Go service driven by `.github/config/services.json` (single source of truth). `go build`/`go test` against the workspace `go.work` will NOT catch a missing `COPY libs/...` line in the shared Dockerfile — only `docker buildx bake` will. CI catches it too, but each round-trip wastes a CI cycle and turns "verified" into a lie.
 
-For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the Docker step.
+To build everything locally: `docker buildx bake all-go-services` (or `tools/build-services.sh` — a thin wrapper).
+
+Adding a new shared lib requires appending two `COPY` lines to the repo-root `Dockerfile` (one in the mod-only block, one in the source block) and one `./libs/<name>` line to `go.work`. That's it — no per-service edits.
+
+For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the bake step.
 
 ## Code Patterns
 

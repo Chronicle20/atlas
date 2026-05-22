@@ -46,6 +46,7 @@ COPY libs/atlas-service/go.mod     libs/atlas-service/
 COPY libs/atlas-socket/go.mod      libs/atlas-socket/go.sum      libs/atlas-socket/
 COPY libs/atlas-tenant/go.mod      libs/atlas-tenant/go.sum      libs/atlas-tenant/
 COPY libs/atlas-tracing/go.mod     libs/atlas-tracing/go.sum     libs/atlas-tracing/
+COPY libs/atlas-wz/go.mod          libs/atlas-wz/go.sum          libs/atlas-wz/
 
 # Layer: this service's tree (per-target; brings in its go.mod and source).
 COPY services/${SERVICE}/atlas.com/ services/${SERVICE}/atlas.com/
@@ -69,6 +70,7 @@ COPY libs/atlas-service     libs/atlas-service
 COPY libs/atlas-socket      libs/atlas-socket
 COPY libs/atlas-tenant      libs/atlas-tenant
 COPY libs/atlas-tracing     libs/atlas-tracing
+COPY libs/atlas-wz          libs/atlas-wz
 
 # Synthesize a minimal go.work containing only the 17 libs + the target service.
 # The repo-root go.work also lists ~50 sibling services + 2 tools/* modules
@@ -82,7 +84,7 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
          for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
                   atlas-object-id atlas-opcodes atlas-packet atlas-redis atlas-rest \
                   atlas-retry atlas-saga atlas-script-core atlas-service atlas-socket \
-                  atlas-tenant atlas-tracing; do \
+                  atlas-tenant atlas-tracing atlas-wz; do \
            printf '    ./libs/%s\n' "$L"; \
          done; \
          printf '    ./%s\n)\n' "$MOD_DIR"; \

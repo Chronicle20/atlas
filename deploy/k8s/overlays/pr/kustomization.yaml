@@ -41,7 +41,6 @@ patches:
   - path: patches/ingress-host.yaml
   - path: patches/db-name-suffix.yaml
   - path: patches/consumer-group-env.yaml
-  - path: patches/pvc-storageclass.yaml
   - path: patches/lb-allocate.yaml
   # Ephemeral PR envs do not need HA. Pin every Deployment to a single
   # replica to halve the pod footprint vs main (some base manifests ship
@@ -73,10 +72,6 @@ patches:
             labelSelector:
               matchLabels:
                 atlas.env: "PLACEHOLDER_ATLAS_ENV"
-  # wz-extractor opts back into replicas=2 (see patch comment for why).
-  # Must be ordered AFTER the global replicas=1 patch above so it wins
-  # the merge.
-  - path: patches/wz-extractor-pr.yaml
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:
@@ -251,8 +246,8 @@ configMapGenerator:
 # update-pr-overlay job via sed; the surrounding quotes are preserved,
 # so all-digit hashes (e.g. "1756" for PR #461) parse as strings.
 #
-# Stateless Deployments (atlas-ingress, atlas-ui, atlas-assets,
-# atlas-query-aggregator, atlas-wz-extractor, atlas-configurations,
+# Stateless Deployments (atlas-ingress, atlas-ui,
+# atlas-query-aggregator, atlas-configurations,
 # atlas-drop-information, atlas-gachapons) don't consume ATLAS_ENV in
 # their containers and therefore have no env entry for it — and don't
 # need one. An earlier kustomize `replacements:` block with
@@ -265,8 +260,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
-    newTag: latest
-  - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
     newTag: latest
@@ -350,6 +343,8 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: latest
+  - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
@@ -359,6 +354,8 @@ images:
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
     newTag: latest
@@ -371,8 +368,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
-    newTag: latest
-  - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
     newTag: latest

@@ -52,7 +52,7 @@ metadata:
     # `Sync` hooks run *in parallel* with the sync wave's normal resource
     # apply, so bootstrap starts the moment Argo applies the manifests. The
     # bootstrap script (`scripts/bootstrap.sh`) already polls atlas-tenants
-    # / atlas-configurations / atlas-data / atlas-wz-extractor with `retry
+    # / atlas-configurations / atlas-data with `retry
     # 60 5` (5 minutes per dependency) before doing any work, so racing
     # with the Deployments coming up is fine — it just waits.
     #

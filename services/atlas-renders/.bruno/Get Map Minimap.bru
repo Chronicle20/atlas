@@ -1,0 +1,11 @@
+meta {
+  name: Get Map Minimap
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/wz/map/render/{{TENANT_ID}}/{{REGION}}/{{MAJOR_VERSION}}.{{MINOR_VERSION}}/{{mapId}}/minimap.png
+  body: none
+  auth: none
+}

@@ -1,0 +1,82 @@
+{
+  "service": "atlas-data + atlas-renders + libs/atlas-wz",
+  "path": "services/atlas-data/atlas.com/data, services/atlas-renders/atlas.com/renders, libs/atlas-wz",
+  "date": "2026-05-20",
+  "build": "pass",
+  "tests": "pass",
+  "dockerBuilds": {
+    "atlas-data": "pass",
+    "atlas-renders": "pass"
+  },
+  "overallStatus": "pass",
+  "round1Resolutions": [
+    {"id": "SEC-01", "name": "operator-gated restore", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/baseline/handler.go:64-67"},
+    {"id": "SEC-02", "name": "sha256 verified before mutation", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/baseline/restore.go:51-72"},
+    {"id": "STUB-Item.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/item.go:26-72"},
+    {"id": "STUB-Mob.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/mob.go:1-73"},
+    {"id": "STUB-Npc.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/npc.go:1-58"},
+    {"id": "STUB-Reactor.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/reactor.go:1-50"},
+    {"id": "STUB-Skill.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/skill.go:1-88"},
+    {"id": "STUB-Quest.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/quest.go:21-33"},
+    {"id": "STUB-String.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/stringw.go:1-53"},
+    {"id": "STUB-Map.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/mapw.go:1-94"},
+    {"id": "STUB-Character.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/character.go:36-101"},
+    {"id": "STUB-UI.Run", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/ui.go:1-97"},
+    {"id": "STUB-runCopyOut", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/baseline/publish.go:98-118"},
+    {"id": "STUB-copyInBinary", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/baseline/restore.go:180-210"},
+    {"id": "STUB-Watchdog.sweep", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/runtime/rest/watchdog.go:39-110"},
+    {"id": "STUB-processStatus", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/runtime/rest/resource.go:90-125"},
+    {"id": "STUB-defaultTemplate", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/runtime/rest/jobs.go:74-115"},
+    {"id": "STUB-character.Handler", "status": "pass", "evidence": "services/atlas-renders/atlas.com/renders/character/handler.go:32-154"},
+    {"id": "STUB-mapr.Handler", "status": "pass", "evidence": "services/atlas-renders/atlas.com/renders/mapr/handler.go:32-69"},
+    {"id": "DEAD-runtime/all", "status": "pass", "evidence": "directory removed"},
+    {"id": "SUB-04/DOM-08", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/baseline/handler.go:22-23"},
+    {"id": "SCAFFOLD-01", "status": "pass", "evidence": ".github/config/services.json:406-410"},
+    {"id": "SCAFFOLD-06", "status": "deferred", "evidence": "absent from deploy/compose/docker-compose.core.yml; deferred to Task 17 per user instruction"},
+    {"id": "SCAFFOLD-08", "status": "pass", "evidence": "services/atlas-renders/.bruno/"},
+    {"id": "RENDERS-TENANT-MIDDLEWARE", "status": "pass", "evidence": "services/atlas-renders/atlas.com/renders/main.go:28,68-94"},
+    {"id": "CANONICAL-DUP", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/canonical/canonical.go:11"},
+    {"id": "WIDTH-DRIFT", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/workers/worker.go:17-18 (uint16); runtime/rest/jobs.go:121 (uint16)"},
+    {"id": "DOM-18-baseline-publish", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/baseline/handler.go:50-52"}
+  ],
+  "newCodeChecks": [
+    {"package": "libs/atlas-wz/charparts", "checks": [
+      {"id": "DOM-20", "status": "pass", "evidence": "libs/atlas-wz/charparts/{extract_test.go,smap_test.go}"},
+      {"id": "DOM-21", "status": "pass", "evidence": "no game id types declared"},
+      {"id": "manifest-determinism", "status": "pass", "evidence": "libs/atlas-wz/manifest/types.go:15 omitempty + encode_test.go:43-57,61-87"}
+    ]},
+    {"package": "services/atlas-data/data/workers", "checks": [
+      {"id": "worker-contract", "status": "pass", "evidence": "data/workers/worker.go:26-30"},
+      {"id": "concurrency-bounded", "status": "pass", "evidence": "data/runwz.go:23-25"},
+      {"id": "tenant-context", "status": "pass", "evidence": "data/workers/runtime.go:34-63"}
+    ]},
+    {"package": "services/atlas-data/baseline", "checks": [
+      {"id": "SEC-01", "status": "pass", "evidence": "baseline/handler.go:35-38,64-67"},
+      {"id": "SEC-02", "status": "pass", "evidence": "baseline/restore.go:65-72"},
+      {"id": "SUB-03", "status": "pass", "evidence": "baseline/handler.go:22-23"},
+      {"id": "DOM-06", "status": "pass", "evidence": "baseline/publish.go:25, restore.go:35"},
+      {"id": "DOM-15", "status": "pass", "evidence": "mutations in Publisher.Publish / Restorer.Restore only"},
+      {"id": "DOM-18", "status": "pass", "evidence": "baseline/handler.go:50-52"}
+    ]},
+    {"package": "services/atlas-data/runtime/rest", "checks": [
+      {"id": "watchdog-real", "status": "pass", "evidence": "watchdog.go:39-110"},
+      {"id": "processStatus-real", "status": "pass", "evidence": "resource.go:90-125"},
+      {"id": "configmap-loader", "status": "pass", "evidence": "jobs.go:74-115"},
+      {"id": "operator-gate-shared", "status": "pass", "evidence": "resource.go:44-47"}
+    ]},
+    {"package": "services/atlas-renders", "checks": [
+      {"id": "tenant-middleware", "status": "pass", "evidence": "main.go:28,68-94"},
+      {"id": "vslot-occlusion", "status": "pass", "evidence": "character/vslot.go:96-137"},
+      {"id": "hash-verify", "status": "pass", "evidence": "character/handler.go:81-91"},
+      {"id": "tenant-cross-check", "status": "pass", "evidence": "character/handler.go:64-71"},
+      {"id": "fresh-ctx-cache-put", "status": "pass", "evidence": "character/handler.go:135-143; mapr/handler.go:120-126"},
+      {"id": "import-lint", "status": "pass", "evidence": "import_lint_test.go"}
+    ]}
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "wzinput SUB-02/03 — handler.go:75 inlines mc.Put; resource.go:20-21 registers PATCH via RegisterHandler. Pre-existing, not on round-2 fix list.",
+    "SCAFFOLD-06 — atlas-renders not in deploy/compose/docker-compose.core.yml. Deferred to Task 17 per explicit user instruction.",
+    "Operator-header threat-model docstring missing on publish/restore/process-shared gates. Documentation only."
+  ]
+}

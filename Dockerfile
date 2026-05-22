@@ -14,8 +14,8 @@
 # file (one to the mod-only block, one to the source block) AND adding
 # the lib name to the synthesized go.work `for L in ...` loop below.
 # That's it — no per-service edits.
-ARG GO_VERSION=1.25.5
-ARG ALPINE_VERSION=3.21
+ARG GO_VERSION=1.26.0
+ARG ALPINE_VERSION=3.23
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build-env
 
@@ -80,7 +80,7 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
     && test -n "$MOD_DIR" || (echo "ERROR: no module dir under services/${SERVICE}/atlas.com/" >&2 && exit 1) \
     && test -f "${MOD_DIR}/go.mod" || (echo "ERROR: ${MOD_DIR}/go.mod missing" >&2 && exit 1) \
     && { \
-         printf 'go 1.25.5\n\nuse (\n'; \
+         printf 'go 1.26.0\n\nuse (\n'; \
          for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
                   atlas-object-id atlas-opcodes atlas-packet atlas-redis atlas-rest \
                   atlas-retry atlas-saga atlas-script-core atlas-service atlas-socket \

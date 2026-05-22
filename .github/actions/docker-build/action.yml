@@ -57,7 +57,7 @@ runs:
         username: ${{ inputs.registry-username }}
         password: ${{ inputs.registry-password }}
 
-    - name: Build per-target --set flags
+    - name: Build bake override file and global --set flags
       id: setflags
       shell: bash
       env:
@@ -79,30 +79,49 @@ runs:
           exit 1
         fi
 
-        # Per-target image name lookup.
-        FLAGS=()
+        # Parse the comma-separated tag list into a JSON array of trimmed,
+        # non-empty tags.
+        TAGS_JSON=$(echo "$TAGS_CSV" | jq -Rc '
+          split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))
+        ')
+        if [ "$(echo "$TAGS_JSON" | jq 'length')" -eq 0 ]; then
+          echo "ERROR: 'tags' input must contain at least one non-empty tag" >&2
+          exit 1
+        fi
+
+        # Validate every target has an image-name-map entry. (jq's // empty
+        # would silently drop missing entries; check explicitly so a typo in
+        # the matrix surfaces here instead of as a bake parse error.)
         for target in "${TARGETS[@]}"; do
           image=$(echo "$IMAGE_MAP_JSON" | jq -r --arg t "$target" '.[$t] // empty')
           if [ -z "$image" ]; then
             echo "ERROR: 'image-name-map' has no entry for target '$target'" >&2
             exit 1
           fi
-          # Build comma-joined "<image>:<tag1>,<image>:<tag2>" list from TAGS_CSV.
-          TAG_LIST=""
-          IFS=',' read -ra TAG_ARRAY <<< "$TAGS_CSV"
-          for tag in "${TAG_ARRAY[@]}"; do
-            tag="$(echo "$tag" | xargs)" # trim
-            [ -z "$tag" ] && continue
-            if [ -n "$TAG_LIST" ]; then
-              TAG_LIST="${TAG_LIST},${image}:${tag}"
-            else
-              TAG_LIST="${image}:${tag}"
-            fi
-          done
-          FLAGS+=("--set" "${target}.tags=${TAG_LIST}")
         done
 
+        # Build the bake override file: per-target tags = [<image>:<tag>, ...].
+        # `tags` is a list-valued attribute; bake's `--set` does not split
+        # comma-separated values for `tags` (only the global cache-from /
+        # cache-to attrs), so multi-tag overrides must go through a JSON
+        # override file passed via `-f`.
+        echo "$TARGETS_JSON" | jq \
+          --argjson imageMap "$IMAGE_MAP_JSON" \
+          --argjson tags "$TAGS_JSON" \
+          '{
+            target: (
+              map(. as $t | {
+                key: $t,
+                value: { tags: ($tags | map($imageMap[$t] + ":" + .)) }
+              }) | from_entries
+            )
+          }' > "${RUNNER_TEMP}/bake-override.json"
+
+        echo "Wrote ${RUNNER_TEMP}/bake-override.json:"
+        cat "${RUNNER_TEMP}/bake-override.json"
+
         # Global --set flags applied to every target in this invocation.
+        FLAGS=()
         FLAGS+=("--set" "*.platform=${PLATFORM}")
         FLAGS+=("--set" "*.cache-from=type=gha,scope=${CACHE_SCOPE}")
         FLAGS+=("--set" "*.cache-to=type=gha,mode=max,scope=${CACHE_SCOPE}")
@@ -128,8 +147,12 @@ runs:
         set -euo pipefail
         mapfile -t TARGETS < "${RUNNER_TEMP}/bake-targets.txt"
         mapfile -t FLAGS   < "${RUNNER_TEMP}/bake-flags.txt"
-        echo "Running: docker buildx bake ${TARGETS[*]} ${FLAGS[*]}"
-        docker buildx bake "${TARGETS[@]}" "${FLAGS[@]}"
+        echo "Running: docker buildx bake -f docker-bake.hcl -f ${RUNNER_TEMP}/bake-override.json ${TARGETS[*]} ${FLAGS[*]}"
+        docker buildx bake \
+          -f docker-bake.hcl \
+          -f "${RUNNER_TEMP}/bake-override.json" \
+          "${TARGETS[@]}" \
+          "${FLAGS[@]}"
 
     - name: Summary
       shell: bash

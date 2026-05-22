@@ -1,14 +1,15 @@
 package wzinput
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // Status represents the aggregate status of WZ uploads in a scope.
@@ -16,6 +17,42 @@ type Status struct {
 	FileCount  int    `json:"fileCount"`
 	TotalBytes int64  `json:"totalBytes"`
 	UpdatedAt  string `json:"updatedAt,omitempty"`
+}
+
+// GetName returns the JSON:API resource type. Matches the pre-F14 wire
+// shape "wzInputStatus".
+func (s Status) GetName() string { return "wzInputStatus" }
+
+// GetID returns the JSON:API resource id. The status endpoint exposes a
+// single per-scope singleton resource, "current".
+func (s Status) GetID() string { return "current" }
+
+// SetID satisfies the JSON:API UnmarshalIdentifier interface; the id is
+// fixed at "current" so incoming values are intentionally ignored.
+func (s *Status) SetID(string) error { return nil }
+
+func (s Status) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{}
+}
+
+func (s Status) GetReferencedIDs() []jsonapi.ReferenceID {
+	return []jsonapi.ReferenceID{}
+}
+
+func (s Status) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	return []jsonapi.MarshalIdentifier{}
+}
+
+func (s *Status) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (s *Status) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+func (s *Status) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
+	return nil
 }
 
 func statusHandler(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
@@ -37,14 +74,12 @@ func statusHandler(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Han
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
 			w.Header().Set("Content-Type", "application/vnd.api+json")
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"data": map[string]any{
-					"type":       "wzInputStatus",
-					"id":         "current",
-					"attributes": Status{FileCount: s.Count, TotalBytes: s.Size, UpdatedAt: s.UpdatedAt},
-				},
-			})
+			server.MarshalResponse[Status](d.Logger())(w)(c.ServerInformation())(queryParams)(
+				Status{FileCount: s.Count, TotalBytes: s.Size, UpdatedAt: s.UpdatedAt},
+			)
 		}
 	}
 }

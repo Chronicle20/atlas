@@ -90,10 +90,15 @@ func main() {
 		l.WithError(err).Fatal("Unable to start configuration projection subscriber.")
 	}
 
-	ctxCaught, cancelCaught := context.WithTimeout(tdm.Context(), 30*time.Second)
+	// 5-minute window because in a fresh PR env atlas-pr-bootstrap takes
+	// a couple of minutes to write the initial tenant + service configs
+	// after this pod boots; the projection can't catch up until those
+	// events are emitted by atlas-configurations and drained to Kafka.
+	// Override via PROJECTION_CATCHUP_TIMEOUT_S (positive integer seconds).
+	ctxCaught, cancelCaught := context.WithTimeout(tdm.Context(), parseProjectionCatchupTimeout())
 	if err := caughtUp.WaitCaughtUp(ctxCaught); err != nil {
 		cancelCaught()
-		l.WithError(err).Fatal("Configuration projection failed to catch up within 30s.")
+		l.WithError(err).Fatal("Configuration projection failed to catch up.")
 	}
 	cancelCaught()
 	l.Info("Configuration projection caught up; starting listener apply loop.")
@@ -282,6 +287,24 @@ func buildListener(
 
 		return handles, nil
 	}
+}
+
+// parseProjectionCatchupTimeout reads PROJECTION_CATCHUP_TIMEOUT_S from
+// env (positive integer seconds) and returns the catch-up window for the
+// configuration projection at startup. Default is 5 minutes, which covers
+// the fresh-PR-env case where atlas-pr-bootstrap is still writing the
+// initial tenant + service configs when this pod boots.
+func parseProjectionCatchupTimeout() time.Duration {
+	const def = 5 * time.Minute
+	v := os.Getenv("PROJECTION_CATCHUP_TIMEOUT_S")
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return def
+	}
+	return time.Duration(n) * time.Second
 }
 
 // parseDrainDeadline reads DRAIN_DEADLINE_MS from env (default 2000ms,

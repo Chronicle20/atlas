@@ -5,6 +5,7 @@ import (
 	"atlas-data/xml"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -37,6 +38,7 @@ func InitString(t tenant.Model, path string) error {
 		return err
 	}
 
+	added := 0
 	for _, mxml := range exml.ChildNodes {
 		_, err = GetMonsterStringRegistry().Add(t, MonsterString{
 			id:   mxml.Name,
@@ -45,6 +47,8 @@ func InitString(t tenant.Model, path string) error {
 		if err != nil {
 			return err
 		}
+		added++
 	}
+	logrus.StandardLogger().Infof("monster.InitString: tenant=%s read_children=%d added=%d path=%s", t.Id().String(), len(exml.ChildNodes), added, path)
 	return nil
 }

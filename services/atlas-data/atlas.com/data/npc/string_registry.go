@@ -3,9 +3,11 @@ package npc
 import (
 	"atlas-data/document"
 	"atlas-data/xml"
+	"fmt"
 	"strconv"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -42,14 +44,15 @@ func GetNpcStringRegistry() *document.Registry[string, NpcString] {
 func InitString(t tenant.Model, path string) error {
 	exml, err := xml.FromPathProvider(path)()
 	if err != nil {
-		return err
+		return fmt.Errorf("npc.InitString FromPathProvider %s: %w", path, err)
 	}
 
+	added := 0
 	for _, mxml := range exml.ChildNodes {
 		var id int
 		id, err = strconv.Atoi(mxml.Name)
 		if err != nil {
-			return err
+			return fmt.Errorf("npc.InitString parse id %q: %w", mxml.Name, err)
 		}
 		_, err = GetNpcStringRegistry().Add(t, NpcString{
 			id:   strconv.Itoa(id),
@@ -58,6 +61,12 @@ func InitString(t tenant.Model, path string) error {
 		if err != nil {
 			return err
 		}
+		added++
 	}
+	// Diagnostic: PR-544 saw 1620 NPC docs all with empty name even though no
+	// warning was logged here. If `added` is zero, the XML root had no
+	// imgdir children — points at a wztoxml output mismatch or a race that
+	// truncated the file mid-write.
+	logrus.StandardLogger().Infof("npc.InitString: tenant=%s read_children=%d added=%d path=%s", t.Id().String(), len(exml.ChildNodes), added, path)
 	return nil
 }

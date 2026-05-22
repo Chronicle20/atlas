@@ -53,3 +53,50 @@ if grep -nE 'set \$u +"minio:[0-9]+"' "$ROUTES" >/dev/null; then
   exit 1
 fi
 echo "routes.conf MinIO upstream cross-namespace check: OK"
+
+# String-level guard: any nginx location that proxies to atlas-renders MUST set
+# the four tenant headers (TENANT_ID/REGION/MAJOR_VERSION/MINOR_VERSION). The
+# atlas-renders tenant middleware (services/atlas-renders/.../main.go) returns
+# 400 when any are missing. The character-render block at routes.conf:190-204
+# sets them; @maprender_miss originally did not — every cache-miss map render
+# 400'd on PR-544 (see finish-line.md Bug A).
+python3 - "$ROUTES" <<'PY' || exit 1
+import re, sys, pathlib
+text = pathlib.Path(sys.argv[1]).read_text()
+# Find every location block (named or path) that proxies to atlas-renders.
+# Lookahead-bounded block extraction: from `location ... {` to matching `}`.
+def blocks(src):
+    i = 0
+    while True:
+        m = re.search(r'\blocation\s+[^{]*\{', src[i:])
+        if not m:
+            return
+        start = i + m.start()
+        # Naive brace match (no embedded {}) — routes.conf locations are flat.
+        depth = 0
+        for j in range(start, len(src)):
+            c = src[j]
+            if c == '{': depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    yield src[start:j+1]
+                    i = j + 1
+                    break
+        else:
+            return
+required = ['TENANT_ID', 'REGION', 'MAJOR_VERSION', 'MINOR_VERSION']
+fail = False
+for b in blocks(text):
+    if 'atlas-renders:' not in b:
+        continue
+    missing = [h for h in required if f'proxy_set_header {h}' not in b]
+    if missing:
+        fail = True
+        header_line = b.splitlines()[0]
+        print(f"error: location block proxying to atlas-renders missing headers {missing}:", file=sys.stderr)
+        print(f"  {header_line}", file=sys.stderr)
+if fail:
+    sys.exit(1)
+print("routes.conf atlas-renders tenant header check: OK")
+PY

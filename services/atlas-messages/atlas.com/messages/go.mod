@@ -36,7 +36,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
-	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

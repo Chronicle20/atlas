@@ -1,0 +1,11 @@
+meta {
+  name: Health Check
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/healthz
+  body: none
+  auth: none
+}

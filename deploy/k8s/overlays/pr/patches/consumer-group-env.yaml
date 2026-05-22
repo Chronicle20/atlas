@@ -721,18 +721,3 @@ spec:
               value: "World Orchestrator [PLACEHOLDER_ATLAS_ENV]"
             - name: ATLAS_ENV
               value: "PLACEHOLDER_ATLAS_ENV"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: atlas-wz-extractor
-spec:
-  template:
-    spec:
-      containers:
-        - name: wz-extractor
-          env:
-            - name: KAFKA_CONSUMER_GROUP
-              value: "wz-extractor-extraction [PLACEHOLDER_ATLAS_ENV]"
-            - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"

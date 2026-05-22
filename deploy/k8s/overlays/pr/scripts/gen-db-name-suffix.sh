@@ -4,8 +4,8 @@
 # -PLACEHOLDER_ATLAS_ENV. The PLACEHOLDER slot is rewritten by the Argo
 # CD ApplicationSet at sync time.
 #
-# Services with no DB_NAME env var (e.g. atlas-assets, atlas-ui,
-# atlas-ingress, atlas-query-aggregator, atlas-wz-extractor) are skipped.
+# Services with no DB_NAME env var (e.g. atlas-ui, atlas-ingress,
+# atlas-query-aggregator, atlas-renders) are skipped.
 #
 # Re-run after adding/removing a service or changing its DB_NAME.
 

@@ -23,11 +23,11 @@ variable "ATLAS_IMAGE_TAG" {
 }
 
 variable "GO_VERSION" {
-  default = "1.25.5"
+  default = "1.26.0"
 }
 
 variable "ALPINE_VERSION" {
-  default = "3.21"
+  default = "3.23"
 }
 
 # Mirror of .github/config/services.json .services[] | select(.type=="go-service") | .name.
@@ -81,13 +81,13 @@ go_services = [
   "atlas-rates",
   "atlas-reactor-actions",
   "atlas-reactors",
+  "atlas-renders",
   "atlas-saga-orchestrator",
   "atlas-skills",
   "atlas-storage",
   "atlas-tenants",
   "atlas-transports",
   "atlas-world",
-  "atlas-wz-extractor",
 ]
 
 # One target per Go service, expanded from the list above at parse time.
@@ -107,11 +107,37 @@ target "go-service" {
   tags = ["${svc}:${ATLAS_IMAGE_TAG}"]
 }
 
+# Non-Go services with their own Dockerfiles. cideps EnrichDockerServices
+# includes any services.json entry with `docker_image` set regardless of
+# type (see tools/cideps/config.go:116-141 + the
+# TestEnrichDockerServices_IncludesNonGoServices guard), so these must be
+# bake targets too — otherwise CI's per-shard `bake <names…>` errors with
+# "could not find any target matching '<name>'" the first time a PR touches
+# atlas-ui or atlas-pr-bootstrap.
+target "atlas-ui" {
+  context    = "."
+  dockerfile = "services/atlas-ui/Dockerfile"
+  tags       = ["atlas-ui:${ATLAS_IMAGE_TAG}"]
+}
+
+target "atlas-pr-bootstrap" {
+  # Its Dockerfile uses relative COPYs (scripts/, canonical/), so the
+  # context is the service directory rather than the repo root.
+  context    = "services/atlas-pr-bootstrap"
+  dockerfile = "Dockerfile"
+  tags       = ["atlas-pr-bootstrap:${ATLAS_IMAGE_TAG}"]
+}
+
 group "all-go-services" {
   targets = go_services
 }
 
-# Default group: same as all-go-services.
+group "all-services" {
+  targets = concat(go_services, ["atlas-ui", "atlas-pr-bootstrap"])
+}
+
+# Default group: build everything (Go + non-Go) so a bare `docker buildx bake`
+# matches the implicit "build all images" intent.
 group "default" {
-  targets = ["all-go-services"]
+  targets = ["all-services"]
 }

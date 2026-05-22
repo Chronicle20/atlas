@@ -4,12 +4,21 @@
 set -uo pipefail
 
 log() {
+    # Logs are diagnostic output and MUST go to stderr. The fallback branch
+    # already does; the jq branch did not, which caused subtle bugs when a
+    # caller captured a function's stdout via $(): e.g. resolve_mode echoes
+    # the resolved mode on stdout, but a `log warn` inside it would prepend
+    # a JSON line into the captured value and break the subsequent `case`
+    # match. PR-544 hit this — auto-mode resolution silently produced a
+    # multi-line mode value, the case statement no-op'd, and the bootstrap
+    # exited cleanly without running ingest. Fixed by redirecting both
+    # branches to stderr.
     local level="$1"; shift
     local step="${ATLAS_STEP:-init}"
     if command -v jq >/dev/null 2>&1; then
         printf '{"ts":"%s","level":"%s","atlas.env":"%s","atlas.step":"%s","msg":%s}\n' \
             "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$level" "${ATLAS_ENV:-}" "$step" \
-            "$(printf '%s' "$*" | jq -Rs .)"
+            "$(printf '%s' "$*" | jq -Rs .)" >&2
     else
         # Fallback for environments without jq (e.g., bats hosts without
         # the bootstrap image installed). Emits the same raw message

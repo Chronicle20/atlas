@@ -19,7 +19,10 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/data").Subrouter()
-			r.HandleFunc("/process", rest.RegisterHandler(l)(si)("process", processData(db))).Methods(http.MethodPost)
+			// POST /data/process is registered by runtime/rest.InitResource — that
+			// handler creates a k8s ingest Job. The legacy in-process processData
+			// (now-orphaned in this file) walked a PVC mount that no longer exists
+			// in the MinIO-backed model and would shadow the new handler.
 			r.HandleFunc("/status", rest.RegisterHandler(l)(si)("get_status", handleGetStatus(db))).Methods(http.MethodGet)
 		}
 	}

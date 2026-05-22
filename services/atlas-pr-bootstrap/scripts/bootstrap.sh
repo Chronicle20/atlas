@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# Atlas PR-env bootstrap. Idempotent — short-circuits each step that
-# is already complete. Reads:
+# Atlas PR-env bootstrap (task-071: MinIO-backed ingest). Idempotent —
+# short-circuits each step that is already complete. Reads:
 #   ATLAS_ENV          — env hash, REQUIRED
 #   ATLAS_UI_BASE      — http://atlas-ingress.<ns>.svc.cluster.local
-#   WZ_CANONICAL       — path to canonical zip (default /opt/wz/atlas.zip)
+#   BOOTSTRAP_MODE     — auto|baseline|full (default auto)
+#     baseline — restore from canonical baseline in MinIO (fast: ~60s).
+#     full     — upload WZ zip, run ingest (~10min).
+#     auto     — probe canonical baseline; fall back to full on absence.
+#   WZ_CANONICAL       — path to canonical zip (default /opt/wz/atlas.zip,
+#                        only used in full mode)
+#   MINIO_ENDPOINT     — http://minio.minio.svc.cluster.local:9000
+#                        (for baseline-detect HEAD)
 #   TENANT_ID/REGION/MAJOR_VERSION/MINOR_VERSION — required for tenant headers
 
 set -euo pipefail
@@ -17,6 +24,8 @@ set -e
 
 require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 WZ_CANONICAL="${WZ_CANONICAL:-/opt/wz/atlas.zip}"
+BOOTSTRAP_MODE="${BOOTSTRAP_MODE:-auto}"
+MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio.minio.svc.cluster.local:9000}"
 
 # Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
 # tenant-aware endpoints route through (ParseTenant) requires the
@@ -50,24 +59,23 @@ get_attr() {
         "$1" | jq -r ".data.attributes.$2"
 }
 
-# Polling helpers — return 0 when the target endpoint has *stopped*
+# Polling helper — returns 0 when /api/data/status has *stopped*
 # reporting fresh writes, 1 otherwise. Designed for use with retry().
 #
 # Earlier version returned success as soon as the counter went non-zero
-# — i.e. on the *first* extracted file / written document. That race
-# let the next bootstrap step start while extraction/processing was
-# still streaming. atlas-data workers (MAP, MONSTER, the CHARACTER /
-# EQUIPMENT worker) open WZ XML files in their `Init*` calls and bail
-# with `return err` on ENOENT, so any worker whose XML had not yet been
-# extracted wrote ZERO documents. On 2026-05-16 the cold-start of PR
-# #461's env reproduced this exactly: atlas-data started MAP at
-# 12:09:37.209, hit ENOENT on Map.img.xml at 12:09:37.242, and the
-# extractor wrote that file 168 ms later at 12:09:37.410. Net loss:
-# 5,261 MAP + 1,568 MONSTER + 4,334 EQUIPMENT = 11,163 documents
-# (~23 % deficit vs. atlas-main on the same tenant).
+# — i.e. on the *first* written document. That race let the next
+# bootstrap step start while processing was still streaming. atlas-data
+# workers (MAP, MONSTER, the CHARACTER / EQUIPMENT worker) open WZ XML
+# files in their `Init*` calls and bail with `return err` on ENOENT, so
+# any worker whose XML had not yet been extracted wrote ZERO documents.
+# On 2026-05-16 the cold-start of PR #461's env reproduced this exactly:
+# atlas-data started MAP at 12:09:37.209, hit ENOENT on Map.img.xml at
+# 12:09:37.242, and the extractor wrote that file 168 ms later at
+# 12:09:37.410. Net loss: 5,261 MAP + 1,568 MONSTER + 4,334 EQUIPMENT
+# = 11,163 documents (~23 % deficit vs. atlas-main on the same tenant).
 #
-# Fix: detect actual *completion*, not first progress. Both endpoints
-# expose `updatedAt` = MAX(updated_at) across underlying rows — it
+# Fix: detect actual *completion*, not first progress. /api/data/status
+# exposes `updatedAt` = MAX(updated_at) across underlying rows — it
 # advances on every write and stops advancing when writes stop. Require
 # the counter to be non-zero AND `updatedAt` to be unchanged for
 # STABLE_REQUIRED consecutive polls before declaring done. With the
@@ -79,31 +87,14 @@ get_attr() {
 #
 # State lives in globals — retry() invokes the helper in the current
 # shell (not a subshell), so updates accumulate across calls.
+#
+# Note: as of task-071 the WZ-extraction step is gone — atlas-data's
+# /api/data/process call invokes WZ ingest directly. Only the
+# data_processing stability check remains.
 
-EXTRACTION_LAST_UPDATED=""
-EXTRACTION_STABLE_COUNT=0
 DATA_PROCESSING_LAST_UPDATED=""
 DATA_PROCESSING_STABLE_COUNT=0
 STABLE_REQUIRED=3
-
-extraction_done() {
-    local count updated
-    count=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" fileCount)
-    updated=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" updatedAt)
-    if [ -z "$count" ] || [ "$count" = "0" ] || [ "$count" = "null" ]; then
-        return 1
-    fi
-    if [ -z "$updated" ] || [ "$updated" = "null" ]; then
-        return 1
-    fi
-    if [ "$updated" = "$EXTRACTION_LAST_UPDATED" ]; then
-        EXTRACTION_STABLE_COUNT=$((EXTRACTION_STABLE_COUNT + 1))
-    else
-        EXTRACTION_LAST_UPDATED="$updated"
-        EXTRACTION_STABLE_COUNT=1
-    fi
-    [ "$EXTRACTION_STABLE_COUNT" -ge "$STABLE_REQUIRED" ]
-}
 
 data_processing_done() {
     local count updated
@@ -124,12 +115,52 @@ data_processing_done() {
     [ "$DATA_PROCESSING_STABLE_COUNT" -ge "$STABLE_REQUIRED" ]
 }
 
-ATLAS_STEP=wait-ready log info "waiting for atlas-tenants, atlas-configurations, atlas-data, atlas-wz-extractor"
+# Probe whether a canonical baseline exists for (region, major.minor).
+# Returns 0 = present, 1 = absent. Reads MinIO directly via anonymous
+# HEAD — the bucket is anonymous-read by `atlas-minio-init`, so no
+# credentials are required.
+canonical_baseline_exists() {
+    local sha_url="$MINIO_ENDPOINT/atlas-canonical/baseline/regions/$REGION/versions/$MAJOR_VERSION.$MINOR_VERSION/documents.dump.sha256"
+    local code
+    code=$(curl -sS -o /dev/null -w '%{http_code}' -I "$sha_url" 2>/dev/null || echo 000)
+    [ "$code" = "200" ]
+}
+
+# Resolve BOOTSTRAP_MODE=auto → baseline|full by probing MinIO; echo the
+# chosen mode (and log a WARN on fallback). For explicit modes, just
+# echo the value back after validation.
+resolve_mode() {
+    case "$BOOTSTRAP_MODE" in
+        baseline|full)
+            echo "$BOOTSTRAP_MODE"
+            ;;
+        auto)
+            if canonical_baseline_exists; then
+                echo baseline
+            else
+                log warn "no canonical baseline at $MINIO_ENDPOINT/atlas-canonical/baseline/regions/$REGION/versions/$MAJOR_VERSION.$MINOR_VERSION/; falling back to full"
+                echo full
+            fi
+            ;;
+        *)
+            log error "BOOTSTRAP_MODE='$BOOTSTRAP_MODE' invalid; expected auto|baseline|full"
+            exit 1
+            ;;
+    esac
+}
+
+# wait-ready: poll the ingress-fronted endpoints we'll actually call
+# during bootstrap. atlas-renders is included as a rollout-status check
+# because its /healthz isn't surfaced through atlas-ingress and its
+# render routes require a fully-set-up tenant + asset path to probe
+# meaningfully.
+ATLAS_STEP=wait-ready log info "waiting for atlas-tenants, atlas-configurations, atlas-data, atlas-renders"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/tenants"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/configurations/services"
 retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/data/status"
-retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/wz/input"
-retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/wz/extractions"
+retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/data/wz"
+kubectl rollout status deployment/atlas-renders --timeout=180s 2>/dev/null \
+    || log warn "atlas-renders rollout status check failed; continuing"
 
 # Tenant: POST canonical payload, capture the assigned id, override
 # downstream TENANT_ID for all subsequent calls. The atlas-tenants pitfall
@@ -320,38 +351,53 @@ for d in atlas-login atlas-channel atlas-drops atlas-character-factory atlas-wor
     kubectl rollout status deployment/"$d" --timeout=180s 2>/dev/null || log warn "$d not ready"
 done
 
-# WZ upload: PATCH /api/wz/input
-ATLAS_STEP=wz-upload
-files=$(get_attr "$ATLAS_UI_BASE/api/wz/input" fileCount)
-if [ "$files" = "0" ] || [ "$files" = "null" ]; then
-    log info "uploading canonical WZ zip"
-    curl -fsS -X PATCH \
-        -H "TENANT_ID: $TENANT_ID" \
-        -H "REGION: $REGION" \
-        -H "MAJOR_VERSION: $MAJOR_VERSION" \
-        -H "MINOR_VERSION: $MINOR_VERSION" \
-        -F "zip_file=@$WZ_CANONICAL" \
-        "$ATLAS_UI_BASE/api/wz/input"
-else
-    log info "WZ already uploaded (fileCount=$files), skipping"
-fi
+# Data ingest: branch on resolved BOOTSTRAP_MODE.
+#   baseline → POST /api/data/baseline/restore (fast, ~60s).
+#   full     → PATCH /api/data/wz upload + POST /api/data/process
+#              (~10min; ingest now runs inside atlas-data, no separate
+#              WZ-extraction step).
+ATLAS_STEP=data-ingest
+mode=$(resolve_mode)
+log info "bootstrap mode: $mode"
 
-# WZ extraction
-ATLAS_STEP=wz-extract
-extracted=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" fileCount)
-if [ "$extracted" = "0" ] || [ "$extracted" = "null" ]; then
-    log info "running WZ extraction"
-    post "$ATLAS_UI_BASE/api/wz/extractions"
-    retry 240 10 extraction_done
-fi
-
-# Data processing
-ATLAS_STEP=data-process
 docs=$(get_attr "$ATLAS_UI_BASE/api/data/status" documentCount)
 if [ "$docs" = "0" ] || [ "$docs" = "null" ]; then
-    log info "running data processing"
-    post "$ATLAS_UI_BASE/api/data/process"
-    retry 240 10 data_processing_done
+    case "$mode" in
+        baseline)
+            log info "restoring canonical baseline → POST /api/data/baseline/restore"
+            restore_body=$(jq -cn \
+                --arg r "$REGION" \
+                --arg M "$MAJOR_VERSION" \
+                --arg m "$MINOR_VERSION" \
+                --arg t "$TENANT_ID" \
+                '{data:{type:"baselineRestores",attributes:{region:$r,majorVersion:($M|tonumber),minorVersion:($m|tonumber),tenantId:$t}}}')
+            curl -fsS -X POST \
+                -H "TENANT_ID: $TENANT_ID" \
+                -H "REGION: $REGION" \
+                -H "MAJOR_VERSION: $MAJOR_VERSION" \
+                -H "MINOR_VERSION: $MINOR_VERSION" \
+                -H "X-Atlas-Operator: 1" \
+                -H "Content-Type: application/vnd.api+json" \
+                -d "$restore_body" \
+                "$ATLAS_UI_BASE/api/data/baseline/restore" >/dev/null
+            retry 60 5 data_processing_done
+            ;;
+        full)
+            log info "uploading canonical WZ zip → PATCH /api/data/wz"
+            curl -fsS -X PATCH \
+                -H "TENANT_ID: $TENANT_ID" \
+                -H "REGION: $REGION" \
+                -H "MAJOR_VERSION: $MAJOR_VERSION" \
+                -H "MINOR_VERSION: $MINOR_VERSION" \
+                -F "zip_file=@$WZ_CANONICAL" \
+                "$ATLAS_UI_BASE/api/data/wz" >/dev/null
+            log info "running data processing → POST /api/data/process"
+            post "$ATLAS_UI_BASE/api/data/process"
+            retry 240 10 data_processing_done
+            ;;
+    esac
+else
+    log info "data already processed (documentCount=$docs); skipping ingest"
 fi
 
 # Per-domain seeds, in parallel

@@ -23,11 +23,11 @@ variable "ATLAS_IMAGE_TAG" {
 }
 
 variable "GO_VERSION" {
-  default = "1.25.5"
+  default = "1.26.0"
 }
 
 variable "ALPINE_VERSION" {
-  default = "3.21"
+  default = "3.23"
 }
 
 # Mirror of .github/config/services.json .services[] | select(.type=="go-service") | .name.

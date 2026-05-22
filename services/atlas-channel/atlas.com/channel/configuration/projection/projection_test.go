@@ -178,3 +178,26 @@ func TestCaughtUp_ReadyChecker(t *testing.T) {
 	c.SetEndOffsets("T", map[int]int64{})
 	require.True(t, fn())
 }
+
+// Regression: a partition with end-offset 1 (one pending record) must NOT
+// be considered caught up until offset 0 has been observed. Previously
+// the default int64 zero returned by `got[p]` for a never-observed
+// partition satisfied the `>= end-1` check, marking the gate caught up
+// before the record was consumed.
+func TestCaughtUp_EndOffsetOneRequiresObservation(t *testing.T) {
+	c := projection.NewCaughtUp()
+	c.SetEndOffsets("T", map[int]int64{0: 1})
+	require.False(t, c.CaughtUpNow(), "end=1 with no observation must not count as caught up")
+
+	c.Observe("T", 0, 0)
+	require.True(t, c.CaughtUpNow(), "end=1 with offset 0 observed must count as caught up")
+}
+
+// Regression: a partition with end-offset 0 (empty partition) is
+// trivially caught up — the empty-topic semantics must extend to
+// single-partition empties returned by Kafka.
+func TestCaughtUp_EmptyPartitionTriviallyCaughtUp(t *testing.T) {
+	c := projection.NewCaughtUp()
+	c.SetEndOffsets("T", map[int]int64{0: 0})
+	require.True(t, c.CaughtUpNow(), "end=0 must count as already caught up")
+}

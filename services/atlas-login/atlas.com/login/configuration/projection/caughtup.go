@@ -96,9 +96,19 @@ func (c *CaughtUp) evaluateLocked() {
 	for topic, ends := range c.snapshots {
 		got := c.consumed[topic]
 		for p, end := range ends {
-			// "caught up" means we've consumed past end-1 (offsets are
-			// 0-indexed; end is the high-water mark).
-			if got[p] < end-1 {
+			// end == 0 means the partition is empty (Kafka end-offset is
+			// the next-to-be-written offset); trivially caught up.
+			if end == 0 {
+				continue
+			}
+			// "caught up" means we've consumed up to end-1 (offsets are
+			// 0-indexed; end is the high-water mark). Distinguish "never
+			// observed" from "observed offset 0" — a default int64 zero
+			// from a missing map key would otherwise satisfy `got[p] >=
+			// end-1` when end == 1, marking us caught up before any
+			// record was actually consumed.
+			observed, present := got[p]
+			if !present || observed < end-1 {
 				return
 			}
 		}

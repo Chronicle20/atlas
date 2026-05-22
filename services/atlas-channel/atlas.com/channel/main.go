@@ -208,11 +208,21 @@ func main() {
 	// from a half-loaded state, then run the apply loop in a goroutine.
 	state := projection.NewState()
 	caughtUp := projection.NewCaughtUp()
+	serviceTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS")
+	tenantTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS")
+	if serviceTopic == "" && tenantTopic == "" {
+		// Both topic env vars unset means the projection silently
+		// subscribes to nothing — the caught-up gate then trivially
+		// flips (empty snapshots) and the apply loop never gets any
+		// events. Surface the misconfiguration here rather than letting
+		// startup look successful while live config updates do nothing.
+		l.Warn("projection: neither EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS nor EVENT_TOPIC_CONFIGURATION_TENANT_STATUS is set; service/tenant config updates will not propagate live")
+	}
 	sub := &projection.Subscriber{
 		State:        state,
 		CaughtUp:     caughtUp,
-		ServiceTopic: os.Getenv("EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"),
-		TenantTopic:  os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"),
+		ServiceTopic: serviceTopic,
+		TenantTopic:  tenantTopic,
 		ServiceId:    serviceId,
 	}
 	if err := sub.Start(tdm.Context(), l, consumerGroupId); err != nil {

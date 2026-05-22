@@ -147,7 +147,7 @@ func main() {
 	}
 
 	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
-	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, serviceId.String()))
+	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

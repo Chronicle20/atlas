@@ -162,11 +162,20 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeMagicShield)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMagicResist)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeSoulStone)(NoOpForeignValueWriter, NoOpForeignValueReader)
-	if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+	// v87+ GMS and JMS have the first 4 stats of the post-SoulStone block.
+	// Verified for v87 against the client SecondaryStat::Reset disassembly
+	// (86 UINT128 mask groups covering Atlas bits 0..85 — see
+	// https://github.com/Chronicle20/gms-83-dll docs/tasks/cwvscontext-port/v87_secondarystat_reset_mapping.md).
+	if (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS" {
 		newAndIncNonDiseased(character.TemporaryStatTypeFlying)(NoOpForeignValueWriter, NoOpForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeMirrorImage)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	}
+	// v95+ GMS and JMS have the remaining 24 stats (SuddenDeath through Unknown).
+	// v87 lacks these (CTS_SuddenDeath etc. absent from the v87 client; including them
+	// on a v87 tenant shifts the bitmask wire layout by 24 bits and breaks GIVE_BUFF).
+	if (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS" {
 		newAndIncNonDiseased(character.TemporaryStatTypeSuddenDeath)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeNotDamaged)(NoOpForeignValueWriter, NoOpForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeFinalCut)(ValueAsIntForeignValueWriter, IntForeignValueReader)

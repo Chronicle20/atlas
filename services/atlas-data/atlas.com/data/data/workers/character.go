@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas/pngenc"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/charparts"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
@@ -96,6 +97,41 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// over helmets. The warning logged below makes that consequence visible.
 	if err := emitSmapSidecar(ctx, l, mc, p); err != nil {
 		l.WithError(err).Warn("smap sidecar emit failed; vslot-based occlusion will be disabled in atlas-renders")
+	}
+
+	// Equipment icons. Character.wz holds equipment under subdirectories
+	// (Cap, Coat, Pants, Glove, Shield, Shoes, Weapon, Cape, Accessory,
+	// Ring, Pendant, Longcoat, Belt, Shoulder, Taming, …). Each per-id .img
+	// has info/icon at the root. Item.wz uses the same UI path
+	// /api/assets/.../item/<id>/icon.png; equipment IDs (1XXXXXX) don't
+	// collide with Item.wz items (2XXXXXX–5XXXXXX), so we write into the
+	// same prefix. Non-equipment subdirs (Body/Head/Face/Hair/Afterimage)
+	// have no info/icon and ExtractItemIcon returns ErrNotFound for them;
+	// the scanned/extracted counter split makes the difference observable.
+	{
+		prefix := minioAssetPrefix(p)
+		var scanned, extracted, uploaded int
+		for _, sub := range file.Root().Directories() {
+			for _, img := range sub.Images() {
+				id, ok := imgID(img.Name())
+				if !ok {
+					continue
+				}
+				scanned++
+				icon, err := icons.ExtractItemIcon(file, id)
+				if err != nil || icon == nil {
+					continue
+				}
+				extracted++
+				key := fmt.Sprintf("%s/item/%d/icon.png", prefix, id)
+				if err := putPNG(ctx, mc, key, icon); err != nil {
+					l.WithError(err).Warnf("upload equipment icon %d", id)
+					continue
+				}
+				uploaded++
+			}
+		}
+		l.Infof("equipment icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	}
 	return nil
 }

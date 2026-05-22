@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"atlas-data/canonical"
 	"atlas-data/data/wztoxml"
@@ -132,15 +133,57 @@ func fetchArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p
 	return f, cleanup, nil
 }
 
+// archiveSerialization memoizes one cross-archive fetch+serialize per archive
+// name. Multiple workers (Mob/Npc/Skill/Map/Character) need to read the SAME
+// String.wz, Etc.wz, or UI.wz, and each calling fetchAndSerializeArchive
+// independently races on:
+//
+//	1. The shared download path $scratch/<archive> — os.Create truncates and
+//	   defer os.Remove leaves a window where peers see a missing file
+//	   (observed: Skill worker logged "String.wz unavailable" on PR-544).
+//	2. The XML output dir $scratch/xml/<region>/<ver>/<archive>/*.img.xml —
+//	   wztoxml.SerializeToDirectory calls os.Create on every file; concurrent
+//	   re-serializations briefly truncate, and a reader that happens to grab
+//	   the file during that window parses an empty <imgdir/> with zero
+//	   ChildNodes. Silent: no error returned, the consuming InitString just
+//	   adds nothing to its registry, and downstream document Name fields stay
+//	   blank. PR-544 evidence: all 1568 MONSTER + 1620 NPC docs had name=''.
+//
+// The map is keyed by archive name only because Params (ScopeKey/Region/
+// Version) are constant for the lifetime of one ingest job. sync.Once
+// provides the happens-before relationship for archiveResult.root/err.
+type archiveResult struct {
+	once sync.Once
+	root string
+	err  error
+}
+
+var archiveCache sync.Map // archive name -> *archiveResult
+
 // fetchAndSerializeArchive downloads <BucketWZ>/<scope>/regions/<region>/versions/<x.y>/<archive>
 // from MinIO into ScratchDir, opens it as a wz.File, and serializes it next to
 // the current worker's other archives so domain readers can resolve
 // cross-archive references (e.g. String.wz Eqp.img while the worker is on
 // Character.wz). Returns the rootDir(p) shared layout root.
+//
+// Per-archive memoized: only the first caller for a given archive name does
+// the work; later callers wait via sync.Once and read the cached result.
 func fetchAndSerializeArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (string, error) {
 	if mc == nil {
 		return "", fmt.Errorf("minio client unavailable")
 	}
+	v, _ := archiveCache.LoadOrStore(archive, &archiveResult{})
+	r := v.(*archiveResult)
+	r.once.Do(func() {
+		r.root, r.err = fetchAndSerializeArchiveOnce(ctx, l, mc, p, archive)
+	})
+	return r.root, r.err
+}
+
+// fetchAndSerializeArchiveOnce is the actual fetch+serialize. Always called
+// at most once per (archive, ingest-process) by fetchAndSerializeArchive's
+// sync.Once gate.
+func fetchAndSerializeArchiveOnce(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (string, error) {
 	key := fmt.Sprintf("%s/regions/%s/versions/%d.%d/%s", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion, archive)
 	localPath, err := mc.DownloadToScratch(ctx, mc.Cfg().BucketWZ, key, p.ScratchDir)
 	if err != nil {

@@ -44,3 +44,15 @@ commonLabels:
   atlas.env: "PLACEHOLDER_ATLAS_ENV"
   atlas.pr-number: "PLACEHOLDER_PR_NUMBER"
   app: atlas-pr-cleanup
+
+# Image bump for the cleanup Job. The pr/ overlay's images: block is
+# rewritten at PR-resolve time by pr-validation.yml's "Bump image tags"
+# step (see .github/workflows/pr-validation.yml). That step rewrites
+# this overlay's images block too, so a PR that rebuilds the
+# atlas-pr-bootstrap image gets that image used by its own teardown
+# Job — without this, the cleanup Job pulled `:latest` (main branch's
+# build) and any cleanup-script change on a PR couldn't be validated
+# by the PR's own teardown cycle (task-077 cycle 2 failure mode).
+images:
+  - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
+    newTag: latest

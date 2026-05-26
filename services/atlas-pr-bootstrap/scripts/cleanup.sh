@@ -95,7 +95,21 @@ do_drop_groups() {
     local matched
     matched=$(printf '%s\n' "$groups" | { grep -E -- "\\[${ATLAS_ENV}\\]\$" || true; })
     [ -z "$matched" ] && return 0
-    printf '%s\n' "$matched" | xargs -r -d '\n' -n 1 rpk group delete -X brokers="$BOOTSTRAP_SERVERS"
+    # Group names contain spaces (e.g. `Channel Service - 7e3a-0a1b [a1b2]`).
+    # Can't use `xargs -n 1` because BusyBox xargs splits on whitespace and
+    # would chop the name; the GNU-only `-d '\n'` workaround isn't available
+    # because the bootstrap image's alpine base ships only BusyBox xargs
+    # (verified via "xargs: unrecognized option: d"). while-read preserves
+    # the line intact. Mirrors sweep-orphans.sh::sweep_kafka.
+    local rc=0
+    while IFS= read -r g; do
+        [ -z "$g" ] && continue
+        if ! rpk group delete -X brokers="$BOOTSTRAP_SERVERS" "$g"; then
+            ATLAS_STEP=drop-groups log warn "delete group failed: $g"
+            rc=1
+        fi
+    done <<<"$matched"
+    return $rc
 }
 
 do_drop_redis() {

@@ -66,6 +66,15 @@ for n in "${PR_NUMBERS[@]}"; do
     fi
 done
 
+# gh CLI requires its own credentials even when an explicit `-H
+# "Authorization: Bearer …"` header is passed on the request — without
+# GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
+# non-zero. Mirror cleanup.sh: export GH_TOKEN once so every gh
+# invocation in sweep_ghcr / sweep_branch is authenticated.
+if [ -n "${GHCR_TOKEN:-}" ]; then
+    export GH_TOKEN="$GHCR_TOKEN"
+fi
+
 sweep_pr() {
     local pr_number="$1"
     local env_hash
@@ -143,8 +152,8 @@ sweep_kafka() {
 
     ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log info "scanning Kafka consumer groups"
     local groups
-    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
-        | jq -r "$RPK_GROUPS_JQ" \
+    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" \
+        | rpk_group_names_awk \
         | { grep -E -- "\\[${env_hash}\\]\$" || true; })
     while IFS= read -r g; do
         [ -z "$g" ] && continue

@@ -37,6 +37,16 @@ ATLAS_ENV="$(compute_atlas_env "$PR_NUMBER")"
 export ATLAS_ENV
 ATLAS_STEP=init log info "derived ATLAS_ENV=${ATLAS_ENV} for PR ${PR_NUMBER}"
 
+# gh CLI requires its own credentials even when an explicit `-H
+# "Authorization: Bearer …"` header is passed on the request — without
+# GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
+# non-zero, which historically broke drop-branch silently and masked
+# leaks in drop-images (which `2>&1 ||`'d the same error). Export here
+# once so every gh invocation downstream is authenticated.
+if [ -n "${GHCR_TOKEN:-}" ]; then
+    export GH_TOKEN="$GHCR_TOKEN"
+fi
+
 # ----------------------------------------------------------------------------
 # Phase functions. Each returns 0 on success, non-zero on failure;
 # run_phase (lib.sh) records the phase name once on non-zero. Detail

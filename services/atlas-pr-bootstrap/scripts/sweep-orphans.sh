@@ -66,6 +66,15 @@ for n in "${PR_NUMBERS[@]}"; do
     fi
 done
 
+# gh CLI requires its own credentials even when an explicit `-H
+# "Authorization: Bearer …"` header is passed on the request — without
+# GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
+# non-zero. Mirror cleanup.sh: export GH_TOKEN once so every gh
+# invocation in sweep_ghcr / sweep_branch is authenticated.
+if [ -n "${GHCR_TOKEN:-}" ]; then
+    export GH_TOKEN="$GHCR_TOKEN"
+fi
+
 sweep_pr() {
     local pr_number="$1"
     local env_hash

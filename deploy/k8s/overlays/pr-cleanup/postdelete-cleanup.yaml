@@ -21,7 +21,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: atlas-pr-cleanup
+  # Name is per-PR (suffixed with the PR number) so a Failed cleanup
+  # from one PR doesn't head-of-line block every subsequent PostDelete.
+  # Until task-077 the name was a literal `atlas-pr-cleanup` for every
+  # PR; combined with `hook-delete-policy: HookSucceeded` (a Failed Job
+  # stays put) this caused Argo to refuse the next PR's hook with
+  # `SharedResourceWarning: Job/atlas-pr-cleanup is part of applications
+  # argocd/atlas-pr-<this> and atlas-pr-<that>`.
+  name: atlas-pr-cleanup-PLACEHOLDER_PR_NUMBER
   # Long-lived namespace. Until task-070, this Job ran in atlas-pr-<N> —
   # the same namespace Argo CD's resources-finalizer prunes during
   # Application deletion. The PostDelete hook fires AFTER prune, so by

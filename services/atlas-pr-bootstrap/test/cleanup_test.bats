@@ -13,22 +13,23 @@ setup() {
 #
 # Args (optional, in order):
 #   $1 — topic_list_json (default: rpk-topic-list.json fixture)
-#   $2 — group_list_json (default: rpk-group-list.json fixture)
+#   $2 — group_list_table (default: rpk-group-list.txt fixture; raw table
+#        as emitted by `rpk group list` — no --format in rpk 24.3.1)
 make_stubs() {
     local topic_json
-    local group_json
+    local group_table
     if [ "${1+set}" = set ]; then
         topic_json="$1"
     else
         topic_json="$(cat "$PROJECT_ROOT/test/fixtures/rpk-topic-list.json")"
     fi
     if [ "${2+set}" = set ]; then
-        group_json="$2"
+        group_table="$2"
     else
-        group_json="$(cat "$PROJECT_ROOT/test/fixtures/rpk-group-list.json")"
+        group_table="$(cat "$PROJECT_ROOT/test/fixtures/rpk-group-list.txt")"
     fi
     printf '%s\n' "$topic_json" > "$BATS_TEST_TMPDIR/topic_list.json"
-    printf '%s\n' "$group_json" > "$BATS_TEST_TMPDIR/group_list.json"
+    printf '%s\n' "$group_table" > "$BATS_TEST_TMPDIR/group_list.txt"
 
     cat > "$STUB_BIN/rpk" <<'EOF'
 #!/usr/bin/env bash
@@ -36,7 +37,7 @@ echo "rpk $*" >> "$STUB_LOG"
 if [ "$1" = "topic" ] && [ "$2" = "list" ]; then
     cat "$BATS_TEST_TMPDIR/topic_list.json"
 elif [ "$1" = "group" ] && [ "$2" = "list" ]; then
-    cat "$BATS_TEST_TMPDIR/group_list.json"
+    cat "$BATS_TEST_TMPDIR/group_list.txt"
 fi
 exit 0
 EOF
@@ -172,7 +173,7 @@ fixture_env() {
     env_hash="$(fixture_env)"
     local groups
     groups=$(sed "s/a1b2/${env_hash}/g" \
-        "$PROJECT_ROOT/test/fixtures/rpk-group-list.json")
+        "$PROJECT_ROOT/test/fixtures/rpk-group-list.txt")
     make_stubs '[]' "$groups"
     run run_cleanup
     [ "$status" -eq 0 ]

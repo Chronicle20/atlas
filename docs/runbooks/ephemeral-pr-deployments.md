@@ -216,6 +216,8 @@ Loki query for env-scoped logs (`atlas.env=<token>`):
 
 **Contract:** PR close (or `deploy-env` label removal) ⇒ Argo CD deletes the Application immediately ⇒ the PostDelete Job in `argocd` namespace runs `cleanup.sh` ⇒ all per-env state (DBs, topics, groups, Redis keys, ghcr tags, bot branch) is reclaimed within ~10 minutes.
 
+The PostDelete Job is named `atlas-pr-cleanup-<N>` in the `argocd` namespace (per-PR suffix as of task-077). Pre-task-077 the Job was a literal `atlas-pr-cleanup` for every PR — combined with `hook-delete-policy: HookSucceeded` (a Failed Job is never garbage-collected) this caused cross-PR head-of-line blocking: one PR's Failed cleanup would wedge every subsequent PR's teardown with `SharedResourceWarning: Job/atlas-pr-cleanup is part of applications argocd/atlas-pr-<X> and atlas-pr-<Y>`. Look up Jobs by label rather than by name (`kubectl -n argocd get jobs -l app=atlas-pr-cleanup,atlas.pr-number=<N>`) so existing recipes survive future renames.
+
 If something in that chain fails, the Application sits in `Terminating` with finalizers `post-delete-finalizer.argocd.argoproj.io/cleanup` and `resources-finalizer.argocd.argoproj.io` still present. Per-env state may be partially reclaimed.
 
 ### Diagnose

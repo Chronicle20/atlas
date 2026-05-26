@@ -121,6 +121,16 @@ runs:
           echo ".github changed - will trigger all builds"
         fi
 
+        # The shared Dockerfile and docker-bake.hcl live at repo root, not
+        # under any services/<svc>/ path, so the per-service detector below
+        # misses them. A change to either affects every Docker image — treat
+        # it as a workflow-level change so cideps lights up --force-all and
+        # update-pr-overlay re-tags every service.
+        if echo "$CHANGED_FILES" | grep -qE "^(Dockerfile|docker-bake\.hcl)$"; then
+          HAS_WORKFLOW_CHANGES="true"
+          echo "shared Dockerfile/docker-bake.hcl changed - will trigger all builds"
+        fi
+
         # Detect changed services
         while IFS= read -r file; do
           if [[ "$file" =~ ^services/([^/]+)/ ]]; then

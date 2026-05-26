@@ -48,8 +48,11 @@ COPY libs/atlas-tenant/go.mod      libs/atlas-tenant/go.sum      libs/atlas-tena
 COPY libs/atlas-tracing/go.mod     libs/atlas-tracing/go.sum     libs/atlas-tracing/
 COPY libs/atlas-wz/go.mod          libs/atlas-wz/go.sum          libs/atlas-wz/
 
-# Layer: this service's tree (per-target; brings in its go.mod and source).
-COPY services/${SERVICE}/atlas.com/ services/${SERVICE}/atlas.com/
+# Layer: this service's tree (per-target; brings in its go.mod, source, and
+# any auxiliary files like seed-data/. Widened from atlas.com/ alone so
+# services that ship runtime data (e.g. atlas-configurations seed templates)
+# don't need a per-service Dockerfile branch.
+COPY services/${SERVICE}/ services/${SERVICE}/
 
 # Layer: all 17 atlas libs' source trees (shared across every target; invalidates
 # when any lib source changes — same invalidation profile as today).
@@ -111,6 +114,29 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1) \
          : > /app/config.yaml; \
        fi
 
+# Stash this service's auxiliary runtime data dirs at stable build-env paths
+# so the runtime stage can COPY unconditionally. Pre-task-074 each affected
+# service had its own Dockerfile that COPYed these dirs into the runtime
+# image; the shared Dockerfile must reproduce that. Mapping:
+#   seed-data      → /seed-data      (atlas-configurations)
+#   drops          → /drops          (atlas-drop-information)
+#   data           → /gachapons/data (atlas-gachapons)
+#   scripts        → /scripts        (atlas-map-actions, atlas-portal-actions, atlas-reactor-actions)
+#   conversations  → /conversations  (atlas-npc-conversations)
+#   shops          → /shops          (atlas-npc-shops)
+#   party-quests   → /party-quests   (atlas-party-quests)
+#   configurations → /configurations (atlas-tenants)
+# Services without a given dir get an empty placeholder so the runtime COPY
+# has a stable source path; the loader code treats empty dirs as no-ops.
+RUN set -e; \
+    for src in seed-data drops data scripts conversations shops party-quests configurations; do \
+      if [ -d "services/${SERVICE}/${src}" ]; then \
+        cp -r "services/${SERVICE}/${src}" "/app/${src}"; \
+      else \
+        mkdir -p "/app/${src}"; \
+      fi; \
+    done
+
 FROM alpine:3.23
 
 EXPOSE 8080
@@ -121,5 +147,13 @@ WORKDIR /
 
 COPY --from=build-env /server /
 COPY --from=build-env /app/config.yaml /
+COPY --from=build-env /app/seed-data      /seed-data
+COPY --from=build-env /app/drops          /drops
+COPY --from=build-env /app/data           /gachapons/data
+COPY --from=build-env /app/scripts        /scripts
+COPY --from=build-env /app/conversations  /conversations
+COPY --from=build-env /app/shops          /shops
+COPY --from=build-env /app/party-quests   /party-quests
+COPY --from=build-env /app/configurations /configurations
 
 CMD ["/server"]

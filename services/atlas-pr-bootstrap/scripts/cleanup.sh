@@ -37,6 +37,16 @@ ATLAS_ENV="$(compute_atlas_env "$PR_NUMBER")"
 export ATLAS_ENV
 ATLAS_STEP=init log info "derived ATLAS_ENV=${ATLAS_ENV} for PR ${PR_NUMBER}"
 
+# gh CLI requires its own credentials even when an explicit `-H
+# "Authorization: Bearer …"` header is passed on the request — without
+# GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
+# non-zero, which historically broke drop-branch silently and masked
+# leaks in drop-images (which `2>&1 ||`'d the same error). Export here
+# once so every gh invocation downstream is authenticated.
+if [ -n "${GHCR_TOKEN:-}" ]; then
+    export GH_TOKEN="$GHCR_TOKEN"
+fi
+
 # ----------------------------------------------------------------------------
 # Phase functions. Each returns 0 on success, non-zero on failure;
 # run_phase (lib.sh) records the phase name once on non-zero. Detail
@@ -80,12 +90,26 @@ do_drop_topics() {
 do_drop_groups() {
     ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
     local groups
-    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
-        | jq -r "$RPK_GROUPS_JQ") || return 1
+    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" \
+        | rpk_group_names_awk) || return 1
     local matched
     matched=$(printf '%s\n' "$groups" | { grep -E -- "\\[${ATLAS_ENV}\\]\$" || true; })
     [ -z "$matched" ] && return 0
-    printf '%s\n' "$matched" | xargs -r -d '\n' -n 1 rpk group delete -X brokers="$BOOTSTRAP_SERVERS"
+    # Group names contain spaces (e.g. `Channel Service - 7e3a-0a1b [a1b2]`).
+    # Can't use `xargs -n 1` because BusyBox xargs splits on whitespace and
+    # would chop the name; the GNU-only `-d '\n'` workaround isn't available
+    # because the bootstrap image's alpine base ships only BusyBox xargs
+    # (verified via "xargs: unrecognized option: d"). while-read preserves
+    # the line intact. Mirrors sweep-orphans.sh::sweep_kafka.
+    local rc=0
+    while IFS= read -r g; do
+        [ -z "$g" ] && continue
+        if ! rpk group delete -X brokers="$BOOTSTRAP_SERVERS" "$g"; then
+            ATLAS_STEP=drop-groups log warn "delete group failed: $g"
+            rc=1
+        fi
+    done <<<"$matched"
+    return $rc
 }
 
 do_drop_redis() {

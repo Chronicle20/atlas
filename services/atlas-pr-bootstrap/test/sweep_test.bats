@@ -51,7 +51,9 @@ case "$1 $2" in
         echo '[{"name":"atlas-faketopic-ed86","partitions":1,"replicas":1}]'
         ;;
     "group list")
-        echo '[{"name":"Fake Group [ed86]","members":0}]'
+        # rpk 24.3.1 `group list` has no --format flag; emit the raw
+        # table that lib.sh's rpk_group_names_awk parses.
+        printf 'BROKER  GROUP             STATE\n1       Fake Group [ed86]  Stable\n'
         ;;
     "topic delete"|"group delete")
         echo "FAIL: delete invoked in list mode" >&2; exit 1 ;;
@@ -101,7 +103,10 @@ EOF
 printf '%s\n' "rpk \$*" >> "$CALL_LOG"
 case "\$1 \$2" in
     "topic list") echo '[]' ;;
-    "group list") echo '[{"name":"Party Quest Service [ed86]","members":0}]' ;;
+    "group list")
+        # rpk 24.3.1 `group list` table — no --format flag.
+        printf 'BROKER  GROUP                       STATE\n1       Party Quest Service [ed86]  Stable\n'
+        ;;
 esac
 exit 0
 EOF

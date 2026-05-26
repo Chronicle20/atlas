@@ -143,8 +143,8 @@ sweep_kafka() {
 
     ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log info "scanning Kafka consumer groups"
     local groups
-    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
-        | jq -r "$RPK_GROUPS_JQ" \
+    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" \
+        | rpk_group_names_awk \
         | { grep -E -- "\\[${env_hash}\\]\$" || true; })
     while IFS= read -r g; do
         [ -z "$g" ] && continue

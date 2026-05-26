@@ -80,8 +80,8 @@ do_drop_topics() {
 do_drop_groups() {
     ATLAS_STEP=drop-groups log info "deleting per-env consumer groups"
     local groups
-    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" --format json \
-        | jq -r "$RPK_GROUPS_JQ") || return 1
+    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" \
+        | rpk_group_names_awk) || return 1
     local matched
     matched=$(printf '%s\n' "$groups" | { grep -E -- "\\[${ATLAS_ENV}\\]\$" || true; })
     [ -z "$matched" ] && return 0

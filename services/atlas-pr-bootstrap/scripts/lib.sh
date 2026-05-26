@@ -138,17 +138,35 @@ summarize_phases() {
 }
 
 # ----------------------------------------------------------------------------
-# rpk JSON-output schema constants. See test/fixtures/rpk-*.json.
+# rpk output-shape constants.
 #
-# rpk 24.3.1 emits a flat array for both topic list and group list:
-#   [{"name":"…","partitions":…}, …]
-# The pre-fix queries (.topics[].name / .groups[].name) assumed an
-# object wrapping the array and failed with "Cannot index array with
-# string …" — see prd.md §1 / Bug 1.
+# `rpk topic list --format json` emits a flat array of objects in
+# rpk 24.3.1:  [{"name":"…","partitions":…}, …]
 #
-# Bumping ARG RPK_VERSION in the Dockerfile invalidates the fixtures.
-# Regenerate against the new rpk and re-run bats; the schema may move
-# again.
+# `rpk group list` does NOT accept --format in rpk 24.3.1 (only
+# `-s/--states`). The default output is a fixed-column table:
+#
+#   BROKER  GROUP                                        STATE
+#   1       Account Service                              Stable
+#   1       Channel Service - 7e3a-0a1b [a1b2]           Stable
+#
+# STATE is always a single token (Stable / Empty / Dead /
+# PreparingRebalance / CompletingRebalance), so the group name is
+# every whitespace-separated token from column 2 through NF-1.
+# `rpk_group_names_awk` reads that table on stdin and prints one
+# group name per line.
+#
+# Bumping ARG RPK_VERSION in the Dockerfile invalidates the
+# rpk-topic-list.json fixture and the rpk-group-list.txt fixture.
+# Regenerate against the new rpk and re-run bats; the table shape and
+# JSON schema both move when rpk does.
 # ----------------------------------------------------------------------------
 readonly RPK_TOPICS_JQ='.[].name'
-readonly RPK_GROUPS_JQ='.[].name'
+
+rpk_group_names_awk() {
+    awk 'NR>1 && NF>=2 {
+        name=""
+        for (i=2; i<NF; i++) name = name (i>2 ? " " : "") $i
+        print name
+    }'
+}

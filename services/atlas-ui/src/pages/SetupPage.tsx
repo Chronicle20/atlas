@@ -266,9 +266,7 @@ export function SetupPage() {
       mutation: seedNpcShops,
       status: npcShopsSeed,
       formatBadge: (d?: NpcShopsSeedStatus) =>
-        !d
-          ? "—"
-          : `${formatCount(d.shopCount)} ${pluralize(d.shopCount, "shop", "shops")} / ${formatCount(d.commodityCount)} ${pluralize(d.commodityCount, "commodity", "commodities")}`,
+        !d ? "—" : `${formatCount(d.shopCount)} ${pluralize(d.shopCount, "shop", "shops")}`,
     },
     {
       label: "Portal Scripts",

@@ -8,9 +8,31 @@ import (
 )
 
 type exportFn struct {
-	Address   string `json:"address"`
+	Address string `json:"address"`
+	// Direction is "clientbound" or "serverbound".
 	Direction string `json:"direction"`
-	Calls     []struct {
+	// Dispatcher, when set, names a known dispatcher chain whose prefix
+	// bytes are auto-prepended to the Calls list during Resolve. Supported
+	// values:
+	//
+	//   "per-mob"         → Decode4 dwMobId (read by CMobPool::OnMobPacket
+	//                       before dispatch to CMob::On*).
+	//   "per-pet"         → Decode4 characterId + Decode1 slot (read by
+	//                       CUserPool::OnUserRemotePacket and
+	//                       CUser::OnPetPacket before dispatch to CPet::On*).
+	//   "per-pet-remote"  → Decode4 characterId (read by
+	//                       CUserPool::OnUserRemotePacket before dispatch to
+	//                       CUserRemote::OnPetActivated). No slot, since
+	//                       OnPetActivated does not go through OnPetPacket.
+	//
+	// When set, the JSON entry's own "calls" list MUST omit these prefix
+	// bytes — they are added by the resolver. Unrecognized values are
+	// ignored (no prefix added) — this is a forward-compat hook for new
+	// dispatcher chains.
+	Dispatcher string `json:"dispatcher,omitempty"`
+	// Notes is free-form documentation that does not affect resolution.
+	Notes string `json:"notes,omitempty"`
+	Calls []struct {
 		Op      string `json:"op"`
 		Comment string `json:"comment"`
 		Guard   string `json:"guard,omitempty"`
@@ -59,6 +81,8 @@ func (s *ExportSource) Resolve(_ context.Context, fname string) (Fields, error) 
 		dir = DirServerbound
 	}
 	out := Fields{Function: fname, Address: raw.Address, Direction: dir}
+	// Auto-prepend dispatcher prefix when annotated.
+	out.Calls = append(out.Calls, dispatcherPrefix(raw.Dispatcher)...)
 	for i, c := range raw.Calls {
 		op, err := parsePrim(c.Op)
 		if err != nil {
@@ -67,6 +91,45 @@ func (s *ExportSource) Resolve(_ context.Context, fname string) (Fields, error) 
 		out.Calls = append(out.Calls, FieldCall{Op: op, Comment: c.Comment, Guard: c.Guard})
 	}
 	return out, nil
+}
+
+// dispatcherPrefix returns the FieldCalls that should be auto-prepended to a
+// leaf op's wire layout for the named dispatcher chain. Returns nil for the
+// empty kind (most entries) and for unrecognized kinds (forward-compat).
+//
+// The prefixes mirror the bytes that the in-game dispatcher reads before
+// forwarding the remaining payload to the leaf handler:
+//
+//   per-mob         → CMobPool::OnMobPacket reads Decode4 mobId, then routes
+//                     to CMob::On*.
+//   per-pet         → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//                     then CUser::OnPetPacket reads Decode1 slot, then routes
+//                     to CPet::On*.
+//   per-pet-remote  → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//                     then routes to CUserRemote::OnPetActivated. The slot
+//                     byte is part of the leaf payload here, not the prefix.
+//
+// Keep this list narrow and well-tested — adding a new dispatcher requires a
+// matching test in export_test.go.
+func dispatcherPrefix(kind string) []FieldCall {
+	switch kind {
+	case "":
+		return nil
+	case "per-mob":
+		return []FieldCall{
+			{Op: Decode4, Comment: "dwMobId — auto-prepended via dispatcher: per-mob (CMobPool::OnMobPacket)"},
+		}
+	case "per-pet":
+		return []FieldCall{
+			{Op: Decode4, Comment: "characterId — auto-prepended via dispatcher: per-pet (CUserPool::OnUserRemotePacket)"},
+			{Op: Decode1, Comment: "slot — auto-prepended via dispatcher: per-pet (CUser::OnPetPacket)"},
+		}
+	case "per-pet-remote":
+		return []FieldCall{
+			{Op: Decode4, Comment: "characterId — auto-prepended via dispatcher: per-pet-remote (CUserPool::OnUserRemotePacket)"},
+		}
+	}
+	return nil
 }
 
 func parsePrim(s string) (Primitive, error) {

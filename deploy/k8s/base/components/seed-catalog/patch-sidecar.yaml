@@ -21,4 +21,3 @@
     volumeMounts:
       - name: seed-catalog
         mountPath: /git
-        subPath: deploy/seed

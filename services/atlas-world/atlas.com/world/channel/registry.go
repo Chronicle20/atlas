@@ -13,11 +13,9 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 )
 
-const tenantSetKey = "channel:tenants"
-
 type Registry struct {
 	channels *atlas.TenantRegistry[string, Model]
-	client   *goredis.Client
+	tenants  *atlas.Set
 }
 
 var channelRegistry *Registry
@@ -31,7 +29,7 @@ func compositeKey(worldId world.Id, channelId channelConstant.Id) string {
 func InitRegistry(client *goredis.Client) {
 	channelRegistry = &Registry{
 		channels: atlas.NewTenantRegistry[string, Model](client, "channel", func(k string) string { return k }),
-		client:   client,
+		tenants:  atlas.NewSet(client, "channel:tenants"),
 	}
 }
 
@@ -79,7 +77,7 @@ func (r *Registry) RemoveByWorldAndChannel(ctx context.Context, ch channelConsta
 
 func (r *Registry) Tenants() []tenant.Model {
 	ctx := context.Background()
-	members, err := r.client.SMembers(ctx, tenantSetKey).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil
 	}
@@ -99,5 +97,5 @@ func (r *Registry) trackTenant(ctx context.Context, t tenant.Model) {
 	if err != nil {
 		return
 	}
-	_ = r.client.SAdd(ctx, tenantSetKey, string(data)).Err()
+	_ = r.tenants.Add(ctx, string(data))
 }

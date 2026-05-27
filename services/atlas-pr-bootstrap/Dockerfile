@@ -16,7 +16,13 @@ ARG RPK_VERSION=24.3.1
 # `sweep_minio` phase to enumerate and delete orphan per-tenant
 # prefixes under `atlas-wz`, `atlas-assets`, `atlas-renders` (issue
 # #596 — MinIO storage leak across PR teardowns).
-ARG MC_VERSION=RELEASE.2024-12-30T16-23-25Z
+#
+# Bump path: `curl -sL https://dl.min.io/client/mc/release/linux-amd64/mc -o mc && chmod +x mc && ./mc --version`
+# prints the latest release tag MinIO is serving; copy that here.
+# Anything older than ~2 years is still served from the archive path
+# below, so picking a stale tag won't break the build until MinIO
+# rotates retention.
+ARG MC_VERSION=RELEASE.2025-08-13T08-35-41Z
 
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     apk add \

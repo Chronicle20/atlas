@@ -4,6 +4,7 @@ import (
 	"atlas-login/character"
 	consumer2 "atlas-login/kafka/consumer"
 	"atlas-login/kafka/message/seed"
+	"atlas-login/listener"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
@@ -26,18 +27,23 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, de
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+				var handles []listener.HandlerHandle
 				t, _ := topic.EnvProvider(l)(seed.EnvEventTopicStatus)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(ten, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(ten, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleFailedStatusEvent(ten, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFailedStatusEvent(ten, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}

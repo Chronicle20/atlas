@@ -26,7 +26,7 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-# Layer: all 17 atlas libs' go.mod (and go.sum where present — atlas-retry and
+# Layer: all 18 atlas libs' go.mod (and go.sum where present — atlas-retry and
 # atlas-service have no external deps so no go.sum exists). Lib-mod-only layer;
 # shared across every target.
 COPY libs/atlas-constants/go.mod   libs/atlas-constants/go.sum   libs/atlas-constants/
@@ -36,6 +36,7 @@ COPY libs/atlas-lock/go.mod        libs/atlas-lock/go.sum        libs/atlas-lock
 COPY libs/atlas-model/go.mod       libs/atlas-model/go.sum       libs/atlas-model/
 COPY libs/atlas-object-id/go.mod   libs/atlas-object-id/go.sum   libs/atlas-object-id/
 COPY libs/atlas-opcodes/go.mod     libs/atlas-opcodes/go.sum     libs/atlas-opcodes/
+COPY libs/atlas-outbox/go.mod      libs/atlas-outbox/go.sum      libs/atlas-outbox/
 COPY libs/atlas-packet/go.mod      libs/atlas-packet/go.sum      libs/atlas-packet/
 COPY libs/atlas-redis/go.mod       libs/atlas-redis/go.sum       libs/atlas-redis/
 COPY libs/atlas-rest/go.mod        libs/atlas-rest/go.sum        libs/atlas-rest/
@@ -54,7 +55,7 @@ COPY libs/atlas-wz/go.mod          libs/atlas-wz/go.sum          libs/atlas-wz/
 # don't need a per-service Dockerfile branch.
 COPY services/${SERVICE}/ services/${SERVICE}/
 
-# Layer: all 17 atlas libs' source trees (shared across every target; invalidates
+# Layer: all 18 atlas libs' source trees (shared across every target; invalidates
 # when any lib source changes — same invalidation profile as today).
 COPY libs/atlas-constants   libs/atlas-constants
 COPY libs/atlas-database    libs/atlas-database
@@ -63,6 +64,7 @@ COPY libs/atlas-lock        libs/atlas-lock
 COPY libs/atlas-model       libs/atlas-model
 COPY libs/atlas-object-id   libs/atlas-object-id
 COPY libs/atlas-opcodes     libs/atlas-opcodes
+COPY libs/atlas-outbox      libs/atlas-outbox
 COPY libs/atlas-packet      libs/atlas-packet
 COPY libs/atlas-redis       libs/atlas-redis
 COPY libs/atlas-rest        libs/atlas-rest
@@ -75,7 +77,7 @@ COPY libs/atlas-tenant      libs/atlas-tenant
 COPY libs/atlas-tracing     libs/atlas-tracing
 COPY libs/atlas-wz          libs/atlas-wz
 
-# Synthesize a minimal go.work containing only the 17 libs + the target service.
+# Synthesize a minimal go.work containing only the 18 libs + the target service.
 # The repo-root go.work also lists ~50 sibling services + 2 tools/* modules
 # whose go.mod files are not in the build context; copying it directly fails
 # workspace-load. Equivalent to what the legacy per-service Dockerfiles did.
@@ -85,9 +87,9 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
     && { \
          printf 'go 1.26.0\n\nuse (\n'; \
          for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
-                  atlas-object-id atlas-opcodes atlas-packet atlas-redis atlas-rest \
-                  atlas-retry atlas-saga atlas-script-core atlas-service atlas-socket \
-                  atlas-tenant atlas-tracing atlas-wz; do \
+                  atlas-object-id atlas-opcodes atlas-outbox atlas-packet atlas-redis \
+                  atlas-rest atlas-retry atlas-saga atlas-script-core atlas-service \
+                  atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
            printf '    ./libs/%s\n' "$L"; \
          done; \
          printf '    ./%s\n)\n' "$MOD_DIR"; \

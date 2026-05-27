@@ -22,6 +22,9 @@ To build everything locally: `docker buildx bake all-go-services` (or `tools/bui
 Adding a new shared lib requires appending two `COPY` lines to the repo-root `Dockerfile` (one in the mod-only block, one in the source block) and one `./libs/<name>` line to `go.work`. That's it — no per-service edits.
 
 For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the bake step.
+5. **`tools/redis-key-guard.sh` clean from the repo root.** Bans keyed Redis
+   commands on the raw `go-redis` client outside `libs/atlas-redis` (FR-1.5,
+   task-045). Runs alongside `go vet ./...`.
 
 ## Code Patterns
 

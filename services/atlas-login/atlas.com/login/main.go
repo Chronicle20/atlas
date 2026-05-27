@@ -96,7 +96,15 @@ func main() {
 		TenantTopic:  tenantTopic,
 		ServiceId:    serviceId,
 	}
-	if err := sub.Start(tdm.Context(), l, tdm.WaitGroup(), consumerGroupId); err != nil {
+	// Use a per-process group ID for the projection so each container
+	// start replays the full compacted log from FirstOffset. Sharing
+	// consumerGroupId with the regular consumers would resume from the
+	// previous run's committed offset (= end of topic) on restart; the
+	// in-memory projection State would then sit empty forever because
+	// Observe never fires and CaughtUp never flips, leaving the TCP
+	// listener never started.
+	projectionGroupId := fmt.Sprintf("%s - projection - %s", consumerGroupId, uuid.New().String())
+	if err := sub.Start(tdm.Context(), l, tdm.WaitGroup(), projectionGroupId); err != nil {
 		l.WithError(err).Fatal("Unable to start configuration projection subscriber.")
 	}
 

@@ -1,0 +1,74 @@
+{
+  "WriterName": "BuddyInvite",
+  "IDAName": "CWvsContext::OnFriendResult#Invite",
+  "Address": "0xa12630",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/clientbound/invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=0x09, INVITE) — dispatcher switch byte consumed by OnFriendResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwFriendID — originatorId (characterId of the player sending the friend request)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "originatorName — display name of the requester (ZXString, variable length)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 2,
+      "IDAComment": "v25 — extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)",
+      "Verdict": 3,
+      "Note": "sub-struct: b — see _substruct/"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "v26 — extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "GW_Friend entry (39 bytes via CFriend::Insert → GW_Friend::Decode → DecodeBuffer(this,0x27)): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inShop — after GW_Friend::Insert, CFriend::Insert reads Decode1 for m_aInShop[new_entry]",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3
+}

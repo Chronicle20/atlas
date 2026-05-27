@@ -1,0 +1,47 @@
+{
+  "WriterName": "BuddyChannelChange",
+  "IDAName": "CWvsContext::OnFriendResult#ChannelChange",
+  "Address": "0xa12630",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/clientbound/channel_change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=0x14/20, CHANNEL_CHANGE) — dispatcher switch byte consumed by OnFriendResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwFriendID — characterId of the buddy whose channel changed",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inShop — 0=not in cash shop, 1=in cash shop (m_aInShop[Index])",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nChannelID — new channel id (stored in m_aFriend[Index].nChannelID; -1=offline)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

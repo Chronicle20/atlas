@@ -1,0 +1,29 @@
+{
+  "WriterName": "BuddyCapacityUpdate",
+  "IDAName": "CWvsContext::OnFriendResult#CapacityUpdate",
+  "Address": "0xa12630",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/clientbound/capacity_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=0x15/21, CAPACITY_UPDATE) — dispatcher switch byte consumed by OnFriendResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nFriendMax — new buddy-list capacity written into CharacterData.nFriendMax",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

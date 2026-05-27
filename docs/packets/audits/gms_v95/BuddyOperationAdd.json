@@ -1,0 +1,38 @@
+{
+  "WriterName": "BuddyOperationAdd",
+  "IDAName": "CField::SendSetFriendMsg",
+  "Address": "0x535240",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_add.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op (=1, ADD) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sTarget — name of the character to add as buddy",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sFriendGroup — buddy group name",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

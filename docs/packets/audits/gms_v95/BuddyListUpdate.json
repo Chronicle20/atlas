@@ -1,0 +1,47 @@
+{
+  "WriterName": "BuddyListUpdate",
+  "IDAName": "CWvsContext::OnFriendResult#ListUpdate",
+  "Address": "0xa12630",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/clientbound/list_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=0x07/0x0A/0x12, LIST_UPDATE variants) — dispatcher switch byte consumed by OnFriendResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "count — number of buddy entries (v4); used for ZArray realloc",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "buddy entries — count × 39 bytes (GW_Friend array) decoded as DecodeBuffer(m_aFriend.a, 39*count)",
+      "Verdict": 3,
+      "Note": "sub-struct: bm — see _substruct/"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "inShop flags — count × 4 bytes (int array) decoded as DecodeBuffer(m_aInShop.a, 4*count)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    }
+  ],
+  "Verdict": 3
+}

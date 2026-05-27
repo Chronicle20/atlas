@@ -58,6 +58,11 @@ data:
   REDIS_URL: redis.home:6379
   ATLAS_DB_NAMES: "${ATLAS_DB_NAMES}"
   ATLAS_SERVICES: "${ATLAS_SERVICES}"
+  # Issue #596: per-tenant MinIO prefix cleanup. The cleanup Job's
+  # drop-tenant-storage phase uses these to reach MinIO directly.
+  # Credentials are read from a separate Secret (minio-root-creds,
+  # reflected from the minio namespace).
+  MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
 EOF
 
 echo "Wrote $OUT"

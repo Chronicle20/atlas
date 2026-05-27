@@ -136,6 +136,108 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "cleanup.sh drop-branch pre-empts post-delete-finalizer drain after deleting branch" {
+    # Once `drop-branch` deletes the bot branch, Argo CD's finalizer-drain
+    # reconcile can't re-render the missing source → DeletionError → the
+    # Application sits Terminating forever. PR 522 hit this on 2026-05-27.
+    # cleanup.sh must patch the Application's finalizers itself after a
+    # successful (or already-404'd) branch delete.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "gh \$*" >> "$CALL_LOG"
+# DELETE branch returns 204 (no body).
+exit 0
+EOF
+    cat > "$SHIM_DIR/kubectl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "kubectl \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        GHCR_TOKEN=fake-token \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    # The DELETE branch call must have happened.
+    grep -F 'gh api --method DELETE' "$CALL_LOG" | grep -F 'bot%2Fpr-42-resolved'
+    # AND we must have followed it with a finalizer-drop patch on the
+    # Application.
+    grep -F 'kubectl -n argocd patch application.argoproj.io atlas-pr-42' "$CALL_LOG" \
+        | grep -F '"finalizers":[]'
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh drop-branch still pre-empts finalizer drain when branch already 404'd" {
+    # On a re-run after a partial cleanup, the bot branch may already be
+    # gone. cleanup.sh treats that as success (idempotent) — and must
+    # ALSO still patch the Application's finalizers, because the
+    # Application is in the same Source-branch-missing state.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "gh \$*" >> "$CALL_LOG"
+echo "gh: Reference does not exist (HTTP 404)" >&2
+exit 1
+EOF
+    cat > "$SHIM_DIR/kubectl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "kubectl \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        GHCR_TOKEN=fake-token \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    grep -F 'kubectl -n argocd patch application.argoproj.io atlas-pr-42' "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR"
+}
+
 # fixture_env returns the ATLAS_ENV hash cleanup.sh derives for PR_NUMBER=99
 # (compute_atlas_env "99" → first 4 hex chars of sha256("pr-99")). Keeping this
 # computed instead of hardcoded means the rpk tests below stay correct if the
@@ -251,7 +353,102 @@ EOF
     run run_cleanup
     [ "$status" -eq 0 ]
     [[ "$output" == *'phases_failed=0'* ]]
-    [[ "$output" == *'phases_run=7'* ]]
+    # 8 phases as of #596 (drop-tenant-storage added).
+    [[ "$output" == *'phases_run=8'* ]]
+}
+
+@test "cleanup.sh drop-tenant-storage skips when MINIO_ENDPOINT unset" {
+    make_stubs '[]' '[]'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'drop-tenant-storage'*'MINIO_ENDPOINT not set'* ]]
+    [[ "$output" == *'drop-tenant-storage'*'phase complete'* ]]
+}
+
+@test "cleanup.sh drop-tenant-storage reads tenants from atlas-data DB + mc-rm's prefixes" {
+    # Stub psql to return two tenant UUIDs when queried for tenant_baselines
+    # in the atlas-data-<env> DB. Stub mc to record every call.
+    make_stubs '[]' '[]'
+
+    # Override psql so it returns tenant UUIDs ONLY when reading
+    # tenant_baselines from atlas-data-<env>. All other psql calls
+    # (drop-dbs probe + DROP DATABASE) succeed silently.
+    cat > "$STUB_BIN/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "psql $*" >> "$STUB_LOG"
+# Match the tenant_baselines SELECT on atlas-data DB.
+if printf '%s\n' "$*" | grep -q "tenant_baselines"; then
+    printf 'a8657a40-4dc9-4d7a-a0d2-3a9edb69d141\nb046fcc7-6cc4-4355-803e-a841930b1f63\n'
+fi
+exit 0
+EOF
+    cat > "$STUB_BIN/mc" <<'EOF'
+#!/usr/bin/env bash
+echo "mc $*" >> "$STUB_LOG"
+exit 0
+EOF
+    chmod +x "$STUB_BIN"/*
+
+    PATH="$STUB_BIN:$PATH" \
+        STUB_LOG="$STUB_LOG" \
+        BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" \
+        DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="atlas-data" \
+        BOOTSTRAP_SERVERS=kafka:9093 REDIS_URL=redis:6379 \
+        PR_NUMBER=99 \
+        MINIO_ENDPOINT=minio.test:9000 \
+        MINIO_ROOT_USER=root MINIO_ROOT_PASSWORD=rootpass \
+        run bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    # Both tenants × 3 buckets = 6 mc rm calls.
+    grep -F 'mc rm --recursive --force bee/atlas-wz/tenants/a8657a40-4dc9-4d7a-a0d2-3a9edb69d141/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-assets/tenants/a8657a40-4dc9-4d7a-a0d2-3a9edb69d141/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-renders/tenants/a8657a40-4dc9-4d7a-a0d2-3a9edb69d141/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-wz/tenants/b046fcc7-6cc4-4355-803e-a841930b1f63/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-assets/tenants/b046fcc7-6cc4-4355-803e-a841930b1f63/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-renders/tenants/b046fcc7-6cc4-4355-803e-a841930b1f63/' "$STUB_LOG"
+}
+
+@test "cleanup.sh drop-tenant-storage tolerates atlas-data DB being absent" {
+    # Simulate atlas-data DB missing (psql returns non-zero on the
+    # tenant_baselines query). The phase should log "could not read"
+    # and continue without calling mc rm.
+    make_stubs '[]' '[]'
+
+    cat > "$STUB_BIN/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "psql $*" >> "$STUB_LOG"
+# Tenant-baselines query → fail; drop-dbs probe + DROP → succeed.
+if printf '%s\n' "$*" | grep -q "tenant_baselines"; then
+    exit 1
+fi
+exit 0
+EOF
+    cat > "$STUB_BIN/mc" <<'EOF'
+#!/usr/bin/env bash
+echo "mc $*" >> "$STUB_LOG"
+exit 0
+EOF
+    chmod +x "$STUB_BIN"/*
+
+    PATH="$STUB_BIN:$PATH" \
+        STUB_LOG="$STUB_LOG" \
+        BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" \
+        DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="atlas-data" \
+        BOOTSTRAP_SERVERS=kafka:9093 REDIS_URL=redis:6379 \
+        PR_NUMBER=99 \
+        MINIO_ENDPOINT=minio.test:9000 \
+        MINIO_ROOT_USER=root MINIO_ROOT_PASSWORD=rootpass \
+        run bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'drop-tenant-storage'*'could not read'*'tenant_baselines'* ]]
+    if grep -F 'mc rm' "$STUB_LOG"; then
+        echo "ERROR: mc rm called despite missing tenant_baselines" >&2
+        return 1
+    fi
 }
 
 @test "cleanup.sh fails fast on malformed rpk output" {

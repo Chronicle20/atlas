@@ -138,3 +138,155 @@ EOF
 
     rm -rf "$SHIM_DIR"
 }
+
+@test "sweep-orphans.sh: --minio rejects PR_NUMBER arg" {
+    run bash "$SCRIPT" --minio 491
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"--minio takes no PR_NUMBER"* ]]
+}
+
+@test "sweep-orphans.sh: --minio (no args) skips when MINIO_ENDPOINT unset" {
+    run env -u MINIO_ENDPOINT bash "$SCRIPT" --minio
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"MINIO_ENDPOINT not set"* ]]
+    [[ "$output" == *"sweep complete"* ]]
+}
+
+@test "sweep-orphans.sh: --minio aborts if active tenants fetch fails" {
+    # mc stub never invoked because curl fails first; sweep should
+    # refuse to operate on empty allowlist.
+    SHIM_DIR="$(mktemp -d)"
+    cat > "$SHIM_DIR/mc" <<'EOF'
+#!/usr/bin/env bash
+echo "FAIL: mc should not be called when atlas-main tenants fetch fails" >&2
+exit 99
+EOF
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+# Simulate atlas-main unreachable.
+exit 6
+EOF
+    chmod +x "$SHIM_DIR"/*
+    PATH="$SHIM_DIR:$PATH" run env \
+        MINIO_ENDPOINT=fake:9000 \
+        MINIO_ACCESS_KEY=x MINIO_SECRET_KEY=y \
+        bash "$SCRIPT" --minio
+    [[ "$output" != *"FAIL:"* ]]
+    [[ "$output" == *"aborting MinIO sweep"* ]]
+    rm -rf "$SHIM_DIR"
+}
+
+@test "sweep-orphans.sh: --minio --apply deletes orphan UUIDs but not active ones" {
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/mc-calls.log"
+
+    # atlas-main returns one active UUID (this must NOT be deleted).
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+    *"/api/tenants"*)
+        echo '{"data":[{"type":"tenants","id":"ec876921-c363-4cc6-9c51-5bb8d57f9553"}]}'
+        ;;
+    *)
+        exit 7 ;;
+esac
+EOF
+
+    # mc lists three UUIDs per bucket: the active one + two orphans
+    # (one fresh, one old). The fresh orphan must be skipped by the
+    # safety window; the old orphan must be deleted.
+    cat > "$SHIM_DIR/mc" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "mc \$*" >> "$CALL_LOG"
+case "\$*" in
+    "alias set"*) exit 0 ;;
+    "ls bee/atlas-wz/tenants/"|"ls bee/atlas-assets/tenants/"|"ls bee/atlas-renders/tenants/")
+        printf '[2026-05-27 00:00 UTC]     0B ec876921-c363-4cc6-9c51-5bb8d57f9553/\n'
+        printf '[2026-05-27 00:00 UTC]     0B aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/\n'
+        printf '[2026-05-27 00:00 UTC]     0B bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/\n'
+        ;;
+    "ls --recursive --json bee/atlas-wz/tenants/aaaaaaaa-"*|"ls --recursive --json bee/atlas-assets/tenants/aaaaaaaa-"*|"ls --recursive --json bee/atlas-renders/tenants/aaaaaaaa-"*)
+        # Old orphan — last-modified > safety window ago.
+        printf '{"type":"file","lastModified":"2024-01-01T00:00:00Z"}\n'
+        ;;
+    "ls --recursive --json bee/atlas-wz/tenants/bbbbbbbb-"*|"ls --recursive --json bee/atlas-assets/tenants/bbbbbbbb-"*|"ls --recursive --json bee/atlas-renders/tenants/bbbbbbbb-"*)
+        # Fresh orphan — last-modified now (within safety window).
+        printf '{"type":"file","lastModified":"%s"}\n' "\$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        ;;
+    "rm --recursive --force"*) exit 0 ;;
+    *) exit 0 ;;
+esac
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        MINIO_ENDPOINT=fake:9000 \
+        MINIO_ACCESS_KEY=x MINIO_SECRET_KEY=y \
+        ATLAS_MAIN_TENANTS_URL=http://fake/api/tenants \
+        bash "$SCRIPT" --minio --apply
+
+    [ "$status" -eq 0 ]
+    # Active main UUID must never be touched.
+    if grep -F "rm --recursive --force bee/atlas-wz/tenants/ec876921" "$CALL_LOG"; then
+        echo "ERROR: active main tenant was deleted" >&2
+        return 1
+    fi
+    # Old orphan (aaa) must be deleted across all three buckets.
+    grep -F "rm --recursive --force bee/atlas-wz/tenants/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/" "$CALL_LOG"
+    grep -F "rm --recursive --force bee/atlas-assets/tenants/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/" "$CALL_LOG"
+    grep -F "rm --recursive --force bee/atlas-renders/tenants/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/" "$CALL_LOG"
+    # Fresh orphan (bbb) must be skipped by the safety window.
+    if grep -F "rm --recursive --force bee/atlas-wz/tenants/bbbbbbbb-" "$CALL_LOG"; then
+        echo "ERROR: fresh orphan within safety window was deleted" >&2
+        return 1
+    fi
+    # And the list output should announce "drop-minio" lines.
+    [[ "$output" == *"drop-minio atlas-wz/tenants/aaaaaaaa-"* ]]
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "sweep-orphans.sh: --minio --list (default) does not call rm" {
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/mc-calls.log"
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+    *"/api/tenants"*)
+        echo '{"data":[{"type":"tenants","id":"ec876921-c363-4cc6-9c51-5bb8d57f9553"}]}'
+        ;;
+    *) exit 7 ;;
+esac
+EOF
+    cat > "$SHIM_DIR/mc" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "mc \$*" >> "$CALL_LOG"
+case "\$*" in
+    "alias set"*) exit 0 ;;
+    "ls bee/atlas-wz/tenants/"|"ls bee/atlas-assets/tenants/"|"ls bee/atlas-renders/tenants/")
+        printf '[2024-01-01 00:00 UTC]     0B aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/\n'
+        ;;
+    "ls --recursive --json"*)
+        printf '{"type":"file","lastModified":"2024-01-01T00:00:00Z"}\n'
+        ;;
+    "rm --recursive --force"*) exit 0 ;;
+    *) exit 0 ;;
+esac
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        MINIO_ENDPOINT=fake:9000 \
+        MINIO_ACCESS_KEY=x MINIO_SECRET_KEY=y \
+        ATLAS_MAIN_TENANTS_URL=http://fake/api/tenants \
+        bash "$SCRIPT" --minio
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"drop-minio atlas-wz/tenants/aaaaaaaa-"* ]]
+    if grep -F "rm --recursive --force" "$CALL_LOG"; then
+        echo "ERROR: rm called in --list (default) mode" >&2
+        return 1
+    fi
+
+    rm -rf "$SHIM_DIR"
+}

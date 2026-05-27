@@ -13,7 +13,28 @@ on:
         type: boolean
 
 concurrency:
-  group: pr-${{ github.head_ref || github.ref }}
+  # Two concurrency lanes per PR — one for push/synchronize events (the
+  # noisy lane: cancels in-progress when the user pushes a new commit),
+  # and a separate lane for `labeled` events (the rare lane: must not be
+  # cancelled by an in-flight build).
+  #
+  # When a user pushes a commit and adds `deploy-env` in quick succession,
+  # GitHub fires both `synchronize` and `labeled` events. With a single
+  # shared lane and `cancel-in-progress: true`, whichever fired second
+  # cancelled the first — and the surviving run's `pull_request.labels`
+  # payload reflected the state at fire time, missing the label if push
+  # came first. Result: `update-pr-overlay` gated on
+  # `contains(github.event.pull_request.labels.*.name, 'deploy-env')`
+  # was skipped, the bot branch never updated, Argo CD continued syncing
+  # against stale image tags. See issue #597.
+  #
+  # Splitting the lane preserves cancel-in-progress for normal push
+  # churn while letting `labeled` events run to completion. The
+  # trade-off: a push+label race produces two concurrent CI runs (the
+  # push lane builds without push=true; the labeled lane builds with
+  # push=true and updates the bot branch). The wasted compute is fine
+  # — the alternative is silent stale-overlay teardowns.
+  group: pr-${{ github.head_ref || github.ref }}${{ github.event.action == 'labeled' && '-labeled' || '' }}
   cancel-in-progress: true
 
 env:

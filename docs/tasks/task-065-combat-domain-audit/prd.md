@@ -19,11 +19,13 @@ Existing tasks touch adjacent monster-behavior logic: task-033/034/035/036 (mons
 
 | Domain | Clientbound | Serverbound | Total |
 |---|---|---|---|
-| monster | 15 | 2 | 17 |
-| drop | 4 | 2 | 6 |
-| reactor | 6 | 2 | 8 |
-| pet | 12 | 16 | 28 |
-| **Total** | **37** | **22** | **59** |
+| monster | 9 | 1 | 10 |
+| drop | 2 | 1 | 3 |
+| reactor | 3 | 1 | 4 |
+| pet | 6 | 8 | 14 |
+| **Total** | **20** | **11** | **31** |
+
+Counts reflect the actual `libs/atlas-packet/{monster,drop,reactor,pet}/{clientbound,serverbound}/*.go` enumeration. The monster clientbound row includes `MonsterStatSet` and `MonsterStatReset` packed in `stat.go`; the pet clientbound row treats `activated_body.go` as a wrapper of `activated.go` per plan.md §5 Step 1, not a separate packet.
 
 Note: `monster/clientbound/movement.go` and `pet/clientbound/movement.go` have no `_test.go` siblings — they appear to be stub-only files. Flag in `_pending.md` if the audit finds no encoder body to analyze.
 
@@ -47,22 +49,22 @@ Note: `monster/clientbound/movement.go` and `pet/clientbound/movement.go` have n
 
 ### 4.1 Coverage matrix
 
-Produce a verdict row in `docs/packets/audits/gms_v95/SUMMARY.md` for each of the 59 packets:
+Produce a verdict row in `docs/packets/audits/gms_v95/SUMMARY.md` for each of the 31 packets:
 
-**monster/clientbound (15):** `control`, `damage`, `destroy`, `health`, `movement_ack`, `movement`, `spawn`, `stat`  
-**monster/serverbound (2):** (enumerate from `libs/atlas-packet/monster/serverbound/`)  
-**drop/clientbound (4):** `destroy`, `spawn`  
-**drop/serverbound (2):** (enumerate from `libs/atlas-packet/drop/serverbound/`)  
-**reactor/clientbound (6):** `destroy`, `hit`, `spawn`  
-**reactor/serverbound (2):** (enumerate from `libs/atlas-packet/reactor/serverbound/`)  
-**pet/clientbound (12):** `activated`, `cash_food_result`, `chat`, `command`, `exclude`, `movement`  
-**pet/serverbound (16):** (enumerate from `libs/atlas-packet/pet/serverbound/`)
+**monster/clientbound (9):** `control`, `damage`, `destroy`, `health`, `movement_ack`, `movement`, `spawn`, `stat` (× StatSet + StatReset)  
+**monster/serverbound (1):** `movement`  
+**drop/clientbound (2):** `destroy`, `spawn`  
+**drop/serverbound (1):** `pick_up`  
+**reactor/clientbound (3):** `destroy`, `hit`, `spawn`  
+**reactor/serverbound (1):** `hit`  
+**pet/clientbound (6):** `activated`, `cash_food_result`, `chat`, `command`, `exclude`, `movement` (`activated_body.go` is a wrapper of `activated.go`)  
+**pet/serverbound (8):** `chat`, `command`, `drop_pick_up`, `exclude_item`, `food`, `item_use`, `movement`, `spawn`
 
 Each row: FName, IDA function address, verdict (✅ / ⚠️ / ❌), notes with file:line citation or `_pending.md` reference.
 
 ### 4.2 IDA exports
 
-Populate character-domain FName entries in `docs/packets/ida-exports/gms_v95.json` for all 59 packets. During the cross-version pass, add matching entries to `gms_v83.json`, `gms_v87.json`, and `gms_jms_185.json`. Use the existing entry schema (op list with `Decode1/2/4/Str/Buffer/Loop` operations + guard expressions).
+Populate combat-domain FName entries in `docs/packets/ida-exports/gms_v95.json` for all 31 packets. During the cross-version pass, add matching entries to `gms_v83.json`, `gms_v87.json`, and `gms_jms_185.json`. Use the existing entry schema (op list with `Decode1/2/4/Str/Buffer/Loop` operations + guard expressions).
 
 ### 4.3 Wire bug fixes
 
@@ -145,7 +147,7 @@ No persistent-data changes. `services/atlas-configurations/seed-data/templates/`
 
 ## 11. Acceptance Criteria
 
-- [ ] All 59 listed packet files have audit reports under `docs/packets/audits/gms_v95/`.
+- [ ] All 31 listed packets have audit reports under `docs/packets/audits/gms_v95/`.
 - [ ] Every ❌ has either a fix commit OR a `_pending.md` row.
 - [ ] All 4 verification commands pass cleanly: `go build ./...`, `go vet ./libs/atlas-packet/...`, `go test -race ./libs/atlas-packet/...`, `go test -race ./tools/packet-audit/...`.
 - [ ] gitleaks scrub clean.

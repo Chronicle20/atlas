@@ -106,3 +106,11 @@ eab8e64d8 feat(packet-audit): sub-domain disambiguation via candidate.pkg
 ```
 
 Plus three earlier docs commits (spec, design, plan). 19 total commits ahead of task-028 baseline (e4113fd3b).
+
+## Post-PR follow-up work landed in-branch
+
+After the initial post-phase-b closeout, the deferred items surfaced during code review were re-opened and worked through on the same branch.
+
+### PRD scope reconciliation (item 10)
+
+`prd.md` §2, §4.1, §4.2, and §11 originally claimed 59 combat packets (37 cb + 22 sb). The actual `libs/atlas-packet/{monster,drop,reactor,pet}` source inventory is 31 packets (20 cb + 11 sb), which matches the `plan.md` per-phase breakdown (monster 9+1, pet 6+8, drop 2+1, reactor 3+1 = 31). The PRD over-counted; plan.md and the delivered audit were correct. PRD updated in-place to reflect the actual inventory, with a clarifying note that `stat.go` packs both StatSet and StatReset and `activated_body.go` is a wrapper rather than an independent packet.

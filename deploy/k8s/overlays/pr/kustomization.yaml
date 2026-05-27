@@ -31,7 +31,6 @@ resources:
   - wave0-create-dbs.yaml
   - sync-bootstrap.yaml
   - postsync-pihole-add.yaml
-  - atlas-data-ns-reader-crb.yaml
   # Note: the PostDelete cleanup Job intentionally does NOT live here.
   # It moved to deploy/k8s/overlays/pr-cleanup/ (its own kustomization)
   # so kustomize's overlay-level `namespace:` directive doesn't override

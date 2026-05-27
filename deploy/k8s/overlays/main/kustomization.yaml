@@ -8,7 +8,6 @@ namespace: atlas-main
 resources:
   - ../../base
   - atlas-env-tokens.yaml
-  - atlas-data-ns-reader-crb.yaml
 patches:
   - path: lb-pin.yaml
   - path: patches/atlas-env-env.yaml

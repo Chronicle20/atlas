@@ -475,25 +475,24 @@ Alert wiring is out of scope for task-070 — this is observable but not paged.
 
 ### Known follow-ups (post task-071)
 
-- ~~`cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment~~ — addressed by task-078 (#596): atlas-data self-purges its per-tenant Postgres rows and MinIO prefixes on graceful shutdown when its namespace is being deleted. `sweep-orphans.sh --minio` is the operator backstop for the rare case where atlas-data is force-evicted before its handler finishes. See §9.14.
+- ~~`cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment~~ — addressed by task-078 (#596): `cleanup.sh` now has a `drop-tenant-storage` phase that reads tenant UUIDs from atlas-data's still-alive Postgres database and `mc rm`'s the per-tenant MinIO prefixes BEFORE the `drop-dbs` phase tears the database down. See §9.14.
 
 ### Per-tenant cleanup architecture
 
 #### Teardown-integrated (primary, post-#596)
 
-atlas-data owns its per-tenant data lifecycle. On SIGTERM (Kubernetes pod termination), `tenantpurge.PurgeAllIfNamespaceTerminating` runs:
+The PostDelete cleanup Job (`atlas-pr-cleanup-<N>` in argocd ns) runs a new `drop-tenant-storage` phase BEFORE `drop-dbs`:
 
-1. Reads the pod's own Namespace via the Kubernetes API.
-2. If `metadata.deletionTimestamp` is **not** set → routine restart (rolling update, eviction, manual delete pod) → no-op, tenants preserved.
-3. If `deletionTimestamp` **is** set → env teardown (Argo CD is deleting the Application's namespace) → enumerate every tenant from `SELECT DISTINCT tenant_id FROM tenant_baselines`, then call `tenantpurge.Purge` for each (which deletes the per-tenant Postgres rows AND `atlas-{wz,assets,renders}/tenants/<id>/` MinIO prefixes via atlas-data's `minio.Client`).
+1. Reads tenant UUIDs from the still-alive `atlas-data-<env>` Postgres database via `SELECT DISTINCT tenant_id FROM tenant_baselines`. The DB is alive at PostDelete time because the same cleanup Job's `drop-dbs` phase is what eventually destroys it — ordering matters.
+2. For each tenant, runs `mc rm --recursive --force bee/{atlas-wz,atlas-assets,atlas-renders}/tenants/<id>/`. These are the same MinIO buckets/prefixes that atlas-data's `tenantpurge.Purge` would clean if it were callable (atlas-data is gone at PostDelete time, but its DB isn't).
+3. The Postgres half of `tenantpurge.Purge` (DELETE FROM per-tenant tables) is moot here — the next phase (`drop-dbs`) drops the entire `atlas-data-<env>` database.
 
 Implementation notes:
 
-- The `atlas-data-ns-reader` ClusterRole + per-env ClusterRoleBinding (`deploy/k8s/base/atlas-data.yaml` + `deploy/k8s/overlays/{pr,main}/atlas-data-ns-reader-crb.yaml`) grants atlas-data's ServiceAccount `namespaces: get`. The CRB is per-env so Argo CD garbage-collects it on Application deletion.
-- `terminationGracePeriodSeconds: 360` on the atlas-data Deployment gives the handler headroom for MinIO deletes on a fully-ingested PR env (~2 GiB / ~120K objects per tenant).
-- The canonical tenant is protected by `tenantpurge.ErrCanonicalRefused` — the handler skips it explicitly.
-- atlas-main: the handler is wired up but typically never fires (atlas-main namespace doesn't get a deletionTimestamp under normal operations). Defensive, uniform code path.
-- Force-evicted pods (OOM, node failure) skip SIGTERM and leave tenant data behind → `sweep-orphans.sh --minio` is the operator backstop (see below).
+- Required env on the cleanup Job: `MINIO_ENDPOINT` (added to the `atlas-pr-cleanup-env` ConfigMap — cluster-infra mirrors from `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml`) and `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` (from `minio-root-creds` Secret reflected from `minio` ns; `optional: true` on the envFrom so cleanup doesn't wedge in clusters where the reflection isn't wired up).
+- Cleanup is one phase among eight; failure is logged + tolerated, not fatal (matches the rest of the script's idiom). `sweep-orphans.sh --minio` is the operator backstop for cases where the cleanup Job itself doesn't run (force-evicted before completing, manual finalizer-strip, etc.).
+- No additional RBAC needed — the cleanup Job already has `db-credentials` to reach Postgres, and `mc` ships in the bootstrap image (also added in task-078).
+- atlas-data does NOT need a SIGTERM handler, ClusterRole for `namespaces: get`, or extended `terminationGracePeriodSeconds`. Routine atlas-data pod restarts preserve tenants; only the PostDelete Job during env teardown wipes them.
 
 #### `--minio` (backstop, also primary on pre-#596 leaks)
 

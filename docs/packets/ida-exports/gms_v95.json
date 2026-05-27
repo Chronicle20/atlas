@@ -3382,6 +3382,178 @@
           "comment": "message (acceptance note from CUIReceiveGift::GetResult)"
         }
       ]
+    },
+
+    "CWvsContext::OnFriendResult#CapacityUpdate": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x15/21, CAPACITY_UPDATE) — dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nFriendMax — new buddy-list capacity written into CharacterData.nFriendMax"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ChannelChange": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x14/20, CHANNEL_CHANGE) — dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID — characterId of the buddy whose channel changed"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inShop — 0=not in cash shop, 1=in cash shop (m_aInShop[Index])"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nChannelID — new channel id (stored in m_aFriend[Index].nChannelID; -1=offline)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Error": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode — error sub-op byte (0x0B=11..0x0F=15, 0x10=16..0x13=19, 0x16=22, 0x17=23); each arm shows a StringPool notice dialog with no further packet reads except cases 0x10/0x11/0x13/0x16 which do Decode1 + optional DecodeStr"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Invite": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x09, INVITE) — dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID — originatorId (characterId of the player sending the friend request)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "originatorName — display name of the requester (ZXString, variable length)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v25 — extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v26 — extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_Friend entry (39 bytes via CFriend::Insert → GW_Friend::Decode → DecodeBuffer(this,0x27)): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inShop — after GW_Friend::Insert, CFriend::Insert reads Decode1 for m_aInShop[new_entry]"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListUpdate": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x07/0x0A/0x12, LIST_UPDATE variants) — dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count — number of buddy entries (v4); used for ZArray realloc"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "buddy entries — count × 39 bytes (GW_Friend array) decoded as DecodeBuffer(m_aFriend.a, 39*count)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "inShop flags — count × 4 bytes (int array) decoded as DecodeBuffer(m_aInShop.a, 4*count)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Update": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x08, UPDATE) — dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID — characterId used to locate the buddy via CFriend::FindIndex"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_Friend update — 39 bytes via GW_Friend::Decode → DecodeBuffer(this,0x27): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inShop — updated inShop flag stored in m_aInShop[Index]"
+        }
+      ]
+    },
+
+    "CField::SendSetFriendMsg": {
+      "address": "0x535240",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=1, ADD) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sTarget — name of the character to add as buddy"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sFriendGroup — buddy group name"
+        }
+      ]
+    },
+    "CField::SendAcceptFriendMsg": {
+      "address": "0x52f290",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=2, ACCEPT) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFriendID — characterId of the buddy whose request is being accepted"
+        }
+      ]
+    },
+    "CField::SendDeleteFriendMsg": {
+      "address": "0x52f170",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=3, DELETE) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFriendID — characterId of the buddy to remove"
+        }
+      ]
     }
   }
 }

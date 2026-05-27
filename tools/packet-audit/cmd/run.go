@@ -579,6 +579,53 @@ func candidatesFromFName(fname string) []candidate {
 		// Note: CCashShop gift-accept path uses the same NOTE_ACTION opcode with op=0;
 		// the wire layout (EncodeStr toName + EncodeStr message) matches atlas OperationSend.
 		return []candidate{{name: "OperationSend", pkg: "note", dir: csvpkg.DirServerbound}}
+
+	// --- Social: buddy ---
+	// CSV: BUDDYLIST (clientbound, opcode 0x24/36 in GMS v95) → CWvsContext::OnFriendResult
+	// dispatches on a leading mode byte to multiple sub-ops. Each atlas writer struct is
+	// modelled via a #-suffixed synthetic IDA entry (same pattern as note sub-ops above).
+	case "CWvsContext::OnFriendResult#CapacityUpdate":
+		// mode=0x15 (21, CAPACITY_UPDATE): Decode1(nFriendMax).
+		// Atlas struct: buddy/clientbound/capacity_update.go CapacityUpdate.
+		return []candidate{{name: "CapacityUpdate", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#ChannelChange":
+		// mode=0x14 (20, CHANNEL_CHANGE): Decode4(charId) + Decode1(inShop) + Decode4(channelId).
+		// Atlas struct: buddy/clientbound/channel_change.go ChannelChange.
+		return []candidate{{name: "ChannelChange", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#Error":
+		// mode=0x0B–0x17 (error sub-ops): mode byte only; no further packet reads on success
+		// path (error cases show StringPool notice dialogs). Sub-op enum deferred to _pending.md.
+		// Atlas struct: buddy/clientbound/error.go Error.
+		return []candidate{{name: "Error", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#Invite":
+		// mode=0x09 (INVITE): Decode4(origId) + DecodeStr(origName) + Decode4 + Decode4 +
+		// GW_Friend::Insert(39 bytes) + Decode1(inShop).
+		// Atlas struct: buddy/clientbound/invite.go Invite.
+		return []candidate{{name: "Invite", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#ListUpdate":
+		// mode=0x07/0x0A/0x12 (LIST_UPDATE): Decode1(count) + count×39(GW_Friend) + count×4(inShop).
+		// Atlas struct: buddy/clientbound/list_update.go ListUpdate.
+		// ⚠️ Analyzer flattens loop; IDA loop-bound citation: CFriend::Reset@0xa10760.
+		return []candidate{{name: "ListUpdate", pkg: "buddy", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnFriendResult#Update":
+		// mode=0x08 (UPDATE): Decode4(charId) + GW_Friend(39 bytes) + Decode1(inShop).
+		// Atlas struct: buddy/clientbound/update.go Update.
+		return []candidate{{name: "Update", pkg: "buddy", dir: csvpkg.DirClientbound}}
+
+	// CSV: BUDDYLIST_MODIFY (serverbound, opcode 0x99/153 in GMS v95) — three FNames share
+	// this opcode; each represents a different sub-operation (op-byte at Encode1 position 0).
+	case "CField::SendSetFriendMsg":
+		// Sub-op 1 (ADD): Encode1(1) + EncodeStr(name) + EncodeStr(group).
+		// Atlas struct: buddy/serverbound/operation_add.go OperationAdd.
+		return []candidate{{name: "OperationAdd", pkg: "buddy", dir: csvpkg.DirServerbound}}
+	case "CField::SendAcceptFriendMsg":
+		// Sub-op 2 (ACCEPT): Encode1(2) + Encode4(friendId).
+		// Atlas struct: buddy/serverbound/operation_accept.go OperationAccept.
+		return []candidate{{name: "OperationAccept", pkg: "buddy", dir: csvpkg.DirServerbound}}
+	case "CField::SendDeleteFriendMsg":
+		// Sub-op 3 (DELETE): Encode1(3) + Encode4(friendId).
+		// Atlas struct: buddy/serverbound/operation_delete.go OperationDelete.
+		return []candidate{{name: "OperationDelete", pkg: "buddy", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

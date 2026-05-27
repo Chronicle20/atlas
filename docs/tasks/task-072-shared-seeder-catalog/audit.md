@@ -255,3 +255,51 @@ Not in scope. The changes do not introduce, rename, or modify Kafka topics. No `
 ### Overall verdict
 
 **PASS** — branch meets backend developer guidelines for the scope of Go-touching changes. No new blocking findings. The single prior blocker (firstjob test float-formatted filenames) is resolved by commit `36b44c90c`; the secondary cleanup gap (`services/atlas-reactor-actions/scripts/reactors/` leftover) is resolved by commit `410275f94`.
+
+---
+
+## Re-audit post-main-merge (2026-05-27)
+
+**Reviewer:** backend-guidelines-reviewer
+**Branch HEAD:** `730099ac0` (merge of `origin/main` into `task-072-shared-seeder-catalog`)
+**Scope:** Verify the main-merge did NOT introduce regressions to task-072's Go-touching changes. Prior pre-merge verdict (PASS / READY_TO_MERGE) is not re-litigated.
+**Overall:** PASS
+
+### Merge artifacts inspected
+
+| Concern | Status | Evidence |
+|---------|--------|----------|
+| Dockerfile carries BOTH `atlas-outbox` (main) AND `atlas-seeder` (task) in mod-only COPY block | PASS | `Dockerfile:39` (atlas-outbox) and `Dockerfile:46` (atlas-seeder) |
+| Dockerfile carries BOTH libs in source COPY block | PASS | `Dockerfile:68` (atlas-outbox) and `Dockerfile:75` (atlas-seeder) |
+| Dockerfile synthesized `go.work` loop lists BOTH libs | PASS | `Dockerfile:92` (`atlas-outbox`) and `Dockerfile:93` (`atlas-seeder`); loop now enumerates 20 libs, matching the leading "20 atlas libs" comment at `Dockerfile:29` and the source-COPY block (20 entries, lines 61–80) |
+| `deploy/k8s/base/kustomization.yaml` retains task-072 `components: - components/seed-catalog` | PASS | `deploy/k8s/base/kustomization.yaml:66-67` |
+| `deploy/k8s/base/kustomization.yaml` retains main `configMapGenerator: atlas-ingress-routes` | PASS | `deploy/k8s/base/kustomization.yaml:69-72` |
+| `go.work` lists `./libs/atlas-outbox` AND `./libs/atlas-seeder` | PASS | `go.work:11` (atlas-outbox) and `go.work:18` (atlas-seeder) |
+| Seed-catalog component artifacts intact post-merge | PASS | `deploy/k8s/base/components/seed-catalog/` contains `configmap.yaml`, `kustomization.yaml`, `patch-mount.yaml`, `patch-sidecar.yaml`, `patch-volume.yaml` |
+| Kustomize render applies both stacks | PASS | `kubectl kustomize deploy/k8s/base` emits 57 `seed-catalog` references and 2 `atlas-ingress-routes` references (component active + configMapGenerator active simultaneously) |
+
+### Build & vet verification post-merge
+
+| Module | go vet | go build | Notes |
+|--------|--------|----------|-------|
+| `libs/atlas-seeder` | PASS | PASS (race tests PASS, 1.051s) | clean |
+| `services/atlas-gachapons/atlas.com/gachapons` | PASS | PASS | |
+| `services/atlas-drop-information/atlas.com/dis` | PASS | PASS | |
+| `services/atlas-map-actions/atlas.com/map-actions` | PASS | PASS | |
+| `services/atlas-reactor-actions/atlas.com/reactor` | PASS | PASS | |
+| `services/atlas-portal-actions/atlas.com/portal` | PASS | PASS | |
+| `services/atlas-npc-conversations/atlas.com/npc` | PASS | PASS | |
+| `services/atlas-npc-shops/atlas.com/npc` | PASS | PASS | |
+| `services/atlas-party-quests/atlas.com/party-quests` | PASS | PASS | |
+
+### Notes on the new shared Dockerfile pattern (introduced via main)
+
+Main now uses a single parameterized `Dockerfile` at the repo root (`ARG SERVICE`) instead of per-service Dockerfiles. Under this pattern each lib appears in exactly **3** placements: (a) mod-only COPY at lines 32–51, (b) source COPY at lines 61–80, and (c) the synthesized-`go.work` `for L in ...` loop at lines 91–94. The legacy DOM-22 "4-mention" check (which counted the now-removed per-service `go mod edit -replace=...` line) is therefore obsolete for this codebase. Both atlas-outbox and atlas-seeder are wired correctly under the new pattern.
+
+### Consistency observation (non-blocking, informational)
+
+`libs/atlas-outbox/` was introduced by main (PR #522) as a transactional outbox library. It is conceptually independent of `libs/atlas-seeder/` and does not impose any new pattern that atlas-seeder would need to mirror — they solve different problems (one persists pending Kafka events for at-least-once delivery; the other coordinates idempotent JSON-catalog ingestion). No drift to flag.
+
+### Verdict
+
+**PASS — no regressions from main-merge.** Both task-072's seed-catalog stack and main's outbox + ingress-routes additions coexist cleanly in `Dockerfile`, `deploy/k8s/base/kustomization.yaml`, and `go.work`. All eight migrated services and `libs/atlas-seeder` still build, vet, and (for `libs/atlas-seeder`) pass race tests. The pre-merge PASS / READY_TO_MERGE recommendation stands.

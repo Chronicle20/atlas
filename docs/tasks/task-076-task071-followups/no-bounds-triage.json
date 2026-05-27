@@ -1,0 +1,8 @@
+{
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "status": "pending-operator-run",
+  "note": "Run tools/triage-no-bounds.sh against a reachable atlas-data env with /tmp/no-bounds-ids.txt populated from atlas-data worker logs. See script header comment for the capture recipe.",
+  "reachable": [],
+  "unreachable": [],
+  "counts": { "reachable": 0, "unreachable": 0, "total": 0 }
+}

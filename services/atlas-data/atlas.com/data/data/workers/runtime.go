@@ -112,6 +112,15 @@ func serializeArchive(l logrus.FieldLogger, p Params, file *wz.File) (string, er
 // helper skips the XML serialization step — workers that only need to read a
 // single .img out of the archive (smap.img from Base.wz, gauge data from
 // UI.wz) avoid the cost of materializing the whole tree to disk.
+//
+// Concurrency: fetchArchive opens a fresh wz.File on a freshly-downloaded
+// local path. The returned *wz.File is published to a single worker
+// goroutine that holds it until the caller-provided cleanup runs. Other
+// workers fetching the same archive name receive their own *wz.File on
+// their own local copy (archiveSerialization memoizes the SERIALIZED form
+// but not the *wz.File itself), so the Seek+Read sequence inside
+// wz.Open's parseHeader/detectVersion/parseRoot runs single-threaded
+// per File and needs no parseMu coverage. See task-076 F4 / CONCURRENCY-03.
 func fetchArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (*wz.File, func(), error) {
 	if mc == nil {
 		return nil, func() {}, fmt.Errorf("minio client unavailable")

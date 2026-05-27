@@ -15,7 +15,11 @@ func ExtractMinimap(img *wz.Image) (image.Image, error) {
 	if img == nil {
 		return nil, ErrNoMinimap
 	}
-	cp := findMinimapCanvas(img.Properties())
+	props, err := img.Properties()
+	if err != nil {
+		return nil, fmt.Errorf("minimap properties: %w", err)
+	}
+	cp := findMinimapCanvas(props)
 	if cp == nil {
 		return nil, ErrNoMinimap
 	}
@@ -45,11 +49,17 @@ func findMinimapCanvas(props []property.Property) *property.CanvasProperty {
 
 // extractZmap parses a zmap.img property tree into an ordered slice of
 // layer-string names. Order in the WZ is the render order.
+//
+// best-effort: returns nil when img.Properties() fails to parse so callers
+// fall back to layer-declaration order instead of aborting layout extraction.
 func extractZmap(img *wz.Image) []string {
 	if img == nil {
 		return nil
 	}
-	props := img.Properties()
+	props, err := img.Properties()
+	if err != nil {
+		return nil
+	}
 	out := make([]string, 0, len(props))
 	for _, p := range props {
 		out = append(out, p.Name())

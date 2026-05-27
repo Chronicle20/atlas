@@ -41,7 +41,11 @@ func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.
 	var loginProps []property.Property
 	for _, img := range root.Images() {
 		if strings.EqualFold(img.Name(), "Login") {
-			loginProps = img.Properties()
+			props, err := img.Properties()
+			if err != nil {
+				return fmt.Errorf("ui worker: parse Login.img: %w", err)
+			}
+			loginProps = props
 			break
 		}
 	}

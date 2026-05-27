@@ -276,6 +276,8 @@ gh api --method DELETE \
 
 If the PostDelete render fails with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`, the Application targets a branch that no longer exists. Diagnose: `kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions[] | select(.message | contains("ComparisonError"))'`. Recovery is the same finalizer patch (step 2 above) followed by the sweep (step 1) — the branch is already gone so `drop-branch` is a no-op.
 
+**As of task-078, `cleanup.sh::do_drop_branch` pre-empts this race itself** — after a successful branch delete it patches the Application's `post-delete-finalizer.argocd.argoproj.io[/cleanup]` finalizers off so Argo CD can GC the Application without ever needing to re-render the now-missing source. The runbook step above is still the manual recovery for legacy Applications that were torn down before this fix, or for clusters where `atlas-pr-cleanup` SA was denied the patch permission. Observed first on PR 522 on 2026-05-27 — Application sat Terminating for 10h before manual finalizer-patch.
+
 ## §9.5 Rotating credentials
 
 All Argo CD-related Secrets live in the `argocd` namespace and are templated by `argocd-secrets.yml.example` in the cluster-infra repo. To rotate:
@@ -473,7 +475,61 @@ Alert wiring is out of scope for task-070 — this is observable but not paged.
 
 ### Known follow-ups (post task-071)
 
-- `cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment (cleanup keys off `ATLAS_ENV` for DB and Kafka drops; per-tenant MinIO cleanup needs the UUID). MinIO per-tenant prefixes (under `atlas-wz/tenants/<id>/`, `atlas-assets/tenants/<id>/`, `atlas-renders/tenants/<id>/`) therefore leak across PR teardowns. Postgres state continues to clear via the per-env database drop. Resolving this requires the cleanup Helm chart to inject `TENANT_ID`; until then operators may run `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` manually as needed. Extending `sweep-orphans.sh` (§9.11) with a MinIO phase would be the cleaner long-term fix.
+- ~~`cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment~~ — addressed by task-078 (#596): `cleanup.sh` now has a `drop-tenant-storage` phase that reads tenant UUIDs from atlas-data's still-alive Postgres database and `mc rm`'s the per-tenant MinIO prefixes BEFORE the `drop-dbs` phase tears the database down. See §9.14.
+
+### Per-tenant cleanup architecture
+
+#### Teardown-integrated (primary, post-#596)
+
+The PostDelete cleanup Job (`atlas-pr-cleanup-<N>` in argocd ns) runs a new `drop-tenant-storage` phase BEFORE `drop-dbs`:
+
+1. Reads tenant UUIDs from the still-alive `atlas-data-<env>` Postgres database via `SELECT DISTINCT tenant_id FROM tenant_baselines`. The DB is alive at PostDelete time because the same cleanup Job's `drop-dbs` phase is what eventually destroys it — ordering matters.
+2. For each tenant, runs `mc rm --recursive --force bee/{atlas-wz,atlas-assets,atlas-renders}/tenants/<id>/`. These are the same MinIO buckets/prefixes that atlas-data's `tenantpurge.Purge` would clean if it were callable (atlas-data is gone at PostDelete time, but its DB isn't).
+3. The Postgres half of `tenantpurge.Purge` (DELETE FROM per-tenant tables) is moot here — the next phase (`drop-dbs`) drops the entire `atlas-data-<env>` database.
+
+Implementation notes:
+
+- Required env on the cleanup Job: `MINIO_ENDPOINT` (added to the `atlas-pr-cleanup-env` ConfigMap — cluster-infra mirrors from `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml`) and `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` (from `minio-root-creds` Secret reflected from `minio` ns; `optional: true` on the envFrom so cleanup doesn't wedge in clusters where the reflection isn't wired up).
+- Cleanup is one phase among eight; failure is logged + tolerated, not fatal (matches the rest of the script's idiom). `sweep-orphans.sh --minio` is the operator backstop for cases where the cleanup Job itself doesn't run (force-evicted before completing, manual finalizer-strip, etc.).
+- No additional RBAC needed — the cleanup Job already has `db-credentials` to reach Postgres, and `mc` ships in the bootstrap image (also added in task-078).
+- atlas-data does NOT need a SIGTERM handler, ClusterRole for `namespaces: get`, or extended `terminationGracePeriodSeconds`. Routine atlas-data pod restarts preserve tenants; only the PostDelete Job during env teardown wipes them.
+
+#### `--minio` (backstop, also primary on pre-#596 leaks)
+
+`sweep-orphans.sh --minio` (added task-078, issue #596) enumerates UUID-prefixed paths under `atlas-wz/tenants/`, `atlas-assets/tenants/`, `atlas-renders/tenants/` and deletes any UUID that is BOTH:
+
+- not present in atlas-main's `atlas-tenants` REST listing (the long-lived env's tenant UUIDs — these are the allowlist), AND
+- aged past `MINIO_TENANT_SAFETY_WINDOW_SEC` (default 7200s / 2h) — covers in-flight bringups whose data-ingest is still writing.
+
+Refusal-to-act guards: an empty atlas-main tenant list aborts the sweep (refuses to operate on an empty allowlist). Missing `mc` aborts. Missing `MINIO_ENDPOINT` or credentials silently skips (matches the rest of the script's idiom).
+
+```bash
+# Dry-run from a workstation with cluster kubeconfig
+kubectl -n argocd run sweep-minio --rm -i --restart=Never \
+    --serviceaccount=atlas-pr-cleanup \
+    --image=ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest \
+    --overrides='{
+      "spec": {
+        "containers": [{
+          "name": "sweep-minio",
+          "image": "ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest",
+          "command": ["/atlas/sweep-orphans.sh", "--minio"],
+          "envFrom": [
+            {"configMapRef": {"name": "atlas-pr-cleanup-env"}}
+          ],
+          "env": [
+            {"name": "MINIO_ENDPOINT", "value": "minio.minio.svc.cluster.local:9000"},
+            {"name": "MINIO_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "minio-root-creds", "key": "MINIO_ROOT_USER"}}},
+            {"name": "MINIO_SECRET_KEY", "valueFrom": {"secretKeyRef": {"name": "minio-root-creds", "key": "MINIO_ROOT_PASSWORD"}}}
+          ]
+        }]
+      }
+    }'
+
+# Replace `--minio` with `--minio --apply` once the list looks correct.
+```
+
+`minio-root-creds` is in the `minio` namespace; reflect it (or copy) to `argocd` first if running from there. Operators can also `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` per-UUID for surgical recovery.
 
 ## §9.12 Diagnosing partial-cleanup failure
 

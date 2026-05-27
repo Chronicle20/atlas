@@ -2,6 +2,7 @@ package baseline
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"atlas-data/rest"
@@ -38,7 +39,8 @@ func publishInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 			}
 			sum, err := (Publisher{DB: db, MC: mc, L: d.Logger()}).Publish(r.Context(), input.Region, input.MajorVersion, input.MinorVersion)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				d.Logger().WithError(err).Errorf("baseline publish failed")
+				http.Error(w, fmt.Sprintf("publish failed: %s", err.Error()), http.StatusInternalServerError)
 				return
 			}
 			out := PublishOutputModel{

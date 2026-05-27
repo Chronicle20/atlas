@@ -35,6 +35,51 @@ type Restorer struct {
 	L  logrus.FieldLogger
 }
 
+// runRestoreTables consumes the tar reader and dispatches each table entry
+// to restoreOneTable. Pulled out of Restore so the marker UPSERT can be
+// deferred until every entry succeeds.
+func runRestoreTables(ctx context.Context, db *gorm.DB, tr *tar.Reader, target uuid.UUID) error {
+	for {
+		e, err := tr.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		table := strings.TrimSuffix(e.Name, ".binary")
+		if !contains(DumpTables, table) {
+			return fmt.Errorf("unexpected table %s", table)
+		}
+		if err := restoreOneTable(ctx, db, table, tr, target); err != nil {
+			return fmt.Errorf("restore table %s: %w", table, err)
+		}
+	}
+}
+
+func restoreOneTable(ctx context.Context, db *gorm.DB, table string, r io.Reader, target uuid.UUID) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM "+table+" WHERE tenant_id = ?", target.String()).Error; err != nil {
+			return err
+		}
+		rw := Rewriter{TenantColIndex: tenantColIndex(table), Target: target}
+		// Pipe rw.Stream() into COPY FROM STDIN BINARY through the raw connection.
+		return copyInBinary(ctx, tx, table, r, rw)
+	})
+}
+
+// cleanupAfterFailure DELETEs every DumpTables row for target in its own
+// best-effort transaction so a subsequent restore is not blocked by stale
+// rows. Cleanup failures are logged; the caller still returns the original
+// restore error so operators see the true cause.
+func cleanupAfterFailure(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, target uuid.UUID) {
+	for _, t := range DumpTables {
+		if err := db.WithContext(ctx).Exec("DELETE FROM "+t+" WHERE tenant_id = ?", target.String()).Error; err != nil {
+			l.WithError(err).Warnf("restore: cleanup DELETE FROM %s failed (best-effort)", t)
+		}
+	}
+}
+
 // Restore is destructive: DELETE rows for target tenant, COPY-FROM with rewrite,
 // ANALYZE, UPSERT tenant_baselines.
 //
@@ -91,31 +136,26 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 		return fmt.Errorf("%w: dump=%s current=%s", ErrSchemaMismatch, hdr.SchemaVersion, SchemaVersion)
 	}
 
-	// 3) Mutations only after both gates pass.
-	for {
-		e, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		table := strings.TrimSuffix(e.Name, ".binary")
-		if !contains(DumpTables, table) {
-			return fmt.Errorf("unexpected table %s", table)
-		}
-		if err := restoreOneTable(ctx, r.DB, table, tr, target); err != nil {
+	// 3) Mutations only after both gates pass. Two-phase finalization: per-
+	//    table transactions are unchanged; the tenant_baselines UPSERT is
+	//    deferred until every table loop iteration AND every ANALYZE
+	//    succeeds. A mid-restore failure triggers cleanupAfterFailure to
+	//    DELETE every DumpTables row for `target` so subsequent reads see
+	//    "never restored" rather than half-restored. See task-076 F5.
+	if err := runRestoreTables(ctx, r.DB, tr, target); err != nil {
+		r.L.WithError(err).Warnf("restore: table loop failed for target=%s region=%s ver=%d.%d; cleaning partial state", target, region, major, minor)
+		cleanupAfterFailure(ctx, r.L, r.DB, target)
+		return err
+	}
+
+	for _, t := range DumpTables {
+		if err := r.DB.WithContext(ctx).Exec("ANALYZE " + t).Error; err != nil {
+			r.L.WithError(err).Warnf("restore: ANALYZE %s failed; cleaning partial state", t)
+			cleanupAfterFailure(ctx, r.L, r.DB, target)
 			return err
 		}
 	}
 
-	// ANALYZE all tables
-	for _, t := range DumpTables {
-		if err := r.DB.WithContext(ctx).Exec("ANALYZE " + t).Error; err != nil {
-			return err
-		}
-	}
-	// UPSERT tenant_baselines
 	if err := r.DB.WithContext(ctx).Exec(`
         INSERT INTO tenant_baselines (tenant_id, region, major_version, minor_version, baseline_sha256, restored_at)
         VALUES (?, ?, ?, ?, ?, now())
@@ -124,18 +164,8 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
     `, target.String(), region, major, minor, expectedSum).Error; err != nil {
 		return err
 	}
+	r.L.Infof("restore: finalized target=%s region=%s ver=%d.%d sha=%s", target, region, major, minor, expectedSum)
 	return nil
-}
-
-func restoreOneTable(ctx context.Context, db *gorm.DB, table string, r io.Reader, target uuid.UUID) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("DELETE FROM "+table+" WHERE tenant_id = ?", target.String()).Error; err != nil {
-			return err
-		}
-		rw := Rewriter{TenantColIndex: tenantColIndex(table), Target: target}
-		// Pipe rw.Stream() into COPY FROM STDIN BINARY through the raw connection.
-		return copyInBinary(ctx, tx, table, r, rw)
-	})
 }
 
 func tenantColIndex(table string) int {

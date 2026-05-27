@@ -53,6 +53,93 @@ fi
 # log lines inside a phase use log warn / log error.
 # ----------------------------------------------------------------------------
 
+# do_drop_tenant_storage deletes per-tenant MinIO prefixes for every
+# tenant atlas-data has stored data for.
+#
+# Ordering matters: this phase MUST run BEFORE drop-dbs, because we
+# read the tenant UUID list from `tenant_baselines` in the live
+# atlas-data-<env> Postgres database. Once drop-dbs runs, that DB is
+# gone and the tenant list is unrecoverable from cleanup's POV.
+#
+# atlas-data is no longer alive at PostDelete time (Argo CD's
+# resources-finalizer drained the per-PR namespace before this hook
+# fired), so we can't call its DELETE /api/data/tenants/<id> REST
+# endpoint. Instead we replicate the MinIO half of `tenantpurge.Purge`
+# directly with `mc rm`. The Postgres-side row deletion that Purge
+# also does is moot here — the next phase (drop-dbs) drops the whole
+# database.
+#
+# Required env:
+#   MINIO_ENDPOINT, MINIO_ACCESS_KEY/MINIO_ROOT_USER,
+#   MINIO_SECRET_KEY/MINIO_ROOT_PASSWORD — direct MinIO creds with
+#     delete access on the per-tenant prefixes (`minio-root-creds`
+#     reflected from `minio` ns is the expected source).
+#   DB_HOST/PORT/USER/PASSWORD — already required for drop-dbs.
+#
+# Any missing dependency is a no-op (info-level "skipping" log) —
+# `sweep-orphans.sh --minio` remains the operator backstop. Issue #596.
+do_drop_tenant_storage() {
+    if [ -z "${MINIO_ENDPOINT:-}" ]; then
+        ATLAS_STEP=drop-tenant-storage log info "MINIO_ENDPOINT not set; skipping (sweep --minio is the backstop)"
+        return 0
+    fi
+    # Accept either the generic MINIO_ACCESS_KEY/SECRET_KEY env names or
+    # the MINIO_ROOT_USER/PASSWORD keys mounted from minio-root-creds.
+    local access="${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}"
+    local secret="${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}"
+    if [ -z "$access" ] || [ -z "$secret" ]; then
+        ATLAS_STEP=drop-tenant-storage log info "MinIO credentials not set; skipping"
+        return 0
+    fi
+    if ! command -v mc >/dev/null 2>&1; then
+        ATLAS_STEP=drop-tenant-storage log warn "mc not on PATH; skipping"
+        return 0
+    fi
+
+    # Read tenant UUIDs from atlas-data's tenant_baselines table.
+    # Missing table → atlas-data never ingested anything → no tenants
+    # to clean (no error).
+    local atlas_data_db="atlas-data-${ATLAS_ENV}"
+    local tenant_ids
+    if ! tenant_ids=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$atlas_data_db" \
+            -tAc "SELECT DISTINCT tenant_id FROM tenant_baselines" 2>/dev/null); then
+        ATLAS_STEP=drop-tenant-storage log info \
+            "could not read $atlas_data_db.tenant_baselines (db missing or table missing); skipping per-tenant MinIO cleanup"
+        return 0
+    fi
+    if [ -z "$tenant_ids" ]; then
+        ATLAS_STEP=drop-tenant-storage log info "no tenants in tenant_baselines; nothing to clean"
+        return 0
+    fi
+
+    ATLAS_STEP=drop-tenant-storage log info "deleting MinIO prefixes for $(printf '%s\n' "$tenant_ids" | wc -l) tenant(s)"
+
+    # Private mc config so we don't touch the host's, if any.
+    export MC_CONFIG_DIR="${MC_CONFIG_DIR:-/tmp/.mc-cleanup}"
+    mkdir -p "$MC_CONFIG_DIR"
+    local mc_endpoint="$MINIO_ENDPOINT"
+    case "$mc_endpoint" in
+        http://*|https://*) ;;
+        *) mc_endpoint="http://${mc_endpoint}" ;;
+    esac
+    if ! mc alias set bee "$mc_endpoint" "$access" "$secret" >/dev/null 2>&1; then
+        ATLAS_STEP=drop-tenant-storage log warn "mc alias set failed; skipping"
+        return 1
+    fi
+
+    local rc=0
+    while IFS= read -r tid; do
+        [ -z "$tid" ] && continue
+        for bucket in atlas-wz atlas-assets atlas-renders; do
+            # Idempotent: missing prefix is fine, mc emits a warning that
+            # we tolerate.
+            mc rm --recursive --force "bee/${bucket}/tenants/${tid}/" >/dev/null 2>&1 \
+                || ATLAS_STEP=drop-tenant-storage log warn "rm ${bucket}/tenants/${tid}/ returned non-zero"
+        done
+    done <<<"$tenant_ids"
+    return $rc
+}
+
 do_drop_dbs() {
     ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
     # Probe connectivity before the per-DB loop. Postgres unreachable
@@ -186,13 +273,18 @@ do_drop_branch() {
     fi
     ATLAS_STEP=drop-branch log info "deleting bot/pr-${PR_NUMBER}-resolved"
     local err
-    if ! err=$(gh api --method DELETE \
+    local branch_deleted=0
+    if err=$(gh api --method DELETE \
         -H "Authorization: Bearer ${GHCR_TOKEN}" \
         "/repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-${PR_NUMBER}-resolved" \
         2>&1); then
+        branch_deleted=1
+    else
         case "$err" in
             *"Reference does not exist"*|*"Branch not found"*|*"404"*)
-                return 0
+                # Already gone; treat as success for the race below — the
+                # Application targets a missing branch either way.
+                branch_deleted=1
                 ;;
             *)
                 ATLAS_STEP=drop-branch log warn "branch delete: $err"
@@ -200,20 +292,52 @@ do_drop_branch() {
                 ;;
         esac
     fi
+
+    # Once the bot branch is gone, Argo CD's post-delete-finalizer drain
+    # for atlas-pr-${PR_NUMBER} CANNOT re-render the source manifest. Its
+    # next reconcile will record `DeletionError: failed to generate
+    # manifest ... unable to resolve 'bot/pr-${PR_NUMBER}-resolved' to a
+    # commit SHA` and the finalizers stay attached forever — the
+    # "Source-branch-missing scenario" in runbook §9.4. PR 522 hit this
+    # on 2026-05-27 and sat Terminating for 10h until a manual
+    # finalizer-patch.
+    #
+    # Pre-empt the race by patching the post-delete finalizers ourselves
+    # NOW, while we still have the Application's identity (PR_NUMBER) and
+    # the cleanup Job is still running with its argocd-ns RBAC. After
+    # this, the Application can GC even if Argo's drain fails to render.
+    # The resources-finalizer drain already ran (we're in PostDelete);
+    # the per-env namespace is gone; this is just removing the
+    # bookkeeping finalizers Argo would otherwise drop after its
+    # final-render verification.
+    if [ "$branch_deleted" = "1" ] && command -v kubectl >/dev/null 2>&1; then
+        ATLAS_STEP=drop-branch log info \
+            "pre-empting post-delete-finalizer drain on atlas-pr-${PR_NUMBER}"
+        kubectl -n argocd patch application.argoproj.io "atlas-pr-${PR_NUMBER}" \
+            --type=merge -p '{"metadata":{"finalizers":[]}}' >/dev/null 2>&1 \
+            || ATLAS_STEP=drop-branch log warn \
+                "finalizer patch failed; manual recovery may be required (see runbook §9.4)"
+    fi
     return 0
 }
 
 # ----------------------------------------------------------------------------
 # Orchestration. PHASES is interleaved <phase_name> <function_name>.
 # ----------------------------------------------------------------------------
+#
+# drop-tenant-storage MUST come before drop-dbs because it reads
+# atlas-data's tenant_baselines table to enumerate per-tenant MinIO
+# prefixes. drop-dbs drops the atlas-data-<env> database; after that
+# the tenant list is unrecoverable.
 PHASES=(
-    drop-dbs     do_drop_dbs
-    drop-topics  do_drop_topics
-    drop-groups  do_drop_groups
-    drop-redis   do_drop_redis
-    drop-images  do_drop_images
-    drop-dns     do_drop_dns
-    drop-branch  do_drop_branch
+    drop-tenant-storage  do_drop_tenant_storage
+    drop-dbs             do_drop_dbs
+    drop-topics          do_drop_topics
+    drop-groups          do_drop_groups
+    drop-redis           do_drop_redis
+    drop-images          do_drop_images
+    drop-dns             do_drop_dns
+    drop-branch          do_drop_branch
 )
 TOTAL=$(( ${#PHASES[@]} / 2 ))
 ATLAS_PHASE_ERRORS=()

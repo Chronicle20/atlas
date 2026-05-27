@@ -144,6 +144,16 @@ ReactorHitRequest reports + SUMMARY rows updated across all 4 versions in this b
 
 The three negative shifts (MonsterMovement, Move, CharacterList) are explicitly **not corrected on the verdict line in-branch** — fixing them requires IDA-entry rewrites (Delegate refs for CMovePath/CMob::Init/CPet::Init, loop-unrolling cleanup for CharacterList) that are bulk per-version edits gated on the same IDA-decompile access blocking [Item 1] (v83/v87 `CMob::GenerateMovePath` addresses) and the [combat template population gap] (`template-audit.md` Finding 3). All three were ✅ wire-correct under the *old* analyzer and remain ✅ wire-correct under the new one — the verdict shift reflects the analyzer surfacing IDA-entry imprecision that previously masked itself via atlas's pre-collapse double-counting.
 
+### MonsterControl aggro byte (item 3)
+
+Atlas's `monster/clientbound/control.go` previously hardcoded `WriteByte(5)` at the post-mobId position (the v95 client's "controller aggro" flag). Wire shape was ✅ since width and position matched, but every controller assignment appeared to the client as aggro=true regardless of server intent. Fixed in this branch:
+
+- Added `aggro bool` field + `Aggro() bool` getter on `Control`. Constructor signature widens to `NewMonsterControl(controlType, uniqueId, monsterId, monster, aggro bool)`.
+- Encoder writes `byte(1)` if aggro else `byte(0)` (replacing the legacy hardcoded `byte(5)`). The v95 client reads non-zero as aggro, so the aggro=true case is wire-equivalent to the legacy behavior; the aggro=false case now correctly signals "no aggro" instead of falsely saying "aggro".
+- Decoder reads the byte into `m.aggro` (was `_ = r.ReadByte() // always 5`).
+- Atlas-channel caller (`services/atlas-channel/atlas.com/channel/socket/writer/monster_control.go`) updated: `ControlMonsterBody(m, controlType, aggro)`; `StartControlMonsterBody` threads aggro from `m.ControllerHasAggro()` / `e.Body.ControllerHasAggro`; `StopControlMonsterBody` passes `false` (Reset never reaches the aggro byte at all).
+- Existing 5-variant round-trip tests for ActiveInit / Reset / ActiveRequest updated to pass the new aggro arg; new `TestMonsterControlAggroByteReflectsState` pins the wire-level emission to `0x01` for aggro=true and `0x00` for aggro=false.
+
 ### Combat template opcode audit (item 2)
 
 PRD §4.4 required cross-checking combat template opcodes against IDA dispatcher case-statement values and landing fixes for any drift. Full findings in [`template-audit.md`](template-audit.md). Summary:

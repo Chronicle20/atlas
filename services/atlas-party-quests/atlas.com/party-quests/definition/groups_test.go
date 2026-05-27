@@ -67,7 +67,10 @@ func TestInitSeedResource_SeedRouteAccepted(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/party-quests/definitions/seed", nil)
-	req = req.WithContext(tenant.WithContext(req.Context(), te))
+	req.Header.Set(tenant.ID, te.Id().String())
+	req.Header.Set(tenant.Region, te.Region())
+	req.Header.Set(tenant.MajorVersion, fmt.Sprintf("%d", te.MajorVersion()))
+	req.Header.Set(tenant.MinorVersion, fmt.Sprintf("%d", te.MinorVersion()))
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -90,7 +93,10 @@ func TestInitSeedResource_StatusRouteOK(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/party-quests/definitions/seed/status", nil)
-	req = req.WithContext(tenant.WithContext(req.Context(), te))
+	req.Header.Set(tenant.ID, te.Id().String())
+	req.Header.Set(tenant.Region, te.Region())
+	req.Header.Set(tenant.MajorVersion, fmt.Sprintf("%d", te.MajorVersion()))
+	req.Header.Set(tenant.MinorVersion, fmt.Sprintf("%d", te.MinorVersion()))
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

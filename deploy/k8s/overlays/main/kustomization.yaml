@@ -208,7 +208,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
@@ -220,7 +220,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
@@ -232,7 +232,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
@@ -252,17 +252,17 @@ images:
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
@@ -274,7 +274,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
-    newTag: main-b3de17d
+    newTag: main-95172f5
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
@@ -292,6 +292,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-b3de17d
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-b3de17d
+    newTag: main-95172f5
 commonLabels:
   atlas.env: main

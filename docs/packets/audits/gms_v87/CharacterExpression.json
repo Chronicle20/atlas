@@ -3,7 +3,7 @@
   "IDAName": "CUser::OnEmotion",
   "Address": "0x9f7492",
   "Variant": "GMS/v87",
-  "BranchDepth": 3,
+  "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/character/clientbound/expression.go",
   "Rows": [
     {

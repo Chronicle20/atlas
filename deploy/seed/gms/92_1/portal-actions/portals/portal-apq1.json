@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Amoria Party Quest - Stage 2 to Stage 3 portal",
+      "mapId": 670010300,
+      "portalId": "apq1",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "670010400",
+                  "portalId": "0"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "apq1",
+    "type": "portal-action"
+  }
+}

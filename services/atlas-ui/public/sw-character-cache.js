@@ -3,7 +3,7 @@
  * Provides offline support for character images with intelligent cache management
  */
 
-const CACHE_NAME = 'atlas-character-images-v1';
+const CACHE_NAME = 'atlas-character-images-v2-task071';
 const CHARACTER_API_PATH = '/api/assets/';
 const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_CACHE_SIZE = 100; // Maximum number of cached images

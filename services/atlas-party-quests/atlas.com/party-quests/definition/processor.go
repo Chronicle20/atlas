@@ -2,7 +2,6 @@ package definition
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -19,7 +18,6 @@ type Processor interface {
 	ByQuestIdProvider(questId string) model.Provider[Model]
 	AllProvider() model.Provider[[]Model]
 	DeleteAllForTenant() (int64, error)
-	Seed() (SeedResult, error)
 	ValidateDefinitions() []ValidationResult
 }
 
@@ -96,48 +94,6 @@ func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	}
 	p.l.Debugf("Deleted [%d] PQ definitions for tenant [%s]", count, p.t.Id())
 	return count, nil
-}
-
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding PQ definitions for tenant [%s]", p.t.Id())
-
-	result := SeedResult{}
-
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing PQ definitions: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	models, loadErrors := LoadDefinitionFiles()
-
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	for _, rm := range models {
-		m, err := Extract(rm)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to extract model: %v", rm.QuestId, err))
-			result.FailedCount++
-			continue
-		}
-
-		_, err = p.Create(m)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", rm.QuestId, err))
-			result.FailedCount++
-			continue
-		}
-
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 func (p *ProcessorImpl) ValidateDefinitions() []ValidationResult {

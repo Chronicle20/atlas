@@ -1,0 +1,16 @@
+{
+  "data": {
+    "type": "continent-drop",
+    "id": "100",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 2000,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "chance": 5000
+        }
+      ]
+    }
+  }
+}

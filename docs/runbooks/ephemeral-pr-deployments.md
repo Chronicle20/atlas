@@ -66,6 +66,31 @@ curl -fsSL -o /opt/wz/atlas.zip \
 The main bootstrap container then reads `/opt/wz/atlas.zip` via the
 `WZ_CANONICAL` env (default unchanged).
 
+### Bootstrap mode (task-071: MinIO-backed ingest)
+
+As of task-071, `bootstrap.sh` runs WZ ingest entirely through atlas-data
+— the donor `atlas-wz-extractor` step is gone, and WZ assets land in
+MinIO (`atlas-canonical`, `atlas-wz`, `atlas-assets`, `atlas-renders`
+buckets) instead of an extracted XML tree on disk.
+
+The `BOOTSTRAP_MODE` env controls the data-ingest step:
+
+- `baseline` — call `POST /api/data/baseline/restore`. atlas-data pulls
+  a pre-built document dump from MinIO at
+  `atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump`
+  and replays it directly into Postgres. Fast (~60 s); requires the
+  operator to have published a baseline first via `POST /api/data/baseline/publish`.
+- `full` — `PATCH /api/data/wz` uploads the canonical zip to MinIO,
+  then `POST /api/data/process` invokes WZ ingest. ~10 minutes; used
+  when no baseline exists for the region/version pair.
+- `auto` (default) — probes
+  `HEAD $MINIO_ENDPOINT/atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump.sha256`
+  and resolves to `baseline` on 200 or `full` on absence (with a WARN
+  log so operators can correlate slow PR envs with missing baselines).
+
+To force a particular mode, override `BOOTSTRAP_MODE` on the bootstrap
+Job (Helm value or `kubectl set env`).
+
 ### Refreshing the canonical zip
 
 A re-upload (`mc cp ... atlas.zip`) is picked up by every subsequent PR sync;
@@ -154,18 +179,24 @@ created by Argo CD's ApplicationSet.
 
 ## §9.2 Force-cleanup of a PR env
 
-Bypass the grace period:
+Removing the `deploy-env` label or closing the PR triggers immediate teardown — there is **no grace window**. If a teardown wedges, see §9.4 for recovery and §9.11 for the orphan-sweep script.
+
+To stop a running env without closing the PR:
 
 ```sh
-kubectl delete application -n argocd atlas-pr-<N>
+gh pr edit <N> --remove-label deploy-env
 ```
 
-Argo's PostDelete hook fires immediately. Verify:
+The ApplicationSet drops its generator entry on the next reconcile (~30s), Argo CD deletes the Application, and the PostDelete Job in the `argocd` namespace reclaims per-env state within ~10 minutes.
+
+Verify in-flight cleanup:
 
 ```sh
-kubectl get jobs -n atlas-pr-<N>
-kubectl logs -n atlas-pr-<N> job/atlas-pr-cleanup -f
+kubectl -n argocd get jobs -l app=atlas-pr-cleanup
+kubectl -n argocd logs -l app=atlas-pr-cleanup --tail=200
 ```
+
+If you specifically need to force-delete an Application that is stuck (i.e., the ApplicationSet's generator still points at it), see §9.4.
 
 ## §9.3 Inspecting a stuck env
 
@@ -181,28 +212,112 @@ Loki query for env-scoped logs (`atlas.env=<token>`):
 {atlas_env="a3f7"} |= ""
 ```
 
-## §9.4 Re-running a failed PostDelete
+## §9.4 Recovery when teardown wedges
 
-If the cleanup Job fails, the Application stays in `cleanup-failed`. Re-trigger by force-syncing then re-deleting:
+**Contract:** PR close (or `deploy-env` label removal) ⇒ Argo CD deletes the Application immediately ⇒ the PostDelete Job in `argocd` namespace runs `cleanup.sh` ⇒ all per-env state (DBs, topics, groups, Redis keys, ghcr tags, bot branch) is reclaimed within ~10 minutes.
 
-```sh
-argocd app sync atlas-pr-<N> --force
-kubectl delete application -n argocd atlas-pr-<N>
+The PostDelete Job is named `atlas-pr-cleanup-<N>` in the `argocd` namespace (per-PR suffix as of task-077). Pre-task-077 the Job was a literal `atlas-pr-cleanup` for every PR — combined with `hook-delete-policy: HookSucceeded` (a Failed Job is never garbage-collected) this caused cross-PR head-of-line blocking: one PR's Failed cleanup would wedge every subsequent PR's teardown with `SharedResourceWarning: Job/atlas-pr-cleanup is part of applications argocd/atlas-pr-<X> and atlas-pr-<Y>`. Look up Jobs by label rather than by name (`kubectl -n argocd get jobs -l app=atlas-pr-cleanup,atlas.pr-number=<N>`) so existing recipes survive future renames.
+
+If something in that chain fails, the Application sits in `Terminating` with finalizers `post-delete-finalizer.argocd.argoproj.io/cleanup` and `resources-finalizer.argocd.argoproj.io` still present. Per-env state may be partially reclaimed.
+
+### Diagnose
+
+**Read the summary line first.** As of task-075, `cleanup.sh` runs every
+phase regardless of any single phase's outcome. The final log line is
+the authoritative status:
+
+```
+{"ts":…,"level":"info","atlas.env":"…","atlas.step":"done","msg":"cleanup complete phases_run=7 phases_failed=0"}
 ```
 
-Alternatively, manually re-create the cleanup Job from the rendered overlay (advanced; see plan §11.4).
+or, on partial failure:
+
+```
+{"ts":…,"level":"error","atlas.env":"…","atlas.step":"done","msg":"cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=[\"drop-topics\",\"drop-redis\"]"}
+```
+
+Use the `failed_phases` array to scope your re-run — only the listed
+phases need a manual recovery pass.  Every other phase ran to
+completion (look for its `phase complete` log line). Pre-task-075
+runbooks said "assume every phase after the failed one was skipped"; that
+assumption no longer applies.
+
+```sh
+kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions'
+kubectl -n argocd get jobs -l app=atlas-pr-cleanup,atlas.pr-number=<N>
+kubectl -n argocd logs -l app=atlas-pr-cleanup,atlas.pr-number=<N> --tail=500
+```
+
+Common signals:
+
+- `DeletionError: namespaces "atlas-pr-<N>" not found` — should not happen post-task-070; if it does, the cluster-infra ApplicationSet was rolled back. File an incident.
+- The PostDelete Job is `Failed` with logs showing a specific phase (e.g. `drop-topics`) erroring on a missing dep — fix the dep, re-run via the sweep (§9.11).
+- `cleanup.sh` ran to completion but `kubectl get application` still shows the Application — finalizer wasn't drained because the Job container exited non-zero on a non-critical step. Patch the finalizers (below).
+
+### Recover
+
+```sh
+# 1. (If state is suspected leaked.) Run the orphan sweep in list mode,
+#    review output, then re-run with --apply. See §9.11.
+sweep-orphans.sh <N>          # list
+sweep-orphans.sh --apply <N>  # reclaim
+
+# 2. Drop the Application's finalizers so the CRD can be removed.
+kubectl -n argocd patch application.argoproj.io atlas-pr-<N> \
+    --type=merge -p '{"metadata":{"finalizers":[]}}'
+
+# 3. (If the bot branch survived.) The sweep script handles this, but the
+#    manual command is:
+gh api --method DELETE \
+    /repos/Chronicle20/atlas/git/refs/heads/bot/pr-<N>-resolved
+```
+
+### Source-branch-missing scenario
+
+If the PostDelete render fails with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`, the Application targets a branch that no longer exists. Diagnose: `kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions[] | select(.message | contains("ComparisonError"))'`. Recovery is the same finalizer patch (step 2 above) followed by the sweep (step 1) — the branch is already gone so `drop-branch` is a no-op.
+
+**As of task-078, `cleanup.sh::do_drop_branch` pre-empts this race itself** — after a successful branch delete it patches the Application's `post-delete-finalizer.argocd.argoproj.io[/cleanup]` finalizers off so Argo CD can GC the Application without ever needing to re-render the now-missing source. The runbook step above is still the manual recovery for legacy Applications that were torn down before this fix, or for clusters where `atlas-pr-cleanup` SA was denied the patch permission. Observed first on PR 522 on 2026-05-27 — Application sat Terminating for 10h before manual finalizer-patch.
 
 ## §9.5 Rotating credentials
 
 All Argo CD-related Secrets live in the `argocd` namespace and are templated by `argocd-secrets.yml.example` in the cluster-infra repo. To rotate:
 
-- **GitHub PAT for Argo:** generate a new fine-scoped PAT, then
+- **`atlas-pr-cleanup-gh-token` (PR-env cleanup PAT).** Used by the PostDelete Job for bot-branch deletion and ghcr image-tag deletion. Fine-grained PAT minted under the `Chronicle20` user account.
+
+  Mint the token at *Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token*:
+
+  - **Resource owner:** `Chronicle20`.
+  - **Repository access:** *Only selected repositories* → `Chronicle20/atlas`.
+  - **Repository permissions:**
+    - **Contents** → *Read and write* — enables `DELETE /repos/Chronicle20/atlas/git/refs/heads/bot/pr-<N>-resolved`.
+    - **Metadata** → *Read-only* (mandatory; auto-selected).
+    - everything else → *No access*.
+  - **Account permissions:**
+    - **Packages** → *Read and write* — enables `DELETE /users/chronicle20/packages/container/<svc>/versions/<vid>` against ghcr.
+    - everything else → *No access*.
+  - **Expiration:** ≤ 90 days; operator calendars the next rotation.
+
+  Rotation procedure:
+
   ```sh
-  kubectl edit secret argocd-repo-creds-chronicle20-atlas -n argocd
+  # 1. Mint a new PAT with the scope set above.
+  # 2. Update the cluster secret.
+  kubectl -n argocd edit secret atlas-pr-cleanup-gh-token   # set key GHCR_TOKEN
+  # 3. Update the repo secret used by .github/workflows/pr-cleanup.yml's image-delete step.
+  gh secret set GHCR_TOKEN --repo Chronicle20/atlas --body "$NEW_PAT"
   ```
-  replace `password`, save. ApplicationSet picks up on next reconcile (~30s).
-- **Pi-hole tokens:** `kubectl edit secret pihole-credentials -n argocd`. The PostSync register Job reads at run-time; rotation takes effect on the next PR sync.
-- **ghcr PAT:** `kubectl edit secret ghcr-pat -n argocd`. Used by the PostDelete cleanup Job for image-tag deletion.
+
+  The nightly smoke test (§4.5 / `pr-env-smoke.yml`) will catch a missed half-rotation within 24h.
+
+  **If your GitHub plan does not expose Account-level `Packages` on fine-grained PATs:** mint a classic PAT instead (*Tokens (classic) → Generate new token (classic)*) with the `repo` scope and `delete:packages` (which auto-selects `read:packages`). Classic PATs are broader (whole-user repo write) but reliably support GHCR package deletion. Document the choice when rotating so the next operator knows which type to renew.
+
+- **GitHub PAT for Argo source-repo creds:** `kubectl edit secret argocd-repo-creds-chronicle20-atlas -n argocd`, replace `password`. ApplicationSet picks up on next reconcile (~30s). This token does NOT need `Contents: Read and write` (the cleanup PAT above owns branch deletion).
+
+- **Pi-hole tokens:** `kubectl edit secret pihole-credentials -n argocd`. Source Secret lives in `argocd` and is Reflector-replicated to every `atlas-pr-*` namespace. The PostSync register Job (in `atlas-pr-<N>`) reads the replica; the PostDelete cleanup Job (in `argocd`) reads the source directly. Rotation takes effect on the next PR sync.
+
+- **Database credentials (`db-credentials`):** source Secret lives in `atlas-main` and is Reflector-replicated to `atlas-pr-.*|argocd` (the per-PR namespaces AND `argocd` so the PostDelete cleanup Job can read it). `kubectl edit secret db-credentials -n atlas-main`; Reflector pushes the change to all replicas within seconds.
+
+- **ghcr-pat (legacy).** No longer used by the PostDelete Job (replaced by `atlas-pr-cleanup-gh-token`). If no other consumer needs it, remove it in a cluster-infra follow-up.
 
 ## §9.6 Bootstrap-duration metrics
 
@@ -259,3 +374,210 @@ gh pr edit <N> --add-label deploy-env
 Within ~30s, Argo CD's PR generator polls GitHub and creates the Application.
 
 To stop a PR's env without closing the PR: remove the label, then force-delete the Application (§9.2).
+
+## §9.11 Orphan sweep
+
+For PR-envs whose teardown wedged or pre-dated the task-070 fixes, `services/atlas-pr-bootstrap/scripts/sweep-orphans.sh` enumerates and (with `--apply`) deletes every leaked artifact.
+
+### One-shot from a workstation
+
+For one-off recovery you can run the image directly from a workstation
+with cluster credentials (kubeconfig pointing at the prod cluster's
+`argocd` namespace). The Job manifest form below mirrors the
+PostDelete cleanup Job's shape (envFrom the cluster-infra-owned
+ConfigMap; PR_NUMBER as the only per-invocation override). It is
+preferred over `kubectl run --rm -i` — non-TTY pods don't always stream
+logs reliably, and a Job leaves an inspectable record.
+
+Apply this manifest (substitute `PR_NUMBER`):
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: atlas-pr-cleanup-oneshot-
+  namespace: argocd
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: atlas-pr-cleanup
+      containers:
+        - name: cleanup
+          image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+          command: ["/atlas/cleanup.sh"]
+          envFrom:
+            - secretRef: { name: db-credentials }
+            - secretRef: { name: pihole-credentials }
+            - secretRef: { name: atlas-pr-cleanup-gh-token }
+            - configMapRef: { name: atlas-pr-cleanup-env }
+          env:
+            - name: PR_NUMBER
+              value: "<PR_NUMBER>"
+```
+
+Pipe through `kubectl -n argocd create -f -` (no `apply`; oneshot
+Jobs use `generateName`). Tail logs with:
+
+```bash
+kubectl -n argocd logs -l app.kubernetes.io/part-of=atlas-pr-cleanup --tail=-1 -f
+```
+
+The workstation no longer needs to export `DB_HOST`, `BOOTSTRAP_SERVERS`,
+`ATLAS_DB_NAMES`, `ATLAS_SERVICES`, etc. — those come from the
+cluster-infra-owned `atlas-pr-cleanup-env` ConfigMap. `PR_NUMBER` is
+the only value you supply.
+
+### In-cluster (preferred for production cluster credentials)
+
+`/atlas/sweep-orphans.sh` is part of the published bootstrap image as of
+task-075. The legacy `kubectl create configmap` + script-mount workaround
+is no longer needed.
+
+```bash
+kubectl -n argocd run sweep-orphans \
+    --rm -i --restart=Never \
+    --serviceaccount=atlas-pr-cleanup \
+    --image=ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest \
+    --overrides='{
+      "spec": {
+        "containers": [{
+          "name": "sweep-orphans",
+          "image": "ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest",
+          "command": ["/atlas/sweep-orphans.sh", "--apply", "<PR_NUMBER>"],
+          "envFrom": [
+            {"secretRef": {"name": "db-credentials"}},
+            {"secretRef": {"name": "pihole-credentials"}},
+            {"secretRef": {"name": "atlas-pr-cleanup-gh-token"}},
+            {"configMapRef": {"name": "atlas-pr-cleanup-env"}}
+          ]
+        }]
+      }
+    }'
+```
+
+Drop `--apply` (or pass `--list` explicitly) to enumerate without
+deleting. The script's Kafka phases use rpk as of task-075; the previous
+"kafka-topics.sh not on PATH; skipping" warning is gone.
+
+Idempotent — re-running on an already-clean PR exits 0 with all enumerations empty. The script tolerates absent infrastructure (it skips any phase whose required env var is unset), so partial-credential invocations also work for diagnosing one subsystem at a time.
+
+### Metric (cluster-infra)
+
+The cluster-infra `atlas-pr-cleanup` CronJob's orphan-sweep mode emits `atlas_pr_orphan_envs_total{pr_number,kind}` (counter). Operator dashboard query:
+
+```promql
+sum by (kind) (atlas_pr_orphan_envs_total)
+```
+
+Alert wiring is out of scope for task-070 — this is observable but not paged.
+
+### Known follow-ups (post task-071)
+
+- ~~`cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment~~ — addressed by task-078 (#596): `cleanup.sh` now has a `drop-tenant-storage` phase that reads tenant UUIDs from atlas-data's still-alive Postgres database and `mc rm`'s the per-tenant MinIO prefixes BEFORE the `drop-dbs` phase tears the database down. See §9.14.
+
+### Per-tenant cleanup architecture
+
+#### Teardown-integrated (primary, post-#596)
+
+The PostDelete cleanup Job (`atlas-pr-cleanup-<N>` in argocd ns) runs a new `drop-tenant-storage` phase BEFORE `drop-dbs`:
+
+1. Reads tenant UUIDs from the still-alive `atlas-data-<env>` Postgres database via `SELECT DISTINCT tenant_id FROM tenant_baselines`. The DB is alive at PostDelete time because the same cleanup Job's `drop-dbs` phase is what eventually destroys it — ordering matters.
+2. For each tenant, runs `mc rm --recursive --force bee/{atlas-wz,atlas-assets,atlas-renders}/tenants/<id>/`. These are the same MinIO buckets/prefixes that atlas-data's `tenantpurge.Purge` would clean if it were callable (atlas-data is gone at PostDelete time, but its DB isn't).
+3. The Postgres half of `tenantpurge.Purge` (DELETE FROM per-tenant tables) is moot here — the next phase (`drop-dbs`) drops the entire `atlas-data-<env>` database.
+
+Implementation notes:
+
+- Required env on the cleanup Job: `MINIO_ENDPOINT` (added to the `atlas-pr-cleanup-env` ConfigMap — cluster-infra mirrors from `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml`) and `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` (from `minio-root-creds` Secret reflected from `minio` ns; `optional: true` on the envFrom so cleanup doesn't wedge in clusters where the reflection isn't wired up).
+- Cleanup is one phase among eight; failure is logged + tolerated, not fatal (matches the rest of the script's idiom). `sweep-orphans.sh --minio` is the operator backstop for cases where the cleanup Job itself doesn't run (force-evicted before completing, manual finalizer-strip, etc.).
+- No additional RBAC needed — the cleanup Job already has `db-credentials` to reach Postgres, and `mc` ships in the bootstrap image (also added in task-078).
+- atlas-data does NOT need a SIGTERM handler, ClusterRole for `namespaces: get`, or extended `terminationGracePeriodSeconds`. Routine atlas-data pod restarts preserve tenants; only the PostDelete Job during env teardown wipes them.
+
+#### `--minio` (backstop, also primary on pre-#596 leaks)
+
+`sweep-orphans.sh --minio` (added task-078, issue #596) enumerates UUID-prefixed paths under `atlas-wz/tenants/`, `atlas-assets/tenants/`, `atlas-renders/tenants/` and deletes any UUID that is BOTH:
+
+- not present in atlas-main's `atlas-tenants` REST listing (the long-lived env's tenant UUIDs — these are the allowlist), AND
+- aged past `MINIO_TENANT_SAFETY_WINDOW_SEC` (default 7200s / 2h) — covers in-flight bringups whose data-ingest is still writing.
+
+Refusal-to-act guards: an empty atlas-main tenant list aborts the sweep (refuses to operate on an empty allowlist). Missing `mc` aborts. Missing `MINIO_ENDPOINT` or credentials silently skips (matches the rest of the script's idiom).
+
+```bash
+# Dry-run from a workstation with cluster kubeconfig
+kubectl -n argocd run sweep-minio --rm -i --restart=Never \
+    --serviceaccount=atlas-pr-cleanup \
+    --image=ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest \
+    --overrides='{
+      "spec": {
+        "containers": [{
+          "name": "sweep-minio",
+          "image": "ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest",
+          "command": ["/atlas/sweep-orphans.sh", "--minio"],
+          "envFrom": [
+            {"configMapRef": {"name": "atlas-pr-cleanup-env"}}
+          ],
+          "env": [
+            {"name": "MINIO_ENDPOINT", "value": "minio.minio.svc.cluster.local:9000"},
+            {"name": "MINIO_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "minio-root-creds", "key": "MINIO_ROOT_USER"}}},
+            {"name": "MINIO_SECRET_KEY", "valueFrom": {"secretKeyRef": {"name": "minio-root-creds", "key": "MINIO_ROOT_PASSWORD"}}}
+          ]
+        }]
+      }
+    }'
+
+# Replace `--minio` with `--minio --apply` once the list looks correct.
+```
+
+`minio-root-creds` is in the `minio` namespace; reflect it (or copy) to `argocd` first if running from there. Operators can also `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` per-UUID for surgical recovery.
+
+## §9.12 Diagnosing partial-cleanup failure
+
+As of task-075 the PostDelete Job runs every phase regardless of any
+single phase's outcome. The summary line names which phases failed:
+
+```
+cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=["drop-topics","drop-redis"]
+```
+
+Re-run only the failed phases via the §9.11 sweep-orphans path with
+`--apply`, or manually:
+
+| Phase | Manual re-run |
+|---|---|
+| `drop-dbs` | `psql -h postgres.home -U <user> -c 'DROP DATABASE IF EXISTS "atlas-<base>-<env>";'` (per leaked DB) |
+| `drop-topics` | `rpk topic list -X brokers=kafka.home:9093 --format json \| jq -r '.[].name' \| grep -- '-<env>$' \| xargs -r -n1 rpk topic delete -X brokers=kafka.home:9093` |
+| `drop-groups` | `rpk group list -X brokers=kafka.home:9093 --format json \| jq -r '.[].name' \| grep -- '\[<env>\]$' \| xargs -r -d '\n' -n1 rpk group delete -X brokers=kafka.home:9093` |
+| `drop-redis` | `redis-cli -u redis://redis.home:6379 --scan --pattern '<env>:*' \| xargs -r -n 1000 redis-cli -u redis://redis.home:6379 DEL` |
+| `drop-images` | See §9.5 GHCR token; the image-cleanup phase of `/atlas/sweep-orphans.sh --apply <PR>` is the canonical re-run path |
+| `drop-dns` | Pi-hole admin UI on each replica; remove A records ending `… <PR_NUMBER>.atlas.home` |
+| `drop-branch` | `gh api --method DELETE /repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-<PR>-resolved` |
+
+The full re-run path (`/atlas/sweep-orphans.sh --apply <PR>`) is
+idempotent and is the recommended recovery — it touches every phase
+again with `WHERE NOT EXISTS`-equivalent semantics. The per-phase
+recipes above are for cases where the operator wants to address a
+single phase in isolation (e.g. the rpk broker is the only thing that
+was unavailable during cleanup).
+
+## §9.13 Coordination with cluster-infra
+
+This repo (`Chronicle20/atlas`) deploys per-PR resources into
+`atlas-pr-<N>` namespaces. Long-lived `argocd`-namespace dependencies
+are owned by the cluster-infra repo. The atlas repo expects these to
+already exist in `argocd`:
+
+- `ServiceAccount atlas-pr-cleanup` + `Role` / `RoleBinding` granting
+  the PostDelete Job permission to query+patch Applications.
+- `Secret atlas-pr-cleanup-gh-token` (fine-grained PAT for GHCR + bot
+  branch delete).
+- `ConfigMap atlas-pr-cleanup-env` — shape mirrored from
+  `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml`.
+
+When a new service is added to `.github/config/services.json`,
+`gen-cleanup-env.sh` regenerates the example artifact and CI fails
+the PR until the artifact is committed. Once that PR merges,
+cluster-infra mirrors the new shape into the live ConfigMap. Order
+of merges matters: cluster-infra changes land BEFORE the consuming
+atlas PR, otherwise the next PostDelete Job wedges with
+`CreateContainerConfigError: configmap "atlas-pr-cleanup-env" not found`.

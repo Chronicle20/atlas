@@ -30,7 +30,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.26.0'
   NODE_VERSION: '22'
   REGISTRY: ghcr.io
 
@@ -113,92 +113,98 @@ jobs:
           fi
 
   # ============================================
-  # Build and Push AMD64 Images
+  # Build and Push AMD64 Images (bake — sharded matrix)
   # ============================================
   build-amd64:
-    name: Build AMD64 - ${{ matrix.service.name }}
+    name: Build AMD64 (bake — shard ${{ matrix.shard }}/3)
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.docker-services-matrix) }}
+        shard: [0, 1, 2, 3]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Derive bake inputs for this shard
+        id: bake-inputs
+        env:
+          MATRIX_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          TARGETS=$(echo "$MATRIX_JSON" | jq -c --argjson s "$SHARD" \
+            '[to_entries[] | select(.key % 4 == $s) | .value.name]')
+          IMAGE_MAP=$(echo "$MATRIX_JSON" | jq -c 'map({(.name): .docker_image}) | add')
+          echo "targets=$TARGETS"          >> "$GITHUB_OUTPUT"
+          echo "image-name-map=$IMAGE_MAP" >> "$GITHUB_OUTPUT"
+          echo "Shard ${SHARD} got $(echo "$TARGETS" | jq 'length') target(s)"
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Build and push AMD64 images (bake)
+        if: steps.bake-inputs.outputs.targets != '[]'
+        uses: ./.github/actions/docker-build
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and push AMD64 image
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.service.docker_context }}
-          file: ${{ matrix.service.path }}/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ matrix.service.docker_image }}:latest-amd64
-            ${{ matrix.service.docker_image }}:main-${{ needs.detect-changes.outputs.short-sha }}-amd64
-          cache-from: type=gha,scope=${{ matrix.service.name }}-amd64
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-amd64
-          # Disable attestations to produce single-platform image (not manifest list)
-          # Required for docker manifest create to work correctly
-          provenance: false
-          sbom: false
+          targets: ${{ steps.bake-inputs.outputs.targets }}
+          image-name-map: ${{ steps.bake-inputs.outputs.image-name-map }}
+          tags: latest-amd64,main-${{ needs.detect-changes.outputs.short-sha }}-amd64
+          push: 'true'
+          platform: linux/amd64
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GHCR_TOKEN }}
+          cache-scope: atlas-bake-amd64-shard${{ matrix.shard }}
 
   # ============================================
-  # Build and Push ARM64 Images
+  # Build and Push ARM64 Images (bake — sharded matrix)
   # ============================================
   build-arm64:
-    name: Build ARM64 - ${{ matrix.service.name }}
+    name: Build ARM64 (bake — shard ${{ matrix.shard }}/3)
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
     runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.docker-services-matrix) }}
+        shard: [0, 1, 2, 3]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Derive bake inputs for this shard
+        id: bake-inputs
+        env:
+          MATRIX_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          TARGETS=$(echo "$MATRIX_JSON" | jq -c --argjson s "$SHARD" \
+            '[to_entries[] | select(.key % 4 == $s) | .value.name]')
+          IMAGE_MAP=$(echo "$MATRIX_JSON" | jq -c 'map({(.name): .docker_image}) | add')
+          echo "targets=$TARGETS"          >> "$GITHUB_OUTPUT"
+          echo "image-name-map=$IMAGE_MAP" >> "$GITHUB_OUTPUT"
+          echo "Shard ${SHARD} got $(echo "$TARGETS" | jq 'length') target(s)"
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Build and push ARM64 images (bake)
+        if: steps.bake-inputs.outputs.targets != '[]'
+        uses: ./.github/actions/docker-build
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and push ARM64 image
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.service.docker_context }}
-          file: ${{ matrix.service.path }}/Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: |
-            ${{ matrix.service.docker_image }}:latest-arm64
-            ${{ matrix.service.docker_image }}:main-${{ needs.detect-changes.outputs.short-sha }}-arm64
-          cache-from: type=gha,scope=${{ matrix.service.name }}-arm64
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-arm64
-          # Disable attestations to produce single-platform image (not manifest list)
-          # Required for docker manifest create to work correctly
-          provenance: false
-          sbom: false
+          targets: ${{ steps.bake-inputs.outputs.targets }}
+          image-name-map: ${{ steps.bake-inputs.outputs.image-name-map }}
+          tags: latest-arm64,main-${{ needs.detect-changes.outputs.short-sha }}-arm64
+          push: 'true'
+          platform: linux/arm64
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GHCR_TOKEN }}
+          cache-scope: atlas-bake-arm64-shard${{ matrix.shard }}
 
   # ============================================
   # Create and Push Multi-Arch Manifests
@@ -275,6 +281,13 @@ jobs:
           curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64" \
             -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
+      - name: Stamp CATALOG_REVISION
+        run: |
+          set -e
+          for dir in deploy/seed/*/*/; do
+            printf '%s' "$GITHUB_SHA" > "${dir}CATALOG_REVISION"
+          done
+
       - name: Bump newTag for every built service
         env:
           SERVICES_JSON: ${{ needs.detect-changes.outputs.docker-services-matrix }}
@@ -317,7 +330,7 @@ jobs:
           git config user.name 'atlas-image-bot'
           git config user.email 'atlas-image-bot@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add "$OVERLAY"
+          git add "$OVERLAY" deploy/seed
           # Loop prevention is handled at the workflow trigger level via
           # paths-ignore on main-publish.yml's `on.push` — the squash-merge
           # commit will only touch deploy/k8s/overlays/main/kustomization.yaml,

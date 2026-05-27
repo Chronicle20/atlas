@@ -8,22 +8,12 @@ import (
 	"atlas-monster-book/collection"
 	mbmsg "atlas-monster-book/kafka/message/monsterbook"
 
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
-
-// noopWriter is a kafka.Writer stub that discards all messages so message.Emit
-// does not attempt a real TCP connection during unit tests.
-type noopWriter struct{ topic string }
-
-func (w *noopWriter) Topic() string                                              { return w.topic }
-func (w *noopWriter) WriteMessages(_ context.Context, _ ...kafka.Message) error { return nil }
-func (w *noopWriter) Close() error                                              { return nil }
 
 func tenantCtx(t *testing.T, id uuid.UUID) context.Context {
 	t.Helper()
@@ -34,17 +24,7 @@ func tenantCtx(t *testing.T, id uuid.UUID) context.Context {
 	return tenant.WithContext(context.Background(), tn)
 }
 
-func setupNoopProducer(t *testing.T) {
-	t.Helper()
-	kafkaProducer.ResetInstance()
-	kafkaProducer.GetManager(kafkaProducer.ConfigWriterFactory(func(topicName string) kafkaProducer.Writer {
-		return &noopWriter{topic: topicName}
-	}))
-	t.Cleanup(kafkaProducer.ResetInstance)
-}
-
 func TestHandleCardPickedUpInsertsAndRecomputes(t *testing.T) {
-	setupNoopProducer(t)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open: %v", err)
@@ -89,7 +69,6 @@ func TestHandleCardPickedUpInsertsAndRecomputes(t *testing.T) {
 }
 
 func TestHandleCardPickedUpIgnoresWrongType(t *testing.T) {
-	setupNoopProducer(t)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open: %v", err)

@@ -20,7 +20,7 @@ kustomize build deploy/k8s/overlays/pr
 
 (`kustomize` 4.5+; install from https://kubectl.docs.kubernetes.io/installation/kustomize/)
 
-The PR overlay output contains `PLACEHOLDER_ATLAS_ENV`, `PLACEHOLDER_PR_NUMBER`, and `PLACEHOLDER_SHA` slots that Argo CD's `ApplicationSet(atlas-pr)` substitutes at sync time. Locally-rendered output is not directly applyable to a cluster.
+The PR overlay output contains `PLACEHOLDER_ATLAS_ENV`, `PLACEHOLDER_PR_NUMBER`, and `PLACEHOLDER_FULL_SHA` slots that Argo CD's `ApplicationSet(atlas-pr)` substitutes at sync time. Locally-rendered output is not directly applyable to a cluster.
 
 ## Adding a new service
 

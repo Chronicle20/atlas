@@ -91,3 +91,13 @@ func (r *nextSkillInbox) Evict(t tenant.Model, uniqueId uint32) {
 	}
 	delete(inner, uniqueId)
 }
+
+// EvictTenant drops every entry for the given tenant. Invoked by
+// listener.RegisterEvictor when the last listener for a tenant drains
+// so the inbox doesn't retain dangling decisions for a tenant that
+// won't be served again until reconfigured.
+func (r *nextSkillInbox) EvictTenant(tid uuid.UUID) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.tenants, tid)
+}

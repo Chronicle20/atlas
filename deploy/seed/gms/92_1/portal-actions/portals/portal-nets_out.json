@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Nett's Pyramid Dunes - Exit portal that returns player to their saved MIRROR location",
+      "mapId": 926010000,
+      "portalId": "nets_out",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "warp_to_saved_mirror",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "locationType": "MIRROR"
+                },
+                "type": "warp_to_saved_location"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "nets_out",
+    "type": "portal-action"
+  }
+}

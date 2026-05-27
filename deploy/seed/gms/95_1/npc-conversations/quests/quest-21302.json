@@ -1,0 +1,232 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "end_intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "end_reawakening",
+                  "text": "Next"
+                },
+                {
+                  "nextState": "end_declinedAtStart",
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Wait.. Isn't that.. Did you remember how to make Red Jade?\r\nWow... you may be stupid and prone to amnesia, but this is why I can't abandon you. Now give me the jade!"
+            },
+            "id": "end_intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey! At least say you tried!"
+            },
+            "id": "end_declinedAtStart",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "end_intro",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "end_checkQuestCompleted",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Okay, now that I have the Red Jade back on, let me work on reawakening more of your abilities. I mean, your level's gone much higher since the last time we met, so I am sure I can work my magic a bit more this time!"
+            },
+            "id": "end_reawakening",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "21302",
+                      "type": "questStatus",
+                      "value": "2"
+                    }
+                  ],
+                  "nextState": "end_keepTraining"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "end_checkInventorySpace"
+                }
+              ]
+            },
+            "id": "end_checkQuestCompleted",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142131",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "end_removeRedJade"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "end_inventoryFull"
+                }
+              ]
+            },
+            "id": "end_checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Wow, your #bequip#k inventory is full. I need you to make at least 1 empty slot to complete this quest."
+            },
+            "id": "end_inventoryFull",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032312",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "end_grantRewards"
+                }
+              ]
+            },
+            "id": "end_removeRedJade",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142131",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "jobId": "2111"
+                  },
+                  "type": "change_job"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "end_keepTraining"
+                }
+              ]
+            },
+            "id": "end_grantRewards",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Come on, keep training so you can get all your abilities back, and that way we can explore together once more!"
+            },
+            "id": "end_keepTraining",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 21302,
+      "questName": "Aran Third Job Advancement",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21302",
+    "type": "quest-conversation"
+  }
+}

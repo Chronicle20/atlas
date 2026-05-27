@@ -41,23 +41,53 @@ jobs:
           set -euo pipefail
           for svc in $(jq -r '.[]' /tmp/svcs.json); do
             echo "Cleaning up $svc tags matching pr-${PR_NUMBER}-*"
-            gh api "/users/chronicle20/packages/container/${svc}%2F${svc}/versions" \
-              --paginate \
-              --jq '.[] | select(.metadata.container.tags[]? | startswith("pr-'"${PR_NUMBER}"'-")) | .id' \
-              | while read -r vid; do
-                  gh api --method DELETE \
-                    "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" \
-                    || echo "skip: $svc/$vid"
-              done
+            # List versions separately from the delete loop so a 404 on the
+            # listing call (package never published — e.g. the first PR that
+            # adds a new service to services.json) cleanly skips the service
+            # instead of aborting under `set -euo pipefail`.
+            VIDS=$(gh api "/users/chronicle20/packages/container/${svc}%2F${svc}/versions" \
+                     --paginate \
+                     --jq '.[] | select(.metadata.container.tags[]? | startswith("pr-'"${PR_NUMBER}"'-")) | .id' \
+                     2>/dev/null) \
+              || { echo "  skip: package $svc not present on ghcr"; continue; }
+            for vid in $VIDS; do
+              gh api --method DELETE \
+                "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" \
+                || echo "  skip: $svc/$vid"
+            done
           done
+
+  # Branch deletion intentionally NOT done here.
+  #
+  # `bot/pr-<N>-resolved` is the Argo CD ApplicationSet's targetRevision.
+  # Argo CD's PostDelete Job
+  # (`deploy/k8s/overlays/pr/postdelete-cleanup.yaml`) fires *immediately*
+  # on PR close / `deploy-env` label removal. The Job's cleanup.sh deletes
+  # the bot branch as its last step using the dedicated
+  # atlas-pr-cleanup-gh-token PAT (Contents: write on Chronicle20/atlas).
+  #
+  # If we deleted the branch here on PR close, the Application's
+  # PostDelete render — which targets bot/pr-<N>-resolved — would fail
+  # with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`,
+  # `post-delete-finalizer.argocd.argoproj.io/cleanup` couldn't complete,
+  # and the Application would wedge in Terminating. Reproduced 2026-05-16
+  # on PR #461.
+  #
+  # Branch lifetime is now coupled to PostDelete Job lifetime — see
+  # `docs/runbooks/ephemeral-pr-deployments.md` §9.4.
 
   notify-argo:
     name: Notify Argo of PR close
     runs-on: ubuntu-latest
-    needs: delete-images
+    needs: [delete-images]
     steps:
       - name: Log notice
         run: |
           echo "PR ${PR_NUMBER} closed at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "Argo CD's hourly cleanup CronJob will set cleanup-deadline within the hour."
-          echo "Force-cleanup (bypassing grace) is documented in docs/runbooks/ephemeral-pr-deployments.md §9.2."
+          echo "Argo CD's ApplicationSet will delete the Application immediately."
+          echo "The PostDelete Job runs in the argocd namespace and reclaims"
+          echo "per-env state (DBs, topics, groups, Redis keys, ghcr tags,"
+          echo "bot branch) within ~10 minutes."
+          echo "Recovery procedure if the teardown wedges:"
+          echo "  docs/runbooks/ephemeral-pr-deployments.md §9.4 (force-cleanup),"
+          echo "  §9.11 (full orphan sweep)."

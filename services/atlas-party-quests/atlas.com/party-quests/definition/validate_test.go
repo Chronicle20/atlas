@@ -15,8 +15,9 @@ func definitionsPath(t *testing.T) string {
 	t.Helper()
 	_, filename, _, ok := runtime.Caller(0)
 	require.True(t, ok, "failed to get caller info")
-	// validate_test.go is in definition/, definitions are at atlas-party-quests/party-quests/
-	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "party-quests")
+	// validate_test.go is in definition/; seed data lives at deploy/seed/gms/83_1/party-quests/definitions/
+	// relative to the repo root (5 levels up from definition/)
+	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "..", "deploy", "seed", "gms", "83_1", "party-quests", "definitions")
 }
 
 func TestValidate_AllDefinitions(t *testing.T) {

@@ -1,0 +1,136 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 22504,
+      "questName": "Evan Dragon Food Quest",
+      "startStateMachine": {
+        "startState": "dialogue_0",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue_1",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "NPC",
+              "text": "Ugh. This isn't going to work. I need something else. No plants. No meat. What, you have no idea? But you're the master, and you're older than me, too. You must know what'd be good for me!"
+            },
+            "id": "dialogue_0",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue_0",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue_2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "#bBut I don't. It's not like age has anything to do with this..."
+            },
+            "id": "dialogue_1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "dialogue_decline",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "speaker": "NPC",
+              "text": "Since you're older, you must be more experienced in the world, too. Makes sense that you'd know more than me. Oh, fine. I'll ask someone who's even older than you, master!"
+            },
+            "id": "dialogue_2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "NPC",
+              "text": "No use trying to find an answer to this on my own. I'd better look for #bsomeone older and wiser than master#k!"
+            },
+            "id": "dialogue_decline",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "dialogue_accepted"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "#b#b(You already asked Dad once, but you don't have any better ideas. Time to ask him again!)"
+            },
+            "id": "dialogue_accepted",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "22504",
+    "type": "quest-conversation"
+  }
+}

@@ -63,6 +63,10 @@ const (
 	EventKindCompartmentReleased       EventKind = "compartment.released"
 	EventKindCompartmentError          EventKind = "compartment.error"
 
+	// Inventory (rollup of all compartments for a character).
+	EventKindInventoryCreated        EventKind = "inventory.created"
+	EventKindInventoryCreationFailed EventKind = "inventory.creation_failed"
+
 	// Storage.
 	EventKindStorageMesosUpdated        EventKind = "storage.mesos_updated"
 	EventKindStorageError               EventKind = "storage.error"
@@ -88,7 +92,6 @@ const (
 // — no Kafka event advances the step. A missing entry is a bug: unknown
 // actions default-deny in StepAcceptsEvent, but the coverage test
 // (event_acceptance_test.go) catches missing entries before runtime.
-//
 var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Asset actions.
 	sharedsaga.AwardAsset:           {EventKindAssetCreated, EventKindAssetQuantityChanged},
@@ -160,6 +163,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Character lifecycle.
 	sharedsaga.CreateCharacter:       {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
+	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
 	sharedsaga.WarpToRandomPortal:         {},

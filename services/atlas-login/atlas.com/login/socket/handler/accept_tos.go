@@ -6,6 +6,7 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	account2 "github.com/Chronicle20/atlas/libs/atlas-packet/account/serverbound"
@@ -44,7 +45,11 @@ func issueSuccess(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 				return func(a account.Model) error {
 					sc, err := configuration.GetTenantConfig(t.Id())
 					if err != nil {
-						l.WithError(err).Errorf("Unable to find server configuration.")
+						if errors.Is(err, configuration.ErrNotReady) {
+							l.WithError(err).Debugf("Configuration projection not yet ready; skipping authorization for account [%d].", a.Id())
+						} else {
+							l.WithError(err).Errorf("Unable to find server configuration.")
+						}
 						return err
 					}
 

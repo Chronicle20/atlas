@@ -24,13 +24,9 @@ You are starting Phase 2 of the Atlas four-phase development workflow. Argument:
    > Task `<id>` exists on main but has no worktree. The current workflow expects every task to have its own worktree (created by `/spec-task`). Either move the task into a worktree or run `/spec-task` from scratch.
 5. Otherwise, the resolved location is `<worktree>/docs/tasks/<id>/`. Record `<worktree>` as the absolute path you'll use for all subsequent operations.
 
-### Step 2 — Verify we're in the right worktree
+### Step 2 — Ensure we're in the right worktree
 
-Run `pwd`. If it does NOT match `<worktree>`, tell the user:
-
-> Task `<id>` lives in `<worktree>`. Please `cd <worktree>` and re-run `/design-task <id>`.
-
-Stop. Do not proceed from the wrong cwd.
+Run `pwd`. If it does NOT match `<worktree>`, `cd <worktree>` yourself and continue from there. Do NOT ask the user to re-run the command — per CLAUDE.md's "Worktree Discipline" rule, cd into the task worktree yourself.
 
 ### Step 3 — Validate inputs
 

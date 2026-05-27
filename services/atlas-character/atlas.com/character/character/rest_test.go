@@ -102,7 +102,7 @@ func TestTransformExtractGmField(t *testing.T) {
 	im := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
-		SetName("TestCharacter").
+		SetName("TestChar").
 		SetLevel(10).
 		SetExperience(1000).
 		SetGm(1).

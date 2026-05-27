@@ -81,12 +81,12 @@ type AwardCurrencyPayload struct {
 
 // AwardFamePayload represents the payload required to award fame to a character.
 type AwardFamePayload struct {
-	CharacterId uint32     `json:"characterId"`          // CharacterId to award fame to
-	WorldId     world.Id   `json:"worldId"`              // WorldId associated with the action
-	ChannelId   channel.Id `json:"channelId"`            // ChannelId associated with the action
-	ActorId     uint32     `json:"actorId,omitempty"`    // ActorId identifies who is giving fame (e.g., quest ID)
-	ActorType   string     `json:"actorType,omitempty"`  // ActorType identifies the type of actor (e.g., "quest")
-	Amount      int16      `json:"amount"`               // Amount of fame to award (can be negative)
+	CharacterId uint32     `json:"characterId"`         // CharacterId to award fame to
+	WorldId     world.Id   `json:"worldId"`             // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`           // ChannelId associated with the action
+	ActorId     uint32     `json:"actorId,omitempty"`   // ActorId identifies who is giving fame (e.g., quest ID)
+	ActorType   string     `json:"actorType,omitempty"` // ActorType identifies the type of actor (e.g., "quest")
+	Amount      int16      `json:"amount"`              // Amount of fame to award (can be negative)
 }
 
 // DestroyAssetPayload represents the payload required to destroy an asset in a compartment.
@@ -262,12 +262,12 @@ type ValidateCharacterStatePayload struct {
 
 // CompleteQuestPayload represents the payload required to complete a quest.
 type CompleteQuestPayload struct {
-	CharacterId uint32             `json:"characterId"`        // CharacterId associated with the action
-	WorldId     world.Id           `json:"worldId"`            // WorldId associated with the action
-	QuestId     uint32             `json:"questId"`            // QuestId to complete
-	NpcId       uint32             `json:"npcId"`              // NpcId that completed the quest
-	Force       bool               `json:"force"`              // If true, skip requirement checks and just mark complete
-	Rewards     []QuestRewardItem  `json:"rewards,omitempty"`  // Item rewards granted alongside completion (for downstream display)
+	CharacterId uint32            `json:"characterId"`       // CharacterId associated with the action
+	WorldId     world.Id          `json:"worldId"`           // WorldId associated with the action
+	QuestId     uint32            `json:"questId"`           // QuestId to complete
+	NpcId       uint32            `json:"npcId"`             // NpcId that completed the quest
+	Force       bool              `json:"force"`             // If true, skip requirement checks and just mark complete
+	Rewards     []QuestRewardItem `json:"rewards,omitempty"` // Item rewards granted alongside completion (for downstream display)
 }
 
 // QuestRewardItem describes an item granted as part of a quest completion,
@@ -434,10 +434,10 @@ type SpawnMonsterPayload struct {
 
 // SpawnReactorDropsPayload represents the payload for spawning drops from a reactor.
 type SpawnReactorDropsPayload struct {
-	CharacterId    uint32     `json:"characterId"`    // Character who triggered the reactor
-	WorldId        world.Id   `json:"worldId"`        // WorldId for drop spawning
-	ChannelId      channel.Id `json:"channelId"`      // ChannelId for drop spawning
-	MapId          _map.Id    `json:"mapId"`          // MapId where drops should spawn
+	CharacterId    uint32     `json:"characterId"` // Character who triggered the reactor
+	WorldId        world.Id   `json:"worldId"`     // WorldId for drop spawning
+	ChannelId      channel.Id `json:"channelId"`   // ChannelId for drop spawning
+	MapId          _map.Id    `json:"mapId"`       // MapId where drops should spawn
 	Instance       uuid.UUID  `json:"instance"`
 	ReactorId      uint32     `json:"reactorId"`      // ReactorId for fetching drop configuration
 	Classification string     `json:"classification"` // Reactor classification string
@@ -617,6 +617,13 @@ type AwaitCharacterCreatedPayload struct {
 	CharacterName      string `json:"characterName"`                // Name of the character being created
 	FollowUpSagaId     string `json:"followUpSagaId"`               // ID of the follow-up saga to trigger
 	CreatedCharacterId uint32 `json:"createdCharacterId,omitempty"` // CharacterId once created (set by orchestrator)
+}
+
+// AwaitInventoryCreatedPayload represents the payload required to await
+// inventory-compartment creation. The orchestrator's result-forwarding
+// substitutes CharacterId=0 with the actual id emitted by handleCharacterCreatedEvent.
+type AwaitInventoryCreatedPayload struct {
+	CharacterId uint32 `json:"characterId"`
 }
 
 // StartInstanceTransportPayload represents the payload required to start an instance-based transport.

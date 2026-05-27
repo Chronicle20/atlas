@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - atlas-account.yaml
   - atlas-asset-expiration.yaml
-  - atlas-assets.yaml
   - atlas-ban.yaml
   - atlas-buddies.yaml
   - atlas-buffs.yaml
@@ -17,6 +16,7 @@ resources:
   - atlas-configurations.yaml
   - atlas-consumables.yaml
   - atlas-data.yaml
+  - atlas-data-ingest-job-template.yaml
   - atlas-drop-information.yaml
   - atlas-drops.yaml
   - atlas-effective-stats.yaml
@@ -32,9 +32,11 @@ resources:
   - atlas-login.yaml
   - atlas-map-actions.yaml
   - atlas-maps.yaml
+  - atlas-minio-init.yaml
   - atlas-merchant.yaml
   - atlas-messages.yaml
   - atlas-messengers.yaml
+  - atlas-monster-book.yaml
   - atlas-monster-death.yaml
   - atlas-monsters.yaml
   - atlas-notes.yaml
@@ -48,6 +50,7 @@ resources:
   - atlas-query-aggregator.yaml
   - atlas-quest.yaml
   - atlas-rates.yaml
+  - atlas-renders.yaml
   - atlas-reactor-actions.yaml
   - atlas-reactors.yaml
   - atlas-saga-orchestrator.yaml
@@ -57,9 +60,16 @@ resources:
   - atlas-transports.yaml
   - atlas-ui.yaml
   - atlas-world.yaml
-  - atlas-wz-extractor.yaml
   - env-configmap.yaml
   - namespace.yaml
+
+components:
+  - components/seed-catalog
+
+configMapGenerator:
+  - name: atlas-ingress-routes
+    files:
+      - routes.conf.template=routes.conf.template.generated
 
 # Push every Deployment to sync-wave 10 so Argo CD waits for the
 # atlas-kafka-precreate Job (sync-wave 0) to complete before rolling

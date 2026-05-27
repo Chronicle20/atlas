@@ -1,0 +1,6 @@
+[
+  {"name": "boss-spawn-events", "partitions": 3, "replicas": 1},
+  {"name": "boss-spawn-events-a1b2", "partitions": 3, "replicas": 1},
+  {"name": "character-events-a1b2", "partitions": 6, "replicas": 1},
+  {"name": "configurations-events", "partitions": 1, "replicas": 1}
+]

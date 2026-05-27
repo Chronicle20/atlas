@@ -31,9 +31,6 @@ type ProcessorMock struct {
 	// DeleteAllForTenantFunc is a function field for the DeleteAllForTenant method
 	DeleteAllForTenantFunc func() (int64, error)
 
-	// SeedFunc is a function field for the Seed method
-	SeedFunc func() (quest.SeedResult, error)
-
 	// GetStateMachineForCharacterFunc is a function field for the GetStateMachineForCharacter method
 	GetStateMachineForCharacterFunc func(questId uint32, characterId uint32) (quest.StateMachine, error)
 
@@ -101,14 +98,6 @@ func (m *ProcessorMock) DeleteAllForTenant() (int64, error) {
 		return m.DeleteAllForTenantFunc()
 	}
 	return 0, nil
-}
-
-// Seed is a mock implementation of the quest.Processor.Seed method
-func (m *ProcessorMock) Seed() (quest.SeedResult, error) {
-	if m.SeedFunc != nil {
-		return m.SeedFunc()
-	}
-	return quest.SeedResult{}, nil
 }
 
 // GetStateMachineForCharacter is a mock implementation of the quest.Processor.GetStateMachineForCharacter method

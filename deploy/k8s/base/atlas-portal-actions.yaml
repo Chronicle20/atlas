@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-portal-actions
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-portal-actions
     spec:
+      volumes: []
       containers:
       - name: portal-actions
         image: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:
@@ -36,8 +40,6 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: PORTAL_SCRIPTS_DIR
-          value: "/scripts/portals"
         - name: QUERY_AGGREGATOR_URL
           value: "http://atlas-query-aggregator:8080"
 ---

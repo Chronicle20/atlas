@@ -1,0 +1,342 @@
+{
+  "data": {
+    "attributes": {
+      "duration": 2700,
+      "exit": 926100700,
+      "failRequirements": [],
+      "fieldLock": "instance",
+      "name": "Romeo and Juliet Party Quest",
+      "questId": "magatia_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 261000011,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 0,
+          "mapIds": [
+            926100000,
+            926110000
+          ],
+          "name": "Investigation",
+          "properties": {
+            "investigationNpc": 2112007,
+            "julietVariant": 926110000,
+            "letterItems": [
+              4001130,
+              4001131
+            ],
+            "romeoVariant": 926100000
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 1,
+          "mapIds": [
+            926100001,
+            926110001
+          ],
+          "name": "Monster Elimination",
+          "properties": {
+            "killAll": true
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001132,
+              "type": "item",
+              "value": 3
+            }
+          ],
+          "duration": 0,
+          "index": 2,
+          "mapIds": [
+            926100100,
+            926110100
+          ],
+          "name": "Suspicious Liquid Collection",
+          "properties": {
+            "collectItemId": 4001132,
+            "monsters": [
+              9300147
+            ]
+          },
+          "rewards": [],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001133,
+              "type": "item",
+              "value": 1
+            }
+          ],
+          "duration": 0,
+          "index": 3,
+          "mapIds": [
+            926100200,
+            926100201,
+            926100202,
+            926110200,
+            926110201,
+            926110202
+          ],
+          "name": "Card Key Retrieval",
+          "properties": {
+            "cardKeyId": 4001133,
+            "experimentFiles": [
+              4001134,
+              4001135
+            ],
+            "monsters": [
+              9300148
+            ],
+            "npcId": 2112006
+          },
+          "rewards": [],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 4,
+          "mapIds": [
+            926100203,
+            926110203
+          ],
+          "name": "Reinforced Mutae",
+          "properties": {
+            "killAll": true,
+            "monsters": [
+              9300252,
+              9300253
+            ]
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 5,
+          "mapIds": [
+            926100300,
+            926100301,
+            926100302,
+            926100303,
+            926100304,
+            926110300,
+            926110301,
+            926110302,
+            926110303,
+            926110304
+          ],
+          "name": "Warp Combination Puzzle",
+          "properties": {
+            "levelsPerRoom": 10,
+            "unitRooms": 4
+          },
+          "rewards": [],
+          "type": "warp_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 6,
+          "mapIds": [
+            926100400,
+            926100401,
+            926110400,
+            926110401
+          ],
+          "name": "Boss Stage",
+          "properties": {
+            "bossMonsters": [
+              9300139,
+              9300140
+            ],
+            "friendlyNpc": 2112005,
+            "marbleRewards": {
+              "juliet": 4001159,
+              "romeo": 4001160
+            }
+          },
+          "rewards": [
+            {
+              "amount": 1,
+              "items": [
+                {
+                  "quantity": 100,
+                  "templateId": 2000003,
+                  "weight": 1
+                },
+                {
+                  "quantity": 100,
+                  "templateId": 2000002,
+                  "weight": 1
+                },
+                {
+                  "quantity": 20,
+                  "templateId": 2000004,
+                  "weight": 1
+                },
+                {
+                  "quantity": 10,
+                  "templateId": 2000005,
+                  "weight": 1
+                },
+                {
+                  "quantity": 50,
+                  "templateId": 2022003,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032016,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032015,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032014,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2041212,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2041020,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040502,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2041016,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2044701,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040301,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2043201,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040501,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040704,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2044001,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2043701,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040803,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1102026,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1102028,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1102029,
+                  "weight": 1
+                }
+              ],
+              "type": "random_item"
+            }
+          ],
+          "type": "boss",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "926100000"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "eq",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 4
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 71
+        },
+        {
+          "operator": "lte",
+          "referenceId": 0,
+          "type": "level_max",
+          "value": 85
+        }
+      ]
+    },
+    "id": "magatia_pq",
+    "type": "party-quest-definition"
+  }
+}

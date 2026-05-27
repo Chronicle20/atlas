@@ -1,0 +1,21 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Hak transit map (Mu Lung to Orbis) - Block portal to prevent manual exit during transport",
+      "mapId": 200090310,
+      "portalId": "crane_SS",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": []
+          }
+        }
+      ]
+    },
+    "id": "crane_SS",
+    "type": "portal-action"
+  }
+}

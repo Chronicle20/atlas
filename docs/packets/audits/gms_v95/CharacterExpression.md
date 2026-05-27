@@ -3,7 +3,7 @@
 - **IDA:** 0x8e0150
 - **Atlas file:** `libs/atlas-packet/character/clientbound/expression.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 3
+- **Branch depth:** 2
 - **Verdict:** ✅
 
 ## Wire-level diff

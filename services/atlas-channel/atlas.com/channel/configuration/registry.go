@@ -2,17 +2,13 @@ package configuration
 
 import (
 	"atlas-channel/configuration/tenant"
-	"context"
 	"errors"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
-var once sync.Once
 var configMu sync.RWMutex
 var serviceConfig *RestModel
 var tenantConfig map[uuid.UUID]tenant.RestModel
@@ -33,12 +29,15 @@ var readyOnce sync.Once
 const readyTimeout = 60 * time.Second
 
 // ErrNotReady is returned by Get* when the projection has not yet
-// published a snapshot within readyTimeout. Callers should log and skip;
-// /readyz keeps the pod out of service until catch-up completes.
+// published a snapshot within readyTimeout. Transient: callers should log
+// at DEBUG and skip; /readyz keeps the pod out of service until catch-up
+// completes.
 var ErrNotReady = errors.New("configuration: projection snapshot not yet published")
 
 // ErrTenantNotConfigured is returned by GetTenantConfig when the requested
-// tenant is absent from the current snapshot.
+// tenant is absent from the current snapshot. Persistent (vs ErrNotReady)
+// — a tenant that was never in the projection won't appear by waiting.
+// Callers should log at ERROR.
 var ErrTenantNotConfigured = errors.New("configuration: tenant not configured")
 
 func waitReady() error {
@@ -62,17 +61,6 @@ func GetServiceConfig() (*RestModel, error) {
 	return serviceConfig, nil
 }
 
-func GetTenantConfigs() map[uuid.UUID]tenant.RestModel {
-	_ = waitReady()
-	configMu.RLock()
-	defer configMu.RUnlock()
-	out := make(map[uuid.UUID]tenant.RestModel, len(tenantConfig))
-	for k, v := range tenantConfig {
-		out[k] = v
-	}
-	return out
-}
-
 func GetTenantConfig(tenantId uuid.UUID) (tenant.RestModel, error) {
 	if err := waitReady(); err != nil {
 		return tenant.RestModel{}, err
@@ -84,30 +72,6 @@ func GetTenantConfig(tenantId uuid.UUID) (tenant.RestModel, error) {
 		return tenant.RestModel{}, ErrTenantNotConfigured
 	}
 	return val, nil
-}
-
-func Init(l logrus.FieldLogger) func(ctx context.Context) func(serviceId uuid.UUID) {
-	return func(ctx context.Context) func(serviceId uuid.UUID) {
-		return func(serviceId uuid.UUID) {
-			once.Do(func() {
-				tenantConfig = make(map[uuid.UUID]tenant.RestModel)
-				c, err := requestByService(serviceId)(l, ctx)
-				if err != nil {
-					log.Fatalf("Could not retrieve configuration.")
-				}
-				serviceConfig = &c
-
-				for _, t := range c.Tenants {
-					tenantId := uuid.MustParse(t.Id)
-					tc, err := requestForTenant(tenantId)(l, ctx)
-					if err != nil {
-						log.Fatalf("Could not retrieve tenant configuration.")
-					}
-					tenantConfig[tenantId] = tc
-				}
-			})
-		}
-	}
 }
 
 // PublishSnapshot replaces the package-level service+tenant config with

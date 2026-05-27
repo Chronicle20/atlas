@@ -11,6 +11,7 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
+	"errors"
 	"sort"
 	"time"
 
@@ -87,7 +88,11 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 
 			sc, err := configuration.GetTenantConfig(t.Id())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to find server configuration.")
+				if errors.Is(err, configuration.ErrNotReady) {
+					l.WithError(err).Debugf("Configuration projection not yet ready; skipping session created event for account [%d].", e.AccountId)
+				} else {
+					l.WithError(err).Errorf("Unable to find server configuration.")
+				}
 				return err
 			}
 

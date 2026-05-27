@@ -2,7 +2,6 @@ package shops
 
 import (
 	"atlas-npc/commodities"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -51,7 +50,7 @@ func (ShopSubdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (ShopSubdomain) Decode(payload []byte) (JSONModel, error) {
 	var jm JSONModel
-	if err := json.Unmarshal(payload, &jm); err != nil {
+	if err := seeder.DecodeAttributes(payload, &jm); err != nil {
 		return JSONModel{}, fmt.Errorf("npc-shops: decode: %w", err)
 	}
 	return jm, nil

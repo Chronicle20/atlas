@@ -1,7 +1,6 @@
 package script
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -35,7 +34,7 @@ func (ReactorSubdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (ReactorSubdomain) Decode(payload []byte) (jsonReactorScript, error) {
 	var attrs jsonReactorScript
-	if err := json.Unmarshal(payload, &attrs); err != nil {
+	if err := seeder.DecodeAttributes(payload, &attrs); err != nil {
 		return jsonReactorScript{}, fmt.Errorf("reactor-actions: decode attributes: %w", err)
 	}
 	return attrs, nil

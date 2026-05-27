@@ -1,7 +1,6 @@
 package script
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -35,7 +34,7 @@ func (PortalSubdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (PortalSubdomain) Decode(payload []byte) (jsonPortalScript, error) {
 	var attrs jsonPortalScript
-	if err := json.Unmarshal(payload, &attrs); err != nil {
+	if err := seeder.DecodeAttributes(payload, &attrs); err != nil {
 		return jsonPortalScript{}, fmt.Errorf("portal-actions: decode attributes: %w", err)
 	}
 	return attrs, nil

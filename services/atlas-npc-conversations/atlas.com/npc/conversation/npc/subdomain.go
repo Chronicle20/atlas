@@ -1,7 +1,6 @@
 package npc
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -35,7 +34,7 @@ func (NpcConversationSubdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (NpcConversationSubdomain) Decode(payload []byte) (RestModel, error) {
 	var rm RestModel
-	if err := json.Unmarshal(payload, &rm); err != nil {
+	if err := seeder.DecodeAttributes(payload, &rm); err != nil {
 		return RestModel{}, fmt.Errorf("npc-conversations: decode: %w", err)
 	}
 	return rm, nil

@@ -39,6 +39,30 @@ func ParseEnvelope(b []byte) (Envelope, error) {
 	return env, nil
 }
 
+// DecodeAttributes parses payload as a JSON:API envelope and unmarshals
+// data.attributes into target. Use this from Subdomain.Decode when the
+// catalog file's payload sits inline under data.attributes (the
+// majority of subdomains).
+//
+// Subdomains whose files instead encode their payload through
+// relationships + included[] (e.g. reactor-drop, where the data block
+// has only relationships and the included array carries the per-drop
+// attributes) should not call this helper; they should walk payload
+// directly to materialize their JSONModel from included[].
+func DecodeAttributes(payload []byte, target any) error {
+	env, err := ParseEnvelope(payload)
+	if err != nil {
+		return err
+	}
+	if len(env.Data.Attributes) == 0 {
+		return fmt.Errorf("envelope has no data.attributes")
+	}
+	if err := json.Unmarshal(env.Data.Attributes, target); err != nil {
+		return fmt.Errorf("unmarshal attributes: %w", err)
+	}
+	return nil
+}
+
 func ExtractEntityID(filename string, pattern *regexp.Regexp) (string, error) {
 	if pattern == nil {
 		return "", fmt.Errorf("extract id: nil pattern")

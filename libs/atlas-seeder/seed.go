@@ -128,7 +128,14 @@ func loadOne(ctx context.Context, src CatalogSource, root string, t tenant.Model
 	} else {
 		entityID = env.Data.ID
 	}
-	return sd.LoadAndBuild(t, entityID, env.Data.Attributes)
+	// Hand the full file payload to the subdomain rather than just
+	// env.Data.Attributes. Most subdomains only need attributes (use
+	// seeder.DecodeAttributes helper), but JSON:API files where the
+	// per-entity data lives under relationships + included[] (e.g.
+	// reactor-drop) need the full envelope to materialize their
+	// JSONModel. Type/id checks above ran against the parsed envelope,
+	// so passing raw bytes does not lose any validation.
+	return sd.LoadAndBuild(t, entityID, b)
 }
 
 func rowCount(rows any) int64 {

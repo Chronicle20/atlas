@@ -1,7 +1,6 @@
 package drop
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -45,7 +44,7 @@ func (Subdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (Subdomain) Decode(payload []byte) (JSONModel, error) {
 	var attrs JSONModel
-	if err := json.Unmarshal(payload, &attrs); err != nil {
+	if err := seeder.DecodeAttributes(payload, &attrs); err != nil {
 		return JSONModel{}, fmt.Errorf("continent-drop: decode attributes: %w", err)
 	}
 	return attrs, nil

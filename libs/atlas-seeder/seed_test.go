@@ -2,8 +2,9 @@ package seeder
 
 import (
 	"context"
-	"encoding/json"
 	"regexp"
+	"sort"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -23,6 +24,8 @@ type widgetRow struct {
 type widgetSubdomain struct {
 	deleted int64
 	created atomic.Int64
+	mu      sync.Mutex
+	rows    []widgetRow
 }
 
 func (w *widgetSubdomain) Name() string                    { return "widgets" }
@@ -32,21 +35,40 @@ func (w *widgetSubdomain) EntityIDPattern() *regexp.Regexp { return regexp.MustC
 func (w *widgetSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) {
 	return w.deleted, nil
 }
+
+// Decode receives the FULL file bytes (post-task-072 contract), not just
+// data.attributes. Use the seeder helper so this matches the pattern
+// production subdomains use; that way the test exercises the same code
+// path. A regression in DecodeAttributes (e.g. silently returning empty
+// attributes) would surface as Name="" on the built rows.
 func (w *widgetSubdomain) Decode(b []byte) (widgetAttrs, error) {
 	var a widgetAttrs
-	return a, json.Unmarshal(b, &a)
+	if err := DecodeAttributes(b, &a); err != nil {
+		return widgetAttrs{}, err
+	}
+	return a, nil
 }
 func (w *widgetSubdomain) Build(_ tenant.Model, id string, a widgetAttrs) ([]widgetRow, error) {
 	n, _ := uintFromString(id)
 	return []widgetRow{{ID: n, Name: a.Name}}, nil
 }
 func (w *widgetSubdomain) BulkCreate(_ *gorm.DB, rows []widgetRow) error {
+	w.mu.Lock()
+	w.rows = append(w.rows, rows...)
+	w.mu.Unlock()
 	w.created.Add(int64(len(rows)))
 	return nil
 }
 func (w *widgetSubdomain) Count(_ *gorm.DB) (int64, *time.Time, error) {
 	now := time.Now().UTC()
 	return w.created.Load(), &now, nil
+}
+func (w *widgetSubdomain) Rows() []widgetRow {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	out := make([]widgetRow, len(w.rows))
+	copy(out, w.rows)
+	return out
 }
 
 func uintFromString(s string) (uint64, error) {
@@ -64,11 +86,12 @@ func TestSeed_SuccessfulRunPersistsStateAndCountsCreated(t *testing.T) {
 	t.Cleanup(ResetMetricsForTest)
 	db := openTestDB(t)
 	src := NewFilesystemCatalogSource("X_NO_ENV", goodFixtureRoot(t))
+	sub := &widgetSubdomain{}
 	g := Group{
 		Name:      "widgets-group",
 		URLPrefix: "/widgets",
 		Subdomains: []SubdomainAny{
-			AdaptSubdomain[widgetAttrs, widgetRow](&widgetSubdomain{}),
+			AdaptSubdomain[widgetAttrs, widgetRow](sub),
 		},
 	}
 	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
@@ -81,6 +104,21 @@ func TestSeed_SuccessfulRunPersistsStateAndCountsCreated(t *testing.T) {
 	}
 	if res.Subdomains["widgets"].Created != 2 {
 		t.Fatalf("created = %d, want 2 (widget-1.json + widget-2.json)", res.Subdomains["widgets"].Created)
+	}
+
+	// Verify that data.attributes was actually decoded — would catch a
+	// regression where the pipeline accidentally hands data.relationships
+	// (or nothing) to Decode and silently builds rows with zero values.
+	rows := sub.Rows()
+	sort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })
+	want := []widgetRow{{ID: 1, Name: "one"}, {ID: 2, Name: "two"}}
+	if len(rows) != len(want) {
+		t.Fatalf("rows = %+v, want %+v", rows, want)
+	}
+	for i := range rows {
+		if rows[i] != want[i] {
+			t.Fatalf("rows[%d] = %+v, want %+v", i, rows[i], want[i])
+		}
 	}
 	tm2 := tenant.MustFromContext(ctx)
 	row, err := ReadSeedState(db, tm2.Id(), "widgets-group")

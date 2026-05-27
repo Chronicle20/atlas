@@ -1,7 +1,6 @@
 package gachapon
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -48,7 +47,7 @@ func (Subdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (Subdomain) Decode(payload []byte) (GachaponAttributes, error) {
 	var attrs GachaponAttributes
-	if err := json.Unmarshal(payload, &attrs); err != nil {
+	if err := seeder.DecodeAttributes(payload, &attrs); err != nil {
 		return GachaponAttributes{}, fmt.Errorf("gachapon: decode attributes: %w", err)
 	}
 	return attrs, nil

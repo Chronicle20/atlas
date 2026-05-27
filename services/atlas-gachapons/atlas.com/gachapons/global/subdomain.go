@@ -1,7 +1,6 @@
 package global
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -47,7 +46,7 @@ func (Subdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (Subdomain) Decode(payload []byte) (GlobalPoolAttributes, error) {
 	var attrs GlobalPoolAttributes
-	if err := json.Unmarshal(payload, &attrs); err != nil {
+	if err := seeder.DecodeAttributes(payload, &attrs); err != nil {
 		return GlobalPoolAttributes{}, fmt.Errorf("global: decode attributes: %w", err)
 	}
 	return attrs, nil

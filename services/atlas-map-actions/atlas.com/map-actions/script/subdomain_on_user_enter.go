@@ -1,7 +1,6 @@
 package script
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -33,7 +32,7 @@ func (OnUserEnterSubdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 
 func (OnUserEnterSubdomain) Decode(payload []byte) (jsonMapScript, error) {
 	var attrs jsonMapScript
-	if err := json.Unmarshal(payload, &attrs); err != nil {
+	if err := seeder.DecodeAttributes(payload, &attrs); err != nil {
 		return jsonMapScript{}, fmt.Errorf("onUserEnter: decode attributes: %w", err)
 	}
 	return attrs, nil

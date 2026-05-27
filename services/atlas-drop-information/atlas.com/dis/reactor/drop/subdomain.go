@@ -41,12 +41,29 @@ func (Subdomain) DeleteAllForTenant(db *gorm.DB) (int64, error) {
 	return DeleteAll(db)
 }
 
+// Decode parses a reactor-drop JSON:API file. Unlike monster-drop /
+// continent-drop, the per-drop attributes are not inline under
+// data.attributes — they live in included[] entries of type "drops",
+// with data.relationships.drops pointing at them. Walk included[] to
+// materialize the JSONModel.Drops list.
 func (Subdomain) Decode(payload []byte) (JSONModel, error) {
-	var attrs JSONModel
-	if err := json.Unmarshal(payload, &attrs); err != nil {
-		return JSONModel{}, fmt.Errorf("reactor-drop: decode attributes: %w", err)
+	var doc struct {
+		Included []struct {
+			Type       string   `json:"type"`
+			Attributes DropJSON `json:"attributes"`
+		} `json:"included"`
 	}
-	return attrs, nil
+	if err := json.Unmarshal(payload, &doc); err != nil {
+		return JSONModel{}, fmt.Errorf("reactor-drop: parse envelope: %w", err)
+	}
+	out := JSONModel{}
+	for _, inc := range doc.Included {
+		if inc.Type != "drops" {
+			continue
+		}
+		out.Drops = append(out.Drops, inc.Attributes)
+	}
+	return out, nil
 }
 
 func (Subdomain) Build(t tenant.Model, entityID string, attrs JSONModel) ([]Model, error) {

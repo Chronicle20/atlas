@@ -609,6 +609,60 @@ func TestGetDropsForMap_EmptyMap(t *testing.T) {
 	}
 }
 
+func TestGetAllDrops_MultipleTenants(t *testing.T) {
+	setupTestRegistry(t)
+	r := GetRegistry()
+
+	// Two tenants that differ in both region and version so their TenantKeys are distinct.
+	ten1, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("Failed to create tenant 1: %v", err)
+	}
+	ten2, err := tenant.Create(uuid.New(), "JMS", 95, 1)
+	if err != nil {
+		t.Fatalf("Failed to create tenant 2: %v", err)
+	}
+
+	// Capture UUIDs before creating drops (Id() is a pointer receiver; take address once).
+	ten1Id := (&ten1).Id()
+	ten2Id := (&ten2).Id()
+
+	// Create one drop per tenant on different maps to make them easy to distinguish.
+	mb1 := createTestBuilder(ten1, 1, 1, 100000000)
+	mb2 := createTestBuilder(ten2, 1, 1, 200000000)
+
+	drop1 := mustCreateDrop(t, r, mb1)
+	drop2 := mustCreateDrop(t, r, mb2)
+
+	all := r.GetAllDrops()
+	if len(all) != 2 {
+		t.Fatalf("Expected 2 total drops across both tenants, got %d", len(all))
+	}
+
+	// IDs are per-tenant sequences and can coincide (both start at 1000000), so key
+	// on (tenantUUID, dropId) rather than dropId alone.
+	type tenantDrop struct {
+		tenantId uuid.UUID
+		dropId   uint32
+	}
+	seen := make(map[tenantDrop]bool, len(all))
+	for i := range all {
+		d := &all[i]
+		dt := d.Tenant()
+		seen[tenantDrop{(&dt).Id(), d.Id()}] = true
+	}
+
+	// drop1 must come back attributed to ten1.
+	if !seen[tenantDrop{ten1Id, drop1.Id()}] {
+		t.Fatalf("Drop (tenant=%s, id=%d) was not returned by GetAllDrops", ten1Id, drop1.Id())
+	}
+
+	// drop2 must come back attributed to ten2.
+	if !seen[tenantDrop{ten2Id, drop2.Id()}] {
+		t.Fatalf("Drop (tenant=%s, id=%d) was not returned by GetAllDrops", ten2Id, drop2.Id())
+	}
+}
+
 func TestGetAllDrops_EmptyRegistry(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()

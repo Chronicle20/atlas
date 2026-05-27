@@ -694,6 +694,78 @@ func candidatesFromFName(fname string) []candidate {
 		// Sub-op 6 (CHAT): Encode1(6) + EncodeStr(chatLine — format "name : msg").
 		// Atlas struct: messenger/serverbound/operation_chat.go OperationChat.
 		return []candidate{{name: "OperationChat", pkg: "messenger", dir: csvpkg.DirServerbound}}
+
+	// --- Social: chat (clientbound) ---
+	// CSV: CHATTEXT (0xB5 / 181) and CHATTEXT1 (0xB6 / 182) both dispatch to CUser::OnChat.
+	// characterId is consumed by CUserPool::OnUserRemotePacket before calling OnChat;
+	// the function itself reads Decode1(isGM) + DecodeStr(msg) + Decode1(bOnlyBalloon).
+	// Atlas GeneralChat writes WriteInt(characterId)+WriteBool(gm)+WriteAsciiString(msg)+WriteBool(show).
+	// The characterId prefix mismatch is a known dispatcher-prefix pattern (same as CharacterSpawn etc.).
+	case "CUser::OnChat":
+		// CSV: CHATTEXT / CHATTEXT1 — atlas GeneralChat (clientbound chat/general.go).
+		return []candidate{{name: "GeneralChat", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// CSV: MULTICHAT (0x96 / 150) → CField::OnGroupMessage.
+	// Dispatches on a leading mode byte (Decode1): 0=buddy, 1=party, 2=guild, 3=alliance, 6=expedition.
+	// Atlas MultiChat writes WriteByte(mode)+WriteAsciiString(from)+WriteAsciiString(message) — parameterised.
+	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
+	case "CField::OnGroupMessage":
+		// CSV: MULTICHAT — atlas MultiChat (clientbound chat/multi.go).
+		return []candidate{{name: "MultiChat", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// CSV: WHISPER (0x97 / 151) → CField::OnWhisper.
+	// Dispatches on a leading mode byte: 9/10=find, 18=receive-whisper, 34=blocked, 146=weather.
+	// All atlas clientbound whisper structs (WhisperSendResult, WhisperReceive, etc.) write mode as first byte — parameterised.
+	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
+	case "CField::OnWhisper":
+		// Use WhisperReceive as the representative struct (mode=18 branch).
+		return []candidate{{name: "WhisperReceive", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// CSV: SPOUSE_CHAT (0x98 / 152) → CField::OnCoupleMessage.
+	// Dispatches on a leading mode byte (Decode1 - 4): mode=4 (own message), mode=5 (partner message).
+	// Both sub-modes are parameterised; atlas world_message.go and whisper.go write mode as first byte.
+	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
+	// Note: SPOUSE_CHAT is absent in v95 template (opcode 0 in serverbound SPOUSE_CHAT for GMS). No template
+	// opcode mapping; the clientbound opcode is 0x98. Atlas has no dedicated SPOUSE_CHAT writer yet; mapping
+	// via CField::OnCoupleMessage to WhisperWeather as a placeholder for pipeline coverage.
+	case "CField::OnCoupleMessage":
+		// Use WhisperWeather as a representative sub-op struct for pipeline coverage.
+		return []candidate{{name: "WhisperWeather", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// CSV: SERVERMESSAGE (0x47 / 71) → CWvsContext::OnBroadcastMsg.
+	// Dispatches on a leading mode byte (Decode1): multiple sub-modes for notice/megaphone/ticker/etc.
+	// All atlas world_message.go and world_message_extra.go structs write mode as first byte — parameterised.
+	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
+	case "CWvsContext::OnBroadcastMsg":
+		// Use WorldMessageSimple as the representative struct (covers the common Notice/PopUp/Megaphone modes).
+		return []candidate{{name: "WorldMessageSimple", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// --- Social: chat (serverbound) ---
+	// CSV: GENERAL_CHAT (0x36 / 54) → CField::SendChatMsg.
+	// Wire: Encode4(update_time) + EncodeStr(sText) + Encode1(bOnlyBalloon).
+	// Atlas General writes: WriteInt(updateTime, GMS>83 gate) + WriteAsciiString(msg) + WriteBool(bOnlyBalloon).
+	// Gate fires for v95 → all 3 fields written → matches IDA wire exactly.
+	case "CField::SendChatMsg":
+		// CSV: GENERAL_CHAT — atlas General (serverbound chat/general.go).
+		return []candidate{{name: "General", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// CSV: MULTI_CHAT (0xDD / 221) → CUIStatusBar::SendGroupMessage.
+	// Wire at LABEL_24: Encode4(updateTime) + Encode1(nChatTarget) + Encode1(nMemberCnt) +
+	// loop(Encode4×n memberIds) + EncodeStr(sText). Atlas Multi writes chatType + recipientCount +
+	// loop(recipients) + chatText — the updateTime prefix is additional in v95.
+	// Sub-op value space (chatType): ⚠️ deferred to _pending.md (single consolidated chat row).
+	case "CUIStatusBar::SendGroupMessage":
+		// CSV: MULTI_CHAT — atlas Multi (serverbound chat/multi.go).
+		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// CSV: WHISPER (0xDE / 222) → CField::SendChatMsgWhisper (and SendLocationWhisper for find queries).
+	// Wire for chat path (LABEL_79): Encode1(mode=6) + Encode4(updateTime) + EncodeStr(targetName) + EncodeStr(msg).
+	// Atlas Whisper writes: WriteByte(mode) + WriteInt(updateTime, GMS>=95) + WriteAsciiString(targetName) +
+	// optional WriteAsciiString(msg for mode==CHAT). The atlas WhisperMode constants include FIND(5)/CHAT(6).
+	// Sub-op value space (WhisperMode): ⚠️ deferred to _pending.md (single consolidated chat row).
+	case "CField::SendChatMsgWhisper":
+		// CSV: WHISPER — atlas Whisper (serverbound chat/whisper.go).
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

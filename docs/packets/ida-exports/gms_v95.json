@@ -3777,6 +3777,44 @@
           "comment": "sText — formatted chat message ('name : msg'); op byte (=6) stripped by atlas Operation dispatcher"
         }
       ]
+    },
+    "CUser::OnChat": {
+      "address": "0x8e86c0",
+      "direction": "clientbound",
+      "note": "CHATTEXT (0xB5) / CHATTEXT1 (0xB6). characterId (Decode4) is consumed by CUserPool dispatcher before calling OnChat — not visible here. Sub-op mode byte (Decode1 line 65): 0=normal, 1=npc-name. Then DecodeStr(msg), Decode1(bOnlyBalloon). Atlas GeneralChat writes characterId+gm+msg+show; the characterId is the dispatcher prefix, gm maps to the mode byte, show maps to bOnlyBalloon.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "isGM / chat type byte (0=normal player, 1=npc-name; consumed as gm flag in atlas)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "chat message text"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bOnlyBalloon (show flag: 0=show in chat log, 1=balloon only)"
+        }
+      ]
+    },
+    "CField::SendChatMsg": {
+      "address": "0x534000",
+      "direction": "serverbound",
+      "note": "GENERAL_CHAT (0x36). Client sends: Encode4(update_time) + EncodeStr(msg) + Encode1(bOnlyBalloon). Atlas General.Encode writes updateTime (GMS>83 gate) + msg + bOnlyBalloon — matches v95 wire exactly.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time(); gated GMS>83 in atlas — v95 always present)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chat message text (sText)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bOnlyBalloon flag"
+        }
+      ]
     }
   }
 }

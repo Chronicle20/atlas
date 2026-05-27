@@ -114,3 +114,14 @@ After the initial post-phase-b closeout, the deferred items surfaced during code
 ### PRD scope reconciliation (item 10)
 
 `prd.md` §2, §4.1, §4.2, and §11 originally claimed 59 combat packets (37 cb + 22 sb). The actual `libs/atlas-packet/{monster,drop,reactor,pet}` source inventory is 31 packets (20 cb + 11 sb), which matches the `plan.md` per-phase breakdown (monster 9+1, pet 6+8, drop 2+1, reactor 3+1 = 31). The PRD over-counted; plan.md and the delivered audit were correct. PRD updated in-place to reflect the actual inventory, with a clarifying note that `stat.go` packs both StatSet and StatReset and `activated_body.go` is a wrapper rather than an independent packet.
+
+### Combat template opcode audit (item 2)
+
+PRD §4.4 required cross-checking combat template opcodes against IDA dispatcher case-statement values and landing fixes for any drift. Full findings in [`template-audit.md`](template-audit.md). Summary:
+
+- ✅ **No writer/handler name string drift** — every combat opcode entry in every template uses the canonical name declared as a `const` in `libs/atlas-packet/`.
+- ✅ **No combat-domain opcode collisions** within any template.
+- ⚠️ **Template coverage gap surfaced as separate concern** — only `template_gms_83_1.json` is fully populated; v95 has zero combat entries; v12/v87/v92/jms_185 each have only 6 monster entries. Channel-servers booted against the under-populated templates emit `Service declares writer [...] but tenant config has no opcode mapping for it.` warnings from `libs/atlas-opcodes/producer.go:31` and silently drop combat traffic. This belongs in a follow-up task gated on IDA access (same gating as the v83/v87 `CMob::GenerateMovePath` lookup) and is **not** task-065's PRD §4.4 acceptance scope, which targets drift in existing entries.
+- ⏸ **IDA dispatcher case-statement verification deferred** — the audit pipeline records function addresses + call sequences, not dispatcher case-statement values. Verifying opcode values against the client dispatcher requires per-version IDA decompile.
+
+No template files were modified. No "Template opcode fixes" table is added to this ledger because no drift was found in existing entries.

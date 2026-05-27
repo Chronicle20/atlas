@@ -1,0 +1,34 @@
+package fixture
+
+import "context"
+
+// ServerboundDecode models an atlas serverbound packet decoder. The Decode
+// method walks r.Read* primitives — the analyzer should normalize these to
+// the same Encode1/Encode2/Encode4 ops that the symmetric Encode method
+// produces, so the diff engine can compare wire shapes byte-for-byte against
+// IDA Send* entries that record Encode×N on the client side.
+type ServerboundDecode struct {
+	kind uint8
+	id   uint32
+	flag int16
+	text string
+}
+
+func (m *ServerboundDecode) Decode(l interface{}, ctx context.Context) func(r anyReader, opts map[string]interface{}) {
+	return func(r anyReader, opts map[string]interface{}) {
+		m.kind = r.ReadByte()
+		m.id = r.ReadUint32()
+		m.flag = r.ReadInt16()
+		m.text = r.ReadAsciiString()
+	}
+}
+
+// anyReader stubs the request.Reader interface atlas uses, exposing the same
+// method names primFromName recognizes (ReadByte / ReadUint32 / ReadInt16 /
+// ReadAsciiString).
+type anyReader interface {
+	ReadByte() byte
+	ReadUint32() uint32
+	ReadInt16() int16
+	ReadAsciiString() string
+}

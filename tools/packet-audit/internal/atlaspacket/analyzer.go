@@ -420,6 +420,16 @@ func (cc *callCtx) walk(node ast.Node) {
 		cc.unreachableSuffix = savedUnreachable
 	case *ast.ExprStmt:
 		cc.walk(n.X)
+	case *ast.AssignStmt:
+		// atlas Decode methods write to receiver fields:
+		//   m.field = r.ReadByte()
+		// The wire op lives on the RHS as a CallExpr. Walk each RHS so we
+		// pick up the primitive — required for task-065 item 7
+		// (Encode↔Decode equivalence) where serverbound packets' runtime
+		// path is Decode rather than Encode.
+		for _, rhs := range n.Rhs {
+			cc.walk(rhs)
+		}
 	case *ast.RangeStmt:
 		// Record range variable binding for type resolution.
 		// Pattern: for _, varName := range m.<fieldName> { ... }

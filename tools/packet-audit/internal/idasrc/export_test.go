@@ -220,6 +220,42 @@ func TestDelegateRequiresRef(t *testing.T) {
 	}
 }
 
+// TestParsePrimEncodeDecodeEquivalence verifies task-065 item 7: parsePrim
+// accepts both Encode×N and Decode×N op names and normalizes them to the
+// same Primitive enum value. This is the binding that lets IDA Send*
+// entries (which record Encode×N) and IDA OnX entries (which record
+// Decode×N) flow through the same diff engine and compare against atlas's
+// analyzer output (which itself normalizes Read/Write to Encode×N).
+func TestParsePrimEncodeDecodeEquivalence(t *testing.T) {
+	cases := []struct {
+		enc, dec string
+		want     Primitive
+	}{
+		{"Encode1", "Decode1", Decode1},
+		{"Encode2", "Decode2", Decode2},
+		{"Encode4", "Decode4", Decode4},
+		{"Encode8", "Decode8", Decode8},
+		{"EncodeStr", "DecodeStr", DecodeStr},
+		{"EncodeBuf", "DecodeBuf", DecodeBuf},
+		{"EncodeBuffer", "DecodeBuffer", DecodeBuf}, // legacy aliases
+	}
+	for _, c := range cases {
+		e, err := parsePrim(c.enc)
+		if err != nil {
+			t.Errorf("parsePrim(%q): %v", c.enc, err)
+			continue
+		}
+		d, err := parsePrim(c.dec)
+		if err != nil {
+			t.Errorf("parsePrim(%q): %v", c.dec, err)
+			continue
+		}
+		if e != c.want || d != c.want {
+			t.Errorf("parsePrim(%q)=%v parsePrim(%q)=%v; both want %v", c.enc, e, c.dec, d, c.want)
+		}
+	}
+}
+
 func contains(haystack, needle string) bool {
 	for i := 0; i+len(needle) <= len(haystack); i++ {
 		if haystack[i:i+len(needle)] == needle {

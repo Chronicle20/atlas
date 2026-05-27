@@ -1,0 +1,21 @@
+package fixture
+
+import "context"
+
+// ServerboundEncode is the symmetric encoder for ServerboundDecode. Wire
+// shape is identical: byte + int + short + string. Used by the
+// Encode↔Decode equivalence test (task-065 item 7) to confirm the analyzer
+// produces the same Call list whether it walks a writer (Write*) or a
+// reader (Read*) method body.
+type ServerboundEncode struct{}
+
+func (m ServerboundEncode) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(0)
+		w.WriteInt(1)
+		w.WriteShort(2)
+		w.WriteAsciiString("hi")
+		return w.Bytes()
+	}
+}

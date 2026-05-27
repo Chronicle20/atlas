@@ -107,6 +107,42 @@ func TestWireMutexCollapsesIfElse(t *testing.T) {
 	}
 }
 
+// TestEncodeDecodeProduceEquivalentCalls verifies task-065 item 7:
+// the analyzer normalizes r.Read* (atlas Decode methods, used at runtime by
+// serverbound packets) and w.Write* (atlas Encode methods, the test-helper)
+// to the same Primitive enum. This is what lets IDA Send* entries (which
+// record Encode×N on the client side) bind by bit-width to atlas's Decode
+// implementation when the audit pipeline compares the two.
+//
+// The two fixtures share a wire shape (byte + int + short + string). If the
+// normalization breaks, this test catches it before any real packet audit
+// shifts ❌ silently.
+func TestEncodeDecodeProduceEquivalentCalls(t *testing.T) {
+	encCalls, err := AnalyzeFile("testdata/serverbound_encode.go.txt", "ServerboundEncode", "Encode")
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	decCalls, err := AnalyzeFile("testdata/serverbound_decode.go.txt", "ServerboundDecode", "Decode")
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(encCalls) != len(decCalls) {
+		t.Fatalf("len mismatch: encode=%d decode=%d", len(encCalls), len(decCalls))
+	}
+	wantOps := []Primitive{Encode1, Encode4, Encode2, EncodeStr}
+	for i, want := range wantOps {
+		if encCalls[i].Op != want {
+			t.Errorf("encode calls[%d]: got %v, want %v", i, encCalls[i].Op, want)
+		}
+		if decCalls[i].Op != want {
+			t.Errorf("decode calls[%d]: got %v, want %v", i, decCalls[i].Op, want)
+		}
+		if encCalls[i].Op != decCalls[i].Op {
+			t.Errorf("encode/decode calls[%d] mismatch: enc=%v dec=%v", i, encCalls[i].Op, decCalls[i].Op)
+		}
+	}
+}
+
 // TestWireDivergentKeepsBothBranches is the negative case: when the if/else
 // branches write DIVERGENT wire shapes (different widths, different lengths,
 // or different recurse types), the analyzer must keep both branches with

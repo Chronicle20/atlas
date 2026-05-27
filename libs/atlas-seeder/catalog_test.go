@@ -53,6 +53,30 @@ func TestFilesystemCatalogSource_Roots_UsesTenantRegionVersion(t *testing.T) {
 	}
 }
 
+// Production tenants store the region in uppercase ("GMS") while the
+// catalog tree on disk uses lowercase directory names. Roots() must
+// normalize to the lowercase layout so the path resolves on a
+// case-sensitive filesystem (Linux).
+func TestFilesystemCatalogSource_Roots_LowerCasesRegion(t *testing.T) {
+	src := newTestSource(t)
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+
+	roots, err := src.Roots(tm)
+	if err != nil {
+		t.Fatalf("Roots: %v", err)
+	}
+	if len(roots) != 1 {
+		t.Fatalf("len(roots) = %d, want 1", len(roots))
+	}
+	want := filepath.Join("gms", "83_1")
+	if !strings.HasSuffix(roots[0], want) {
+		t.Fatalf("root = %q, want suffix %q (region must be lower-cased)", roots[0], want)
+	}
+}
+
 func TestFilesystemCatalogSource_Revision(t *testing.T) {
 	src := newTestSource(t)
 	tm := tenantGMS83(t)

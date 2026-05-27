@@ -43,11 +43,18 @@ func (s *filesystemSource) base() string {
 
 // Roots returns the tenant-specific root directory path(s) under the base.
 // Returns an error when the tenant has a zero major or minor version.
+//
+// The region segment is lower-cased to match the catalog directory layout
+// emitted by tools/seed-splitters (e.g. "gms/83_1"). Tenants store their
+// region in an unspecified casing — production tenants use uppercase
+// ("GMS") while tests use lowercase ("gms") — and the catalog resolver
+// normalizes both to a single canonical form so a Linux filesystem (which
+// is case-sensitive) can find the directory either way.
 func (s *filesystemSource) Roots(t tenant.Model) ([]string, error) {
 	if t.MajorVersion() == 0 || t.MinorVersion() == 0 {
 		return nil, fmt.Errorf("catalog: tenant has zero major/minor version (region=%q)", t.Region())
 	}
-	root := filepath.Join(s.base(), t.Region(), fmt.Sprintf("%d_%d", t.MajorVersion(), t.MinorVersion()))
+	root := filepath.Join(s.base(), strings.ToLower(t.Region()), fmt.Sprintf("%d_%d", t.MajorVersion(), t.MinorVersion()))
 	return []string{root}, nil
 }
 

@@ -3,9 +3,11 @@ package instance
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"time"
 
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -20,8 +22,8 @@ type transportInstanceJSON struct {
 	CreatedAt     time.Time     `json:"createdAt"`
 }
 
-func marshalInstanceMetadata(inst TransportInstance) ([]byte, error) {
-	return json.Marshal(transportInstanceJSON{
+func toJSON(inst TransportInstance) transportInstanceJSON {
+	return transportInstanceJSON{
 		InstanceId:    inst.instanceId,
 		RouteId:       inst.routeId,
 		TenantId:      inst.tenantId,
@@ -29,14 +31,10 @@ func marshalInstanceMetadata(inst TransportInstance) ([]byte, error) {
 		BoardingUntil: inst.boardingUntil,
 		ArrivalAt:     inst.arrivalAt,
 		CreatedAt:     inst.createdAt,
-	})
+	}
 }
 
-func unmarshalInstanceMetadata(data []byte) (TransportInstance, error) {
-	var j transportInstanceJSON
-	if err := json.Unmarshal(data, &j); err != nil {
-		return TransportInstance{}, err
-	}
+func fromJSON(j transportInstanceJSON) TransportInstance {
 	return TransportInstance{
 		instanceId:    j.InstanceId,
 		routeId:       j.RouteId,
@@ -46,64 +44,67 @@ func unmarshalInstanceMetadata(data []byte) (TransportInstance, error) {
 		arrivalAt:     j.ArrivalAt,
 		createdAt:     j.CreatedAt,
 		characters:    make([]CharacterEntry, 0),
-	}, nil
+	}
+}
+
+// tenantFromId reconstructs a region-less tenant.Model from a bare UUID, used
+// to scope the per-route SET. The region/version segments are unused by routing
+// and repopulate; this only affects the (prefixed) Redis key shape.
+func tenantFromId(id uuid.UUID) (tenant.Model, bool) {
+	t, err := tenant.Create(id, "", 0, 0)
+	if err != nil {
+		return tenant.Model{}, false
+	}
+	return t, true
 }
 
 type InstanceRegistry struct {
-	client *goredis.Client
+	all    *atlas.Set
+	meta   *atlas.Registry[uuid.UUID, transportInstanceJSON]
+	chars  *atlas.KeyedHash[uuid.UUID]
+	routes *atlas.TenantKeyedSet[uuid.UUID]
 }
 
 var instanceRegistry *InstanceRegistry
 
 func InitInstanceRegistry(client *goredis.Client) {
-	instanceRegistry = &InstanceRegistry{client: client}
+	instanceRegistry = &InstanceRegistry{
+		all: atlas.NewSet(client, "transport:instances"),
+		meta: atlas.NewRegistry[uuid.UUID, transportInstanceJSON](client, "transport:instance", func(id uuid.UUID) string {
+			return id.String()
+		}),
+		chars: atlas.NewKeyedHash[uuid.UUID](client, "transport:instance:chars", func(id uuid.UUID) string {
+			return id.String()
+		}),
+		routes: atlas.NewTenantKeyedSet[uuid.UUID](client, "transport:route", func(id uuid.UUID) string {
+			return id.String()
+		}),
+	}
 }
 
 func getInstanceRegistry() *InstanceRegistry {
 	return instanceRegistry
 }
 
-const allInstancesKey = "transport:instances"
-
-func instanceMetaKey(id uuid.UUID) string {
-	return fmt.Sprintf("transport:instance:%s", id.String())
-}
-
-func instanceCharsKey(id uuid.UUID) string {
-	return fmt.Sprintf("transport:instance:%s:chars", id.String())
-}
-
-func instanceRouteSetKey(tenantId, routeId uuid.UUID) string {
-	return fmt.Sprintf("transport:route:%s:%s", tenantId.String(), routeId.String())
-}
-
 func (r *InstanceRegistry) storeMetadata(inst TransportInstance) {
 	ctx := context.Background()
-	data, err := marshalInstanceMetadata(inst)
-	if err != nil {
-		return
+	_ = r.meta.Put(ctx, inst.instanceId, toJSON(inst))
+	_ = r.all.Add(ctx, inst.instanceId.String())
+	if t, ok := tenantFromId(inst.tenantId); ok {
+		_ = r.routes.Add(ctx, t, inst.routeId, inst.instanceId.String())
 	}
-	_ = r.client.Set(ctx, instanceMetaKey(inst.instanceId), data, 0).Err()
-	_ = r.client.SAdd(ctx, allInstancesKey, inst.instanceId.String()).Err()
-	_ = r.client.SAdd(ctx, instanceRouteSetKey(inst.tenantId, inst.routeId), inst.instanceId.String()).Err()
 }
 
 func (r *InstanceRegistry) loadMetadata(id uuid.UUID) (TransportInstance, bool) {
-	ctx := context.Background()
-	data, err := r.client.Get(ctx, instanceMetaKey(id)).Bytes()
+	j, err := r.meta.Get(context.Background(), id)
 	if err != nil {
 		return TransportInstance{}, false
 	}
-	inst, err := unmarshalInstanceMetadata(data)
-	if err != nil {
-		return TransportInstance{}, false
-	}
-	return inst, true
+	return fromJSON(j), true
 }
 
 func (r *InstanceRegistry) loadCharacters(id uuid.UUID) []CharacterEntry {
-	ctx := context.Background()
-	charMap, err := r.client.HGetAll(ctx, instanceCharsKey(id)).Result()
+	charMap, err := r.chars.GetAll(context.Background(), id)
 	if err != nil {
 		return nil
 	}
@@ -133,28 +134,28 @@ func (r *InstanceRegistry) loadInstance(id uuid.UUID) (TransportInstance, bool) 
 // or creates a new one with a fresh UUID.
 func (r *InstanceRegistry) FindOrCreateInstance(tenantId uuid.UUID, route RouteModel, now time.Time) TransportInstance {
 	ctx := context.Background()
-	key := instanceRouteSetKey(tenantId, route.Id())
-
-	members, err := r.client.SMembers(ctx, key).Result()
-	if err == nil {
-		for _, member := range members {
-			id, err := uuid.Parse(member)
-			if err != nil {
-				continue
-			}
-			inst, ok := r.loadMetadata(id)
-			if !ok {
-				continue
-			}
-			if inst.state != Boarding || !now.Before(inst.boardingUntil) {
-				continue
-			}
-			count, err := r.client.HLen(ctx, instanceCharsKey(id)).Result()
-			if err != nil {
-				continue
-			}
-			if uint32(count) < route.Capacity() {
-				return inst
+	if t, ok := tenantFromId(tenantId); ok {
+		members, err := r.routes.Members(ctx, t, route.Id())
+		if err == nil {
+			for _, member := range members {
+				id, err := uuid.Parse(member)
+				if err != nil {
+					continue
+				}
+				inst, ok := r.loadMetadata(id)
+				if !ok {
+					continue
+				}
+				if inst.state != Boarding || !now.Before(inst.boardingUntil) {
+					continue
+				}
+				count, err := r.chars.Len(ctx, id)
+				if err != nil {
+					continue
+				}
+				if uint32(count) < route.Capacity() {
+					return inst
+				}
 			}
 		}
 	}
@@ -172,13 +173,12 @@ func (r *InstanceRegistry) FindOrCreateInstance(tenantId uuid.UUID, route RouteM
 // Returns whether the instance was found and the new character count.
 func (r *InstanceRegistry) AddCharacter(instanceId uuid.UUID, entry CharacterEntry) (bool, int) {
 	ctx := context.Background()
-	exists, err := r.client.Exists(ctx, instanceMetaKey(instanceId)).Result()
-	if err != nil || exists == 0 {
+	if _, ok := r.loadMetadata(instanceId); !ok {
 		return false, 0
 	}
 	data, _ := json.Marshal(entry)
-	_ = r.client.HSet(ctx, instanceCharsKey(instanceId), fmt.Sprintf("%d", entry.CharacterId), data).Err()
-	count, _ := r.client.HLen(ctx, instanceCharsKey(instanceId)).Result()
+	_ = r.chars.Set(ctx, instanceId, strconv.FormatUint(uint64(entry.CharacterId), 10), string(data))
+	count, _ := r.chars.Len(ctx, instanceId)
 	return true, int(count)
 }
 
@@ -186,8 +186,8 @@ func (r *InstanceRegistry) AddCharacter(instanceId uuid.UUID, entry CharacterEnt
 // Returns true if the instance is now empty.
 func (r *InstanceRegistry) RemoveCharacter(instanceId uuid.UUID, characterId uint32) bool {
 	ctx := context.Background()
-	_ = r.client.HDel(ctx, instanceCharsKey(instanceId), fmt.Sprintf("%d", characterId)).Err()
-	count, err := r.client.HLen(ctx, instanceCharsKey(instanceId)).Result()
+	_ = r.chars.Del(ctx, instanceId, strconv.FormatUint(uint64(characterId), 10))
+	count, err := r.chars.Len(ctx, instanceId)
 	if err != nil {
 		return false
 	}
@@ -201,11 +201,7 @@ func (r *InstanceRegistry) TransitionToInTransit(instanceId uuid.UUID) bool {
 		return false
 	}
 	inst.state = InTransit
-	data, err := marshalInstanceMetadata(inst)
-	if err != nil {
-		return false
-	}
-	_ = r.client.Set(context.Background(), instanceMetaKey(instanceId), data, 0).Err()
+	r.storeMetadata(inst)
 	return true
 }
 
@@ -216,10 +212,12 @@ func (r *InstanceRegistry) ReleaseInstance(instanceId uuid.UUID) {
 	if !ok {
 		return
 	}
-	_ = r.client.SRem(ctx, instanceRouteSetKey(inst.tenantId, inst.routeId), instanceId.String()).Err()
-	_ = r.client.SRem(ctx, allInstancesKey, instanceId.String()).Err()
-	_ = r.client.Del(ctx, instanceMetaKey(instanceId)).Err()
-	_ = r.client.Del(ctx, instanceCharsKey(instanceId)).Err()
+	if t, ok := tenantFromId(inst.tenantId); ok {
+		_ = r.routes.Remove(ctx, t, inst.routeId, instanceId.String())
+	}
+	_ = r.all.Remove(ctx, instanceId.String())
+	_ = r.meta.Remove(ctx, instanceId)
+	_ = r.chars.DeleteKey(ctx, instanceId)
 }
 
 // GetInstance returns the instance for a given instance ID.
@@ -243,9 +241,7 @@ func (r *InstanceRegistry) GetExpiredTransit(now time.Time) []TransportInstance 
 
 // GetAllActive returns all active instances.
 func (r *InstanceRegistry) GetAllActive() []TransportInstance {
-	return r.filterInstances(func(inst TransportInstance) bool {
-		return true
-	})
+	return r.filterInstances(func(inst TransportInstance) bool { return true })
 }
 
 // GetStuck returns instances exceeding the given max lifetime.
@@ -257,9 +253,11 @@ func (r *InstanceRegistry) GetStuck(now time.Time, maxLifetime time.Duration) []
 
 // GetInstancesByRoute returns all instances for a given tenant and route.
 func (r *InstanceRegistry) GetInstancesByRoute(tenantId, routeId uuid.UUID) []TransportInstance {
-	ctx := context.Background()
-	key := instanceRouteSetKey(tenantId, routeId)
-	members, err := r.client.SMembers(ctx, key).Result()
+	t, ok := tenantFromId(tenantId)
+	if !ok {
+		return nil
+	}
+	members, err := r.routes.Members(context.Background(), t, routeId)
 	if err != nil {
 		return nil
 	}
@@ -279,8 +277,7 @@ func (r *InstanceRegistry) GetInstancesByRoute(tenantId, routeId uuid.UUID) []Tr
 }
 
 func (r *InstanceRegistry) filterInstances(predicate func(TransportInstance) bool) []TransportInstance {
-	ctx := context.Background()
-	members, err := r.client.SMembers(ctx, allInstancesKey).Result()
+	members, err := r.all.Members(context.Background())
 	if err != nil {
 		return nil
 	}

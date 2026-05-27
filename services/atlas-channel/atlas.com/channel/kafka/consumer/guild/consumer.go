@@ -358,7 +358,7 @@ func announceCapacityChanged(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, capacity uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, capacity uint32) model.Operator[session.Model] {
 			return func(guildId uint32, capacity uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildCapacityChangedBody(guildId, capacity))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildCapacityChangedBody(guildId, byte(capacity)))
 			}
 		}
 	}

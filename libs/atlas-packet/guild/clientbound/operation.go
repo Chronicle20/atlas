@@ -405,18 +405,20 @@ func (m *MemberJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 // Invite
 
 type Invite struct {
-	mode            byte
-	guildId         uint32
-	originatorName  string
+	mode           byte
+	guildId        uint32
+	originatorName string
+	unknown        uint32
+	skillId        uint32
 }
 
-func NewInvite(mode byte, guildId uint32, originatorName string) Invite {
-	return Invite{mode: mode, guildId: guildId, originatorName: originatorName}
+func NewInvite(mode byte, guildId uint32, originatorName string, unknown uint32, skillId uint32) Invite {
+	return Invite{mode: mode, guildId: guildId, originatorName: originatorName, unknown: unknown, skillId: skillId}
 }
 
 func (m Invite) Operation() string { return GuildOperationWriter }
 func (m Invite) String() string {
-	return fmt.Sprintf("mode [%d], guildId [%d], originatorName [%s]", m.mode, m.guildId, m.originatorName)
+	return fmt.Sprintf("mode [%d], guildId [%d], originatorName [%s], unknown [%d], skillId [%d]", m.mode, m.guildId, m.originatorName, m.unknown, m.skillId)
 }
 
 func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
@@ -425,6 +427,8 @@ func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map
 		w.WriteByte(m.mode)
 		w.WriteInt(m.guildId)
 		w.WriteAsciiString(m.originatorName)
+		w.WriteInt(m.unknown)
+		w.WriteInt(m.skillId)
 		return w.Bytes()
 	}
 }
@@ -434,6 +438,8 @@ func (m *Invite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
 		m.originatorName = r.ReadAsciiString()
+		m.unknown = r.ReadUint32()
+		m.skillId = r.ReadUint32()
 	}
 }
 
@@ -513,10 +519,10 @@ func (m *Disband) Decode(_ logrus.FieldLogger, _ context.Context) func(r *reques
 type CapacityChange struct {
 	mode     byte
 	guildId  uint32
-	capacity uint32
+	capacity byte
 }
 
-func NewCapacityChange(mode byte, guildId uint32, capacity uint32) CapacityChange {
+func NewCapacityChange(mode byte, guildId uint32, capacity byte) CapacityChange {
 	return CapacityChange{mode: mode, guildId: guildId, capacity: capacity}
 }
 
@@ -530,7 +536,7 @@ func (m CapacityChange) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.guildId)
-		w.WriteInt(m.capacity)
+		w.WriteByte(m.capacity)
 		return w.Bytes()
 	}
 }
@@ -539,6 +545,6 @@ func (m *CapacityChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
-		m.capacity = r.ReadUint32()
+		m.capacity = r.ReadByte()
 	}
 }

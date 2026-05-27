@@ -3,7 +3,7 @@
   "IDAName": "CReactorPool::FindHitReactor",
   "Address": "0x7356c7",
   "Variant": "GMS/v83",
-  "BranchDepth": 1,
+  "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/reactor/serverbound/hit.go",
   "Rows": [
     {
@@ -35,31 +35,22 @@
     },
     {
       "Index": 3,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "tDelay",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "reserved (0)",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

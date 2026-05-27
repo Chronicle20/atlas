@@ -28,7 +28,7 @@
 | [PetCommand](PetCommand.md) | ❌ | `libs/atlas-packet/pet/serverbound/command.go` |
 | [PetExcludeItem](PetExcludeItem.md) | ❌ | `libs/atlas-packet/pet/serverbound/exclude_item.go` |
 | [PetFood](PetFood.md) | ✅ | `libs/atlas-packet/pet/serverbound/food.go` |
-| [ReactorHitRequest](ReactorHitRequest.md) | ❌ | `libs/atlas-packet/reactor/serverbound/hit.go` |
+| [ReactorHitRequest](ReactorHitRequest.md) | ✅ | `libs/atlas-packet/reactor/serverbound/hit.go` |
 | [CharacterAppearanceUpdate](CharacterAppearanceUpdate.md) | ❌ | `libs/atlas-packet/character/clientbound/appearance_update.go` |
 | [CharacterHint](CharacterHint.md) | ✅ | `libs/atlas-packet/character/clientbound/hint.go` |
 | [DropDestroy](DropDestroy.md) | ❌ | `libs/atlas-packet/drop/clientbound/destroy.go` |

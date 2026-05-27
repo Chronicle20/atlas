@@ -74,7 +74,7 @@
 | [CreateCharacter](CreateCharacter.md) | ✅ | `libs/atlas-packet/character/serverbound/create.go` |
 | [CharacterSpawn](CharacterSpawn.md) | ❌ | `libs/atlas-packet/character/clientbound/spawn.go` |
 | [MonsterMovementAck](MonsterMovementAck.md) | ✅ | `libs/atlas-packet/monster/clientbound/movement_ack.go` |
-| [ReactorHitRequest](ReactorHitRequest.md) | ❌ | `libs/atlas-packet/reactor/serverbound/hit.go` |
+| [ReactorHitRequest](ReactorHitRequest.md) | ✅ | `libs/atlas-packet/reactor/serverbound/hit.go` |
 | [EffectSimple](EffectSimple.md) | ❌ | `libs/atlas-packet/character/clientbound/effect.go` |
 | [EffectQuest](EffectQuest.md) | ❌ | `libs/atlas-packet/character/clientbound/effect_quest.go` |
 | [EffectSkillUse](EffectSkillUse.md) | ❌ | `libs/atlas-packet/character/clientbound/effect_skill_use.go` |

@@ -115,6 +115,35 @@ After the initial post-phase-b closeout, the deferred items surfaced during code
 
 `prd.md` §2, §4.1, §4.2, and §11 originally claimed 59 combat packets (37 cb + 22 sb). The actual `libs/atlas-packet/{monster,drop,reactor,pet}` source inventory is 31 packets (20 cb + 11 sb), which matches the `plan.md` per-phase breakdown (monster 9+1, pet 6+8, drop 2+1, reactor 3+1 = 31). The PRD over-counted; plan.md and the delivered audit were correct. PRD updated in-place to reflect the actual inventory, with a clarifying note that `stat.go` packs both StatSet and StatReset and `activated_body.go` is a wrapper rather than an independent packet.
 
+### Audit-tool refactors (items 4, 5, 6, 7, 8)
+
+The five audit-tool follow-ups originally flagged for "future tasks" (see §"Audit-tool follow-ups recommended" above) all landed in-branch as part of the follow-up sweep:
+
+- **Item 4 — Qualified registry keys** (`170ba923f`). `tools/packet-audit/internal/atlaspacket/registry.go` keys storage on `<pkgPath>.<name>` so cross-sub-domain struct-name collisions (Spawn, Destroy, Movement, etc.) don't last-write-wins. New `Qualify(hint, contextPkg)` method resolves unqualified short names with same-package preference. Backward-compat: HasType/Calls/FieldType still accept unambiguous short names.
+
+- **Item 5 — Wire-mutex if/else collapse** (`02a781195`). `analyzer.go` walker detects `if x { WriteByte(a) } else { WriteByte(b) }` patterns (same Kind+Op+RecurseType in both branches) and emits one unconditional position rather than two consecutive guarded entries. Resolves the DropSpawn/MonsterSpawn/ReactorHitRequest analyzer FPs.
+
+- **Item 6 — Dispatcher-prefix annotation** (`25fd855d3`). `idasrc/export.go` accepts a `"dispatcher": "per-mob"|"per-pet"|"per-pet-remote"` field that auto-prepends the canonical CMobPool/CUserPool/CUser dispatcher prefix bytes. Opt-in for new entries; existing entries unchanged.
+
+- **Item 7 — Encode↔Decode equivalence** (`37450ea49`). Added AssignStmt walking to the analyzer so atlas's runtime Decode methods (`m.field = r.ReadByte()`) produce the same Call list as the symmetric Encode methods. parsePrim already accepted both Encode×N and Decode×N op names; the new tests make the binding explicit.
+
+- **Item 8 — Sub-function descent via `Delegate` op** (`f9515973a`). New `{"op": "Delegate", "ref": "<fname>"}` schema in the IDA exports inlines a referenced FName's resolved Calls (recursively, with cycle detection and guard ANDing). Resolves the `DecodeBuf` placeholder gap for `CMob::Init`, `CMob::ProcessStatSet`, `CPet::Init`, `CMovePath::OnMovePacket`, etc. — once those sub-functions get their own IDA entries.
+
+### Audit re-run sweep (item 9)
+
+After the analyzer refactors above, the audit pipeline was re-run across all 4 versions. Verdict shifts:
+
+| Packet | v83 | v87 | v95 | jms_v185 | Cause |
+|---|---|---|---|---|---|
+| ReactorHitRequest (sb) | ❌→✅ | ❌→✅ | ❌→✅ | ❌→✅ | Item 5 collapses `if isSkill { Encode4(1) } else { Encode4(0) }` to a single Encode4. |
+| MonsterMovement (cb) | unchanged 🔍 | 🔍→❌ | 🔍→❌ | 🔍→❌ | Item 4 expansion now resolves the Movement sub-struct accurately, surfacing the IDA-side `CMovePath::OnMovePacket` `DecodeBuf` placeholder as a position mismatch. Real fix: populate `CMovePath::OnMovePacket` IDA entries and switch the placeholder to a `Delegate` ref. Wire is still correct. |
+| Move (cb) | 🔍→❌ | 🔍→❌ | 🔍→❌ | 🔍→❌ | Same root cause as MonsterMovement — character movement also embeds Movement sub-struct via CMovePath. Wire is still correct. |
+| CharacterList (cb) | unchanged ✅ | ✅→❌ | ✅→❌ | unchanged ✅ | Item 5 collapses `for i := 0; i < 3; i++ { if ok { Encode4(petId) } else { Encode4(0) } }` to one Encode4 in the loop body. Pre-collapse, atlas double-emitted (1 per branch) which happened to match the IDA entry's manually-unrolled 3 `anPetID[N]` entries by accident. The IDA entry needs to be rewritten with a single `loop nCount` body entry — same correction the surrounding entries already use. Wire is still correct. v83/jms_v185 unchanged because their IDA entries don't unroll. |
+
+ReactorHitRequest reports + SUMMARY rows updated across all 4 versions in this branch.
+
+The three negative shifts (MonsterMovement, Move, CharacterList) are explicitly **not corrected on the verdict line in-branch** — fixing them requires IDA-entry rewrites (Delegate refs for CMovePath/CMob::Init/CPet::Init, loop-unrolling cleanup for CharacterList) that are bulk per-version edits gated on the same IDA-decompile access blocking [Item 1] (v83/v87 `CMob::GenerateMovePath` addresses) and the [combat template population gap] (`template-audit.md` Finding 3). All three were ✅ wire-correct under the *old* analyzer and remain ✅ wire-correct under the new one — the verdict shift reflects the analyzer surfacing IDA-entry imprecision that previously masked itself via atlas's pre-collapse double-counting.
+
 ### Combat template opcode audit (item 2)
 
 PRD §4.4 required cross-checking combat template opcodes against IDA dispatcher case-statement values and landing fixes for any drift. Full findings in [`template-audit.md`](template-audit.md). Summary:

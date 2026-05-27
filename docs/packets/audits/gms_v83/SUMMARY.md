@@ -80,7 +80,7 @@
 | [PetExcludeResponse](PetExcludeResponse.md) | ❌ | `libs/atlas-packet/pet/clientbound/exclude.go` |
 | [ReactorDestroy](ReactorDestroy.md) | ✅ | `libs/atlas-packet/reactor/clientbound/destroy.go` |
 | [PetFood](PetFood.md) | ✅ | `libs/atlas-packet/pet/serverbound/food.go` |
-| [ReactorHitRequest](ReactorHitRequest.md) | ❌ | `libs/atlas-packet/reactor/serverbound/hit.go` |
+| [ReactorHitRequest](ReactorHitRequest.md) | ✅ | `libs/atlas-packet/reactor/serverbound/hit.go` |
 | [ServerStatus](ServerStatus.md) | ✅ | `libs/atlas-packet/login/clientbound/server_status.go` |
 | [BuffCancelForeign](BuffCancelForeign.md) | ❌ | `libs/atlas-packet/character/clientbound/buff_cancel.go` |
 | [StatusMessageDropPickUpInventoryFull](StatusMessageDropPickUpInventoryFull.md) | ❌ | `libs/atlas-packet/character/clientbound/status_message.go` |

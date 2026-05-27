@@ -23,7 +23,7 @@
 | [ExpressionRequest](ExpressionRequest.md) | ✅ | `libs/atlas-packet/character/serverbound/expression.go` |
 | [PetItemUse](PetItemUse.md) | ❌ | `libs/atlas-packet/pet/serverbound/item_use.go` |
 | [ReactorSpawn](ReactorSpawn.md) | ✅ | `libs/atlas-packet/reactor/clientbound/spawn.go` |
-| [ReactorHitRequest](ReactorHitRequest.md) | ❌ | `libs/atlas-packet/reactor/serverbound/hit.go` |
+| [ReactorHitRequest](ReactorHitRequest.md) | ✅ | `libs/atlas-packet/reactor/serverbound/hit.go` |
 | [PetDropPickUp](PetDropPickUp.md) | ❌ | `libs/atlas-packet/pet/serverbound/drop_pick_up.go` |
 | [ServerListRequest](ServerListRequest.md) | ✅ | `libs/atlas-packet/login/serverbound/server_list_request.go` |
 | [CharacterExpression](CharacterExpression.md) | ✅ | `libs/atlas-packet/character/clientbound/expression.go` |

@@ -115,7 +115,9 @@ async function fetchSeedStatus(url: string, tenant: Tenant): Promise<SeedStatus>
 }
 
 function subdomainCount(s: SeedStatus, key: string): number {
-  return s.subdomains[key]?.count ?? 0;
+  // Optional chain on `subdomains` as well as the entry — guards
+  // against a malformed response where the map itself is absent.
+  return s.subdomains?.[key]?.count ?? 0;
 }
 
 class SeedService {

@@ -201,6 +201,25 @@ describe('seedService status projections', () => {
     expect(s.updatedAt).toBe('2026-05-27T17:00:00Z');
   });
 
+  it('falls back to 0 when subdomains map is absent entirely', async () => {
+    // Defensive guard: a malformed response missing the subdomains
+    // map itself (vs. just missing a specific key) should not throw.
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        groupName: 'drops',
+        catalogRevision: '',
+        tenantSeededRevision: null,
+        tenantSeededAt: null,
+        updatedAt: null,
+      }),
+    });
+    const s = await seedService.getDropsSeedStatus(mockTenant);
+    expect(s.monsterDropCount).toBe(0);
+    expect(s.continentDropCount).toBe(0);
+    expect(s.reactorDropCount).toBe(0);
+  });
+
   it('throws on non-2xx', async () => {
     fetchMock.mockResolvedValue({
       ok: false,

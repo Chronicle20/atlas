@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Mushroom Town - Tutorial portal showing Quest window instructions",
+      "mapId": 10000,
+      "portalId": "advice05",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "show_quest_hint",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "height": "5",
+                  "hint": "Press #e#b[Q]#k#n to view the Quest window.",
+                  "width": "250"
+                },
+                "type": "show_hint"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "advice05",
+    "type": "portal-action"
+  }
+}

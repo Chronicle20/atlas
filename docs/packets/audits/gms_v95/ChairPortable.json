@@ -1,0 +1,20 @@
+{
+  "WriterName": "ChairPortable",
+  "IDAName": "CWvsContext::SendSitOnPortableChairRequest",
+  "Address": "0x9da100",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/chair_portable.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nItemID (portable chair item ID)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

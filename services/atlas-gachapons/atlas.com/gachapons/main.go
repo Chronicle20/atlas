@@ -1,18 +1,20 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-gachapons/gachapon"
 	"atlas-gachapons/global"
 	"atlas-gachapons/item"
 	"atlas-gachapons/logger"
 	"atlas-gachapons/reward"
 	"atlas-gachapons/seed"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-gachapons"
@@ -48,7 +50,12 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(gachapon.Migration, item.Migration, global.Migration))
+	db := database.Connect(l, database.SetMigrations(
+		gachapon.Migration,
+		item.Migration,
+		global.Migration,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	server.New(l).
 		WithContext(tdm.Context()).

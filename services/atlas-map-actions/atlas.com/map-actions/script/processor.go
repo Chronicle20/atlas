@@ -26,7 +26,6 @@ type ScriptProcessor interface {
 	AllProvider() model.Provider[[]MapScript]
 
 	DeleteAllForTenant() (int64, error)
-	Seed() (SeedResult, error)
 
 	// Count returns the number of map scripts for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
@@ -118,40 +117,6 @@ func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	}
 	p.l.Debugf("Deleted [%d] map scripts for tenant [%s].", count, p.t.Id())
 	return count, nil
-}
-
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding map scripts for tenant [%s].", p.t.Id())
-
-	result := SeedResult{}
-
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing map scripts: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	scripts, loadErrors := LoadMapScriptFiles()
-
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	for _, script := range scripts {
-		_, err = p.Create(script)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s/%s: failed to create: %v", script.ScriptName(), script.ScriptType(), err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d.",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 func (p *ProcessorImpl) Process(f field.Model, characterId uint32, scriptName string, scriptType string) ProcessResult {

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/channel"
 	consumer2 "atlas-channel/kafka/consumer"
 	channel2 "atlas-channel/kafka/message/channel"
+	"atlas-channel/listener"
 	"atlas-channel/server"
 	"context"
 
@@ -25,16 +26,19 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(sc server.Model) func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(sc server.Model) func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(channel2.EnvCommandTopicChannelStatus)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandStatus(sc, ipAddress, port)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandStatus(sc, ipAddress, port))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}

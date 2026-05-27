@@ -1,0 +1,15 @@
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: seed-catalog
+    mountPath: /var/run/seed-catalog
+    readOnly: true
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SEED_CATALOG_ROOT
+    # git-sync's symlink layout: <root>/<link> -> <hash-prefix>/. With
+    # link=catalog (set in configmap.yaml) and the repo's catalog data at
+    # deploy/seed/<region>/<version>/, the absolute path the seeder lib needs
+    # is <mount>/<link>/deploy/seed.
+    value: /var/run/seed-catalog/catalog/deploy/seed

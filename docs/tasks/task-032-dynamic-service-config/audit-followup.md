@@ -1,0 +1,81 @@
+# Backend Audit — task-032 follow-up fixes (atlas-channel, atlas-login)
+
+- **Branch:** task-032-dynamic-service-config
+- **Commit range:** 1b4fa7f75..HEAD (e5fbabadc, 0b33ee5ee)
+- **Date:** 2026-05-27
+- **Build:** PASS — `go build ./...` clean in both `services/atlas-channel/atlas.com/channel` and `services/atlas-login/atlas.com/login`.
+- **Tests:** PASS — `go test -race -count=1 ./configuration/...` ok in both services. `atlas-login/configuration 1.114s`, `atlas-channel/configuration 1.114s`.
+- **Overall:** NEEDS-WORK — build/tests green, but five blocking concerns (one correctness, four maintainability/anti-pattern) and three non-blocking concerns.
+
+## Files in scope
+
+- `services/atlas-channel/atlas.com/channel/configuration/registry.go`
+- `services/atlas-channel/atlas.com/channel/configuration/registry_test.go`
+- `services/atlas-channel/atlas.com/channel/main.go` (lines 225–236)
+- `services/atlas-login/atlas.com/login/configuration/registry.go`
+- `services/atlas-login/atlas.com/login/configuration/registry_test.go`
+- `services/atlas-login/atlas.com/login/main.go` (lines 96–107)
+
+## Callers verified (production code)
+
+```
+services/atlas-login/atlas.com/login/main.go:130             configuration.PublishSnapshot(svc, tenants)
+services/atlas-login/atlas.com/login/main.go:192             configuration.GetServiceConfig()
+services/atlas-login/atlas.com/login/session/task.go:24      configuration.GetServiceConfig()
+services/atlas-login/atlas.com/login/socket/handler/accept_tos.go:45  configuration.GetTenantConfig(t.Id())
+services/atlas-login/atlas.com/login/kafka/consumer/account/session/consumer.go:88  configuration.GetTenantConfig(t.Id())
+services/atlas-channel/atlas.com/channel/session/task.go:24  configuration.GetServiceConfig()
+```
+
+`configuration.Init` — **zero callers** in either service. `configuration.GetTenantConfigs` — **zero production callers** (defined only in atlas-channel; atlas-login does not have this function at all).
+
+## Checklist Results
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| FU-01 | Concurrency: `readyCh` close happens-before `configMu.Lock/Unlock` write ordering is sound | PASS | `registry.go:121-138` (both services). `configMu.Lock()` brackets the write, then `readyOnce.Do(close(readyCh))` runs only after `Unlock`. Readers do `waitReady()` → `configMu.RLock()`, so a reader that observes the close is guaranteed to also observe the protected write via the mutex's happens-before edge. `sync.Once` provides the happens-before for the close itself. |
+| FU-02 | `time.After(readyTimeout)` leak under high call rate | WARN (non-blocking) | `registry.go:48` (both services). `time.After` schedules a `time.Timer` that cannot be GC'd until the 60s fires. After PublishSnapshot the channel close path is taken immediately, so the timer is unused but lives 60s. At steady state (millions of calls) this is fine because `waitReady` returns on the first `select` arm without scheduling — `time.After` is only evaluated when both arms are ready and Go's `select` short-circuits on a closed channel. Verified by reading `runtime/select.go` semantics: a `select` with a ready case fires that case without arming the other. NO leak in the hot path. Only the cold-start window (≤ 60 s × call-rate) allocates timers. Acceptable; flagged only because a reviewer might assume otherwise. |
+| FU-03 | `GetServiceConfig` nil-check after `waitReady()` returns nil error | FAIL | `registry.go:59-61` (both services). After `waitReady()` returns nil (channel closed → snapshot was published) the function still checks `if serviceConfig == nil { return nil, ErrNotReady }`. This branch is **unreachable in normal operation** (close happens only when `svc != nil` per `registry.go:136`), but it is reachable if a later `PublishSnapshot(nil, ...)` clobbers it (line 127 explicitly sets `serviceConfig = nil`). In that case `GetServiceConfig` returns `ErrNotReady` — semantically wrong; the projection has been ready, the snapshot is now empty/cleared. A new sentinel (e.g. `ErrServiceUnconfigured`) would be more honest, OR `PublishSnapshot` should refuse to set `serviceConfig = nil` once ready. As written, callers cannot distinguish "never ready" from "transient nil after ready". |
+| FU-04 | `Init` (legacy REST path) dead code | FAIL | `registry.go:89-111` (both services). Confirmed via `grep -rn "configuration.Init"` — zero hits. The function still imports `log`, `requestByService`, `requestForTenant`. Leaving dead code that still `log.Fatalf`s is a confusion hazard: a future caller wiring it in would reintroduce exactly the crash class this PR fixes. Either delete it (and the now-orphan `requestByService`/`requestForTenant` if unused elsewhere) or comment-mark as intentionally retained for rollback. The commit message says nothing about retention. |
+| FU-05 | `GetTenantConfigs` swallows timeout silently | FAIL | `registry.go:65-74` (atlas-channel only). `_ = waitReady()` discards `ErrNotReady`. Because the signature has no error return, a caller hitting this during the 60 s window gets an **empty map** rather than an indication that the snapshot is not yet ready. Empty-map vs unconfigured-tenant is indistinguishable downstream. Two acceptable fixes: (a) change signature to `(map[uuid.UUID]tenant.RestModel, error)` and update callers — currently zero production callers, so cheap; (b) delete `GetTenantConfigs` entirely since it has no production callers. Adding a function with the wrong contract "in case it's useful" is dead-code-with-a-trap. |
+| FU-06 | Callers of `GetTenantConfig` propagate `ErrTenantNotConfigured` distinctly from `ErrNotReady` | FAIL | `accept_tos.go:45-49`, `kafka/consumer/account/session/consumer.go:88-92`. Both sites do `l.WithError(err).Errorf("Unable to find server configuration.")` and `return err`. They do NOT use `errors.Is(err, configuration.ErrTenantNotConfigured)` vs `errors.Is(err, configuration.ErrNotReady)` to distinguish "tenant is misconfigured" (a permanent ops error worth alerting on) from "snapshot not ready yet" (a transient startup error that should self-heal). The previous `log.Fatalf` was wrong, but the new behavior loses signal: a misconfigured production tenant now silently errors per-request and the operator sees "Unable to find server configuration" with no way to grep for the permanent vs transient class. Recommend the two consumer sites branch on `errors.Is(err, configuration.ErrTenantNotConfigured)` and emit a distinct metric/log so this doesn't become invisible. |
+| FU-07 | `session.NewTimeout` swallows `ErrNotReady` into a 1-hour default | FAIL | `services/atlas-login/atlas.com/login/session/task.go:22-40` and `services/atlas-channel/atlas.com/channel/session/task.go:22-40`. `NewTimeout(l, tt)` calls `configuration.GetServiceConfig()`; if it returns `ErrNotReady` (or any error) the code falls back to `to = 3600000` (1 hour) **without logging that the fallback was taken**. atlas-login `main.go:191-205` does call `GetServiceConfig()` at startup and `Fatalf`s on error — but that call happens BEFORE the timeout goroutine spawns, and the timeout value `tt` it computes is passed in as `interval`, not `timeout`. Then `NewTimeout` internally re-reads the config to compute `timeout`. If the projection later resets `serviceConfig` to nil (per FU-03), or if a future refactor moves `NewTimeout` earlier, the 1-hour default kicks in invisibly. At minimum the `err != nil` branch should `l.WithError(err).Warnf("Using default timeout %dms because configuration unavailable", to)`. As written, a stale 1-hour session keepalive could persist undetected. |
+| FU-08 | Per-process projection group id leaves orphan Kafka consumer groups on every pod restart | WARN (non-blocking, but worth documenting) | `services/atlas-channel/atlas.com/channel/main.go:235`, `services/atlas-login/atlas.com/login/main.go:106`. Format `fmt.Sprintf("%s - projection - %s", consumerGroupId, uuid.New().String())` is correct for the stated goal (forced FirstOffset replay per process) but every restart leaves a new group id behind in Kafka. Group metadata is eventually GC'd by Kafka's `offsets.retention.minutes` (default 7 days). For a high-restart-rate environment (PR envs, CI, frequent deploys) this is hundreds of dead groups visible to anyone running `kafka-consumer-groups.sh --list`. Acceptable for now per user direction, but the prefix `"%s - projection - %s"` should be greppable — verify by searching ops dashboards / alerting that no rule does an exact-match on group id. Recommend a follow-up to either (a) use a Kafka manual-assign mode (no group id, no commits, true ephemeral consumer) or (b) tag the group id with a stable identifier (e.g. pod name) so restarts of the same pod reuse the same id. |
+| FU-09 | Projection group id inherits env override via `consumerGroupId` prefix | PASS | `main.go:62` (login) and `main.go:150` (channel): `consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())`. The projection group id `fmt.Sprintf("%s - projection - %s", consumerGroupId, uuid.New().String())` interpolates the already-resolved value, so any `CONSUMER_GROUP_ID` env override IS honored. The user's question 6.b is satisfied. |
+| FU-10 | Test file does not reset package state — second test would inherit closed `readyCh` | FAIL | `registry_test.go` (both services). The single test calls `configuration.PublishSnapshot(&RestModel{Id: id}, nil)` which closes `readyCh` via `readyOnce.Do`. There is no `t.Cleanup` to reset `readyCh`, `readyOnce`, `serviceConfig`, `tenantConfig`, or `once`. Per `testing-guide.md` (table-driven tests with package-level state), a second test in the same package would either (a) start with `readyCh` already closed (defeating the block-then-return assertion) or (b) start with `serviceConfig` populated from this test (cross-test contamination). The package has no test-only `Reset()` export, no `TestMain` that resets between tests. The test happens to work today because it is the ONLY test; that is a trap for the next contributor. Recommend either: (a) export a `// Test-only` `resetForTest()` helper guarded by build tag, (b) add `t.Cleanup` that re-initializes package vars via unsafe or a real export, or (c) refactor `readyCh`/`readyOnce` into a struct injected via constructor so tests use a fresh instance. |
+| FU-11 | `PublishSnapshot` value-copy doc claim is misleading (shallow vs deep) | WARN (non-blocking) | `registry.go:121-134` (both services). Comment: "Both args are taken by value-copy so the caller's projection State can mutate independently after the call." But `c := *svc` is a **shallow** copy: `RestModel.Tasks` (`[]task.RestModel`) and `RestModel.Tenants` (`[]ChannelTenantRestModel`) are slice headers, still pointing at the caller's backing arrays. If the projection layer later mutates `state.Service.Tasks[0].Duration` in place, that mutation is visible to `GetServiceConfig()` readers without holding `configMu`. The tenants map is also shallow-copied (the map struct is new, but `tenant.RestModel` values may contain slices/maps internally — `ChannelTenantRestModel.Worlds` is `[]ChannelWorldRestModel`). The doc should either accurately describe shallow-copy semantics or `PublishSnapshot` should deep-copy. Today's caller in `main.go:128-130` constructs fresh values from the projection State each tick, so the risk is theoretical, but the doc is wrong. |
+| FU-12 | New code uses `time.After` and channels but not `context.Context` for the wait | WARN (non-blocking) | `registry.go:44-51` (both services). `waitReady()` cannot be cancelled by caller context. The blocking callers (`accept_tos.go:45`, `consumer.go:88`) operate inside an HTTP handler / Kafka handler that has a `context.Context` in scope. A 60 s blocking call inside a Kafka handler can stall the partition's consumer loop and trigger a rebalance long before `waitReady` gives up. Recommend `func waitReady(ctx context.Context) error` with `case <-ctx.Done(): return ctx.Err()` as a third select arm, and pass the handler's context. This also fixes the timer-leak edge case in FU-02. |
+| FU-13 | Build clean | PASS | `go build ./...` zero output in both `services/atlas-channel/atlas.com/channel` and `services/atlas-login/atlas.com/login`. |
+| FU-14 | Tests clean (race detector) | PASS | `go test -race -count=1 ./configuration/...` → `ok atlas-login/configuration 1.114s` and `ok atlas-channel/configuration 1.114s`. |
+
+## Answers to specific questions
+
+1. **Concurrency correctness of `readyCh` + `sync.Once` + `configMu`** — Logically sound (FU-01). The mutex's happens-before edge protects the write that the close advertises. `time.After` allocation is not a hot-path concern because a closed channel short-circuits `select` arming (FU-02). The real concurrency-flavor concern is FU-12: no context plumbing, so a stalled wait blocks a Kafka partition handler for up to 60 s and risks a consumer-group rebalance. Worth fixing.
+
+2. **`ErrTenantNotConfigured` caller safety** — Both consumer sites (`accept_tos.go:45-49`, `kafka/consumer/account/session/consumer.go:88-92`) propagate the error correctly (no silent swallow) but do NOT distinguish `ErrTenantNotConfigured` from `ErrNotReady` (FU-06). A permanent misconfiguration is now indistinguishable from a transient startup error in logs. This is a regression from the fatal behavior in observability terms, even though it is a correctness improvement.
+
+3. **`Init` legacy REST path** — Dead. Zero callers (FU-04). Should be deleted or at least flagged with a `// Deprecated:` doc.
+
+4. **Test state leakage** — Confirmed (FU-10). Single happy-path test, no reset, no `TestMain`, no test-only reset export. The next test in the file will silently inherit a closed `readyCh` and populated `serviceConfig` and have no way to assert the block behavior. Worth flagging as a guideline violation per `testing-guide.md` table-driven-test isolation expectations.
+
+5. **`GetTenantConfigs` swallowing timeout** — Not acceptable (FU-05). Either change the signature or delete the function (it has zero production callers).
+
+6. **Per-process projection group id** — Mechanically correct for the goal (FU-09 confirms env-override prefix is preserved). Orphan groups (FU-08) are a low-grade ops smell; raised as a follow-up but not blocking.
+
+## Summary
+
+### Blocking (must fix before merge)
+
+- **FU-03** — `GetServiceConfig` returns the wrong sentinel (`ErrNotReady`) for the "cleared after ready" case. Either prevent the clear or add a distinct sentinel.
+- **FU-04** — `configuration.Init` is dead code. Delete or explicitly retain with a comment.
+- **FU-05** — `GetTenantConfigs` (atlas-channel only) silently swallows `ErrNotReady` because the signature has no error return. Change the signature or delete (zero production callers).
+- **FU-06** — Caller sites at `accept_tos.go:45-49` and `kafka/consumer/account/session/consumer.go:88-92` do not distinguish `ErrTenantNotConfigured` from `ErrNotReady`. Observability regression vs the fatal-then-loud-restart behavior. Branch on the sentinel and emit distinct logs/metrics.
+- **FU-07** — `session.NewTimeout` (both services) silently defaults to a 1-hour timeout on any `GetServiceConfig` error without logging. At minimum, log the fallback at WARN.
+- **FU-10** — `registry_test.go` (both services) has no test isolation. The single test pollutes package state for any future test in the file. Add a reset hook or refactor `readyCh`/`readyOnce` into an injectable struct.
+
+### Non-blocking (should fix, document, or accept)
+
+- **FU-02** — `time.After` in `waitReady` is not hot-path-relevant (closed-channel short-circuit), but a comment would prevent future "why isn't this a `time.NewTimer` with `Stop`?" review noise.
+- **FU-08** — Per-process projection group id leaves orphan Kafka consumer groups on every restart. Accepted per user direction; consider a stable per-pod id (using `HOSTNAME` env) in a follow-up.
+- **FU-11** — `PublishSnapshot` shallow-copy doc claim is inaccurate. Either deep-copy or correct the doc.
+- **FU-12** — `waitReady()` does not accept a `context.Context`. A 60-second blocking wait inside a Kafka handler can trigger a partition rebalance. Plumb the handler's context and add a third select arm `<-ctx.Done()`.

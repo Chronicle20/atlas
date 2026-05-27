@@ -2,7 +2,6 @@ package script
 
 import (
 	"atlas-portal-actions/rest"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -28,8 +27,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/portals/scripts", registerInputHandler("create_script", CreateScriptHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/portals/scripts/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/portals/scripts/{scriptId}", registerHandler("delete_script", DeleteScriptHandler)).Methods(http.MethodDelete)
-			router.HandleFunc("/portals/scripts/seed", registerHandler("seed_scripts", SeedScriptsHandler)).Methods(http.MethodPost)
-			router.HandleFunc("/portals/scripts/seed/status", registerHandler("get_portal_scripts_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -198,19 +195,3 @@ func DeleteScriptHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 	})
 }
 
-// SeedScriptsHandler handles POST /portals/scripts/seed
-func SeedScriptsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Seeding scripts.")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
-	}
-}

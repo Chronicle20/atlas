@@ -53,10 +53,37 @@ func run(args []string, stdout, stderr io.Writer) int {
 		ForceAll:        *forceAll,
 	})
 
+	// Non-Go services (atlas-ui, atlas-assets, atlas-pr-bootstrap, …) live in
+	// services.json but never enter BuildGraph (no go.mod under atlas.com/).
+	// Under --force-all, Select returns only graph services, which silently
+	// drops non-Go services from the docker-services matrix even when their
+	// Dockerfile sources changed. Merge them back in here so the rebuild
+	// surface matches what services.json actually declares.
+	dockerSvcNames := append([]string(nil), sel.Services...)
+	if *forceAll {
+		for _, s := range cfg.Services {
+			if s.DockerImage == "" {
+				continue
+			}
+			if !containsString(dockerSvcNames, s.Name) {
+				dockerSvcNames = append(dockerSvcNames, s.Name)
+			}
+		}
+	} else {
+		// Not force-all: respect what the caller passed via --changed-services,
+		// even for non-Go services (Select already preserves these, but be
+		// defensive in case the graph filter drops one).
+		for _, n := range splitCSV(*changedSvcsArg) {
+			if !containsString(dockerSvcNames, n) {
+				dockerSvcNames = append(dockerSvcNames, n)
+			}
+		}
+	}
+
 	out := output{
 		GoServices:     cfg.EnrichGoServices(sel.Services),
 		GoLibraries:    cfg.EnrichGoLibraries(sel.Libs),
-		DockerServices: cfg.EnrichDockerServices(sel.Services),
+		DockerServices: cfg.EnrichDockerServices(dockerSvcNames),
 		Reason:         buildReason(sel, *forceAll, *changedLibsArg, *changedSvcsArg),
 	}
 
@@ -73,6 +100,15 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+func containsString(ss []string, s string) bool {
+	for _, x := range ss {
+		if x == s {
+			return true
+		}
+	}
+	return false
 }
 
 func splitCSV(s string) []string {

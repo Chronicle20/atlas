@@ -1,0 +1,182 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkQuestCompletion",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3523",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3524",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3525",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3526",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3527",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3529",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "3539",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "completeAndReward"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "notYetChecked"
+                }
+              ]
+            },
+            "id": "checkQuestCompletion",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "successMessage"
+                }
+              ]
+            },
+            "id": "completeAndReward",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "You are now filled with all of your memories again.. You are now allowed to go to #m270020000#."
+            },
+            "id": "successMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "You have not yet checked with your first teacher about your memories?"
+            },
+            "id": "notYetChecked",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 3507,
+      "questName": "Memory Lane",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3507",
+    "type": "quest-conversation"
+  }
+}

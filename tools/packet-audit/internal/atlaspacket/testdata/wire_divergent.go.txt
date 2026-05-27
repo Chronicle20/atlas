@@ -1,0 +1,23 @@
+package fixture
+
+import "context"
+
+// WireDivergent models the case where the if/else branches write DIFFERENT
+// wire shapes (different lengths or different op widths). The analyzer must
+// keep both branches with their respective guards — NOT collapse.
+type WireDivergent struct{}
+
+func (m WireDivergent) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		if m.extended() {
+			w.WriteInt(1)
+			w.WriteByte(2)
+		} else {
+			w.WriteInt(0)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m WireDivergent) extended() bool { return true }

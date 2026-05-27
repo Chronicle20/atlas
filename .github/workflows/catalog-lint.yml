@@ -1,0 +1,39 @@
+name: catalog-lint
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'deploy/seed/**'
+      - 'tools/catalog-lint/**'
+      - 'libs/atlas-seeder/**'
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/seed/**'
+      - 'tools/catalog-lint/**'
+
+env:
+  GO_VERSION: '1.25.5'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Lint catalog
+        run: |
+          set -e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            go run ./tools/catalog-lint deploy/seed
+          else
+            # advisory on main: log failures but do not fail the job
+            go run ./tools/catalog-lint deploy/seed || true
+          fi

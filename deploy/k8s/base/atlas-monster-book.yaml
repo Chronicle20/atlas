@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-monster-book
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-monster-book
+  template:
+    metadata:
+      labels:
+        app: atlas-monster-book
+    spec:
+      containers:
+      - name: monster-book
+        image: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-monster-book"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-monster-book
+spec:
+  selector:
+    app: atlas-monster-book
+  ports:
+  - protocol: TCP
+    port: 8080

@@ -1,0 +1,57 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 20600,
+      "questName": "Cygnus Knight Level 100 Training",
+      "startStateMachine": {
+        "startState": "start_0",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "start_1_accept",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": null,
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "#h0#. Have you been slacking off on training since reaching Level 100? We all know how powerful you are, but the training is not complete. Take a look at these Knight Commanders. They train day and night, preparing themselves for the possible encounter with the Black Mage."
+            },
+            "id": "start_0",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "start_1_accept",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "20600",
+    "type": "quest-conversation"
+  }
+}

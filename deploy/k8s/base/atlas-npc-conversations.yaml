@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-npc-conversations
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-npc-conversations
     spec:
+      volumes: []
       containers:
       - name: npc-conversations
         image: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:
@@ -36,10 +40,6 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: NPC_CONVERSATIONS_PATH
-          value: "/conversations/npc"
-        - name: QUEST_CONVERSATIONS_PATH
-          value: "/conversations/quests"
 ---
 apiVersion: v1
 kind: Service

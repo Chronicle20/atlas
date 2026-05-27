@@ -1,0 +1,4 @@
+[
+  {"id":"henesys","name":"Henesys Gachapon","npcIds":[9100100],"commonWeight":90,"uncommonWeight":8,"rareWeight":2},
+  {"id":"ellinia","name":"Ellinia Gachapon","npcIds":[9100101],"commonWeight":85,"uncommonWeight":10,"rareWeight":5}
+]

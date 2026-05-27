@@ -18,7 +18,9 @@ import (
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-party-quests"
@@ -56,7 +58,9 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(definition.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(definition.MigrateTable, func(db *gorm.DB) error {
+		return db.AutoMigrate(&seeder.SeedState{})
+	}))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	pqConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -118,6 +122,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(definition.InitResource(GetServer())(db)).
+		AddRouteInitializer(definition.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(instance.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()

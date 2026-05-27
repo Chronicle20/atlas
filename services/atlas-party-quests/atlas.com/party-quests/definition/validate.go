@@ -4,8 +4,69 @@ import (
 	"atlas-party-quests/condition"
 	"atlas-party-quests/reward"
 	"atlas-party-quests/stage"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 )
+
+// jsonAPIEnvelope is a minimal representation of the seed catalog JSON:API file format.
+type jsonAPIEnvelope struct {
+	Data struct {
+		Attributes json.RawMessage `json:"attributes"`
+	} `json:"data"`
+}
+
+// LoadDefinitionFiles reads all JSON files from the configured definitions path
+// and parses them as RestModel values. Files are expected to be in JSON:API
+// envelope format ({"data":{"attributes":{...}}}). Used by validation tooling and tests.
+func LoadDefinitionFiles() ([]RestModel, []error) {
+	var models []RestModel
+	var errs []error
+
+	dir := os.Getenv("PARTY_QUEST_DEFINITIONS_PATH")
+	if dir == "" {
+		dir = "/party-quests"
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, []error{fmt.Errorf("failed to read definitions directory: %w", err)}
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: failed to read file: %w", entry.Name(), err))
+			continue
+		}
+
+		var env jsonAPIEnvelope
+		if err := json.Unmarshal(data, &env); err != nil {
+			errs = append(errs, fmt.Errorf("%s: failed to parse JSON: %w", entry.Name(), err))
+			continue
+		}
+		if env.Data.Attributes == nil {
+			errs = append(errs, fmt.Errorf("%s: missing data.attributes", entry.Name()))
+			continue
+		}
+
+		var rm RestModel
+		if err := json.Unmarshal(env.Data.Attributes, &rm); err != nil {
+			errs = append(errs, fmt.Errorf("%s: failed to parse attributes: %w", entry.Name(), err))
+			continue
+		}
+
+		models = append(models, rm)
+	}
+
+	return models, errs
+}
 
 type ValidationResult struct {
 	Valid    bool     `json:"valid"`

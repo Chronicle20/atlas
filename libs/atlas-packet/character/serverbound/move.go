@@ -44,23 +44,28 @@ func (m Move) String() string {
 		m.dr0, m.dr1, m.fieldKey, m.dr2, m.dr3, m.crc, m.dwKey, m.crc32, len(m.movement.Elements))
 }
 
+// Encode writes the movement packet.
+//
+// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: encodes Encode1(detectFlag) then if active:
+// Encode1(fieldKey)+Encode4(crc)+CMovePath::Flush — NO dr0/dr1/dr2/dr3/dwKey/crc32 fields.
+// The || JMS clause on dr-field gates was incorrect; JMS uses GMS v83-style layout (no dr fields).
 func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			w.WriteInt(m.dr0)
 			w.WriteInt(m.dr1)
 		}
 		w.WriteByte(m.fieldKey)
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			w.WriteInt(m.dr2)
 			w.WriteInt(m.dr3)
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			w.WriteInt(m.crc)
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			w.WriteInt(m.dwKey)
 			w.WriteInt(m.crc32)
 		}
@@ -72,19 +77,21 @@ func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 func (m *Move) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: no dr0/dr1/dr2/dr3/dwKey/crc32.
+		// JMS movement is equivalent to GMS v83 layout (fieldKey only before CMovePath).
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			m.dr0 = r.ReadUint32()
 			m.dr1 = r.ReadUint32()
 		}
 		m.fieldKey = r.ReadByte()
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			m.dr2 = r.ReadUint32()
 			m.dr3 = r.ReadUint32()
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			m.crc = r.ReadUint32()
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			m.dwKey = r.ReadUint32()
 			m.crc32 = r.ReadUint32()
 		}

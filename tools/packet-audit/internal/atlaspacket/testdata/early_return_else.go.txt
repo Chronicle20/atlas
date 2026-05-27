@@ -1,0 +1,20 @@
+package fixture
+
+import "context"
+
+type EarlyReturnElse struct{}
+
+func (m EarlyReturnElse) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	t := mustTenant(ctx)
+	return func(opts map[string]interface{}) []byte {
+		if t.MajorVersion() >= 95 {
+			w.WriteByte(1)
+		} else {
+			w.WriteShort(2)
+			return w.Bytes()
+		}
+		w.WriteInt(3)
+		return w.Bytes()
+	}
+}

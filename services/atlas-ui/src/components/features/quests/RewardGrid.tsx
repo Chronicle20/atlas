@@ -86,24 +86,93 @@ export function RewardGrid({
   }
 
   if (actions.items && actions.items.length > 0) {
-    blocks.push(
-      <Block key="items" label="Items">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {actions.items.map((item, i) => (
-            <EntityWidget
-              key={`${item.id}-${i}`}
-              kind="item"
-              id={item.id}
-              count={item.count}
-              prop={item.prop}
-              period={item.period}
-              gender={item.gender}
-              job={item.job}
-            />
-          ))}
-        </div>
-      </Block>,
+    // Backend semantics (atlas-quest processor.go):
+    //   prop == -1 (or count < 0): unconditional — awarded/consumed every time.
+    //   prop >= 0 && count > 0: enters a weighted random pool where exactly one
+    //   item is selected per pool. Weight = max(prop, 1).
+    const consumed = actions.items.filter((i) => i.count < 0);
+    const guaranteed = actions.items.filter(
+      (i) => i.count > 0 && i.prop === -1,
     );
+    const pool = actions.items.filter(
+      (i) => i.count > 0 && (i.prop ?? 0) >= 0,
+    );
+    const totalWeight = pool.reduce(
+      (sum, i) => sum + Math.max(i.prop ?? 0, 1),
+      0,
+    );
+
+    if (guaranteed.length > 0) {
+      blocks.push(
+        <Block key="items-guaranteed" label="Items">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {guaranteed.map((item, i) => (
+              <EntityWidget
+                key={`g-${item.id}-${i}`}
+                kind="item"
+                id={item.id}
+                count={item.count}
+                period={item.period}
+                gender={item.gender}
+                job={item.job}
+              />
+            ))}
+          </div>
+        </Block>,
+      );
+    }
+
+    if (pool.length > 0) {
+      const label =
+        pool.length === 1 ? "Items" : "Items (one of the following)";
+      blocks.push(
+        <Block key="items-pool" label={label}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {pool.map((item, i) => {
+              const weight = Math.max(item.prop ?? 0, 1);
+              const chance =
+                pool.length === 1
+                  ? 100
+                  : totalWeight > 0
+                    ? (weight / totalWeight) * 100
+                    : 100 / pool.length;
+              return (
+                <EntityWidget
+                  key={`p-${item.id}-${i}`}
+                  kind="item"
+                  id={item.id}
+                  count={item.count}
+                  chance={pool.length === 1 ? undefined : chance}
+                  period={item.period}
+                  gender={item.gender}
+                  job={item.job}
+                />
+              );
+            })}
+          </div>
+        </Block>,
+      );
+    }
+
+    if (consumed.length > 0) {
+      blocks.push(
+        <Block key="items-consumed" label="Items consumed">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {consumed.map((item, i) => (
+              <EntityWidget
+                key={`c-${item.id}-${i}`}
+                kind="item"
+                id={item.id}
+                count={item.count}
+                period={item.period}
+                gender={item.gender}
+                job={item.job}
+              />
+            ))}
+          </div>
+        </Block>,
+      );
+    }
   }
 
   if (actions.skills && actions.skills.length > 0) {

@@ -206,3 +206,54 @@ func TestCreateDoesNotInjectWhere(t *testing.T) {
 	db.Where("tenant_id = ?", tid).First(&result)
 	assert.Equal(t, "created", result.Name)
 }
+
+func TestCreateInjectsTenantIdWhenMissing(t *testing.T) {
+	db, _ := setupTestDB(t)
+	tid := uuid.New()
+
+	e := tenantEntity{Name: "no-tid"} // TenantId left zero
+	require.NoError(t, db.WithContext(tenantContext(tid)).Create(&e).Error)
+
+	var result tenantEntity
+	require.NoError(t, db.Unscoped().Where("name = ?", "no-tid").First(&result).Error)
+	assert.Equal(t, tid, result.TenantId, "callback must inject context tenant_id when struct value is zero")
+	assert.Equal(t, tid, e.TenantId, "callback must mutate the caller's struct so subsequent reads see the injected value")
+}
+
+func TestCreateDoesNotOverrideExplicitTenantId(t *testing.T) {
+	db, _ := setupTestDB(t)
+	ctxTid := uuid.New()
+	structTid := uuid.New()
+
+	e := tenantEntity{TenantId: structTid, Name: "explicit"}
+	require.NoError(t, db.WithContext(tenantContext(ctxTid)).Create(&e).Error)
+
+	var result tenantEntity
+	require.NoError(t, db.Unscoped().Where("name = ?", "explicit").First(&result).Error)
+	assert.Equal(t, structTid, result.TenantId, "callback must not overwrite an explicitly-set non-zero tenant_id")
+}
+
+func TestCreateBatchInjectsTenantIdForZeroEntries(t *testing.T) {
+	db, _ := setupTestDB(t)
+	tid := uuid.New()
+	explicitTid := uuid.New()
+
+	rows := []tenantEntity{
+		{Name: "row-a"},                        // zero -> inject tid
+		{TenantId: explicitTid, Name: "row-b"}, // non-zero -> preserved
+		{Name: "row-c"},                        // zero -> inject tid
+	}
+	require.NoError(t, db.WithContext(tenantContext(tid)).Create(&rows).Error)
+
+	var all []tenantEntity
+	require.NoError(t, db.Unscoped().Order("name").Find(&all).Error)
+	require.Len(t, all, 3)
+
+	got := map[string]uuid.UUID{}
+	for _, r := range all {
+		got[r.Name] = r.TenantId
+	}
+	assert.Equal(t, tid, got["row-a"])
+	assert.Equal(t, explicitTid, got["row-b"])
+	assert.Equal(t, tid, got["row-c"])
+}

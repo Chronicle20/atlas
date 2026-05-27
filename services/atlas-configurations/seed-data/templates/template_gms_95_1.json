@@ -129,9 +129,40 @@
         "opCode": "0x24",
         "validator": "LoggedInValidator",
         "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x37",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
+        "opCode": "0x38",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterExpressionHandle"
+      },
+      {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x9F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle"
       }
     ],
-    "writers": [{
+    "writers": [
+      {
         "opCode": "0x00",
         "writer": "AuthSuccess"
       },
@@ -311,152 +342,599 @@
       {
         "opCode": "0x1C",
         "writer": "PicResult"
+      },
+      {
+        "opCode": "0x1F",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x20",
+        "writer": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x23",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "CharacterSpawn"
+      },
+      {
+        "opCode": "0xD2",
+        "writer": "CharacterMovement"
+      },
+      {
+        "opCode": "0xD3",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xD4",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xD6",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xDA",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xDF",
+        "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xE0",
+        "writer": "CharacterEffect"
+      },
+      {
+        "opCode": "0xE1",
+        "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xE2",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xB4",
+        "writer": "CharacterDespawn"
+      },
+      {
+        "opCode": "0x114",
+        "writer": "CharacterSkillCooldown"
+      },
+      {
+        "opCode": "0x3D",
+        "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xDB",
+        "writer": "CharacterExpression"
+      },
+      {
+        "opCode": "0xDE",
+        "writer": "CharacterShowChair"
+      },
+      {
+        "opCode": "0xE7",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xF5",
+        "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0x26",
+        "writer": "CharacterStatusMessage"
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0x18E",
+        "writer": "CharacterKeyMap"
+      },
+      {
+        "opCode": "0x18F",
+        "writer": "CharacterKeyMapAutoHp"
+      },
+      {
+        "opCode": "0x190",
+        "writer": "CharacterKeyMapAutoMp"
       }
     ]
   },
   "characters": {
-    "templates": [{
-      "jobIndex": 0,
-      "subJobIndex": 0,
-      "mapId": 130010220,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161047]
-    }, {
-      "jobIndex": 0,
-      "subJobIndex": 0,
-      "mapId": 130010220,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161047]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }, {
-      "jobIndex": 2,
-      "subJobIndex": 0,
-      "mapId": 140090000,
-      "gender": 0,
-      "faces": [20100, 20401, 20402],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042167],
-      "bottoms": [1062115],
-      "shoes": [1072383],
-      "weapons": [1442079],
-      "items": [4161048]
-    }, {
-      "jobIndex": 2,
-      "subJobIndex": 0,
-      "mapId": 140090000,
-      "gender": 1,
-      "faces": [21700, 21201, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042167],
-      "bottoms": [1062115],
-      "shoes": [1072383],
-      "weapons": [1442079],
-      "items": [4161048]
-    }, {
-      "jobIndex": 3,
-      "subJobIndex": 0,
-      "mapId": 100030100,
-      "gender": 0,
-      "faces": [20100, 20401, 20402],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042180],
-      "bottoms": [1060138],
-      "shoes": [1072418],
-      "weapons": [1302132]
-    }, {
-      "jobIndex": 3,
-      "subJobIndex": 0,
-      "mapId": 100030100,
-      "gender": 1,
-      "faces": [21700, 21201, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042180],
-      "bottoms": [1061160],
-      "shoes": [1072418],
-      "weapons": [1302132]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 1,
-      "mapId": 10000,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30027, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 1,
-      "mapId": 10000,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }],
+    "templates": [
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1060138
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      },
+      {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1061160
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 1,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30027,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 1,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      }
+    ],
     "presets": []
   },
-  "worlds": [{
+  "worlds": [
+    {
       "name": "Scania",
       "flag": "Nothing",
       "serverMessage": "Welcome to Scania!",
@@ -691,9 +1169,18 @@
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [
-        {"templateId": 5211060, "hours": 2},
-        {"templateId": 5211048, "hours": 4},
-        {"templateId": 5360042, "hours": 4}
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
       ]
     }
   }

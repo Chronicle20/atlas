@@ -13,6 +13,8 @@ import (
 
 const TimeoutTask = "timeout"
 
+const fallbackTimeoutMs int64 = 3600000
+
 type Timeout struct {
 	l        logrus.FieldLogger
 	interval time.Duration
@@ -24,11 +26,13 @@ func NewTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
 	c, err := configuration.GetServiceConfig()
 
 	if err != nil {
-		to = 3600000
+		l.WithError(err).Warnf("Unable to read service configuration; falling back to default %dms session timeout.", fallbackTimeoutMs)
+		to = fallbackTimeoutMs
 	} else {
 		t, err := c.FindTask(TimeoutTask)
 		if err != nil {
-			to = 3600000
+			l.WithError(err).Warnf("Service configuration missing %q task; falling back to default %dms session timeout.", TimeoutTask, fallbackTimeoutMs)
+			to = fallbackTimeoutMs
 		} else {
 			to = t.Duration
 		}

@@ -1,0 +1,112 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1102003,
+      "questId": 20008,
+      "questName": "The Path of a Knight",
+      "startStateMachine": {
+        "startState": "askMission",
+        "states": [
+          {
+            "id": "askMission",
+            "listSelection": {
+              "choices": [
+                {
+                  "nextState": "decline",
+                  "text": "I'll try this later."
+                },
+                {
+                  "nextState": "startQuest",
+                  "text": "I'm not afraid. Let's do this."
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "Are you ready to take on a mission? If you can't pass this test, then you won't be able to call yourself a real Knight. Are you sure you can do this? If you are afraid to do this, let me know. I won't tell Neinheart."
+            },
+            "type": "listSelection"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "If you call yourself a Knight, then do not hesitate. Show everyone how much courage you have in you."
+            },
+            "id": "decline",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "askCommitment"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "id": "askCommitment",
+            "listSelection": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "If the Empress wants peace in the Maple World, then I'm down for whatever."
+                },
+                {
+                  "nextState": "completeQuest",
+                  "text": "As long as I can become a knight I'll endure whatever"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "I'm glad you didn't run away, but... are you sure you want to become a Knight-in-Training? What I am asking is whether you're okay with being a Cygnus Knight, and therefore being tied to the Empress at all times? She may be an Empress, but she's also still just a kid. Are you sure you can fight for her? I won't let Neinheart know so just tell me what you really feel."
+            },
+            "type": "listSelection"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "20008",
+    "type": "quest-conversation"
+  }
+}

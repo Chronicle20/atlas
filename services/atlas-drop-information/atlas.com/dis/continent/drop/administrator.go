@@ -27,3 +27,9 @@ func BulkCreateContinentDrop(db *gorm.DB, continentDrops []Model) error {
 		return nil
 	})
 }
+
+// DeleteAll deletes all continent drops for the tenant in context.
+func DeleteAll(db *gorm.DB) (int64, error) {
+	result := db.Unscoped().Where("1 = 1").Delete(&entity{})
+	return result.RowsAffected, result.Error
+}

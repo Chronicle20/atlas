@@ -1,0 +1,23 @@
+- op: add
+  path: /spec/template/spec/containers/-
+  value:
+    name: git-sync
+    image: registry.k8s.io/git-sync/git-sync:v4.4.0
+    envFrom:
+      - configMapRef:
+          name: seed-catalog-config
+    args:
+      - --repo=$(GITSYNC_REPO)
+      - --ref=$(GITSYNC_REF)
+      - --root=$(GITSYNC_ROOT)
+      - --period=$(GITSYNC_PERIOD)
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    volumeMounts:
+      - name: seed-catalog
+        mountPath: /git

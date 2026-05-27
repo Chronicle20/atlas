@@ -45,7 +45,7 @@ func handleStatusEventCreated(db *gorm.DB) func(l logrus.FieldLogger, ctx contex
 		if e.Type != character.StatusEventTypeCreated {
 			return
 		}
-		_, err := inventory.NewProcessor(l, ctx, db).CreateAndEmit(uuid.New(), e.CharacterId)
+		_, err := inventory.NewProcessor(l, ctx, db).CreateAndEmit(e.TransactionId, e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create for character [%d].", e.CharacterId)
 		}

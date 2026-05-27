@@ -25,16 +25,17 @@ var ControlMonsterTypePassive1 = ControlMonsterType(-3)
 
 func StartControlMonsterBody(m monster.Model, aggro bool) packet.Encode {
 	if aggro {
-		return ControlMonsterBody(m, ControlMonsterTypeActiveRequest)
+		return ControlMonsterBody(m, ControlMonsterTypeActiveRequest, true)
 	}
-	return ControlMonsterBody(m, ControlMonsterTypeActiveInit)
+	return ControlMonsterBody(m, ControlMonsterTypeActiveInit, false)
 }
 
 func StopControlMonsterBody(m monster.Model) packet.Encode {
-	return ControlMonsterBody(m, ControlMonsterTypeReset)
+	// Reset never reaches the post-mobId aggro byte; pass false for clarity.
+	return ControlMonsterBody(m, ControlMonsterTypeReset, false)
 }
 
-func ControlMonsterBody(m monster.Model, controlType ControlMonsterType) packet.Encode {
+func ControlMonsterBody(m monster.Model, controlType ControlMonsterType, aggro bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
@@ -48,7 +49,7 @@ func ControlMonsterBody(m monster.Model, controlType ControlMonsterType) packet.
 				stat := buildMonsterTemporaryStat(l, t, m)
 				mem.SetTemporaryStat(stat)
 			}
-			return monsterpkt.NewMonsterControl(monsterpkt.ControlType(controlType), m.UniqueId(), m.MonsterId(), mem).Encode(l, ctx)(options)
+			return monsterpkt.NewMonsterControl(monsterpkt.ControlType(controlType), m.UniqueId(), m.MonsterId(), mem, aggro).Encode(l, ctx)(options)
 		}
 	}
 }

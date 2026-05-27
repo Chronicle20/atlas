@@ -1,16 +1,49 @@
 package tenants
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"atlas-configurations/outbox"
 	"atlas-configurations/tenants/characters/preset"
 	"context"
 	"encoding/json"
+	"os"
+	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+// EnvTenantStatusTopic names the env var carrying the Kafka topic that
+// tenant config CRUD events are enqueued onto. Unset = enqueue skipped
+// (matches the EnvServiceStatusTopic convention in services/processor).
+const EnvTenantStatusTopic = "EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"
+
+func tenantOutboxKey(id uuid.UUID) []byte {
+	return []byte("tenant:" + id.String())
+}
+
+func enqueueTenantStatus(tx *gorm.DB, id uuid.UUID, config any) error {
+	topic := os.Getenv(EnvTenantStatusTopic)
+	if topic == "" {
+		return nil
+	}
+	var value []byte
+	if config != nil {
+		v, err := outbox.NewTenantEnvelope(id, config, time.Now())
+		if err != nil {
+			return err
+		}
+		value = v
+	}
+	return outboxlib.Enqueue(tx, outboxlib.Message{
+		Topic: topic,
+		Key:   tenantOutboxKey(id),
+		Value: value,
+	})
+}
 
 type Processor struct {
 	l         logrus.FieldLogger
@@ -88,11 +121,21 @@ func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {
 		return err
 	}
 
-	return database.ExecuteTransaction(p.db, update(p.ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
+	return database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		if err := update(p.ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm)(db); err != nil {
+			return err
+		}
+		return enqueueTenantStatus(db, tenantId, input)
+	})
 }
 
 func (p *Processor) DeleteById(tenantId uuid.UUID) error {
-	return database.ExecuteTransaction(p.db, delete(p.ctx, tenantId))
+	return database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		if err := delete(p.ctx, tenantId)(db); err != nil {
+			return err
+		}
+		return enqueueTenantStatus(db, tenantId, nil)
+	})
 }
 
 func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
@@ -125,11 +168,10 @@ func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 			MinorVersion: input.MinorVersion,
 			Data:         *rm,
 		}
-		err := db.Create(e).Error
-		if err != nil {
+		if err := db.Create(e).Error; err != nil {
 			return err
 		}
-		return nil
+		return enqueueTenantStatus(db, tenantId, input)
 	})
 	if err != nil {
 		return uuid.Nil, err

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -19,7 +20,9 @@ func seedIndex(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUI
 	row := testSearchIndexEntity{
 		TenantId: tenantId, MapId: id, Name: name, StreetName: street, UpdatedAt: time.Now(),
 	}
-	require.NoError(t, db.WithContext(ctx).Create(&row).Error)
+	// Bypass the tenant create-callback's auto-injection: this fixture deliberately
+	// writes the supplied tenantId (which may be uuid.Nil to seed a "global" row).
+	require.NoError(t, db.WithContext(database.WithoutTenantFilter(ctx)).Create(&row).Error)
 }
 
 func TestSearch_ExactIdFirst(t *testing.T) {

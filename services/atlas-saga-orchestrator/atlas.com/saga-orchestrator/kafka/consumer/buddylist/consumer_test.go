@@ -51,7 +51,7 @@ func TestHandleBuddyCapacityChangedEvent_CompletesIncreaseBuddyCapacityStep(t *t
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("test").
 		AddStep("s1", saga.Pending, saga.IncreaseBuddyCapacity, saga.IncreaseBuddyCapacityPayload{CharacterId: 1, Amount: 5}).
-		AddStep("s2", saga.Pending, saga.SendMessage, saga.SendMessagePayload{CharacterId: 1, Message: "pinned"}).
+		AddStep("s2", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{CharacterId: 1, Item: saga.ItemPayload{TemplateId: 2000000, Quantity: 1}}).
 		Build()
 	require.NoError(t, err)
 	putTestSaga(t, ctx, s)

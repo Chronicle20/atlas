@@ -32,6 +32,8 @@ spec:
           value: e7fb1d7e-47b8-46bd-97dc-867d93530000
         - name: SERVICE_TYPE
           value: channel-service
+        - name: DRAIN_DEADLINE_MS
+          value: "5000"
 ---
 apiVersion: v1
 kind: Service

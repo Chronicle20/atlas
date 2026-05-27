@@ -1,0 +1,27 @@
+{
+  "data": {
+    "type": "gachapon",
+    "id": "henesys",
+    "attributes": {
+      "name": "Henesys Gachapon",
+      "npcIds": [
+        9100100
+      ],
+      "commonWeight": 90,
+      "uncommonWeight": 8,
+      "rareWeight": 2,
+      "items": [
+        {
+          "itemId": 2040001,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 2040002,
+          "quantity": 1,
+          "tier": "common"
+        }
+      ]
+    }
+  }
+}

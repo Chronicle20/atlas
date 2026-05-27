@@ -1,0 +1,96 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1101001,
+      "startState": "checkEligibility",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "jobId",
+                    "value": "1111"
+                  },
+                  {
+                    "operator": "<=",
+                    "type": "jobId",
+                    "value": "1512"
+                  }
+                ],
+                "nextState": "applyBuff"
+              },
+              {
+                "conditions": [],
+                "nextState": "trainHarderMessage"
+              }
+            ]
+          },
+          "id": "checkEligibility",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "2022458"
+                },
+                "type": "apply_consumable_effect"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "blessedMessage"
+              }
+            ]
+          },
+          "id": "applyBuff",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Let me cast you my blessings, my Knight. Please protect the world of Maple...."
+          },
+          "id": "blessedMessage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Don't stop training. Every ounce of your energy is required to protect the world of Maple...."
+          },
+          "id": "trainHarderMessage",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1101001",
+    "type": "npc-conversation"
+  }
+}

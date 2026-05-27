@@ -1,0 +1,148 @@
+{
+  "task": "task-071-gamedata-minio-consolidation",
+  "worktree": ".worktrees/task-071-gamedata-minio-consolidation",
+  "reviewRange": "19d00ed0868cdc8dfe7c2487e5b79ecc4e6943b9..2527c45415b5380195379fc85dc7580fd985cc2d",
+  "date": "2026-05-22",
+  "build": "pass",
+  "tests": "pass",
+  "overallStatus": "needs-work",
+  "modulesBuilt": [
+    {"path": "libs/atlas-wz", "build": "pass", "race": "pass"},
+    {"path": "services/atlas-data/atlas.com/data", "build": "pass", "race": "pass"},
+    {"path": "services/atlas-renders/atlas.com/renders", "build": "pass", "race": "pass"}
+  ],
+  "blocking": [
+    {
+      "id": "DOM-21-A",
+      "name": "Reinvents libs/atlas-constants/item.IsTwoHanded",
+      "evidence": "services/atlas-renders/atlas.com/renders/character/composite.go:61-68",
+      "duplicates": "libs/atlas-constants/item/constants.go:186 (tested at constants_test.go:39-64)",
+      "note": "Code comment lines 59-60 explicitly admits to the duplication."
+    },
+    {
+      "id": "DOM-21-B",
+      "name": "Reinvents item classification (partClassFor)",
+      "evidence": "services/atlas-renders/atlas.com/renders/character/composite.go:90-122",
+      "duplicates": "libs/atlas-constants/item/constants.go:13-27 (Classification enum) and constants.go:121 (GetClassification)"
+    },
+    {
+      "id": "DOM-21-C",
+      "name": "Reinvents item classification (slotForItemID)",
+      "evidence": "services/atlas-renders/atlas.com/renders/character/composite.go:169-196",
+      "duplicates": "libs/atlas-constants/item/constants.go:13-27"
+    }
+  ],
+  "nonBlocking": [
+    {
+      "id": "CONCURRENCY-01",
+      "severity": "high",
+      "name": "wz.Reader is not goroutine-safe but is shared across concurrent map renders",
+      "evidence": [
+        "libs/atlas-wz/wz/reader.go:42-44 (Seek on shared *os.File)",
+        "libs/atlas-wz/wz/image.go:53-81 (lazy parse uses Seek)",
+        "services/atlas-renders/atlas.com/renders/storage/wzcache.go:28-100 (shares one *wz.File per archive across requests)",
+        "services/atlas-renders/atlas.com/renders/mapr/handler.go:104-115 (consumes the shared file)"
+      ],
+      "note": "go test -race does not exercise this; the race surfaces only under multi-request production load."
+    },
+    {
+      "id": "CONCURRENCY-02",
+      "severity": "medium",
+      "name": "WZCache pins permanent errors",
+      "evidence": "services/atlas-renders/atlas.com/renders/storage/wzcache.go:78-99",
+      "note": "sync.Once never re-runs; transient MinIO failure on first download poisons the cache for process lifetime."
+    },
+    {
+      "id": "CONCURRENCY-03",
+      "severity": "low",
+      "name": "DownloadToScratch races on basename collision",
+      "evidence": "services/atlas-data/atlas.com/data/storage/minio/scratch.go:15",
+      "note": "fetchArchive bypasses archiveCache. Today only Character→Base.wz, no peer to race with."
+    },
+    {
+      "id": "CORRECTNESS-01",
+      "severity": "medium",
+      "name": "Baseline restore is per-table atomic, not whole-dump atomic",
+      "evidence": [
+        "services/atlas-data/atlas.com/data/baseline/restore.go:107 (per-table txn)",
+        "services/atlas-data/atlas.com/data/baseline/restore.go:119-126 (tenant_baselines UPSERT outside any txn)"
+      ]
+    },
+    {
+      "id": "LINT-01",
+      "severity": "low",
+      "name": "Manual JSON:API envelope construction",
+      "evidence": "services/atlas-data/atlas.com/data/wzinput/status.go:40-48",
+      "note": "Should use server.MarshalResponse[T]."
+    },
+    {
+      "id": "LINT-02",
+      "severity": "low",
+      "name": "Dead orphan handler",
+      "evidence": "services/atlas-data/atlas.com/data/data/resource.go:31-59"
+    },
+    {
+      "id": "LINT-03",
+      "severity": "medium",
+      "name": "Lazy Properties() silently masks parse errors",
+      "evidence": "libs/atlas-wz/wz/image.go:44-50"
+    },
+    {
+      "id": "LINT-04",
+      "severity": "low",
+      "name": "UI worker discards tenanted ctx return",
+      "evidence": "services/atlas-data/atlas.com/data/data/workers/ui.go:33",
+      "note": "Safe today because dispatcher pre-injects, but exact pattern runtime.go:67-73 warned against."
+    },
+    {
+      "id": "LINT-05",
+      "severity": "low",
+      "name": "ExtractLayout and ExtractLayers duplicate ~80% of body",
+      "evidence": "libs/atlas-wz/mapimage/layers.go:38-86 vs :101-167"
+    },
+    {
+      "id": "LINT-06",
+      "severity": "low",
+      "name": "accessoryPartClassFor reinvents item classification inside libs/atlas-wz",
+      "evidence": "libs/atlas-wz/charparts/extract.go:97-108"
+    },
+    {
+      "id": "LINT-07",
+      "severity": "info",
+      "name": "wzinput PATCH route bypasses RegisterInputHandler[T]",
+      "evidence": "services/atlas-data/atlas.com/data/wzinput/resource.go:20",
+      "note": "Correct given multipart body, but undocumented at the call site."
+    },
+    {
+      "id": "LINT-08",
+      "severity": "info",
+      "name": "User-acknowledged: storage/scope.go negative-cache permanence",
+      "evidence": [
+        "services/atlas-renders/atlas.com/renders/storage/scope.go:18-34",
+        "services/atlas-renders/atlas.com/renders/storage/smap.go:61-76"
+      ],
+      "note": "Deferred follow-up per dispatch prompt."
+    }
+  ],
+  "reAuditOfRound2Workers": [
+    {"name": "MAP", "file": "services/atlas-data/atlas.com/data/data/workers/mapw.go", "verdict": "OK"},
+    {"name": "MOB", "file": "services/atlas-data/atlas.com/data/data/workers/mob.go", "verdict": "OK"},
+    {"name": "NPC", "file": "services/atlas-data/atlas.com/data/data/workers/npc.go", "verdict": "OK"},
+    {"name": "REACTOR", "file": "services/atlas-data/atlas.com/data/data/workers/reactor.go", "verdict": "OK"},
+    {"name": "SKILL", "file": "services/atlas-data/atlas.com/data/data/workers/skill.go", "verdict": "OK"},
+    {"name": "QUEST", "file": "services/atlas-data/atlas.com/data/data/workers/quest.go", "verdict": "OK"},
+    {"name": "STRING", "file": "services/atlas-data/atlas.com/data/data/workers/stringw.go", "verdict": "OK"},
+    {"name": "CHARACTER", "file": "services/atlas-data/atlas.com/data/data/workers/character.go", "verdict": "OK"},
+    {"name": "UI", "file": "services/atlas-data/atlas.com/data/data/workers/ui.go", "verdict": "NEEDS-WORK", "issue": "LINT-04"},
+    {"name": "ITEM", "file": "services/atlas-data/atlas.com/data/data/workers/item.go", "verdict": "OK"},
+    {"name": "COMMODITY", "file": "services/atlas-data/atlas.com/data/data/workers/commodity.go", "verdict": "OK"}
+  ],
+  "securityChecks": {
+    "operatorGating": {"status": "pass", "evidence": ["baseline/handler.go:35,64", "tenantpurge/handler.go:35", "wzinput/scope.go:29-32", "runtime/rest/resource.go:44-47"]},
+    "shaBeforeMutation": {"status": "pass", "evidence": "baseline/restore.go:51-72"},
+    "canonicalTenantRefusal": {"status": "pass", "evidence": "tenantpurge/purge.go:32-34"},
+    "zipSlipValidation": {"status": "pass", "evidence": "wzinput/validate.go:10-22"},
+    "crossTenantCachePoisoning": {"status": "pass", "evidence": "services/atlas-renders/atlas.com/renders/character/handler.go:65-71"},
+    "hardcodedSecrets": {"status": "pass"}
+  }
+}

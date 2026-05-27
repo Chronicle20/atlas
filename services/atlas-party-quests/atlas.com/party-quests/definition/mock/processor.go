@@ -15,7 +15,6 @@ type ProcessorMock struct {
 	ByQuestIdProviderFunc   func(questId string) model.Provider[definition.Model]
 	AllProviderFunc         func() model.Provider[[]definition.Model]
 	DeleteAllForTenantFunc  func() (int64, error)
-	SeedFunc                func() (definition.SeedResult, error)
 	ValidateDefinitionsFunc func() []definition.ValidationResult
 }
 
@@ -72,13 +71,6 @@ func (m *ProcessorMock) DeleteAllForTenant() (int64, error) {
 		return m.DeleteAllForTenantFunc()
 	}
 	return 0, nil
-}
-
-func (m *ProcessorMock) Seed() (definition.SeedResult, error) {
-	if m.SeedFunc != nil {
-		return m.SeedFunc()
-	}
-	return definition.SeedResult{}, nil
 }
 
 func (m *ProcessorMock) ValidateDefinitions() []definition.ValidationResult {

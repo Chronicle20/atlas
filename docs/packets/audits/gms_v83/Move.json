@@ -1,0 +1,38 @@
+{
+  "WriterName": "Move",
+  "IDAName": "CVecCtrlUser::EndUpdateActive",
+  "Address": "0x9cb992",
+  "Variant": "GMS/v83",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/move.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "fieldKey (Encode1; NO dr0/dr1/dr2/dr3/dwKey/crc32 in v83)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "crc (field CRC for anti-cheat; GMS\u003e28 guard still applies in v83)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "movement: CMovePath::Flush — encoded movement path; tool cannot linearize loop — ack:tool-limitation",
+      "Verdict": 3,
+      "Note": "sub-struct: movement — see _substruct/"
+    }
+  ],
+  "Verdict": 3
+}

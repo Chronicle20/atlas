@@ -4,7 +4,7 @@
   "Address": "0x5f9891",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/list.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/list.go",
   "Rows": [
     {
       "Index": 0,
@@ -404,12 +404,12 @@
     },
     {
       "Index": 44,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "worldRank",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 45,
@@ -440,30 +440,30 @@
     },
     {
       "Index": 48,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_bLoginOpt (hasPic)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 49,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "m_nSlotCount",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 50,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "m_nBuyCharCount",
+      "IDAComment": "m_nSlotCount",
       "Verdict": 0,
       "Note": ""
+    },
+    {
+      "Index": 50,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nBuyCharCount",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
   "Verdict": 2

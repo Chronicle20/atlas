@@ -34,8 +34,9 @@ func NewCharacterListEntry(statistics CharacterStatistics, avatar Avatar, viewAl
 }
 
 func (m CharacterListEntry) Statistics() CharacterStatistics { return m.statistics }
+func (m CharacterListEntry) Avatar() Avatar                  { return m.avatar }
 func (m CharacterListEntry) ViewAll() bool                   { return m.viewAll }
-func (m CharacterListEntry) Gm() bool                       { return m.gm }
+func (m CharacterListEntry) Gm() bool                        { return m.gm }
 func (m CharacterListEntry) Rank() uint32                    { return m.rank }
 func (m CharacterListEntry) RankMove() uint32                { return m.rankMove }
 func (m CharacterListEntry) JobRank() uint32                 { return m.jobRank }
@@ -50,8 +51,8 @@ func (m CharacterListEntry) Encode(l logrus.FieldLogger, ctx context.Context) fu
 		if !m.viewAll {
 			w.WriteByte(0)
 		}
+		w.WriteBool(!m.gm) // rankEnabled byte: 0x00 for GM, 0x01 for ranked
 		if m.gm {
-			w.WriteByte(0)
 			return w.Bytes()
 		}
 
@@ -59,7 +60,6 @@ func (m CharacterListEntry) Encode(l logrus.FieldLogger, ctx context.Context) fu
 			w.WriteInt(1) // auto select first character
 		}
 
-		w.WriteByte(1) // world rank enabled
 		w.WriteInt(m.rank)
 		w.WriteInt(m.rankMove)
 		w.WriteInt(m.jobRank)

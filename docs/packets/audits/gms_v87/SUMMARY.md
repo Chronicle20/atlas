@@ -68,6 +68,7 @@
 | [ItemCancel](ItemCancel.md) | ✅ | `libs/atlas-packet/character/serverbound/item_cancel.go` |
 | [CharacterChairShow](CharacterChairShow.md) | ✅ | `libs/atlas-packet/character/clientbound/chair_show.go` |
 | [MonsterMovement](MonsterMovement.md) | 🔍 | `libs/atlas-packet/monster/clientbound/movement.go` |
+| [MonsterMovementRequest](MonsterMovementRequest.md) | 🔍 | `libs/atlas-packet/monster/serverbound/movement.go` |
 | [MonsterStatReset](MonsterStatReset.md) | ❌ | `libs/atlas-packet/monster/clientbound/stat.go` |
 | [PetChat](PetChat.md) | ✅ | `libs/atlas-packet/pet/clientbound/chat.go` |
 | [ReactorHit](ReactorHit.md) | ✅ | `libs/atlas-packet/reactor/clientbound/hit.go` |

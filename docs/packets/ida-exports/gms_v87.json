@@ -1195,6 +1195,34 @@
         {"op": "Encode2", "comment": "tDelay"},
         {"op": "Encode4", "comment": "reserved (0)"}
       ]
+    },
+    "CMob::GenerateMovePath": {
+      "address": "0x6a6381",
+      "direction": "serverbound",
+      "notes": "Opcode 0xC8. v87 wire shape matches v95 / JMS-v185 — the `(GMS && >83) || JMS` gates open the multiTargetForBall and randTimeForAreaAttack count+loop blocks, the hackedCodeCRC field between flyCtxTargetY and the Flush body, and the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail. Decompile cross-check at GMSv87_4GB.exe:0x6a6381 confirms COutPacket(0xC8) → Encode4 mobId → Encode2 ctrlSN+1 → Encode1 packed flags → Encode1 actionType → Encode4 skill m_Data → Encode4 multiTargetForBall count + 2×Encode4 per entry → Encode4 randTimeForAreaAttack count + 1×Encode4 per entry → Encode1 state → Encode4 hackedCode → Encode4 flyCtxTargetX → Encode4 flyCtxTargetY → Encode4 hackedCodeCRC → CMovePath::Flush → Encode1 bChasing → Encode1 hasTarget → Encode1 bChasing2 → Encode1 bChasingHack → Encode4 tChaseDuration.",
+      "calls": [
+        {"op": "Encode4", "comment": "dwMobID (uniqueId)"},
+        {"op": "Encode2", "comment": "nMobCtrlSN (moveId)"},
+        {"op": "Encode1", "comment": "flags byte (atlas dwFlag — multiBitFlag with nMoveType / bRiseByToss / etc.)"},
+        {"op": "Encode1", "comment": "nAction (atlas nActionAndDir)"},
+        {"op": "Encode4", "comment": "ti (TARGETINFO — atlas skillData packed)"},
+        {"op": "Encode4", "comment": "multiTargetForBall count"},
+        {"op": "Encode4", "comment": "multiTargetForBall[i].x — loop", "guard": "loop multiTargetForBall"},
+        {"op": "Encode4", "comment": "multiTargetForBall[i].y — loop", "guard": "loop multiTargetForBall"},
+        {"op": "Encode4", "comment": "randTimeForAreaAttack count"},
+        {"op": "Encode4", "comment": "randTimeForAreaAttack[i] — loop", "guard": "loop randTimeForAreaAttack"},
+        {"op": "Encode1", "comment": "state byte (atlas moveFlags)"},
+        {"op": "Encode4", "comment": "hackedCode"},
+        {"op": "Encode4", "comment": "flyCtxTargetX (or 16768460 default)"},
+        {"op": "Encode4", "comment": "flyCtxTargetY (or 16768460 default)"},
+        {"op": "Encode4", "comment": "hackedCodeCRC (fall start CRC)"},
+        {"op": "EncodeBuf", "comment": "CMovePath::Flush body (Movement elements)"},
+        {"op": "Encode1", "comment": "bChasing"},
+        {"op": "Encode1", "comment": "hasTarget"},
+        {"op": "Encode1", "comment": "bChasing2 (ladder)"},
+        {"op": "Encode1", "comment": "bChasingHack (zMass)"},
+        {"op": "Encode4", "comment": "tChaseDuration"}
+      ]
     }
   }
 }

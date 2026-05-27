@@ -154,6 +154,20 @@ Atlas's `monster/clientbound/control.go` previously hardcoded `WriteByte(5)` at 
 - Atlas-channel caller (`services/atlas-channel/atlas.com/channel/socket/writer/monster_control.go`) updated: `ControlMonsterBody(m, controlType, aggro)`; `StartControlMonsterBody` threads aggro from `m.ControllerHasAggro()` / `e.Body.ControllerHasAggro`; `StopControlMonsterBody` passes `false` (Reset never reaches the aggro byte at all).
 - Existing 5-variant round-trip tests for ActiveInit / Reset / ActiveRequest updated to pass the new aggro arg; new `TestMonsterControlAggroByteReflectsState` pins the wire-level emission to `0x01` for aggro=true and `0x00` for aggro=false.
 
+### MonsterMovementHandle v83/v87 IDA entries (item 1)
+
+`CMob::GenerateMovePath` IDA addresses captured via live IDA decompile and added to both version exports:
+
+- **v83**: `0x66b6fc` (MapleStory_dump.exe / md5 80ff438ced539b831f0d2ed95099275d). Opcode `0xBC`. Narrowest wire shape of the four audited versions — atlas's `(GMS && >83) || JMS` gates correctly exclude the `multiTargetForBall`/`randTimeForAreaAttack` count+loop blocks, the `hackedCodeCRC` between fly targets and the Flush body, and the entire post-Flush `bChasing`/`hasTarget`/`bChasing2`/`bChasingHack`/`tChaseDuration` tail. 10 wire entries total before the Flush.
+- **v87**: `0x6a6381` (GMSv87_4GB.exe / md5 2e692f3ab5078e04138d264f8ea1e668). Opcode `0xC8`. Full wire shape (21 entries) identical to v95 / JMS v185.
+
+Re-audit results after the entries landed:
+
+- v83 MonsterMovementRequest verdict: ❌ — sub-struct expansion FP on positions 9+ (atlas's analyzer now expands the Movement payload via `model.Movement` after item 4's qualified registry, but the IDA entry has a single `EncodeBuf` placeholder for the Flush body). The first 9 wire entries (mobId, ctrlSN, flags, action, skill data, state, hackedCode, flyCtxTargetX, flyCtxTargetY) all match ✅ — same documented analyzer-FP class as the existing MonsterMovement / Move regressions. Wire is correct.
+- v87 MonsterMovementRequest verdict: 🔍 — matches v95 / JMS-v185 distribution. Same analyzer FP, same documented status. Wire is correct.
+
+New reports + SUMMARY rows added under `docs/packets/audits/gms_v83/MonsterMovementRequest.{md,json}` and `gms_v87/MonsterMovementRequest.{md,json}`.
+
 ### Combat template opcode audit (item 2)
 
 PRD §4.4 required cross-checking combat template opcodes against IDA dispatcher case-statement values and landing fixes for any drift. Full findings in [`template-audit.md`](template-audit.md). Summary:

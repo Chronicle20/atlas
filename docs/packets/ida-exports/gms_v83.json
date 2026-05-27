@@ -1152,6 +1152,23 @@
         {"op": "Encode2", "comment": "tDelay"},
         {"op": "Encode4", "comment": "reserved (0)"}
       ]
+    },
+    "CMob::GenerateMovePath": {
+      "address": "0x66b6fc",
+      "direction": "serverbound",
+      "notes": "Opcode 0xBC. v83 wire is the narrowest of the four audited versions — atlas's `(GMS && >83) || JMS` gates exclude the multiTargetForBall/randTimeForAreaAttack count+loop blocks, the hackedCodeCRC field between flyCtxTargetY and the Flush body, and the post-Flush bChasing tail. Decompile cross-check: COutPacket(0xBC) → Encode4 mobId, Encode2 ctrlSN+1, Encode1 packed flags, Encode1 actionType, Encode4 skill m_Data (packed), Encode1 state, Encode4 hackedCode, Encode4 flyCtxTargetX, Encode4 flyCtxTargetY, CMovePath::Flush, end.",
+      "calls": [
+        {"op": "Encode4", "comment": "dwMobID (uniqueId)"},
+        {"op": "Encode2", "comment": "nMobCtrlSN (moveId)"},
+        {"op": "Encode1", "comment": "flags byte (atlas dwFlag — multiBitFlag with nMoveType / bRiseByToss / etc.)"},
+        {"op": "Encode1", "comment": "nAction (atlas nActionAndDir; packed `(2 * arg0) | a2 & 1`)"},
+        {"op": "Encode4", "comment": "ti (TARGETINFO — atlas skillData packed; v83 lacks the multiTargetForBall + randTimeForAreaAttack blocks that v87/v95/JMS-v185 carry between actionType and state byte)"},
+        {"op": "Encode1", "comment": "state byte (atlas moveFlags — packed `(v42 == 0) | (16 * v43)`)"},
+        {"op": "Encode4", "comment": "hackedCode (v12[288])"},
+        {"op": "Encode4", "comment": "flyCtxTargetX (or 16768460 default when not in dev-mode)"},
+        {"op": "Encode4", "comment": "flyCtxTargetY (or 16768460 default)"},
+        {"op": "EncodeBuf", "comment": "CMovePath::Flush body (Movement elements). v83 lacks the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail that v87+ carry."}
+      ]
     }
   }
 }

@@ -68,6 +68,7 @@
 | [DistributeSp](DistributeSp.md) | ✅ | `libs/atlas-packet/character/serverbound/distribute_sp.go` |
 | [MonsterDestroy](MonsterDestroy.md) | ✅ | `libs/atlas-packet/monster/clientbound/destroy.go` |
 | [MonsterMovement](MonsterMovement.md) | ❌ | `libs/atlas-packet/monster/clientbound/movement.go` |
+| [MonsterMovementRequest](MonsterMovementRequest.md) | ❌ | `libs/atlas-packet/monster/serverbound/movement.go` |
 | [CharacterSkillCooldown](CharacterSkillCooldown.md) | ✅ | `libs/atlas-packet/character/clientbound/skill_cooldown.go` |
 | [Move](Move.md) | 🔍 | `libs/atlas-packet/character/serverbound/move.go` |
 | [MonsterStatReset](MonsterStatReset.md) | ❌ | `libs/atlas-packet/monster/clientbound/stat.go` |

@@ -626,6 +626,74 @@ func candidatesFromFName(fname string) []candidate {
 		// Sub-op 3 (DELETE): Encode1(3) + Encode4(friendId).
 		// Atlas struct: buddy/serverbound/operation_delete.go OperationDelete.
 		return []candidate{{name: "OperationDelete", pkg: "buddy", dir: csvpkg.DirServerbound}}
+
+	// --- Social: messenger ---
+	// CSV: MESSENGER (clientbound, opcode 0xAE/174 in GMS v95) → CUIMessenger::OnPacket
+	// dispatches on a leading mode byte to 9 sub-handlers. Each atlas clientbound struct
+	// is modelled via a #-suffixed synthetic IDA entry (same pattern as note/buddy sub-ops).
+	case "CUIMessenger::OnPacket#Add":
+		// mode=0 (OnEnter): Decode1(position) + AvatarLook::Decode + DecodeStr(name) +
+		// Decode1(channelId) + Decode1(pad).
+		// Atlas struct: messenger/clientbound/add.go Add.
+		return []candidate{{name: "Add", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#Join":
+		// mode=1 (OnSelfEnterResult): Decode1(position).
+		// Atlas struct: messenger/clientbound/join.go Join.
+		return []candidate{{name: "Join", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#Remove":
+		// mode=2 (OnLeave): Decode1(position).
+		// Atlas struct: messenger/clientbound/remove.go Remove.
+		return []candidate{{name: "Remove", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#RequestInvite":
+		// mode=3 (OnInvite, before instance check): DecodeStr(fromName) + Decode1(pad) +
+		// Decode4(messengerId) + Decode1(pad). Static handler — no instance guard.
+		// Atlas struct: messenger/clientbound/request_invite.go RequestInvite.
+		return []candidate{{name: "RequestInvite", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#InviteSent":
+		// mode=4 (OnInviteResult): DecodeStr(msg) + Decode1(success/bool).
+		// Atlas struct: messenger/clientbound/invite_sent.go InviteSent.
+		return []candidate{{name: "InviteSent", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#InviteDeclined":
+		// mode=5 (OnBlocked): DecodeStr(blockedUser) + Decode1(declineMode).
+		// Atlas struct: messenger/clientbound/invite_declined.go InviteDeclined.
+		// ⚠️ declineMode sub-enum deferred to _pending.md (OP-FAMILY-messenger-decline).
+		return []candidate{{name: "InviteDeclined", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#Chat":
+		// mode=6 (OnChat): DecodeStr(chatLine — format "name : msg").
+		// Atlas struct: messenger/clientbound/chat.go Chat.
+		return []candidate{{name: "Chat", pkg: "messenger", dir: csvpkg.DirClientbound}}
+	case "CUIMessenger::OnPacket#Update":
+		// mode=7 (OnAvatar): Decode1(position) + AvatarLook::Decode.
+		// ❌ Atlas Update also encodes name + channelId + pad, which OnAvatar does NOT read.
+		// Atlas struct: messenger/clientbound/update.go Update.
+		return []candidate{{name: "Update", pkg: "messenger", dir: csvpkg.DirClientbound}}
+
+	// CSV: MESSENGER (serverbound, opcode 0x8F/143 in GMS v95) — multiple FNames share
+	// this opcode; each encodes a different sub-op byte at Encode1 position 0.
+	case "CUIMessenger::OnCreate":
+		// Sub-op 0 (ENTER): Encode1(0) + Encode4(messengerId) — client accepts invite.
+		// Atlas struct: messenger/serverbound/operation_answer_invite.go OperationAnswerInvite.
+		return []candidate{{name: "OperationAnswerInvite", pkg: "messenger", dir: csvpkg.DirServerbound}}
+	case "CUIMessenger::OnDestroy":
+		// Sub-op 2 (LEAVE): Encode1(2) — client leaves/closes the messenger window.
+		// Atlas struct: messenger/serverbound/operation.go Operation (op-byte dispatcher).
+		// ⚠️ Operation only carries the mode byte; full op-family deferred to _pending.md
+		// (OP-FAMILY-messenger-serverbound).
+		return []candidate{{name: "Operation", pkg: "messenger", dir: csvpkg.DirServerbound}}
+	case "CUIMessenger::SendInviteMsg":
+		// Sub-op 3 (INVITE): Encode1(3) + EncodeStr(targetCharacter).
+		// Atlas struct: messenger/serverbound/operation_invite.go OperationInvite.
+		return []candidate{{name: "OperationInvite", pkg: "messenger", dir: csvpkg.DirServerbound}}
+	case "CFadeWnd::SendCloseMessage":
+		// Sub-op 5 (DECLINE): Encode1(5) + EncodeStr(fromName) + EncodeStr(myName) + Encode1(0).
+		// CFadeWnd handles multiple dialog types (type=0 → messenger decline, type=1 → buddy delete,
+		// type=2/3 → miniroom, type=5 → guild); only type=0 maps to messenger OperationDeclineInvite.
+		// Atlas struct: messenger/serverbound/operation_decline_invite.go OperationDeclineInvite.
+		return []candidate{{name: "OperationDeclineInvite", pkg: "messenger", dir: csvpkg.DirServerbound}}
+	case "CUIMessenger::ProcessChat":
+		// Sub-op 6 (CHAT): Encode1(6) + EncodeStr(chatLine — format "name : msg").
+		// Atlas struct: messenger/serverbound/operation_chat.go OperationChat.
+		return []candidate{{name: "OperationChat", pkg: "messenger", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

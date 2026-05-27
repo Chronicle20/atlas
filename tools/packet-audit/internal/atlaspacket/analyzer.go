@@ -7,6 +7,7 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -93,7 +94,31 @@ func AnalyzeFileWithRegistry(path, typeName, methodName string, reg *TypeRegistr
 	if inner == nil {
 		inner = body
 	}
-	return collectCallsWithCtx(inner, fset, reg, typeName), nil
+	enclosing := qualifiedEnclosingFromPath(path, typeName, reg)
+	return collectCallsWithCtx(inner, fset, reg, enclosing), nil
+}
+
+// qualifiedEnclosingFromPath derives the qualified registry key for a struct
+// at the given file path. When the registry is non-nil and the path lives
+// under "libs/atlas-packet/<sub>/<direction>/file.go", the result is
+// "<sub>/<direction>.<typeName>". Falls back to the bare type name when the
+// path doesn't conform or the registry is nil.
+func qualifiedEnclosingFromPath(path, typeName string, reg *TypeRegistry) string {
+	if reg == nil {
+		return typeName
+	}
+	norm := filepath.ToSlash(path)
+	const marker = "libs/atlas-packet/"
+	idx := strings.Index(norm, marker)
+	if idx < 0 {
+		return typeName
+	}
+	relDir := strings.TrimSuffix(norm[idx+len(marker):], filepath.Base(norm))
+	relDir = strings.TrimSuffix(relDir, "/")
+	if relDir == "" {
+		return typeName
+	}
+	return relDir + "." + typeName
 }
 
 // findReturnClosure finds the first return func literal's body in a block statement.
@@ -119,8 +144,14 @@ func findReturnClosure(b *ast.BlockStmt) *ast.BlockStmt {
 
 // callCtx holds the context needed for registry-aware call collection.
 type callCtx struct {
-	reg       *TypeRegistry
+	reg *TypeRegistry
+	// enclosing is the (qualified, when known) registry key of the struct
+	// whose Encode/Write body is being walked. Used for FieldType lookups.
 	enclosing string
+	// pkg is the pkgPath portion of enclosing (e.g. "monster/clientbound"),
+	// used as the same-package preference when qualifying short-name recurse
+	// targets via reg.Qualify. Empty when enclosing is itself unqualified.
+	pkg string
 	// rangeVars maps a range-loop variable name to the field name it iterates over.
 	// E.g. for "for _, c := range m.characters" → rangeVars["c"] = "characters".
 	rangeVars map[string]string
@@ -137,36 +168,57 @@ type callCtx struct {
 // resolveRecurse attempts to resolve a variable-name hint to an actual Go type
 // name using range-var bindings and field-type lookups on the enclosing struct.
 // Falls back to returning the hint unchanged.
+//
+// When the registry is qualified (post task-065 item 4), the returned value
+// is always passed through reg.Qualify so RecurseType carries the package-
+// qualified key that the diff engine can look up unambiguously.
 func resolveRecurse(hint string, cc *callCtx) string {
 	if cc == nil || cc.reg == nil || cc.enclosing == "" {
 		return hint
 	}
-	// If the registry already knows this name as a type, use it directly.
-	if cc.reg.HasType(hint) {
-		return hint
-	}
-	// Check if it is a range-bound variable name.
-	if fieldName, ok := cc.rangeVars[hint]; ok {
-		if resolved, ok := cc.reg.FieldType(cc.enclosing, fieldName); ok && resolved != "" {
-			return resolved
+	resolved := hint
+	switch {
+	case cc.reg.HasType(hint):
+		// Hint already names a registered type — keep it.
+	default:
+		if fieldName, ok := cc.rangeVars[hint]; ok {
+			if r, ok := cc.reg.FieldType(cc.enclosing, fieldName); ok && r != "" {
+				resolved = r
+				break
+			}
+		}
+		if r, ok := cc.reg.FieldType(cc.enclosing, hint); ok && r != "" {
+			resolved = r
 		}
 	}
-	// Check if it is a field name directly on the enclosing struct.
-	if resolved, ok := cc.reg.FieldType(cc.enclosing, hint); ok && resolved != "" {
-		return resolved
-	}
-	return hint
+	return cc.reg.Qualify(resolved, cc.pkg)
 }
 
 // collectCallsWithCtx walks a block and collects all w.Write*/r.Read* primitive
 // calls in order, with optional registry-aware sub-struct type resolution.
 // Pass reg=nil and enclosing="" to get the legacy variable-name behavior.
+//
+// `enclosing` should be the qualified registry key (e.g. "monster/clientbound.Spawn")
+// when the caller has it; unqualified short names still work for backward
+// compatibility but lose same-package preference during sub-struct resolution.
 func collectCallsWithCtx(b *ast.BlockStmt, fset *token.FileSet, reg *TypeRegistry, enclosing string) []Call {
 	var out []Call
 	var stack []*GuardExpr
+	pkg := ""
+	if i := strings.LastIndex(enclosing, "."); i > 0 && reg != nil {
+		// Strip the EncodeForeign suffix before treating ".X" as the type segment.
+		head := enclosing
+		if strings.HasSuffix(head, "::EncodeForeign") {
+			head = strings.TrimSuffix(head, "::EncodeForeign")
+		}
+		if j := strings.LastIndex(head, "."); j > 0 {
+			pkg = head[:j]
+		}
+	}
 	cc := &callCtx{
 		reg:       reg,
 		enclosing: enclosing,
+		pkg:       pkg,
 		rangeVars: map[string]string{},
 		fieldVars: map[string]string{},
 		out:       &out,

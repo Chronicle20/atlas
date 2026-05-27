@@ -130,6 +130,70 @@ func TestRegistryRegistersCombatSubStructs(t *testing.T) {
 	}
 }
 
+// TestRegistryQualifiedKeysResolveCollisions verifies the registry stores
+// all variants of a colliding short struct name (e.g. Spawn appears in 5
+// packages) under qualified keys so per-package field-type resolution and
+// per-package Calls lookup do not last-write-wins each other.
+func TestRegistryQualifiedKeysResolveCollisions(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// All five Spawn variants must be present under their qualified keys.
+	for _, qual := range []string{
+		"monster/clientbound.Spawn",
+		"drop/clientbound.Spawn",
+		"reactor/clientbound.Spawn",
+		"npc/clientbound.Spawn",
+		"pet/serverbound.Spawn",
+	} {
+		if !reg.HasType(qual) {
+			t.Errorf("registry missing qualified Spawn variant %q", qual)
+			continue
+		}
+		if calls, ok := reg.Calls(qual); !ok || len(calls) == 0 {
+			t.Errorf("Calls(%q) returned no calls (ok=%v len=%d)", qual, ok, len(calls))
+		}
+	}
+	// And the ambiguous short name "Spawn" must NOT return a Calls list — the
+	// caller has to disambiguate via Qualify or pass the qualified key.
+	if calls, ok := reg.Calls("Spawn"); ok && calls != nil {
+		t.Errorf("Calls(\"Spawn\") on ambiguous short name should return (nil,false); got (%d calls, ok=%v)", len(calls), ok)
+	}
+}
+
+// TestRegistryQualifyPrefersSamePackage verifies that Qualify resolves
+// ambiguous short names by preferring the caller-provided context package
+// over arbitrary first-match selection.
+func TestRegistryQualifyPrefersSamePackage(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		short, pkg, want string
+	}{
+		{"Spawn", "monster/clientbound", "monster/clientbound.Spawn"},
+		{"Spawn", "drop/clientbound", "drop/clientbound.Spawn"},
+		{"Spawn", "reactor/clientbound", "reactor/clientbound.Spawn"},
+		{"Destroy", "monster/clientbound", "monster/clientbound.Destroy"},
+		{"Destroy", "drop/clientbound", "drop/clientbound.Destroy"},
+		{"Movement", "monster/clientbound", "monster/clientbound.Movement"},
+		{"Movement", "pet/clientbound", "pet/clientbound.Movement"},
+		{"Movement", "model", "model.Movement"},
+	}
+	for _, c := range cases {
+		got := reg.Qualify(c.short, c.pkg)
+		if got != c.want {
+			t.Errorf("Qualify(%q, %q) = %q; want %q", c.short, c.pkg, got, c.want)
+		}
+	}
+}
+
 func TestRegistryStillRegistersMovementAfterCombatExtension(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")

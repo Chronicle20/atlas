@@ -114,6 +114,121 @@ func TestExportSourceServerboundIgnoresDispatcherAnnotation(t *testing.T) {
 	}
 }
 
+// TestDelegateInlinesSubFunction verifies task-065 item 8: a call with
+// op="Delegate" and a ref splices the referenced FName's resolved Calls into
+// the parent's call list at that position, replacing the placeholder.
+func TestDelegateInlinesSubFunction(t *testing.T) {
+	src, err := NewExportSource("testdata/delegate_mini.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := src.Resolve(context.Background(), "CMobPool::OnMobEnterField")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	// 2 parent calls + 3 inlined leaf calls = 5.
+	if len(f.Calls) != 5 {
+		t.Fatalf("calls: got %d, want 5 (2 parent + 3 inlined) — %+v", len(f.Calls), f.Calls)
+	}
+	wantOps := []Primitive{Decode4, Decode4, Decode2, Decode2, Decode1}
+	for i, want := range wantOps {
+		if f.Calls[i].Op != want {
+			t.Errorf("calls[%d].Op: got %v, want %v", i, f.Calls[i].Op, want)
+		}
+	}
+}
+
+// TestDelegateANDsGuards verifies that when a Delegate call carries a guard,
+// each inlined call's guard becomes "(outer-guard) && (inner-guard)" so the
+// conditional-delegate semantic is preserved.
+func TestDelegateANDsGuards(t *testing.T) {
+	src, err := NewExportSource("testdata/delegate_mini.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := src.Resolve(context.Background(), "Guarded::Parent")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if len(f.Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(f.Calls))
+	}
+	// calls[0]: Decode1 kind — unconditional.
+	if f.Calls[0].Guard != "" {
+		t.Errorf("calls[0].Guard: got %q, want \"\"", f.Calls[0].Guard)
+	}
+	// calls[1]: Decode4 payload — inlined under (kind > 0) && (version > 0).
+	want := "(kind > 0) && (version > 0)"
+	if f.Calls[1].Guard != want {
+		t.Errorf("calls[1].Guard: got %q, want %q", f.Calls[1].Guard, want)
+	}
+}
+
+// TestDelegateCycleDetected verifies that A → B → A terminates with an error
+// rather than infinite recursion.
+func TestDelegateCycleDetected(t *testing.T) {
+	src, err := NewExportSource("testdata/delegate_mini.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = src.Resolve(context.Background(), "Cycle::A")
+	if err == nil {
+		t.Fatal("expected cycle detection error, got nil")
+	}
+	// The error chain should mention either "cycle" or both FNames.
+	msg := err.Error()
+	if !contains(msg, "cycle") || !contains(msg, "Cycle::") {
+		t.Errorf("expected cycle error mentioning Cycle::*; got %q", msg)
+	}
+}
+
+// TestDelegateDiamondAllowed verifies that the same leaf reachable via two
+// different parent calls (NOT on the same descent path) inlines cleanly.
+// This isn't a cycle — the cycle detector only trips on a re-entry to an
+// fname currently on the resolve stack.
+func TestDelegateDiamondAllowed(t *testing.T) {
+	src, err := NewExportSource("testdata/delegate_mini.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := src.Resolve(context.Background(), "Diamond::Root")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	// Two parent Delegates each inline 1 leaf call → 2 total.
+	if len(f.Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2 (1 + 1 from diamond)", len(f.Calls))
+	}
+	if f.Calls[0].Op != Decode1 || f.Calls[1].Op != Decode1 {
+		t.Errorf("ops: got %v %v, want Decode1 Decode1", f.Calls[0].Op, f.Calls[1].Op)
+	}
+}
+
+// TestDelegateRequiresRef verifies the error message when op="Delegate" but no
+// ref field is set.
+func TestDelegateRequiresRef(t *testing.T) {
+	src, err := NewExportSource("testdata/delegate_mini.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = src.Resolve(context.Background(), "BadRef::Parent")
+	if err == nil {
+		t.Fatal("expected error for Delegate without ref, got nil")
+	}
+	if !contains(err.Error(), "Delegate") || !contains(err.Error(), "ref") {
+		t.Errorf("expected error mentioning Delegate and ref; got %q", err.Error())
+	}
+}
+
+func contains(haystack, needle string) bool {
+	for i := 0; i+len(needle) <= len(haystack); i++ {
+		if haystack[i:i+len(needle)] == needle {
+			return true
+		}
+	}
+	return false
+}
+
 func TestDispatcherPrefixUnknownKind(t *testing.T) {
 	// Forward-compat: unrecognized kinds yield no prefix (warn-and-continue,
 	// not error). A future dispatcher kind can be added without breaking

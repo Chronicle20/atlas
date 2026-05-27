@@ -32,11 +32,20 @@ type exportFn struct {
 	Dispatcher string `json:"dispatcher,omitempty"`
 	// Notes is free-form documentation that does not affect resolution.
 	Notes string `json:"notes,omitempty"`
-	Calls []struct {
-		Op      string `json:"op"`
-		Comment string `json:"comment"`
-		Guard   string `json:"guard,omitempty"`
-	} `json:"calls"`
+	Calls []rawCall `json:"calls"`
+}
+
+type rawCall struct {
+	Op      string `json:"op"`
+	Comment string `json:"comment"`
+	Guard   string `json:"guard,omitempty"`
+	// Ref names a sibling FName to inline at this position. Only consulted
+	// when Op == "Delegate" (task-065 item 8 — sub-function descent). The
+	// referenced FName's resolved Calls list (including its own
+	// dispatcher prefix and recursive Delegates) is spliced into the
+	// parent's Calls at this position, with the Delegate's Guard ANDed
+	// onto each inlined Call.
+	Ref string `json:"ref,omitempty"`
 }
 
 type exportFile struct {
@@ -71,11 +80,28 @@ func (s *ExportSource) Functions() []string {
 	return out
 }
 
-func (s *ExportSource) Resolve(_ context.Context, fname string) (Fields, error) {
+func (s *ExportSource) Resolve(ctx context.Context, fname string) (Fields, error) {
+	return s.resolveWithVisited(ctx, fname, map[string]bool{})
+}
+
+// resolveWithVisited is the workhorse that handles recursive Delegate descent.
+// The shared `visited` set tracks FNames currently on the resolve stack so a
+// cycle (A → B → A) terminates with an error rather than infinite recursion.
+//
+// We do NOT remove fname from visited on return — a diamond pattern (A → B,
+// A → C, B → C, C unreachable from itself) is fine; the cycle detector only
+// trips when the SAME fname appears twice on the active descent path.
+func (s *ExportSource) resolveWithVisited(ctx context.Context, fname string, visited map[string]bool) (Fields, error) {
+	if visited[fname] {
+		return Fields{}, fmt.Errorf("idasrc: Delegate cycle through %q", fname)
+	}
 	raw, ok := s.file.Functions[fname]
 	if !ok {
 		return Fields{}, fmt.Errorf("idasrc: function %q not in export", fname)
 	}
+	visited[fname] = true
+	defer delete(visited, fname)
+
 	dir := DirClientbound
 	if raw.Direction == "serverbound" {
 		dir = DirServerbound
@@ -84,6 +110,23 @@ func (s *ExportSource) Resolve(_ context.Context, fname string) (Fields, error) 
 	// Auto-prepend dispatcher prefix when annotated.
 	out.Calls = append(out.Calls, dispatcherPrefix(raw.Dispatcher)...)
 	for i, c := range raw.Calls {
+		if c.Op == "Delegate" {
+			if c.Ref == "" {
+				return Fields{}, fmt.Errorf("call %d (%s): Delegate op requires ref", i, fname)
+			}
+			sub, err := s.resolveWithVisited(ctx, c.Ref, visited)
+			if err != nil {
+				return Fields{}, fmt.Errorf("call %d (%s): delegate to %q: %w", i, fname, c.Ref, err)
+			}
+			// Splice the sub's calls in at this position, AND-ing the
+			// Delegate's own guard into each inlined call's guard.
+			for _, sc := range sub.Calls {
+				inlined := sc
+				inlined.Guard = combineGuards(c.Guard, sc.Guard)
+				out.Calls = append(out.Calls, inlined)
+			}
+			continue
+		}
 		op, err := parsePrim(c.Op)
 		if err != nil {
 			return Fields{}, fmt.Errorf("call %d (%s): %w", i, fname, err)
@@ -91,6 +134,21 @@ func (s *ExportSource) Resolve(_ context.Context, fname string) (Fields, error) 
 		out.Calls = append(out.Calls, FieldCall{Op: op, Comment: c.Comment, Guard: c.Guard})
 	}
 	return out, nil
+}
+
+// combineGuards AND-s two free-form guard expressions, omitting empties so we
+// don't generate "() && (x)" textual noise.
+func combineGuards(outer, inner string) string {
+	switch {
+	case outer == "" && inner == "":
+		return ""
+	case outer == "":
+		return inner
+	case inner == "":
+		return outer
+	default:
+		return "(" + outer + ") && (" + inner + ")"
+	}
 }
 
 // dispatcherPrefix returns the FieldCalls that should be auto-prepended to a

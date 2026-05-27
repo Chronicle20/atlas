@@ -361,6 +361,44 @@ func TestRegistry_ConcurrentReadWrite(t *testing.T) {
 	assert.GreaterOrEqual(t, len(results), 5) // At least the pre-created ones
 }
 
+func TestRegistry_GetActiveTenants_RoundTrip(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	// No tenants before any Create
+	initial := GetRegistry().GetActiveTenants()
+	assert.Empty(t, initial)
+
+	// Create an invite — this should track the tenant
+	GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
+
+	tenants := GetRegistry().GetActiveTenants()
+	assert.Len(t, tenants, 1)
+	assert.Equal(t, ten, tenants[0])
+}
+
+func TestRegistry_GetActiveTenants_MultipleTenants(t *testing.T) {
+	setupTestRegistry(t)
+	ten1 := setupTestTenant(t)
+	ten2 := setupTestTenant(t)
+	ctx1 := setupTestContext(t, ten1)
+	ctx2 := setupTestContext(t, ten2)
+
+	GetRegistry().Create(ctx1, 1001, 1, 2001, "BUDDY", 5001)
+	GetRegistry().Create(ctx2, 1002, 1, 2002, "BUDDY", 5002)
+
+	tenants := GetRegistry().GetActiveTenants()
+	assert.Len(t, tenants, 2)
+
+	ids := make(map[string]bool)
+	for _, ten := range tenants {
+		ids[ten.Id().String()] = true
+	}
+	assert.True(t, ids[ten1.Id().String()])
+	assert.True(t, ids[ten2.Id().String()])
+}
+
 func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 	setupTestRegistry(t)
 	ten1 := setupTestTenant(t)

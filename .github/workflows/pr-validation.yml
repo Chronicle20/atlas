@@ -241,7 +241,7 @@ jobs:
   # After build-docker completes, create/update a derived branch
   # `bot/pr-<N>-resolved` that:
   #   1. Substitutes every PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER /
-  #      PLACEHOLDER_SHA token in deploy/k8s/overlays/pr/ AND
+  #      PLACEHOLDER_FULL_SHA token in deploy/k8s/overlays/pr/ AND
   #      deploy/k8s/overlays/pr-cleanup/ with the actual per-PR value
   #      (sed across both directories).
   #   2. Bumps deploy/k8s/overlays/pr/kustomization.yaml's `images:` block
@@ -311,7 +311,7 @@ jobs:
         env:
           ATLAS_ENV: ${{ steps.tokens.outputs.atlas_env }}
           PR_NUMBER: ${{ steps.tokens.outputs.pr_number }}
-          SHORT_SHA: ${{ steps.tokens.outputs.short_sha }}
+          FULL_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           # find + sed across every file under deploy/k8s/overlays/pr/ AND
@@ -322,15 +322,17 @@ jobs:
           # same PLACEHOLDER tokens and are resolved against the same
           # bot/pr-<N>-resolved branch via Argo CD multi-source.
           #
-          # Order matters: PLACEHOLDER_ATLAS_ENV must be replaced before
-          # any token whose name is a prefix of it (none today, but
-          # defensive).
+          # PLACEHOLDER_FULL_SHA uses the full 40-char commit SHA, not the
+          # short one used for image tags below: `git fetch <remote> <ref>`
+          # against GitHub does not resolve abbreviated SHAs (the
+          # seed-catalog git-sync sidecar fails with "couldn't find remote
+          # ref" if a short SHA is used).
           find deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup \
               -type f \( -name '*.yaml' -o -name '*.yml' \) \
             -exec sed -i \
               -e "s|PLACEHOLDER_ATLAS_ENV|${ATLAS_ENV}|g" \
               -e "s|PLACEHOLDER_PR_NUMBER|${PR_NUMBER}|g" \
-              -e "s|PLACEHOLDER_SHA|${SHORT_SHA}|g" \
+              -e "s|PLACEHOLDER_FULL_SHA|${FULL_SHA}|g" \
               {} +
           echo "=== Placeholders remaining (expect none) ==="
           grep -rn 'PLACEHOLDER_' deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup \

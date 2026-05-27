@@ -1,6 +1,6 @@
 # Per-PR overlay shell.
 #
-# PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER / PLACEHOLDER_SHA are
+# PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER / PLACEHOLDER_FULL_SHA are
 # sentinel strings resolved at CI time by .github/workflows/pr-validation.yml's
 # update-pr-overlay job, which sed-substitutes them across this directory
 # and force-pushes the result to bot/pr-<N>-resolved. The Argo CD
@@ -72,8 +72,11 @@ patches:
             labelSelector:
               matchLabels:
                 atlas.env: "PLACEHOLDER_ATLAS_ENV"
-  # Override GITSYNC_REF so the git-sync sidecar tracks the PR's SHA
-  # instead of main. CI sed-substitutes PLACEHOLDER_SHA at apply time.
+  # Override GITSYNC_REF so the git-sync sidecar tracks the PR's full
+  # commit SHA (not main). CI sed-substitutes PLACEHOLDER_FULL_SHA at
+  # apply time. Full SHA — not short — is required because
+  # `git fetch <remote> <ref>` against GitHub does not resolve
+  # abbreviated SHAs.
   - path: patches/seed-catalog-ref.yaml
     target:
       kind: ConfigMap

@@ -206,6 +206,15 @@ do_drop_branch() {
 # ----------------------------------------------------------------------------
 # Orchestration. PHASES is interleaved <phase_name> <function_name>.
 # ----------------------------------------------------------------------------
+#
+# Per-tenant MinIO cleanup is intentionally NOT a phase here. atlas-data
+# owns its per-tenant data and self-destructs on graceful shutdown when
+# its namespace is being deleted (see services/atlas-data/atlas.com/data/main.go
+# `registerTenantTeardown`). The PostDelete cleanup Job runs AFTER atlas-data
+# is gone, so it can't call atlas-data's REST endpoint here.
+# `sweep-orphans.sh --minio` is the operator backstop for the rare case
+# where atlas-data is force-evicted (OOM/node failure) before its
+# graceful-shutdown handler finishes.
 PHASES=(
     drop-dbs     do_drop_dbs
     drop-topics  do_drop_topics

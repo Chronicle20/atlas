@@ -34,6 +34,7 @@ import (
 	"atlas-data/tenantpurge"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-data/wzinput"
+	"context"
 	"os"
 	"time"
 
@@ -143,6 +144,31 @@ func main() {
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+
+	// Issue #596: on graceful shutdown, if this pod's namespace is being
+	// deleted (Argo CD env teardown), purge per-tenant Postgres rows and
+	// MinIO prefixes for every tenant atlas-data has data for. The
+	// namespace-deletionTimestamp check distinguishes env teardown from
+	// routine pod restart (rolling update, eviction, OOM-restart) — only
+	// the former wipes data. Routine restarts no-op and preserve tenants.
+	//
+	// Requires: kubernetes client (only available in MODE=rest with
+	// in-cluster config) and `namespaces: get` RBAC (see
+	// deploy/k8s/base/atlas-data.yaml's ClusterRole and per-env
+	// ClusterRoleBinding). If either is missing, the function silently
+	// no-ops and `sweep-orphans.sh --minio` is the operator backstop.
+	if jc != nil && jc.K8s != nil && jc.Namespace != "" {
+		tdm.TeardownFunc(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			tenantpurge.PurgeAllIfNamespaceTerminating(
+				ctx, l, db, mc,
+				tenantpurge.NewKubeNamespaceLister(jc.K8s),
+				tenantpurge.NewDBTenantEnumerator(db),
+				jc.Namespace,
+			)
+		})
+	}
 
 	// task-071: PATCH /api/data/wz streams the canonical WZ zip — production
 	// atlas.zip is ~1.6 GB. atlas-rest's default 5-second ReadTimeout cuts

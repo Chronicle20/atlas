@@ -31,6 +31,23 @@ subjects:
   - kind: ServiceAccount
     name: atlas-data
 ---
+# Cluster-scoped permission to read the pod's own namespace. atlas-data's
+# graceful-shutdown handler (tenantpurge.PurgeAllIfNamespaceTerminating)
+# checks the namespace's deletionTimestamp to distinguish env teardown
+# from routine pod restarts. Issue #596.
+#
+# This ClusterRole is shared across environments. A per-environment
+# ClusterRoleBinding (in deploy/k8s/overlays/{pr,main}/) grants this
+# ClusterRole to that env's atlas-data ServiceAccount.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlas-data-ns-reader
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,6 +65,13 @@ spec:
         app: atlas-data
     spec:
       serviceAccountName: atlas-data
+      # tenantpurge.PurgeAllIfNamespaceTerminating runs on SIGTERM and
+      # may issue many MinIO deletes (~2 GiB per tenant on a fully
+      # ingested PR env). The default 30s is too tight; 360s gives the
+      # handler headroom while still bounding pod-termination latency
+      # on routine restarts (where the handler short-circuits in <1s
+      # because the namespace's deletionTimestamp is nil). Issue #596.
+      terminationGracePeriodSeconds: 360
       containers:
       - name: data
         image: ghcr.io/chronicle20/atlas-data/atlas-data:latest

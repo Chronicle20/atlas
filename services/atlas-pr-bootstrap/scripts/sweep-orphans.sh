@@ -340,10 +340,15 @@ sweep_minio() {
         ATLAS_STEP=drop-minio log info "MINIO_ENDPOINT not set; skipping"
         return 0
     }
-    [ -z "${MINIO_ACCESS_KEY:-}" ] && [ -z "${MINIO_SECRET_KEY:-}" ] && {
+    # Accept either MINIO_ACCESS_KEY/MINIO_SECRET_KEY (generic) or
+    # MINIO_ROOT_USER/MINIO_ROOT_PASSWORD (the minio-root-creds Secret's
+    # keys, when mounted via envFrom).
+    local access="${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}"
+    local secret="${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}"
+    if [ -z "$access" ] || [ -z "$secret" ]; then
         ATLAS_STEP=drop-minio log info "MinIO credentials not set; skipping"
         return 0
-    }
+    fi
     if ! command -v mc >/dev/null 2>&1; then
         ATLAS_STEP=drop-minio log warn "mc not on PATH; skipping"
         return 0
@@ -381,7 +386,7 @@ sweep_minio() {
         http://*|https://*) ;;
         *) mc_endpoint="http://${mc_endpoint}" ;;
     esac
-    mc alias set bee "$mc_endpoint" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" >/dev/null 2>&1 || {
+    mc alias set bee "$mc_endpoint" "$access" "$secret" >/dev/null 2>&1 || {
         ATLAS_STEP=drop-minio log warn "mc alias set failed; aborting MinIO sweep"
         return 1
     }

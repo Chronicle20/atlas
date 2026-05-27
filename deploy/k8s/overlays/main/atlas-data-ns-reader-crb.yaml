@@ -1,0 +1,21 @@
+# ClusterRoleBinding granting atlas-data's ServiceAccount in atlas-main
+# the `atlas-data-ns-reader` ClusterRole (which carries
+# `namespaces: get`). Used by tenantpurge.PurgeAllIfNamespaceTerminating
+# to detect env teardown vs. routine pod restart. Issue #596.
+#
+# For atlas-main this is largely defensive: the main env is not
+# typically torn down (only on cutover), so the graceful-shutdown
+# handler short-circuits on every routine restart. Granting the
+# permission anyway keeps the deploy story uniform across env types.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: atlas-data-ns-reader-main
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: atlas-data-ns-reader
+subjects:
+  - kind: ServiceAccount
+    name: atlas-data
+    namespace: atlas-main

@@ -128,13 +128,30 @@ describe('seedService status projections', () => {
     expect(s.conversationCount).toBe(214);
   });
 
-  it('reads npc-shops from npc-shops key', async () => {
+  it('reads npc-shops + auxiliary commodities from subdomain map', async () => {
+    // ShopSubdomain implements seeder.SubdomainAuxiliary, so the
+    // status response carries a "commodities" entry alongside the
+    // primary "npc-shops" entry. The UI projects both.
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => seedStatusBody({ 'npc-shops': 99, commodities: 3194 }),
+    });
+    const s = await seedService.getNpcShopsSeedStatus(mockTenant);
+    expect(s.shopCount).toBe(99);
+    expect(s.commodityCount).toBe(3194);
+  });
+
+  it('defaults commodity count to 0 when auxiliary key is absent', async () => {
+    // Backward-compat case: a deployment running an older atlas-npc-shops
+    // image that does not yet implement SubdomainAuxiliary returns
+    // only the primary subdomain. The projection must not blow up.
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => seedStatusBody({ 'npc-shops': 99 }),
     });
     const s = await seedService.getNpcShopsSeedStatus(mockTenant);
     expect(s.shopCount).toBe(99);
+    expect(s.commodityCount).toBe(0);
   });
 
   it('reads portal-actions from portal-actions key', async () => {

@@ -2,6 +2,7 @@ package seeder
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -44,8 +45,22 @@ func ReadStatus(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (S
 			if err != nil {
 				return err
 			}
+			aux, err := sd.AuxiliaryCounts(db.WithContext(gctx))
+			if err != nil {
+				return fmt.Errorf("auxiliary counts for %s: %w", sd.Name(), err)
+			}
 			mu.Lock()
 			out.Subdomains[sd.Name()] = SubdomainStatus{Count: count, UpdatedAt: ts}
+			for k, v := range aux {
+				// Don't overwrite a primary subdomain entry; the
+				// primary count is the source of truth for that key.
+				if _, exists := out.Subdomains[k]; !exists {
+					out.Subdomains[k] = v
+					if v.UpdatedAt != nil && (latest == nil || v.UpdatedAt.After(*latest)) {
+						latest = v.UpdatedAt
+					}
+				}
+			}
 			if ts != nil && (latest == nil || ts.After(*latest)) {
 				latest = ts
 			}

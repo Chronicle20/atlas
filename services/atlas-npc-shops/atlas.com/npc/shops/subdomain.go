@@ -121,6 +121,25 @@ func (ShopSubdomain) Count(db *gorm.DB) (int64, *time.Time, error) {
 	return count, nil, nil
 }
 
+// AuxiliaryCounts surfaces the commodities row count under the
+// "commodities" key. ShopSubdomain's Build creates commodities as a
+// side effect of seeding each shop, so without this the UI can't see
+// them — but they're a meaningful part of the seed output.
+//
+// Implementing seeder.SubdomainAuxiliary is opt-in; the seeder library
+// merges the returned counts into the status response's `subdomains`
+// map alongside the primary `npc-shops` entry.
+func (ShopSubdomain) AuxiliaryCounts(db *gorm.DB) (map[string]seeder.SubdomainStatus, error) {
+	var count int64
+	tenantId := extractShopTenantId(db)
+	if err := db.Model(&commodities.Entity{}).Where("tenant_id = ?", tenantId).Count(&count).Error; err != nil {
+		return nil, fmt.Errorf("count commodities: %w", err)
+	}
+	return map[string]seeder.SubdomainStatus{
+		"commodities": {Count: count, UpdatedAt: nil},
+	}, nil
+}
+
 // extractShopTenantId retrieves the tenant ID embedded in the GORM context.
 func extractShopTenantId(db *gorm.DB) uuid.UUID {
 	if db.Statement != nil && db.Statement.Context != nil {

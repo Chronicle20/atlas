@@ -48,6 +48,7 @@ export interface QuestConversationsSeedStatus {
 
 export interface NpcShopsSeedStatus {
   shopCount: number;
+  commodityCount: number;
   updatedAt: string | null;
 }
 
@@ -238,8 +239,11 @@ class SeedService {
 
   async getNpcShopsSeedStatus(tenant: Tenant): Promise<NpcShopsSeedStatus> {
     const s = await fetchSeedStatus('/api/shops/seed/status', tenant);
+    // commodities arrives via SubdomainAuxiliary on ShopSubdomain — it
+    // shares the response shape but is not its own primary subdomain.
     return {
       shopCount: subdomainCount(s, 'npc-shops'),
+      commodityCount: subdomainCount(s, 'commodities'),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }

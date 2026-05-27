@@ -19,8 +19,29 @@ import (
 	"gorm.io/gorm"
 )
 
+// seedLocks serializes concurrent Seed() calls per (tenant, group).
+// Two parallel POST /seed requests would otherwise race the
+// DeleteAllForTenant + BulkCreate cycle: caller A clears the table and
+// starts inserting, caller B clears it mid-A, both fan out their
+// inserts in interleaved order, and the final row count varies between
+// 0 and 2x the catalog total depending on timing. Holding the per-key
+// lock for the full Seed() body makes the second caller wait for the
+// first to finish, then run cleanly — producing a deterministic count
+// equal to the catalog's actual file content.
+var seedLocks sync.Map // key: "<tenantUUID>/<groupName>" → *sync.Mutex
+
+func acquireSeedLock(tenantID, groupName string) *sync.Mutex {
+	key := tenantID + "/" + groupName
+	mu, _ := seedLocks.LoadOrStore(key, &sync.Mutex{})
+	m := mu.(*sync.Mutex)
+	m.Lock()
+	return m
+}
+
 func Seed(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (Result, error) {
 	t := tenant.MustFromContext(ctx)
+	lock := acquireSeedLock(t.Id().String(), g.Name)
+	defer lock.Unlock()
 	started := time.Now().UTC()
 
 	roots, err := src.Roots(t)

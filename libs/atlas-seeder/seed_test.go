@@ -33,7 +33,13 @@ func (w *widgetSubdomain) Path() string                    { return "widgets" }
 func (w *widgetSubdomain) Type() string                    { return "widget" }
 func (w *widgetSubdomain) EntityIDPattern() *regexp.Regexp { return regexp.MustCompile(`^widget-(\d+)\.json$`) }
 func (w *widgetSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) {
-	return w.deleted, nil
+	w.mu.Lock()
+	cleared := int64(len(w.rows))
+	w.rows = nil
+	w.mu.Unlock()
+	// Don't reset the `created` counter — Result.Subdomains[].Created
+	// tracks lifetime BulkCreate volume, not the final table size.
+	return w.deleted + cleared, nil
 }
 
 // Decode receives the FULL file bytes (post-task-072 contract), not just
@@ -151,6 +157,97 @@ var errBad = errSimple("intentional decode failure")
 type errSimple string
 
 func (e errSimple) Error() string { return string(e) }
+
+// widgetWithAuxSubdomain mirrors a service like atlas-npc-shops where the
+// primary subdomain's Build also touches a secondary table whose count
+// is exposed via SubdomainAuxiliary. Used to verify the lib merges
+// auxiliary counts into the status response.
+type widgetWithAuxSubdomain struct {
+	widgetSubdomain
+	auxCount atomic.Int64
+}
+
+func (w *widgetWithAuxSubdomain) Name() string { return "widgets-aux" }
+
+func (w *widgetWithAuxSubdomain) AuxiliaryCounts(_ *gorm.DB) (map[string]SubdomainStatus, error) {
+	return map[string]SubdomainStatus{
+		"side-table": {Count: w.auxCount.Load(), UpdatedAt: nil},
+	}, nil
+}
+
+func TestStatus_MergesAuxiliaryCounts(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSource("X_NO_ENV", goodFixtureRoot(t))
+	sub := &widgetWithAuxSubdomain{}
+	sub.auxCount.Store(7)
+	g := Group{
+		Name:      "aux-group",
+		URLPrefix: "/aux",
+		Subdomains: []SubdomainAny{
+			AdaptSubdomain[widgetAttrs, widgetRow](sub),
+		},
+	}
+	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
+	if _, err := Seed(ctx, db, src, g); err != nil {
+		t.Fatalf("Seed: %v", err)
+	}
+	st, err := ReadStatus(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("ReadStatus: %v", err)
+	}
+	// Primary count comes from Count(); auxiliary count from
+	// SubdomainAuxiliary.AuxiliaryCounts() — both keys are visible.
+	if st.Subdomains["widgets-aux"].Count != 2 {
+		t.Errorf("widgets-aux count = %d, want 2", st.Subdomains["widgets-aux"].Count)
+	}
+	if st.Subdomains["side-table"].Count != 7 {
+		t.Errorf("side-table count = %d, want 7 (auxiliary count)", st.Subdomains["side-table"].Count)
+	}
+}
+
+// TestSeed_SerializesConcurrentCallsPerTenantGroup is the regression
+// for the symptom that surfaced in atlas-pr-543: two parallel POST
+// /seed calls (e.g. bootstrap + manual probe + UI button click)
+// racing on DeleteAllForTenant + BulkCreate produced wildly variable
+// row counts (7533 / 22640 / 38971 against the same 21812-entry
+// catalog). With the per-(tenant, group) lock in place, both calls
+// complete and the final count is exactly one catalog's worth.
+func TestSeed_SerializesConcurrentCallsPerTenantGroup(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	t.Cleanup(backgroundSeeds.Wait)
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSource("X_NO_ENV", goodFixtureRoot(t))
+	sub := &widgetSubdomain{}
+	g := Group{
+		Name:      "race-group",
+		URLPrefix: "/race",
+		Subdomains: []SubdomainAny{
+			AdaptSubdomain[widgetAttrs, widgetRow](sub),
+		},
+	}
+	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
+
+	const parallel = 4
+	var wg sync.WaitGroup
+	wg.Add(parallel)
+	for range parallel {
+		go func() {
+			defer wg.Done()
+			if _, err := Seed(ctx, db, src, g); err != nil {
+				t.Errorf("Seed: %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Each Seed deletes-then-inserts; with serialization the table
+	// converges to exactly two rows (the count of fixture files). A
+	// race would land anywhere between 0 and 8.
+	if got := sub.Rows(); len(got) != 2 {
+		t.Fatalf("final row set has %d rows, want 2 (catalog has 2 widget files); rows=%+v", len(got), got)
+	}
+}
 
 func TestSeed_PartialFailurePersistsAndContinues(t *testing.T) {
 	t.Cleanup(ResetMetricsForTest)

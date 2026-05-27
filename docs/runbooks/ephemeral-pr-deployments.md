@@ -473,7 +473,44 @@ Alert wiring is out of scope for task-070 — this is observable but not paged.
 
 ### Known follow-ups (post task-071)
 
-- `cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment (cleanup keys off `ATLAS_ENV` for DB and Kafka drops; per-tenant MinIO cleanup needs the UUID). MinIO per-tenant prefixes (under `atlas-wz/tenants/<id>/`, `atlas-assets/tenants/<id>/`, `atlas-renders/tenants/<id>/`) therefore leak across PR teardowns. Postgres state continues to clear via the per-env database drop. Resolving this requires the cleanup Helm chart to inject `TENANT_ID`; until then operators may run `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` manually as needed. Extending `sweep-orphans.sh` (§9.11) with a MinIO phase would be the cleaner long-term fix.
+- `cleanup.sh` does not currently invoke `DELETE /api/data/tenants/<id>` because `TENANT_ID` is not injected into the cleanup environment (cleanup keys off `ATLAS_ENV` for DB and Kafka drops; per-tenant MinIO cleanup needs the UUID). MinIO per-tenant prefixes leak across PR teardowns as a result. **Mitigation (task-078):** `sweep-orphans.sh --minio` reclaims them after-the-fact. The cleaner long-term fix is still to inject `TENANT_ID` into the cleanup Helm chart so cleanup can call `DELETE /api/data/tenants/<id>` directly — `--minio` is a backstop, not the primary path. See §9.14.
+
+### `--minio` mode (orphan tenant-prefix sweep)
+
+`sweep-orphans.sh --minio` (added task-078, issue #596) enumerates UUID-prefixed paths under `atlas-wz/tenants/`, `atlas-assets/tenants/`, `atlas-renders/tenants/` and deletes any UUID that is BOTH:
+
+- not present in atlas-main's `atlas-tenants` REST listing (the long-lived env's tenant UUIDs — these are the allowlist), AND
+- aged past `MINIO_TENANT_SAFETY_WINDOW_SEC` (default 7200s / 2h) — covers in-flight bringups whose data-ingest is still writing.
+
+Refusal-to-act guards: an empty atlas-main tenant list aborts the sweep (refuses to operate on an empty allowlist). Missing `mc` aborts. Missing `MINIO_ENDPOINT` or credentials silently skips (matches the rest of the script's idiom).
+
+```bash
+# Dry-run from a workstation with cluster kubeconfig
+kubectl -n argocd run sweep-minio --rm -i --restart=Never \
+    --serviceaccount=atlas-pr-cleanup \
+    --image=ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest \
+    --overrides='{
+      "spec": {
+        "containers": [{
+          "name": "sweep-minio",
+          "image": "ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest",
+          "command": ["/atlas/sweep-orphans.sh", "--minio"],
+          "envFrom": [
+            {"configMapRef": {"name": "atlas-pr-cleanup-env"}}
+          ],
+          "env": [
+            {"name": "MINIO_ENDPOINT", "value": "minio.minio.svc.cluster.local:9000"},
+            {"name": "MINIO_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "minio-root-creds", "key": "MINIO_ROOT_USER"}}},
+            {"name": "MINIO_SECRET_KEY", "valueFrom": {"secretKeyRef": {"name": "minio-root-creds", "key": "MINIO_ROOT_PASSWORD"}}}
+          ]
+        }]
+      }
+    }'
+
+# Replace `--minio` with `--minio --apply` once the list looks correct.
+```
+
+`minio-root-creds` is in the `minio` namespace; reflect it (or copy) to `argocd` first if running from there. Operators can also `mc rm --recursive --force <alias>/<bucket>/tenants/<id>/` per-UUID for surgical recovery.
 
 ## §9.12 Diagnosing partial-cleanup failure
 

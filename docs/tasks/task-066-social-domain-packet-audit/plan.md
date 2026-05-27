@@ -19,9 +19,93 @@
 - **No `*_testhelpers.go` files.** Use the project's Builder pattern. Per-test data is constructed via the existing `New<Packet>(...)` constructors in each clientbound/serverbound package.
 - **No `reflect`, no new `interface{}` params, no benchmarks** in atlas-packet edits (design §6, inherited from task-028 §8).
 - **Hard cap: 2 nested region/version guards per encoder** (design §8 Phase 2; carries from task-028 §7). 3+ → STOP, log `_pending.md` row, do not refactor under audit cover.
-- **No gitleaks bait.** Absolute paths like `/home/<user>/` must not appear in any file under `docs/packets/audits/gms_v95/{guild,party,buddy,messenger,note,chat}/`. Pre-PR check is mandatory (Task 13 Step 4).
+- **No gitleaks bait.** Absolute paths like `/home/<user>/` must not appear in any social-domain audit report (`docs/packets/audits/<version>/{Guild,Party,Buddy,Messenger,Note,Chat}*.md`). Pre-PR check is mandatory (Task 13 Step 4 — flat layout, prefix-glob).
 - **Tracking sub-tasks vs PR-sized commits.** Phase 1 sub-tasks (Tasks 2–7) and Phase 2 sub-tasks (Tasks 8–10) are *tracking* units, not single commits. Each ❌ verdict inside a sub-task triggers an independent fix commit (one fix = one commit). A sub-task is "done" when every packet in its bucket has a verdict in `SUMMARY.md` and every ❌ has either a fix commit on this branch or a `_pending.md` row.
 - **`_pending.md` row grouping.** Group deferrals by *cause*, not by *file*. One row per limitation with a sub-list of affected files (design §4.1, §9). One row per bare-handler family, not per handler.
+
+---
+
+## Pipeline wiring & report layout — corrections applied at execute-time
+
+The plan as originally written contained three inaccuracies about how `tools/packet-audit` actually produces social-domain reports. These corrections are *binding* for every audit invocation in Phase 1 / Phase 2 / Phase 3 below. Where the literal text of a downstream task disagrees, follow this section.
+
+### A. `candidatesFromFName` wiring is a prerequisite, not an automatic step
+
+`tools/packet-audit/cmd/run.go` (`Run` function, lines 96–110) only audits an FName when **both** of these are true:
+
+1. The FName has an entry in `docs/packets/ida-exports/gms_v95.json` (or the appropriate per-version export).
+2. The hardcoded switch statement `candidatesFromFName(fname)` in `tools/packet-audit/cmd/run.go` returns a non-empty `[]candidate` that maps the FName to an atlas writer/handler name **with `pkg: "<sub-domain>"`** for social packets (mirroring the `pkg: "monster"`/`"pet"`/`"drop"`/`"reactor"` rows that task-065 added).
+
+At branch-base, `candidatesFromFName` has **zero social-domain entries**. Running the audit CLI with the plan's original command therefore produces zero new social reports — the tool silently iterates an empty candidate set.
+
+**Implication for every Phase 1 sub-task:** before "Run the audit", the implementer must:
+
+1. Identify the FName for each packet in the bucket (use `docs/packets/MapleStory Ops - ClientBound.csv` / `ServerBound.csv` — the `FName` column).
+2. Decompile each FName via `mcp__ida-pro__get_function_by_name` + `mcp__ida-pro__decompile_function` and append wire layouts to `gms_v95.json` in the existing `Decode1/2/4/Str/Buffer/Loop` schema.
+3. Add one `candidatesFromFName` switch case per packet in `tools/packet-audit/cmd/run.go`, using `pkg: "<sub-domain>"` so `qualifiedWriterName` produces a domain-prefixed report filename (see §C below).
+4. Run `go test -race ./tools/packet-audit/...` — confirm green (no regression in the existing fixture suite, including the social-sub-struct fixture from Task 1).
+5. Commit the wiring + IDA-export changes in **one commit per sub-domain** (commit message: `feat(packet-audit): wire <domain> FName candidates + v95 IDA exports`).
+6. Then proceed with the per-sub-task "Run the audit" step.
+
+### B. The `--output` flag value
+
+`tools/packet-audit/cmd/run.go:42` constructs the report directory as `filepath.Join(opts.Output, "<region>_v<major>")`. So:
+
+- Plan-original (wrong): `--output docs/packets/audits/gms_v95` → produces `docs/packets/audits/gms_v95/gms_v95/*.md`.
+- Correct: `--output docs/packets/audits` → produces `docs/packets/audits/gms_v95/*.md`.
+
+Apply the corrected value to **every** audit-CLI invocation downstream (Phase 1 preamble, Tasks 8/9/10, Task 11). Per-version, the flag stays `--output docs/packets/audits` — the tool derives `gms_v83/`, `gms_v87/`, `gms_v95/`, `jms_v185/` itself from the `--template` file's `Region`/`MajorVersion`.
+
+### C. Report layout is flat, not per-sub-domain
+
+The tool writes one report per writer struct directly under `docs/packets/audits/<region>_v<major>/`. There are no `note/`, `buddy/`, etc. subdirectories. `qualifiedWriterName(pkg, name)` returns `Titlecase(pkg) + name` (e.g. `MonsterSpawn` / `NoteOperation` / `BuddyError`), which becomes the report filename. So:
+
+- Plan-original (wrong): reports under `docs/packets/audits/gms_v95/note/Display.md`, `docs/packets/audits/gms_v95/note/Operation.md`, etc.
+- Correct: `docs/packets/audits/gms_v95/NoteDisplay.md`, `docs/packets/audits/gms_v95/NoteSendSuccess.md`, `docs/packets/audits/gms_v95/NoteOperation.md` (cb dispatcher), etc.
+
+There is **no cb/sb filename collision** to manage manually — `pkg: "note"` already prefixes both directions, and each clientbound/serverbound file in a sub-domain holds a distinct top-level struct (verified by `grep ^type` across `libs/atlas-packet/{guild,party,buddy,messenger,note,chat}/{clientbound,serverbound}/*.go`).
+
+### D. Per-sub-task exit gate adjustments
+
+Wherever a downstream sub-task says `ls docs/packets/audits/gms_v95/<domain>/*.md | wc -l`, read it as:
+
+```bash
+ls docs/packets/audits/gms_v95/<TitleDomain>*.md 2>/dev/null | wc -l
+```
+
+(e.g. `Note*.md`, `Buddy*.md`, `Messenger*.md`, `Chat*.md`, `Party*.md`, `Guild*.md`.) The expected count is the **struct-level audit-report count** for that sub-domain, which may differ from the file count if a single source file (e.g. `note/clientbound/operation.go`) declares multiple writer structs. Determine the expected count by enumerating top-level `type X struct` declarations under `libs/atlas-packet/<domain>/{clientbound,serverbound}/` (excluding `_test.go`) **and** intersecting with the FName set the implementer wired up in step A.5. The `SUMMARY.md` `grep -c` checks similarly use the writer name (e.g. `grep -c "atlas-packet/note/" SUMMARY.md`) — these survive because `SUMMARY.md` records the atlas-file path, not the report filename.
+
+### E. Bucket commit composition
+
+The plan's bucket-commit recipe lists:
+
+```bash
+git add docs/packets/audits/gms_v95/<domain>/ \
+        docs/packets/audits/gms_v95/SUMMARY.md \
+        docs/packets/ida-exports/gms_v95.json
+```
+
+Replace the first path with a glob over the per-sub-domain prefixed reports:
+
+```bash
+git add docs/packets/audits/gms_v95/<TitleDomain>*.md \
+        docs/packets/audits/gms_v95/<TitleDomain>*.json \
+        docs/packets/audits/gms_v95/SUMMARY.md \
+        docs/packets/ida-exports/gms_v95.json
+```
+
+The `gms_v95.json` append is already done in step A.2 (often as part of the wiring commit); if it lands in the wiring commit instead of the bucket commit, omit it from the bucket-commit add list. Only one of the two commits should touch `gms_v95.json` per sub-task — pick whichever flow is cleaner (default: wiring commit owns the IDA-export append; bucket commit only adds reports + SUMMARY).
+
+### F. The wiring-commit budget
+
+Each Phase 1 sub-task now produces:
+
+- **1 wiring commit** — `candidatesFromFName` additions + `gms_v95.json` appends.
+- **0–N per-fix commits** — each ❌ atlas-wire-bug fix (one fix = one commit) per the existing per-fix recipe.
+- **0–N deferral commits** — each `_pending.md` row landed (one row = one commit, or grouped if 2+ rows land together for a clear reason).
+- **1 bucket commit** — audit reports + SUMMARY.md (and optionally the IDA-export append if it didn't go in the wiring commit).
+
+Total commits per sub-task therefore: 1 wiring + 0–N fixes + 0–N deferrals + 1 bucket. The plan-original budgeted only 0–N fixes + 1 bucket; budget for one extra commit per sub-task.
 
 ---
 
@@ -155,16 +239,18 @@ go run ./tools/packet-audit \
   --template         services/atlas-configurations/seed-data/templates/template_gms_95_1.json \
   --atlas-packet     libs/atlas-packet \
   --ida-source       docs/packets/ida-exports/gms_v95.json \
-  --output           docs/packets/audits/gms_v95
+  --output           docs/packets/audits
 ```
 
-It produces per-packet reports under `docs/packets/audits/gms_v95/<domain>/<PacketName>.{md,json}` and updates `docs/packets/audits/gms_v95/SUMMARY.md`. Run once per sub-task; commit the report files alongside the fix commits.
+(`--output` is the *base* path; the tool appends `/gms_v95/` itself — see "Pipeline wiring & report layout" §B.) It produces per-packet reports under `docs/packets/audits/gms_v95/<TitleDomain><Name>.{md,json}` (flat layout, prefixed by `qualifiedWriterName`) and updates `docs/packets/audits/gms_v95/SUMMARY.md`. Run once per sub-task; commit the report files alongside the fix commits.
+
+**Per §A above:** before invoking the audit CLI, the implementer must add `candidatesFromFName` switch cases for every social FName in the sub-task bucket and append IDA decompiles to `gms_v95.json`. Without that wiring the CLI produces zero new reports for this domain.
 
 Before starting Phase 1, the user must have v95 IDA loaded so MCP `mcp__ida-pro__*` calls resolve. Each sub-task's IDA additions land in `docs/packets/ida-exports/gms_v95.json` (append) in the same commit as the audit report bucket commit.
 
 ### Verdict triage rules (apply within every sub-task)
 
-For each report under `docs/packets/audits/gms_v95/<domain>/`:
+For each report under `docs/packets/audits/gms_v95/<TitleDomain>*.md` (per "Pipeline wiring & report layout" §C above — reports are flat, prefixed by `qualifiedWriterName`):
 
 - **✅** → no action; row already in `SUMMARY.md`.
 - **⚠️** → annotate the report manually with a one-line "ack: <reason>" footer; commit alone (commit message: `audit(<domain>/<pkt>): ack <reason>`). Examples: tool-limited package-level write helper (per Phase 0 row), loop-flattened lists (analyzer flattens fixed-count loops; cite IDA loop bound), `EncodeMask` / sub-struct method calls that emit multiple bytes per analyzer call.
@@ -260,19 +346,19 @@ For each ❌ atlas-wire-bug fix:
 
 ### Bucket-commit recipe (end of every Phase 1 sub-task)
 
-After all per-fix commits land, commit the audit reports + SUMMARY + IDA-export append in one bucket commit:
+After all per-fix commits land, commit the audit reports + SUMMARY in one bucket commit (the IDA-export append landed in the wiring commit per §A above; only re-add it here if a per-fix recipe extended it beyond the wiring-commit snapshot):
 
 ```bash
-git add docs/packets/audits/gms_v95/<domain>/ \
-        docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json
+git add docs/packets/audits/gms_v95/<TitleDomain>*.md \
+        docs/packets/audits/gms_v95/<TitleDomain>*.json \
+        docs/packets/audits/gms_v95/SUMMARY.md
 git commit -m "audit(<domain>): v95 audit (<n> packets)"
 ```
 
 ### Exit gate (every Phase 1 sub-task)
 
 ```bash
-ls docs/packets/audits/gms_v95/<domain>/*.md | wc -l
+ls docs/packets/audits/gms_v95/<TitleDomain>*.md 2>/dev/null | wc -l
 ```
 
 Must equal the bucket packet count. Then:
@@ -291,12 +377,13 @@ Must equal the same count. Every ❌ in `SUMMARY.md` for this sub-domain has eit
 **Packets — serverbound (3):** `operation.go`, `operation_discard.go`, `operation_send.go`
 
 **Files:**
+- Modify: `tools/packet-audit/cmd/run.go` (add `candidatesFromFName` cases for note FNames — see §A)
+- Append: `docs/packets/ida-exports/gms_v95.json` (note IDA decompiles — see §A)
 - Modify (per fix): `libs/atlas-packet/note/clientbound/<pkt>.go` + matching `_test.go`
 - Modify (per fix): `libs/atlas-packet/note/serverbound/<pkt>.go` + matching `_test.go`
 - Modify (per template fix): `services/atlas-configurations/seed-data/templates/template_gms_*_1.json`
-- Modify: `docs/packets/audits/gms_v95/note/<PacketName>.{md,json}` (created by audit run)
+- Modify: `docs/packets/audits/gms_v95/Note*.{md,json}` (created by audit run; flat layout per §C)
 - Modify: `docs/packets/audits/gms_v95/SUMMARY.md`
-- Append: `docs/packets/ida-exports/gms_v95.json`
 - Append (if deferrals): `docs/packets/ida-exports/_pending.md`
 
 - [ ] **Step 1: Confirm v95 IDA is loaded.**
@@ -307,32 +394,55 @@ mcp__ida-pro__get_metadata
 
 Expected: `binary` field matches GMS v95. If not, ask the user to swap before continuing.
 
-- [ ] **Step 2: Run the audit (full pipeline; the tool produces note/* reports as a subset of the run).**
+- [ ] **Step 1b: Wire candidatesFromFName + populate gms_v95.json (per §A).**
+
+For each note struct (cb: `Display`, `SendSuccess`, `SendError`, `Refresh`; sb: `Operation` dispatcher, `OperationDiscard`, `OperationSend`) — note structs without an FName in the CSV (e.g. pure body-decorator helpers) are skipped:
+
+1. Look up the FName in `docs/packets/MapleStory Ops - {Client,Server}Bound.csv` (search keywords `MEMO`, `NOTE`).
+2. `mcp__ida-pro__get_function_by_name("<FName>")` → `mcp__ida-pro__decompile_function(<addr>)`.
+3. Append an entry to `docs/packets/ida-exports/gms_v95.json` in the existing `Decode1/2/4/Str/Buffer/Loop` schema.
+4. Add a switch case to `candidatesFromFName` in `tools/packet-audit/cmd/run.go`: `return []candidate{{name: "<StructName>", pkg: "note", dir: csvpkg.Dir{Client,Server}bound}}`.
+
+After all note FNames are wired:
+
+```
+go test -race ./tools/packet-audit/...
+go vet ./tools/packet-audit/...
+```
+
+Both must be clean. Commit:
+
+```bash
+git add tools/packet-audit/cmd/run.go docs/packets/ida-exports/gms_v95.json
+git commit -m "feat(packet-audit): wire note FName candidates + v95 IDA exports"
+```
+
+- [ ] **Step 2: Run the audit (full pipeline; tool now emits `Note*.{md,json}` per §C).**
 
 Use the audit command from the Phase 1 preamble. Expected runtime: ≤ 60 s.
 
-- [ ] **Step 3: Triage each note/* report.**
+- [ ] **Step 3: Triage each `Note*.md` report.**
 
-Apply the verdict triage rules from the Phase 1 preamble. `note/serverbound/operation.go` is the operation-dispatcher (op-byte only) — record an OP-FAMILY-note row in `_pending.md` if any ❌ triggers it; verdict ⚠️ on the file. `note/clientbound/operation_body.go` carries the per-op result body shape — audit normally.
+Apply the verdict triage rules from the Phase 1 preamble. `note/serverbound/operation.go` is the operation-dispatcher (op-byte only) — record an OP-FAMILY-note row in `_pending.md` if any ❌ triggers it; verdict ⚠️ on the file. `note/clientbound/operation_body.go` is a body-decorator file (no top-level audit-target struct); skip.
 
 - [ ] **Step 4: Per-fix loop — for each ❌, follow the per-fix recipe (5 sub-steps) from the Phase 1 preamble.**
 
-- [ ] **Step 5: Bucket commit (audit reports + SUMMARY + IDA-export append).**
+- [ ] **Step 5: Bucket commit (audit reports + SUMMARY).**
 
 ```bash
-git add docs/packets/audits/gms_v95/note/ \
-        docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json
-git commit -m "audit(note): v95 audit (6 packets)"
+git add docs/packets/audits/gms_v95/Note*.md \
+        docs/packets/audits/gms_v95/Note*.json \
+        docs/packets/audits/gms_v95/SUMMARY.md
+git commit -m "audit(note): v95 audit"
 ```
 
 - [ ] **Step 6: Exit gate.**
 
 ```bash
-ls docs/packets/audits/gms_v95/note/*.md | wc -l
+ls docs/packets/audits/gms_v95/Note*.md 2>/dev/null | wc -l
 ```
 
-Expected: 6 (counting `display.md`, `operation_cb.md` if renamed for cb/sb collision, `operation_body.md`, `operation_sb.md`, `operation_discard.md`, `operation_send.md`). If the tool collides cb and sb `operation.md` filenames, hand-rename one to `operation_cb.md` / `operation_sb.md` consistently and re-stage.
+Expected: equals the count of note FNames wired in Step 1b. There is no cb/sb collision — `qualifiedWriterName` already prefixes both directions with `Note`, and each cb/sb file holds a distinct struct.
 
 ```bash
 grep -c "atlas-packet/note/" docs/packets/audits/gms_v95/SUMMARY.md
@@ -350,32 +460,34 @@ Expected: 6.
 `buddy/clientbound/list_update.go` and `update.go` exercise the `model.Buddy` sub-struct registered in Phase 0 — first practical proof of the registry batch. `buddy/clientbound/error.go` is the canonical sub-op enum surface (capacity-full, target-offline, target-blocked, etc.) — sub-op enum drift goes to `_pending.md` per design §9. `buddy/clientbound/list_update.go` linearises the buddy list loop — analyzer flattens it; ⚠️ verdict + IDA loop-bound citation.
 
 **Files:**
+- Modify: `tools/packet-audit/cmd/run.go` (add `candidatesFromFName` cases for buddy FNames — see §A)
+- Append: `docs/packets/ida-exports/gms_v95.json` (buddy IDA decompiles — see §A)
 - Modify (per fix): `libs/atlas-packet/buddy/clientbound/<pkt>.go` + matching `_test.go`
 - Modify (per fix): `libs/atlas-packet/buddy/serverbound/<pkt>.go` + matching `_test.go`
 - Modify (per template fix): `services/atlas-configurations/seed-data/templates/template_gms_*_1.json`
-- Modify: `docs/packets/audits/gms_v95/buddy/<PacketName>.{md,json}` (audit-generated)
+- Modify: `docs/packets/audits/gms_v95/Buddy*.{md,json}` (audit-generated; flat layout per §C)
 - Modify: `docs/packets/audits/gms_v95/SUMMARY.md`
-- Append: `docs/packets/ida-exports/gms_v95.json`
 - Append (if deferrals): `docs/packets/ida-exports/_pending.md`
 
 - [ ] **Step 1: Confirm v95 IDA is still loaded** (`mcp__ida-pro__get_metadata`).
-- [ ] **Step 2: Run the audit (Phase 1 preamble command).**
-- [ ] **Step 3: Triage each buddy/* report per Phase 1 preamble triage rules.** `error.go` → likely sub-op enum row in `_pending.md` (group under Task 1's deferral heading).
+- [ ] **Step 1b: Wire candidatesFromFName + gms_v95.json entries (per §A) for buddy structs. Commit as `feat(packet-audit): wire buddy FName candidates + v95 IDA exports`.**
+- [ ] **Step 2: Run the audit (Phase 1 preamble command). Tool emits `Buddy*.{md,json}` per §C.**
+- [ ] **Step 3: Triage each `Buddy*.md` report per Phase 1 preamble triage rules.** `error.go` → likely sub-op enum row in `_pending.md` (group under Task 1's deferral heading).
 - [ ] **Step 4: Per-fix loop — Phase 1 per-fix recipe.**
 - [ ] **Step 5: Bucket commit.**
 
 ```bash
-git add docs/packets/audits/gms_v95/buddy/ \
-        docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json
-git commit -m "audit(buddy): v95 audit (9 packets)"
+git add docs/packets/audits/gms_v95/Buddy*.md \
+        docs/packets/audits/gms_v95/Buddy*.json \
+        docs/packets/audits/gms_v95/SUMMARY.md
+git commit -m "audit(buddy): v95 audit"
 ```
 
 - [ ] **Step 6: Exit gate.**
 
 ```bash
-ls docs/packets/audits/gms_v95/buddy/*.md | wc -l   # Expected: 9
-grep -c "atlas-packet/buddy/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: 9
+ls docs/packets/audits/gms_v95/Buddy*.md 2>/dev/null | wc -l   # Expected: equals buddy FName count wired in Step 1b
+grep -c "atlas-packet/buddy/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: same count
 ```
 
 ---
@@ -391,23 +503,24 @@ grep -c "atlas-packet/buddy/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected
 - Same as Task 3 substituting `buddy` → `messenger`.
 
 - [ ] **Step 1: Confirm v95 IDA is loaded.**
-- [ ] **Step 2: Run the audit.**
-- [ ] **Step 3: Triage each messenger/* report.** OP-FAMILY-messenger row in `_pending.md` for `serverbound/operation.go`. Sub-op enum row covers `invite_declined.go` decline reasons.
+- [ ] **Step 1b: Wire candidatesFromFName + gms_v95.json entries (per §A) for messenger structs. Commit as `feat(packet-audit): wire messenger FName candidates + v95 IDA exports`.**
+- [ ] **Step 2: Run the audit (tool emits `Messenger*.{md,json}` per §C).**
+- [ ] **Step 3: Triage each `Messenger*.md` report.** OP-FAMILY-messenger row in `_pending.md` for `serverbound/operation.go`. Sub-op enum row covers `invite_declined.go` decline reasons.
 - [ ] **Step 4: Per-fix loop.**
 - [ ] **Step 5: Bucket commit.**
 
 ```bash
-git add docs/packets/audits/gms_v95/messenger/ \
-        docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json
-git commit -m "audit(messenger): v95 audit (13 packets)"
+git add docs/packets/audits/gms_v95/Messenger*.md \
+        docs/packets/audits/gms_v95/Messenger*.json \
+        docs/packets/audits/gms_v95/SUMMARY.md
+git commit -m "audit(messenger): v95 audit"
 ```
 
 - [ ] **Step 6: Exit gate.**
 
 ```bash
-ls docs/packets/audits/gms_v95/messenger/*.md | wc -l   # Expected: 13
-grep -c "atlas-packet/messenger/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: 13
+ls docs/packets/audits/gms_v95/Messenger*.md 2>/dev/null | wc -l   # Expected: equals messenger FName count wired in Step 1b
+grep -c "atlas-packet/messenger/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: same count
 ```
 
 ---
@@ -434,7 +547,8 @@ grep -n "WriteByte" libs/atlas-packet/chat/serverbound/{general,multi,whisper}.g
 - Same shape as Task 3 substituting `buddy` → `chat`.
 
 - [ ] **Step 1: Confirm v95 IDA is loaded.**
-- [ ] **Step 2: Run the audit.**
+- [ ] **Step 1b: Wire candidatesFromFName + gms_v95.json entries (per §A) for chat structs. Commit as `feat(packet-audit): wire chat FName candidates + v95 IDA exports`.**
+- [ ] **Step 2: Run the audit (tool emits `Chat*.{md,json}` per §C).**
 - [ ] **Step 3: Per-file sub-mode classification.** Apply the case-1/case-2 dichotomy above to each of the 8 chat files. For case-2 files, append a single bullet to the existing `_pending.md` heading "Sub-op enum / sub-struct deferrals — social domain (task-066)" naming all parameterised chat files in one row:
 
   ```markdown
@@ -447,18 +561,18 @@ grep -n "WriteByte" libs/atlas-packet/chat/serverbound/{general,multi,whisper}.g
 - [ ] **Step 5: Bucket commit.**
 
 ```bash
-git add docs/packets/audits/gms_v95/chat/ \
+git add docs/packets/audits/gms_v95/Chat*.md \
+        docs/packets/audits/gms_v95/Chat*.json \
         docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json \
         docs/packets/ida-exports/_pending.md
-git commit -m "audit(chat): v95 audit (8 packets) + sub-mode enum deferral"
+git commit -m "audit(chat): v95 audit + sub-mode enum deferral"
 ```
 
 - [ ] **Step 6: Exit gate.**
 
 ```bash
-ls docs/packets/audits/gms_v95/chat/*.md | wc -l   # Expected: 8 (with cb/sb name disambiguation if needed)
-grep -c "atlas-packet/chat/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: 8
+ls docs/packets/audits/gms_v95/Chat*.md 2>/dev/null | wc -l   # Expected: equals chat FName count wired in Step 1b
+grep -c "atlas-packet/chat/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: same count
 ```
 
 ---
@@ -478,24 +592,25 @@ grep -c "atlas-packet/chat/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected:
 - Same shape as Task 3 substituting `buddy` → `party`.
 
 - [ ] **Step 1: Confirm v95 IDA is loaded.**
-- [ ] **Step 2: Run the audit.**
-- [ ] **Step 3: Triage each party/* report. Add OP-FAMILY-party + party operation-result enum rows to `_pending.md` if not already present.**
+- [ ] **Step 1b: Wire candidatesFromFName + gms_v95.json entries (per §A) for party structs. Commit as `feat(packet-audit): wire party FName candidates + v95 IDA exports`.**
+- [ ] **Step 2: Run the audit (tool emits `Party*.{md,json}` per §C).**
+- [ ] **Step 3: Triage each `Party*.md` report. Add OP-FAMILY-party + party operation-result enum rows to `_pending.md` if not already present.**
 - [ ] **Step 4: Per-fix loop. Hot-path discipline (member_hp/update) — 4-variant byte-output sweep is mandatory; cite IDA dispatcher offset in the fix comment.**
 - [ ] **Step 5: Bucket commit.**
 
 ```bash
-git add docs/packets/audits/gms_v95/party/ \
+git add docs/packets/audits/gms_v95/Party*.md \
+        docs/packets/audits/gms_v95/Party*.json \
         docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json \
         docs/packets/ida-exports/_pending.md
-git commit -m "audit(party): v95 audit (16 packets)"
+git commit -m "audit(party): v95 audit"
 ```
 
 - [ ] **Step 6: Exit gate.**
 
 ```bash
-ls docs/packets/audits/gms_v95/party/*.md | wc -l   # Expected: 16
-grep -c "atlas-packet/party/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: 16
+ls docs/packets/audits/gms_v95/Party*.md 2>/dev/null | wc -l   # Expected: equals party FName count wired in Step 1b
+grep -c "atlas-packet/party/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: same count
 ```
 
 ---
@@ -515,8 +630,9 @@ This is the largest sub-domain. Two dispatcher families:
 - Same shape as Task 3 substituting `buddy` → `guild`.
 
 - [ ] **Step 1: Confirm v95 IDA is loaded.**
-- [ ] **Step 2: Run the audit.**
-- [ ] **Step 3: Triage each guild/* report. Add OP-FAMILY-guild and OP-FAMILY-bbs rows to `_pending.md` (one row per family). Add guild operation-result enum row if not already present from earlier sub-tasks.**
+- [ ] **Step 1b: Wire candidatesFromFName + gms_v95.json entries (per §A) for guild structs. Note: 19 serverbound packets — this is the largest wiring step. Commit as `feat(packet-audit): wire guild FName candidates + v95 IDA exports`.**
+- [ ] **Step 2: Run the audit (tool emits `Guild*.{md,json}` per §C).**
+- [ ] **Step 3: Triage each `Guild*.md` report. Add OP-FAMILY-guild and OP-FAMILY-bbs rows to `_pending.md` (one row per family). Add guild operation-result enum row if not already present from earlier sub-tasks.**
 
   Sanity-check the dispatcher reading: re-read `libs/atlas-packet/guild/serverbound/operation.go` and `bbs_operation.go`. If either dispatcher's `Encode` body emits more than one `WriteByte(...)` (i.e. carries payload beyond the op byte), design §10's "Low likelihood" risk has materialised — record the actual dispatcher shape in the audit report instead of treating as op-byte-only, and audit accordingly. Do not rewrite the design.
 
@@ -524,27 +640,27 @@ This is the largest sub-domain. Two dispatcher families:
 - [ ] **Step 5: Bucket commit.**
 
 ```bash
-git add docs/packets/audits/gms_v95/guild/ \
+git add docs/packets/audits/gms_v95/Guild*.md \
+        docs/packets/audits/gms_v95/Guild*.json \
         docs/packets/audits/gms_v95/SUMMARY.md \
-        docs/packets/ida-exports/gms_v95.json \
         docs/packets/ida-exports/_pending.md
-git commit -m "audit(guild): v95 audit (24 packets)"
+git commit -m "audit(guild): v95 audit"
 ```
 
 - [ ] **Step 6: Exit gate.**
 
 ```bash
-ls docs/packets/audits/gms_v95/guild/*.md | wc -l   # Expected: 24
-grep -c "atlas-packet/guild/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: 24
+ls docs/packets/audits/gms_v95/Guild*.md 2>/dev/null | wc -l   # Expected: equals guild FName count wired in Step 1b
+grep -c "atlas-packet/guild/" docs/packets/audits/gms_v95/SUMMARY.md  # Expected: same count
 ```
 
-**Phase 1 exit:** `SUMMARY.md` contains rows for all 76 social-domain packets. Every ❌ has a fix commit on this branch OR a `_pending.md` row.
+**Phase 1 exit:** `SUMMARY.md` contains rows for every social-domain FName the implementer wired across Tasks 2–7 (originally targeted as 76 from a file-count survey; the actual struct/FName-level count may differ — see §A & §D). Every ❌ has a fix commit on this branch OR a `_pending.md` row.
 
 ```bash
 grep -c "atlas-packet/\(guild\|party\|buddy\|messenger\|note\|chat\)/" docs/packets/audits/gms_v95/SUMMARY.md
 ```
 
-Expected: 76. If less, identify the missing files via:
+Expected: equals the sum of FName counts from Tasks 2–7 Step 1b commits. If 76 was the original target and the actual is below, this gap should be reconciled — either by adding the missing FName wirings or by documenting why specific structs have no corresponding IDA function (e.g. body-decorator helpers like `note/clientbound/operation_body.go`). If less than originally targeted, identify the missing files via:
 
 ```bash
 diff <(ls libs/atlas-packet/{guild,party,buddy,messenger,note,chat}/{clientbound,serverbound}/*.go 2>/dev/null | grep -v _test.go | xargs -n1 basename | sort -u) \
@@ -560,7 +676,7 @@ Investigate every missing file before exiting Phase 1.
 Three tracking sub-tasks (Tasks 8–10), one per version. Each requires a user-driven IDA binary swap before starting (PRD §4.6, design §8 Phase 2). A sub-task is "done" when:
 
 - `docs/packets/ida-exports/gms_{v83,v87}.json` or `gms_jms_185.json` contains social-domain entries for every FName resolved during Phase 1.
-- The audit has been re-run against the version's template + IDA export, producing reports under `docs/packets/audits/<version>/<social-domain>/`.
+- The audit has been re-run against the version's template + IDA export, producing flat reports under `docs/packets/audits/<version>/<TitleDomain>*.md` (per §C above).
 - Every divergence vs v95 atlas-packet behaviour has either:
   - A `Region/MajorVersion` gate that already handles it (audit report captures evidence; no code change),
   - A gate fix on this branch with a 4-variant test sweep, OR
@@ -573,7 +689,7 @@ Three tracking sub-tasks (Tasks 8–10), one per version. Each requires a user-d
 - Modify: `docs/packets/ida-exports/gms_v83.json` (append social entries — file already exists with login + possibly character entries)
 - Modify (per fix): `libs/atlas-packet/<domain>/<dir>/<pkt>.go` + matching `_test.go`
 - Modify (per template fix): `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`
-- Create or modify: `docs/packets/audits/gms_v83/<domain>/<pkt>.{md,json}` (tool creates the directory)
+- Create or modify: `docs/packets/audits/gms_v83/<TitleDomain>*.{md,json}` (tool creates the directory; flat layout per §C)
 - Modify: `docs/packets/audits/gms_v83/SUMMARY.md`
 - Append (if deferrals): `docs/packets/ida-exports/_pending.md`
 
@@ -603,8 +719,10 @@ go run ./tools/packet-audit \
   --template         services/atlas-configurations/seed-data/templates/template_gms_83_1.json \
   --atlas-packet     libs/atlas-packet \
   --ida-source       docs/packets/ida-exports/gms_v83.json \
-  --output           docs/packets/audits/gms_v83
+  --output           docs/packets/audits
 ```
+
+(`--output` is the *base* path; the tool derives `gms_v83/` from the template's Region/MajorVersion — see "Pipeline wiring & report layout" §B.)
 
 If `docs/packets/audits/gms_v83/` doesn't exist yet, the tool creates it.
 
@@ -626,11 +744,13 @@ fix(atlas-packet,<domain>/<pkt>): widen/narrow v83 gate for <field>
 Cites IDA v83 <CClientSocket::SendXxx>@<addr>: <one-line evidence>.
 ```
 
-Final bucket commit:
+Final bucket commit (flat-layout glob — pick up Note/Buddy/Messenger/Chat/Party/Guild prefixed reports the audit run produced):
 
 ```bash
 git add docs/packets/ida-exports/gms_v83.json \
-        docs/packets/audits/gms_v83/
+        docs/packets/audits/gms_v83/{Note,Buddy,Messenger,Chat,Party,Guild}*.md \
+        docs/packets/audits/gms_v83/{Note,Buddy,Messenger,Chat,Party,Guild}*.json \
+        docs/packets/audits/gms_v83/SUMMARY.md
 git commit -m "audit(social): GMS v83 cross-version pass (social domain)"
 ```
 
@@ -662,7 +782,7 @@ Identical shape to Task 8. Replace `v83` with `v87` everywhere. Templates: `temp
 - Create: `docs/packets/ida-exports/gms_v87.json`
 - Modify (per fix): `libs/atlas-packet/<domain>/<dir>/<pkt>.go` + matching `_test.go`
 - Modify (per template fix): `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`
-- Create or modify: `docs/packets/audits/gms_v87/<domain>/<pkt>.{md,json}`
+- Create or modify: `docs/packets/audits/gms_v87/<TitleDomain>*.{md,json}` (flat layout per §C)
 - Modify: `docs/packets/audits/gms_v87/SUMMARY.md`
 - Append (if deferrals): `docs/packets/ida-exports/_pending.md`
 
@@ -677,15 +797,19 @@ go run ./tools/packet-audit \
   --template         services/atlas-configurations/seed-data/templates/template_gms_87_1.json \
   --atlas-packet     libs/atlas-packet \
   --ida-source       docs/packets/ida-exports/gms_v87.json \
-  --output           docs/packets/audits/gms_v87
+  --output           docs/packets/audits
 ```
+
+(`--output` is the *base* path; the tool derives `gms_v87/` from the template's Region/MajorVersion.)
 
 - [ ] **Step 4: Triage divergences** (per Task 8 Step 4).
 - [ ] **Step 5: Per-fix commits + bucket commit.**
 
 ```bash
 git add docs/packets/ida-exports/gms_v87.json \
-        docs/packets/audits/gms_v87/
+        docs/packets/audits/gms_v87/{Note,Buddy,Messenger,Chat,Party,Guild}*.md \
+        docs/packets/audits/gms_v87/{Note,Buddy,Messenger,Chat,Party,Guild}*.json \
+        docs/packets/audits/gms_v87/SUMMARY.md
 git commit -m "audit(social): GMS v87 cross-version pass (social domain)"
 ```
 
@@ -701,7 +825,7 @@ JMS v185 had a separate opcode space for login/character (task-027/028 finding) 
 - Create: `docs/packets/ida-exports/gms_jms_185.json`
 - Modify (per fix): `libs/atlas-packet/<domain>/<dir>/<pkt>.go` + matching `_test.go`
 - Modify (per template fix): `services/atlas-configurations/seed-data/templates/template_jms_185_1.json`
-- Create or modify: `docs/packets/audits/jms_v185/<domain>/<pkt>.{md,json}`
+- Create or modify: `docs/packets/audits/jms_v185/<TitleDomain>*.{md,json}` (flat layout per §C)
 - Modify: `docs/packets/audits/jms_v185/SUMMARY.md`
 - Append (if deferrals): `docs/packets/ida-exports/_pending.md`
 
@@ -719,8 +843,10 @@ go run ./tools/packet-audit \
   --template         services/atlas-configurations/seed-data/templates/template_jms_185_1.json \
   --atlas-packet     libs/atlas-packet \
   --ida-source       docs/packets/ida-exports/gms_jms_185.json \
-  --output           docs/packets/audits/jms_v185
+  --output           docs/packets/audits
 ```
+
+(`--output` is the *base* path; the tool derives `jms_v185/` from the template's Region/MajorVersion.)
 
 - [ ] **Step 4: Triage per design §8 / task-028 §7.1 in-scope rules:**
   - In scope: atlas-packet writes bytes the JMS client decodes wrong.
@@ -732,7 +858,9 @@ go run ./tools/packet-audit \
 
 ```bash
 git add docs/packets/ida-exports/gms_jms_185.json \
-        docs/packets/audits/jms_v185/
+        docs/packets/audits/jms_v185/{Note,Buddy,Messenger,Chat,Party,Guild}*.md \
+        docs/packets/audits/jms_v185/{Note,Buddy,Messenger,Chat,Party,Guild}*.json \
+        docs/packets/audits/jms_v185/SUMMARY.md
 git commit -m "audit(social): JMS v185 cross-version pass (social domain)"
 ```
 
@@ -765,8 +893,10 @@ go run ./tools/packet-audit \
   --template         services/atlas-configurations/seed-data/templates/template_gms_95_1.json \
   --atlas-packet     libs/atlas-packet \
   --ida-source       docs/packets/ida-exports/gms_v95.json \
-  --output           docs/packets/audits/gms_v95
+  --output           docs/packets/audits
 ```
+
+(`--output` is the *base* path; the tool derives `gms_v95/` from the template.)
 
 - [ ] **Step 3: Diff the SUMMARY against the pre-Phase-3 snapshot.**
 
@@ -878,12 +1008,14 @@ Expected: clean. If it fails on workspace replace lines, the affected Dockerfile
 
 - [ ] **Step 4: gitleaks scrub.**
 
+Reports are flat (per §C) — there are no per-sub-domain subdirs. Filter by the `qualifiedWriterName` prefixes instead:
+
 ```bash
-grep -r '/home/' docs/packets/audits/gms_v95/{guild,party,buddy,messenger,note,chat}/ \
-                 docs/packets/audits/gms_v83/{guild,party,buddy,messenger,note,chat}/ \
-                 docs/packets/audits/gms_v87/{guild,party,buddy,messenger,note,chat}/ \
-                 docs/packets/audits/jms_v185/{guild,party,buddy,messenger,note,chat}/ \
-                 2>/dev/null
+for d in gms_v95 gms_v83 gms_v87 jms_v185; do
+    for prefix in Note Buddy Messenger Chat Party Guild; do
+        grep -l '/home/' docs/packets/audits/$d/${prefix}*.md 2>/dev/null
+    done
+done
 ```
 
 Expected: no output. If any user-home path appears in an audit report, scrub it and commit:

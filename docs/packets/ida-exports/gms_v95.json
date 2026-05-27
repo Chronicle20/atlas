@@ -3815,6 +3815,163 @@
           "comment": "bOnlyBalloon flag"
         }
       ]
+    },
+    "CWvsContext::OnPartyResult#Created": {
+      "address": "0xa10efc",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=8 (CREATE). Server sends: Decode4(partyId) + Decode4(townPortalFromId) + Decode4(townPortalToId) + Decode2(x) + Decode2(y). Client sets local party state. Atlas Created writes mode+partyId+2×EmptyMapId+2×shorts.",
+      "calls": [
+        {"op": "Decode4", "comment": "partyId — stored as m_nPartyID"},
+        {"op": "Decode2", "comment": "townPortalFromId (map4 in atlas Created)"},
+        {"op": "Decode2", "comment": "townPortalToId (map4 in atlas Created)"},
+        {"op": "Decode2", "comment": "door x (short)"},
+        {"op": "Decode2", "comment": "door y (short)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Invite": {
+      "address": "0xa10b5f",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=4 (INVITE). Server sends: Decode4(partyId) + DecodeStr(inviterName) + Decode4(inviterJobId) + Decode4(inviterLevel) + Decode1(autoJoinFlag). Atlas Invite writes mode+partyId+name+0x00 — missing inviterJobId, inviterLevel fields.",
+      "calls": [
+        {"op": "Decode4", "comment": "v7 = partyId"},
+        {"op": "DecodeStr", "comment": "sApplierName = inviter character name"},
+        {"op": "Decode4", "comment": "nSkillID = inviter job id"},
+        {"op": "Decode4", "comment": "sName = inviter level"},
+        {"op": "Decode1", "comment": "sMsg = auto-join flag (0=show dialog, 1=auto-accept)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Disband": {
+      "address": "0xa11085",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=12 with isForced=0 path (DISBAND/LEAVE). Reads: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId — the repeated partyId is a known pattern. When isForced=0 and no party data follows, layout matches atlas structure.",
+      "calls": [
+        {"op": "Decode4", "comment": "m_nPartyID = partyId (stored, zeroed after)"},
+        {"op": "Decode4", "comment": "v37 = targetId"},
+        {"op": "Decode1", "comment": "isForced flag — 0=leave/disband, 1=expelled"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Error": {
+      "address": "0xa10e9e",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) error sub-modes (9,10,13,17,18,22,29,32-34,36). These modes only display string-pool chat messages; no Decode calls beyond the mode byte consumed by the dispatcher. Atlas Error writes mode+name where name is a server-supplied string. Sub-op enum deferred.",
+      "calls": []
+    },
+    "CWvsContext::OnPartyResult#ChangeLeader": {
+      "address": "0xa1169e",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=31 (CHANGE_LEADER). Reads: Decode4(newLeaderId) + Decode1(disconnected). Atlas ChangeLeader writes mode+targetCharacterId(4)+disconnected(1). Wire matches.",
+      "calls": [
+        {"op": "Decode4", "comment": "v66 = newLeaderId — stored as dwPartyBossCharacterID"},
+        {"op": "Decode1", "comment": "v67 = disconnected flag (0=normal transfer, 1=due to disconnect)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Join": {
+      "address": "0xa11405",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=15 (JOIN). Reads: Decode4(partyId) + DecodeStr(targetName) + PARTYDATA::Decode(378 bytes). Atlas Join writes mode+partyId+name+WritePartyData(298 bytes). WritePartyData is 80 bytes short: missing aTownPortal[6].skillId (24 bytes) + aPQReward/aPQRewardType/dwPQRewardMobTemplateID/bPQReward (56 bytes).",
+      "calls": [
+        {"op": "Decode4", "comment": "m_nPartyID = partyId"},
+        {"op": "DecodeStr", "comment": "sCharacterName = joining member name"},
+        {"op": "DecodeBuffer", "comment": "PARTYDATA::Decode(0x17A=378 bytes) — includes PARTYMEMBER+adwFieldID+aTownPortal+aPQReward fields"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Left": {
+      "address": "0xa11085",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=12 with isForced=1 path (LEFT/EXPELLED). Reads: Decode4(partyId)+Decode4(targetId)+Decode1(1)+Decode1(isForced)+DecodeStr(targetName)+PARTYDATA::Decode(378 bytes). Atlas Left writes mode+partyId+targetId+0x01+forced+name+WritePartyData(298 bytes). WritePartyData 80-byte shortfall same as Join/Update.",
+      "calls": [
+        {"op": "Decode4", "comment": "m_nPartyID = partyId"},
+        {"op": "Decode4", "comment": "v37 = targetId"},
+        {"op": "Decode1", "comment": "isForced branch discriminator (1 = member leaving with PARTYDATA)"},
+        {"op": "Decode1", "comment": "v38 = forced flag (0=voluntary leave, 1=expelled by leader)"},
+        {"op": "DecodeStr", "comment": "sCharacterName = leaving member name"},
+        {"op": "DecodeBuffer", "comment": "PARTYDATA::Decode(0x17A=378 bytes) — full party state after member left"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Update": {
+      "address": "0xa10ea1",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=7/38 (UPDATE). Reads: Decode4(partyId) + PARTYDATA::Decode(378 bytes). Atlas Update writes mode+partyId+WritePartyData(298 bytes). WritePartyData is 80 bytes short: missing aTownPortal[6].m_nSKillID (6×4=24 bytes) + aPQReward[6](24)+aPQRewardType[6](24)+dwPQRewardMobTemplateID(4)+bPQReward(4)=56 bytes. HOT PATH.",
+      "calls": [
+        {"op": "Decode4", "comment": "m_nPartyID = partyId"},
+        {"op": "DecodeBuffer", "comment": "PARTYDATA::Decode(0x17A=378 bytes) — full PARTYDATA struct including PQ reward fields"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#OperationBody": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "Synthetic entry for operation_body.go helper (assembles sub-op packets via WithResolvedCode). No independent wire shape; OP-FAMILY-party sub-op enum deferred to _pending.md.",
+      "calls": []
+    },
+    "CUserRemote::OnReceiveHP": {
+      "address": "0x953f50",
+      "direction": "clientbound",
+      "note": "UPDATE_PARTYMEMBER_HP (0xD6). CUserRemote::OnReceiveHP reads Decode4(hp)+Decode4(maxHp). The characterId is consumed upstream by CUserPool::OnUserRemotePacket before this function is called (dispatcher-prefix pattern). Atlas MemberHP writes WriteInt(characterId)+WriteInt(hp)+WriteInt(maxHp) — characterId is the packet-level prefix prepended by the opcode writer, correct. HOT PATH.",
+      "calls": [
+        {"op": "Decode4", "comment": "hp — current HP of the remote party member"},
+        {"op": "Decode4", "comment": "maxHp — max HP of the remote party member"}
+      ]
+    },
+    "CField::SendCreateNewPartyMsg": {
+      "address": "0x52ebc0",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=1 (CREATE). Client sends: Encode1(1). No further fields.",
+      "calls": [
+        {"op": "Encode1", "comment": "op=1 (CREATE_PARTY)"}
+      ]
+    },
+    "CField::SendWithdrawPartyMsg": {
+      "address": "0x52edb0",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=2 (LEAVE). Client sends: Encode1(2)+Encode1(0). Atlas Operation only carries op byte; the trailing 0x00 is not in atlas OperationJoin/Leave separate struct.",
+      "calls": [
+        {"op": "Encode1", "comment": "op=2 (LEAVE_PARTY)"},
+        {"op": "Encode1", "comment": "trailing 0 — not modelled in atlas Operation dispatcher"}
+      ]
+    },
+    "CField::SendKickPartyMsg": {
+      "address": "0x530140",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=5 (EXPEL). Client sends: Encode1(5)+Encode4(targetCharacterId). Atlas OperationExpel writes WriteInt(targetCharacterId) — op byte consumed by dispatcher.",
+      "calls": [
+        {"op": "Encode1", "comment": "op=5 (EXPEL_PARTY_MEMBER)"},
+        {"op": "Encode4", "comment": "PartyMemberByName = targetCharacterId"}
+      ]
+    },
+    "CField::SendChangePartyBossMsg": {
+      "address": "0x530370",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=6 (CHANGE_LEADER). Client sends: Encode1(6)+Encode4(targetCharacterId). Atlas OperationChangeLeader writes WriteInt(targetCharacterId) — op byte consumed by dispatcher.",
+      "calls": [
+        {"op": "Encode1", "comment": "op=6 (CHANGE_PARTY_BOSS)"},
+        {"op": "Encode4", "comment": "PartyMemberByName = targetCharacterId"}
+      ]
+    },
+    "CField::SendJoinPartyMsg": {
+      "address": "0x534310",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=4 (INVITE). Client sends: Encode1(4)+EncodeStr(targetName). Atlas OperationInvite writes WriteAsciiString(name) — op byte consumed by dispatcher.",
+      "calls": [
+        {"op": "Encode1", "comment": "op=4 (INVITE_PARTY_MEMBER)"},
+        {"op": "EncodeStr", "comment": "v22 = target character name to invite"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#InviteReject": {
+      "address": "0xa10ab0",
+      "direction": "serverbound",
+      "note": "DENY_PARTY_REQUEST (0x92). Synthetic entry: no direct IDA function for the reject path. Wire: Encode1(declineCode)+EncodeStr(inviterName). Atlas InviteReject writes WriteByte(unk)+WriteAsciiString(from). The unk maps to the decline response code; from is the inviter name. Layout matches.",
+      "calls": [
+        {"op": "Encode1", "comment": "unk = decline response code"},
+        {"op": "EncodeStr", "comment": "from = inviter character name"}
+      ]
+    },
+    "CField::SendJoinPartyMsg#OperationJoin": {
+      "address": "0x534310",
+      "direction": "serverbound",
+      "note": "Synthetic entry for OperationJoin (accept party invite). After receiving an invite the client sends partyId to the server. Atlas OperationJoin writes WriteInt(partyId). Wire: Encode4(partyId).",
+      "calls": [
+        {"op": "Encode4", "comment": "partyId — the party to join"}
+      ]
     }
   }
 }

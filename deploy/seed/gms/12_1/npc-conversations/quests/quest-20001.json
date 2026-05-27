@@ -1,0 +1,369 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1101002,
+      "questId": 20001,
+      "questName": "Neinheart the Tactician",
+      "startStateMachine": {
+        "startState": "intro1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hello, #h #. I formally welcome you to the Cygnus Knights. My name is Neinheart Von Rubistein, the Head Tactician for the young Empress. I will be seeing you often from here on out, so I suggest you remember my name. Haha..."
+            },
+            "id": "intro1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro3",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "I understand that you didn't have enough time and exposure to figure out what you really need to do as a Cygnus Knight. I will eplain it to you in detail, one by one. I will explain where you are, who the young Empress is, and what our duties are..."
+            },
+            "id": "intro2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro4",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "You're standing on an island called Ereve, the only land that's governed by the young Empress that also happens to float in the air. Yes, we're floating in the air as we speak. We stay here out of necessity, but it usually works as a ship that floats all over Maple World, for the sake of the young Empress..."
+            },
+            "id": "intro3",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro3",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro5",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "The young Empress is indeed the ruler of Maple World, the one and only governer of this world. What? You've never heard of such a thing? Ahhh, that's understandable. The young Empress may govern this world, but she's not a dictator that looms over everyone. She uses Ereve as a way for her to oversee the world as an observer without having to be too hands-on. That's how it usually is, anyway..."
+            },
+            "id": "intro4",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro4",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro6",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "But situations arise every now and then where she'll have to take control. The evil Black Mage has been showing signs of resurrection all over the world. The very king of destruction that threatened to destroy the world as we know it is trying to reappear into our lives."
+            },
+            "id": "intro5",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro5",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro7",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "The problem is, no one is aware of it. It's been so long since the Black Mage disappeared, that people have become used to peace in the world, not necessarily knowing what to do if a crisis like this reaches. If this keeps up, our world will be in grave danger in no time."
+            },
+            "id": "intro6",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro6",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro8",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "That's when the young Empress decided to step forward and take control of this potential crisis before it revealed itself. She decided to create a group of Knights that will prevent the Black Mage from being fully resurrected. I'm sure you know of what happens afterwards since you volunteered to become a Knight yourself."
+            },
+            "id": "intro7",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro7",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Our duties are simple. We need to make ourselves more powerful; much more powerful than the state we're in right now, so that when the Black Mage returns, we'll battle him and eliminate him once and for all before he puts the whole world in grave danger. That is our goal, our mission, and therefore yours as well"
+            },
+            "id": "intro8",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkAlreadyCompleted",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "This is the basic overview of this situation. Understood?"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "20001",
+                      "type": "questStatus",
+                      "value": "2"
+                    }
+                  ],
+                  "nextState": "awardRewards"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "startAndCompleteQuest"
+                }
+              ]
+            },
+            "id": "checkAlreadyCompleted",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "40"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "itemId": "1052177",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "startAndCompleteQuest"
+                }
+              ]
+            },
+            "id": "awardRewards",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "outro1"
+                }
+              ]
+            },
+            "id": "startAndCompleteQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "outro2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I'm glad you understand what I've told you but... did you know? Based on your current level, you won't be able to face the Black Mage. Heck you won't be able to face off his disciple's slave's monster's pet's dummy! Are you sure you are ready to protect Maple World like that?"
+            },
+            "id": "outro1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "outro1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "outro3",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "You may be a member of the Cygnus Knights, but that doesn't mean you're a knight. Forget being the official knight. You're not even a Knight-in-Training, yet. A lot of time will pass where you will just sit around here, doing paperwork for the Cygnus Knights, but..."
+            },
+            "id": "outro2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "outro2",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "outro4",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "But then again, no one is born strong, anyway. The Empress also prefers that she creates an enviroment where a string of powerful knights can be nurtured and created, as opposed to finding a supernaturally-gifted knight. For now, you'll have to become a Knight-in-Training, and make yourself much more powerful so you'll become useful later on. We'll talk about the duties of being a Cygnus Knight once you reach that level of competency."
+            },
+            "id": "outro3",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "outro3",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendPrev",
+              "text": "Take the portal on the left side and go straight, and you'll head towards #b Training Forest I # . There, you'll find the training instructor for the Knights, Kiku. The next time I see you, I'd like for you to be atleast at level 10."
+            },
+            "id": "outro4",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "20001",
+    "type": "quest-conversation"
+  }
+}

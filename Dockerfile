@@ -26,7 +26,7 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-# Layer: all 18 atlas libs' go.mod (and go.sum where present — atlas-retry and
+# Layer: all 20 atlas libs' go.mod (and go.sum where present — atlas-retry and
 # atlas-service have no external deps so no go.sum exists). Lib-mod-only layer;
 # shared across every target.
 COPY libs/atlas-constants/go.mod   libs/atlas-constants/go.sum   libs/atlas-constants/
@@ -43,6 +43,7 @@ COPY libs/atlas-rest/go.mod        libs/atlas-rest/go.sum        libs/atlas-rest
 COPY libs/atlas-retry/go.mod       libs/atlas-retry/
 COPY libs/atlas-saga/go.mod        libs/atlas-saga/go.sum        libs/atlas-saga/
 COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
+COPY libs/atlas-seeder/go.mod      libs/atlas-seeder/go.sum      libs/atlas-seeder/
 COPY libs/atlas-service/go.mod     libs/atlas-service/
 COPY libs/atlas-socket/go.mod      libs/atlas-socket/go.sum      libs/atlas-socket/
 COPY libs/atlas-tenant/go.mod      libs/atlas-tenant/go.sum      libs/atlas-tenant/
@@ -55,7 +56,7 @@ COPY libs/atlas-wz/go.mod          libs/atlas-wz/go.sum          libs/atlas-wz/
 # don't need a per-service Dockerfile branch.
 COPY services/${SERVICE}/ services/${SERVICE}/
 
-# Layer: all 18 atlas libs' source trees (shared across every target; invalidates
+# Layer: all 20 atlas libs' source trees (shared across every target; invalidates
 # when any lib source changes — same invalidation profile as today).
 COPY libs/atlas-constants   libs/atlas-constants
 COPY libs/atlas-database    libs/atlas-database
@@ -71,6 +72,7 @@ COPY libs/atlas-rest        libs/atlas-rest
 COPY libs/atlas-retry       libs/atlas-retry
 COPY libs/atlas-saga        libs/atlas-saga
 COPY libs/atlas-script-core libs/atlas-script-core
+COPY libs/atlas-seeder      libs/atlas-seeder
 COPY libs/atlas-service     libs/atlas-service
 COPY libs/atlas-socket      libs/atlas-socket
 COPY libs/atlas-tenant      libs/atlas-tenant
@@ -88,8 +90,8 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
          printf 'go 1.26.0\n\nuse (\n'; \
          for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
                   atlas-object-id atlas-opcodes atlas-outbox atlas-packet atlas-redis \
-                  atlas-rest atlas-retry atlas-saga atlas-script-core atlas-service \
-                  atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
+                  atlas-rest atlas-retry atlas-saga atlas-script-core atlas-seeder \
+                  atlas-service atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
            printf '    ./libs/%s\n' "$L"; \
          done; \
          printf '    ./%s\n)\n' "$MOD_DIR"; \

@@ -1,0 +1,15 @@
+{
+  "data": {
+    "type": "gachapon-pool",
+    "id": "_global",
+    "attributes": {
+      "items": [
+        {
+          "itemId": 2000004,
+          "quantity": 1,
+          "tier": "common"
+        }
+      ]
+    }
+  }
+}

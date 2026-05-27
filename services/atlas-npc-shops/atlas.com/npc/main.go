@@ -2,21 +2,23 @@ package main
 
 import (
 	"atlas-npc/commodities"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	character2 "atlas-npc/kafka/consumer/character"
 	shops2 "atlas-npc/kafka/consumer/shops"
 	"atlas-npc/logger"
 	"atlas-npc/seed"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-npc/shops"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-npc-shops"
@@ -58,7 +60,11 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(commodities.Migration, shops.Migration))
+	db := database.Connect(l, database.SetMigrations(
+		commodities.Migration,
+		shops.Migration,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)

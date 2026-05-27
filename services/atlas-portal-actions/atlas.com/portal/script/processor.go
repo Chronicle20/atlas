@@ -27,10 +27,6 @@ type ScriptProcessor interface {
 	ByPortalIdProvider(portalId string) model.Provider[PortalScript]
 	AllProvider() model.Provider[[]PortalScript]
 
-	// Seeding
-	DeleteAllForTenant() (int64, error)
-	Seed() (SeedResult, error)
-
 	// Count returns the number of portal scripts for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
 	Count() (int64, *time.Time, error)
@@ -114,58 +110,6 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 		return err
 	}
 	return nil
-}
-
-// DeleteAllForTenant deletes all portal scripts for the current tenant
-func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
-	p.l.Debugf("Deleting all portal scripts for tenant [%s]", p.t.Id())
-
-	count, err := deleteAllPortalScripts(p.db.WithContext(p.ctx))
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to delete portal scripts for tenant [%s]", p.t.Id())
-		return 0, err
-	}
-	p.l.Debugf("Deleted [%d] portal scripts for tenant [%s]", count, p.t.Id())
-	return count, nil
-}
-
-// Seed clears existing portal scripts and loads them from the scripts directory
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding portal scripts for tenant [%s]", p.t.Id())
-
-	result := SeedResult{}
-
-	// Delete all existing scripts for this tenant
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing portal scripts: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load script files from the filesystem
-	scripts, loadErrors := LoadPortalScriptFiles()
-
-	// Track load errors
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each script
-	for _, script := range scripts {
-		_, err = p.Create(script)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", script.PortalId(), err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 // Process processes a portal entry request

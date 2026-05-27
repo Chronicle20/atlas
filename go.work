@@ -15,6 +15,7 @@ use (
 	./libs/atlas-retry
 	./libs/atlas-saga
 	./libs/atlas-script-core
+	./libs/atlas-seeder
 	./libs/atlas-service
 	./libs/atlas-socket
 	./libs/atlas-tenant
@@ -75,6 +76,8 @@ use (
 	./services/atlas-tenants/atlas.com/tenants
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
+	./tools/catalog-lint
 	./tools/cideps
 	./tools/packet-audit
+	./tools/seed-splitters
 )

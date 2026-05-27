@@ -41,16 +41,6 @@ import {
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
 } from "@/lib/hooks/api/useSeed";
-import type {
-  DropsSeedStatus,
-  GachaponsSeedStatus,
-  NpcConversationsSeedStatus,
-  QuestConversationsSeedStatus,
-  NpcShopsSeedStatus,
-  PortalScriptsSeedStatus,
-  ReactorScriptsSeedStatus,
-  MapActionScriptsSeedStatus,
-} from "@/services/api/seed.service";
 import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
 import { ScopeToggle, type Scope } from "@/components/features/setup/ScopeToggle";
 import { useRestoreBaseline, usePublishBaseline } from "@/lib/hooks/api/useBaseline";
@@ -223,76 +213,95 @@ export function SetupPage() {
     ? `${activeTenant.attributes.majorVersion}.${activeTenant.attributes.minorVersion}`
     : "";
 
-  const seedRows = [
+  // formatBadge is a thunk that closes over its own status.data so the
+  // map() loop below can render every row uniformly without an array
+  // union or `as never` escape. Each thunk picks up its row's specific
+  // status type at definition time.
+  interface SeedRow {
+    label: string;
+    icon: React.ReactNode;
+    mutation: { mutate: () => void; isPending: boolean };
+    formatBadge: () => string;
+  }
+
+  const seedRows: SeedRow[] = [
     {
       label: "Monster & Reactor Drops",
       icon: <Database className="h-5 w-5" />,
       mutation: seedDrops,
-      status: dropsSeed,
-      formatBadge: (d?: DropsSeedStatus) =>
-        !d
+      formatBadge: () => {
+        const d = dropsSeed.data;
+        return !d
           ? "—"
-          : `${formatCount(d.monsterDropCount)} ${pluralize(d.monsterDropCount, "monster drop", "monster drops")} / ${formatCount(d.continentDropCount)} ${pluralize(d.continentDropCount, "continent drop", "continent drops")} / ${formatCount(d.reactorDropCount)} ${pluralize(d.reactorDropCount, "reactor drop", "reactor drops")}`,
+          : `${formatCount(d.monsterDropCount)} ${pluralize(d.monsterDropCount, "monster drop", "monster drops")} / ${formatCount(d.continentDropCount)} ${pluralize(d.continentDropCount, "continent drop", "continent drops")} / ${formatCount(d.reactorDropCount)} ${pluralize(d.reactorDropCount, "reactor drop", "reactor drops")}`;
+      },
     },
     {
       label: "Gachapons",
       icon: <Package className="h-5 w-5" />,
       mutation: seedGachapons,
-      status: gachaponsSeed,
-      formatBadge: (d?: GachaponsSeedStatus) =>
-        !d
+      formatBadge: () => {
+        const d = gachaponsSeed.data;
+        return !d
           ? "—"
-          : `${formatCount(d.gachaponCount)} ${pluralize(d.gachaponCount, "gachapon", "gachapons")} / ${formatCount(d.itemCount)} ${pluralize(d.itemCount, "item", "items")} / ${formatCount(d.globalItemCount)} ${pluralize(d.globalItemCount, "global item", "global items")}`,
+          : `${formatCount(d.gachaponCount)} ${pluralize(d.gachaponCount, "gachapon", "gachapons")} / ${formatCount(d.itemCount)} ${pluralize(d.itemCount, "item", "items")} / ${formatCount(d.globalItemCount)} ${pluralize(d.globalItemCount, "global item", "global items")}`;
+      },
     },
     {
       label: "NPC Conversations",
       icon: <MessageSquare className="h-5 w-5" />,
       mutation: seedNpcConversations,
-      status: npcConversationsSeed,
-      formatBadge: (d?: NpcConversationsSeedStatus) =>
-        !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`,
+      formatBadge: () => {
+        const d = npcConversationsSeed.data;
+        return !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+      },
     },
     {
       label: "Quest Conversations",
       icon: <HelpCircle className="h-5 w-5" />,
       mutation: seedQuestConversations,
-      status: questConversationsSeed,
-      formatBadge: (d?: QuestConversationsSeedStatus) =>
-        !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`,
+      formatBadge: () => {
+        const d = questConversationsSeed.data;
+        return !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+      },
     },
     {
       label: "NPC Shops",
       icon: <Store className="h-5 w-5" />,
       mutation: seedNpcShops,
-      status: npcShopsSeed,
-      formatBadge: (d?: NpcShopsSeedStatus) =>
-        !d
+      formatBadge: () => {
+        const d = npcShopsSeed.data;
+        return !d
           ? "—"
-          : `${formatCount(d.shopCount)} ${pluralize(d.shopCount, "shop", "shops")} / ${formatCount(d.commodityCount)} ${pluralize(d.commodityCount, "commodity", "commodities")}`,
+          : `${formatCount(d.shopCount)} ${pluralize(d.shopCount, "shop", "shops")} / ${formatCount(d.commodityCount)} ${pluralize(d.commodityCount, "commodity", "commodities")}`;
+      },
     },
     {
       label: "Portal Scripts",
       icon: <DoorOpen className="h-5 w-5" />,
       mutation: seedPortalScripts,
-      status: portalScriptsSeed,
-      formatBadge: (d?: PortalScriptsSeedStatus) =>
-        !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`,
+      formatBadge: () => {
+        const d = portalScriptsSeed.data;
+        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
+      },
     },
     {
       label: "Reactor Scripts",
       icon: <Zap className="h-5 w-5" />,
       mutation: seedReactorScripts,
-      status: reactorScriptsSeed,
-      formatBadge: (d?: ReactorScriptsSeedStatus) =>
-        !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`,
+      formatBadge: () => {
+        const d = reactorScriptsSeed.data;
+        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
+      },
     },
     {
       label: "Map Action Scripts",
       icon: <Map className="h-5 w-5" />,
       mutation: seedMapActionScripts,
-      status: mapActionScriptsSeed,
-      formatBadge: (d?: MapActionScriptsSeedStatus) =>
-        !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`,
+      formatBadge: () => {
+        const d = mapActionScriptsSeed.data;
+        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "map action", "map actions")}`;
+      },
     },
   ];
 
@@ -449,7 +458,7 @@ export function SetupPage() {
               key={row.label}
               icon={row.icon}
               label={row.label}
-              badge={row.formatBadge(row.status.data as never)}
+              badge={row.formatBadge()}
               action={
                 <Button
                   size="sm"

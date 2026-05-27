@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Amoria Party Quest - Stage 3 exit portal to Stage 4",
+      "mapId": 670010400,
+      "portalId": "apq2",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "670010500",
+                  "portalId": "0"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "apq2",
+    "type": "portal-action"
+  }
+}

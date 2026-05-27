@@ -1,0 +1,77 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "explain",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "complete",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Is that so? All there was was a saying that #p1103000# set out to continue his journey? That can't be, there were further instructions for him to detail the progress of his mission until then. #rReturn to the cave#k and report again if it really has nothing more there."
+            },
+            "id": "explain",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "complete",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "npcId": 1103000,
+      "questId": 20406,
+      "questName": "Chasing the Knight's Target",
+      "startStateMachine": {
+        "startState": "placeholder",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "This quest has no start dialogue."
+            },
+            "id": "placeholder",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "20406",
+    "type": "quest-conversation"
+  }
+}

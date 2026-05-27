@@ -1,0 +1,140 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1300002,
+      "questId": 2342,
+      "questName": "Recovered Royal Seal",
+      "startStateMachine": {
+        "startState": "checkConditions",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4001318",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2331",
+                      "type": "questStatus",
+                      "value": "2"
+                    }
+                  ],
+                  "nextState": "checkInventory"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkConditions",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4001318",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "startAndCompleteQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noInventorySpace"
+                }
+              ]
+            },
+            "id": "checkInventory",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "4001318",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "sealRecovered"
+                }
+              ]
+            },
+            "id": "startAndCompleteQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Looks like you forgot to pick up the #b#t4001318##k when you fought with the #bPrime Minister#k. This is very important to our kingdom, so please deliver this to my father as soon as possible."
+            },
+            "id": "sealRecovered",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please free up one spot in your ETC inventory"
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "2342",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21767,
+      "questName": "Aran Medicine Box Quest",
+      "startStateMachine": {
+        "startState": "checkExistingItem",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032423",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "startQuestOnly"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkInventorySpace"
+                }
+              ]
+            },
+            "id": "checkExistingItem",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuestOnly",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032423",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "medicineDialogue"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noInventorySpace"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Please open a slot in your ETC inventory first."
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "giveItemAndStartQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "#bHm, there's a medicinal substance in the box. What could this be? You better take this to John and ask him what it is.#k"
+            },
+            "id": "medicineDialogue",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032423",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveItemAndStartQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21767",
+    "type": "quest-conversation"
+  }
+}

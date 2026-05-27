@@ -63,6 +63,9 @@ resources:
   - env-configmap.yaml
   - namespace.yaml
 
+components:
+  - components/seed-catalog
+
 configMapGenerator:
   - name: atlas-ingress-routes
     files:

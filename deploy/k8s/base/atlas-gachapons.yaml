@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-gachapons
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-gachapons
     spec:
+      volumes: []
       containers:
       - name: gachapons
         image: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:

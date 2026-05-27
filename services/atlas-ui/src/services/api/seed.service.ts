@@ -67,6 +67,25 @@ export interface MapActionScriptsSeedStatus {
   updatedAt: string | null;
 }
 
+// Shape returned by libs/atlas-seeder's GET /<prefix>/seed/status handler.
+// The handler emits a plain JSON object (not a JSON:API envelope), so we
+// read it directly. Per-service status objects (DropsSeedStatus, etc.)
+// are projections of this generic shape into the field names the UI
+// already renders.
+interface SeederSubdomainStatus {
+  count: number;
+  updatedAt: string | null;
+}
+
+interface SeedStatus {
+  groupName: string;
+  subdomains: Record<string, SeederSubdomainStatus>;
+  updatedAt: string | null;
+  catalogRevision: string;
+  tenantSeededRevision: string | null;
+  tenantSeededAt: string | null;
+}
+
 interface JsonApiEnvelope<A> {
   data: {
     type: string;
@@ -84,6 +103,21 @@ async function fetchJsonApi<A>(url: string, tenant: Tenant): Promise<A> {
   }
   const body = (await response.json()) as JsonApiEnvelope<A>;
   return body.data.attributes;
+}
+
+async function fetchSeedStatus(url: string, tenant: Tenant): Promise<SeedStatus> {
+  const headers = tenantHeaders(tenant);
+  const response = await fetch(url, { method: 'GET', headers });
+  if (!response.ok) {
+    throw new Error(`GET ${url} failed: ${response.status} ${response.statusText}`);
+  }
+  return (await response.json()) as SeedStatus;
+}
+
+function subdomainCount(s: SeedStatus, key: string): number {
+  // Optional chain on `subdomains` as well as the entry — guards
+  // against a malformed response where the map itself is absent.
+  return s.subdomains?.[key]?.count ?? 0;
 }
 
 class SeedService {
@@ -170,35 +204,77 @@ class SeedService {
   }
 
   async getDropsSeedStatus(tenant: Tenant): Promise<DropsSeedStatus> {
-    return fetchJsonApi<DropsSeedStatus>('/api/drops/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/drops/seed/status', tenant);
+    return {
+      monsterDropCount: subdomainCount(s, 'monster-drop'),
+      continentDropCount: subdomainCount(s, 'continent-drop'),
+      reactorDropCount: subdomainCount(s, 'reactor-drop'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getGachaponsSeedStatus(tenant: Tenant): Promise<GachaponsSeedStatus> {
-    return fetchJsonApi<GachaponsSeedStatus>('/api/gachapons/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/gachapons/seed/status', tenant);
+    return {
+      gachaponCount: subdomainCount(s, 'gachapons'),
+      itemCount: subdomainCount(s, 'items'),
+      globalItemCount: subdomainCount(s, 'globalItems'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getNpcConversationsSeedStatus(tenant: Tenant): Promise<NpcConversationsSeedStatus> {
-    return fetchJsonApi<NpcConversationsSeedStatus>('/api/npcs/conversations/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/npcs/conversations/seed/status', tenant);
+    return {
+      conversationCount: subdomainCount(s, 'npc.conversation'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getQuestConversationsSeedStatus(tenant: Tenant): Promise<QuestConversationsSeedStatus> {
-    return fetchJsonApi<QuestConversationsSeedStatus>('/api/quests/conversations/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/quests/conversations/seed/status', tenant);
+    return {
+      conversationCount: subdomainCount(s, 'quest.conversation'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getNpcShopsSeedStatus(tenant: Tenant): Promise<NpcShopsSeedStatus> {
-    return fetchJsonApi<NpcShopsSeedStatus>('/api/shops/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/shops/seed/status', tenant);
+    // commodities arrives via SubdomainAuxiliary on ShopSubdomain — it
+    // shares the response shape but is not its own primary subdomain.
+    return {
+      shopCount: subdomainCount(s, 'npc-shops'),
+      commodityCount: subdomainCount(s, 'commodities'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getPortalScriptsSeedStatus(tenant: Tenant): Promise<PortalScriptsSeedStatus> {
-    return fetchJsonApi<PortalScriptsSeedStatus>('/api/portals/scripts/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/portals/scripts/seed/status', tenant);
+    return {
+      scriptCount: subdomainCount(s, 'portal-actions'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getReactorScriptsSeedStatus(tenant: Tenant): Promise<ReactorScriptsSeedStatus> {
-    return fetchJsonApi<ReactorScriptsSeedStatus>('/api/reactors/actions/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/reactors/actions/seed/status', tenant);
+    return {
+      scriptCount: subdomainCount(s, 'reactor-actions'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 
   async getMapActionScriptsSeedStatus(tenant: Tenant): Promise<MapActionScriptsSeedStatus> {
-    return fetchJsonApi<MapActionScriptsSeedStatus>('/api/maps/actions/seed/status', tenant);
+    const s = await fetchSeedStatus('/api/maps/actions/seed/status', tenant);
+    // map-actions exposes two subdomains in the seeder lib
+    // (onUserEnter + onFirstUserEnter); sum them for the single
+    // scriptCount the UI displays.
+    return {
+      scriptCount: subdomainCount(s, 'onUserEnter') + subdomainCount(s, 'onFirstUserEnter'),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
   }
 }
 

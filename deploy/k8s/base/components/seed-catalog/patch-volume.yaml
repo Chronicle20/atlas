@@ -1,0 +1,5 @@
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: seed-catalog
+    emptyDir: {}

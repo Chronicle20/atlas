@@ -1,0 +1,21 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Sky ferry transit map (Ereve to Victoria) - Block portal to prevent manual exit during transport",
+      "mapId": 200090031,
+      "portalId": "move_EreEli",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": []
+          }
+        }
+      ]
+    },
+    "id": "move_EreEli",
+    "type": "portal-action"
+  }
+}

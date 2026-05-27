@@ -7,6 +7,7 @@ import (
 	saga "atlas-map-actions/kafka/consumer/saga"
 	"atlas-map-actions/logger"
 	"atlas-map-actions/script"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
@@ -14,6 +15,7 @@ import (
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-map-actions"
@@ -51,7 +53,10 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(script.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(
+		script.MigrateTable,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	script.InitConsumers(l)(cmf)(consumerGroupId)
@@ -72,6 +77,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(script.InitResource(GetServer())(db)).
+		AddRouteInitializer(script.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

@@ -6,6 +6,7 @@ import (
 	"atlas-npc-conversations/conversation/quest"
 	"atlas-npc-conversations/conversation/recipe"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
 	questConsumer "atlas-npc-conversations/kafka/consumer/quest"
@@ -20,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-npc-conversations"
@@ -60,7 +62,12 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(npcConversation.MigrateTable, quest.MigrateTable, recipe.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(
+		npcConversation.MigrateTable,
+		quest.MigrateTable,
+		recipe.MigrateTable,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
@@ -89,7 +96,9 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(npcConversation.InitResource(GetServer())(db)).
+		AddRouteInitializer(npcConversation.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(quest.InitResource(GetServer())(db)).
+		AddRouteInitializer(quest.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(recipe.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()

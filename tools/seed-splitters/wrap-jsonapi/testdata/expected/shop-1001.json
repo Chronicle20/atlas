@@ -1,0 +1,16 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [
+        {
+          "mesoPrice": 50,
+          "templateId": 1040002
+        }
+      ],
+      "npcId": 1001,
+      "recharger": false
+    },
+    "id": "1001",
+    "type": "shop"
+  }
+}

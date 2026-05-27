@@ -14,6 +14,10 @@ x-atlas-defaults: &atlas-defaults
     atlas-tenants:
       condition: service_healthy
 
+x-seed-catalog: &seed-catalog
+  volumes:
+    - ../seed:/var/run/seed-catalog:ro
+
 services:
   atlas-account:
     <<: *atlas-defaults
@@ -193,7 +197,7 @@ services:
       - ../../tmp/data:/usr/data
 
   atlas-drop-information:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-drop-information
     build:
       context: ../..
@@ -206,9 +210,7 @@ services:
       DB_NAME: atlas-drops
       SERVICE_ID: 00000000-0000-0000-0000-000000000000
       SERVICE_TYPE: drops-information-service
-      MONSTER_DROPS_PATH: /drops/monsters
-      CONTINENT_DROPS_PATH: /drops/continents
-      REACTOR_DROPS_PATH: /drops/reactors
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-drops:
     <<: *atlas-defaults
@@ -260,7 +262,7 @@ services:
       DB_NAME: atlas-fame
 
   atlas-gachapons:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-gachapons
     build:
       context: ../..
@@ -270,6 +272,7 @@ services:
     image: atlas-gachapons:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-gachapons
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-guilds:
     <<: *atlas-defaults
@@ -323,7 +326,7 @@ services:
       DB_NAME: atlas-keys
 
   atlas-map-actions:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-map-actions
     build:
       context: ../..
@@ -333,7 +336,7 @@ services:
     image: atlas-map-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-map-actions
-      MAP_SCRIPTS_DIR: /scripts/map
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-maps:
     <<: *atlas-defaults
@@ -435,7 +438,7 @@ services:
       DB_NAME: atlas-notes
 
   atlas-npc-conversations:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-npc-conversations
     build:
       context: ../..
@@ -446,11 +449,10 @@ services:
     environment:
       LOG_LEVEL: debug
       DB_NAME: atlas-npc-conversations
-      NPC_CONVERSATIONS_PATH: /conversations/npc
-      QUEST_CONVERSATIONS_PATH: /conversations/quests
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-npc-shops:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-npc-shops
     build:
       context: ../..
@@ -461,6 +463,7 @@ services:
     environment:
       LOG_LEVEL: debug
       DB_NAME: atlas-npc-shops
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-parties:
     <<: *atlas-defaults
@@ -475,7 +478,7 @@ services:
       LOG_LEVEL: debug
 
   atlas-party-quests:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-party-quests
     build:
       context: ../..
@@ -485,6 +488,7 @@ services:
     image: atlas-party-quests:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-party-quests
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-pets:
     <<: *atlas-defaults
@@ -500,7 +504,7 @@ services:
       DB_NAME: atlas-pets
 
   atlas-portal-actions:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-portal-actions
     build:
       context: ../..
@@ -510,7 +514,7 @@ services:
     image: atlas-portal-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-portal-actions
-      PORTAL_SCRIPTS_DIR: /scripts/portals
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
       QUERY_AGGREGATOR_URL: http://atlas-query-aggregator:8080
 
   atlas-portals:
@@ -560,7 +564,7 @@ services:
     image: atlas-rates:${ATLAS_IMAGE_TAG:-local}
 
   atlas-reactor-actions:
-    <<: *atlas-defaults
+    <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-reactor-actions
     build:
       context: ../..
@@ -570,7 +574,7 @@ services:
     image: atlas-reactor-actions:${ATLAS_IMAGE_TAG:-local}
     environment:
       DB_NAME: atlas-reactor-actions
-      REACTOR_ACTIONS_DIR: /scripts/reactors
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-reactors:
     <<: *atlas-defaults

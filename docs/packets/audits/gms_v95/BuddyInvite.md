@@ -18,5 +18,3 @@
 | 5 | byte | bytes `GW_Friend entry (39 bytes via CFriend::Insert → GW_Friend::Decode → DecodeBuffer(this,0x27)): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)` | ❌ | atlas: short — missing trailing field |
 | 6 | byte | byte `inShop — after GW_Friend::Insert, CFriend::Insert reads Decode1 for m_aInShop[new_entry]` | ❌ | atlas: short — missing trailing field |
 
-ack: investigation deferred — rows 3–6 show a chain of misalignment caused by 2 unmodelled extra Decode4 calls (v25/v26 at IDA lines 67–69) before CFriend::Insert. Atlas does not write these 8 bytes; IDA reads them unambiguously. The row-3 🔍 is the sub-struct (model.Buddy b), misaligned because the tool sees it at position 3 against IDA's Decode4(v25). Rows 4–6 are cascade alignment errors. Real wire bug candidate: atlas invite packet may be missing 8 bytes (2×int32 of unknown semantics before GW_Friend entry). Deferred to _pending.md "BuddyInvite two-extra-field investigation" row pending live-client confirmation.
-

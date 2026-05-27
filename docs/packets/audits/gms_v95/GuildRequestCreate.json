@@ -1,0 +1,20 @@
+{
+  "WriterName": "GuildRequestCreate",
+  "IDAName": "CField::InputGuildName",
+  "Address": "0x0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_request_create.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "proposed guild name",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

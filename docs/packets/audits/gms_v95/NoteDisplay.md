@@ -18,5 +18,3 @@
 | 5 | int64 | bytes `dateSent (8-byte FILETIME timestamp via DecodeBuffer(8))` | ❌ | width mismatch |
 | 6 | byte | byte `nFlag (memo status flag)` | ✅ |  |
 
-ack: tool-limitation — position 5 `int64` (WriteInt64/Encode8, 8 bytes) vs `bytes` (DecodeBuffer(8)/DecodeBuf, 8 bytes) are identical on the wire; the audit framework treats Encode8 and DecodeBuf as different types. Atlas writes FILETIME as a little-endian int64 which matches the 8-byte buffer the client reads. Wire is correct; verdict promoted to ⚠️. See _pending.md "NoteDisplay tool-limitation".
-

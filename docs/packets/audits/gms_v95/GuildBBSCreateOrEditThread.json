@@ -1,0 +1,74 @@
+{
+  "WriterName": "GuildBBSCreateOrEditThread",
+  "IDAName": "CUIGuildBBS::OnRegister",
+  "Address": "0x7c4250",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op byte (create/edit sub-op)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "modify bool",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "threadId (if modify)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "notice bool",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "title",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "emoticonId",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

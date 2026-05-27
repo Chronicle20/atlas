@@ -3,7 +3,7 @@
 - **IDA:** 0xa02fc0
 - **Atlas file:** `libs/atlas-packet/character/clientbound/buff_give.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 1
+- **Branch depth:** 0
 - **Verdict:** ❌
 
 ## Wire-level diff
@@ -20,6 +20,4 @@
 | 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 8 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

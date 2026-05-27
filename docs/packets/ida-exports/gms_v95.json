@@ -4692,12 +4692,16 @@
       ]
     },
     "CField::SendCreateGuildAgreeMsg": {
-      "address": "0x0",
+      "address": "0x52d780",
       "direction": "serverbound",
       "calls": [
         {
+          "op": "Encode4",
+          "comment": "guildId (from CWvsContext)"
+        },
+        {
           "op": "Encode1",
-          "comment": "agreed bool (0=no, 1=yes)"
+          "comment": "bAgree bool (0=no, 1=yes)"
         }
       ]
     },
@@ -4772,7 +4776,7 @@
       ]
     },
     "CUIGuildBBS::SendLoadListRequest": {
-      "address": "0x0",
+      "address": "0x7c3680",
       "direction": "serverbound",
       "calls": [
         {
@@ -4786,7 +4790,7 @@
       ]
     },
     "CUIGuildBBS::SendViewEntryRequest": {
-      "address": "0x0",
+      "address": "0x7c3710",
       "direction": "serverbound",
       "calls": [
         {
@@ -4800,7 +4804,7 @@
       ]
     },
     "CUIGuildBBS::OnCommentDelete": {
-      "address": "0x0",
+      "address": "0x7c3b70",
       "direction": "serverbound",
       "calls": [
         {
@@ -4818,7 +4822,7 @@
       ]
     },
     "CUIGuildBBS::OnRegister": {
-      "address": "0x0",
+      "address": "0x7c4250",
       "direction": "serverbound",
       "calls": [
         {
@@ -4852,7 +4856,7 @@
       ]
     },
     "CUIGuildBBS::OnComment": {
-      "address": "0x0",
+      "address": "0x7c4530",
       "direction": "serverbound",
       "calls": [
         {
@@ -4870,7 +4874,7 @@
       ]
     },
     "CUIGuildBBS::OnDelete": {
-      "address": "0x0",
+      "address": "0x7c6520",
       "direction": "serverbound",
       "calls": [
         {

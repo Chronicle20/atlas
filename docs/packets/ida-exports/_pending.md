@@ -571,3 +571,68 @@ Three of the four "real wire bugs" originally deferred have been fixed in-branch
 | `DropDestroy` explode/pet-pickup tail | **Fixed.** Replaced `petSlot int8` field with `explodeDelay int16` (type 4) + `petPickupExtra uint32` (type 5). Encoder switches on `destroyType` to emit the correct trailing fields per case. Legacy `NewDropDestroy` constructor preserved for backwards compatibility (auto-widens petSlot to petPickupExtra for type 5; ignores params for type 4). v95 audit positions 0-3 now ✅; remaining ❌ rows (positions 4-5) are the same switch-case-flatten analyzer FP documented elsewhere — wire is correct. | `ac174269b` |
 | `MonsterMovementHandle` (serverbound) deferred | **Audited.** Decompiled JMS v185 `CMob::GenerateMovePath@0x6e8892` and verified atlas's `MovementRequest` encoder matches byte-for-byte across all v95+JMS gated blocks (multiTargetForBall, randTimeForAreaAttack, hackedCodeCRC, bChasing-tail). Added IDA entries to gms_v95.json + gms_jms_185.json. Audit verdict: 🔍 (sub-struct expansion FP). Wire is correct. v83/v87 IDA entries not added — `CMob::GenerateMovePath` address lookups deferred to next IDA swap. | `e32a3d809` |
 | `MonsterControl` shape divergence | **Not a real bug.** Re-analysis with JMS v185 IDA loaded showed atlas's encoder writes `byte(controlType) + int(uniqueId) + (if type>0: byte(5) + int(monsterId) + MonsterModel)`. JMS reads `byte(controlMode) + int(mobId) + (if mode != 0: byte(aggro) + int(templateId) + MonsterModel)`. Production v95 (with dev-mode `CClientOptMan::GetOpt(2)` off) reads the same shape. **The earlier ❌ verdict was a false-positive** from my initial IDA entries unconditionally listing the dev-mode `moveRandSeed` block. Atlas server never enables opt 2, so seeds never appear on wire. Fix: removed seeds from IDA entries in all 4 version files (gms_v95.json, gms_v83.json, gms_v87.json, gms_jms_185.json). The hardcoded `byte(5)` at the aggro position is a *semantic* concern (atlas always sends 5 regardless of actual aggro state) but not a wire-shape bug — width and position match. | `e32a3d809` |
+
+## Sub-op enum / sub-struct deferrals — social domain (task-066, Phase 1f: guild)
+
+Guild domain audit (task-066 Phase 1f) of 38 packets in GMS v95. ✅ 24 / 🔍 2 / ❌ 12 (pipeline verdicts). After triage: **2 real wire bugs fixed**, all remaining ❌ are tool-limitation FPs.
+
+### Real wire bugs fixed in-branch (task-066 Phase 1f commits)
+
+| Atlas struct | Bug | Fix commit |
+|---|---|---|
+| `guild/clientbound/operation.go` `CapacityChange` | `capacity` field written as `WriteInt` (4 bytes); IDA `CWvsContext::OnGuildResult#CapacityChange@0xa0dfe2` reads `Decode1` (1 byte). Changed `capacity` from `uint32` to `byte` throughout (struct, constructor, `GuildCapacityChangedBody` signature, call site in atlas-channel `announceCapacityChanged`). | `29a248285` |
+| `guild/clientbound/operation.go` `Invite` | Missing two trailing `Decode4` fields after `inviterName`; IDA `CWvsContext::OnGuildResult#Invite@0xa0d664` reads `Decode4(v21)` + `Decode4(nSkillID)` after the inviter name string. Added `unknown uint32` + `skillId uint32` fields; `NewInvite` now takes 5 args; `GuildInviteBody` passes zeros; test updated. | `29a248285` |
+
+### Tool-limitation pattern A — clientbound mode-byte dispatcher prefix
+
+`CWvsContext::OnGuildResult` is a dispatcher function that reads the mode byte first (`Decode1`), then dispatches to a sub-handler. Sub-handler IDA entries (synthetic `#`-suffixed FNames) start at the first field AFTER the mode byte. Atlas structs encode the mode byte as their first write. The pipeline compares atlas position 0 (mode=byte) to IDA position 0 (first real field), producing false-positive width mismatches.
+
+Affected clientbound packets (all ❌ or showing mode-byte prefix artifacts):
+
+| Report | IDA FName | Triage |
+|---|---|---|
+| `GuildRequestAgreement.md` | `CWvsContext::OnGuildResult` (dispatcher root) | ⚠️ Dispatcher-root FName has only mode-byte; atlas `RequestAgreement` writes full payload. After fix to IDA entry, now ✅ (dispatcher-only comparison). |
+| `GuildSetTitleNames.md` | `CWvsContext::SendSetGuildTitleNames` | ⚠️ Tool-limitation (loop): atlas writes 5 strings via a for-loop; pipeline sees only first iteration. Wire is correct (all 5 strings written/read). |
+| `GuildTitleChange.md` | `CWvsContext::OnGuildResult#TitleChange@0xa0e239` | ⚠️ Tool-limitation (loop): atlas writes 5 strings via a for-loop; pipeline sees only first. Wire is correct (all 5 strings written/read). |
+
+### Tool-limitation pattern B — serverbound op-byte dispatcher prefix
+
+BBS serverbound structs each model only the sub-payload; the op byte is written by the dispatcher before the struct's `Encode` is called. IDA entries include the op byte at position 0. The pipeline compares atlas position 0 (sub-payload first field) to IDA position 0 (op byte), producing false-positive cascades.
+
+Affected serverbound packets (all ❌ due to this tool-limitation):
+
+| Report | IDA FName | Op byte | Triage |
+|---|---|---|---|
+| `GuildBBSListThreads.md` | `CUIGuildBBS::SendLoadListRequest@0x7c3680` | op=2 (LIST) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas writes `startIndex(4)` which aligns with IDA's `Encode4(m_nEntryListStart)`. ✅ after adjustment. |
+| `GuildBBSDisplayThread.md` | `CUIGuildBBS::SendViewEntryRequest@0x7c3710` | op=3 (VIEW) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas writes `threadId(4)` which aligns with IDA's `Encode4(entryID)`. ✅ after adjustment. |
+| `GuildBBSDeleteReply.md` | `CUIGuildBBS::OnCommentDelete@0x7c3b70` | op=5 (DELETE_REPLY) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas writes `threadId(4)+replyId(4)` which aligns with IDA. ✅ after adjustment. |
+| `GuildBBSCreateOrEditThread.md` | `CUIGuildBBS::OnRegister@0x7c4250` | op=1 (CREATE/EDIT) | ⚠️ Tool-limitation (op-byte prefix + conditional `threadId`). After adjusting: atlas writes `modify(bool)+optional threadId(4)+notice(bool)+title(str)+message(str)+emoticonId(4)` which aligns with IDA. ✅ after adjustment. |
+| `GuildBBSReplyThread.md` | `CUIGuildBBS::OnComment@0x7c4530` | op=4 (REPLY) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas writes `threadId(4)+message(str)` which aligns with IDA. ✅ after adjustment. |
+| `GuildBBSDeleteThread.md` | `CUIGuildBBS::OnDelete@0x7c6520` | op=6 (DELETE_THREAD) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas writes `threadId(4)` which aligns with IDA. ✅ after adjustment. |
+
+### Tool-limitation pattern C — DecodeBuf vs explicit write (BBS FILETIME fields)
+
+`BBSThread.Encode` and `BBSThreadList.Encode` write `WriteInt64(createdAt)` (8 bytes) for FILETIME fields. IDA reads `DecodeBuffer(8)` (8 raw bytes). Wire bytes are identical; audit tool reports ❌ "width mismatch" because `int64` (Decode8) and `bytes` (DecodeBuf) are classified as different types. Wire is correct.
+
+| Report | Field | Triage |
+|---|---|---|
+| `GuildBBSThread.md` | `ftCurDate`, `reply.m_ftDate` | ⚠️ Tool-limitation (DecodeBuf vs int64). Wire is ✅. |
+| `GuildBBSThreadList.md` | `notice.ftDate`, `entry.ftDate` | ⚠️ Tool-limitation (DecodeBuf vs int64 + conditional branch flatten). Wire is ✅. |
+
+### OP-FAMILY-guild-clientbound
+
+`libs/atlas-packet/guild/clientbound/operation.go` `RequestAgreement` (and all other clientbound guild sub-op structs) are dispatched by `CWvsContext::OnGuildResult` via a mode byte. The `GuildOperationWriter` opcode key selects among 15+ sub-op structs. The audit pipeline audits each sub-op struct independently via synthetic `#`-suffixed FNames. Sub-op value space (mode byte values) is template-configured; enum drift verification deferred to Phase 2 cross-version pass.
+
+### OP-FAMILY-guild-serverbound
+
+`libs/atlas-packet/guild/serverbound/operation.go` `Operation` struct emits only the op byte (sub-op discriminator for the GUILD_ACTION opcode). Sub-operations: LEAVE, INVITE, KICK, REQUEST_CREATE, JOIN, SET_EMBLEM, SET_NOTICE, INCREASE_CAPACITY, SET_MEMBER_TITLE, SET_TITLE_NAMES, AGREE. Each sub-op has its own struct (`OperationWithdraw`, `OperationInvite`, `OperationKick`, `OperationRequestCreate`, `OperationJoin`, `OperationSetEmblem`, `OperationSetNotice`, `OperationSetMemberTitle`, `SetTitleNames`, `AgreementResponse`). The `Operation` struct is used for sub-ops that carry only the op byte (e.g., LEAVE). Sub-op value space verification deferred to Phase 2 cross-version pass.
+
+### OP-FAMILY-guild-bbs-serverbound
+
+`libs/atlas-packet/guild/serverbound/bbs_operation.go` `BBS` struct emits only the op byte (sub-op discriminator for the GUILD_BBS_ACTION opcode). Sub-operations: LIST=2, CREATE/EDIT=1, REPLY=4, DELETE_REPLY=5, VIEW=3, DELETE_THREAD=6. Each sub-op has its own struct. Sub-op value space verification deferred to Phase 2 cross-version pass.
+
+### GuildInfo and GuildMemberJoined — sub-struct expansion gaps
+
+`GuildInfo.md` (verdict 🔍): packed array reads (`count×charId` + `count×GuildMember(37 bytes)`) are modelled as `DecodeBuffer` in IDA. Atlas encodes each array element via a loop which the flat analyzer cannot expand. Wire is correct per `model.GuildMember.Encode` (37 bytes = PaddedString(13)+6×WriteInt(4)) matching `GUILDMEMBER::Decode(DecodeBuffer(0x25=37))` verified byte-for-byte.
+
+`GuildMemberJoined.md` (verdict 🔍): `GuildMember` sub-struct embedded inline. Same sub-struct expansion gap — atlas calls `gm.Encode(l, ctx)(options)` which writes 37 bytes; IDA reads `GUILDMEMBER::Decode` (37 bytes). Wire is ✅.

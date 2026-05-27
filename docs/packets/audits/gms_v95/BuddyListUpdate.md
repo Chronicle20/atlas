@@ -15,5 +15,3 @@
 | 2 | byte | bytes `buddy entries — count × 39 bytes (GW_Friend array) decoded as DecodeBuffer(m_aFriend.a, 39*count)` | 🔍 | sub-struct: bm — see _substruct/ |
 | 3 | int32 | bytes `inShop flags — count × 4 bytes (int array) decoded as DecodeBuffer(m_aInShop.a, 4*count)` | ❌ | width mismatch |
 
-ack: tool-limitation — analyzer flattens the buddy-list loop (CFriend::Reset@0xa10760: count×39 bytes friend array + count×4 bytes inShop array). Row 2 is a sub-struct call (model.Buddy = 39 bytes = GW_Friend exactly); row 3 is WriteInt(uint32) per entry vs DecodeBuffer(4×count) — same wire bytes, different tool representation. Wire is correct: loop count from CFriend::Reset confirmed. Verdict promoted to ⚠️.
-

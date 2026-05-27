@@ -14,5 +14,3 @@
 | 1 | string | string `sTarget — name of the character to add as buddy` | ✅ |  |
 | 2 | byte | string `sFriendGroup — buddy group name` | ❌ | atlas: short — missing trailing field |
 
-ack: OP-FAMILY-buddy tool-limitation — atlas-channel handler decodes BUDDYLIST_MODIFY in two steps: `buddy.Operation.Decode` reads the sub-op byte (op=1/ADD) first; `OperationAdd.Decode` then reads name+group from the remaining bytes. The audit pipeline sees only `OperationAdd.Encode` (EncodeStr+EncodeStr) without the leading op byte, misaligning against IDA's `SendSetFriendMsg` which emits Encode1(1)+EncodeStr+EncodeStr. Wire is correct. Deferred to _pending.md "OP-FAMILY-buddy" row.
-

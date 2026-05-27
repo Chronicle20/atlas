@@ -49,7 +49,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		if isNoteOperation(l)(readerOptions, op, NoteOperationDiscard) {
 			sp := &notesb.OperationDiscard{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] discarding [%d] notes. val1 [%d], val2 [%d].", s.CharacterId(), sp.Count(), sp.Val1(), sp.Val2())
+			l.Debugf("Character [%d] discarding [%d] notes. emptySlotCount [%d].", s.CharacterId(), sp.Count(), sp.EmptySlotCount())
 
 			noteIds := make([]uint32, 0, sp.Count())
 

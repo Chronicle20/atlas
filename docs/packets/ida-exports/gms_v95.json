@@ -3282,31 +3282,24 @@
           "comment": "count \u2014 number of GW_Memo entries"
         },
         {
-          "op": "Loop",
-          "comment": "GW_Memo::Decode loop (count iterations)",
-          "body": [
-            {
-              "op": "Decode4",
-              "comment": "dwSN (memo id)"
-            },
-            {
-              "op": "DecodeStr",
-              "comment": "sSender (sender name, max 13 chars)"
-            },
-            {
-              "op": "DecodeStr",
-              "comment": "sContent (message body, max 201 chars)"
-            },
-            {
-              "op": "DecodeBuffer",
-              "length": 8,
-              "comment": "dateSent (8-byte FILETIME timestamp)"
-            },
-            {
-              "op": "Decode1",
-              "comment": "nFlag (memo status flag)"
-            }
-          ]
+          "op": "Decode4",
+          "comment": "dwSN (memo id) \u2014 GW_Memo::Decode loop body (count iterations; analyzer flattens)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sSender (sender name, max 13 chars)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sContent (message body, max 201 chars)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "dateSent (8-byte FILETIME timestamp via DecodeBuffer(8))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nFlag (memo status flag)"
         }
       ]
     },
@@ -3364,21 +3357,15 @@
         },
         {
           "op": "Encode1",
-          "comment": "emptySlotCount (nEmptySlotCount \u2014 free inventory slots)"
+          "comment": "emptySlotCount \u2014 free inventory slots (tab 4, from CharacterData::GetEmptySlotCount)"
         },
         {
-          "op": "Loop",
-          "comment": "per discardable memo (count iterations); marriage memos additionally include Encode4(marriageNo) not modeled here",
-          "body": [
-            {
-              "op": "Encode4",
-              "comment": "dwSN (memo serial number)"
-            },
-            {
-              "op": "Encode1",
-              "comment": "nFlag (memo type flag)"
-            }
-          ]
+          "op": "Encode4",
+          "comment": "dwSN (memo serial number) \u2014 per-entry loop body (count iterations; analyzer flattens)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nFlag (memo type flag)"
         }
       ]
     },

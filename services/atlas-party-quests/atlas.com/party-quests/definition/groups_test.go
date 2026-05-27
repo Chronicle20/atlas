@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -108,16 +109,7 @@ func TestInitSeedResource_StatusRouteOK(t *testing.T) {
 	if body == "" {
 		t.Error("GET /party-quests/definitions/seed/status: empty body")
 	}
-	if !containsStr(body, "catalogRevision") {
+	if !strings.Contains(body, "catalogRevision") {
 		t.Errorf("GET /party-quests/definitions/seed/status: body missing 'catalogRevision': %s", body)
 	}
-}
-
-func containsStr(s, sub string) bool {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
 }

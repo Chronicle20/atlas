@@ -303,3 +303,130 @@ Main now uses a single parameterized `Dockerfile` at the repo root (`ARG SERVICE
 ### Verdict
 
 **PASS — no regressions from main-merge.** Both task-072's seed-catalog stack and main's outbox + ingress-routes additions coexist cleanly in `Dockerfile`, `deploy/k8s/base/kustomization.yaml`, and `go.work`. All eight migrated services and `libs/atlas-seeder` still build, vet, and (for `libs/atlas-seeder`) pass race tests. The pre-merge PASS / READY_TO_MERGE recommendation stands.
+
+## Frontend final audit (2026-05-27)
+
+**Scope:** delta-only UI audit of `0fc1dbf0e` (new `SeedStatus` projection) and `ceeb02577` (npc-shops commodity restore via SubdomainAuxiliary).
+
+**Files reviewed:**
+
+- `services/atlas-ui/src/services/api/seed.service.ts`
+- `services/atlas-ui/src/pages/SetupPage.tsx` (formatBadge only)
+- `services/atlas-ui/src/services/api/__tests__/seed.service.test.ts`
+
+### Build & Tests
+
+- `npm run build` → clean. `vite build` succeeds; only pre-existing chunk-size warnings unchanged by this diff.
+- `npm test -- --run` → **77 files, 725/725 passed** (matches commit message claim of 725).
+
+### Mechanical Checklist
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| FE-01 | No `any` type | PASS | `grep -nE ':\s*any\b\|\bas any\b'` over the three scoped files returns nothing. The lone non-pristine cast in `SetupPage.tsx:452` (`row.status.data as never`) is pre-existing — not introduced by either of these commits (`git show 0fc1dbf0e -- services/atlas-ui/src/pages/SetupPage.tsx` only touches the npc-shops formatBadge expression). |
+| FE-02 | No manual class concat | PASS | No `+`/template concatenation on className in scoped files |
+| FE-03 | No direct API client in components/tests | PASS | The test stubs `fetch` via `vi.stubGlobal` (`seed.service.test.ts:38`); no import of `@/lib/api/client`. `SetupPage.tsx` only consumes hooks |
+| FE-04 | No inline Zod | PASS | No `z.*` references in scoped files |
+| FE-05 | No spinners for content load | PASS | All five `animate-spin` occurrences (`SetupPage.tsx:344,371,399,428,460`) are on submit/action buttons; none gate content rendering. Status badges fall back to `"—"` while undefined — no spinner |
+| FE-06 | No hardcoded colors | PASS | None added |
+| FE-07 | No state mutation | PASS | `subdomainCount()` reads only; projections return new objects (`seed.service.ts:206-211`, etc.) |
+| FE-08 | No default exports for components | PASS | `seedService` is a named const export (`seed.service.ts:279`); `SetupPage` is a named function export (`SetupPage.tsx:74`) |
+| FE-09 | Tenant guard in hooks | PASS (out-of-scope but verified) | `useSeed.ts` hooks all gate on `enabled: !!activeTenant` and call `seedService.getXxxSeedStatus(activeTenant!)` only when enabled. Unchanged by this cycle but composes correctly with the new projection layer |
+| FE-10 | Tenant ID in query keys | PASS (out-of-scope) | Each key factory in `useSeed.ts:24-33` is `[name, tenantId] as const`. The hook substitutes `'none'` sentinel when tenant is null |
+| FE-11 | Error handling | PASS (delta) | `fetchSeedStatus` (`seed.service.ts:108-115`) throws `Error` with status + statusText on non-2xx; the test (`seed.service.test.ts:204-211`) confirms the 500 path. The hook layer surfaces these via React Query's `error` state, which the badge code renders as `"—"`. No silent swallow |
+| FE-12 | JSON:API model shape | PASS (with documented divergence) | The `SeedStatus` shape (`seed.service.ts:80-87`) is intentionally NOT a JSON:API envelope — the seeder lib emits plain JSON. This is by design per the lib's contract and is the bug being fixed. `fetchJsonApi` (`seed.service.ts:97-106`) is still used for the WZ/data endpoints that DO speak JSON:API |
+| FE-14 | Query key factory uses `as const` | PASS | `useSeed.ts:26-33` all `as const` |
+| FE-17 | Tests exist for changes | PASS | New test file `seed.service.test.ts` has 13 cases covering every projection (drops, gachapons, npc-conversations, quest-conversations, npc-shops with commodities, npc-shops without commodities, portal-actions, reactor-actions, map-actions sum, tenantSeededAt→updatedAt fallback, missing-subdomain fallback, header wiring, 5xx). Each test calls the actual `seedService.getXxxSeedStatus(mockTenant)` method (not a mock of it), exercising the production projection code path |
+
+### Adversarial focus-area findings
+
+**1. Type safety of internal interfaces (`SeedStatus`/`SeederSubdomainStatus` un-exported).** PASS — `seed.service.ts:75-87` keeps both shapes file-local; the per-service exported interfaces are unchanged so `useSeed.ts` and `SetupPage.tsx` typings remain stable. tsc -b under `npm run build` is clean.
+
+**2. Runtime validation of `fetchSeedStatus` body.** OBSERVATION (non-blocking). `seed.service.ts:114` does an unchecked `as SeedStatus` cast on the parsed JSON. There is no Zod schema or `typeof`/`in` guard. A malformed body (e.g. missing `subdomains`) would manifest as `Cannot read properties of undefined (reading 'count')` at first projection access. The `subdomainCount` helper at `seed.service.ts:117-119` uses optional chaining on the entries but NOT on `s.subdomains` itself — if the server returns `{ "subdomains": null }` or omits the key entirely, `s.subdomains[key]?.count` would throw `Cannot read properties of undefined/null`. This is consistent with the codebase's general approach (no Zod on response bodies in this service module) so it is non-blocking, but worth a follow-up if seeder-lib's response contract ever wobbles. A defensive `s.subdomains?.[key]?.count ?? 0` would close the gap.
+
+**3. `subdomainCount` fallback of `0` for missing keys.** PASS for the stated goal — `seed.service.ts:117-119` returns 0 on missing keys; the regression test (`seed.service.test.ts:82-95`) explicitly asserts this for the "old fetcher would have crashed" scenario, and the npc-shops backward-compat test (`seed.service.test.ts:144-155`) asserts the same for the absent auxiliary key. The "0 commodities is ambiguous with seed-failed" concern is mitigated because the operator-facing badge always shows the primary count (e.g. "99 shops") next to it; a true seed-failure shows `"—"` (rendered by `SetupPage.tsx:271` when `d` is undefined entirely). Not blocking.
+
+**4. React Query composition.** PASS — `useSeed.ts:183-279` query hooks still type-resolve against the per-service interfaces re-exported from `seed.service.ts`. The build confirms type-compat. The hooks were not edited this cycle and compose cleanly because the service module deliberately preserved the per-service return types as a stable seam.
+
+**5. "scripts" terminology for map-actions.** NON-BLOCKING cosmetic. `SetupPage.tsx:295` and `seed.service.ts:267-276` both call them "scripts" even though map-actions are JSON action files, not scripts. This pre-dates this cycle and is not a guideline violation.
+
+**6. Tenant header handling for `fetchSeedStatus`.** PASS — `seed.service.ts:108-115` calls `tenantHeaders(tenant)` and explicitly does NOT set `Accept`. Verified by reading `lib/headers.tsx:3-10` (only sets the four `TENANT_ID/REGION/MAJOR_VERSION/MINOR_VERSION` headers, no Accept). The test at `seed.service.test.ts:62` explicitly asserts `headers.get('Accept')` is `null`, which is the regression guard for the original bug (the old `fetchJsonApi` set `Accept: application/vnd.api+json` which made the seeder lib emit a JSON:API envelope mismatch).
+
+**7. Test quality.** PASS — the tests stub the global `fetch` (`seed.service.test.ts:36-42`) and invoke the real `seedService` methods, so the projection logic, header wiring, and error path are all exercised. The "no auxiliary key" backward-compat test (`seed.service.test.ts:144-155`) targets the right scenario: an older atlas-npc-shops without `SubdomainAuxiliary` would emit only `{"npc-shops": ...}` and the test asserts `commodityCount === 0` rather than throwing.
+
+**8. Concurrency / status freshness.** OBSERVATION (out-of-scope, pre-existing). `useSeed.ts:189-191` etc. use `staleTime: 0, refetchInterval: 5000` for the seed-status queries. The guideline example (`patterns-react-query.md:55,214`) suggests a non-zero stale time, but aggressive refresh on the Setup page is justified by the use case (operator wants to see counts climb after kicking a seed). Not introduced this cycle.
+
+### Verdict
+
+**PASS** — Build clean, 725/725 tests green, zero FAIL on the FE-* checklist for the in-scope delta. The two SetupPage commits are minimal and correct (only the npc-shops formatBadge string changed; reverted to include commodities in the second commit). The new `seed.service.ts` projection layer is a clean adapter over the seeder lib's generic response and is covered by 13 unit tests including the exact regression that motivated the rewrite.
+
+**Non-blocking follow-ups:**
+
+1. Consider guarding `fetchSeedStatus` with a Zod schema or at minimum `s.subdomains?.[key]?.count ?? 0` to harden against a future shape regression from the seeder lib.
+2. (Cosmetic, pre-existing) "scripts" vs "actions" terminology mismatch for map-actions.
+3. (Pre-existing) `SetupPage.tsx:452` `as never` cast on `row.status.data` — type-erases the per-row badge typing. Replaceable with a discriminated union or `unknown`-typed `formatBadge` wrapper if a future cycle wants strict typing on the seed-rows table.
+
+## Final code audit (2026-05-27)
+
+Adversarial delta-only pass over commits `aed05ba0e` → `ceeb02577` (7 commits added during the final review/fix cycle).
+
+### Verification
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| `libs/atlas-seeder` `go test -race -count=1 ./...` | PASS | `ok github.com/Chronicle20/atlas/libs/atlas-seeder 1.072s` |
+| `libs/atlas-seeder` `go vet ./...` | PASS | no output |
+| All 8 migrated services `go build ./...` | PASS | clean (drop-info, gachapons, map-actions, npc-conversations, npc-shops, party-quests, portal-actions, reactor-actions) |
+| All 8 migrated services `go vet ./...` | PASS | clean |
+| All 8 migrated services `go test -race -count=1 ./...` | PASS | every test package green; only `[no test files]` markers in unrelated subpackages |
+| New `services/atlas-drop-information/atlas.com/dis/reactor/drop/subdomain_test.go` | PASS | 4 tests pass under `-race`; covers walks-included, ignores-non-drop, malformed JSON, Build-from-included |
+
+### Domain checklist (delta only)
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| DOM-21 | No duplication of atlas-constants types | PASS | `grep ^type libs/atlas-seeder/*.go` shows only seeder-domain types (`CatalogSource`, `Envelope`, `Subdomain`, `SubdomainAuxiliary`, `SubdomainAny`, etc.). No item/inventory/world/map IDs reinvented. `reactor/drop/subdomain.go:24-28` `DropJSON` is a pre-existing JSON wire shape, not a new domain type. |
+| Concurrency: per-(tenant, group) Seed serialization | PASS | `libs/atlas-seeder/seed.go:31-39,43-44` — `sync.Map` of `*sync.Mutex` with `LoadOrStore` is the textbook race-free init; `defer lock.Unlock()` at line 44 unlocks on every return path, including panic, since `defer` runs on stack unwind. Regression test at `libs/atlas-seeder/seed_test.go:216-250` runs 4 parallel `Seed()` calls and asserts the row set converges to exactly the catalog file count — race detector clean. |
+| Mutex map leak | PASS (bounded) | `seedLocks` keys are `<tenantUUID>/<groupName>`. Both dimensions are bounded by deployment (one digit of tenants × one digit of groups). Documented at `libs/atlas-seeder/seed.go:22-31`. No background GC needed. |
+| `SubdomainAuxiliary` interface stability + key collision | PASS | Optional interface declared at `libs/atlas-seeder/subdomain.go:36-38`; adapter probes it via type assertion at `subdomain.go:96-101`, returning `(nil, nil)` when not implemented. Status merge at `libs/atlas-seeder/status.go:53-66` writes the primary first, then iterates auxiliary entries with an `if _, exists := out.Subdomains[k]; !exists` guard — primary always wins. Test at `seed_test.go:178-207` exercises an aux subdomain and asserts both keys are visible without collision. |
+| `ParseTenant` wiring + per-request `t` capture in background goroutine | PASS | `libs/atlas-seeder/handlers.go:33-42` wraps POST and GET with `server.ParseTenant`. `postSeed` extracts `t := tenant.MustFromContext(ctx)` at line 47 — `ctx` is the per-request `tctx` produced by `ParseTenant` (see `libs/atlas-rest/server/handler.go:96-97`). The captured `t` at line 47 is a local closed over by the goroutine literal at line 49; each request gets its own `t`. The background `bgCtx := tenant.WithContext(context.Background(), t)` at line 51 then carries the per-request tenant into the long-running Seed. Verified by the 400-on-missing-tenant tests at `handlers_test.go:66-92, 131-155`. |
+| Decode contract change (full bytes vs attributes) | PASS | New contract at `libs/atlas-seeder/seed.go:152-159` is documented inline and again at `subdomain.go:42-51` on `DecodeAttributes`. All 9 subdomain `Decode` methods updated in lockstep: 8 use `seeder.DecodeAttributes(payload, &target)`, the 1 outlier (reactor-drop at `reactor/drop/subdomain.go:49-67`) walks `included[]` because that's where its data lives. No subdomain still assumes the old attributes-only bytes contract. |
+| Region case-folding | PASS | `libs/atlas-seeder/catalog.go:53-58` lower-cases `t.Region()` only in the filesystem path resolution. `grep -rn Region\(\) libs/atlas-seeder/` confirms this is the only path-formation call site; the error message on line 55 preserves original casing for debug. No comparison logic elsewhere is affected. |
+| AuxiliaryCounts tenant filter (npc-shops) | PASS | `services/atlas-npc-shops/atlas.com/npc/shops/subdomain.go:132-141` explicitly applies `Where("tenant_id = ?", extractShopTenantId(db))`. `extractShopTenantId` (lines 144-150) pulls the tenant from `db.Statement.Context`, which is set by `status.go:48` via `db.WithContext(gctx)` where `gctx` was derived from `tenant.MustFromContext`'s context (verified via `ReadStatus` at `status.go:15`). The explicit `Where` clause is defensive — works whether or not GORM tenant callbacks are registered. |
+| K8s git-sync layout | PASS | `deploy/k8s/base/components/seed-catalog/configmap.yaml:9-14` sets `GITSYNC_LINK: catalog`. `patch-mount.yaml:11-15` resolves `SEED_CATALOG_ROOT=/var/run/seed-catalog/catalog/deploy/seed`, which is exactly the path the seeder lib's `NewFilesystemCatalogSource("SEED_CATALOG_ROOT", "./deploy/seed")` expects to find `<region>/<major>_<minor>/...` under. `patch-sidecar.yaml` no longer carries the `subPath: deploy/seed` (removed at line 24) — git-sync writes the full repo to `/git`, so `SEED_CATALOG_ROOT` walks through the symlink. |
+
+### Adversarial focus-area findings
+
+**1. Concurrency / race in seedLocks.** PASS. Lock acquisition uses `LoadOrStore`, which is atomic. Lock acquisition order in `acquireSeedLock` (line 35-38) is: `LoadOrStore` → type-assert → `Lock()` → return. Any concurrent goroutine seeing the same key will get the same `*sync.Mutex` pointer; the first to call `Lock()` proceeds, others block until `Unlock()`. `defer lock.Unlock()` at `seed.go:44` runs on panic too. No deadlock path: only one mutex per call, no nested acquisition. Verified by `TestSeed_SerializesConcurrentCallsPerTenantGroup` (`seed_test.go:216-250`) running clean under `-race`.
+
+**2. `SubdomainAuxiliary` interface key collisions.** PASS. Status merge at `status.go:53-66` writes the primary `Subdomains[sd.Name()]` first inside the mu.Lock region, then iterates auxiliary entries with an existence check. Cross-subdomain race scenario (subdomain A's auxiliary "foo" vs subdomain B's primary "foo"): if A's aux writes first, B's primary later overwrites it (no existence check on the primary write at line 53 — primary always wins). If B's primary writes first, A's aux is skipped by the existence guard at line 57. Either ordering produces "primary wins for key foo", consistent with the documented contract at `subdomain.go:35`.
+
+**3. `ParseTenant` wiring lifetime correctness.** PASS. The `ctx context.Context` arg passed to `server.ParseTenant` from `handlers.go:33,39` is `context.Background()` — intentional, since the request's cancellation doesn't apply to the seeder's long-running background work. `postSeed` at line 47-51 captures `t` (per-request) and constructs a fresh `bgCtx` from a fresh `context.Background()` plus `t`. The goroutine therefore inherits zero cancellation surface from the HTTP request, by design. GET /seed/status (`handlers.go:71-89`) uses `ctx` directly for db queries; since `ctx` was derived from `context.Background()` in ParseTenant, request cancellation does not propagate to DB queries. Pre-existing pattern across atlas services; not a regression introduced by this cycle.
+
+**4. Decode contract change documentation + audit.** PASS. The contract change is documented at two sites (`seed.go:152-159` and `jsonapi.go:42-51`). Grep across all migrated subdomains shows every Decode method now uses `seeder.DecodeAttributes` or, for reactor-drop, walks `included[]` explicitly. No subdomain still assumes "input bytes are the attributes-only fragment." Note that `seed.go:140-148` continues to validate type/id against the parsed envelope before handing raw bytes to the subdomain, so the validation surface did not shrink.
+
+**5. DOM-21 (atlas-constants reuse).** PASS. No new domain types introduced. All seeder-lib types are seeder-domain (`Subdomain`, `Group`, `Result`, `Status`, `SubdomainCounts`). `DropJSON` in reactor-drop is a pre-existing JSON wire struct, not a new domain ID type.
+
+**6. Background `Seed` goroutine vs service-test teardown.** OBSERVATION (non-blocking). The 8 service `groups_test.go` files (e.g. `services/atlas-npc-shops/atlas.com/npc/seed/groups_test.go:62-84`) POST to `/seed`, get 202, and finish. They do NOT call `backgroundSeeds.Wait()` because `backgroundSeeds` is package-private to `libs/atlas-seeder`. The background Seed goroutine continues running against the in-memory SQLite after the test returns. Race detector is clean and the in-memory DSN with `cache=shared` plus uuid keeps each test isolated, but if any of these tests ever grow assertions on the seed state row, they'll race. The lib's own `handlers_test.go:35-40` solves this correctly via `t.Cleanup(backgroundSeeds.Wait)` — the lib could optionally export `WaitForBackgroundSeeds()` (or a `t.Cleanup`-friendly helper) so service-level tests can do the same. Not blocking.
+
+**7. Metric leakage in service tests.** OBSERVATION (non-blocking). `libs/atlas-seeder/metrics.go:9-13` declares package-private metric vars guarded by `sync.Once`. Service tests instantiate routes which fire `ObserveSeederRun`, accumulating counts into a Prom registry that lives for the test binary's lifetime. `ResetMetricsForTest` (line 36-46) exists but is unreachable from service test packages. Cross-test metric bleed within one service's test binary is benign because nothing asserts metric values at that layer. Not blocking.
+
+**8. `containsStr` hand-rolled in npc-shops groups_test.** OBSERVATION (non-blocking style). `services/atlas-npc-shops/atlas.com/npc/seed/groups_test.go:119-126` reimplements `strings.Contains`. Stdlib equivalent would do. Cosmetic.
+
+**9. `Seed()` panic safety on missing tenant.** PASS. `seed.go:42` calls `tenant.MustFromContext(ctx)`, which panics if absent. Since the only call site (`postSeed`) wraps with `ParseTenant`, panic is unreachable in production. Tests always seed the context with `tenant.WithContext(...)`. No regression.
+
+**10. Walk() ordering.** PASS. `catalog.go:81-105` relies on `os.ReadDir`'s documented sort-by-filename behavior (verified via `go doc os.ReadDir`). The doc comment at line 79 is accurate.
+
+### Verdict
+
+**PASS** — All 7 commits build clean, vet clean, and pass `-race` tests in both `libs/atlas-seeder` and all 8 migrated services. The concurrency primitives (sync.Map + per-key mutex + defer unlock) are textbook; the regression test at `seed_test.go:216-250` proves serialization actually works. The `SubdomainAuxiliary` interface is opt-in via type assertion and the status merge correctly prefers primary counts over auxiliary on key collision. The Decode contract change (full file bytes) is documented in two places and adopted by every migrated subdomain. The K8s git-sync layout fix lines up the symlinked catalog path with what `SEED_CATALOG_ROOT` resolves to.
+
+**Blocking findings:** none.
+
+**Non-blocking observations:**
+
+1. `backgroundSeeds.Wait` is package-private to the seeder lib, so service-level `groups_test.go` files cannot drain the in-flight goroutine before tearing down. Race-clean today; a future test that asserts on seed_state row state would be exposed. Consider exporting `seeder.WaitForBackgroundSeeds(t *testing.T)` as a helper.
+2. `ResetMetricsForTest` is similarly unreachable from service test packages; service-level tests accumulate metric writes for the binary's lifetime. Benign today.
+3. `services/atlas-npc-shops/atlas.com/npc/seed/groups_test.go:119-126` re-implements `strings.Contains`. Cosmetic — replace with the stdlib call.
+4. GET /seed/status passes `context.Background()`-derived ctx into DB queries (`handlers.go:71-89`), so request cancellation/timeout does not propagate. Pre-existing atlas pattern, not a regression.
+

@@ -479,6 +479,10 @@ Phase 3 Task 10 (task-065) audit of 30 combat packets against JMS v185 IDA. ✅ 
 
 - **`party.WritePartyData` (package-level function)** — `libs/atlas-packet/party/member_data.go:19` flattens 6 fixed-size column slices (id, name, jobId, level, channelId, mapId) plus a leader id and 6×4 zero-padding tail. The audit pipeline's TypeRegistry walks receiver-method `Encode`/`Write` only; package-level write helpers are invisible. Affected packets: `party/clientbound/update.go`, `party/clientbound/join.go`, `party/clientbound/left.go`. Audit verdict for these three files will be ⚠️ "tool-limitation: package-level write helper not modelled; verify against IDA member-list shape".
 
+- **OP-FAMILY-note** — `libs/atlas-packet/note/serverbound/operation.go` `Operation` struct emits only the op byte (sub-op discriminator for NOTE_ACTION opcode 0x9A/154 in GMS v95). Sub-operations audited individually via synthetic FName entries: `CWvsContext::OnMemoNotify_Receive` (op=2 REQUEST → ✅), `CMemoListDlg::SetRet` (op=1 DISCARD → ✅ after val1 fix), `CCashShop::OnCashItemResLoadGiftDone` (op=0 SEND → ✅). The sub-op value space (SEND=0, DISCARD=1, REQUEST=2) is template-configured; enum drift verification deferred to Phase 2 cross-version pass.
+
+- **NoteDisplay tool-limitation** — `libs/atlas-packet/note/clientbound/display.go` `Display.Encode` writes `WriteInt64(model.MsTime(timestamp))` (Encode8 = 8 bytes); IDA `GW_Memo::Decode` reads `DecodeBuffer(v2, &this->dateSent, 8u)` (DecodeBuf = 8 raw bytes). Both are 8 bytes on the wire; the audit framework reports ❌ "width mismatch" because it classifies `int64` (Decode8) and `bytes` (DecodeBuf) as different types. Wire is correct: FILETIME is a 64-bit little-endian value. Verdict manually promoted to ⚠️.
+
 ## Real wire bugs fixed in-branch (task-065 follow-up commits)
 
 Three of the four "real wire bugs" originally deferred have been fixed in-branch after re-analysis. The fourth turned out not to be a real bug at all.

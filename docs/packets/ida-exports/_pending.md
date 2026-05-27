@@ -475,6 +475,10 @@ Phase 3 Task 10 (task-065) audit of 30 combat packets against JMS v185 IDA. ✅ 
 
 **No encoder mutations** land in any Phase 3 sub-task — atlas's existing version gates are correct.
 
+## Sub-op enum / sub-struct deferrals — social domain (task-066)
+
+- **`party.WritePartyData` (package-level function)** — `libs/atlas-packet/party/member_data.go:19` flattens 6 fixed-size column slices (id, name, jobId, level, channelId, mapId) plus a leader id and 6×4 zero-padding tail. The audit pipeline's TypeRegistry walks receiver-method `Encode`/`Write` only; package-level write helpers are invisible. Affected packets: `party/clientbound/update.go`, `party/clientbound/join.go`, `party/clientbound/left.go`. Audit verdict for these three files will be ⚠️ "tool-limitation: package-level write helper not modelled; verify against IDA member-list shape".
+
 ## Real wire bugs fixed in-branch (task-065 follow-up commits)
 
 Three of the four "real wire bugs" originally deferred have been fixed in-branch after re-analysis. The fourth turned out not to be a real bug at all.

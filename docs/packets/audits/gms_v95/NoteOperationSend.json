@@ -1,0 +1,29 @@
+{
+  "WriterName": "NoteOperationSend",
+  "IDAName": "CCashShop::OnCashItemResLoadGiftDone",
+  "Address": "0x496520",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/note/serverbound/operation_send.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "senderName (gift sender name — from gift list entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message (acceptance note from CUIReceiveGift::GetResult)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

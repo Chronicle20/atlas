@@ -261,6 +261,74 @@ func (cc *callCtx) conjoin() *GuardExpr {
 	return conjoin(combined)
 }
 
+// isIfWireMutex reports whether both branches of an if statement produce the
+// same wire shape — same Call.Kind+Op (and RecurseType) at every position. It
+// peeks at the branches via a scratch ctx without emitting into the parent's
+// call list. Returns false when there is no else, when one branch is empty
+// while the other isn't, or when the shapes diverge in any position.
+//
+// Examples that ARE mutex (collapsed to a single position):
+//
+//   if isMeso { w.WriteInt(meso)   } else { w.WriteInt(itemId)  }
+//   if owned  { w.WriteByte(1)     } else { w.WriteByte(5)      }
+//   if isSkill { w.WriteInt(1)     } else { w.WriteInt(0)       }
+//
+// Examples that are NOT mutex (still emit per-branch with guards):
+//
+//   if extended { w.WriteInt(x); w.WriteByte(y) } else { w.WriteInt(x) }   // different lengths
+//   if narrow   { w.WriteByte(x) } else { w.WriteInt(x) }                  // different widths
+//   if x.Encode { w.WriteByte(x) }                                         // no else
+func (cc *callCtx) isIfWireMutex(n *ast.IfStmt) bool {
+	if n.Else == nil {
+		return false
+	}
+	bodyCalls := cc.scratchWalk(n.Body)
+	var elseCalls []Call
+	switch e := n.Else.(type) {
+	case *ast.BlockStmt:
+		elseCalls = cc.scratchWalk(e)
+	case *ast.IfStmt:
+		elseCalls = cc.scratchWalk(&ast.BlockStmt{List: []ast.Stmt{e}})
+	default:
+		return false
+	}
+	if len(bodyCalls) == 0 || len(bodyCalls) != len(elseCalls) {
+		return false
+	}
+	for i, b := range bodyCalls {
+		e := elseCalls[i]
+		if b.Kind != e.Kind || b.Op != e.Op || b.RecurseType != e.RecurseType {
+			return false
+		}
+	}
+	return true
+}
+
+// scratchWalk runs the call collector against a sub-tree without emitting into
+// the parent ctx. Used by isIfWireMutex to peek at branch shapes before
+// deciding whether to collapse or expand them.
+//
+// Important: the scratch ctx is given a fresh stack/out/suffix-state so it
+// observes only the calls *inside* the sub-tree. It shares the parent's
+// registry, range/field-var maps, and enclosing context so resolveRecurse
+// continues to work — those are read-only during a wire-shape peek.
+func (cc *callCtx) scratchWalk(b ast.Node) []Call {
+	var out []Call
+	var stack []*GuardExpr
+	scratch := &callCtx{
+		reg:       cc.reg,
+		enclosing: cc.enclosing,
+		pkg:       cc.pkg,
+		rangeVars: cc.rangeVars,
+		fieldVars: cc.fieldVars,
+		out:       &out,
+		stack:     &stack,
+		fset:      cc.fset,
+	}
+	scratch.walk(b)
+	return out
+}
+
 // blockTerminatesWithReturn reports whether b's final statement is an *ast.ReturnStmt,
 // either at top level or as the terminator of every branch of a terminal IfStmt.
 // Loops are not descended (design §3.3 — loop-internal early-return is out of scope).
@@ -294,6 +362,17 @@ func blockTerminatesWithReturn(b *ast.BlockStmt) bool {
 func (cc *callCtx) walk(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.IfStmt:
+		// Wire-mutex collapse (task-065 item 5):
+		// Detect `if x { WriteByte(a) } else { WriteByte(b) }` patterns where
+		// both branches emit the same wire shape (same Kind+Op+RecurseType at
+		// every position). Treat them as a single unconditional position rather
+		// than two consecutive entries that misalign the diff. Mutually-
+		// exclusive branches that write divergent wire shapes fall through to
+		// the standard per-branch walk with guards intact.
+		if cc.isIfWireMutex(n) {
+			cc.walk(n.Body)
+			return
+		}
 		g := guardFromIf(n, cc.fset)
 		*cc.stack = append(*cc.stack, g)
 		cc.walk(n.Body)

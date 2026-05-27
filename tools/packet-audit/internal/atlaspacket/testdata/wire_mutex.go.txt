@@ -1,0 +1,25 @@
+package fixture
+
+import "context"
+
+// WireMutex models the DropSpawn / MonsterSpawn pattern: an if/else where both
+// branches write the same wire shape (one Encode4) but with different runtime
+// values. The analyzer should collapse this into a SINGLE Encode4 position,
+// not two consecutive ones — task-065 item 5.
+type WireMutex struct{}
+
+func (m WireMutex) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(0)
+		if m.isMeso() {
+			w.WriteInt(100)
+		} else {
+			w.WriteInt(200)
+		}
+		w.WriteByte(1)
+		return w.Bytes()
+	}
+}
+
+func (m WireMutex) isMeso() bool { return true }

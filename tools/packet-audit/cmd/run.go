@@ -540,6 +540,45 @@ func candidatesFromFName(fname string) []candidate {
 	case "CPet::SendDropPickUpRequest":
 		// CSV: PET_LOOT — atlas DropPickUp.
 		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
+
+	// --- Social: note ---
+	// CSV: MEMO_RESULT (clientbound, opcode 0x28/40 in GMS v95) → CWvsContext::OnMemoResult
+	// dispatches on a leading mode byte to 4 sub-ops. Each sub-op modelled via a #-suffixed
+	// synthetic IDA entry so the pipeline produces one report per atlas struct.
+	case "CWvsContext::OnMemoResult#Display":
+		// mode=3 (SHOW): count byte + loop of GW_Memo::Decode entries.
+		// Atlas struct: note/clientbound/display.go Display.
+		return []candidate{{name: "Display", pkg: "note", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMemoResult#SendSuccess":
+		// mode=4 (SEND_SUCCESS): no additional bytes.
+		// Atlas struct: note/clientbound/operation.go SendSuccess.
+		return []candidate{{name: "SendSuccess", pkg: "note", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMemoResult#SendError":
+		// mode=5 (SEND_ERROR): 1 errorCode byte.
+		// Atlas struct: note/clientbound/operation.go SendError.
+		return []candidate{{name: "SendError", pkg: "note", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMemoResult#Refresh":
+		// mode=7 (REFRESH): no additional bytes.
+		// Atlas struct: note/clientbound/operation.go Refresh.
+		return []candidate{{name: "Refresh", pkg: "note", dir: csvpkg.DirClientbound}}
+
+	// CSV: NOTE_ACTION (serverbound, opcode 0x9A/154 in GMS v95) — three FNames share
+	// this opcode; each represents a different sub-operation.
+	case "CWvsContext::OnMemoNotify_Receive":
+		// Sub-op 2 (REQUEST): client sends op=2 to request memo list refresh.
+		// Atlas struct: note/serverbound/operation.go Operation (op-byte dispatcher).
+		// Verdict will be ⚠️ "op-byte dispatcher; sub-ops audited individually" — see OP-FAMILY-note in _pending.md.
+		return []candidate{{name: "Operation", pkg: "note", dir: csvpkg.DirServerbound}}
+	case "CMemoListDlg::SetRet":
+		// Sub-op 1 (DISCARD): client sends selected memo SN list for deletion.
+		// Atlas struct: note/serverbound/operation_discard.go OperationDiscard.
+		return []candidate{{name: "OperationDiscard", pkg: "note", dir: csvpkg.DirServerbound}}
+	case "CCashShop::OnCashItemResLoadGiftDone":
+		// Sub-op 0 (SEND): client sends note with recipient name + message body.
+		// Atlas struct: note/serverbound/operation_send.go OperationSend.
+		// Note: CCashShop gift-accept path uses the same NOTE_ACTION opcode with op=0;
+		// the wire layout (EncodeStr toName + EncodeStr message) matches atlas OperationSend.
+		return []candidate{{name: "OperationSend", pkg: "note", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

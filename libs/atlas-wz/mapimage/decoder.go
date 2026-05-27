@@ -77,7 +77,11 @@ func (i *Index) resolveBackSprite(d *decoder, bS string, no int) (*sprite, *prop
 	if !ok {
 		return nil, nil, fmt.Errorf("back set %q not found", bS)
 	}
-	backSub := findSub(img.Properties(), "back")
+	props, err := img.Properties()
+	if err != nil {
+		return nil, nil, fmt.Errorf("back %q properties: %w", bS, err)
+	}
+	backSub := findSub(props, "back")
 	if backSub == nil {
 		return nil, nil, fmt.Errorf("back/%s has no /back", bS)
 	}
@@ -113,7 +117,11 @@ func (i *Index) resolveTileSprite(d *decoder, tS, u, no string) (*sprite, *prope
 	if !ok {
 		return nil, nil, fmt.Errorf("tile set %q not found", tS)
 	}
-	uSub := findSub(img.Properties(), u)
+	props, err := img.Properties()
+	if err != nil {
+		return nil, nil, fmt.Errorf("tile %q properties: %w", tS, err)
+	}
+	uSub := findSub(props, u)
 	if uSub == nil {
 		return nil, nil, fmt.Errorf("tile %s/%s not found", tS, u)
 	}
@@ -134,7 +142,11 @@ func (i *Index) resolveObjSprite(d *decoder, oS, l0, l1, l2 string) (*sprite, *p
 	if !ok {
 		return nil, nil, fmt.Errorf("obj set %q not found", oS)
 	}
-	l0s := findSub(img.Properties(), l0)
+	props, err := img.Properties()
+	if err != nil {
+		return nil, nil, fmt.Errorf("obj %q properties: %w", oS, err)
+	}
+	l0s := findSub(props, l0)
 	if l0s == nil {
 		return nil, nil, fmt.Errorf("obj %s/%s not found", oS, l0)
 	}

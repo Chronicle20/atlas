@@ -219,6 +219,13 @@ func (wz *File) detectVersion() error {
 	return fmt.Errorf("unable to detect WZ version for encrypted version %d", encryptedVersion)
 }
 
+// Concurrency: tryParseWithVersion runs only during Open() (called from
+// detectVersion) before the *File is published to any consumer goroutine.
+// The Seek+Read against wz.reader is therefore single-threaded by
+// construction and needs no parseMu coverage. Image.parse() acquires
+// parseMu for all post-Open seek-based parsing; this is the canonical
+// invariant — adding new public seek paths requires either parseMu
+// coverage or an analogous single-threaded guarantee.
 func (wz *File) tryParseWithVersion(hash uint32, key *crypto.WzKey) bool {
 	r := wz.reader
 

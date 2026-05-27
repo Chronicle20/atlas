@@ -37,7 +37,11 @@ func ExtractSmap(base *wz.File) (map[string]string, error) {
 	if smapImg == nil {
 		return nil, ErrSmapMissing
 	}
-	return smapFromProps(smapImg.Properties()), nil
+	props, err := smapImg.Properties()
+	if err != nil {
+		return nil, fmt.Errorf("smap properties: %w", err)
+	}
+	return smapFromProps(props), nil
 }
 
 // smapFromProps is the pure transformation: each StringProperty child of the

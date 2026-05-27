@@ -582,6 +582,28 @@ services:
     environment:
       LOG_LEVEL: debug
 
+  atlas-renders:
+    <<: *atlas-defaults
+    container_name: atlas-renders
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-renders
+    image: atlas-renders:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      REST_PORT: 8080
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_ASSETS: atlas-assets
+      WZ_SCRATCH_DIR: /scratch/wz
+    volumes:
+      - ../../tmp/wz-scratch:/scratch/wz
+    # Internal-only — no `ports:` mapping. PRD §8 Security.
+
   atlas-saga-orchestrator:
     <<: *atlas-defaults
     container_name: atlas-saga-orchestrator

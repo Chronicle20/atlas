@@ -63,6 +63,11 @@ resources:
   - env-configmap.yaml
   - namespace.yaml
 
+configMapGenerator:
+  - name: atlas-ingress-routes
+    files:
+      - routes.conf.template=routes.conf.template.generated
+
 # Push every Deployment to sync-wave 10 so Argo CD waits for the
 # atlas-kafka-precreate Job (sync-wave 0) to complete before rolling
 # them out. This eliminates the cold-start stampede that happens when

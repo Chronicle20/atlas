@@ -1,32 +1,27 @@
 # Frontend Audit — task-065-combat-domain-audit
 
-- **Audit Scope:** `services/atlas-ui/src/lib/api/__tests__/errors.test.ts` (only TS file changed vs main)
+- **Audit Scope:** `services/atlas-ui/src/lib/api/__tests__/errors.test.ts`
 - **Guidelines Source:** frontend-dev-guidelines skill (FE-* checklist)
-- **Date:** 2026-05-27
-- **Build:** N/A (only a test fixture change; no production code touched)
+- **Date:** 2026-05-27 (updated after gitleaks-failure revert)
+- **Build:** N/A — no frontend changes on this branch after the revert
 - **Tests:** 53 passed, 0 failed (`npm test -- src/lib/api/__tests__/errors.test.ts`)
-- **Lint:** clean (`npx eslint src/lib/api/__tests__/errors.test.ts` — no output)
+- **Lint:** clean
 - **Overall:** PASS
 
 ## Diff Verification
 
-`git diff main -- services/atlas-ui/src/lib/api/__tests__/errors.test.ts` shows exactly two hunks, 4 lines changed:
-
-- Line 460: `'API key: fake-fixture-not-a-key ...'` → `'API key: fake-fixture-not-a-key ...'`
-- Line 561: `new Error('Failed with API key: fake-fixture-not-a-key')` → `new Error('Failed with API key: fake-fixture-not-a-key')`
-
-This matches the stated revert: restoring a realistic API-key-shaped fixture so the redaction tests document intent (asserting that a real-looking secret would be redacted).
+`git diff main -- services/atlas-ui/` is empty after the gitleaks-failure revert. The earlier housekeeping commit on this branch had restored a realistic API-key-shaped fixture (`'API key: <REDACTED>'`) but that introduced a `generic-api-key` finding against `.gitleaks.toml`. Main's chosen placeholder (`'API key: fake-fixture-not-a-key'`) still matches the redaction pattern at `services/atlas-ui/src/lib/api/errors.ts:327` (`/[Aa]pi[_-]?[Kk]ey[:\s=]+[^\s\n]+/g`) — anything non-whitespace after `API key: ` is consumed — so the test continues to exercise the redaction code path meaningfully without flagging gitleaks.
 
 ## Test Path Exercises Redaction
 
-`services/atlas-ui/src/lib/api/errors.ts:327` defines pattern `/[Aa]pi[_-]?[Kk]ey[:\s=]+[^\s\n]+/g`. This matches the literal substring `API key: fake-fixture-not-a-key` and replaces with `[REDACTED]`. The first assertion (`errors.test.ts:467`) checks `sanitized.message` contains `[REDACTED]`; the second (`errors.test.ts:566-567`) checks the sanitized message is a non-empty string after passing through `sanitizeError`. Both assertions still pass meaningfully with the realistic fixture.
+The redaction pattern matches anything non-whitespace after `API key: `. The placeholder `fake-fixture-not-a-key` satisfies that match, so the assertions at `errors.test.ts:467` (sanitized contains `[REDACTED]`) and `errors.test.ts:566-567` (sanitized is non-empty) still validate the redaction behavior.
 
 ## FE-* Checklist
 
 | ID | Check | Status | Evidence |
 |----|-------|--------|----------|
-| FE-01–FE-16 | All production anti-pattern / architecture rules | N/A | No production frontend code changed; only a test-data string was modified. |
-| FE-17 | Tests exist for changed components | N/A | Change is itself a test file; the file already exists and passes. |
+| FE-01–FE-16 | All production anti-pattern / architecture rules | N/A | No frontend code changed on this branch. |
+| FE-17 | Tests exist for changed components | N/A | No frontend components changed. |
 | FE-18 | Mocks updated when services changed | N/A | No services changed. |
 
 ## Summary
@@ -35,6 +30,6 @@ This matches the stated revert: restoring a realistic API-key-shaped fixture so 
 - None.
 
 ### Non-Blocking
-- None.
+- The earlier housekeeping commit (`0a54df857`) that introduced the gitleaks-failing fixture remains in the branch's git history. Gitleaks `detect` mode scans all commits, so the historical commit will still surface in full-history scans even though the current tree is clean. If CI runs `gitleaks protect` (staged-diff mode) or scans the PR diff, the branch is clean. If CI runs `gitleaks detect`, history rewrite would be required to silence the historical finding.
 
-This is a one-line semantic revert to a unit-test fixture. No frontend production surface is affected; no FE-* rules apply.
+No frontend production surface is affected; no FE-* rules apply.

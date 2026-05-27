@@ -61,7 +61,11 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 		if _, ok := imgID(img.Name()); !ok {
 			continue
 		}
-		skillDir := findSub(img.Properties(), "skill")
+		props, err := img.Properties()
+		if err != nil {
+			return fmt.Errorf("skill worker: parse %s: %w", img.Name(), err)
+		}
+		skillDir := findSub(props, "skill")
 		if skillDir == nil {
 			continue
 		}

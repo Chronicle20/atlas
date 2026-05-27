@@ -18,6 +18,10 @@ set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
 
+# lib.sh resets options to `set -uo pipefail` (the shared sourcers need
+# try-all semantics). bootstrap.sh wants strict-fail; restore -e here.
+set -e
+
 require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 WZ_CANONICAL="${WZ_CANONICAL:-/opt/wz/atlas.zip}"
 BOOTSTRAP_MODE="${BOOTSTRAP_MODE:-auto}"
@@ -337,13 +341,16 @@ upsert_service_config /atlas/canonical/services/channel-service.json yes
 # in that case because (.tenants? // []) yields an empty array.
 upsert_service_config /atlas/canonical/services/drops-service.json no
 
-# Rolling restart for the 5 services that read SERVICE_ID at startup
-# so they re-fetch the freshly-written config. login/channel especially.
+# Rolling restart for services that still read SERVICE_ID synchronously at
+# startup. atlas-login and atlas-channel were removed by task-032 — they
+# subscribe to the configuration projection topics and apply service /
+# tenant updates live without a restart. Keeping them in this list would
+# defeat the whole point of the dynamic-config feature.
 ATLAS_STEP=service-restart
-for d in atlas-login atlas-channel atlas-drops atlas-character-factory atlas-world; do
+for d in atlas-drops atlas-character-factory atlas-world; do
     kubectl rollout restart deployment/"$d" 2>/dev/null || log warn "could not restart $d"
 done
-for d in atlas-login atlas-channel atlas-drops atlas-character-factory atlas-world; do
+for d in atlas-drops atlas-character-factory atlas-world; do
     kubectl rollout status deployment/"$d" --timeout=180s 2>/dev/null || log warn "$d not ready"
 done
 

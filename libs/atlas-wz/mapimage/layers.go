@@ -25,6 +25,74 @@ type LayerOutput struct {
 // MapleStory map images use eight layers; matches donor renderer.go.
 const maxLayers = 8
 
+// layerSubInfo collects the per-layer parsing output shared between
+// ExtractLayout and ExtractLayers so neither has to re-walk the property
+// tree. See task-076 F15.
+type layerSubInfo struct {
+	ID    int
+	Name  string
+	Props []property.Property
+	Objs  []objEntry
+	Tiles []tileEntry
+}
+
+// extractLayoutCommon resolves bounds, walks foothold/portal/NPC subtrees,
+// and produces the per-layer info slice for layers that have at least one
+// tile or obj. Shared body for ExtractLayout (metadata-only emit) and
+// ExtractLayers (composites pixels per layer). Does NOT set ZMap or Layers
+// on the layout — callers add those after their own per-layer work.
+func extractLayoutCommon(img *wz.Image) (maplayout.Layout, WorldBounds, []layerSubInfo, error) {
+	if img == nil {
+		return maplayout.Layout{}, WorldBounds{}, nil, fmt.Errorf("layout: nil image")
+	}
+	root, err := img.Properties()
+	if err != nil {
+		return maplayout.Layout{}, WorldBounds{}, nil, fmt.Errorf("layers properties: %w", err)
+	}
+	info := childrenOf(root, "info")
+
+	bounds, err := resolveBounds(info, root)
+	if err != nil {
+		return maplayout.Layout{}, WorldBounds{}, nil, fmt.Errorf("resolve bounds: %w", err)
+	}
+	if bounds.W <= 0 || bounds.H <= 0 {
+		return maplayout.Layout{}, WorldBounds{}, nil, fmt.Errorf("invalid bounds %dx%d", bounds.W, bounds.H)
+	}
+
+	layout := maplayout.Layout{
+		Version:   maplayout.SchemaVersion,
+		MapID:     parseMapID(img.Name()),
+		Bounds:    maplayout.Bounds{Left: bounds.X, Top: bounds.Y, Right: bounds.X + bounds.W, Bottom: bounds.Y + bounds.H},
+		Footholds: extractFootholds(root),
+		Portals:   extractPortals(root),
+		NPCs:      extractNPCs(root),
+	}
+
+	subs := make([]layerSubInfo, 0, maxLayers)
+	for layer := 0; layer < maxLayers; layer++ {
+		layerSub := findSub(root, strconv.Itoa(layer))
+		if layerSub == nil {
+			continue
+		}
+		layerProps := layerSub.Children()
+		objs := loadObjEntries(layerProps)
+		layerInfo := childrenOf(layerProps, "info")
+		tS := stringVal(layerInfo, "tS", "")
+		tiles := loadTileEntries(layerProps, tS)
+		if len(objs) == 0 && len(tiles) == 0 {
+			continue
+		}
+		subs = append(subs, layerSubInfo{
+			ID:    layer,
+			Name:  fmt.Sprintf("layer-%d", layer),
+			Props: layerProps,
+			Objs:  objs,
+			Tiles: tiles,
+		})
+	}
+	return layout, bounds, subs, nil
+}
+
 // ExtractLayout walks a parsed Map.img and returns only the metadata portion
 // of the layout — bounds, footholds, portals, NPCs, the per-layer
 // Layer{ID,Name,Z,Source} records, and the ZMap render order — without
@@ -43,50 +111,18 @@ const maxLayers = 8
 // pass an image with no backing File still get correct rendering, just
 // with `"zmap":null` in the on-disk JSON.
 func ExtractLayout(img *wz.Image) (maplayout.Layout, error) {
-	if img == nil {
-		return maplayout.Layout{}, fmt.Errorf("layout: nil image")
-	}
-	root := img.Properties()
-	info := childrenOf(root, "info")
-
-	bounds, err := resolveBounds(info, root)
+	layout, _, subs, err := extractLayoutCommon(img)
 	if err != nil {
-		return maplayout.Layout{}, fmt.Errorf("resolve bounds: %w", err)
+		return maplayout.Layout{}, err
 	}
-	if bounds.W <= 0 || bounds.H <= 0 {
-		return maplayout.Layout{}, fmt.Errorf("invalid bounds %dx%d", bounds.W, bounds.H)
-	}
-
-	layout := maplayout.Layout{
-		Version:   maplayout.SchemaVersion,
-		MapID:     parseMapID(img.Name()),
-		Bounds:    maplayout.Bounds{Left: bounds.X, Top: bounds.Y, Right: bounds.X + bounds.W, Bottom: bounds.Y + bounds.H},
-		Footholds: extractFootholds(root),
-		Portals:   extractPortals(root),
-		NPCs:      extractNPCs(root),
-		ZMap:      lookupZMap(img),
-	}
-
-	layerMetas := make([]maplayout.Layer, 0, maxLayers)
-	for layer := 0; layer < maxLayers; layer++ {
-		layerSub := findSub(root, strconv.Itoa(layer))
-		if layerSub == nil {
-			continue
-		}
-		layerProps := layerSub.Children()
-		objs := loadObjEntries(layerProps)
-		layerInfo := childrenOf(layerProps, "info")
-		tS := stringVal(layerInfo, "tS", "")
-		tiles := loadTileEntries(layerProps, tS)
-		if len(objs) == 0 && len(tiles) == 0 {
-			continue
-		}
-		name := fmt.Sprintf("layer-%d", layer)
+	layout.ZMap = lookupZMap(img)
+	layerMetas := make([]maplayout.Layer, 0, len(subs))
+	for _, s := range subs {
 		layerMetas = append(layerMetas, maplayout.Layer{
-			ID:     layer,
-			Name:   name,
-			Z:      layer,
-			Source: name,
+			ID:     s.ID,
+			Name:   s.Name,
+			Z:      s.ID,
+			Source: s.Name,
 		})
 	}
 	layout.Layers = layerMetas
@@ -129,66 +165,33 @@ func lookupZMap(img *wz.Image) []string {
 // from img.File(), which only works when the Map.wz file has been parsed in
 // full (including the Back/Tile/Obj sub-directories).
 func ExtractLayers(idx *Index, img *wz.Image) ([]LayerOutput, maplayout.Layout, error) {
-	if img == nil {
-		return nil, maplayout.Layout{}, fmt.Errorf("layers: nil image")
-	}
-	root := img.Properties()
-	info := childrenOf(root, "info")
-
-	bounds, err := resolveBounds(info, root)
+	layout, bounds, subs, err := extractLayoutCommon(img)
 	if err != nil {
-		return nil, maplayout.Layout{}, fmt.Errorf("resolve bounds: %w", err)
-	}
-	if bounds.W <= 0 || bounds.H <= 0 {
-		return nil, maplayout.Layout{}, fmt.Errorf("invalid bounds %dx%d", bounds.W, bounds.H)
-	}
-
-	layout := maplayout.Layout{
-		Version:   maplayout.SchemaVersion,
-		MapID:     parseMapID(img.Name()),
-		Bounds:    maplayout.Bounds{Left: bounds.X, Top: bounds.Y, Right: bounds.X + bounds.W, Bottom: bounds.Y + bounds.H},
-		Footholds: extractFootholds(root),
-		Portals:   extractPortals(root),
-		NPCs:      extractNPCs(root),
+		return nil, maplayout.Layout{}, err
 	}
 
 	if idx == nil && img.File() != nil {
 		idx = NewIndex(img.File())
 	}
 
-	outputs := make([]LayerOutput, 0, maxLayers)
-	layerMetas := make([]maplayout.Layer, 0, maxLayers)
-	for layer := 0; layer < maxLayers; layer++ {
-		layerSub := findSub(root, strconv.Itoa(layer))
-		if layerSub == nil {
-			continue
-		}
-		layerProps := layerSub.Children()
-		objs := loadObjEntries(layerProps)
-		layerInfo := childrenOf(layerProps, "info")
-		tS := stringVal(layerInfo, "tS", "")
-		tiles := loadTileEntries(layerProps, tS)
-		if len(objs) == 0 && len(tiles) == 0 {
-			continue
-		}
-
-		layerImg, err := compositeLayer(idx, bounds, layerProps, objs, tiles)
+	outputs := make([]LayerOutput, 0, len(subs))
+	layerMetas := make([]maplayout.Layer, 0, len(subs))
+	for _, s := range subs {
+		layerImg, err := compositeLayer(idx, bounds, s.Props, s.Objs, s.Tiles)
 		if err != nil {
-			return nil, maplayout.Layout{}, fmt.Errorf("layer %d: %w", layer, err)
+			return nil, maplayout.Layout{}, fmt.Errorf("layer %d: %w", s.ID, err)
 		}
-
-		name := fmt.Sprintf("layer-%d", layer)
 		outputs = append(outputs, LayerOutput{
-			ID:    layer,
-			Z:     layer,
+			ID:    s.ID,
+			Z:     s.ID,
 			Image: layerImg,
-			Name:  name,
+			Name:  s.Name,
 		})
 		layerMetas = append(layerMetas, maplayout.Layer{
-			ID:     layer,
-			Name:   name,
-			Z:      layer,
-			Source: name,
+			ID:     s.ID,
+			Name:   s.Name,
+			Z:      s.ID,
+			Source: s.Name,
 		})
 	}
 
@@ -291,12 +294,17 @@ func extractFootholds(root []property.Property) []maplayout.Foothold {
 	return out
 }
 
-// extractPortals walks portal/<i>/ entries into a flat list.
+// extractPortals walks portal/<i>/ entries into a flat list. Dedup by
+// (name, target, x, y) — v83 WZ data for some maps (Henesys 100000000)
+// includes shadow entries (pn="", pn="0") that collide with player-
+// visible portals on the same coordinate. Without dedup these surface as
+// duplicate entries in atlas-portals' response. See task-076 F20.
 func extractPortals(root []property.Property) []maplayout.Portal {
 	portal := findSub(root, "portal")
 	if portal == nil {
 		return nil
 	}
+	seen := make(map[string]struct{})
 	var out []maplayout.Portal
 	for _, p := range portal.Children() {
 		sub, ok := p.(*property.SubProperty)
@@ -305,13 +313,19 @@ func extractPortals(root []property.Property) []maplayout.Portal {
 		}
 		ch := sub.Children()
 		target := uint32(intVal(ch, "tm", 0))
-		out = append(out, maplayout.Portal{
+		entry := maplayout.Portal{
 			Name:   stringVal(ch, "pn", ""),
 			Type:   intVal(ch, "pt", 0),
 			Target: target,
 			X:      intVal(ch, "x", 0),
 			Y:      intVal(ch, "y", 0),
-		})
+		}
+		key := fmt.Sprintf("%s|%d|%d|%d", entry.Name, entry.Target, entry.X, entry.Y)
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, entry)
 	}
 	return out
 }

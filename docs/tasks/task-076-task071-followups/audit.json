@@ -1,0 +1,132 @@
+{
+  "service": "task-076-task071-followups (branch audit)",
+  "path": ".worktrees/task-076-task071-followups",
+  "date": "2026-05-22",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "scope": "All Go files changed on branch task-076-task071-followups vs main. Packages are support / infrastructure only (no DDD model.go in any changed package); full DOM-* / SUB-* checklists do not apply mechanically. Targeted checks below cover the items the request specifically asked for plus cross-cutting rules.",
+  "modules": [
+    {
+      "name": "libs/atlas-wz",
+      "build": "pass",
+      "vet": "pass",
+      "raceTests": "pass"
+    },
+    {
+      "name": "libs/atlas-kafka",
+      "build": "pass",
+      "vet": "pass",
+      "raceTests": "pass"
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data",
+      "build": "pass",
+      "vet": "pass",
+      "raceTests": "pass"
+    },
+    {
+      "name": "services/atlas-renders/atlas.com/renders",
+      "build": "pass",
+      "vet": "pass",
+      "raceTests": "pass"
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel",
+      "build": "pass",
+      "vet": "pass",
+      "raceTests": "pass"
+    },
+    {
+      "name": "services/atlas-login/atlas.com/login",
+      "build": "pass",
+      "vet": "warn",
+      "vetNote": "Pre-existing 'WaitGroup.Add called from inside new goroutine' at socket/init.go:39 — NOT in this branch's diff (confirmed via git diff main..HEAD).",
+      "raceTests": "pass"
+    }
+  ],
+  "targetedChecks": [
+    {
+      "id": "F16-DOM-21",
+      "name": "accessoryPartClassFor delegates to libs/atlas-constants; no service hardcodes 101/102/103",
+      "status": "pass",
+      "evidence": "libs/atlas-wz/charparts/extract.go:99-109 switches on item.Classification(id / 10000) and references item.ClassificationFaceAccessory / EyeAccessory / Earring (defined libs/atlas-constants/item/constants.go:14-16). composite.go:78-116 already uses item.GetClassification + item.Classification* — same single-source pattern. No other touched package re-hardcodes these magic numbers."
+    },
+    {
+      "id": "F6",
+      "name": "Image.Properties() returns ([]Property, error); every caller handles it",
+      "status": "pass",
+      "evidence": "libs/atlas-wz/wz/image.go:60 new signature. 17 non-test callers (libs/atlas-wz/{icons,charparts,mapimage} + services/atlas-data/data/workers/{ui,item,skill} + services/atlas-data/data/wztoxml/adapter) all assign (props, err) and either return %w-wrapped error or apply documented best-effort continue. Zero '_, _ :=' or '_ =' Properties() swallowing in non-test code."
+    },
+    {
+      "id": "F1",
+      "name": "publish.go nil-deps guards + tempfile buffering + step-prefixed errors",
+      "status": "pass",
+      "evidence": "services/atlas-data/atlas.com/data/baseline/publish.go:39-44 nil-deps returns 'publish: nil-db'/'publish: nil-mc'. :47-52 os.CreateTemp + defer os.Remove + defer Close. 9 step-prefixed errors wrap with 'publish: <step>: %w'. io.MultiWriter(tmp, h) at :55 drives sha and tempfile in one pass. publish_test.go:15-24 pins the prefix invariant."
+    },
+    {
+      "id": "F5",
+      "name": "restore.go cleanupAfterFailure is best-effort; original error returned",
+      "status": "pass",
+      "evidence": "services/atlas-data/atlas.com/data/baseline/restore.go:75-81 cleanupAfterFailure returns nothing, logs each DELETE failure via l.WithError(err).Warnf 'best-effort'. Call sites at :145-149 (table-loop) and :151-156 (ANALYZE) invoke cleanup then return the ORIGINAL err. tenant_baselines UPSERT at :159-166 runs only after both loops succeed. restore_failure_test.go:14-34 pins the ordering."
+    },
+    {
+      "id": "F2",
+      "name": "commodity/processor.go dropped outer transaction; Storage.Add commits per row",
+      "status": "pass",
+      "evidence": "services/atlas-data/atlas.com/data/commodity/processor.go:24-39 Register iterates ms and calls s.Add(ctx)(m)() per row; no enclosing transaction. document/storage.go:95-108 Storage.Add calls dbSto.Add + regSto.Add per row; db_storage.go:105 wraps each row in its own database.ExecuteTransaction. processor_test.go:15-23 asserts file contains no database.ExecuteTransaction."
+    },
+    {
+      "id": "F14",
+      "name": "wzinput Status implements full JSON:API Marshal/UnmarshalIdentifier interface",
+      "status": "pass",
+      "evidence": "services/atlas-data/atlas.com/data/wzinput/status.go:24-56 implements GetName/GetID/SetID + GetReferences/GetReferencedIDs/GetReferencedStructs + SetToOneReferenceID/SetToManyReferenceIDs/SetReferencedStructs. Matches the canonical data/status.go:17-58 StatusRestModel 1:1. Handler at :80-82 uses server.MarshalResponse[Status]."
+    }
+  ],
+  "crossCuttingChecks": [
+    {
+      "id": "BACK-LOG",
+      "name": "Processors/publishers/restorers accept logrus.FieldLogger",
+      "status": "pass",
+      "evidence": "publish.go:26, restore.go:35, commodity/processor.go:13 all use logrus.FieldLogger; no *logrus.Logger in changed files."
+    },
+    {
+      "id": "BACK-ERR",
+      "name": "New error paths wrap with %w",
+      "status": "pass",
+      "evidence": "publish.go has 9 %w-wrapped step errors; restore.go runRestoreTables/restoreOneTable wrap with %w; workers all use 'worker: parse %s: %w'."
+    },
+    {
+      "id": "BACK-POST",
+      "name": "POST/PATCH use RegisterInputHandler[T] or have a documented exception",
+      "status": "pass",
+      "evidence": "baseline/handler.go:23,24 POSTs use rest.RegisterInputHandler[PublishInputModel]/[RestoreInputModel]. wzinput/resource.go:21-26 PATCH bypass is documented (F12) — binary multipart, RegisterInputHandler[T] would consume body as JSON."
+    },
+    {
+      "id": "BACK-ENV",
+      "name": "No new os.Getenv reads in handlers",
+      "status": "pass",
+      "evidence": "Zero new os.Getenv hits across changed handler files."
+    },
+    {
+      "id": "BACK-CONCURRENCY",
+      "name": "F4 wz seek-path concurrency invariants documented + tested",
+      "status": "pass",
+      "evidence": "libs/atlas-wz/wz/file.go:222-228 annotates tryParseWithVersion as Open-only single-threaded. libs/atlas-wz/wz/image.go:53-59 + :117-121 document parseMu invariant. parse_race_test.go TestLockParseIsExclusive + TestPropertiesFastPathSkipsLock pin the contract."
+    },
+    {
+      "id": "BACK-RESOLVE",
+      "name": "consumergroup.Resolve simplified; sprintf moved to call sites",
+      "status": "pass",
+      "evidence": "libs/atlas-kafka/consumergroup/resolver.go:14-22 returns env-or-default verbatim. atlas-channel/main.go:151 and atlas-login/main.go:66 call Resolve(fmt.Sprintf(template, id)). All ~50 other callers pass a single literal string and remain source-compatible."
+    }
+  ],
+  "securityReview": "not_applicable",
+  "blocking": [],
+  "nonBlocking": [
+    "F17 testdata/concurrent.wz is intentionally absent (skipped fixture, documented operator-side carve-out).",
+    "F11 no-bounds-triage.json awaits operator run; not a code issue."
+  ],
+  "notes": "All changed packages are support/infrastructure (no model.go in any). Full DOM-* / SUB-* checklist is therefore not exercised; what applies is the cross-cutting set above plus the targeted F-item checks. The branch passes every applicable gate."
+}

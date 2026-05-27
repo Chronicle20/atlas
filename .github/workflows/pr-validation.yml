@@ -13,7 +13,28 @@ on:
         type: boolean
 
 concurrency:
-  group: pr-${{ github.head_ref || github.ref }}
+  # Two concurrency lanes per PR — one for push/synchronize events (the
+  # noisy lane: cancels in-progress when the user pushes a new commit),
+  # and a separate lane for `labeled` events (the rare lane: must not be
+  # cancelled by an in-flight build).
+  #
+  # When a user pushes a commit and adds `deploy-env` in quick succession,
+  # GitHub fires both `synchronize` and `labeled` events. With a single
+  # shared lane and `cancel-in-progress: true`, whichever fired second
+  # cancelled the first — and the surviving run's `pull_request.labels`
+  # payload reflected the state at fire time, missing the label if push
+  # came first. Result: `update-pr-overlay` gated on
+  # `contains(github.event.pull_request.labels.*.name, 'deploy-env')`
+  # was skipped, the bot branch never updated, Argo CD continued syncing
+  # against stale image tags. See issue #597.
+  #
+  # Splitting the lane preserves cancel-in-progress for normal push
+  # churn while letting `labeled` events run to completion. The
+  # trade-off: a push+label race produces two concurrent CI runs (the
+  # push lane builds without push=true; the labeled lane builds with
+  # push=true and updates the bot branch). The wasted compute is fine
+  # — the alternative is silent stale-overlay teardowns.
+  group: pr-${{ github.head_ref || github.ref }}${{ github.event.action == 'labeled' && '-labeled' || '' }}
   cancel-in-progress: true
 
 env:
@@ -330,24 +351,51 @@ jobs:
           SHORT_SHA: ${{ steps.tokens.outputs.short_sha }}
         run: |
           set -euo pipefail
-          OVERLAY=deploy/k8s/overlays/pr/kustomization.yaml
           NEW_TAG="pr-${PR_NUMBER}-${SHORT_SHA}"
 
           # The detect-changes matrix is the exact list of services
           # that build-docker pushed pr-<N>-<sha> tags for. For each,
-          # bump the corresponding entry in the overlay's `images:` block.
-          # Services NOT in this list keep their existing tag (typically
-          # `latest` for first-build PRs, or a previous `pr-<N>-<sha>`
-          # for subsequent pushes that left unchanged services untouched).
-          while read -r image; do
-              echo "Bumping ${image} → ${NEW_TAG}"
-              yq -i \
-                  "(.images[] | select(.name == \"${image}\") | .newTag) = \"${NEW_TAG}\"" \
-                  "$OVERLAY"
-          done < <(echo "$SERVICES_JSON" | jq -r '.[].docker_image')
+          # bump the corresponding entry in each overlay's `images:`
+          # block. Services NOT in this list keep their existing tag
+          # (typically `latest` for first-build PRs, or a previous
+          # `pr-<N>-<sha>` for subsequent pushes that left unchanged
+          # services untouched).
+          #
+          # Two overlays are kept in sync: `pr/` (the main env manifest)
+          # and `pr-cleanup/` (the PostDelete cleanup Job). Without the
+          # second loop, a PR that rebuilds atlas-pr-bootstrap would
+          # still see its cleanup Job pull `:latest` at teardown,
+          # masking any bootstrap-script change from the PR's own
+          # validation cycle. Only atlas-pr-bootstrap appears in
+          # `pr-cleanup/`'s images block today; the yq selector silently
+          # skips any service not present, so the same loop is safe to
+          # apply to both overlays.
+          for OVERLAY in deploy/k8s/overlays/pr/kustomization.yaml \
+                         deploy/k8s/overlays/pr-cleanup/kustomization.yaml; do
+              while read -r image; do
+                  echo "Bumping ${image} → ${NEW_TAG} in ${OVERLAY}"
+                  yq -i \
+                      "(.images[]? | select(.name == \"${image}\") | .newTag) = \"${NEW_TAG}\"" \
+                      "$OVERLAY"
+              done < <(echo "$SERVICES_JSON" | jq -r '.[].docker_image')
+          done
 
           echo "=== Resulting images: block (head) ==="
           yq '.images[0:5]' "$OVERLAY"
+
+      - name: Regenerate cluster-infra coordination ConfigMap artifact
+        run: |
+          set -euo pipefail
+          deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh
+          # The output file is checked in. If a service was added or
+          # removed since the last regen, this run's output diverges
+          # from the committed copy and CI fails — forcing the PR
+          # author to commit the regen alongside their services.json
+          # change.
+          if ! git diff --exit-code dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml; then
+              echo '::error::dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml is stale. Run deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh and commit the result.' >&2
+              exit 1
+          fi
 
       - name: Force-push bot/pr-<N>-resolved
         env:

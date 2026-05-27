@@ -26,6 +26,25 @@ func MountHandler(path string, h http.Handler) RouteInitializer {
 	}
 }
 
+// MountReadiness returns a RouteInitializer that mounts a k8s readiness
+// probe at path. fn reports whether the pod is ready to serve traffic
+// (true → HTTP 200, false → HTTP 503). Use this to gate readiness on a
+// caught-up projection AND a not-yet-shutting-down state so SIGTERM can
+// flip readiness off before any teardown destroys live state.
+func MountReadiness(path string, fn func() bool) RouteInitializer {
+	return func(r *mux.Router, _ logrus.FieldLogger) {
+		r.HandleFunc(path, func(w http.ResponseWriter, _ *http.Request) {
+			if fn() {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("ready"))
+				return
+			}
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("not ready"))
+		}).Methods(http.MethodGet)
+	}
+}
+
 func CommonHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")

@@ -71,6 +71,9 @@ func (s *Storage) ResolveSmapScope(ctx context.Context, tenantID, region, versio
 	// Fall back to shared scope. We don't HEAD-probe shared first because
 	// almost every deployment relies on the shared sidecar — a miss here is
 	// recoverable (atlas-renders disables occlusion and logs a warning).
-	s.Caches.Scope.Add(cacheKey, "shared")
+	//
+	// We also don't cache this verdict — see F3 in
+	// docs/tasks/task-076-task071-followups: a negative probe becomes wrong
+	// the moment ingest publishes the smap sidecar for this tenant.
 	return "shared", nil
 }

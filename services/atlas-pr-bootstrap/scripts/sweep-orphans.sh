@@ -4,9 +4,14 @@
 #
 # Usage:
 #   sweep-orphans.sh [--apply] PR_NUMBER [PR_NUMBER ...]
+#   sweep-orphans.sh --minio [--apply]
 #
 # Without --apply (default): lists everything that would be deleted.
 # With --apply: deletes it. Idempotent — safe to re-run after a partial sweep.
+#
+# --minio scans MinIO buckets atlas-wz/atlas-assets/atlas-renders for
+# orphan per-tenant prefixes (UUIDs not present in atlas-main and aged
+# past the safety window). See `sweep_minio` for details and issue #596.
 #
 # Required env (same names cleanup.sh uses; defaults match cluster reality):
 #   DB_HOST, DB_PORT, DB_USER, DB_PASSWORD
@@ -17,26 +22,43 @@
 #   ATLAS_SERVICES                    — comma-separated service names
 #   PIHOLE_API_BASE_1 / PIHOLE_TOKEN_1 / PIHOLE_API_BASE_2 / PIHOLE_TOKEN_2
 #
+# Required env for --minio:
+#   MINIO_ENDPOINT                    — host:port (NOT a URL)
+#   MINIO_ACCESS_KEY, MINIO_SECRET_KEY — MinIO credentials with delete
+#                                       access on the per-tenant prefixes
+#   ATLAS_MAIN_TENANTS_URL            — REST endpoint for atlas-main's
+#                                       atlas-tenants (default:
+#                                       http://atlas-tenants.atlas-main.svc.cluster.local:8080/api/tenants)
+#   MINIO_TENANT_SAFETY_WINDOW_SEC    — seconds; UUIDs touched within
+#                                       this window are skipped (default 7200)
+#
 # DRY_RUN_NO_INFRA=1 short-circuits external-command phases (testing only).
 
-set -euo pipefail
+set -uo pipefail
 
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
 
 APPLY=0
+MINIO_MODE=0
 PR_NUMBERS=()
 
 usage() {
     cat <<'EOF'
 Usage: sweep-orphans.sh [--apply] PR_NUMBER [PR_NUMBER ...]
+       sweep-orphans.sh --minio [--apply]
 
   --apply        Actually delete state. Without this flag, sweep is list-only.
+  --minio        Scan MinIO atlas-wz/atlas-assets/atlas-renders for orphan
+                 per-tenant prefixes (no PR_NUMBER needed). Cross-references
+                 against atlas-main tenants and skips UUIDs touched within
+                 MINIO_TENANT_SAFETY_WINDOW_SEC (default 7200s).
   PR_NUMBER      One or more positive integers.
 
 Without --apply, all phases print what they would do, one resource per line,
 prefixed with the phase name (drop-dbs, drop-topics, drop-groups,
-drop-redis, drop-images, drop-dns, drop-app-finalizers, drop-branch).
+drop-redis, drop-images, drop-dns, drop-app-finalizers, drop-branch,
+drop-minio).
 Suitable for piping through `tee` or `diff` for visual review before re-running
 with --apply.
 EOF
@@ -46,6 +68,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --apply) APPLY=1 ; shift ;;
         --list)  APPLY=0 ; shift ;;     # explicit form, same as default
+        --minio) MINIO_MODE=1 ; shift ;;
         -h|--help) usage ; exit 0 ;;
         --) shift ; break ;;
         -*) echo "unknown flag: $1" >&2 ; usage >&2 ; exit 2 ;;
@@ -53,7 +76,14 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ "${#PR_NUMBERS[@]}" -eq 0 ]; then
+if [ "$MINIO_MODE" = "1" ]; then
+    # --minio takes no PR_NUMBER args.
+    if [ "${#PR_NUMBERS[@]}" -gt 0 ]; then
+        echo "--minio takes no PR_NUMBER args (got ${PR_NUMBERS[*]})" >&2
+        usage >&2
+        exit 2
+    fi
+elif [ "${#PR_NUMBERS[@]}" -eq 0 ]; then
     usage >&2
     exit 2
 fi
@@ -65,6 +95,15 @@ for n in "${PR_NUMBERS[@]}"; do
         exit 2
     fi
 done
+
+# gh CLI requires its own credentials even when an explicit `-H
+# "Authorization: Bearer …"` header is passed on the request — without
+# GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
+# non-zero. Mirror cleanup.sh: export GH_TOKEN once so every gh
+# invocation in sweep_ghcr / sweep_branch is authenticated.
+if [ -n "${GHCR_TOKEN:-}" ]; then
+    export GH_TOKEN="$GHCR_TOKEN"
+fi
 
 sweep_pr() {
     local pr_number="$1"
@@ -122,33 +161,36 @@ sweep_kafka() {
     local pr_number="$1"
     local env_hash="$2"
     [ -z "${BOOTSTRAP_SERVERS:-}" ] && return 0
-    if ! command -v kafka-topics.sh >/dev/null 2>&1; then
-        ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log warn "kafka-topics.sh not on PATH; skipping"
+    if ! command -v rpk >/dev/null 2>&1; then
+        ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log warn "rpk not on PATH; skipping"
         return 0
     fi
+
     ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log info "scanning Kafka topics"
     local topics
-    topics=$(kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list 2>/dev/null \
-        | grep -E -- "-${env_hash}\$" || true)
+    topics=$(rpk topic list -X brokers="$BOOTSTRAP_SERVERS" --format json \
+        | jq -r "$RPK_TOPICS_JQ" \
+        | { grep -E -- "-${env_hash}\$" || true; })
     while IFS= read -r t; do
         [ -z "$t" ] && continue
         echo "drop-topics ${t}"
         if [ "$APPLY" = "1" ]; then
-            kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --topic "$t" || \
+            rpk topic delete -X brokers="$BOOTSTRAP_SERVERS" "$t" || \
                 ATLAS_ENV="$env_hash" ATLAS_STEP=drop-topics log warn "delete topic $t failed"
         fi
     done <<<"$topics"
 
     ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log info "scanning Kafka consumer groups"
     local groups
-    groups=$(kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list 2>/dev/null \
-        | grep -E -- "\\[${env_hash}\\]\$" || true)
+    groups=$(rpk group list -X brokers="$BOOTSTRAP_SERVERS" \
+        | rpk_group_names_awk \
+        | { grep -E -- "\\[${env_hash}\\]\$" || true; })
     while IFS= read -r g; do
         [ -z "$g" ] && continue
         echo "drop-groups ${g}"
         if [ "$APPLY" = "1" ]; then
-            kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --delete --group "$g" || \
-                ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log warn "delete group failed"
+            rpk group delete -X brokers="$BOOTSTRAP_SERVERS" "$g" || \
+                ATLAS_ENV="$env_hash" ATLAS_STEP=drop-groups log warn "delete group $g failed"
         fi
     done <<<"$groups"
 }
@@ -272,6 +314,143 @@ sweep_branch() {
                 "delete bot/pr-${pr_number}-resolved failed"
     fi
 }
+
+# sweep_minio enumerates per-tenant UUID prefixes under MinIO buckets
+# (atlas-wz, atlas-assets, atlas-renders) and deletes any UUID that
+# is BOTH:
+#   - not present in atlas-main's atlas-tenants list (the long-lived
+#     env's tenant UUIDs — these must never be touched), AND
+#   - aged past MINIO_TENANT_SAFETY_WINDOW_SEC (default 7200s / 2h)
+#     to protect bringups in progress whose data-ingest is still
+#     writing per-tenant data.
+#
+# We don't enumerate per-PR atlas-tenants services because by the
+# time this sweep runs (cron'd hourly, or after a wedged teardown),
+# the PR env namespace is being deleted; querying its atlas-tenants
+# would race with namespace termination. The age window covers
+# bringups in flight; orphans older than the window cannot belong to
+# an active env.
+#
+# Cleanup target: 13 GiB of leaked tenant data observed on 2026-05-26
+# (see issue #596). Reclaims storage until atlas-data's per-tenant
+# DELETE endpoint is wired into cleanup.sh (the cleaner long-term
+# fix; see runbook §9.11 known follow-ups).
+sweep_minio() {
+    [ -z "${MINIO_ENDPOINT:-}" ] && {
+        ATLAS_STEP=drop-minio log info "MINIO_ENDPOINT not set; skipping"
+        return 0
+    }
+    # Accept either MINIO_ACCESS_KEY/MINIO_SECRET_KEY (generic) or
+    # MINIO_ROOT_USER/MINIO_ROOT_PASSWORD (the minio-root-creds Secret's
+    # keys, when mounted via envFrom).
+    local access="${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-}}"
+    local secret="${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}"
+    if [ -z "$access" ] || [ -z "$secret" ]; then
+        ATLAS_STEP=drop-minio log info "MinIO credentials not set; skipping"
+        return 0
+    fi
+    if ! command -v mc >/dev/null 2>&1; then
+        ATLAS_STEP=drop-minio log warn "mc not on PATH; skipping"
+        return 0
+    fi
+
+    local main_url="${ATLAS_MAIN_TENANTS_URL:-http://atlas-tenants.atlas-main.svc.cluster.local:8080/api/tenants}"
+    local safety_sec="${MINIO_TENANT_SAFETY_WINDOW_SEC:-7200}"
+
+    ATLAS_STEP=drop-minio log info \
+        "scanning MinIO for orphan tenants (main=${main_url}, safety_window_sec=${safety_sec})"
+
+    # Fetch active tenant UUIDs from atlas-main. Treat fetch failure
+    # as a hard stop — without the protected list we'd risk deleting
+    # main's tenants.
+    local active_uuids
+    if ! active_uuids=$(curl -fsS -H 'Accept: application/vnd.api+json' "$main_url" \
+        | jq -r '.data[].id' 2>/dev/null); then
+        ATLAS_STEP=drop-minio log warn \
+            "fetch active tenants from ${main_url} failed; aborting MinIO sweep"
+        return 1
+    fi
+    if [ -z "$active_uuids" ]; then
+        ATLAS_STEP=drop-minio log warn \
+            "no active tenants returned by ${main_url}; aborting MinIO sweep (refusing to operate on empty allowlist)"
+        return 1
+    fi
+
+    # Configure mc alias under a private CONFIG_DIR so the host's mc
+    # config (if any) isn't touched. http vs https is keyed off the
+    # endpoint scheme; default to http for in-cluster MinIO.
+    export MC_CONFIG_DIR="${MC_CONFIG_DIR:-/tmp/.mc-sweep}"
+    mkdir -p "$MC_CONFIG_DIR"
+    local mc_endpoint="$MINIO_ENDPOINT"
+    case "$mc_endpoint" in
+        http://*|https://*) ;;
+        *) mc_endpoint="http://${mc_endpoint}" ;;
+    esac
+    mc alias set bee "$mc_endpoint" "$access" "$secret" >/dev/null 2>&1 || {
+        ATLAS_STEP=drop-minio log warn "mc alias set failed; aborting MinIO sweep"
+        return 1
+    }
+
+    local now_epoch
+    now_epoch=$(date -u +%s)
+
+    local rc=0
+    for bucket in atlas-wz atlas-assets atlas-renders; do
+        # Enumerate UUID prefixes; tolerate empty/missing bucket.
+        local uuid_lines
+        uuid_lines=$(mc ls "bee/${bucket}/tenants/" 2>/dev/null \
+            | awk '{print $NF}' \
+            | tr -d '/' \
+            | grep -E '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' \
+            || true)
+        while IFS= read -r uuid; do
+            [ -z "$uuid" ] && continue
+
+            # Skip if this UUID is an active main tenant.
+            if printf '%s\n' "$active_uuids" | grep -qFx "$uuid"; then
+                continue
+            fi
+
+            # Skip if the prefix was touched within the safety window.
+            # `mc stat` on the prefix may not exist; sample by listing
+            # one nested object and reading its Last-Modified.
+            local last_mod_iso last_mod_epoch age
+            last_mod_iso=$(mc ls --recursive --json "bee/${bucket}/tenants/${uuid}/" 2>/dev/null \
+                | jq -r 'select(.type == "file") | .lastModified' \
+                | sort -r | head -1)
+            if [ -n "$last_mod_iso" ]; then
+                last_mod_epoch=$(date -u -d "$last_mod_iso" +%s 2>/dev/null || echo 0)
+                age=$(( now_epoch - last_mod_epoch ))
+                if [ "$age" -lt "$safety_sec" ]; then
+                    ATLAS_STEP=drop-minio log info \
+                        "skip ${bucket}/tenants/${uuid} (age=${age}s < ${safety_sec}s safety window)"
+                    continue
+                fi
+            fi
+
+            echo "drop-minio ${bucket}/tenants/${uuid}/"
+            if [ "$APPLY" = "1" ]; then
+                if ! mc rm --recursive --force "bee/${bucket}/tenants/${uuid}/" >/dev/null 2>&1; then
+                    ATLAS_STEP=drop-minio log warn \
+                        "rm ${bucket}/tenants/${uuid}/ failed"
+                    rc=1
+                fi
+            fi
+        done <<<"$uuid_lines"
+    done
+    return $rc
+}
+
+if [ "$MINIO_MODE" = "1" ]; then
+    if [ -n "${DRY_RUN_NO_INFRA:-}" ]; then
+        ATLAS_STEP=init log info "MinIO sweep apply=${APPLY} (dry-run; skipping)"
+    else
+        ATLAS_STEP=init log info "MinIO sweep apply=${APPLY}"
+        sweep_minio
+    fi
+    ATLAS_STEP=done log info "sweep complete"
+    exit 0
+fi
 
 for n in "${PR_NUMBERS[@]}"; do
     sweep_pr "$n"

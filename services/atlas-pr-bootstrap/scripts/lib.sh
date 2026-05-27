@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared helpers for bootstrap.sh and cleanup.sh.
 
-set -euo pipefail
+set -uo pipefail
 
 log() {
     # Logs are diagnostic output and MUST go to stderr. The fallback branch
@@ -78,4 +78,95 @@ compute_atlas_env() {
         return 1
     fi
     printf "pr-%d" "$pr_number" | sha256sum | cut -c1-4
+}
+
+# ----------------------------------------------------------------------------
+# Phase-runner framework. See task-075/design.md §3.1.
+#
+# Used by cleanup.sh and sweep-orphans.sh to run every phase regardless
+# of any single phase's outcome. ONLY run_phase appends to
+# ATLAS_PHASE_ERRORS — phase functions emit detail logs via `log warn`
+# / `log error` and return non-zero on failure; run_phase records the
+# phase name exactly once.
+# ----------------------------------------------------------------------------
+
+# ATLAS_PHASE_ERRORS holds the names of phases that have failed. The
+# caller initialises (or resets, for per-PR sweep loops) by assigning
+# ATLAS_PHASE_ERRORS=() before run_phase is called.
+declare -ga ATLAS_PHASE_ERRORS=()
+
+# record_error <phase> <msg>
+# Appends <phase> to ATLAS_PHASE_ERRORS and logs <msg> at level=error
+# with ATLAS_STEP=<phase>.
+record_error() {
+    local phase="$1"; shift
+    ATLAS_PHASE_ERRORS+=("$phase")
+    ATLAS_STEP="$phase" log error "$*"
+}
+
+# run_phase <phase_name> <function_name>
+# Emits a "phase start" info log, runs <function_name>, and either
+# emits "phase complete" (on zero return) or appends <phase_name> to
+# ATLAS_PHASE_ERRORS via record_error (on non-zero). Always returns 0
+# so a caller without `set -e` continues running subsequent phases.
+run_phase() {
+    local phase="$1"; local fn="$2"
+    ATLAS_STEP="$phase" log info "phase start"
+    if "$fn"; then
+        ATLAS_STEP="$phase" log info "phase complete"
+    else
+        record_error "$phase" "phase exited non-zero"
+    fi
+    return 0
+}
+
+# summarize_phases <total_phase_count>
+# Emits one JSON summary line and returns 0 (success) or 1 (errors
+# recorded). Callers typically `exit $?` after this.
+summarize_phases() {
+    local total="$1"
+    local failed="${#ATLAS_PHASE_ERRORS[@]}"
+    local failed_json
+    if [ "$failed" -eq 0 ]; then
+        ATLAS_STEP=done log info "cleanup complete phases_run=$total phases_failed=0"
+        return 0
+    fi
+    failed_json=$(printf '%s\n' "${ATLAS_PHASE_ERRORS[@]}" \
+        | jq -Rsc 'split("\n") | map(select(length>0))')
+    ATLAS_STEP=done log error "cleanup completed with errors phases_run=$total phases_failed=$failed failed_phases=$failed_json"
+    return 1
+}
+
+# ----------------------------------------------------------------------------
+# rpk output-shape constants.
+#
+# `rpk topic list --format json` emits a flat array of objects in
+# rpk 24.3.1:  [{"name":"…","partitions":…}, …]
+#
+# `rpk group list` does NOT accept --format in rpk 24.3.1 (only
+# `-s/--states`). The default output is a fixed-column table:
+#
+#   BROKER  GROUP                                        STATE
+#   1       Account Service                              Stable
+#   1       Channel Service - 7e3a-0a1b [a1b2]           Stable
+#
+# STATE is always a single token (Stable / Empty / Dead /
+# PreparingRebalance / CompletingRebalance), so the group name is
+# every whitespace-separated token from column 2 through NF-1.
+# `rpk_group_names_awk` reads that table on stdin and prints one
+# group name per line.
+#
+# Bumping ARG RPK_VERSION in the Dockerfile invalidates the
+# rpk-topic-list.json fixture and the rpk-group-list.txt fixture.
+# Regenerate against the new rpk and re-run bats; the table shape and
+# JSON schema both move when rpk does.
+# ----------------------------------------------------------------------------
+readonly RPK_TOPICS_JQ='.[].name'
+
+rpk_group_names_awk() {
+    awk 'NR>1 && NF>=2 {
+        name=""
+        for (i=2; i<NF; i++) name = name (i>2 ? " " : "") $i
+        print name
+    }'
 }

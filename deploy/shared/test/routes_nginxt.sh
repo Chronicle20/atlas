@@ -100,3 +100,26 @@ if fail:
     sys.exit(1)
 print("routes.conf atlas-renders tenant header check: OK")
 PY
+
+# F18: confirm the generated k8s routes file is in sync with the canonical
+# shared source. If shared/routes.conf changes, the committer MUST also run
+# tools/gen-routes.sh and commit the resulting routes.conf.template.generated.
+GEN="$REPO_ROOT/deploy/k8s/base/routes.conf.template.generated"
+if [[ -f "$GEN" ]]; then
+  # Re-run the generator (it writes the committed file in place). Then use
+  # `git diff --quiet` on that file: a clean tree means the committed copy
+  # already matches; any drift means shared/routes.conf was updated without
+  # re-running the generator.
+  bash "$REPO_ROOT/tools/gen-routes.sh" >/dev/null
+  if ! git -C "$REPO_ROOT" diff --quiet -- deploy/k8s/base/routes.conf.template.generated; then
+    echo "error: deploy/shared/routes.conf changed but routes.conf.template.generated is stale." >&2
+    echo "       run tools/gen-routes.sh and commit the result." >&2
+    git -C "$REPO_ROOT" --no-pager diff -- deploy/k8s/base/routes.conf.template.generated | head -40 >&2
+    # Restore committed copy so a stale local checkout doesn't surprise the next run.
+    git -C "$REPO_ROOT" checkout -- deploy/k8s/base/routes.conf.template.generated >/dev/null 2>&1 || true
+    exit 1
+  fi
+  echo "routes drift check (shared vs k8s-generated): OK"
+else
+  echo "warn: $GEN does not exist; skipping F18 drift check (was Task 6 / F8 applied?)" >&2
+fi

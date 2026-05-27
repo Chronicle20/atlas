@@ -12,13 +12,24 @@ setup() {
 # caller passes per-binary overrides.
 #
 # Args (optional, in order):
-#   $1 — topic_list_json (default: empty topic list)
-#   $2 — group_list_json (default: empty group list)
+#   $1 — topic_list_json (default: rpk-topic-list.json fixture)
+#   $2 — group_list_table (default: rpk-group-list.txt fixture; raw table
+#        as emitted by `rpk group list` — no --format in rpk 24.3.1)
 make_stubs() {
-    local topic_json="${1:-{\"topics\":[]\}}"
-    local group_json="${2:-{\"groups\":[]\}}"
+    local topic_json
+    local group_table
+    if [ "${1+set}" = set ]; then
+        topic_json="$1"
+    else
+        topic_json="$(cat "$PROJECT_ROOT/test/fixtures/rpk-topic-list.json")"
+    fi
+    if [ "${2+set}" = set ]; then
+        group_table="$2"
+    else
+        group_table="$(cat "$PROJECT_ROOT/test/fixtures/rpk-group-list.txt")"
+    fi
     printf '%s\n' "$topic_json" > "$BATS_TEST_TMPDIR/topic_list.json"
-    printf '%s\n' "$group_json" > "$BATS_TEST_TMPDIR/group_list.json"
+    printf '%s\n' "$group_table" > "$BATS_TEST_TMPDIR/group_list.txt"
 
     cat > "$STUB_BIN/rpk" <<'EOF'
 #!/usr/bin/env bash
@@ -26,7 +37,7 @@ echo "rpk $*" >> "$STUB_LOG"
 if [ "$1" = "topic" ] && [ "$2" = "list" ]; then
     cat "$BATS_TEST_TMPDIR/topic_list.json"
 elif [ "$1" = "group" ] && [ "$2" = "list" ]; then
-    cat "$BATS_TEST_TMPDIR/group_list.json"
+    cat "$BATS_TEST_TMPDIR/group_list.txt"
 fi
 exit 0
 EOF
@@ -38,7 +49,6 @@ EOF
     cat > "$STUB_BIN/redis-cli" <<'EOF'
 #!/usr/bin/env bash
 echo "redis-cli $*" >> "$STUB_LOG"
-# When invoked with --scan, emit no keys so the xargs delete is a no-op.
 exit 0
 EOF
     cat > "$STUB_BIN/gh" <<'EOF'
@@ -107,11 +117,10 @@ exit 1
 EOF
     chmod +x "$SHIM_DIR/gh"
 
-    # Inject failing kafka-topics.sh / kafka-consumer-groups.sh / psql /
-    # redis-cli so cleanup short-circuits on the very first phase BEFORE
-    # branch-delete, while we only need to assert that the function exists
-    # and is exercised by the unit (the e2e is in the smoke test). For this
-    # unit assertion, we run a bash-side check on the script body instead:
+    # The full end-to-end branch-delete path is exercised by the smoke
+    # test; here we only need to assert that the phase exists in the
+    # script body. Run a bash-side grep on cleanup.sh instead of wiring
+    # up an rpk/psql/redis-cli stub fleet for a single phase.
     run grep -q "drop-branch" "$PROJECT_ROOT/scripts/cleanup.sh"
     [ "$status" -eq 0 ]
 
@@ -127,6 +136,108 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "cleanup.sh drop-branch pre-empts post-delete-finalizer drain after deleting branch" {
+    # Once `drop-branch` deletes the bot branch, Argo CD's finalizer-drain
+    # reconcile can't re-render the missing source → DeletionError → the
+    # Application sits Terminating forever. PR 522 hit this on 2026-05-27.
+    # cleanup.sh must patch the Application's finalizers itself after a
+    # successful (or already-404'd) branch delete.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "gh \$*" >> "$CALL_LOG"
+# DELETE branch returns 204 (no body).
+exit 0
+EOF
+    cat > "$SHIM_DIR/kubectl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "kubectl \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        GHCR_TOKEN=fake-token \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    # The DELETE branch call must have happened.
+    grep -F 'gh api --method DELETE' "$CALL_LOG" | grep -F 'bot%2Fpr-42-resolved'
+    # AND we must have followed it with a finalizer-drop patch on the
+    # Application.
+    grep -F 'kubectl -n argocd patch application.argoproj.io atlas-pr-42' "$CALL_LOG" \
+        | grep -F '"finalizers":[]'
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh drop-branch still pre-empts finalizer drain when branch already 404'd" {
+    # On a re-run after a partial cleanup, the bot branch may already be
+    # gone. cleanup.sh treats that as success (idempotent) — and must
+    # ALSO still patch the Application's finalizers, because the
+    # Application is in the same Source-branch-missing state.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "gh \$*" >> "$CALL_LOG"
+echo "gh: Reference does not exist (HTTP 404)" >&2
+exit 1
+EOF
+    cat > "$SHIM_DIR/kubectl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "kubectl \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        GHCR_TOKEN=fake-token \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    grep -F 'kubectl -n argocd patch application.argoproj.io atlas-pr-42' "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR"
+}
+
 # fixture_env returns the ATLAS_ENV hash cleanup.sh derives for PR_NUMBER=99
 # (compute_atlas_env "99" → first 4 hex chars of sha256("pr-99")). Keeping this
 # computed instead of hardcoded means the rpk tests below stay correct if the
@@ -139,54 +250,234 @@ fixture_env() {
 @test "cleanup.sh deletes only -ATLAS_ENV-suffixed topics via rpk" {
     local env_hash
     env_hash="$(fixture_env)"
-    make_stubs "{\"topics\":[{\"name\":\"foo-${env_hash}\"},{\"name\":\"bar\"},{\"name\":\"baz-${env_hash}\"}]}"
+    local topics
+    topics=$(sed "s/a1b2/${env_hash}/g" \
+        "$PROJECT_ROOT/test/fixtures/rpk-topic-list.json")
+    make_stubs "$topics" '[]'
     run run_cleanup
     [ "$status" -eq 0 ]
 
     # rpk topic list was invoked once
     [ "$(grep -c '^rpk topic list ' "$STUB_LOG")" -eq 1 ]
 
-    # rpk topic delete was invoked for foo-<env> and baz-<env>, and not for bar
-    grep -F 'rpk topic delete' "$STUB_LOG" | grep -F "foo-${env_hash}"
-    grep -F 'rpk topic delete' "$STUB_LOG" | grep -F "baz-${env_hash}"
-    if grep -F 'rpk topic delete' "$STUB_LOG" | grep -wF 'bar'; then
-        echo "ERROR: topic 'bar' (no ATLAS_ENV suffix) was deleted" >&2
+    # rpk topic delete was invoked for the two env-suffixed topics and
+    # not for the unsuffixed ones.
+    grep -F 'rpk topic delete' "$STUB_LOG" | grep -F "boss-spawn-events-${env_hash}"
+    grep -F 'rpk topic delete' "$STUB_LOG" | grep -F "character-events-${env_hash}"
+    if grep -F 'rpk topic delete' "$STUB_LOG" | grep -wF 'configurations-events'; then
+        echo "ERROR: unsuffixed topic was deleted" >&2
         return 1
     fi
 }
 
 @test "cleanup.sh deletes consumer groups with spaces in their names" {
-    # Group list has one name matching [<env>] suffix (with spaces) and one
-    # not matching. Only the matching one should be deleted.
     local env_hash
     env_hash="$(fixture_env)"
-    make_stubs \
-        '{"topics":[]}' \
-        "{\"groups\":[{\"name\":\"Party Quest Service [${env_hash}]\"},{\"name\":\"Other [other]\"}]}"
+    local groups
+    groups=$(sed "s/a1b2/${env_hash}/g" \
+        "$PROJECT_ROOT/test/fixtures/rpk-group-list.txt")
+    make_stubs '[]' "$groups"
     run run_cleanup
     [ "$status" -eq 0 ]
 
     # rpk group list invoked once
     [ "$(grep -c '^rpk group list ' "$STUB_LOG")" -eq 1 ]
 
-    # rpk group delete was called for the spaced name as one argument
+    # rpk group delete was called for the spaced + hyphenated names as
+    # single arguments each.
     grep -F 'rpk group delete' "$STUB_LOG" | grep -F "Party Quest Service [${env_hash}]"
+    grep -F 'rpk group delete' "$STUB_LOG" | grep -F "Channel Service - 7e3a-0a1b [${env_hash}]"
 
     # The other-env group must not be deleted
-    if grep -F 'rpk group delete' "$STUB_LOG" | grep -F 'Other [other]'; then
+    if grep -F 'rpk group delete' "$STUB_LOG" | grep -F 'Party Quest Service [other]'; then
         echo "ERROR: group with non-matching env suffix was deleted" >&2
         return 1
     fi
 }
 
 @test "cleanup.sh skips rpk topic delete when no topic matches" {
-    make_stubs '{"topics":[{"name":"prod-foo"},{"name":"prod-bar"}]}'
+    make_stubs '[{"name":"prod-foo"},{"name":"prod-bar"}]' '[]'
     run run_cleanup
     [ "$status" -eq 0 ]
     [ "$(grep -c '^rpk topic list ' "$STUB_LOG")" -eq 1 ]
-    # No delete because no topic name ends with -<env_hash>
     if grep -F 'rpk topic delete' "$STUB_LOG"; then
         echo "ERROR: rpk topic delete invoked despite no matching topics" >&2
         return 1
     fi
+}
+
+@test "cleanup.sh runs every phase even when drop-topics fails" {
+    mkdir -p "$STUB_BIN"
+    cat > "$STUB_BIN/rpk" <<'EOF'
+#!/usr/bin/env bash
+echo "rpk $*" >> "$STUB_LOG"
+if [ "$1" = "topic" ] && [ "$2" = "list" ]; then
+    echo "<not-json>"
+    exit 0
+elif [ "$1" = "group" ] && [ "$2" = "list" ]; then
+    echo "[]"
+    exit 0
+fi
+exit 0
+EOF
+    cat > "$STUB_BIN/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "psql $*" >> "$STUB_LOG"
+exit 0
+EOF
+    cat > "$STUB_BIN/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+echo "redis-cli $*" >> "$STUB_LOG"
+exit 0
+EOF
+    cat > "$STUB_BIN/gh" <<'EOF'
+#!/usr/bin/env bash
+echo "gh $*" >> "$STUB_LOG"
+exit 0
+EOF
+    chmod +x "$STUB_BIN"/*
+
+    run run_cleanup
+    [ "$status" -eq 1 ]
+    [[ "$output" == *'drop-groups'*'phase complete'* ]]
+    [[ "$output" == *'drop-redis'*'phase complete'* ]]
+    [[ "$output" == *'drop-images'*'phase complete'* ]]
+    [[ "$output" == *'drop-dns'*'phase complete'* ]]
+    [[ "$output" == *'drop-branch'*'phase complete'* ]]
+    [[ "$output" == *'failed_phases'*'drop-topics'* ]]
+    [[ "$output" == *'phases_failed=1'* ]]
+}
+
+@test "cleanup.sh exits 0 when all phases succeed" {
+    make_stubs '[]' '[]'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'phases_failed=0'* ]]
+    # 8 phases as of #596 (drop-tenant-storage added).
+    [[ "$output" == *'phases_run=8'* ]]
+}
+
+@test "cleanup.sh drop-tenant-storage skips when MINIO_ENDPOINT unset" {
+    make_stubs '[]' '[]'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'drop-tenant-storage'*'MINIO_ENDPOINT not set'* ]]
+    [[ "$output" == *'drop-tenant-storage'*'phase complete'* ]]
+}
+
+@test "cleanup.sh drop-tenant-storage reads tenants from atlas-data DB + mc-rm's prefixes" {
+    # Stub psql to return two tenant UUIDs when queried for tenant_baselines
+    # in the atlas-data-<env> DB. Stub mc to record every call.
+    make_stubs '[]' '[]'
+
+    # Override psql so it returns tenant UUIDs ONLY when reading
+    # tenant_baselines from atlas-data-<env>. All other psql calls
+    # (drop-dbs probe + DROP DATABASE) succeed silently.
+    cat > "$STUB_BIN/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "psql $*" >> "$STUB_LOG"
+# Match the tenant_baselines SELECT on atlas-data DB.
+if printf '%s\n' "$*" | grep -q "tenant_baselines"; then
+    printf 'a8657a40-4dc9-4d7a-a0d2-3a9edb69d141\nb046fcc7-6cc4-4355-803e-a841930b1f63\n'
+fi
+exit 0
+EOF
+    cat > "$STUB_BIN/mc" <<'EOF'
+#!/usr/bin/env bash
+echo "mc $*" >> "$STUB_LOG"
+exit 0
+EOF
+    chmod +x "$STUB_BIN"/*
+
+    PATH="$STUB_BIN:$PATH" \
+        STUB_LOG="$STUB_LOG" \
+        BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" \
+        DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="atlas-data" \
+        BOOTSTRAP_SERVERS=kafka:9093 REDIS_URL=redis:6379 \
+        PR_NUMBER=99 \
+        MINIO_ENDPOINT=minio.test:9000 \
+        MINIO_ROOT_USER=root MINIO_ROOT_PASSWORD=rootpass \
+        run bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    # Both tenants × 3 buckets = 6 mc rm calls.
+    grep -F 'mc rm --recursive --force bee/atlas-wz/tenants/a8657a40-4dc9-4d7a-a0d2-3a9edb69d141/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-assets/tenants/a8657a40-4dc9-4d7a-a0d2-3a9edb69d141/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-renders/tenants/a8657a40-4dc9-4d7a-a0d2-3a9edb69d141/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-wz/tenants/b046fcc7-6cc4-4355-803e-a841930b1f63/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-assets/tenants/b046fcc7-6cc4-4355-803e-a841930b1f63/' "$STUB_LOG"
+    grep -F 'mc rm --recursive --force bee/atlas-renders/tenants/b046fcc7-6cc4-4355-803e-a841930b1f63/' "$STUB_LOG"
+}
+
+@test "cleanup.sh drop-tenant-storage tolerates atlas-data DB being absent" {
+    # Simulate atlas-data DB missing (psql returns non-zero on the
+    # tenant_baselines query). The phase should log "could not read"
+    # and continue without calling mc rm.
+    make_stubs '[]' '[]'
+
+    cat > "$STUB_BIN/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "psql $*" >> "$STUB_LOG"
+# Tenant-baselines query → fail; drop-dbs probe + DROP → succeed.
+if printf '%s\n' "$*" | grep -q "tenant_baselines"; then
+    exit 1
+fi
+exit 0
+EOF
+    cat > "$STUB_BIN/mc" <<'EOF'
+#!/usr/bin/env bash
+echo "mc $*" >> "$STUB_LOG"
+exit 0
+EOF
+    chmod +x "$STUB_BIN"/*
+
+    PATH="$STUB_BIN:$PATH" \
+        STUB_LOG="$STUB_LOG" \
+        BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" \
+        DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="atlas-data" \
+        BOOTSTRAP_SERVERS=kafka:9093 REDIS_URL=redis:6379 \
+        PR_NUMBER=99 \
+        MINIO_ENDPOINT=minio.test:9000 \
+        MINIO_ROOT_USER=root MINIO_ROOT_PASSWORD=rootpass \
+        run bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'drop-tenant-storage'*'could not read'*'tenant_baselines'* ]]
+    if grep -F 'mc rm' "$STUB_LOG"; then
+        echo "ERROR: mc rm called despite missing tenant_baselines" >&2
+        return 1
+    fi
+}
+
+@test "cleanup.sh fails fast on malformed rpk output" {
+    mkdir -p "$STUB_BIN"
+    cat > "$STUB_BIN/rpk" <<'EOF'
+#!/usr/bin/env bash
+echo "rpk $*" >> "$STUB_LOG"
+if [ "$1" = "topic" ] && [ "$2" = "list" ]; then
+    printf 'this is not json\n'
+    exit 0
+fi
+echo "[]"
+EOF
+    cat > "$STUB_BIN/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$STUB_BIN/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$STUB_BIN/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$STUB_BIN"/*
+
+    run run_cleanup
+    [ "$status" -eq 1 ]
+    [[ "$output" == *'drop-topics'* ]]
+    [[ "$output" == *'phase exited non-zero'* ]]
 }

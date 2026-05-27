@@ -83,6 +83,16 @@ func GetStatusMirror() *StatusMirror {
 	return statusMirror
 }
 
+// EvictTenant drops every monster-status entry for the given tenant.
+// Invoked by listener.RegisterEvictor when the last listener for the
+// tenant drains so the mirror doesn't retain status from a tenant that
+// is no longer being served.
+func (m *StatusMirror) EvictTenant(tid uuid.UUID) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.perTenant, tid)
+}
+
 // keys derives the effect keys (status names) carried by a body. We
 // project under each status name so reflect lookups don't have to walk
 // the entire monster's effect set.

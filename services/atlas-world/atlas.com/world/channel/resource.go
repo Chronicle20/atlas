@@ -22,6 +22,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r.HandleFunc("", registerGet("get_channel_servers", handleGetChannelServers)).Methods(http.MethodGet)
 		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("register_channel_server", handleRegisterChannelServer)).Methods(http.MethodPost)
 		r.HandleFunc("/{channelId}", registerGet("get_channel", handleGetChannel)).Methods(http.MethodGet)
+		r.HandleFunc("/{channelId}", registerGet("unregister_channel_server", handleUnregisterChannelServer)).Methods(http.MethodDelete)
 	}
 }
 
@@ -60,6 +61,27 @@ func handleRegisterChannelServer(d *rest.HandlerDependency, _ *rest.HandlerConte
 			}
 			w.WriteHeader(http.StatusAccepted)
 		}
+	})
+}
+
+func handleUnregisterChannelServer(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, _ *http.Request) {
+				ch := channel.NewModel(worldId, channelId)
+				err := NewProcessor(d.Logger(), d.Context()).Unregister(ch)
+				if err != nil {
+					if errors.Is(err, ErrChannelNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Unable to unregister channel.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
 	})
 }
 

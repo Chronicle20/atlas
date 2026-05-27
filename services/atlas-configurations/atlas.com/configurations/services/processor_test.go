@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
@@ -394,5 +395,60 @@ func TestMake_InvalidJSON(t *testing.T) {
 	_, err := Make(entity)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestProcessor_Create_EnqueuesOutboxRow(t *testing.T) {
+	t.Setenv(EnvServiceStatusTopic, "test.svc.topic")
+
+	db := setupTestDB(t)
+	if err := outboxlib.Migration(db); err != nil {
+		t.Fatalf("outbox migration: %v", err)
+	}
+	p := NewProcessor(testLogger(), context.Background(), db)
+
+	id, err := p.Create(service.InputRestModel{
+		Type: string(ServiceTypeChannel),
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var ents []outboxlib.Entity
+	if err := db.Find(&ents).Error; err != nil {
+		t.Fatalf("query outbox: %v", err)
+	}
+	if len(ents) != 1 {
+		t.Fatalf("want 1 outbox row, got %d", len(ents))
+	}
+	if got, want := ents[0].Topic, "test.svc.topic"; got != want {
+		t.Errorf("topic: got %q want %q", got, want)
+	}
+	if got, want := string(ents[0].MessageKey), "service:"+id.String(); got != want {
+		t.Errorf("key: got %q want %q", got, want)
+	}
+	if ents[0].MessageValue == nil {
+		t.Errorf("envelope value must not be nil on Create")
+	}
+}
+
+func TestProcessor_Create_NoTopicEnv_SkipsEnqueue(t *testing.T) {
+	// EnvServiceStatusTopic intentionally unset.
+	db := setupTestDB(t)
+	if err := outboxlib.Migration(db); err != nil {
+		t.Fatalf("outbox migration: %v", err)
+	}
+	p := NewProcessor(testLogger(), context.Background(), db)
+
+	if _, err := p.Create(service.InputRestModel{Type: string(ServiceTypeChannel)}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&outboxlib.Entity{}).Count(&count).Error; err != nil {
+		t.Fatalf("count outbox: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("want 0 outbox rows when topic unset, got %d", count)
 	}
 }

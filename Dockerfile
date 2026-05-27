@@ -26,7 +26,7 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-# Layer: all 17 atlas libs' go.mod (and go.sum where present — atlas-retry and
+# Layer: all 20 atlas libs' go.mod (and go.sum where present — atlas-retry and
 # atlas-service have no external deps so no go.sum exists). Lib-mod-only layer;
 # shared across every target.
 COPY libs/atlas-constants/go.mod   libs/atlas-constants/go.sum   libs/atlas-constants/
@@ -36,6 +36,7 @@ COPY libs/atlas-lock/go.mod        libs/atlas-lock/go.sum        libs/atlas-lock
 COPY libs/atlas-model/go.mod       libs/atlas-model/go.sum       libs/atlas-model/
 COPY libs/atlas-object-id/go.mod   libs/atlas-object-id/go.sum   libs/atlas-object-id/
 COPY libs/atlas-opcodes/go.mod     libs/atlas-opcodes/go.sum     libs/atlas-opcodes/
+COPY libs/atlas-outbox/go.mod      libs/atlas-outbox/go.sum      libs/atlas-outbox/
 COPY libs/atlas-packet/go.mod      libs/atlas-packet/go.sum      libs/atlas-packet/
 COPY libs/atlas-redis/go.mod       libs/atlas-redis/go.sum       libs/atlas-redis/
 COPY libs/atlas-rest/go.mod        libs/atlas-rest/go.sum        libs/atlas-rest/
@@ -49,10 +50,13 @@ COPY libs/atlas-tenant/go.mod      libs/atlas-tenant/go.sum      libs/atlas-tena
 COPY libs/atlas-tracing/go.mod     libs/atlas-tracing/go.sum     libs/atlas-tracing/
 COPY libs/atlas-wz/go.mod          libs/atlas-wz/go.sum          libs/atlas-wz/
 
-# Layer: this service's tree (per-target; brings in its go.mod and source).
-COPY services/${SERVICE}/atlas.com/ services/${SERVICE}/atlas.com/
+# Layer: this service's tree (per-target; brings in its go.mod, source, and
+# any auxiliary files like seed-data/. Widened from atlas.com/ alone so
+# services that ship runtime data (e.g. atlas-configurations seed templates)
+# don't need a per-service Dockerfile branch.
+COPY services/${SERVICE}/ services/${SERVICE}/
 
-# Layer: all 17 atlas libs' source trees (shared across every target; invalidates
+# Layer: all 20 atlas libs' source trees (shared across every target; invalidates
 # when any lib source changes — same invalidation profile as today).
 COPY libs/atlas-constants   libs/atlas-constants
 COPY libs/atlas-database    libs/atlas-database
@@ -61,6 +65,7 @@ COPY libs/atlas-lock        libs/atlas-lock
 COPY libs/atlas-model       libs/atlas-model
 COPY libs/atlas-object-id   libs/atlas-object-id
 COPY libs/atlas-opcodes     libs/atlas-opcodes
+COPY libs/atlas-outbox      libs/atlas-outbox
 COPY libs/atlas-packet      libs/atlas-packet
 COPY libs/atlas-redis       libs/atlas-redis
 COPY libs/atlas-rest        libs/atlas-rest
@@ -74,7 +79,7 @@ COPY libs/atlas-tenant      libs/atlas-tenant
 COPY libs/atlas-tracing     libs/atlas-tracing
 COPY libs/atlas-wz          libs/atlas-wz
 
-# Synthesize a minimal go.work containing only the 17 libs + the target service.
+# Synthesize a minimal go.work containing only the 18 libs + the target service.
 # The repo-root go.work also lists ~50 sibling services + 2 tools/* modules
 # whose go.mod files are not in the build context; copying it directly fails
 # workspace-load. Equivalent to what the legacy per-service Dockerfiles did.
@@ -84,9 +89,9 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
     && { \
          printf 'go 1.26.0\n\nuse (\n'; \
          for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
-                  atlas-object-id atlas-opcodes atlas-packet atlas-redis atlas-rest \
-                  atlas-retry atlas-saga atlas-script-core atlas-seeder atlas-service \
-                  atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
+                  atlas-object-id atlas-opcodes atlas-outbox atlas-packet atlas-redis \
+                  atlas-rest atlas-retry atlas-saga atlas-script-core atlas-seeder \
+                  atlas-service atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
            printf '    ./libs/%s\n' "$L"; \
          done; \
          printf '    ./%s\n)\n' "$MOD_DIR"; \
@@ -113,6 +118,29 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1) \
          : > /app/config.yaml; \
        fi
 
+# Stash this service's auxiliary runtime data dirs at stable build-env paths
+# so the runtime stage can COPY unconditionally. Pre-task-074 each affected
+# service had its own Dockerfile that COPYed these dirs into the runtime
+# image; the shared Dockerfile must reproduce that. Mapping:
+#   seed-data      → /seed-data      (atlas-configurations)
+#   drops          → /drops          (atlas-drop-information)
+#   data           → /gachapons/data (atlas-gachapons)
+#   scripts        → /scripts        (atlas-map-actions, atlas-portal-actions, atlas-reactor-actions)
+#   conversations  → /conversations  (atlas-npc-conversations)
+#   shops          → /shops          (atlas-npc-shops)
+#   party-quests   → /party-quests   (atlas-party-quests)
+#   configurations → /configurations (atlas-tenants)
+# Services without a given dir get an empty placeholder so the runtime COPY
+# has a stable source path; the loader code treats empty dirs as no-ops.
+RUN set -e; \
+    for src in seed-data drops data scripts conversations shops party-quests configurations; do \
+      if [ -d "services/${SERVICE}/${src}" ]; then \
+        cp -r "services/${SERVICE}/${src}" "/app/${src}"; \
+      else \
+        mkdir -p "/app/${src}"; \
+      fi; \
+    done
+
 FROM alpine:3.23
 
 EXPOSE 8080
@@ -123,5 +151,13 @@ WORKDIR /
 
 COPY --from=build-env /server /
 COPY --from=build-env /app/config.yaml /
+COPY --from=build-env /app/seed-data      /seed-data
+COPY --from=build-env /app/drops          /drops
+COPY --from=build-env /app/data           /gachapons/data
+COPY --from=build-env /app/scripts        /scripts
+COPY --from=build-env /app/conversations  /conversations
+COPY --from=build-env /app/shops          /shops
+COPY --from=build-env /app/party-quests   /party-quests
+COPY --from=build-env /app/configurations /configurations
 
 CMD ["/server"]

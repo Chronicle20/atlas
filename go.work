@@ -8,6 +8,7 @@ use (
 	./libs/atlas-model
 	./libs/atlas-object-id
 	./libs/atlas-opcodes
+	./libs/atlas-outbox
 	./libs/atlas-packet
 	./libs/atlas-redis
 	./libs/atlas-rest

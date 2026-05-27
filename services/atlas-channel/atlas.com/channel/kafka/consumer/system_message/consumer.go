@@ -3,6 +3,7 @@ package system_message
 import (
 	consumer2 "atlas-channel/kafka/consumer"
 	system_message2 "atlas-channel/kafka/message/system_message"
+	"atlas-channel/listener"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -34,46 +35,69 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(system_message2.EnvCommandTopic)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessage(sc, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessage(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayPortalSound(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayPortalSound(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfo(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfo(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfoText(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfoText(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateAreaInfo(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateAreaInfo(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowHint(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowHint(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowGuideHint(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowGuideHint(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUiDisable(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiDisable(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}

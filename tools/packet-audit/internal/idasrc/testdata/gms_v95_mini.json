@@ -16,6 +16,42 @@
         {"op": "Decode1", "comment": "admin"},
         {"op": "Decode2", "comment": "subGradeCode+testerAccount"}
       ]
+    },
+    "CMob::OnDamaged": {
+      "address": "0x64ecb0",
+      "direction": "clientbound",
+      "dispatcher": "per-mob",
+      "calls": [
+        {"op": "Decode1", "comment": "damageType"},
+        {"op": "Decode4", "comment": "damage"}
+      ]
+    },
+    "CPet::OnAction": {
+      "address": "0x6a3860",
+      "direction": "clientbound",
+      "dispatcher": "per-pet",
+      "calls": [
+        {"op": "Decode1", "comment": "actionType"},
+        {"op": "Decode1", "comment": "actionNo"},
+        {"op": "DecodeStr", "comment": "chatMsg"}
+      ]
+    },
+    "CUserRemote::OnPetActivated": {
+      "address": "0x9547d0",
+      "direction": "clientbound",
+      "dispatcher": "per-pet-remote",
+      "calls": [
+        {"op": "Decode1", "comment": "slot"},
+        {"op": "Decode1", "comment": "active"}
+      ]
+    },
+    "CPet::DoAction": {
+      "address": "0x6a2340",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Decode8", "comment": "petLockerSN — no dispatcher prefix on serverbound"},
+        {"op": "Decode1", "comment": "nType"}
+      ]
     }
   }
 }

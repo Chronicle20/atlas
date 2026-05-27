@@ -1,0 +1,77 @@
+{
+  "binary": "fixture",
+  "md5": "test",
+  "generated_at": "2026-05-27T00:00:00Z",
+  "functions": {
+    "CMobPool::OnMobEnterField": {
+      "address": "0xAAAA",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "dwMobId"},
+        {"op": "Decode4", "comment": "dwTemplateId"},
+        {"op": "Delegate", "ref": "CMob::Init", "comment": "MonsterModel body inlined from CMob::Init"}
+      ]
+    },
+    "CMob::Init": {
+      "address": "0xBBBB",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode2", "comment": "ptX"},
+        {"op": "Decode2", "comment": "ptY"},
+        {"op": "Decode1", "comment": "stance"}
+      ]
+    },
+    "Guarded::Parent": {
+      "address": "0xCCCC",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "kind"},
+        {"op": "Delegate", "ref": "Guarded::Body", "comment": "body inlined when kind > 0", "guard": "kind > 0"}
+      ]
+    },
+    "Guarded::Body": {
+      "address": "0xDDDD",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "payload", "guard": "version > 0"}
+      ]
+    },
+    "Cycle::A": {
+      "address": "0xEEEE",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "before-cycle"},
+        {"op": "Delegate", "ref": "Cycle::B", "comment": "cycle via B"}
+      ]
+    },
+    "Cycle::B": {
+      "address": "0xFFFF",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Delegate", "ref": "Cycle::A", "comment": "back to A (cycle)"}
+      ]
+    },
+    "Diamond::Root": {
+      "address": "0x1000",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Delegate", "ref": "Diamond::Leaf"},
+        {"op": "Delegate", "ref": "Diamond::Leaf"}
+      ]
+    },
+    "Diamond::Leaf": {
+      "address": "0x1001",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "leaf-byte"}
+      ]
+    },
+    "BadRef::Parent": {
+      "address": "0x2000",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Delegate", "comment": "missing ref"}
+      ]
+    }
+  }
+}

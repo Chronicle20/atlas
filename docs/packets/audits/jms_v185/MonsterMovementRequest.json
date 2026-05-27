@@ -1,0 +1,200 @@
+{
+  "WriterName": "MonsterMovementRequest",
+  "IDAName": "CMob::GenerateMovePath",
+  "Address": "0x6e8892",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/monster/serverbound/movement.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwMobID (uniqueId)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nMobCtrlSN (moveId)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flags byte: nMoveEndingX | (v109 \u003c\u003c 1) | (bRiseByToss \u003c\u003c 2) | (nMoveTypeb \u003c\u003c 3) — atlas dwFlag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nAction (atlas nActionAndDir)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "ti (TARGETINFO — atlas skillData; LOBYTE=skillId, BYTE1=skillLevel)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 2,
+      "IDAComment": "multiTargetForBall count",
+      "Verdict": 3,
+      "Note": "sub-struct: multiTargetForBall — see _substruct/"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 2,
+      "IDAComment": "multiTargetForBall[i].x — loop",
+      "Verdict": 3,
+      "Note": "sub-struct: randTimeForAreaAttack — see _substruct/"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "multiTargetForBall[i].y — loop",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "randTimeForAreaAttack count",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "randTimeForAreaAttack[i] — loop",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) — atlas moveFlags",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "TSecType\u003clong\u003e.GetData(sub_6E9537) — atlas hackedCode",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "v107 ? TSecType\u003clong\u003e.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "v107 ? TSecType\u003clong\u003e.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 2,
+      "IDAComment": "sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC",
+      "Verdict": 3,
+      "Note": "sub-struct: Movement — see _substruct/"
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "CMovePath::Flush body (Movement elements, variable length)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bChasing (sub_68664B of m_bChasing)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hasTarget (LODWORD(v14[1].m_ap._ZtlSecureTear_vx[1]) != 0)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bChasing2 (m_pLadderOrRope flag)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bChasingHack (m_lZMass flag)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "tChaseDuration (vy / fall velocity)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3
+}

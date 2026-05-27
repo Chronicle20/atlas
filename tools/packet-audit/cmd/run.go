@@ -48,7 +48,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	worstVerdict := diff.VerdictMatch
 	var summary []report.Packet
 
-	process := func(direction csvpkg.Direction, name string, fname string) {
+	process := func(direction csvpkg.Direction, name, pkg, fname string) {
 		fields, err := src.Resolve(context.Background(), fname)
 		if err != nil {
 			if errors.Is(err, idasrc.ErrMCPUnavailable) {
@@ -61,7 +61,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "resolve", fname+":", err)
 			return
 		}
-		atlasPath, found := locateAtlasFile(opts.AtlasPacket, name, direction)
+		atlasPath, found := locateAtlasFile(opts.AtlasPacket, name, pkg, direction)
 		if !found {
 			return
 		}
@@ -73,8 +73,9 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		flat := diff.FlattenWithRegistry(calls, ctx, reg)
 		rows := diff.Diff(flat, fields)
 		v := worstRow(rows)
+		writerName := qualifiedWriterName(pkg, name)
 		pkt := report.Packet{
-			WriterName:  name,
+			WriterName:  writerName,
 			IDAName:     fname,
 			Address:     fields.Address,
 			Variant:     fmt.Sprintf("%s/v%d", ctx.Region, ctx.MajorVersion),
@@ -88,7 +89,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		}
 		summary = append(summary, pkt)
 		if err := report.WritePacket(outDir, pkt); err != nil {
-			fmt.Fprintln(stderr, "write", name+":", err)
+			fmt.Fprintln(stderr, "write", writerName+":", err)
 		}
 	}
 
@@ -99,11 +100,12 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	seen := map[string]bool{}
 	for _, fname := range idaExportFunctions(opts.IDASource) {
 		for _, candidate := range candidatesFromFName(fname) {
-			if seen[candidate.name] {
+			key := candidate.pkg + "::" + candidate.name
+			if seen[key] {
 				continue
 			}
-			seen[candidate.name] = true
-			process(candidate.dir, candidate.name, fname)
+			seen[key] = true
+			process(candidate.dir, candidate.name, candidate.pkg, fname)
 		}
 	}
 
@@ -123,7 +125,24 @@ func runPipeline(opts Options, stderr io.Writer) int {
 
 type candidate struct {
 	name string
-	dir  csvpkg.Direction
+	// pkg is an optional sub-domain folder hint (e.g. "monster", "drop",
+	// "reactor", "pet"). When set, locateAtlasFile restricts the walk to
+	// libs/atlas-packet/<pkg>/<direction>/ and the report filename becomes
+	// titlecase(pkg)+name (e.g. MonsterSpawn.md), disambiguating short
+	// struct names that collide across sub-domains.
+	pkg string
+	dir csvpkg.Direction
+}
+
+// qualifiedWriterName returns the report/file name for a candidate. When pkg
+// is empty (the existing login/character routing), the writer name is just
+// the struct name. When pkg is set, the writer name is titlecase(pkg)+name
+// so each sub-domain's short-named structs get unique report files.
+func qualifiedWriterName(pkg, name string) string {
+	if pkg == "" {
+		return name
+	}
+	return strings.ToUpper(pkg[:1]) + pkg[1:] + name
 }
 
 // candidatesFromFName converts an IDA function name into one or more
@@ -422,6 +441,105 @@ func candidatesFromFName(fname string) []candidate {
 		// Client sends opcode 0x18 (24) with EncodeStr(pic)+Encode4(charId) (v95: PIC path).
 		// IDA: CLogin::SendDeleteCharPacket@0x5d53a0 (m_bLoginOpt==1 branch).
 		return []candidate{{name: "DeleteCharacter", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: monster (clientbound) ---
+	// FNames verified against the canonical CSV (docs/packets/MapleStory Ops -
+	// ClientBound.csv) and live GMS v95 IDA. CMobPool::OnMobPacket dispatches
+	// per-mob ops to CMob::OnXxx leaf handlers; we route each leaf directly.
+	case "CMobPool::OnMobEnterField":
+		return []candidate{{name: "Spawn", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMobPool::OnMobLeaveField":
+		return []candidate{{name: "Destroy", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMobPool::OnMobChangeController":
+		return []candidate{{name: "Control", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMove":
+		return []candidate{{name: "Movement", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnCtrlAck":
+		return []candidate{{name: "MovementAck", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnStatSet":
+		return []candidate{{name: "StatSet", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnStatReset":
+		return []candidate{{name: "StatReset", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnDamaged":
+		return []candidate{{name: "Damage", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnHPIndicator":
+		return []candidate{{name: "Health", pkg: "monster", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: drop (clientbound) ---
+	case "CDropPool::OnDropEnterField":
+		return []candidate{{name: "Spawn", pkg: "drop", dir: csvpkg.DirClientbound}}
+	case "CDropPool::OnDropLeaveField":
+		return []candidate{{name: "Destroy", pkg: "drop", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: reactor (clientbound) ---
+	case "CReactorPool::OnReactorEnterField":
+		return []candidate{{name: "Spawn", pkg: "reactor", dir: csvpkg.DirClientbound}}
+	case "CReactorPool::OnReactorChangeState":
+		// CSV: REACTOR_HIT — atlas Hit (writer = "ReactorHit").
+		return []candidate{{name: "Hit", pkg: "reactor", dir: csvpkg.DirClientbound}}
+	case "CReactorPool::OnReactorLeaveField":
+		return []candidate{{name: "Destroy", pkg: "reactor", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: pet (clientbound) ---
+	// CSV maps SPAWN_PET → CUser::OnPetPacket (the dispatcher for self/foreign
+	// pet activation). Atlas's Activated struct writes `ownerId` + slot + active —
+	// the ownerId is the characterId consumed by CUserPool::OnUserRemotePacket
+	// before dispatch to CUserRemote::OnPetActivated, so we route to the foreign
+	// leaf. Verified against v95 IDA OnPetPacket@0x8e02a0 (dispatcher) and
+	// CUserRemote::OnPetActivated@0x9547d0 (leaf).
+	case "CUserRemote::OnPetActivated":
+		return []candidate{{name: "Activated", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnMove":
+		return []candidate{{name: "Movement", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnAction":
+		return []candidate{{name: "Chat", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnActionCommand":
+		return []candidate{{name: "CommandResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnLoadExceptionList":
+		return []candidate{{name: "ExcludeResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnCashPetFoodResult":
+		return []candidate{{name: "CashFoodResult", pkg: "pet", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: monster (serverbound) ---
+	case "CMob::GenerateMovePath":
+		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
+		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: drop (serverbound) ---
+	case "CWvsContext::SendDropPickUpRequest":
+		// CSV: ITEM_PICKUP — atlas PickUp (handle = "DropPickUpHandle").
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: reactor (serverbound) ---
+	case "CReactorPool::FindHitReactor":
+		// CSV: DAMAGE_REACTOR — atlas HitRequest (handle = "ReactorHitHandle").
+		return []candidate{{name: "HitRequest", pkg: "reactor", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: pet (serverbound) ---
+	case "CWvsContext::SendActivatePetRequest":
+		// CSV: SPAWN_PET (serverbound) — atlas Spawn (handle = "PetSpawnHandle").
+		return []candidate{{name: "Spawn", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CVecCtrlPet::EndUpdateActive":
+		// CSV: MOVE_PET (serverbound) — atlas MovementRequest.
+		return []candidate{{name: "MovementRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::DoAction":
+		// CSV: PET_CHAT (serverbound) — atlas ChatRequest.
+		return []candidate{{name: "ChatRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::ParseCommand":
+		// CSV: PET_COMMAND (serverbound) — atlas Command.
+		return []candidate{{name: "Command", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::SendUpdateExceptionListRequest":
+		// CSV: PET_EXCLUDE_ITEMS — atlas ExcludeItem.
+		return []candidate{{name: "ExcludeItem", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendPetFoodItemUseRequest":
+		// CSV: PET_FOOD — atlas Food.
+		return []candidate{{name: "Food", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendStatChangeItemUseRequestByPetQ":
+		// CSV: PET_AUTO_POT — atlas ItemUse.
+		return []candidate{{name: "ItemUse", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CPet::SendDropPickUpRequest":
+		// CSV: PET_LOOT — atlas DropPickUp.
+		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }
@@ -489,7 +607,7 @@ func lookupFName(name string, dir csvpkg.Direction, cb, sb csvpkg.Map, template 
 	return "", false
 }
 
-func locateAtlasFile(root, name string, dir csvpkg.Direction) (string, bool) {
+func locateAtlasFile(root, name, pkg string, dir csvpkg.Direction) (string, bool) {
 	needle := "type " + name + " struct"
 	var hit string
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -503,6 +621,15 @@ func locateAtlasFile(root, name string, dir csvpkg.Direction) (string, bool) {
 		}
 		if !strings.Contains(path, string(os.PathSeparator)+expectDir+string(os.PathSeparator)) {
 			return nil
+		}
+		// When pkg is set, restrict to /<pkg>/<expectDir>/ so combat sub-domains
+		// (monster/drop/reactor/pet) with colliding short struct names route
+		// to the correct file.
+		if pkg != "" {
+			pkgNeedle := string(os.PathSeparator) + pkg + string(os.PathSeparator) + expectDir + string(os.PathSeparator)
+			if !strings.Contains(path, pkgNeedle) {
+				return nil
+			}
 		}
 		b, err := os.ReadFile(path)
 		if err != nil {

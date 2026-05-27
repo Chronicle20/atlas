@@ -1,0 +1,56 @@
+{
+  "WriterName": "PetItemUse",
+  "IDAName": "CWvsContext::SendStatChangeItemUseRequestByPetQ",
+  "Address": "0xaee1d4",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/pet/serverbound/item_use.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "liPetSN (8 bytes)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bBuffSkill",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "get_update_time()",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nPOS",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nItemID",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 2
+}

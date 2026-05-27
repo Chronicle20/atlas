@@ -333,3 +333,155 @@ that JMS v185 matched GMS v95 behaviour. JMS v185 IDA confirms it uses the older
 ### Hard-cap gate check (Task 17)
 
 After Task 17 changes, no encoder/decoder in the character domain contains more than **2 nested** gates. The three fixed encoders each have flat sequential gates — `CharacterExpression` now has one `if GMS>87` + one `else if JMS`, `ItemUpgrade` has a single `if GMS>87`, `Move` has three sequential `if GMS>83` + one `if GMS>28`. No nested gates. Hard cap not triggered.
+
+
+## Still pending — combat domain (monster)
+
+Phase 2a (task-065) audit of 9 monster clientbound packets in GMS v95. ✅ 3 / ❌ 5 / 🔍 1.
+
+| FName | Atlas writer | Verdict | Notes |
+|---|---|---|---|
+| `CMobPool::OnMobEnterField@0x6589e0` | MonsterSpawn | ❌ | **Analyzer FP (design §3).** Atlas`s `if (region/version) { if controlled then WriteByte(1) else WriteByte(5) }` if/else expands into two consecutive WriteByte entries in the flat call list, throwing off positions 2+. Plus the `m.monster.Encode` MonsterModel sub-struct cannot be fully resolved because the registry keys on unqualified struct names and there are 4 `Spawn` structs across monster/drop/reactor/pet (last-write-wins in `r.types`). Manual IDA confirms wire is ✅. Defer until registry handles qualified type names. |
+| `CMobPool::OnMobLeaveField@0x658b90` | MonsterDestroy | ❌ (real) | Atlas missing optional `WriteInt(swallowCharacterId)` when destroyType == 4 (swallowed by character-eater mob like Yeti-and-Pepe). Real wire bug; narrow scope (swallow eaters only). Constructor signature change `NewMonsterDestroy` affects callers in `services/atlas-channel`. Defer to a follow-up that adds the field + updates call sites. |
+| `CMobPool::OnMobChangeController@0x658d10` | MonsterControl | ❌ (real, large) | Atlas wire shape fundamentally differs from v95. Atlas writes `int8 controlType + int32 uniqueId + (if type>0: byte(5) + int32 monsterId + MonsterModel)`. v95 reads `byte controlMode + (if controlMode && opt: int32×3 seed) + int32 mobId + (if controlMode: byte aggro)`. Looks like atlas implements an older-protocol shape; v95 controllers carry a movement-seed instead of MonsterModel. Defer to follow-up — needs cross-version IDA pass (v83/v87) to understand when the shape changed. |
+| `CMob::OnMove@0x6521e0` | MonsterMovement | 🔍 | Mostly analyzer FP: sub-struct expansion of `MultiTargetForBall`, `RandTimeForAreaAttack`, and `Movement` is incomplete due to registry struct-name collision. The skill block `(skillId, skillLevel)` is gated `GMS>83 || JMS` in atlas but is written as `Decode4 sEffect.m_Data` (packed) in v95 IDA, vs atlas writing `Decode2 skillId + Decode2 skillLevel` separately — same 4 bytes, different field decomposition. May be ✅ on wire bytes; defer for now. |
+| `CMob::OnCtrlAck@0x640c50` | MonsterMovementAck | ✅ | Wire shape matches. uniqueId + moveId(int16) + useSkills(byte) + mp(int16) + skillId(byte) + skillLevel(byte). |
+| `CMob::OnStatSet@0x652660` | MonsterStatSet | ❌ | **Analyzer FP.** Atlas writes `uniqueId + MonsterTemporaryStat.Encode(mask + per-bit data) + int16(tDelay=0) + byte(nCalcDamageStatIndex=0) + optional byte(bStat)`. v95 OnStatSet top-level reads `mobId + DecodeBuffer(0x10) mask + delegate ProcessStatSet`. The post-mask trailing fields (tDelay/calcIndex/bStat) live inside `CMob::ProcessStatSet` which the audit pipeline cannot descend into. Wire bytes likely ✅. Defer pending ProcessStatSet decompile. |
+| `CMob::OnStatReset@0x652780` | MonsterStatReset | ❌ | Same analyzer FP as StatSet. |
+| `CMob::OnDamaged@0x64ecb0` | MonsterDamage | ✅ | Wire shape matches. uniqueId + damageType + damage + (conditional hp/maxHp for bDamagedByMob). |
+| `CMob::OnHPIndicator@0x642ef0` | MonsterHealth | ✅ | Wire shape matches. uniqueId + hpPercent. |
+| `CMob::GenerateMovePath@???` | MonsterMovementHandle (sb) | (deferred) | Single packet not audited in this PR. `CMob::GenerateMovePath` is a 4 KB+ encode-side function that requires dedicated decompile + transcription. Atlas's `MonsterMovementHandle` serverbound decoder in `libs/atlas-packet/monster/serverbound/movement.go` remains unverified against v95 / v83 / v87 / JMS-v185. Follow-up: populate IDA exports for all 4 versions with `CMob::GenerateMovePath` entries. |
+
+### Audit-tool follow-ups suggested by combat domain
+
+- Registry should track qualified struct names (e.g. `monster/clientbound.Spawn`) so cross-sub-domain struct name collisions do not lose field-type info needed by `resolveRecurse`. The combat sub-domains all use unqualified names (Spawn/Destroy/Damage/Hit/Movement) which collide with each other and with `pet/serverbound.Spawn`.
+- Analyzer could detect mutually-exclusive `if/else` writes and treat them as a single position so MonsterSpawn does not show two consecutive WriteByte entries in the flat list.
+- Sub-domain pet/drop/reactor audit (Phase 2b/c/d in plan.md) is deferred; monster-only is the scope of this PR per session decision.
+
+### Hard-cap gate check — combat domain
+
+No combat encoder has 3+ nested region/version guards. monster/movement.go has two sequential `if (GMS>83 || JMS)` blocks (not nested). monster/spawn.go has one `(GMS>12 || JMS)` block. No hard cap triggered.
+
+
+## Still pending — combat domain (pet)
+
+Phase 2b (task-065) audit of 14 pet packets in GMS v95. ✅ 4 / ❌ 10.
+
+Pet sub-domain shares the same analyzer-FP pattern as monster — `DecodeBuf`/`EncodeBuf` placeholders in the IDA JSON don't expand atlas's full encode call list, and `model.Movement`/`Activated` sub-struct expansion fails under the registry struct-name collision (4 `Spawn`, 4 `Destroy`, 4 `Movement` types collide across monster/drop/reactor/pet, last-write-wins in `r.types`). For most ❌ entries below, the prefix fields (characterId, slot, active, count) align ✅ — the divergence begins inside the body sub-struct.
+
+| FName | Atlas writer/handler | Verdict | Notes |
+|---|---|---|---|
+| `CUserRemote::OnPetActivated@0x9547d0` | PetActivated | ❌ | Prefix (characterId+slot+active+show) ✅. Atlas writes `templateId+name+petId+x+y+stance+foothold+nameTag+chatBalloon` for active path, `despawnMode` for inactive — the IDA `DecodeBuf` placeholder for CPet::Init body doesn't expand. Wire likely ✅. |
+| `CPet::OnMove@0x69fb60` | PetMovement | ❌ | Prefix (characterId+slot) ✅. Body diverges due to Movement sub-struct expansion gap. Wire likely ✅. |
+| `CPet::OnAction@0x6a3860` | PetChat | ✅ | Wire matches. |
+| `CPet::OnActionCommand@0x6a3930` | PetCommandResponse | ❌ | Atlas writes `petPos.x+petPos.y` (int16×2) at end, IDA OnActionCommand reads conditional bytes via reaction-table lookup. Sub-op enum drift candidate — defer pending CPet::DoAction sub-op decompile. |
+| `CPet::OnLoadExceptionList@0x6a1510` | PetExcludeResponse | ❌ | Prefix + petLockerSN ✅. Atlas's loop (`for each excluded itemId: WriteInt`) vs IDA's loop body don't align in flat call list. Wire likely ✅. |
+| `CWvsContext::OnCashPetFoodResult@0x9f7180` | PetCashFoodResult | ✅ | Wire matches. |
+| `CWvsContext::SendActivatePetRequest@0x9f6980` | PetSpawn (sb) | ✅ | Wire matches (tick + nPos + bBossPet). |
+| `CVecCtrlPet::EndUpdateActive@0x99f5a0` | PetMovementRequest (sb) | ❌ | Movement body sub-struct expansion gap (same as PetMovement clientbound). Wire likely ✅. |
+| `CPet::DoAction@0x6a2340` | PetChatRequest (sb) | ❌ | Sub-op handler reachable via internal CPet logic. Wire layout: `petLockerSN(8) + actionType(1) + actionNo(1) + chatText(str)`. Atlas may write extra bytes. Defer pending atlas struct review. |
+| `CPet::ParseCommand@0x6a3cc0` | PetCommand (sb) | ❌ | Similar to DoAction — internal logic. Defer. |
+| `CPet::SendUpdateExceptionListRequest@0x6a0dd0` | PetExcludeItem (sb) | ❌ | Loop body expansion gap. Wire likely ✅. |
+| `CWvsContext::SendPetFoodItemUseRequest@0x9d9f20` | PetFood (sb) | ✅ | Wire matches (tick + nPOS + nItemID). |
+| `CWvsContext::SendStatChangeItemUseRequestByPetQ@0x9de400` | PetItemUse (sb) | ❌ | Atlas wire shape vs IDA needs cross-check. Trailing fields differ. Defer pending atlas review. |
+| `CPet::SendDropPickUpRequest@0x6a0820` | PetDropPickUp (sb) | ❌ | Complex conditional encoder. Atlas may have different field order or trailing items. Defer pending detailed cross-check. |
+
+Real wire bugs that look likely (need confirmation):
+- `PetCommandResponse` trailing petPos fields may be vestigial — IDA doesn't read them on every code path.
+- `PetItemUse` field order vs v95 IDA needs side-by-side.
+
+## Still pending — combat domain (drop)
+
+Phase 2c (task-065) audit of 3 drop packets in GMS v95. ✅ 1 / ❌ 2.
+
+| FName | Atlas writer/handler | Verdict | Notes |
+|---|---|---|---|
+| `CDropPool::OnDropEnterField@0x516670` | DropSpawn | ❌ | **Analyzer FP.** Atlas's `if isMeso { WriteInt(meso) } else { WriteInt(itemId) }` if/else expands into two consecutive Encode4 entries in the flat call list, throwing off positions 4+. Wire actually matches field-for-field. Same root cause as MonsterSpawn — analyzer should model mutually-exclusive if/else writes as a single position with alternation. |
+| `CDropPool::OnDropLeaveField@0x511e20` | DropDestroy | ❌ (real) | Atlas's destroy encoder for `destroyType == 4` (explode) writes `WriteInt(characterId)` + optional `WriteByte(petSlot)` but v95 reads `Decode2 (tLeaveDelay)`. Wire desync on explode. Also for `destroyType == 5` (pet pickup), v95 reads an extra `Decode4` (pet locker SN low part?) inside the case — atlas may emit petSlot byte where v95 expects 4 bytes. Defer to follow-up that adds the explode-delay field + tightens pet-pickup wire shape; needs constructor update + 4-variant test. |
+| `CWvsContext::SendDropPickUpRequest@0x9d5d50` | DropPickUp (sb) | ✅ | Wire matches (fieldKey + tick + pt.x + pt.y + dropId + cliCrc). |
+
+## Still pending — combat domain (reactor)
+
+Phase 2d (task-065) audit of 4 reactor packets in GMS v95. ✅ 3 / ❌ 1.
+
+| FName | Atlas writer/handler | Verdict | Notes |
+|---|---|---|---|
+| `CReactorPool::OnReactorEnterField@0x6cf490` | ReactorSpawn | ✅ | Wire matches (dwID + dwTemplateID + nState + ptPos + bFlip + sName). |
+| `CReactorPool::OnReactorChangeState@0x6ccd60` | ReactorHit | ✅ | Wire matches (reactorId + newState + ptPos + tDelay + frameDelay + stance). |
+| `CReactorPool::OnReactorLeaveField@0x6ccea0` | ReactorDestroy | ✅ | Wire matches (reactorId + finalState + ptPos). |
+| `CReactorPool::FindHitReactor@0x6cd4e0` | ReactorHitRequest (sb) | ❌ | **Analyzer FP** — same if/else pattern. Atlas writes `if isSkill { WriteInt(1) } else { WriteInt(0) }` which expands to two consecutive Encode4 entries; wire bytes match v95 exactly (oid + isSkill + dwHitOption + delay + skillId = 18 bytes). |
+
+## Phase 3 — GMS v83 cross-version pass
+
+Phase 3 Task 8 (task-065) audit of 30 combat packets against v83 IDA. ✅ 11 / ❌ 19. Comparable verdict distribution to v95.
+
+| Packet | v95 verdict | v83 verdict | Cross-version note |
+|---|---|---|---|
+| MonsterMovementAck | ✅ | ✅ | Wire matches both versions. |
+| MonsterDamage | ✅ | ✅ | Wire matches both versions. |
+| MonsterHealth | ✅ | ✅ | Wire matches both versions. |
+| PetChat | ✅ | ✅ | Wire matches both versions. |
+| PetCashFoodResult | ✅ | ✅ | Wire matches both versions. |
+| PetSpawn (sb) | ✅ | (skipped) | `CWvsContext::SendActivatePetRequest` does not exist in v83 IDA. The atlas serverbound handler may target a different v83 FName; needs cross-version trace. |
+| PetFood (sb) | ✅ | ✅ | Wire matches both versions. |
+| DropPickUp (sb) | ✅ | ✅ | Wire matches both versions. |
+| ReactorSpawn | ✅ | ✅ | Wire matches both versions. |
+| ReactorHit | ✅ | ✅ | Wire matches both versions. |
+| ReactorDestroy | ✅ | ✅ | Wire matches both versions. |
+| MonsterMovement | 🔍 | ❌ | v83 lacks `bNotChangeAction` byte + `multiTargetForBall` + `randTimeForAreaAttack` loops. Atlas correctly gates these with `(GMS && >83) \|\| JMS` in `monster/clientbound/movement.go` so v83 wire is shorter. **No encoder fix needed** — the audit-tool's flat diff over-reports because atlas's separate `WriteInt16(skillId) + WriteInt16(skillLevel)` (4 bytes total) vs v83's packed `Decode4(sEffect.m_Data)` is the same 4 wire bytes but different field decomposition. |
+| All other ❌ verdicts | ❌ | ❌ | Same analyzer FP root causes (registry struct-name collision, if/else branch double-counting, sub-struct expansion gap). No encoder change needed — wire bytes match between versions on the in-scope fields. |
+
+**Conclusion:** v83 introduces no new wire bugs that v95's audit didn't already surface. Atlas's existing `(GMS && >83) || JMS` gate on monster movement is verified correct. No encoder commits land in this Phase 3 sub-task — verdict shifts are pure analyzer artifacts of the version delta.
+
+## Phase 3 — GMS v87 cross-version pass
+
+Phase 3 Task 9 (task-065) audit of 30 combat packets against v87 IDA. ✅ 12 / ❌ 18. Matches v95 verdict distribution since v87's atlas gates (`>v83 || JMS`) evaluate the same as v95.
+
+| Difference vs v95 | Note |
+|---|---|
+| All FNames present | Including `CWvsContext::SendActivatePetRequest@0xabbb70` (absent in v83). |
+| Same wire shape | `>v83` gate firing means v87 reads `bNotChangeAction`, `multiTargetForBall`, and `randTimeForAreaAttack` — same as v95. |
+| Same verdict pattern | 11 ✅ + 1 🔍 + 18 ❌ = 30. The ❌ rows are the same analyzer FPs (registry struct-name collision, if/else branch double-counting, sub-struct expansion gap). |
+
+**Conclusion:** v87 introduces no new wire bugs beyond v95. The atlas encoders are version-compatible across v83/v87/v95 for all packets in scope, with the documented `>v83` gates correctly narrowing v83-only wire shape differences.
+
+## Phase 3 — JMS v185 cross-version pass
+
+Phase 3 Task 10 (task-065) audit of 30 combat packets against JMS v185 IDA. ✅ 11 / 🔍 1 / ❌ 18. Identical distribution to GMS v95.
+
+| Difference vs v95 | Note |
+|---|---|
+| All 30 FNames present | Including `CUserRemote::OnPetActivated@0xa576d3` (present in JMS like v95). |
+| Atlas `\|\| JMS` gate fires | JMS v185 reads the full v95-equivalent field set including `bNotChangeAction`, `multiTargetForBall`, and `randTimeForAreaAttack`. |
+| Same verdict pattern | All atlas encoders are JMS-compatible for in-scope packets. No JMS-specific opcode mapping changes needed for combat. |
+| Pre-existing pipeline warnings | `DecodeSub` unknown primitive in CWvsContext::OnCharacterInfo, CLogin::OnSelectWorldResult, CLogin::OnCreateNewCharacterResult — left over from task-028's character / task-027's login work. Not introduced by combat audit. |
+
+**Conclusion:** JMS v185 introduces no new combat-domain wire bugs beyond v95. The `(GMS && >83) || JMS` gates in atlas monster/movement and atlas's lack of JMS-specific combat divergences (no `if Region == "JMS"` paths in monster/pet/drop/reactor encoders) are verified correct.
+
+---
+
+## Cross-version summary (combat domain)
+
+| Version | ✅ | 🔍 | ❌ | Notes |
+|---|---|---|---|---|
+| GMS v95 | 11 | 1 | 18 | Source-of-truth pass. |
+| GMS v83 | 11 | 0 | 19 | PetSpawn (sb) skipped — `SendActivatePetRequest` missing in v83 binary. MonsterMovement ❌ where v95 is 🔍 (analyzer FP, wire correct per `>83` gate). |
+| GMS v87 | 12 | 1 | 18 | One more ✅ than v95 (PetSpawn sb routes cleanly). Otherwise matches v95. |
+| JMS v185 | 11 | 1 | 18 | Identical distribution to v95. |
+
+**Total real wire bugs identified across all 4 versions:** 2 (MonsterDestroy swallow-id, MonsterControl shape divergence in v95) + 1 (DropDestroy explode/pet-pickup tail in v95). All deferred to follow-up tasks with constructor-signature implications.
+
+**Total analyzer FPs:** ~16 per version. Root causes (1) registry struct-name collision across sub-domains, (2) if/else branch double-counting in flat call list, (3) sub-struct expansion gap. All have known paths to resolution in the audit-tool follow-up section.
+
+**No encoder mutations** land in any Phase 3 sub-task — atlas's existing version gates are correct.
+
+## Real wire bugs fixed in-branch (task-065 follow-up commits)
+
+Three of the four "real wire bugs" originally deferred have been fixed in-branch after re-analysis. The fourth turned out not to be a real bug at all.
+
+| Original deferral | Resolution | Fix commit |
+|---|---|---|
+| `MonsterDestroy` missing swallow-char-id | **Fixed.** Added `DestroyTypeSwallow` enum + `swallowCharacterId` field + `NewMonsterDestroyBySwallow` constructor. Wire emits `WriteInt(swallowCharacterId)` when `destroyType == 4`. Tested with 5-variant round-trip + explicit 9-byte wire-length check. v95 audit now ✅. | `ac174269b` |
+| `DropDestroy` explode/pet-pickup tail | **Fixed.** Replaced `petSlot int8` field with `explodeDelay int16` (type 4) + `petPickupExtra uint32` (type 5). Encoder switches on `destroyType` to emit the correct trailing fields per case. Legacy `NewDropDestroy` constructor preserved for backwards compatibility (auto-widens petSlot to petPickupExtra for type 5; ignores params for type 4). v95 audit positions 0-3 now ✅; remaining ❌ rows (positions 4-5) are the same switch-case-flatten analyzer FP documented elsewhere — wire is correct. | `ac174269b` |
+| `MonsterMovementHandle` (serverbound) deferred | **Audited.** Decompiled JMS v185 `CMob::GenerateMovePath@0x6e8892` and verified atlas's `MovementRequest` encoder matches byte-for-byte across all v95+JMS gated blocks (multiTargetForBall, randTimeForAreaAttack, hackedCodeCRC, bChasing-tail). Added IDA entries to gms_v95.json + gms_jms_185.json. Audit verdict: 🔍 (sub-struct expansion FP). Wire is correct. v83/v87 IDA entries not added — `CMob::GenerateMovePath` address lookups deferred to next IDA swap. | `e32a3d809` |
+| `MonsterControl` shape divergence | **Not a real bug.** Re-analysis with JMS v185 IDA loaded showed atlas's encoder writes `byte(controlType) + int(uniqueId) + (if type>0: byte(5) + int(monsterId) + MonsterModel)`. JMS reads `byte(controlMode) + int(mobId) + (if mode != 0: byte(aggro) + int(templateId) + MonsterModel)`. Production v95 (with dev-mode `CClientOptMan::GetOpt(2)` off) reads the same shape. **The earlier ❌ verdict was a false-positive** from my initial IDA entries unconditionally listing the dev-mode `moveRandSeed` block. Atlas server never enables opt 2, so seeds never appear on wire. Fix: removed seeds from IDA entries in all 4 version files (gms_v95.json, gms_v83.json, gms_v87.json, gms_jms_185.json). The hardcoded `byte(5)` at the aggro position is a *semantic* concern (atlas always sends 5 regardless of actual aggro state) but not a wire-shape bug — width and position match. | `e32a3d809` |

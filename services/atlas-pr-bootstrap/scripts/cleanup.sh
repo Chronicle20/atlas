@@ -186,19 +186,50 @@ do_drop_branch() {
     fi
     ATLAS_STEP=drop-branch log info "deleting bot/pr-${PR_NUMBER}-resolved"
     local err
-    if ! err=$(gh api --method DELETE \
+    local branch_deleted=0
+    if err=$(gh api --method DELETE \
         -H "Authorization: Bearer ${GHCR_TOKEN}" \
         "/repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-${PR_NUMBER}-resolved" \
         2>&1); then
+        branch_deleted=1
+    else
         case "$err" in
             *"Reference does not exist"*|*"Branch not found"*|*"404"*)
-                return 0
+                # Already gone; treat as success for the race below — the
+                # Application targets a missing branch either way.
+                branch_deleted=1
                 ;;
             *)
                 ATLAS_STEP=drop-branch log warn "branch delete: $err"
                 return 1
                 ;;
         esac
+    fi
+
+    # Once the bot branch is gone, Argo CD's post-delete-finalizer drain
+    # for atlas-pr-${PR_NUMBER} CANNOT re-render the source manifest. Its
+    # next reconcile will record `DeletionError: failed to generate
+    # manifest ... unable to resolve 'bot/pr-${PR_NUMBER}-resolved' to a
+    # commit SHA` and the finalizers stay attached forever — the
+    # "Source-branch-missing scenario" in runbook §9.4. PR 522 hit this
+    # on 2026-05-27 and sat Terminating for 10h until a manual
+    # finalizer-patch.
+    #
+    # Pre-empt the race by patching the post-delete finalizers ourselves
+    # NOW, while we still have the Application's identity (PR_NUMBER) and
+    # the cleanup Job is still running with its argocd-ns RBAC. After
+    # this, the Application can GC even if Argo's drain fails to render.
+    # The resources-finalizer drain already ran (we're in PostDelete);
+    # the per-env namespace is gone; this is just removing the
+    # bookkeeping finalizers Argo would otherwise drop after its
+    # final-render verification.
+    if [ "$branch_deleted" = "1" ] && command -v kubectl >/dev/null 2>&1; then
+        ATLAS_STEP=drop-branch log info \
+            "pre-empting post-delete-finalizer drain on atlas-pr-${PR_NUMBER}"
+        kubectl -n argocd patch application.argoproj.io "atlas-pr-${PR_NUMBER}" \
+            --type=merge -p '{"metadata":{"finalizers":[]}}' >/dev/null 2>&1 \
+            || ATLAS_STEP=drop-branch log warn \
+                "finalizer patch failed; manual recovery may be required (see runbook §9.4)"
     fi
     return 0
 }

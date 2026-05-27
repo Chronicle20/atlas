@@ -276,6 +276,8 @@ gh api --method DELETE \
 
 If the PostDelete render fails with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`, the Application targets a branch that no longer exists. Diagnose: `kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions[] | select(.message | contains("ComparisonError"))'`. Recovery is the same finalizer patch (step 2 above) followed by the sweep (step 1) — the branch is already gone so `drop-branch` is a no-op.
 
+**As of task-078, `cleanup.sh::do_drop_branch` pre-empts this race itself** — after a successful branch delete it patches the Application's `post-delete-finalizer.argocd.argoproj.io[/cleanup]` finalizers off so Argo CD can GC the Application without ever needing to re-render the now-missing source. The runbook step above is still the manual recovery for legacy Applications that were torn down before this fix, or for clusters where `atlas-pr-cleanup` SA was denied the patch permission. Observed first on PR 522 on 2026-05-27 — Application sat Terminating for 10h before manual finalizer-patch.
+
 ## §9.5 Rotating credentials
 
 All Argo CD-related Secrets live in the `argocd` namespace and are templated by `argocd-secrets.yml.example` in the cluster-infra repo. To rotate:

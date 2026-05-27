@@ -136,6 +136,108 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "cleanup.sh drop-branch pre-empts post-delete-finalizer drain after deleting branch" {
+    # Once `drop-branch` deletes the bot branch, Argo CD's finalizer-drain
+    # reconcile can't re-render the missing source → DeletionError → the
+    # Application sits Terminating forever. PR 522 hit this on 2026-05-27.
+    # cleanup.sh must patch the Application's finalizers itself after a
+    # successful (or already-404'd) branch delete.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "gh \$*" >> "$CALL_LOG"
+# DELETE branch returns 204 (no body).
+exit 0
+EOF
+    cat > "$SHIM_DIR/kubectl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "kubectl \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        GHCR_TOKEN=fake-token \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    # The DELETE branch call must have happened.
+    grep -F 'gh api --method DELETE' "$CALL_LOG" | grep -F 'bot%2Fpr-42-resolved'
+    # AND we must have followed it with a finalizer-drop patch on the
+    # Application.
+    grep -F 'kubectl -n argocd patch application.argoproj.io atlas-pr-42' "$CALL_LOG" \
+        | grep -F '"finalizers":[]'
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh drop-branch still pre-empts finalizer drain when branch already 404'd" {
+    # On a re-run after a partial cleanup, the bot branch may already be
+    # gone. cleanup.sh treats that as success (idempotent) — and must
+    # ALSO still patch the Application's finalizers, because the
+    # Application is in the same Source-branch-missing state.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "gh \$*" >> "$CALL_LOG"
+echo "gh: Reference does not exist (HTTP 404)" >&2
+exit 1
+EOF
+    cat > "$SHIM_DIR/kubectl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "kubectl \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
+        PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        GHCR_TOKEN=fake-token \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    grep -F 'kubectl -n argocd patch application.argoproj.io atlas-pr-42' "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR"
+}
+
 # fixture_env returns the ATLAS_ENV hash cleanup.sh derives for PR_NUMBER=99
 # (compute_atlas_env "99" → first 4 hex chars of sha256("pr-99")). Keeping this
 # computed instead of hardcoded means the rpk tests below stay correct if the

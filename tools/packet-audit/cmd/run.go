@@ -871,6 +871,189 @@ func candidatesFromFName(fname string) []candidate {
 		// Synthetic entry: client sends party join accept with partyId after receiving an invite.
 		// Atlas OperationJoin writes: WriteInt(partyId). ✓
 		return []candidate{{name: "OperationJoin", pkg: "party", dir: csvpkg.DirServerbound}}
+
+	// --- Social: guild (clientbound) ---
+	// CSV: GUILD_OPERATION (clientbound, opcode 0x041/65 in GMS v95) → CWvsContext::OnGuildResult
+	// dispatches on a leading mode byte (Decode1) to 20+ sub-handlers. Each atlas struct is modelled
+	// via a #-suffixed synthetic IDA entry. Both mode byte and sub-op enum drift deferred to _pending.md.
+	case "CWvsContext::OnGuildResult":
+		// Top-level dispatcher — reads mode byte only; sub-ops audited individually.
+		// ⚠️ OP-FAMILY-guild-clientbound: op-byte family deferred to _pending.md.
+		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#RequestAgreement":
+		// case 3: Decode1(mode) + Decode4(partyId) + DecodeStr(leaderName) + DecodeStr(guildName).
+		// Atlas RequestAgreement writes: mode(1) + partyId(4) + leaderName(str) + guildName(str). ✓
+		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#Invite":
+		// case 5: Decode1(mode) + Decode4(guildId) + DecodeStr(inviterName) + Decode4(v21) + Decode4(nSkillID).
+		// Atlas Invite writes: mode(1) + guildId(4) + originatorName(str) — MISSING 2 trailing Decode4 fields.
+		// ❌ Real wire bug: client reads 2 extra int32 fields that atlas does not send.
+		// IDA address 0xa0d664 (case 5 body).
+		return []candidate{{name: "Invite", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#ErrorMessage":
+		// cases 30,33,35,37,38,40,42,43,44,47,50,54,58,61: mode byte only, no further reads.
+		// Atlas ErrorMessage writes: mode(1). ✓ (mode-only arms)
+		return []candidate{{name: "ErrorMessage", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#ErrorMessageWithTarget":
+		// cases 55,56,57: Decode1(mode) + DecodeStr(targetName).
+		// Atlas ErrorMessageWithTarget writes: mode(1) + target(str). ✓
+		return []candidate{{name: "ErrorMessageWithTarget", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#EmblemChange":
+		// case 69: Decode1(mode) + Decode4(guildId) + Decode2(nMarkBg) + Decode1(nMarkBgColor) + Decode2(nMark) + Decode1(nMarkColor).
+		// Atlas EmblemChange writes: mode(1) + guildId(4) + logoBackground(2) + logoBackgroundColor(1) + logo(2) + logoColor(1). ✓
+		return []candidate{{name: "EmblemChange", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberStatusUpdate":
+		// case 63: Decode1(mode) + Decode4(guildId) + Decode4(charId) + Decode1(online).
+		// Atlas MemberStatusUpdate writes: mode(1) + guildId(4) + characterId(4) + WriteBool(online)(1). ✓
+		return []candidate{{name: "MemberStatusUpdate", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberTitleUpdate":
+		// case 66: Decode1(mode) + Decode4(guildId) + Decode4(charId) + Decode1(newGrade).
+		// Atlas MemberTitleUpdate writes: mode(1) + guildId(4) + characterId(4) + title(1). ✓
+		return []candidate{{name: "MemberTitleUpdate", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#NoticeChange":
+		// case 71: Decode1(mode) + Decode4(guildId) + DecodeStr(notice).
+		// Atlas NoticeChange writes: mode(1) + guildId(4) + notice(str). ✓
+		return []candidate{{name: "NoticeChange", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberLeft":
+		// case 46: Decode1(mode) + Decode4(guildId) + Decode4(charId) + DecodeStr(name).
+		// Atlas MemberLeft writes: mode(1) + guildId(4) + characterId(4) + name(str). ✓
+		return []candidate{{name: "MemberLeft", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberExpel":
+		// case 49: Decode1(mode) + Decode4(guildId) + Decode4(charId) + DecodeStr(name).
+		// Atlas MemberExpel writes: mode(1) + guildId(4) + characterId(4) + name(str). ✓
+		return []candidate{{name: "MemberExpel", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#MemberJoined":
+		// case 41: Decode1(mode) + Decode4(guildId) + Decode4(charId) + GUILDMEMBER::Decode(37 raw bytes).
+		// GUILDMEMBER::Decode@0x4f2b40 → DecodeBuffer(37): name[13]+job[4]+level[4]+title[4]+online[4]+sig[4]+allianceTitle[4].
+		// Atlas MemberJoined writes: mode(1) + guildId(4) + characterId(4) + GuildMember.Encode(37 bytes). ✓ on wire bytes.
+		// ⚠️ Tool-limitation: DecodeBuf (single call, 37 bytes) vs atlas 7 explicit writes — tool may report ❌.
+		return []candidate{{name: "MemberJoined", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#TitleChange":
+		// case 64: Decode1(mode) + Decode4(guildId) + 5×DecodeStr(titles).
+		// Atlas TitleChange writes: mode(1) + guildId(4) + 5×WriteAsciiString(title). ✓
+		return []candidate{{name: "TitleChange", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#Disband":
+		// case 52: Decode1(mode) + Decode4(guildId).
+		// Atlas Disband writes: mode(1) + guildId(4). ✓
+		return []candidate{{name: "Disband", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#CapacityChange":
+		// case 60: Decode1(mode) + Decode4(guildId) + Decode1(nMaxMemberNum).
+		// Atlas CapacityChange writes: mode(1) + guildId(4) + WriteInt(capacity)(4).
+		// ❌ Real wire bug: IDA reads Decode1 (1 byte) but atlas emits WriteInt (4 bytes).
+		return []candidate{{name: "CapacityChange", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGuildResult#Info":
+		// Info packet (sub-op 0x1A=26 in GUILD_OPERATION).
+		// Wire per GUILDDATA::Decode@0x4fb760: id(4)+name(str)+5×str(titles)+byte(count)+
+		// buf(count×4 charIds)+buf(count×37 members)+int(capacity)+short(logoBg)+byte(logoBgColor)+
+		// short(logo)+byte(logoColor)+str(notice)+int(points)+int(allianceId).
+		// Atlas Info.Encode writes: WriteByte(0x1A)+WriteBool(inGuild)+same field sequence.
+		// ⚠️ Tool-limitation: packed DecodeBuf for charIds and members vs atlas explicit writes;
+		// flat analyzer cannot model member-loop expansion. Wire is ✓ on bytes.
+		return []candidate{{name: "Info", pkg: "guild", dir: csvpkg.DirClientbound}}
+
+	// CSV: GUILD_NAME_CHANGED (clientbound, opcode 0x0CA/202 in GMS v95) → CUserRemote::OnGuildNameChanged.
+	// characterId is consumed upstream by CUserPool::OnUserRemotePacket (dispatcher-prefix pattern).
+	// OnGuildNameChanged reads: DecodeStr(newGuildName). Atlas ForeignNameChanged writes: WriteInt(charId)+WriteAsciiString(name).
+	// ✓ Wire correct: server sends charId+name; dispatcher strips charId then calls OnGuildNameChanged.
+	case "CUserRemote::OnGuildNameChanged":
+		return []candidate{{name: "ForeignNameChanged", pkg: "guild", dir: csvpkg.DirClientbound}}
+
+	// CSV: GUILD_MARK_CHANGED (clientbound, opcode 0x0CB/203 in GMS v95) → CUserRemote::OnGuildMarkChanged.
+	// characterId is consumed upstream (dispatcher-prefix pattern). Reads: Decode2+Decode1+Decode2+Decode1.
+	// Atlas ForeignEmblemChanged writes: WriteInt(charId)+logoBackground(2)+logoBackgroundColor(1)+logo(2)+logoColor(1). ✓
+	case "CUserRemote::OnGuildMarkChanged":
+		return []candidate{{name: "ForeignEmblemChanged", pkg: "guild", dir: csvpkg.DirClientbound}}
+
+	// --- Social: guild BBS (clientbound) ---
+	// CSV: GUILD_BBS_PACKET (clientbound, opcode 0x03B/59 in GMS v95) → CWvsContext::OnGuildBBSPacket →
+	// CUIGuildBBS::OnGuildBBSPacket dispatches on (Decode1 - 6): 0=list, 1=view, 2=not-found.
+	case "CWvsContext::OnGuildBBSPacket":
+		// Top-level dispatcher — op-byte only (delegates to CUIGuildBBS::OnGuildBBSPacket).
+		// ⚠️ OP-FAMILY-guild-bbs-clientbound: deferred to _pending.md.
+		return []candidate{{name: "BBSThreadList", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList":
+		// (Decode1-6)=0 → OnLoadListResult: mode(1)+hasNotice(1)+[noticeFields if set]+totalCount(4)+pageCount(4)+entries.
+		// Atlas BBSThreadList.Encode: WriteByte(0x06)+hasNotice+[noticeFields]+totalCount(4)+[page of entries].
+		// ⚠️ Tool-limitation: conditional notice block + loop body → flat analyzer FP. Wire ✓ on bytes.
+		return []candidate{{name: "BBSThreadList", pkg: "guild", dir: csvpkg.DirClientbound}}
+	case "CUIGuildBBS::OnGuildBBSPacket#BBSThread":
+		// (Decode1-6)=1 → OnViewEntryResult: mode(1)+id(4)+charId(4)+date(8buf)+title(str)+text(str)+emoticon(4)+replyCount(4)+replies.
+		// Atlas BBSThread.Encode: WriteByte(0x07)+id(4)+charId(4)+int64(date)+title+text+emoticon(4)+replyCount(4)+replies. ✓
+		// ⚠️ Tool-limitation: DecodeBuf(8) date vs WriteInt64 — same 8 bytes but different op classification.
+		return []candidate{{name: "BBSThread", pkg: "guild", dir: csvpkg.DirClientbound}}
+
+	// --- Social: guild (serverbound) ---
+	// CSV: GUILD_OPERATION (serverbound, opcode 0x07E/126 in GMS v95) → dispatcher reads op byte.
+	// Multiple CField functions share this opcode.
+	case "CUIFadeYesNo::OnButtonClicked":
+		// Op-byte dispatcher for GUILD_OPERATION serverbound.
+		// ⚠️ OP-FAMILY-guild-serverbound: op-byte family deferred to _pending.md.
+		return []candidate{{name: "Operation", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::InputGuildName":
+		// Sub-op: RequestCreate — Encode1(op) + EncodeStr(name). Atlas RequestCreate writes: WriteAsciiString(name). ✓ (op consumed by dispatcher)
+		return []candidate{{name: "RequestCreate", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::SendCreateGuildAgreeMsg":
+		// Sub-op: AgreementResponse — Encode1(op) + Encode1(agreed). Atlas AgreementResponse writes: WriteInt(unk)+WriteBool(agreed). ❌ wire mismatch — extra Encode4 unk.
+		return []candidate{{name: "AgreementResponse", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::SendSetGuildMarkMsg":
+		// Sub-op: SetEmblem — Encode1(op) + Encode2(logoBg) + Encode1(logoBgColor) + Encode2(logo) + Encode1(logoColor). Atlas SetEmblem writes same fields. ✓
+		return []candidate{{name: "SetEmblem", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::SendInviteGuildMsg":
+		// Sub-op: InviteRequest — Encode1(op) + EncodeStr(target). Atlas InviteRequest writes: WriteAsciiString(target). ✓ (op consumed by dispatcher)
+		return []candidate{{name: "InviteRequest", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::SendWithdrawGuildMsg":
+		// Sub-op: Withdraw — Encode1(op) + Encode4(charId) + EncodeStr(name). Atlas Withdraw writes: WriteInt(cid)+WriteAsciiString(name). ✓
+		return []candidate{{name: "Withdraw", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::SendKickGuildMsg":
+		// Sub-op: Kick — Encode1(op) + Encode4(charId) + EncodeStr(name). Atlas Kick writes: WriteInt(cid)+WriteAsciiString(name). ✓
+		return []candidate{{name: "Kick", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CField::SendSetGuildNoticeMsg":
+		// Sub-op: SetNotice — Encode1(op) + EncodeStr(notice). Atlas SetNotice writes: WriteAsciiString(notice). ✓
+		return []candidate{{name: "SetNotice", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CTabGuildAlliance::OnGradeChange":
+		// Sub-op: SetMemberTitle — Encode1(op) + Encode4(targetId) + Encode1(newTitle). Atlas SetMemberTitle writes: WriteInt(targetId)+WriteByte(newTitle). ✓
+		return []candidate{{name: "SetMemberTitle", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendSetGuildTitleNames":
+		// Sub-op: SetTitleNames — Encode1(op) + 5×EncodeStr(title). Atlas SetTitleNames writes: 5×WriteAsciiString. ✓
+		return []candidate{{name: "SetTitleNames", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::OnGuildResult#AgreementResponse":
+		// Synthetic entry for AgreementResponse serverbound (used in guild creation agree dialog).
+		// IDA CField::SendCreateGuildAgreeMsg builds packet with Encode1(agreed bool).
+		// Atlas AgreementResponse writes: WriteInt(unk)+WriteBool(agreed). ⚠️ extra int field vs wire single bool.
+		return []candidate{{name: "AgreementResponse", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendGuildJoinMsg":
+		// Synthetic entry for Join serverbound (guild join after invitation accepted).
+		// Atlas Join writes: WriteInt(guildId)+WriteInt(characterId). ✓
+		return []candidate{{name: "Join", pkg: "guild", dir: csvpkg.DirServerbound}}
+
+	// CSV: DENY_GUILD_REQUEST (serverbound, opcode 0x07F/127 in GMS v95).
+	// Client sends decline code + inviter name when rejecting guild invite.
+	// Atlas InviteReject writes: WriteByte(unk)+WriteAsciiString(from). ✓
+	case "CFadeWnd::SendCloseMessage#DenyGuildRequest":
+		// DENY_GUILD_REQUEST — atlas InviteReject (serverbound/invite_reject.go).
+		return []candidate{{name: "InviteReject", pkg: "guild", dir: csvpkg.DirServerbound}}
+
+	// --- Social: guild BBS (serverbound) ---
+	// CSV: BBS_OPERATION (serverbound, opcode 0x09B/155 in GMS v95) → dispatcher reads op byte.
+	case "CUIGuildBBS::SendLoadListRequest":
+		// BBS list request: Encode1(op) + Encode4(startIndex). Atlas BBSListThreads writes: WriteInt(startIndex). ✓ (op consumed by BBS dispatcher)
+		return []candidate{{name: "BBSListThreads", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CUIGuildBBS::SendViewEntryRequest":
+		// BBS view entry: Encode1(op) + Encode4(threadId). Atlas BBSDisplayThread writes: WriteInt(threadId). ✓
+		return []candidate{{name: "BBSDisplayThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CUIGuildBBS::OnCommentDelete":
+		// BBS delete reply: Encode1(op) + Encode4(threadId) + Encode4(replyId). Atlas BBSDeleteReply writes: WriteInt(threadId)+WriteInt(replyId). ✓
+		return []candidate{{name: "BBSDeleteReply", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CUIGuildBBS::OnRegister":
+		// BBS create/edit: Encode1(op) + Encode1(modify) + [if modify: Encode4(threadId)] + Encode1(notice) + EncodeStr(title) + EncodeStr(msg) + Encode4(emoticon).
+		// Atlas BBSCreateOrEditThread writes same fields. ✓
+		return []candidate{{name: "BBSCreateOrEditThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CUIGuildBBS::OnComment":
+		// BBS reply thread: Encode1(op) + Encode4(threadId) + EncodeStr(message). Atlas BBSReplyThread writes: WriteInt(threadId)+WriteAsciiString(message). ✓
+		return []candidate{{name: "BBSReplyThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+	case "CUIGuildBBS::OnDelete":
+		// BBS delete thread: Encode1(op) + Encode4(threadId). Atlas BBSDeleteThread writes: WriteInt(threadId). ✓
+		return []candidate{{name: "BBSDeleteThread", pkg: "guild", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

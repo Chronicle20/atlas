@@ -3562,10 +3562,14 @@
       "calls": [
         {
           "op": "Decode1",
+          "comment": "mode (=0, ADD) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
           "comment": "position — slot index in messenger room (0–2)"
         },
         {
-          "op": "DecodeAvatarLook",
+          "op": "DecodeBuf",
           "comment": "AvatarLook::AvatarLook(&v7, iPacket) — avatar appearance"
         },
         {
@@ -3589,6 +3593,10 @@
       "calls": [
         {
           "op": "Decode1",
+          "comment": "mode (=1, JOIN) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
           "comment": "position — self slot index in messenger room (Decode1 → OnSelfEnter)"
         }
       ]
@@ -3600,6 +3608,10 @@
       "calls": [
         {
           "op": "Decode1",
+          "comment": "mode (=2, REMOVE) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
           "comment": "position — slot index of the character that left"
         }
       ]
@@ -3609,6 +3621,10 @@
       "direction": "clientbound",
       "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=3 (OnInvite); static handler — runs before instance guard",
       "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, REQUEST_INVITE) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
         {
           "op": "DecodeStr",
           "comment": "sInviter — name of the character sending the invite"
@@ -3633,6 +3649,10 @@
       "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=4 (OnInviteResult)",
       "calls": [
         {
+          "op": "Decode1",
+          "comment": "mode (=4, INVITE_SENT) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
           "op": "DecodeStr",
           "comment": "sMsg — invitee character name"
         },
@@ -3647,6 +3667,10 @@
       "direction": "clientbound",
       "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=5 (OnBlocked)",
       "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=5, INVITE_DECLINED) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
         {
           "op": "DecodeStr",
           "comment": "sBlockedUser — name of the character who declined"
@@ -3663,6 +3687,10 @@
       "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=6 (OnChat)",
       "calls": [
         {
+          "op": "Decode1",
+          "comment": "mode (=6, CHAT) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
           "op": "DecodeStr",
           "comment": "chatLine — formatted as 'name : message' (parsed client-side to extract speaker)"
         }
@@ -3675,10 +3703,14 @@
       "calls": [
         {
           "op": "Decode1",
+          "comment": "mode (=7, UPDATE) — dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
           "comment": "position — slot index whose avatar changed"
         },
         {
-          "op": "DecodeAvatarLook",
+          "op": "DecodeBuf",
           "comment": "AvatarLook::AvatarLook(&v5, iPacket) — updated avatar appearance"
         }
       ]
@@ -3686,60 +3718,48 @@
     "CUIMessenger::OnCreate": {
       "address": "0x7f59d0",
       "direction": "serverbound",
-      "note": "client accepts a messenger invite; creates the UI window and sends op=0 to server",
+      "note": "client accepts a messenger invite; sends op=0 + messengerId. Op-byte consumed by atlas Operation dispatcher; sub-handler sees only messengerId.",
       "calls": [
         {
-          "op": "Encode1",
-          "comment": "op (=0, ENTER) — sub-op byte for MESSENGER (opcode 143)"
-        },
-        {
           "op": "Encode4",
-          "comment": "messengerId — room id passed in pData (the invite's room id)"
+          "comment": "messengerId — room id passed in pData (the invite's room id); op byte (=0) stripped by atlas Operation dispatcher"
         }
       ]
     },
     "CUIMessenger::OnDestroy": {
       "address": "0x7f03f0",
       "direction": "serverbound",
-      "note": "client closes the messenger window; sends op=2 to leave the room",
+      "note": "client closes the messenger window; sends op=2 only. Op-byte is the entire payload — handled by atlas Operation struct directly.",
       "calls": [
         {
           "op": "Encode1",
-          "comment": "op (=2, LEAVE) — sub-op byte for MESSENGER (opcode 143)"
+          "comment": "op (=2, LEAVE) — only field; atlas Operation struct reads this as mode byte"
         }
       ]
     },
     "CUIMessenger::SendInviteMsg": {
       "address": "0x7f5820",
       "direction": "serverbound",
-      "note": "client invites a character by name to the messenger room",
+      "note": "client invites a character by name; sends op=3 + targetName. Op-byte consumed by dispatcher; sub-handler sees only targetCharacter.",
       "calls": [
         {
-          "op": "Encode1",
-          "comment": "op (=3, INVITE) — sub-op byte for MESSENGER (opcode 143)"
-        },
-        {
           "op": "EncodeStr",
-          "comment": "sTarget — target character name to invite"
+          "comment": "sTarget — target character name to invite; op byte (=3) stripped by atlas Operation dispatcher"
         }
       ]
     },
     "CFadeWnd::SendCloseMessage": {
       "address": "0x524180",
       "direction": "serverbound",
-      "note": "CFadeWnd handles multiple dialog close types; type=0 sends MESSENGER op=5 (decline invite). Other types send different opcodes (buddy delete, miniroom, guild).",
+      "note": "CFadeWnd type=0 declines a messenger invite; sends op=5 + fromName + myName + pad. Op-byte consumed by dispatcher; sub-handler sees fromName + myName + pad.",
       "calls": [
         {
-          "op": "Encode1",
-          "comment": "op (=5, DECLINE) — sub-op byte for MESSENGER (opcode 143); only for m_nType=0"
+          "op": "EncodeStr",
+          "comment": "m_sInviter (fromName) — name of the character who sent the invite; op byte (=5) stripped by atlas Operation dispatcher"
         },
         {
           "op": "EncodeStr",
-          "comment": "m_sInviter — name of the character who sent the invite (being declined)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "selfCharName — own character name"
+          "comment": "selfCharName (myName) — own character name"
         },
         {
           "op": "Encode1",
@@ -3750,15 +3770,11 @@
     "CUIMessenger::ProcessChat": {
       "address": "0x7f6140",
       "direction": "serverbound",
-      "note": "client sends a chat message to the messenger room",
+      "note": "client sends a chat message; sends op=6 + chatLine. Op-byte consumed by dispatcher; sub-handler sees only msg.",
       "calls": [
         {
-          "op": "Encode1",
-          "comment": "op (=6, CHAT) — sub-op byte for MESSENGER (opcode 143)"
-        },
-        {
           "op": "EncodeStr",
-          "comment": "sText — formatted chat message ('name : msg')"
+          "comment": "sText — formatted chat message ('name : msg'); op byte (=6) stripped by atlas Operation dispatcher"
         }
       ]
     }

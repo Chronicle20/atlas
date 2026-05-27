@@ -63,8 +63,8 @@ func MessengerOperationChatBody(message string) func(logrus.FieldLogger, context
 	})
 }
 
-func MessengerOperationUpdateBody(position byte, avatar model.Avatar, name string, channelId byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+func MessengerOperationUpdateBody(position byte, avatar model.Avatar) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", MessengerOperationModeUpdate, func(mode byte) packet.Encoder {
-		return clientbound.NewMessengerUpdate(mode, position, avatar, name, channelId)
+		return clientbound.NewMessengerUpdate(mode, position, avatar)
 	})
 }

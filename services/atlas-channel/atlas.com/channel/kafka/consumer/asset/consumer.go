@@ -376,7 +376,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 							ava := model2.NewFromCharacter(c, true)
 							for _, mm := range m.Members() {
 								_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
-									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
+									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava))(os)
 								})
 							}
 						}()

@@ -1,0 +1,38 @@
+{
+  "WriterName": "PartyJoin",
+  "IDAName": "CWvsContext::OnPartyResult#Join",
+  "Address": "0xa11405",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/party/clientbound/join.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nPartyID = partyId",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sCharacterName = joining member name",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "PARTYDATA::Decode(0x17A=378 bytes) — includes PARTYMEMBER+adwFieldID+aTownPortal+aPQReward fields",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    }
+  ],
+  "Verdict": 2
+}

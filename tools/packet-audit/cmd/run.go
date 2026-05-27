@@ -775,51 +775,46 @@ func candidatesFromFName(fname string) []candidate {
 		// mode=8: client builds local party from CharacterData; server sends Decode4(partyId) +
 		// Decode4(townPortalFromId) + Decode4(townPortalToId) + Decode2(x) + Decode2(y).
 		// Atlas Created writes: mode(1) + partyId(4) + 2×EmptyMapId(8) + 2×short(4) = matches.
-		return []candidate{{name: "Created", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "Created", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#Invite":
 		// mode=4: Decode4(partyId) + DecodeStr(inviterName) + Decode4(inviterJob) + Decode4(inviterLevel) +
-		// Decode1(autoJoinFlag). Atlas Invite writes: mode(1) + partyId(4) + name(str) + 0x00(1).
-		// ⚠️ Wire shape mismatch: IDA reads 2 extra Decode4 fields (job, level) not in atlas Invite.
-		return []candidate{{name: "Invite", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		// Decode1(autoJoinFlag). Atlas Invite writes: mode(1) + partyId(4) + name(str) + jobId(4) + level(4) + 0x00(1). ✓ fixed.
+		// ⚠️ Tool-limitation: mode byte (dispatcher prefix) causes row-0 width mismatch.
+		return []candidate{{name: "Invite", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#Disband":
 		// mode=12 + Decode1(isForced=0): no PARTYDATA follows when isForced branch not taken.
 		// Atlas Disband writes: mode(1) + partyId(4) + targetId(4) + 0x00(1) + partyId(4).
 		// ⚠️ Wire shape varies: IDA mode=12 reads Decode4(partyId)+Decode4(targetId)+Decode1(isForced)+
 		// optional(Decode1+DecodeStr+PARTYDATA). The no-member path (isForced=0, different charId)
 		// writes zero-fills party, consistent with Disband. Tool-limitation: branch-flattening.
-		return []candidate{{name: "Disband", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "Disband", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#Error":
 		// mode=9,10,13,17,18,22,29,32–34,36 (error string pool nodes; no Decode calls beyond mode byte).
 		// Atlas Error writes: mode(1) + name(str). ⚠️ Many error modes read no additional data from
 		// packet; the name field is resolved server-side. Sub-op enum deferred to _pending.md.
-		return []candidate{{name: "Error", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "Error", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#ChangeLeader":
 		// mode=31: Decode4(newLeaderId) + Decode1(disconnected).
 		// Atlas ChangeLeader writes: mode(1) + targetCharacterId(4) + disconnected(1). ✓
-		return []candidate{{name: "ChangeLeader", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "ChangeLeader", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#Join":
 		// mode=15: Decode4(partyId) + DecodeStr(targetName) + PARTYDATA::Decode(378 bytes).
-		// Atlas Join writes: mode(1) + partyId(4) + name(str) + WritePartyData(298 bytes).
-		// ⚠️ WritePartyData is 80 bytes short of PARTYDATA buffer (missing aTownPortal skillId
-		// + aPQReward + aPQRewardType + dwPQRewardMobTemplateID + bPQReward).
-		return []candidate{{name: "Join", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		// Atlas Join writes: mode(1) + partyId(4) + name(str) + WritePartyData(378 bytes). ✓ fixed.
+		// ⚠️ Tool-limitation: mode byte (dispatcher prefix) causes row-0 width mismatch.
+		return []candidate{{name: "Join", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#Left":
 		// mode=12 + Decode1(isForced=1): Decode4(partyId)+Decode4(targetId)+Decode1(1)+Decode1(isForced)+
 		// DecodeStr(targetName)+PARTYDATA::Decode(378 bytes).
 		// Atlas Left writes: mode(1) + partyId(4) + targetId(4) + 0x01(1) + forced(1) + name(str) +
-		// WritePartyData(298 bytes). ⚠️ Same WritePartyData 80-byte shortfall as Join/Update.
-		return []candidate{{name: "Left", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		// WritePartyData(378 bytes). ✓ fixed.
+		// ⚠️ Tool-limitation: mode byte (dispatcher prefix) causes row-0 width mismatch.
+		return []candidate{{name: "Left", pkg: "party", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnPartyResult#Update":
 		// mode=7/38: Decode4(partyId) + PARTYDATA::Decode(378 bytes).
-		// Atlas Update writes: mode(1) + partyId(4) + WritePartyData(298 bytes).
-		// ⚠️ WritePartyData is 80 bytes short of PARTYDATA buffer (missing portal skillId field +
-		// PQ reward fields). Hot-path: 4-variant byte-output sweep mandatory for any fix.
-		return []candidate{{name: "Update", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
-	case "CWvsContext::OnPartyResult#OperationBody":
-		// operation_body.go is a helper that assembles sub-op packets via WithResolvedCode;
-		// it carries no independent wire shape. Model via the dispatcher synthetic entry.
-		// ⚠️ OP-FAMILY-party: sub-op enum drift deferred to _pending.md.
-		return []candidate{{name: "OperationBody", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		// Atlas Update writes: mode(1) + partyId(4) + WritePartyData(378 bytes). ✓ fixed.
+		// ⚠️ Tool-limitation: mode byte (dispatcher prefix) causes row-0 width mismatch. HOT PATH.
+		return []candidate{{name: "Update", pkg: "party", dir: csvpkg.DirClientbound}}
+	// operation_body.go has no exported struct (it's pure helper functions); no candidate entry.
 
 	// CSV: UPDATE_PARTYMEMBER_HP (clientbound, opcode 0xD6/214 in GMS v95) → CUserRemote::OnReceiveHP.
 	// IDA reads: Decode4(hp) + Decode4(maxHp). The characterId is consumed upstream by
@@ -830,7 +825,7 @@ func candidatesFromFName(fname string) []candidate {
 	// Hot-path: 4-variant byte-output sweep mandatory for any encoder fix.
 	case "CUserRemote::OnReceiveHP":
 		// CSV: UPDATE_PARTYMEMBER_HP — atlas MemberHP (party/clientbound/member_hp.go).
-		return []candidate{{name: "MemberHP", pkg: "party/clientbound", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "MemberHP", pkg: "party", dir: csvpkg.DirClientbound}}
 
 	// --- Social: party (serverbound) ---
 	// CSV: PARTY_OPERATION (serverbound, opcode 0x91/145 in GMS v95). Multiple CField functions
@@ -839,25 +834,25 @@ func candidatesFromFName(fname string) []candidate {
 		// op=1 (CREATE): Encode1(1). No further fields.
 		// Atlas Operation (serverbound/operation.go) is the op-byte dispatcher; op=1 maps to create.
 		// ⚠️ OP-FAMILY-party-serverbound: op-byte family deferred to _pending.md.
-		return []candidate{{name: "Operation", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "Operation", pkg: "party", dir: csvpkg.DirServerbound}}
 	case "CField::SendWithdrawPartyMsg":
 		// op=2 (LEAVE): Encode1(2) + Encode1(0). Atlas serverbound has no separate Leave struct;
 		// the op=2 sub-op is handled by the Operation dispatcher.
 		// ⚠️ OP-FAMILY-party-serverbound: op-byte family deferred to _pending.md.
 		// Note: Encode1(0) trailing byte not in atlas Operation (only carries op byte).
-		return []candidate{{name: "Operation", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "Operation", pkg: "party", dir: csvpkg.DirServerbound}}
 	case "CField::SendKickPartyMsg":
 		// op=5 (EXPEL): Encode1(5) + Encode4(targetCharacterId).
 		// Atlas OperationExpel writes: WriteInt(targetCharacterId). ✓ (op byte consumed by dispatcher)
-		return []candidate{{name: "OperationExpel", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationExpel", pkg: "party", dir: csvpkg.DirServerbound}}
 	case "CField::SendChangePartyBossMsg":
 		// op=6 (CHANGE_LEADER): Encode1(6) + Encode4(targetCharacterId).
 		// Atlas OperationChangeLeader writes: WriteInt(targetCharacterId). ✓
-		return []candidate{{name: "OperationChangeLeader", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationChangeLeader", pkg: "party", dir: csvpkg.DirServerbound}}
 	case "CField::SendJoinPartyMsg":
 		// op=4 (INVITE): Encode1(4) + EncodeStr(targetName).
 		// Atlas OperationInvite writes: WriteAsciiString(name). ✓ (op byte consumed by dispatcher)
-		return []candidate{{name: "OperationInvite", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationInvite", pkg: "party", dir: csvpkg.DirServerbound}}
 
 	// CSV: PARTY_RESULT (serverbound, opcode 0x92/146 in GMS v95) → reject/accept invite response.
 	// IDA path: CUIFadeYesNo::OnMouseButton sends op=0x16 (accept) or op=0x17/0x18 (decline/ignore).
@@ -867,7 +862,7 @@ func candidatesFromFName(fname string) []candidate {
 		// DENY_PARTY_REQUEST (serverbound) → atlas InviteReject (serverbound/invite_reject.go).
 		// ⚠️ No direct IDA function found for DENY_PARTY_REQUEST; modelled via synthetic entry.
 		// Wire: Encode1(declineCode) + EncodeStr(inviterName) — matches atlas layout.
-		return []candidate{{name: "InviteReject", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "InviteReject", pkg: "party", dir: csvpkg.DirServerbound}}
 
 	// CSV: PARTY_RESULT (serverbound, opcode 0x92/146 in GMS v95) also maps to OperationJoin.
 	// SendJoinPartyMsg (op=4) triggers server → client PARTY_OPERATION mode 15 (join flow).
@@ -875,7 +870,7 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendJoinPartyMsg#OperationJoin":
 		// Synthetic entry: client sends party join accept with partyId after receiving an invite.
 		// Atlas OperationJoin writes: WriteInt(partyId). ✓
-		return []candidate{{name: "OperationJoin", pkg: "party/serverbound", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationJoin", pkg: "party", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

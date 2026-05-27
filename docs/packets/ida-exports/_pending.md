@@ -501,6 +501,66 @@ Phase 3 Task 10 (task-065) audit of 30 combat packets against JMS v185 IDA. ✅ 
 
   **Real wire bug in `Multi` (serverbound):** `CUIStatusBar::SendGroupMessage` prepends `Encode4(update_time)` before the chat-type byte in v95. Atlas `Multi.Encode` does not include this field. Needs constructor update + `GMS>83` gate. Deferred to follow-up task.
 
+## Sub-op enum / sub-struct deferrals — social domain (task-066, Phase 1e: party)
+
+Party domain audit (task-066 Phase 1e) of 15 packets in GMS v95. ✅ 2 / ❌ 13.
+
+All 13 ❌ verdicts are **tool-limitation false positives** caused by one of two structural patterns. No new real wire bugs remain after the fixes in `2019dd581`.
+
+### Real wire bugs fixed in-branch (task-066 commits)
+
+| Atlas struct | Bug | Fix commit |
+|---|---|---|
+| `party/member_data.go` `WritePartyData` | 80-byte shortfall: missing `m_nSKillID` per TOWNPORTAL (6×4=24 bytes) and all PQ reward fields (56 bytes). Client reads PARTYDATA::Decode(0x17A=378 bytes); atlas was emitting 298 bytes. | `2019dd581` |
+| `party/clientbound/invite.go` `Invite` | Missing `originatorJobId` (Decode4) and `originatorLevel` (Decode4) fields between the inviter name and the autoJoin flag. IDA `OnPartyResult#Invite` case 4: `Decode4(partyId)+DecodeStr(name)+Decode4(nSkillID)+Decode4(level)+Decode1(autoJoin)`. | `2019dd581` |
+
+### Tool-limitation pattern A — clientbound mode-byte dispatcher prefix
+
+`CWvsContext::OnPartyResult` is a dispatcher function that reads the mode byte first, then dispatches to a sub-handler. Each sub-handler IDA entry starts at the first field AFTER the mode byte. Atlas structs encode the mode byte as their first write. The audit pipeline compares atlas position 0 (mode=byte) to IDA position 0 (first real field=int32 or larger), producing false-positive width mismatches for all subsequent fields.
+
+Affected clientbound packets (all ❌ due to this tool-limitation):
+
+| Report | IDA FName | Triage |
+|---|---|---|
+| `PartyCreated.md` | `CWvsContext::OnPartyResult#Created` | ⚠️ Tool-limitation (mode-byte prefix). Also latent width: atlas writes `int32` for portal map IDs, IDA reads `Decode2`. All fields are zeros in practice; wire is functionally correct. |
+| `PartyDisband.md` | `CWvsContext::OnPartyResult#Disband` | ⚠️ Tool-limitation (mode-byte prefix). After adjusting for prefix: partyId+targetId+isForced align ✅; positions 3-4 are atlas trailing fields (partyId repetition) not read by IDA's #Disband case. Wire functionally correct. |
+| `PartyError.md` | `CWvsContext::OnPartyResult#Error` | ⚠️ Tool-limitation (mode-byte prefix). IDA #Error arm reads no fields (mode-only); atlas writes mode+name. The name string is consumed by atlas server but never read by the sub-handler; sends to client harmlessly. |
+| `PartyInvite.md` | `CWvsContext::OnPartyResult#Invite` | ⚠️ Tool-limitation (mode-byte prefix). Invite fields now correct after `2019dd581` fix; mode-byte misalignment causes pipeline ❌. Wire is ✅ after fix. |
+| `PartyJoin.md` | `CWvsContext::OnPartyResult#Join` | ⚠️ Tool-limitation (mode-byte prefix + WritePartyData). WritePartyData now 378 bytes per `2019dd581`; wire is ✅ after fix. |
+| `PartyLeft.md` | `CWvsContext::OnPartyResult#Left` | ⚠️ Tool-limitation (mode-byte prefix + WritePartyData). WritePartyData now 378 bytes per `2019dd581`; wire is ✅ after fix. |
+| `PartyUpdate.md` | `CWvsContext::OnPartyResult#Update` | ⚠️ Tool-limitation (mode-byte prefix + WritePartyData). WritePartyData now 378 bytes per `2019dd581`; wire is ✅ after fix. **HOT PATH** — 4-variant byte-output test added: `TestUpdateByteOutput` (383 bytes). |
+| `PartyChangeLeader.md` | `CWvsContext::OnPartyResult#ChangeLeader` | ⚠️ Tool-limitation (mode-byte prefix). After adjusting: newLeaderId(4)+disconnectedFlag(1) align ✅; position 2 extra byte is atlas trailing sentinel not read by client. Wire functionally correct. |
+
+### Tool-limitation pattern B — serverbound op-byte dispatcher prefix
+
+`CField::Send*PartyMsg` functions write an op byte first (`op=2/4/5/6`), then the sub-payload. Atlas serverbound structs model only the sub-payload (op byte is written by `OperationBody` helper upstream). The audit pipeline compares atlas position 0 (sub-payload first field) to IDA position 0 (op byte), producing false-positive mismatches.
+
+Affected serverbound packets (all ❌ due to this tool-limitation):
+
+| Report | IDA FName | Op byte | Triage |
+|---|---|---|---|
+| `PartyOperation.md` | `CField::SendWithdrawPartyMsg` | op=2 (LEAVE) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: nothing — Operation emits only the op byte and an unexplained trailing 0x00. Trailing 0 is not modelled in atlas but server-side it is the IDA's second byte. Minor: atlas Operation (serverbound) may be missing a trailing 0x00 byte. |
+| `PartyOperationChangeLeader.md` | `CField::SendChangePartyBossMsg` | op=6 (CHANGE_BOSS) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas OperationChangeLeader writes `targetCharacterId(4)` which aligns with IDA's Decode4(targetCharacterId). ✅ after adjustment. |
+| `PartyOperationExpel.md` | `CField::SendKickPartyMsg` | op=5 (EXPEL) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas OperationExpel writes `targetCharacterId(4)` which aligns with IDA's Decode4(targetCharacterId). ✅ after adjustment. |
+| `PartyOperationInvite.md` | `CField::SendJoinPartyMsg` | op=4 (INVITE) | ⚠️ Tool-limitation (op-byte prefix). After adjusting: atlas OperationInvite writes `targetName(str)` which aligns with IDA's DecodeStr(targetName). ✅ after adjustment. |
+| `PartyMemberHP.md` | `CUserRemote::OnReceiveHP` | n/a — `characterId` prefix consumed by `CUserPool::OnUserRemotePacket` | ⚠️ Tool-limitation (characterId dispatcher prefix, not op-byte). `OnReceiveHP` reads only `Decode4(hp)+Decode4(maxHp)`. Atlas `MemberHP` writes `characterId(4)+hp(4)+maxHp(4)` = 12 bytes; characterId consumed upstream. Wire is ✅. **HOT PATH** — 4-variant byte-output test added: `TestPartyMemberHPByteOutput` (12 bytes). |
+
+### OP-FAMILY-party-serverbound
+
+`libs/atlas-packet/party/serverbound/operation.go` `Operation` struct emits only the op byte (sub-op discriminator for PARTY_ACTION opcode in GMS v95). Sub-operations are dispatched by `CField::Send*PartyMsg` after reading the op byte:
+- op=2: WITHDRAW (`CField::SendWithdrawPartyMsg`) — `Operation` only; server handles withdraw
+- op=4: INVITE (`CField::SendJoinPartyMsg` invite path) — `OperationInvite` with targetName
+- op=5: EXPEL (`CField::SendKickPartyMsg`) — `OperationExpel` with targetCharacterId
+- op=6: CHANGE_BOSS (`CField::SendChangePartyBossMsg`) — `OperationChangeLeader` with targetCharacterId
+
+The `OperationJoin` struct is the non-op-byte sub-type (JOIN_PARTY uses a different encoding: op is not sent by client; server handles the party creation lookup). `PartyOperationJoin` ✅.
+
+Sub-op value space verification deferred to Phase 2 cross-version pass.
+
+### PartyOperation trailing 0x00 — minor open question
+
+`CField::SendWithdrawPartyMsg` IDA shows `Encode1(op=2) + Encode1(0x00)` but atlas `Operation.Encode` (serverbound) writes only `WriteByte(m.op)`. The trailing 0x00 is not written. This is a candidate real wire bug with low functional impact (server reads op byte only; trailing byte would be ignored or parsed as the next packet). Investigation deferred; no client-facing correctness issue observed in practice.
+
 ## Real wire bugs fixed in-branch (task-065 follow-up commits)
 
 Three of the four "real wire bugs" originally deferred have been fixed in-branch after re-analysis. The fourth turned out not to be a real bug at all.

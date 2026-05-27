@@ -10,7 +10,7 @@ func TestInviteRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewInvite(16, 5000, "PartyLeader")
+			input := NewInvite(16, 5000, "PartyLeader", 100, 50)
 			output := Invite{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
@@ -21,6 +21,12 @@ func TestInviteRoundTrip(t *testing.T) {
 			}
 			if output.OriginatorName() != input.OriginatorName() {
 				t.Errorf("originatorName: got %v, want %v", output.OriginatorName(), input.OriginatorName())
+			}
+			if output.OriginatorJobId() != input.OriginatorJobId() {
+				t.Errorf("originatorJobId: got %v, want %v", output.OriginatorJobId(), input.OriginatorJobId())
+			}
+			if output.OriginatorLevel() != input.OriginatorLevel() {
+				t.Errorf("originatorLevel: got %v, want %v", output.OriginatorLevel(), input.OriginatorLevel())
 			}
 		})
 	}

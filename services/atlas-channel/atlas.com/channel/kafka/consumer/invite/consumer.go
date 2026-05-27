@@ -76,7 +76,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 
 		var eventHandler model.Operator[session.Model]
 		if e.InviteType == invite.TypeParty {
-			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name())
+			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name(), uint32(rc.JobId()), uint32(rc.Level()))
 		} else if e.InviteType == invite.TypeBuddy {
 			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.Body.TargetId), uint32(e.ReferenceId), rc.Name())
 		} else if e.InviteType == invite.TypeGuild {
@@ -91,11 +91,11 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
-func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
-			return func(partyId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyInviteBody(partyId, originatorName))
+func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+			return func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyInviteBody(partyId, originatorName, originatorJobId, originatorLevel))
 			}
 		}
 	}

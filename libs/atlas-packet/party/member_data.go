@@ -55,11 +55,21 @@ func WritePartyData(w *response.Writer, members []PartyMember, leaderId uint32) 
 		w.WriteInt(0)
 	}
 	for range 6 {
-		w.WriteInt(uint32(_map.EmptyMapId))
-		w.WriteInt(uint32(_map.EmptyMapId))
-		w.WriteInt(0)
-		w.WriteInt(0)
+		w.WriteInt(uint32(_map.EmptyMapId)) // m_dwTownID
+		w.WriteInt(uint32(_map.EmptyMapId)) // m_dwFieldID
+		w.WriteInt(0)                       // m_nSKillID
+		w.WriteInt(0)                       // m_ptFieldPortal.x
+		w.WriteInt(0)                       // m_ptFieldPortal.y
 	}
+	// aPQReward[6], aPQRewardType[6], dwPQRewardMobTemplateID, bPQReward
+	for range 6 {
+		w.WriteInt(0) // aPQReward[i]
+	}
+	for range 6 {
+		w.WriteInt(0) // aPQRewardType[i]
+	}
+	w.WriteInt(0) // dwPQRewardMobTemplateID
+	w.WriteInt(0) // bPQReward
 }
 
 func ReadPartyData(r *request.Reader) ([]PartyMember, uint32) {
@@ -89,11 +99,20 @@ func ReadPartyData(r *request.Reader) ([]PartyMember, uint32) {
 		maps[i] = r.ReadUint32()
 	}
 	for range 6 {
-		_ = r.ReadUint32()
-		_ = r.ReadUint32()
-		_ = r.ReadUint32()
-		_ = r.ReadUint32()
+		_ = r.ReadUint32() // m_dwTownID
+		_ = r.ReadUint32() // m_dwFieldID
+		_ = r.ReadUint32() // m_nSKillID
+		_ = r.ReadUint32() // m_ptFieldPortal.x
+		_ = r.ReadUint32() // m_ptFieldPortal.y
 	}
+	for range 6 {
+		_ = r.ReadUint32() // aPQReward[i]
+	}
+	for range 6 {
+		_ = r.ReadUint32() // aPQRewardType[i]
+	}
+	_ = r.ReadUint32() // dwPQRewardMobTemplateID
+	_ = r.ReadUint32() // bPQReward
 	var members []PartyMember
 	for i := range 6 {
 		if ids[i] != 0 {

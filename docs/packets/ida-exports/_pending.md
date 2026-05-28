@@ -1308,3 +1308,53 @@ After Task 10 changes, no encoder/decoder in the social domain contains more tha
 **Total real bugs fixed in this pass:** 1 (`member_data.go` PARTYDATA gate — `ab8511fee`).
 
 **Total analyzer FPs:** same pattern as GMS (op-byte prefix, sub-struct expansion gap, DecodeSub unknown primitive). No new FP categories introduced by JMS v185 pass.
+
+## Still pending — world domain (task-068 Phase 2c, field/clientbound)
+
+> **task-068 sub-phase 2c** audited five `field/clientbound` packets against GMS
+> v95 IDA: affected-area (mist) create/remove + kite (MessageBox field object)
+> spawn/destroy/error. Tally: **4 ✅ / 0 ⚠️ / 1 ❌-DEFERRED**.
+>
+> ✅: `AffectedAreaRemoved` (`CAffectedAreaPool::OnAffectedAreaRemoved`@0x4360a0,
+> single int32 id), `KiteSpawn` (`CMessageBoxPool::OnMessageBoxEnterField`@0x6369c0),
+> `KiteDestroy` (`CMessageBoxPool::OnMessageBoxLeaveField`@0x635d60),
+> `KiteError` (`CMessageBoxPool::OnCreateFailed`@0x636760, empty body).
+
+### ❌ DEFERRED: AffectedAreaCreated — v83-vs-v95 SPAWN_MIST protocol divergence
+
+`field/clientbound/affected_area_created.go` (`AffectedAreaCreated`) is the
+**v83** SPAWN_MIST layout. The GMS **v95** client
+(`CAffectedAreaPool::OnAffectedAreaCreated`@0x437ec0) decodes a structurally
+different packet:
+
+| pos | v95 reads | atlas (v83) writes |
+|---|---|---|
+| 0 | `Decode4 dwId` | `int32 mistKey` ✅ |
+| 1 | `Decode4 nType` | `int32 ownerId` (meaning differs) |
+| 2 | `Decode4 dwOwnerId` | `int16 originX` ❌ |
+| 3 | `Decode4 nSkillID` | `int16 originY` ❌ |
+| 4 | `Decode1 nSLV` | `int16 ltX` ❌ |
+| 5 | `Decode2 phase` | `int16 ltY` |
+| 6 | `DecodeBuffer(16) rcArea RECT` | `int16 rbX` ❌ |
+| 7 | `Decode4 tStart` | `int16 rbY` ❌ |
+| 8 | `Decode4 tEnd` | `int32 duration` |
+| — | (none) | `int32 skillLevel` (extra) |
+
+v95 adds `nType` + `nSkillID` 4-byte fields, drops `originX/originY`, and packs
+LT/RB as a 16-byte RECT buffer rather than four inline int16s. Atlas's elsewhere
+field-object spawns (drop/reactor/monster) audit ✅ against v95, so atlas is a
+v95 server in general — this `AffectedAreaCreated` is a **stale v83**
+implementation.
+
+**Why deferred (not fixed under audit cover):** a correct v95 re-encode would
+require adding type/skillId, dropping origin, and emitting the RECT as a buffer —
+which would simultaneously **break the v83 client** the struct is written for. A
+proper fix must be region/version-guarded AND cross-version-verified against the
+v83/v87/v92 IDBs (the verify-against-WZ/IDA discipline). That is a versioned
+re-encode effort, out of scope for this clientbound field-shape bucket.
+
+**Sibling-task suggestion:** *"GMS v95 affected-area (mist) SPAWN_MIST re-encode."*
+Scope: rewrite `AffectedAreaCreated.Encode` to the v95 layout above behind a
+version guard, keeping the v83 path; add a 4-variant Encode test; cite
+`CAffectedAreaPool::OnAffectedAreaCreated`@0x437ec0. The sibling REMOVE_MIST
+packet is unaffected (single int32 id matches all versions).

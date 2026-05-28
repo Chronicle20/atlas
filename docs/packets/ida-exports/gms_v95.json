@@ -6401,6 +6401,112 @@
           "guard": "s_bChase"
         }
       ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaCreated": {
+      "address": "0x437ec0",
+      "direction": "clientbound",
+      "notes": "SPAWN_MIST (clientbound, GMS v95 opcode 0x140/320). v95 layout differs structurally from atlas's v83 layout: dwId, nType, dwOwnerId, nSkillID, nSLV, then a Decode2 + DecodeBuffer(16) RECT, then start/end time.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nType (mist type; ==3 is item-area-buff branch)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwOwnerId (owner character id)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "phase/delay (v6; layer-time multiplier)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rcArea RECT (16 bytes = ltX,ltY,rbX,rbY as 4x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "tStart (start time)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "tEnd/nPhase (end time)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaRemoved": {
+      "address": "0x4360a0",
+      "direction": "clientbound",
+      "notes": "REMOVE_MIST (clientbound, GMS v95 opcode 0x141/321). Reads a single Decode4 (affected-area id) then despawns; matches atlas.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxEnterField": {
+      "address": "0x6369c0",
+      "direction": "clientbound",
+      "notes": "SPAWN_KITE (clientbound, GMS v95 opcode 0x13E/318). Kite = MessageBox field object.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMessageBoxID (kite object id)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID (kite template/item id)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMsg (kite message)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCharacterName (owner name)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptMessageBox.x (spawn x)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nType (kite type)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxLeaveField": {
+      "address": "0x635d60",
+      "direction": "clientbound",
+      "notes": "REMOVE_KITE (clientbound, GMS v95 opcode 0x140-1/319). Reads animation flag then id.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bAnimation (leave animation type; 0 = play despawn animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwID (kite object id)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnCreateFailed": {
+      "address": "0x636760",
+      "direction": "clientbound",
+      "notes": "CANNOT_SPAWN_KITE (clientbound, GMS v95 opcode 0x13D/317). Empty body — client reads nothing and shows a StringPool notice (0x1EA).",
+      "calls": []
     }
   }
 }

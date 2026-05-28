@@ -1294,6 +1294,29 @@ func candidatesFromFName(fname string) []candidate {
 	// when s_bChase]. Matches atlas field/serverbound/change.go Change.Encode.
 	case "CField::SendTransferFieldRequest":
 		return []candidate{{name: "Change", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// --- World: field (clientbound) ---
+	// Affected-area (mist) + kite (the flying-kite field object, called
+	// "MessageBox" client-side). FNames + addresses verified against the
+	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live
+	// GMS v95 IDA. Report files become Field<Struct>.{md,json}.
+	case "CAffectedAreaPool::OnAffectedAreaCreated":
+		// CSV: SPAWN_MIST. Atlas struct is the v83 layout (AffectedAreaCreated);
+		// the v95 client decodes a structurally different packet — see
+		// FieldAffectedAreaCreated report + _pending.md (v83-vs-v95 divergence).
+		return []candidate{{name: "AffectedAreaCreated", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CAffectedAreaPool::OnAffectedAreaRemoved":
+		// CSV: REMOVE_MIST. Single Decode4 (mist id) — matches atlas.
+		return []candidate{{name: "AffectedAreaRemoved", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CMessageBoxPool::OnMessageBoxEnterField":
+		// CSV: SPAWN_KITE. Decode4 id + Decode4 itemId + 2×DecodeStr + 2×Decode2.
+		return []candidate{{name: "KiteSpawn", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CMessageBoxPool::OnMessageBoxLeaveField":
+		// CSV: REMOVE_KITE. Decode1 animation flag + Decode4 id.
+		return []candidate{{name: "KiteDestroy", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CMessageBoxPool::OnCreateFailed":
+		// CSV: CANNOT_SPAWN_KITE. Empty body — client reads nothing.
+		return []candidate{{name: "KiteError", pkg: "field", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

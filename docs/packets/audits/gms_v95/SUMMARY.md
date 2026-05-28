@@ -95,6 +95,8 @@
 | [PartyUpdate](PartyUpdate.md) | ❌ | `libs/atlas-packet/party/clientbound/update.go` |
 | [AutoDistributeAp](AutoDistributeAp.md) | ✅ | `libs/atlas-packet/character/serverbound/auto_distribute_ap.go` |
 | [DistributeAp](DistributeAp.md) | ✅ | `libs/atlas-packet/character/serverbound/distribute_ap.go` |
+| [FieldAffectedAreaCreated](FieldAffectedAreaCreated.md) | ❌ | `libs/atlas-packet/field/clientbound/affected_area_created.go` |
+| [FieldAffectedAreaRemoved](FieldAffectedAreaRemoved.md) | ✅ | `libs/atlas-packet/field/clientbound/affected_area_removed.go` |
 | [CashShopOperationBuy](CashShopOperationBuy.md) | ✅ | `libs/atlas-packet/cash/serverbound/shop_operation_buy.go` |
 | [CashShopOperationBuyCouple](CashShopOperationBuyCouple.md) | ✅ | `libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go` |
 | [CashShopOperationBuyFriendship](CashShopOperationBuyFriendship.md) | ✅ | `libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go` |
@@ -170,6 +172,9 @@
 | [NoteOperationDiscard](NoteOperationDiscard.md) | ✅ | `libs/atlas-packet/note/serverbound/operation_discard.go` |
 | [InteractionOperationMemoryGameTieAnswer](InteractionOperationMemoryGameTieAnswer.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_memory_game_tie_answer.go` |
 | [InteractionOperationMemoryGameFlipCard](InteractionOperationMemoryGameFlipCard.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_memory_game_flip_card.go` |
+| [FieldKiteError](FieldKiteError.md) | ✅ | `libs/atlas-packet/field/clientbound/kite_error.go` |
+| [FieldKiteSpawn](FieldKiteSpawn.md) | ✅ | `libs/atlas-packet/field/clientbound/kite_spawn.go` |
+| [FieldKiteDestroy](FieldKiteDestroy.md) | ✅ | `libs/atlas-packet/field/clientbound/kite_destroy.go` |
 | [InteractionOperationChat](InteractionOperationChat.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_chat.go` |
 | [MonsterMovementRequest](MonsterMovementRequest.md) | 🔍 | `libs/atlas-packet/monster/serverbound/movement.go` |
 | [MonsterMovementAck](MonsterMovementAck.md) | ✅ | `libs/atlas-packet/monster/clientbound/movement_ack.go` |

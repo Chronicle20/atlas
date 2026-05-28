@@ -6327,6 +6327,29 @@
           "comment": "characterId"
         }
       ]
+    },
+    "CUserLocal::CheckPortal_Collision": {
+      "address": "0x919a10",
+      "direction": "serverbound",
+      "notes": "CHANGE_MAP_SPECIAL (opcode 0x70). Client portal-script-enter request. Build site @0x919b07 (type-9 script portal). HandleUpKeyDown@0x919e50 builds an identical packet @0x91a04b for up-key portals.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (get_field()->m_bFieldKey)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "portalName (PORTAL::sName)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (GetPos().x)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (GetPos().y)"
+        }
+      ]
     }
   }
 }

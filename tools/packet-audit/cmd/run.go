@@ -1273,6 +1273,17 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ShopOperationRebateLockerItem", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	case "CCashShop::OnSetWish":
 		return []candidate{{name: "ShopOperationSetWishlist", dir: csvpkg.DirServerbound, pkg: "cash"}}
+
+	// --- World: portal (serverbound) ---
+	// CSV: CHANGE_MAP_SPECIAL (opcode 0x70/112 in GMS v95). Two FNames share this
+	// opcode (CUserLocal::HandleUpKeyDown for up-key portals, CUserLocal::CheckPortal_Collision
+	// for type-9 script portals). Both build the identical packet:
+	// Encode1(fieldKey) + EncodeStr(sName) + Encode2(x) + Encode2(y). We route the
+	// collision-based script portal path, which matches atlas portal/serverbound/script.go.
+	// Verified against v95 IDA CheckPortal_Collision@0x919a10 (build site @0x919b07) and
+	// HandleUpKeyDown@0x919e50 (build site @0x91a04b).
+	case "CUserLocal::CheckPortal_Collision":
+		return []candidate{{name: "Script", pkg: "portal", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

@@ -224,6 +224,7 @@
 | [EffectSkillUse](EffectSkillUse.md) | ❌ | `libs/atlas-packet/character/clientbound/effect_skill_use.go` |
 | [CharacterExpression](CharacterExpression.md) | ✅ | `libs/atlas-packet/character/clientbound/expression.go` |
 | [ItemUpgrade](ItemUpgrade.md) | ✅ | `libs/atlas-packet/character/clientbound/item_upgrade.go` |
+| [PortalScript](PortalScript.md) | ✅ | `libs/atlas-packet/portal/serverbound/script.go` |
 | [ChalkboardClose](ChalkboardClose.md) | ✅ | `libs/atlas-packet/character/serverbound/chalkboard_close.go` |
 | [ChairFixed](ChairFixed.md) | ✅ | `libs/atlas-packet/character/serverbound/chair_fixed.go` |
 | [CharacterHint](CharacterHint.md) | ✅ | `libs/atlas-packet/character/clientbound/hint.go` |

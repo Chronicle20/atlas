@@ -100,6 +100,89 @@ guarded blocks; deferred to a follow-up.
   AND all version templates (v83/v87/v92/v95/v111/JMS) that share this
   key. Left as-is for now to avoid cross-version breakage.
 
+## JMS v185 cash-shop NX-payment divergence (task-067 Phase 2, Task 10) — 🔍 DEFERRED to sibling task
+
+> **task-067 Phase 2 (JMS v185 cross-version pass)** audited commerce against the
+> JMS v185 IDB (`MapleStory_dump_SCY.exe`, md5 af6652ff9b7c549341f35e3569d7564a).
+> Tally: **10 ✅ / 5 ❌ / 0 ⚠️ / 0 🔍**. Two JMS-specific IN-scope wire bugs were
+> fixed (see below). The 5 ❌ are all cash serverbound "buy/gift" senders and form
+> a single coherent finding: **JMS v185 runs a different cash-shop payment
+> protocol** (the NX-point system design §9 predicted as uncharted). They are
+> DEFERRED as a sibling task, NOT shipped under audit cover.
+
+### IN-scope JMS fixes shipped this pass (2)
+
+| Atlas struct | JMS IDA evidence | Bug | Fix |
+|---|---|---|---|
+| `interaction/serverbound/operation_chat.go` (`OperationChat`) | `CMiniRoomBaseDlg::CheckAndSendChat`@0x6db3ce: `Encode1(6)`, `Encode4(get_update_time)`, `EncodeStr(message)` | JMS prepends `update_time` (like GMS v87+), but the encoder gated it behind `GMS && >=87` so JMS dropped it → 4-byte serverbound desync per chat | Predicate widened to `(GMS && >=87) \|\| JMS`, single guard. ✅ |
+| `cash/clientbound/shop_inventory.go` (`CashShopInventory`) | `CCashShop::OnCashItemResLoadLockerDone`@0x48bcff: `Decode2 count`, `DecodeBuffer(55*count)`, then `Decode2 ×4` (this+288..291) | JMS reads 4 trailing slot-counter shorts (like GMS v95), but the encoder gated the last two behind `GMS && >=95` so JMS wrote only 2 → 4-byte clientbound under-write desyncs the locker panel | Predicate widened to `(GMS && >=95) \|\| JMS`, single guard. ✅ |
+
+### Else-branch confirmations (GMS-gated encoders correct for JMS)
+
+- `cash/clientbound/query_result.go` (`QueryResult`) — `CCashShop::OnQueryCashResult`@0x48b3e8
+  reads exactly two ints (`Decode4 nCash`, `Decode4 nMaplePoint`); JMS takes the
+  `else` branch (no `prepaid`). ✅
+- `cash/clientbound/shop_inventory.go` (`CashShopPurchaseSuccess`) —
+  `CCashShop::OnCashItemResBuyDone`@0x48c0f0 reads `DecodeBuffer(0x37=55)`; matches
+  atlas's 55-byte item body. ✅
+- `interaction/serverbound/operation_personal_store_buy.go` /
+  `operation_merchant_buy.go` (`OperationPersonalStoreBuy` / `OperationMerchantBuy`)
+  — `CPersonalShopDlg::BuyItem`@0x762365 sends `Encode1 nIdx`, `Encode2 qty`,
+  `Encode4 CItemInfo::GetItemCRC`; the prior-pass unconditional itemCRC append is
+  correct for JMS. ✅
+- `interaction/serverbound/operation_personal_store_set_black_list.go`
+  (`OperationPersonalStoreSetBlackList`) — `CPersonalShopDlg::DeliverBlackList`@0x763021
+  sends `Encode2 count` then a per-entry `EncodeStr` loop; the prior-pass `[]string`
+  conversion is correct for JMS. ✅
+- `storage/serverbound/operation_retrieve_asset.go` /
+  `operation_store_asset.go` — `CTrunkDlg::SendGetItemRequest`@0x84dea0
+  (`Encode1 nType`, `Encode1 slot`) and `CTrunkDlg::SendPutItemRequest`@0x84e07d
+  (`Encode2 slot`, `Encode4 itemId`, `Encode2 qty`) match atlas field-for-field. ✅
+- `cash/serverbound/shop_operation_buy_normal.go` (`ShopOperationBuyNormal`) —
+  `CCashShop::OnBuyNormal`@0x47f5ba sends only `Encode4 nCommSN` (serialNumber);
+  matches atlas. ✅
+
+### OUT-of-scope: JMS cash-shop NX payment protocol — 5 ❌ DEFERRED (do NOT build)
+
+The five cash serverbound senders below diverge from **every** atlas branch (v83,
+GMS-gated, and JMS-else) in BOTH op-byte and field shape. JMS v185 uses a secondary-
+password ("SPW") string plus serial-number-only bodies, and entirely different
+dispatcher op-bytes than the GMS shapes atlas models. Making each JMS-correct would
+require a **3rd nested region/version branch** inside encoders that already carry two
+GMS gates (`>=87` and/or `>=95`) — over the 2-nested-guard HARD CAP — AND a structural
+field rewrite plus op-byte remap in `template_jms_185_1.json`. This is a NEW feature
+(wiring the JMS NX-point cash protocol), not an audit-cover width fix. **DEFERRED.**
+
+| Atlas struct (file) | JMS IDA sender | JMS op-byte | JMS body | atlas (JMS else-branch) |
+|---|---|---|---|---|
+| `ShopOperationBuy` (`shop_operation_buy.go`) | `CCashShop::OnBuy`@0x47eaa7 | 3 | `Encode1 isPoints`, `Encode4 serialNumber` | `bool isPoints`, `int currency`, `int serialNumber`, `int zero` (extra `currency`+`zero`) |
+| `ShopOperationGift` (`shop_operation_gift.go`) | `CCashShop::SendGiftsPacket`@0x47bced | 0x2E (NOT GMS 0x04) | `Encode4 serialNumber` ONLY | `int birthday`, `int serialNumber`, `str name`, `str message` |
+| `ShopOperationBuyCouple` (`shop_operation_buy_couple.go`) | `CCashShop::OnBuyCouple`@0x48085a | 0x1E (NOT GMS 0x1F) | `EncodeStr spw`, `Encode4 serialNumber`, `EncodeStr giveTo`, `EncodeStr message` | `int birthday`, `int option`, `int serialNumber`, `str name`, `str message` (extra `option`, no SPW) |
+| `ShopOperationBuyFriendship` (`shop_operation_buy_friendship.go`) | `CCashShop::OnBuyFriendship`@0x481184 | 0x24 (NOT GMS 0x25) | `EncodeStr spw`, `Encode4 serialNumber`, `EncodeStr giveTo`, `EncodeStr message` | `int birthday`, `int option`, `int serialNumber`, `str name`, `str message` |
+| `ShopOperationRebateLockerItem` (`shop_operation_rebate_locker_item.go`) | `CCashShop::OnRebateLockerItem`@0x47c059 | 0x1B (NOT GMS 0x1C) | `EncodeStr spw`, `EncodeBuffer 8` (locker SN) | `int birthday`, `long unk` (no SPW) |
+
+**Sibling-task suggestion:** *"JMS v185 cash-shop NX-payment protocol support."*
+Scope: (a) add JMS-specific cash serverbound encoders/decoders for the buy/gift/couple/
+friendship/rebate family with the SPW string + serial-number shapes above, structured
+to avoid a 3rd nested guard (e.g. a region-dispatched body strategy rather than nested
+`if`); (b) remap the cash serverbound dispatcher op-bytes in `template_jms_185_1.json`
+to the JMS values (0x2E gift, 0x1E couple, 0x24 friendship, 0x1B rebate) — citing the
+IDA `Encode1(...)` in each sender; (c) wire the JMS NX-point query/charge flow in
+atlas-channel. Out of scope for a packet-shape audit. Note also two interaction
+op-byte differences for the same future pass (template, not atlas-packet): JMS
+PersonalStore `BuyItem` op = 0x14 personal / 0x1F entrusted (GMS 0x17/0x22), and JMS
+`DeliverBlackList` op = 0x1B (GMS 0x1E) — encoder bodies already match, only the
+dispatcher opcodes differ.
+
+### Hard-cap result (Task 10)
+
+No encoder was pushed to a 3rd nested guard. The two IN-scope fixes each widened a
+single existing predicate to `... || JMS` (1 guard level). The 5 cash-shop NX
+divergences that WOULD need a 3rd gate are DEFERRED above, not built. The repo-wide
+nesting awk flags `shop_open.go` and `shop_operation_gift.go` as the documented
+known sequential-guard false positives (two SIBLING `if` blocks, not nested);
+verified by reading — neither was modified this pass.
+
 ## Sub-op enum / sub-struct deferrals — commerce domain (task-067)
 
 > **task-067 Phase 2 (GMS v83 cross-version pass) RESOLVED the 11 deferred wire

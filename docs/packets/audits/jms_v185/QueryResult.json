@@ -1,0 +1,29 @@
+{
+  "WriterName": "QueryResult",
+  "IDAName": "CCashShop::OnQueryCashResult",
+  "Address": "0x48b3e8",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/query_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nCash (credit)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMaplePoint (points). JMS reads only 2 ints — atlas else-branch (no prepaid) matches",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -1,0 +1,139 @@
+{
+ "binary": "MapleStory_dump_SCY.exe (JMS v185)",
+ "md5": "af6652ff9b7c549341f35e3569d7564a",
+ "region": "JMS",
+ "version": 185,
+ "generated_at": "2026-05-28T00:00:00Z",
+ "functions": {
+  "CMiniRoomBaseDlg::CheckAndSendChat": {
+   "address": "0x6db3ce",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode4", "comment": "update_time (get_update_time). JMS v185 PRESENT — same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS"},
+    {"op": "EncodeStr", "comment": "message (s)"}
+   ]
+  },
+  "CPersonalShopDlg::BuyItem": {
+   "address": "0x762365",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode1", "comment": "nIdx (index). op-byte 0x14 personal (or 0x1F entrusted) consumed by dispatcher"},
+    {"op": "Encode2", "comment": "Src (quantity)"},
+    {"op": "Encode4", "comment": "ItemCRC (CItemInfo::GetItemCRC). PRESENT in JMS — atlas unconditional itemCRC fix is correct"}
+   ]
+  },
+  "CPersonalShopDlg::BuyItem#Merchant": {
+   "address": "0x762365",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode1", "comment": "nIdx (index). entrusted op-byte 0x1F consumed by dispatcher"},
+    {"op": "Encode2", "comment": "Src (quantity)"},
+    {"op": "Encode4", "comment": "ItemCRC (CItemInfo::GetItemCRC). PRESENT in JMS"}
+   ]
+  },
+  "CPersonalShopDlg::DeliverBlackList": {
+   "address": "0x763021",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode2", "comment": "count (m_asBlackList size). op-byte 0x1B consumed by dispatcher"},
+    {"op": "EncodeStr", "comment": "per-entry name loop (string[]). JMS string[] — atlas unconditional []string fix is correct"}
+   ]
+  },
+  "CTrunkDlg::SendGetItemRequest": {
+   "address": "0x84dea0",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode1", "comment": "nType (inventory type). op-byte 3 consumed by dispatcher"},
+    {"op": "Encode1", "comment": "slot (*(v5+8))"}
+   ]
+  },
+  "CTrunkDlg::SendPutItemRequest": {
+   "address": "0x84e07d",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode2", "comment": "slot (v40[0]). op-byte 4 consumed by dispatcher"},
+    {"op": "Encode4", "comment": "itemId (n)"},
+    {"op": "Encode2", "comment": "quantity (v41[0])"}
+   ]
+  },
+  "CCashShop::OnQueryCashResult": {
+   "address": "0x48b3e8",
+   "direction": "clientbound",
+   "calls": [
+    {"op": "Decode4", "comment": "nCash (credit)"},
+    {"op": "Decode4", "comment": "nMaplePoint (points). JMS reads only 2 ints — atlas else-branch (no prepaid) matches"}
+   ]
+  },
+  "CCashShop::OnCashItemResult#CashShopInventory": {
+   "address": "0x48bcff",
+   "direction": "clientbound",
+   "calls": [
+    {"op": "Decode1", "comment": "mode (0x58 LOAD_LOCKER_DONE; op-byte consumed by OnCashItemResult dispatcher)"},
+    {"op": "Decode2", "comment": "count (locker item count)"},
+    {"op": "DecodeBuffer", "comment": "55 * count bytes (per CashInventoryItem.EncodeBytes)"},
+    {"op": "Decode2", "comment": "m_nTrunkCount (storageSlots; *(this+288))"},
+    {"op": "Decode2", "comment": "m_nCharacterSlotCount (characterSlots; *(this+289))"},
+    {"op": "Decode2", "comment": "m_nBuyCharacterCount (*(this+290)). JMS PRESENT — atlas else-branch (2 shorts) is WRONG; JMS reads 4 shorts like GMS v95"},
+    {"op": "Decode2", "comment": "m_nCharacterCount (*(this+291))"}
+   ]
+  },
+  "CCashShop::OnCashItemResult#CashShopPurchaseSuccess": {
+   "address": "0x48c0f0",
+   "direction": "clientbound",
+   "calls": [
+    {"op": "Decode1", "comment": "mode (0x64 BUY_DONE; op-byte consumed by dispatcher)"},
+    {"op": "DecodeBuffer", "comment": "0x37 = 55 bytes (per CashInventoryItem). Matches atlas"}
+   ]
+  },
+  "CCashShop::OnBuy": {
+   "address": "0x47eaa7",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode1", "comment": "isPoints bool (v47 == 2). op-byte 3 consumed by dispatcher"},
+    {"op": "Encode4", "comment": "nCommSN (serialNumber). JMS NX-system: NO dwOption/currency int, NO trailing zero/oneADay/eventSN — diverges from all atlas branches"}
+   ]
+  },
+  "CCashShop::OnBuyNormal": {
+   "address": "0x47f5ba",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode4", "comment": "nCommSN (serialNumber). op-byte 0x21 consumed by dispatcher. JMS body = serialNumber only"}
+   ]
+  },
+  "CCashShop::SendGiftsPacket": {
+   "address": "0x47bced",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "Encode4", "comment": "commSN (serialNumber). op-byte 0x2E (NOT GMS 0x04). JMS gift = serialNumber ONLY — no SPW/birthday, no recipient name, no message, no oneADay. NX-system divergence"}
+   ]
+  },
+  "CCashShop::OnBuyCouple": {
+   "address": "0x48085a",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "EncodeStr", "comment": "s (secondary password / SPW). op-byte 0x1E (NOT GMS 0x1F)"},
+    {"op": "Encode4", "comment": "nCommSN (serialNumber). JMS has NO option int (atlas else-branch has option)"},
+    {"op": "EncodeStr", "comment": "sGiveTo (recipient name)"},
+    {"op": "EncodeStr", "comment": "sText (message)"}
+   ]
+  },
+  "CCashShop::OnBuyFriendship": {
+   "address": "0x481184",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "EncodeStr", "comment": "s (SPW). op-byte 0x24 (NOT GMS 0x25)"},
+    {"op": "Encode4", "comment": "nCommSN (serialNumber). JMS has NO option int"},
+    {"op": "EncodeStr", "comment": "v36 (recipient name)"},
+    {"op": "EncodeStr", "comment": "v33 (message)"}
+   ]
+  },
+  "CCashShop::OnRebateLockerItem": {
+   "address": "0x47c059",
+   "direction": "serverbound",
+   "calls": [
+    {"op": "EncodeStr", "comment": "spw (secondary password). op-byte 0x1B (NOT GMS 0x1C). JMS has SPW string (atlas else-branch has int birthday)"},
+    {"op": "EncodeBuffer", "comment": "8-byte locker SN (Src). matches atlas unk long"}
+   ]
+  }
+ }
+}

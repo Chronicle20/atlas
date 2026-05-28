@@ -3,8 +3,7 @@ package shops
 import (
 	"atlas-npc/data/consumable"
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
 
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
@@ -21,18 +20,18 @@ type ConsumableCacheInterface interface {
 
 // ConsumableCache is a Redis-backed cache of rechargeable consumables per tenant
 type ConsumableCache struct {
-	client *goredis.Client
+	reg *atlasredis.Registry[uuid.UUID, []consumable.Model]
 }
 
 var consumableCache ConsumableCacheInterface
 
-func consumableCacheKey(tenantId uuid.UUID) string {
-	return fmt.Sprintf("%s:npc-shop:consumables:%s", atlasredis.KeyPrefix(), tenantId.String())
-}
-
 // InitConsumableCache initializes the Redis-backed consumable cache
 func InitConsumableCache(client *goredis.Client) {
-	consumableCache = &ConsumableCache{client: client}
+	consumableCache = &ConsumableCache{
+		reg: atlasredis.NewRegistry[uuid.UUID, []consumable.Model](client, "npc-shop:consumables", func(id uuid.UUID) string {
+			return id.String()
+		}),
+	}
 }
 
 // GetConsumableCache returns the consumable cache instance
@@ -43,15 +42,12 @@ func GetConsumableCache() ConsumableCacheInterface {
 // GetConsumables returns the rechargeable consumables for a tenant.
 // Checks Redis first, falls back to the data service on cache miss.
 func (c *ConsumableCache) GetConsumables(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) []consumable.Model {
-	key := consumableCacheKey(tenantId)
-
-	data, err := c.client.Get(ctx, key).Bytes()
+	models, err := c.reg.Get(ctx, tenantId)
 	if err == nil {
-		var models []consumable.Model
-		if err = json.Unmarshal(data, &models); err == nil {
-			return models
-		}
-		l.WithError(err).Warnf("Failed to unmarshal cached consumables for tenant %s, reloading.", tenantId)
+		return models
+	}
+	if !errors.Is(err, atlasredis.ErrNotFound) {
+		l.WithError(err).Warnf("Failed to read cached consumables for tenant %s, reloading.", tenantId)
 	}
 
 	l.Infof("Loading rechargeable consumables for tenant %s", tenantId)
@@ -64,19 +60,14 @@ func (c *ConsumableCache) GetConsumables(l logrus.FieldLogger, ctx context.Conte
 
 	l.Infof("Found %d rechargeable consumables for tenant %s", len(consumables), tenantId)
 
-	if data, err = json.Marshal(consumables); err == nil {
-		c.client.Set(ctx, key, data, 0)
-	}
+	_ = c.reg.Put(ctx, tenantId, consumables)
 
 	return consumables
 }
 
 // SetConsumables sets the rechargeable consumables for a tenant
 func (c *ConsumableCache) SetConsumables(tenantId uuid.UUID, consumables []consumable.Model) {
-	key := consumableCacheKey(tenantId)
-	if data, err := json.Marshal(consumables); err == nil {
-		c.client.Set(context.Background(), key, data, 0)
-	}
+	_ = c.reg.Put(context.Background(), tenantId, consumables)
 }
 
 // GetDistinctTenants returns a list of distinct tenant IDs from the shop entities

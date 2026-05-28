@@ -106,6 +106,63 @@ func TestKeyedSet_KeyIsolationAndClear(t *testing.T) {
 	}
 }
 
+func TestKeyedSet_ClearAll(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+	s := NewKeyedSet[string](client, "monster-map", func(k string) string { return k })
+
+	if err := s.Add(ctx, "kA", "m1", "m2"); err != nil {
+		t.Fatalf("Add kA: %v", err)
+	}
+	if err := s.Add(ctx, "kB", "m3"); err != nil {
+		t.Fatalf("Add kB: %v", err)
+	}
+
+	// Both keys exist before ClearAll.
+	membersA, err := s.Members(ctx, "kA")
+	if err != nil {
+		t.Fatalf("Members kA before ClearAll: %v", err)
+	}
+	if len(membersA) == 0 {
+		t.Fatal("expected kA non-empty before ClearAll")
+	}
+	membersB, err := s.Members(ctx, "kB")
+	if err != nil {
+		t.Fatalf("Members kB before ClearAll: %v", err)
+	}
+	if len(membersB) == 0 {
+		t.Fatal("expected kB non-empty before ClearAll")
+	}
+
+	n, err := s.ClearAll(ctx)
+	if err != nil {
+		t.Fatalf("ClearAll: %v", err)
+	}
+	if n != 2 {
+		t.Fatalf("ClearAll returned %d, want 2", n)
+	}
+
+	membersA, err = s.Members(ctx, "kA")
+	if err != nil {
+		t.Fatalf("Members kA after ClearAll: %v", err)
+	}
+	if len(membersA) != 0 {
+		t.Fatalf("Members kA after ClearAll = %v, want empty", membersA)
+	}
+
+	membersB, err = s.Members(ctx, "kB")
+	if err != nil {
+		t.Fatalf("Members kB after ClearAll: %v", err)
+	}
+	if len(membersB) != 0 {
+		t.Fatalf("Members kB after ClearAll = %v, want empty", membersB)
+	}
+}
+
 func TestTenantKeyedSet_IsMember(t *testing.T) {
 	prev := keyPrefix
 	t.Cleanup(func() { keyPrefix = prev })

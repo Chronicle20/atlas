@@ -49,6 +49,44 @@ func (s *KeyedSet[K]) Clear(ctx context.Context, k K) error {
 	return s.client.Del(ctx, s.key(k)).Err()
 }
 
+// ClearAll deletes every SET in this KeyedSet's namespace (SCAN COUNT=100 +
+// pipelined DEL). Returns the number of keys deleted. Mirrors Registry.Clear.
+func (s *KeyedSet[K]) ClearAll(ctx context.Context) (int, error) {
+	pattern := namespacedKey(s.namespace, "*")
+	iter := s.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := s.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = s.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}
+
 // TenantKeyedSet is a family of tenant-scoped SETs, one per key K.
 // Key format: <prefix>:<namespace>:<tenantKey>:<keyFn(k)>.
 type TenantKeyedSet[K comparable] struct {

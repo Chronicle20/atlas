@@ -9,6 +9,7 @@ import (
 	"atlas-messages/kafka/producer"
 	"atlas-messages/message"
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -235,7 +237,11 @@ func MobSpawnCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 
 					mon, err := monsterdata.NewProcessor(l, ctx).GetById(templateId)
 					if err != nil {
-						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown monster template: %d", templateId), []uint32{c.Id()})
+						if errors.Is(err, requests.ErrNotFound) {
+							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown monster template: %d", templateId), []uint32{c.Id()})
+						}
+						l.WithError(err).Errorf("Monster template lookup [%d] failed (non-404).", templateId)
+						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Failed to look up monster template %d.", templateId), []uint32{c.Id()})
 					}
 
 					var fh int16

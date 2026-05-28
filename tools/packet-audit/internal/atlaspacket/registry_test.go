@@ -236,6 +236,30 @@ func TestRegistryStillRegistersMovementAfterCombatExtension(t *testing.T) {
 	}
 }
 
+func TestRegistryRegistersNpcShopItem(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := "ShopCommodity" // npc/clientbound.ShopCommodity in shop_list.go
+	if !reg.HasType(name) {
+		t.Fatalf("registry missing type %s", name)
+	}
+	// ShopCommodity has no Encode/Write/EncodeEntry/EncodeBytes method of its own;
+	// its fields are encoded inline inside ShopList.Encode — the registry therefore
+	// returns no Calls for this type (known registry limitation: inline sub-structs
+	// without their own encode method are not resolvable as KindRecurse targets).
+	calls, ok := reg.Calls(name)
+	if ok && len(calls) > 0 {
+		// If a future change adds an Encode method to ShopCommodity the inline
+		// encoding limitation is resolved — record this as an unexpected pass so
+		// the comment above can be removed.
+		t.Logf("UNEXPECTED: %s.Encode produced calls (ok=%v len=%d) — inline-encoding concern is resolved", name, ok, len(calls))
+	}
+}
+
 func TestRegistryRegistersCommerceSubStructs(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")

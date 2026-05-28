@@ -52,3 +52,18 @@ The sibling REMOVE_MIST packet (`AffectedAreaRemoved`, single int32 id) matches
 v95 cleanly — only the *create* layout diverged between versions.
 
 Ack: world-audit Phase 2c on 2026-05-28
+
+## Correction (task-068 Phase 3 v83): atlas is NOT the v83 shape
+
+The Phase 2c note above assumed atlas encodes the v83 SPAWN_MIST layout and that
+a v95 fix "would break the v83 client." **The v83 audit disproves this.**
+`CAffectedAreaPool::OnAffectedAreaCreated` v83 @0x431a63 reads `Decode4 dwId,
+Decode4 nType, Decode4 dwOwnerId, Decode4 nSkillID, Decode1 nSLV, Decode2 phase,
+DecodeBuffer(16) rcArea, Decode4 tEnd` — the SAME field set as v95 (v95 only adds
+a leading `tStart` int32). Atlas matches NEITHER version. So a rewrite to the
+client SPAWN_MIST shape would FIX v83 too, not break it — v83 and v95 share the
+layout, and a single `tStart`-gated (`GMS>=95`) encode satisfies both. Still
+deferred (structural rewrite, new model fields) — see `_pending.md`
+AFFECTEDAREA-create-shape with v83-confirmed evidence.
+
+Ack: world-audit Phase 3 v95-refresh on 2026-05-28

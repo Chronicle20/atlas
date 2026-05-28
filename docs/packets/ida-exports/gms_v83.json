@@ -4509,6 +4509,415 @@
           "comment": "balloon (bShowBalloon)"
         }
       ]
+    },
+    "CUserLocal::CheckPortal_Collision": {
+      "address": "0x94dac6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (get_field()+308)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "portalName (PORTAL sName)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (GetPos().x)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (GetPos().y)"
+        }
+      ]
+    },
+    "CField::SendTransferFieldRequest": {
+      "address": "0x53035d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (get_field()+308)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetId (a1)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "portalName (arg4; empty when NULL)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (target position X; only when portal name present)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (target position Y; only when portal name present)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "unused (constant 0)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "premium (a2)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "chase (dword_BED760)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetX (a4; only when chase!=0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetY (a5; only when chase!=0)"
+        }
+      ]
+    },
+    "CStage::OnSetField": {
+      "address": "0x776020",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nChannelID (channel id) — v83 has NO DecodeOpt before it and NO m_dwOldDriverID after it"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sNotifierMessage flag (HIBYTE v110)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCharacterData flag (v107)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nNotifierCheck (v108; notifier string-loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 1 (CalcDamage::SetSeed; bCharacterData branch)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 3"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "CharacterData::Decode — ENVELOPE BOUNDARY (character domain task-028)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "timestamp (DecodeBuffer p,8u FILETIME) — v83 has NO logout-gift block before it"
+        }
+      ]
+    },
+    "CStage::OnSetField#WarpToMap": {
+      "address": "0x776020",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nChannelID (channel id) — v83 NO DecodeOpt, NO m_dwOldDriverID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sNotifierMessage flag"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCharacterData flag (warp path = 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nNotifierCheck"
+        },
+        {
+          "op": "Decode1",
+          "comment": "revive flag (else branch, v10)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwPosMap (target map id, v13)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nPortal (target portal id, v17)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nHP — v83 reads Decode2 (2 bytes), v95 reads Decode4 (v20)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "m_bChaseEnable (v23)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "timestamp (DecodeBuffer p,8u FILETIME)"
+        }
+      ]
+    },
+    "CField_ContiMove::OnContiState": {
+      "address": "0x54dd08",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nState (transport/ship state 0-6, v3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "overrideAppear flag (v4; checked v4==1 in AppearShip case)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaCreated": {
+      "address": "0x431a63",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id, v92)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nType (mist type; ==3 is item-area-buff branch, v95.m_Data)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwOwnerId (owner character id, v4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill id, Unknown; ==130/131/2111003/... GetSkill)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level, v99)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "phase/delay (v88; layer-time multiplier)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rcArea RECT (16 bytes = ltX,ltY,rbX,rbY as 4x int32, v86)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "tEnd/nPhase (end time, v90)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaRemoved": {
+      "address": "0x43234d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id, v39)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxEnterField": {
+      "address": "0x65acdf",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMessageBoxID (kite object id, v59)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID (kite template/item id, +56)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMsg (kite message)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCharacterName (owner name)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptMessageBox.x (spawn x, +28)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nType/y (spawn y or kite type, +32)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxLeaveField": {
+      "address": "0x65b2ca",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bAnimation (leave animation type; 0=play despawn animation, v3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwID (kite object id, v38)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnCreateFailed": {
+      "address": "0x65acb4",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CField::OnBlowWeather": {
+      "address": "0x535179",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "m_nBlowType (m_aSwimRect; 0=start admin-weather w/ message, 1=item/end, v3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (v5)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (only when itemId!=0 && blowType==0; start path)"
+        }
+      ]
+    },
+    "CField::OnClock": {
+      "address": "0x5361bd",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "clockType (mode discriminator; switch arms 0/1/2/3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag1 (EventTimerClock enable byte; representative arm = case 3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "seconds"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Summon": {
+      "address": "0x5330f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (effect-type discriminator = 0; summon)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "effect (v4; summon animation index)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (v42)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (v5)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Tremble": {
+      "address": "0x5330f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 1; tremble)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHeavyNShortTremble (v22; bool)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "delay (v23)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#String": {
+      "address": "0x5330f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 2/3/4/6; string-payload effect)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name / path / bgm UOL string"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#BossHp": {
+      "address": "0x5330f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 5; boss HP tag)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monsterId (v38)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "currentHp (v44)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maxHp (v42)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tagColor (v17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tagBackgroundColor (v18)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#RewardRullet": {
+      "address": "0x5330f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 7; reward roulette)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardJobIdx (v24)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardPartIdx (v25)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardLevIdx (v26)"
+        }
+      ]
     }
   }
 }

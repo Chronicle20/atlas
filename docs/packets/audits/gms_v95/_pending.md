@@ -40,19 +40,33 @@ why it was deferred, and what evidence is needed to resolve it.
 
 ---
 
-## Still pending — world domain (task-068 Phase 2c, field/clientbound)
+## Still pending — world domain (task-068 Phase 3, field/clientbound)
 
-### SETFIELD-old-driver-id
+### SETFIELD-old-driver-id — RESOLVED (task-068 Phase 3 v83)
+
+**Status: RESOLVED — removed from pending.** v83 IDA (`CStage::OnSetField`
+@0x776020) reads `Decode4 channelId` then `Decode1 sNotifierMessage`
+immediately, with NO old-driver-id between them, proving the field was
+introduced after v83. Atlas now emits a 4-byte `m_dwOldDriverID` (value 0) gated
+on `Region()=="GMS" && MajorVersion() >= 95` in both `set_field.go` and
+`warp_to_map.go` (also fixed `nHP`: Decode4 for GMS v95+/JMS, Decode2 for
+v83/v87). v95 FieldWarpToMap flipped ❌→✅; v95 FieldSetField row 2 flipped ✅
+(residual report ❌ is the seed-loop/CharacterData analyzer artifact); v83
+FieldSetField/FieldWarpToMap are ✅. The `>=95` lower bound is **provisional** —
+the v87 pass should confirm whether the true introduction point is >=87 or >=95
+against the v87 binary, and tighten the gate if needed.
+
+### AFFECTEDAREA-create-shape — atlas matches NEITHER v83 NOR v95 (structural rewrite)
 
 | Field | Value |
 |---|---|
-| Affected packets | `field/clientbound/set_field.go` — `SetField`; `field/clientbound/warp_to_map.go` — `WarpToMap` |
-| Atlas files | `libs/atlas-packet/field/clientbound/set_field.go`, `libs/atlas-packet/field/clientbound/warp_to_map.go` |
-| IDA | `CStage::OnSetField` @0x71a0a0 (SET_FIELD, GMS v95 opcode 0x8D/141) |
-| Reason | v95 reads `m_dwOldDriverID` as a `Decode4` (line 129) immediately after `m_nChannelID` (line 128), unconditionally — before the `bCharacterData` split, so it affects BOTH the SetField (full) and WarpToMap (warp) paths. Atlas writes only the channelId int32, then emits a `WriteByte(0)+WriteInt(0)` pair under the JMS-only guard; it never emits a 4-byte old-driver-id for GMS. A GMS v95 client therefore reads the following envelope bytes shifted by 4. Every other envelope field matches v95 exactly. |
-| Why deferred (not fixed) | The version-introduction point of `m_dwOldDriverID` is unknown. Atlas runs production GMS at v83/v87; only the v95 IDB is loaded. Adding a `(GMS && MajorVersion>83)`-gated `WriteInt` could be correct for v95 yet wrong for v87/v92 if the field was introduced later, breaking the very versions atlas serves. A speculative version gate is riskier than the current (also-wrong-for-v95) state. |
-| Evidence needed | v83 / v87 / v92 GMS IDA for `CStage::OnSetField` to pin the exact version where `m_dwOldDriverID` (Decode4 after channelId) was added; then add the correctly-gated 4-byte write to both set_field.go and warp_to_map.go. |
-| Verdict | ❌ cross-version structural divergence (v95 confirmed; gate unverifiable) |
+| Affected packet | `field/clientbound/affected_area_created.go` — `AffectedAreaCreated` (writer `AffectedAreaCreated`, CSV SPAWN_MIST) |
+| Atlas file | `libs/atlas-packet/field/clientbound/affected_area_created.go` |
+| IDA | `CAffectedAreaPool::OnAffectedAreaCreated` — v83 @0x431a63, v95 @0x437ec0 |
+| Reason | The atlas struct is documented in-code as the "v83 SPAWN_MIST" layout, but **v83 IDA disproves that**. v83 reads `Decode4 dwId, Decode4 nType, Decode4 dwOwnerId, Decode4 nSkillID, Decode1 nSLV, Decode2 phase, DecodeBuffer(16) rcArea, Decode4 tEnd` — the SAME shape as v95 (v95 adds one extra leading `tStart` int32 after the RECT). Atlas instead writes `int32 mistKey, int32 ownerId, int16 originX, int16 originY, int16 ltX/ltY/rbX/rbY, int32 duration, int32 skillLevel` — which matches NEITHER version: it omits `nType`+`nSkillID` (4 bytes each), invents `originX/originY` int16s no client reads, and emits the LT/RB rectangle as four inline int16s instead of the client's 16-byte RECT buffer (4× int32). |
+| Why deferred (not fixed) | A correct fix is a structural rewrite: the struct must carry `nType` and `nSkillID` (new fields plumbed from atlas-maps), drop `originX/originY`, and emit a 16-byte RECT buffer. Because v83 and v95 share the same field set (differing only by v95's `tStart` int32), a single version-gated rewrite (`tStart` gated `GMS>=95`) could satisfy both. This exceeds the per-packet bucket scope (new model fields + cross-service plumbing + >2 nested guards). |
+| Evidence needed | Confirm the atlas-maps mist event carries skillId + skill type (mist `nType`) and the RECT coordinates; design the rewritten struct; verify against v83 @0x431a63 and v95 @0x437ec0 (and v87/JMS185 in later passes for the `tStart` gate boundary). |
+| Verdict | ❌ structural rewrite — atlas serves a bespoke shape no audited GMS client decodes; sibling-task candidate |
 
 ---
 

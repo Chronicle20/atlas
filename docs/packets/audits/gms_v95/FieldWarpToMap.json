@@ -26,12 +26,12 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "m_dwOldDriverID — v95 reads unconditionally; atlas omits for GMS (DIVERGENCE)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAComment": "m_dwOldDriverID — v95 reads Decode4 unconditionally; atlas now emits it gated GMS\u003e=95 (RESOLVED, v83 omits)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -44,76 +44,76 @@
     },
     {
       "Index": 4,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "bCharacterData flag (atlas writes 0 — warp path)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "nNotifierCheck (atlas writes 0)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "revive flag (else branch, line 180) — atlas WriteByte(0) gated (GMS\u003e28 || JMS)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "dwPosMap (target map id)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "nPortal (target portal id)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nHP — v95 Decode4; atlas was WriteShort(2), FIXED to WriteInt(4)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,
-      "AtlasOp": 3,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_bChaseEnable — atlas WriteBool(false) gated (GMS\u003e28)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 3,
       "IDAComment": "timestamp (DecodeBuffer p,8u); atlas WriteInt64",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

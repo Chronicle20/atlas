@@ -1422,3 +1422,162 @@ IDA switch arms (full table in `FieldClock.md`):
 The export entry `CField::OnClock` models the case-3 (EventTimerClock) arm as a
 representative; the `SUMMARY.md` ❌ for `FieldClock` should be read as ⚠️
 (tool-limitation, manually verified).
+
+## Still pending — world domain (task-068 Phase 2b, field/clientbound envelope)
+
+> **task-068 sub-phase 2b** audited `set_field.go`, `warp_to_map.go`, and
+> `transport.go` against GMS v95 IDA. `FieldTransport` ✅ (after x/y-branch fix).
+> `FieldSetField` and `FieldWarpToMap` share one real structural divergence,
+> deferred below.
+
+### ❌ DEFERRED: FieldSetField / FieldWarpToMap — m_dwOldDriverID missing for GMS
+
+Both `field/clientbound/set_field.go` (`SetField`) and
+`field/clientbound/warp_to_map.go` (`WarpToMap`) share the `CStage::OnSetField`
+envelope (`@0x71a0a0`). Every envelope field matches v95 except one:
+
+| pos after channelId | v95 reads | atlas writes |
+|---|---|---|
+| 0 | `Decode4 m_dwOldDriverID` (unconditional, line 129) | nothing for GMS (only `WriteByte(0)+WriteInt(0)` for JMS) |
+
+v95 reads `m_dwOldDriverID` as an unconditional 4-byte int immediately after
+`m_nChannelID`. Atlas omits it entirely for GMS, shifting the entire
+post-channelId envelope by 4 bytes for any GMS v95 client.
+
+**Why deferred (not fixed under audit cover):** the version-introduction point
+for `m_dwOldDriverID` (v83? v87? v92? first in v95?) cannot be confirmed without
+v83/v87/v92 IDA. A blind unconditional add risks the very GMS versions atlas runs
+in production. A region/version-gated add risks breaking earlier GMS clients if
+the field is absent there. Fix requires a cross-version IDA spike
+(`CStage::OnSetField` in v83/v87/v92) before the correct gate can be written.
+
+Files: `libs/atlas-packet/field/clientbound/set_field.go`,
+`libs/atlas-packet/field/clientbound/warp_to_map.go`.
+
+Audit reports: `FieldSetField.md`, `FieldWarpToMap.md` — both marked ❌ in
+`SUMMARY.md` due to this divergence.
+
+**Sibling-task suggestion:** *"GMS v95 SetField/WarpToMap oldDriverID fix."*
+Scope: read `CStage::OnSetField` in v83/v87/v92 IDA; if field is present from
+v83, add unconditionally; if introduced in v95, gate behind `GMS>=95 || JMS`.
+
+## Tool limitations — world domain (task-068 Phase 2e/2g, npc cluster)
+
+> **task-068 sub-phases 2e and 2g** audited NPC/clientbound non-conversation
+> (9 files) and NPC/serverbound (9 files) against GMS v95 IDA. All ❌ SUMMARY
+> verdicts in this cluster are tool-limitation false positives — no new wire bugs.
+
+### NpcAction — conditional movement body (tool limitation, manually verified ✅)
+
+`npc/clientbound/action.go` (`Action`) routes via `CNpcPool::OnNpcPacket`
+(@0x679260) dispatcher (Decode4 npcId prefix) then `CNpc::OnMove` (@0x678060).
+Rows 0–2 (`objectId int32`, `action byte`, `chatIdx byte`) match v95 exactly.
+Rows 3–6 are the optional `model.Movement` body; the flat analyzer cannot model
+the `m_pTemplate->bMove` client-side gate — it appends movement fields
+unconditionally. Both code paths (animation-only: 6 bytes; move-action: 6 bytes +
+CMovePath body) are server-controlled and align with the template-gated client
+read. Wire is correct.
+
+SUMMARY row: `NpcAction` ❌ → tool-limitation (conditional sub-struct). See
+`NpcAction.md` for full per-field triage.
+
+### NpcActionRequest — conditional movement body (tool limitation, manually verified ✅)
+
+`npc/serverbound/action.go` (`ActionRequest`). Mirror of the clientbound case:
+`CNpc::GenerateMovePath` (@0x671590) writes `npcId(4)+action(1)+chatIdx(1)` then
+`CMovePath::Flush` only when `m_pTemplate->bMove`. Rows 0–2 ✅; rows 3–6 are the
+same movement-body tool-limitation FP. Wire is correct.
+
+SUMMARY row: `NpcActionRequest` ❌ → tool-limitation (conditional sub-struct). See
+`NpcActionRequest.md` for full per-field triage.
+
+### NpcShopList — per-commodity loop + ammo/non-ammo branch (tool limitation, manually verified ✅)
+
+`npc/clientbound/shop_list.go` (`ShopList`). All 9 per-commodity fields (rows
+0–9) match `CShopDlg::SetShopDlg` (@0x6eab00) exactly. Rows 10–11 are artifacts
+of the flat analyzer: it cannot model the per-item loop OR the mutually-exclusive
+`UnitPrice(int64)` / `Quantity(int16)` branch, inlining both consecutively and
+misaligning `SlotMax`. Wire is correct per per-item IDA trace in `NpcShopList.md`.
+
+SUMMARY row: `NpcShopList` ❌ → tool-limitation (loop + ammo/non-ammo branch). See
+`NpcShopList.md` for full per-item triage.
+
+### NpcContinueConversationSelection — wide/narrow branch (tool limitation, manually verified ✅)
+
+`npc/serverbound/continue_conversation_selection.go`
+(`ContinueConversationSelection`). Row 0 (`int32` selection, wide path) matches
+v95 `CScriptMan::OnAskMenu` (@0x6dce00) exactly. Row 1 (`byte`) is an artifact of
+the flat analyzer inlining both the wide (`int32`) and narrow (`byte`) arms of the
+`if m_wide { WriteInt32 } else { WriteByte }` branch. Both widths are covered:
+AskMenu (4-byte) and AskAvatar (1-byte) selection sizes. Wire is correct.
+
+SUMMARY row: `NpcContinueConversationSelection` ❌ → tool-limitation
+(exclusive-branch flatten). See `NpcContinueConversationSelection.md`.
+
+## Sub-op enum drift — world domain (task-068 Phase 2e/2g, npc shop)
+
+> **task-068 sub-phases 2e and 2g** confirmed NpcShopOperation clientbound sub-op
+> mode bytes and NpcShop serverbound op byte via v95 IDA. All wire shapes ✅.
+> Sub-op value spaces are template-configured; enum drift verification is deferred
+> to the cross-version pass (Phase 3, not yet scheduled for world domain).
+
+### OP-FAMILY-npc-shop-clientbound — `shop_operation.go` mode-byte dispatcher
+
+`npc/clientbound/shop_operation.go` carries three structs dispatched by
+`CShopDlg::OnPacket` via a leading mode byte:
+
+| atlas struct | IDA case | mode | payload |
+|---|---|---|---|
+| `ShopOperationSimple` | `CShopDlg::OnPacket#Simple` (@0x6eb7d0) | mode-only | mode(1) |
+| `ShopOperationLevelRequirement` | `CShopDlg::OnPacket#LevelRequirement` (@0x6eb830) | over/under level sub-op | mode(1) + level(4) |
+| `ShopOperationGenericError` | `CShopDlg::OnPacket#GenericError` (@0x6eb860) | generic-error sub-op | mode(1) + errorCode(1) |
+
+All three ✅ against v95 IDA. Mode byte values are template-configured
+(`operations.{SOLD_OUT, LEVEL_REQUIREMENT, GENERIC_ERROR}`); enum drift
+verification deferred to Phase 3 cross-version pass.
+
+### OP-FAMILY-npc-shop-serverbound — `shop.go` op-byte + sub-bodies
+
+`npc/serverbound/shop.go` (`Shop`) writes only the op byte (sub-op discriminator
+for the NPC_SHOP_ACTION opcode). Sub-bodies are in `shop_buy.go`, `shop_sell.go`,
+`shop_recharge.go`. Op-byte values confirmed in v95 IDA:
+
+| atlas struct | IDA sender | op |
+|---|---|---|
+| `Shop` (dispatcher) | `CShopDlg::OnPacket#ShopDispatch` (@0x6e4b80) | op byte only |
+| `ShopBuy` | `CShopDlg::SendBuyRequest` (@0x6e9bb0) | 0 (BUY) |
+| `ShopSell` | `CShopDlg::SendSellRequest` (@0x6e9c60) | 1 (SELL) |
+| `ShopRecharge` | `CShopDlg::SendRechargeRequest` (@0x6e9cf0) | 2 (RECHARGE) |
+
+All three sub-bodies ✅ against v95 IDA. Op-byte values are
+template-configured (`operations.{BUY,SELL,RECHARGE}`); enum drift verification
+deferred to Phase 3 cross-version pass.
+
+## Phase 2 exit gate — world domain summary (task-068)
+
+> This section is the one-glance ledger for all Phase 2 world-domain SUMMARY ❌
+> rows. Every ❌ has either a fix commit on the branch or a deferral entry in
+> this file. No silent ❌ exists.
+
+### Fix commits on branch
+
+| SUMMARY row | Fix commit | Change |
+|---|---|---|
+| `FieldWarpToMap` (partially) | `37f072c11` | `nHP` field width: `WriteShort` → `WriteInt` (4 bytes) to match v95 `Decode4`. Remaining ❌ is `m_dwOldDriverID` — see above. |
+| `NpcGuideTalkMessage` / `NpcGuideTalkIdx` (verdicts became ✅ after fix) | `0d1a20d9b` | Invert GuideTalk leading bool to match v95 client branch. |
+| `NpcAskMemberShopAvatarConversationDetail` (verdict became ✅ after fix) | `f5be63196` | Candidate-count field is `byte`, not `int`. |
+| `NpcSayImageConversationDetail` (verdict became ✅ after fix) | `9a4dad51d` | Image-count field is `byte`, not `int`. |
+| `FieldTransport` (verdict became ✅ after fix) | `ef6a96392` | Correct field-transfer x/y branch to match v95 client. |
+
+### World-domain ❌ SUMMARY rows — classified
+
+| SUMMARY row | Classification | Evidence |
+|---|---|---|
+| `FieldAffectedAreaCreated` | cross-version-deferred (v83↔v95 structural divergence) | `_pending.md` "Still pending — world domain (Phase 2c)" + `FieldAffectedAreaCreated.md` |
+| `FieldClock` | tool-limitation, manually verified ✅ (mutually-exclusive switch arms) | `_pending.md` "Tool limitations — world domain (Phase 2d)" + `FieldClock.md` |
+| `FieldSetField` | cross-version-deferred (`m_dwOldDriverID` version unknown) | `_pending.md` "Still pending — world domain (Phase 2b)" above + `FieldSetField.md` |
+| `FieldWarpToMap` | cross-version-deferred (`m_dwOldDriverID` version unknown; `nHP` fix already landed) | `_pending.md` "Still pending — world domain (Phase 2b)" above + `FieldWarpToMap.md` |
+| `NpcAction` | tool-limitation, manually verified ✅ (conditional movement sub-struct) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcAction.md` |
+| `NpcActionRequest` | tool-limitation, manually verified ✅ (conditional movement sub-struct) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcActionRequest.md` |
+| `NpcContinueConversationSelection` | tool-limitation, manually verified ✅ (wide/narrow exclusive branch) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcContinueConversationSelection.md` |
+| `NpcShopList` | tool-limitation, manually verified ✅ (per-item loop + ammo/non-ammo branch) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcShopList.md` |

@@ -57,6 +57,9 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 			w.WriteShort(0) // decode opt
 		}
 		w.WriteInt(uint32(m.channelId))
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteInt(0) // m_dwOldDriverID: GMS reads Decode4 after channelId (v95+); v83/v87 omit it (verified CStage::OnSetField v83 @0x776020)
+		}
 		if t.Region() == "JMS" {
 			w.WriteByte(0)
 			w.WriteInt(0)
@@ -69,7 +72,13 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 		}
 		w.WriteInt(uint32(m.mapId))
 		w.WriteByte(m.portalId)
-		w.WriteInt(uint32(m.hp)) // nHP: v95 CStage::OnSetField reads Decode4 (4 bytes), not Decode2
+		// nHP: GMS v95 CStage::OnSetField @0x71a0a0 reads Decode4 (4 bytes); v83
+		// CStage::OnSetField @0x776020 reads Decode2 (2 bytes). Gate width by version.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS" {
+			w.WriteInt(uint32(m.hp))
+		} else {
+			w.WriteShort(m.hp)
+		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			w.WriteBool(false) // Chasing
 		}
@@ -85,6 +94,9 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 			_ = r.ReadUint16() // decode opt
 		}
 		m.channelId = channel.Id(r.ReadUint32())
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			_ = r.ReadUint32() // m_dwOldDriverID (GMS v95+)
+		}
 		if t.Region() == "JMS" {
 			_ = r.ReadByte()
 			_ = r.ReadUint32()
@@ -97,7 +109,12 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 		}
 		m.mapId = _map.Id(r.ReadUint32())
 		m.portalId = r.ReadByte()
-		m.hp = uint16(r.ReadUint32()) // nHP: v95 CStage::OnSetField reads Decode4 (4 bytes), not Decode2
+		// nHP: 4 bytes for GMS v95+/JMS, 2 bytes for GMS v83/v87 (see Encode)
+		if (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS" {
+			m.hp = uint16(r.ReadUint32())
+		} else {
+			m.hp = r.ReadUint16()
+		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			_ = r.ReadBool() // Chasing
 		}

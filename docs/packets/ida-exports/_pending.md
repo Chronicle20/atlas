@@ -173,6 +173,49 @@ The dispatcher's op-byte is supplied by the caller (the resolved `operations`
 code), so its lone-byte ✅ in `Operation.md` is expected. Sub-bodies audited
 independently — all ✅ in v95. No fix needed; recorded here for traceability.
 
+### Add clientbound — asset sub-struct tool limitation (inventory), correct in practice
+
+`CWvsContext::OnInventoryOperation#Add` (dispatcher @0xa08a70, case 0 line 158 →
+`GW_ItemSlotBase::Decode`, v95 GMS_v95.0_U_DEVM 3c71fd88...). Verdict 🔍 in
+`Add.md` row 5 is a packet-audit **tool limitation**: the analyzer flattens
+`Add.Encode`'s `WriteByteArray(m.asset.Encode(...))` into one opaque row and
+cannot descend into the `model.Asset` / `GW_ItemSlotBase` sub-struct. NOT a wire
+bug — the dispatcher case-0 read order (Decode1 mode, Decode1 invType, Decode2
+slot, then the item via `GW_ItemSlotBase::Decode`) matches `Add.Encode`
+(`mode 0, type, slot, asset.Encode`) field-for-field. The asset body is the
+shared `model.Asset` encoder, audited independently of this packet. No fix
+needed.
+
+### ChangeBatch clientbound — loop + conditional trailing addMov tool limitation (inventory), correct in practice
+
+`CWvsContext::OnInventoryOperation#ChangeBatch` (dispatcher @0xa08a70). Verdict ❌
+in `ChangeBatch.md` row 3 is a packet-audit **false positive**, NOT a wire bug.
+The dispatcher's per-entry body is a variable-length switch loop
+(`case 0/1/2/3`, lines 148-411) that the analyzer collapses to a single opaque
+buffer op (the Phase 0 `EncodeEntry` extension resolves the entry recursion, so
+row 2 is ✅). After the loop the dispatcher reads **one** trailing addMov byte
+(`Decode1` → `SetSecondaryStatChangedPoint`, line 315) iff `nCurItemPos` was set
+— which happens when any entry is an equip-slot move (case 2:
+`invType==1 && (oldSlot<0||newSlot<0)`, line 225) or remove (case 3:
+`invType==1 && slot<0`, line 374). `ChangeBatch.Encode` writes its single
+trailing `WriteInt8(addMov)` under exactly that condition (`addMov = max over
+entries of EntryAddMov()`, emitted iff `> -1`). The ❌ arises only because the
+conditional trailing byte (atlas row 3) has no flat IDA op to align against once
+the loop is buffer-collapsed. Wire-correct in v95; no fix needed.
+
+### move.go ↔ change.go:ChangeMove addMov symmetry — verified NOT shared (inventory)
+
+The serverbound move request `CWvsContext::SendChangeSlotPositionRequest`@0x9d9c10
+encodes exactly `Encode4 update_time, Encode1 nType, Encode2 nOldPos,
+Encode2 nNewPos, Encode2 nCount` — **no addMov byte**. The clientbound echo
+`change.go:ChangeMove` (dispatcher case 2) DOES carry the trailing addMov byte.
+These are distinct packets (ITEM_MOVE opcode serverbound vs INVENTORY_OPERATION
+clientbound) and correctly do NOT share the addMov field — the addMov byte is
+exclusively a clientbound `OnInventoryOperation` artifact. `move.go` ✅ matches
+its IDA sender byte-for-byte; `change.go:ChangeMove` ✅ matches the dispatcher
+(including the conditional addMov). No mismatch, no fix needed; recorded for
+traceability.
+
 ## Workflow notes
 
 Refresh procedure:

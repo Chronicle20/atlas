@@ -69,18 +69,6 @@ spec:
                 # Owned by cluster-infra (argocd namespace). See
                 # dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml.
                 name: atlas-pr-cleanup-env
-            - secretRef:
-                # MinIO root credentials, used by cleanup.sh's
-                # drop-tenant-storage phase to reclaim per-tenant MinIO
-                # prefixes via `mc rm` (issue #596). Source secret lives
-                # in the `minio` namespace; cluster-infra reflects it
-                # into `argocd`. `optional: true` so cleanup doesn't
-                # wedge in clusters where the reflection hasn't been
-                # wired up — the drop-tenant-storage phase silently
-                # no-ops on missing creds and `sweep-orphans.sh
-                # --minio` is the operator backstop.
-                name: minio-root-creds
-                optional: true
           env:
             # PR_NUMBER is the sole per-PR substitution. ATLAS_ENV is
             # derived inside cleanup.sh via lib.sh::compute_atlas_env, so

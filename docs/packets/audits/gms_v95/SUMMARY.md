@@ -46,6 +46,7 @@
 | [NpcAskBoxTextConversationDetail](NpcAskBoxTextConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcAskMemberShopAvatarConversationDetail](NpcAskMemberShopAvatarConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcAskMenuConversationDetail](NpcAskMenuConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
+| [NpcContinueConversationSelection](NpcContinueConversationSelection.md) | ❌ | `libs/atlas-packet/npc/serverbound/continue_conversation_selection.go` |
 | [NpcAskNumberConversationDetail](NpcAskNumberConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcAskPetConversationDetail](NpcAskPetConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcAskPetAllConversationDetail](NpcAskPetAllConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
@@ -53,11 +54,14 @@
 | [NpcAskSlideMenuConversationDetail](NpcAskSlideMenuConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcAskSpeedQuizConversationDetail](NpcAskSpeedQuizConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcAskTextConversationDetail](NpcAskTextConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
+| [NpcContinueConversationText](NpcContinueConversationText.md) | ✅ | `libs/atlas-packet/npc/serverbound/continue_conversation_text.go` |
 | [NpcAskYesNoConversationDetail](NpcAskYesNoConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
+| [NpcContinueConversation](NpcContinueConversation.md) | ✅ | `libs/atlas-packet/npc/serverbound/continue_conversation.go` |
 | [NpcSayConversationDetail](NpcSayConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcSayImageConversationDetail](NpcSayImageConversationDetail.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
 | [NpcShopOperationGenericError](NpcShopOperationGenericError.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
 | [NpcShopOperationLevelRequirement](NpcShopOperationLevelRequirement.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
+| [NpcShop](NpcShop.md) | ✅ | `libs/atlas-packet/npc/serverbound/shop.go` |
 | [NpcShopOperationSimple](NpcShopOperationSimple.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
 | [FieldWarpToMap](FieldWarpToMap.md) | ❌ | `libs/atlas-packet/field/clientbound/warp_to_map.go` |
 | [StorageErrorMessage](StorageErrorMessage.md) | ✅ | `libs/atlas-packet/storage/clientbound/error.go` |
@@ -214,6 +218,7 @@
 | [MonsterControl](MonsterControl.md) | ❌ | `libs/atlas-packet/monster/clientbound/control.go` |
 | [MonsterSpawn](MonsterSpawn.md) | ❌ | `libs/atlas-packet/monster/clientbound/spawn.go` |
 | [MonsterDestroy](MonsterDestroy.md) | ✅ | `libs/atlas-packet/monster/clientbound/destroy.go` |
+| [NpcActionRequest](NpcActionRequest.md) | ❌ | `libs/atlas-packet/npc/serverbound/action.go` |
 | [NpcAction](NpcAction.md) | ❌ | `libs/atlas-packet/npc/clientbound/action.go` |
 | [NpcSpawnRequestController](NpcSpawnRequestController.md) | ✅ | `libs/atlas-packet/npc/clientbound/spawn_request_controller.go` |
 | [NpcSpawn](NpcSpawn.md) | ✅ | `libs/atlas-packet/npc/clientbound/spawn.go` |
@@ -237,6 +242,9 @@
 | [ReactorSpawn](ReactorSpawn.md) | ✅ | `libs/atlas-packet/reactor/clientbound/spawn.go` |
 | [ReactorDestroy](ReactorDestroy.md) | ✅ | `libs/atlas-packet/reactor/clientbound/destroy.go` |
 | [NpcNpcConversation](NpcNpcConversation.md) | ✅ | `libs/atlas-packet/npc/clientbound/conversation.go` |
+| [NpcShopBuy](NpcShopBuy.md) | ✅ | `libs/atlas-packet/npc/serverbound/shop_buy.go` |
+| [NpcShopRecharge](NpcShopRecharge.md) | ✅ | `libs/atlas-packet/npc/serverbound/shop_recharge.go` |
+| [NpcShopSell](NpcShopSell.md) | ✅ | `libs/atlas-packet/npc/serverbound/shop_sell.go` |
 | [NpcShopList](NpcShopList.md) | ❌ | `libs/atlas-packet/npc/clientbound/shop_list.go` |
 | [FieldSetField](FieldSetField.md) | ❌ | `libs/atlas-packet/field/clientbound/set_field.go` |
 | [GuildSetMemberTitle](GuildSetMemberTitle.md) | ✅ | `libs/atlas-packet/guild/serverbound/operation_set_member_title.go` |
@@ -271,6 +279,7 @@
 | [CharacterSitResult](CharacterSitResult.md) | ❌ | `libs/atlas-packet/character/clientbound/sit_result.go` |
 | [CharacterSkillCooldown](CharacterSkillCooldown.md) | ✅ | `libs/atlas-packet/character/clientbound/skill_cooldown.go` |
 | [BuffCancelRequest](BuffCancelRequest.md) | ✅ | `libs/atlas-packet/character/serverbound/buff_cancel.go` |
+| [NpcStartConversation](NpcStartConversation.md) | ✅ | `libs/atlas-packet/npc/serverbound/start_conversation.go` |
 | [CharacterSpawn](CharacterSpawn.md) | ❌ | `libs/atlas-packet/character/clientbound/spawn.go` |
 | [CharacterDespawn](CharacterDespawn.md) | ✅ | `libs/atlas-packet/character/clientbound/despawn.go` |
 | [Attack](Attack.md) | ❌ | `libs/atlas-packet/character/clientbound/attack.go` |

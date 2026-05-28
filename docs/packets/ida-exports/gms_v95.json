@@ -7369,6 +7369,149 @@
      "comment": "button info / message text"
     }
    ]
+  },
+  "CNpc::GenerateMovePath": {
+   "address": "0x671590",
+   "direction": "serverbound",
+   "notes": "NPC_ACTION (v95 opcode 241/0xF1). Client builds the move/action request in CNpc::GenerateMovePath@0x671590: COutPacket(241) @0x67165b then Encode4(m_dwNpcId @0x6716af) + Encode1(nAction @0x6716f5) + Encode1(nChatIdx @0x671743), then (if m_pTemplate->bMove @0x671750) CMovePath::Flush appends the movement body. SERVERBOUND: the client writes npcId itself (no dispatcher prefix). Atlas ActionRequest.Encode: Int(objectId)+Byte(unk=action)+Byte(unk2=chatIdx)+optional WriteByteArray(movement). The movement presence is server-controlled (hasMovement bool) in atlas and template-gated (bMove) client-side -- conditional movement is a tool limitation. Field-for-field match on the fixed header.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "npcId (m_dwNpcId; atlas ActionRequest.objectId)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "nAction (atlas unk)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "nChatIdx (atlas unk2)"
+    },
+    {
+     "op": "EncodeBuffer",
+     "comment": "movement body (CMovePath::Flush) -- gated on m_pTemplate->bMove; atlas optional WriteByteArray(movement)"
+    }
+   ]
+  },
+  "CUserLocal::TalkToNpc": {
+   "address": "0x9321f0",
+   "direction": "serverbound",
+   "notes": "NPC_TALK (v95 opcode 63/0x3F). Client builds the NPC-click request in CUserLocal::TalkToNpc@0x9321f0 (the non-quest branch): COutPacket(63) @0x93224d then Encode4(npcId/m_dwNpcId @0x932266) + Encode2(GetPos.x @0x932285) + Encode2(GetPos.y @0x9322a1). (The quest branch calls CNpc::ShowQuestList instead, which opens the quest list dialog rather than sending this packet.) Atlas StartConversation.Encode: Int(oid)+Int16(x)+Int16(y). Field-for-field match.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "npcId (m_dwNpcId; atlas oid)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "x (player GetPos x)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "y (player GetPos y)"
+    }
+   ]
+  },
+  "CScriptMan::OnSay#Reply": {
+   "address": "0x6dc110",
+   "direction": "serverbound",
+   "notes": "NPC_TALK_MORE (v95 opcode 65/0x41) generic continue reply. Built inside CScriptMan::OnSay@0x6dc110 after DoModal: COutPacket(65) @0x6dc267 then Encode1(0=msgType SAY @0x6dc276) + Encode1(action @0x6dc299). No trailing body for SAY (msgType 0). Atlas ContinueConversation.Encode: Byte(lastMessageType)+Byte(action). The serverbound continue dispatcher reads these two bytes; per-dialog-type trailing fields (selection int / text string) are read by ContinueConversationSelection / ContinueConversationText after this header. Match.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "msgType / lastMessageType (dialog-type discriminator echoed back; 0=SAY here)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "action (button result: -1/0/1)"
+    }
+   ]
+  },
+  "CScriptMan::OnAskMenu#Selection": {
+   "address": "0x6dce00",
+   "direction": "serverbound",
+   "notes": "NPC_TALK_MORE (v95 opcode 65/0x41) menu-selection reply trailing field. Built inside CScriptMan::OnAskMenu@0x6dce00 after DoModal: COutPacket(65) + Encode1(5=msgType AskMenu @0x6dcf31) + Encode1(action @0x6dcf41/0x6dcf48) + (if action==1: Encode4(m_nSelect @0x6dcf5f)). The msgType+action header is modeled by CScriptMan::OnSay#Reply; this entry models ONLY the trailing selection field for the dispatcher's ContinueConversationSelection body. AskMenu selection is a 4-byte int (Encode4); AskAvatar (msgType 8) selection is a single byte (Encode1@0x6dd26e) -- atlas ContinueConversationSelection.Decode picks width at runtime via r.Available()>=4 (wide). Analyzer flattens the wide/narrow branch to one entry; modeled as the wide (Encode4) path. Match.",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "selection (m_nSelect; AskMenu = 4-byte int; atlas ContinueConversationSelection wide path)"
+    }
+   ]
+  },
+  "CScriptMan::OnAskText#Reply": {
+   "address": "0x6dc790",
+   "direction": "serverbound",
+   "notes": "NPC_TALK_MORE (v95 opcode 65/0x41) text-answer reply trailing field. Built inside CScriptMan::OnAskText@0x6dc790 after DoModal: COutPacket(65) + Encode1(3=msgType AskText @0x6dc8fd) + Encode1(action @0x6dc90c/0x6dc92c) + (if action==1: EncodeStr(input text @0x6dc924)). The msgType+action header is modeled by CScriptMan::OnSay#Reply; this entry models ONLY the trailing text field read by the dispatcher's ContinueConversationText body. Atlas ContinueConversationText.Encode: AsciiString(text). Match.",
+   "calls": [
+    {
+     "op": "EncodeStr",
+     "comment": "input text (atlas ContinueConversationText.text)"
+    }
+   ]
+  },
+  "CShopDlg::OnPacket#ShopDispatch": {
+   "address": "0x6e4b80",
+   "direction": "serverbound",
+   "notes": "NPC_SHOP (v95 opcode 66/0x42) op-byte dispatcher. The shop transaction senders (CShopDlg::SendBuyRequest@0x6e9bb0, SendSellRequest@0x6e7260, SendRechargeRequest@0x6e4e90) each build COutPacket(66) with a leading Encode1(op) discriminator (0=BUY @0x6ea5c1, 1=SELL @0x6e7465, 2=RECHARGE @0x6e4fe3) then the per-op body. Atlas models this as a Shop struct (op byte only) that the channel handler reads first, then delegates to ShopBuy/ShopSell/ShopRecharge bodies. Atlas Shop.Encode: Byte(op). OP-FAMILY: op-byte family; the BUY/SELL/RECHARGE/LEAVE op values are runtime config (operations map) not in the template, so the leading byte's value cannot be analyzer-verified -- deferred to _pending.md (OP-FAMILY-npc-shop-serverbound). Match on the leading op byte.",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "op (shop request discriminator: 0=BUY,1=SELL,2=RECHARGE; runtime-config values)"
+    }
+   ]
+  },
+  "CShopDlg::SendBuyRequest": {
+   "address": "0x6e9bb0",
+   "direction": "serverbound",
+   "notes": "NPC_SHOP (v95 opcode 66/0x42) BUY body (op=0). CShopDlg::SendBuyRequest@0x6e9bb0: COutPacket(66) @0x6ea5b1 + Encode1(0 @0x6ea5c1) + Encode2(slot/commodity index @0x6ea5e5) + Encode4(itemId @0x6ea5f6) + Encode2(nCount/quantity @0x6ea604) + Encode4(discountPrice @0x6ea63a). The leading op byte (0) is consumed by the Shop dispatcher; this entry models the body AFTER the op byte. Atlas ShopBuy.Encode: Short(slot)+Int(itemId)+Short(quantity)+Int(discountPrice). Field-for-field match.",
+   "calls": [
+    {
+     "op": "Encode2",
+     "comment": "slot (commodity index in shop)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity (nCount)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "discountPrice"
+    }
+   ]
+  },
+  "CShopDlg::SendSellRequest": {
+   "address": "0x6e7260",
+   "direction": "serverbound",
+   "notes": "NPC_SHOP (v95 opcode 66/0x42) SELL body (op=1). CShopDlg::SendSellRequest@0x6e7260: COutPacket(66) @0x6e7455 + Encode1(1 @0x6e7465) + Encode2(nPOS/slot @0x6e7473) + Encode4(nItemID @0x6e7481) + Encode2(quantity @0x6e748b). The leading op byte (1) is consumed by the Shop dispatcher; this entry models the body AFTER the op byte. Atlas ShopSell.Encode: Int16(slot)+Int(itemId)+Short(quantity). Field-for-field match.",
+   "calls": [
+    {
+     "op": "Encode2",
+     "comment": "slot (inventory position nPOS)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId (nItemID)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity"
+    }
+   ]
+  },
+  "CShopDlg::SendRechargeRequest": {
+   "address": "0x6e4e90",
+   "direction": "serverbound",
+   "notes": "NPC_SHOP (v95 opcode 66/0x42) RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x6e4e90: COutPacket(66) @0x6e4fd3 + Encode1(2 @0x6e4fe3) + Encode2(nPos/slot @0x6e4fed). The leading op byte (2) is consumed by the Shop dispatcher; this entry models the body AFTER the op byte. Atlas ShopRecharge.Encode: Short(slot). Field-for-field match.",
+   "calls": [
+    {
+     "op": "Encode2",
+     "comment": "slot (inventory position nPos)"
+    }
+   ]
   }
  }
 }

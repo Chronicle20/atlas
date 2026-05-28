@@ -68,3 +68,29 @@ why it was deferred, and what evidence is needed to resolve it.
 | Reason | The clientbound shop-operation result is a mode-byte family: a single leading byte selects 19+ arms. Verified arms — mode-only (cases 0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x12,default → `ShopOperationSimple`), `Decode4`-level (cases 0xE/0xF → `ShopOperationLevelRequirement`), and `Decode1(hasReason)+optional DecodeStr` (case 0x13 → `ShopOperationGenericError`). Each atlas struct's per-mode wire shape was confirmed against the matching IDA case. The exhaustive mode-value → atlas-code mapping (which `operations` template code resolves to each numeric mode, and whether modes 4/6/7/0xB/0xC carry bodies) was not fully enumerated. |
 | Evidence needed | Cross-check the `operations` resolver table in the GMS v95 template against every `CShopDlg::OnPacket` case; confirm cases 4 and 8 (early `return`, no Notice) and any unhandled modes have no atlas emitter. |
 | Verdict | ⚠️ op-byte family — per-struct wire shapes verified; full mode enum unenumerated |
+
+---
+
+## Still pending — world domain (task-068 Phase 2g, npc/serverbound)
+
+### OP-FAMILY-npc-shop-serverbound
+
+| Field | Value |
+|---|---|
+| Affected packets | `npc/serverbound/shop.go` — `Shop` (op-byte dispatcher); `npc/serverbound/shop_buy.go` — `ShopBuy`; `npc/serverbound/shop_sell.go` — `ShopSell`; `npc/serverbound/shop_recharge.go` — `ShopRecharge` (handler `NPCShopHandle`) |
+| Atlas files | `libs/atlas-packet/npc/serverbound/shop.go`, `shop_buy.go`, `shop_sell.go`, `shop_recharge.go`; dispatcher `services/atlas-channel/.../socket/handler/npc_shop.go` |
+| IDA | `CShopDlg::SendBuyRequest` @0x6e9bb0, `CShopDlg::SendSellRequest` @0x6e7260, `CShopDlg::SendRechargeRequest` @0x6e4e90 (NPC_SHOP, GMS v95 opcode 66/0x42); each builds `COutPacket(66) + Encode1(op) + body` |
+| Reason | NPC_SHOP serverbound is an op-byte family: a single leading `Encode1(op)` discriminator (BUY=0, SELL=1, RECHARGE=2 in the client) selects the per-op body. Atlas models this as a `Shop` struct that reads only the op byte, then the channel handler (`npc_shop.go`) delegates to `ShopBuy`/`ShopSell`/`ShopRecharge`. Each per-op body wire shape was verified field-for-field against the matching client `Send*` function (✅ in all three reports). The op-byte VALUES atlas matches against (`NPCShopOperationBuy/Sell/Recharge/Leave`) are loaded from the runtime `operations` config map, NOT the static template, so the analyzer cannot confirm atlas's op-byte values equal the client's (0/1/2). |
+| Evidence needed | Cross-check the channel `operations` resolver config (BUY/SELL/RECHARGE/LEAVE → numeric op) against the client values: BUY=0, SELL=1, RECHARGE=2 (verified in IDA). LEAVE has no client `Send*` site in this binary's shop dialog (the SetRet/leave path was not located); confirm the LEAVE op value and that no client body trails it. |
+| Verdict | ⚠️ op-byte family — per-op body wire shapes verified; op-byte values are runtime config (unverifiable by analyzer) |
+
+### ROUTING-npc-continue-conversation-discriminator
+
+| Field | Value |
+|---|---|
+| Affected packets | `npc/serverbound/continue_conversation.go` — `ContinueConversation` (handler `NPCContinueConversationHandle`) and its trailing-field structs `ContinueConversationSelection`, `ContinueConversationText` |
+| Atlas files | `libs/atlas-packet/npc/serverbound/continue_conversation*.go`; dispatcher `services/atlas-channel/.../socket/handler/npc_continue_conversation.go` |
+| IDA | NPC_TALK_MORE reply built inside the `CScriptMan::On*` dialog handlers (opcode 65/0x41): `OnSay` @0x6dc110 (msgType 0), `OnAskYesNo` @0x6dc5a0 (msgType 2/13), `OnAskText` @0x6dc790 (msgType 3), `OnAskMenu` @0x6dce00 (msgType 5), `OnAskAvatar` @0x6dcff0 (msgType 8) |
+| Reason | The packet STRUCTS are wire-correct (`ContinueConversation` = msgType byte + action byte; `ContinueConversationText` = string; `ContinueConversationSelection` = int32/byte selection). HOWEVER the channel dispatcher `npc_continue_conversation.go` branches on `lastMessageType == 2` to decide text-vs-selection. Per IDA, msgType **2** is AskYesNo (its reply carries NO trailing field — just msgType+action), while the TEXT reply is msgType **3** (AskText, `EncodeStr`) / **14** (AskBoxText). So the channel handler's discriminator value looks wrong: it would attempt to read a text string after an AskYesNo reply (msgType 2, which has no body) and treat AskText (msgType 3) as a selection. This is a channel HANDLER-LOGIC concern, NOT a wire-shape bug in `libs/atlas-packet` (out of this bucket's struct-audit scope). |
+| Evidence needed | Audit `atlas-channel` NPC continue-conversation routing: verify the msgType→body mapping (3/14 = text via `ContinueConversationText`; 5/8/9/etc = selection via `ContinueConversationSelection`; 0/1/2/13 = no trailing body). The current `== 2` branch should likely be `== 3` (and/or cover 14). Track as a channel-service fix, not a packet-lib fix. |
+| Verdict | ⚠️ channel handler routing concern — packet structs verified correct |

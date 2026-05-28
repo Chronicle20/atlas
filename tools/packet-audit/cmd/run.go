@@ -1508,6 +1508,69 @@ func candidatesFromFName(fname string) []candidate {
 		// Decode4(menuType)+DecodeStr(message). Atlas (GMS>83) Int(Unknown)+Int(MenuType)+AsciiString(Message);
 		// leading Int(Unknown) maps to slideDlgType; v95 major>83 so the guard fires. ✓
 		return []candidate{{name: "AskSlideMenuConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+
+	// --- World: npc (serverbound) ---
+	// Client-built request packets. SERVERBOUND: the client's Send*/dialog-reply
+	// build site writes opcode + body; there is NO characterId dispatcher prefix
+	// (the client writes npcId/op-byte as the first field itself, verified in
+	// CUserLocal::TalkToNpc@0x9321f0 and CNpc::GenerateMovePath@0x671590). Report
+	// files become Npc<Struct>.{md,json}.
+	case "CNpc::GenerateMovePath":
+		// CSV: NPC_ACTION (GMS v95 opcode 241/0xF1). CNpc::GenerateMovePath@0x671590
+		// builds COutPacket(241) + Encode4(npcId) + Encode1(nAction) + Encode1(nChatIdx)
+		// + (m_pTemplate->bMove ? CMovePath::Flush movement body). Atlas ActionRequest
+		// writes Int(objectId) + Byte(unk=action) + Byte(unk2=chatIdx) + optional
+		// WriteByteArray(movement). Movement presence is server-controlled (hasMovement)
+		// and template-gated client-side. ✓ header match.
+		return []candidate{{name: "ActionRequest", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TalkToNpc":
+		// CSV: NPC_TALK (GMS v95 opcode 63/0x3F). CUserLocal::TalkToNpc@0x9321f0
+		// (non-quest branch) builds COutPacket(63) + Encode4(npcId) + Encode2(x) +
+		// Encode2(y). Atlas StartConversation writes Int(oid) + Int16(x) + Int16(y). ✓
+		return []candidate{{name: "StartConversation", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CScriptMan::OnSay#Reply":
+		// CSV: NPC_TALK_MORE (GMS v95 opcode 65/0x41) generic continue reply, built
+		// inside CScriptMan::OnSay@0x6dc110 after DoModal: COutPacket(65) + Encode1(msgType)
+		// + Encode1(action). Atlas ContinueConversation writes Byte(lastMessageType) +
+		// Byte(action). This is the dispatcher header; selection/text trailing fields are
+		// separate structs. ✓
+		return []candidate{{name: "ContinueConversation", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CScriptMan::OnAskMenu#Selection":
+		// Same NPC_TALK_MORE opcode (65). The AskMenu reply (msgType 5) appends
+		// Encode4(m_nSelect) when action==1 (CScriptMan::OnAskMenu@0x6dce00). AskAvatar
+		// (msgType 8) appends a single byte (Encode1@0x6dd26e). Atlas
+		// ContinueConversationSelection.Decode picks width at runtime (r.Available()>=4 →
+		// Int32 wide, else Byte); Encode mirrors via the `wide` flag. Analyzer flattens
+		// the branch; modeled as the wide (Encode4) path. ⚠️ runtime width guard — tool
+		// limitation; both client widths covered by the wide/narrow branch.
+		return []candidate{{name: "ContinueConversationSelection", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CScriptMan::OnAskText#Reply":
+		// Same NPC_TALK_MORE opcode (65). The AskText reply (msgType 3) appends
+		// EncodeStr(input) when action==1 (CScriptMan::OnAskText@0x6dc790). Atlas
+		// ContinueConversationText writes AsciiString(text). ✓
+		return []candidate{{name: "ContinueConversationText", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::OnPacket#ShopDispatch":
+		// CSV: NPC_SHOP (GMS v95 opcode 66/0x42) op-byte dispatcher. The transaction
+		// senders each build COutPacket(66) with a leading Encode1(op) discriminator
+		// (0=BUY/1=SELL/2=RECHARGE) then the per-op body. Atlas Shop reads the op byte,
+		// then the channel handler delegates to ShopBuy/ShopSell/ShopRecharge. Atlas Shop
+		// writes Byte(op). ⚠️ OP-FAMILY-npc-shop-serverbound: op-byte values are runtime
+		// config (operations map), not in the template — deferred to _pending.md.
+		return []candidate{{name: "Shop", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::SendBuyRequest":
+		// NPC_SHOP BUY body (op=0). CShopDlg::SendBuyRequest@0x6e9bb0 after the op byte:
+		// Encode2(slot) + Encode4(itemId) + Encode2(quantity) + Encode4(discountPrice).
+		// Atlas ShopBuy writes Short(slot) + Int(itemId) + Short(quantity) + Int(discountPrice). ✓
+		return []candidate{{name: "ShopBuy", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::SendSellRequest":
+		// NPC_SHOP SELL body (op=1). CShopDlg::SendSellRequest@0x6e7260 after the op byte:
+		// Encode2(slot/nPOS) + Encode4(itemId) + Encode2(quantity). Atlas ShopSell writes
+		// Int16(slot) + Int(itemId) + Short(quantity). ✓
+		return []candidate{{name: "ShopSell", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::SendRechargeRequest":
+		// NPC_SHOP RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x6e4e90 after the
+		// op byte: Encode2(slot/nPos). Atlas ShopRecharge writes Short(slot). ✓
+		return []candidate{{name: "ShopRecharge", pkg: "npc", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

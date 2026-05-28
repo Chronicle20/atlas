@@ -1,0 +1,245 @@
+{
+ "binary": "GMSv87_4GB.exe",
+ "md5": "2e692f3ab5078e04138d264f8ea1e668",
+ "generated_at": "2026-05-28T00:00:00Z",
+ "functions": {
+  "CMiniRoomBaseDlg::CheckAndSendChat": {
+   "address": "0x69973e",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "update_time (get_update_time). PRESENT at v87 (line 16) — same as v95. NOT a v95-only field; gate tightened to GMS>=87."
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message (chat text)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::BuyItem": {
+   "address": "0x74076b",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "index (a2)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity (v71)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemCRC (CItemInfo::GetItemCRC) — PRESENT in v83 AND v87 AND v95. Unconditional fix holds."
+    }
+   ]
+  },
+  "CPersonalShopDlg::BuyItem#Merchant": {
+   "address": "0x74076b",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "index (a2)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "quantity (v71)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemCRC (CItemInfo::GetItemCRC) — PRESENT in v83 AND v87 AND v95"
+    }
+   ]
+  },
+  "CPersonalShopDlg::DeliverBlackList": {
+   "address": "0x74146f",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode2",
+     "comment": "count (config blacklist size, v2)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "per-entry character name; repeated count times (string[], NOT byte[]) — same as v83/v95. Unconditional fix holds."
+    }
+   ]
+  },
+  "CCashShop::OnBuy": {
+   "address": "0x477bd9",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "isMaplePoint bool (v48==2)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "dwOption (v48)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "nCommSN (a2 serialNumber)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 443) — NOT v95-only. Gate tightened to GMS>=87."
+    },
+    {
+     "op": "Encode4",
+     "comment": "nEventSN int (v44). PRESENT at v87 (line 444) — NOT v95-only. Gate tightened to GMS>=87."
+    }
+   ]
+  },
+  "CCashShop::OnBuyCouple": {
+   "address": "0x47a820",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "leading ask_SPW int (v31 = sub_A37DDD). v87 is a 4-byte INT (line 106), NOT EncodeStr sSPW. The SPW string is v95-only; >=95 gate CORRECT."
+    },
+    {
+     "op": "Encode4",
+     "comment": "option (v37)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "serialNumber (arg0)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "name (v35)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message (v33)"
+    }
+   ]
+  },
+  "CCashShop::OnBuyFriendship": {
+   "address": "0x47b293",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "leading ask_SPW int (v31 = sub_A37DDD). v87 is a 4-byte INT (line 104), NOT EncodeStr sSPW. The SPW string is v95-only; >=95 gate CORRECT."
+    },
+    {
+     "op": "Encode4",
+     "comment": "option (v37)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "serialNumber (arg0)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "name (v35)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message (v33)"
+    }
+   ]
+  },
+  "CCashShop::SendGiftsPacket": {
+   "address": "0x47a168",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "leading int (*(this+1308)). v87 is a 4-byte INT (line 147), NOT EncodeStr sSPW. The leading SPW string is v95-only; SPW gate >=95 CORRECT."
+    },
+    {
+     "op": "Encode4",
+     "comment": "serialNumber (*(this+1312))"
+    },
+    {
+     "op": "Encode1",
+     "comment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 149) before name — NOT v95-only. oneADay gate tightened to GMS>=87 (split from the v95-only SPW gate)."
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "recipient name (v33)"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message (*(this+1316))"
+    }
+   ]
+  },
+  "CCashShop::OnRebateLockerItem": {
+   "address": "0x0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "leading ask_SPW int — INFERRED from gift-family parity (OnBuyCouple/OnBuyFriendship/SendGiftsPacket all use a leading Encode4 int at v87, NOT EncodeStr). No discrete v87 rebate sender symbol recovered (OnRebateLockerItem not present in v87 export; built inline in a locker UI path). LOW CONFIDENCE: address unknown. SPW gate >=95 retained (consistent with the 3 confirmed family members)."
+    },
+    {
+     "op": "EncodeBuffer",
+     "comment": "8-byte locker serial (inferred identical to v83/v95)"
+    }
+   ]
+  },
+  "CCashShop::OnCashItemResult#CashShopInventory": {
+   "address": "0x484c1d",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (0x58 LOAD_LOCKER_DONE; op-byte consumed by OnCashItemResult dispatcher before OnCashItemResLoadLockerDone@0x484c1d)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "count (m_aCashItemInfo size, v3)"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "55 * count bytes (per GW_CashItemInfo = CashInventoryItem.EncodeBytes, 55 bytes each)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "m_nTrunkCount (storageSlots; *(this+1168))"
+    },
+    {
+     "op": "Decode2",
+     "comment": "m_nCharacterSlotCount (characterSlots; *(this+1172)). v87 reads ONLY these 2 trailing shorts — m_nBuyCharacterCount + m_nCharacterCount are v95-only; >=95 gate CORRECT."
+    }
+   ]
+  },
+  "CTrunkDlg::OnPacket#Show": {
+   "address": "0x819648",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (16/21/22; consumed by OnPacket dispatcher then SetGetItems this[66])"
+    },
+    {
+     "op": "Decode4",
+     "comment": "npcTemplateId (dispatcher; not in SetGetItems@0x819648 body — tool-limitation residual same as v83/v95)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "slotCount (dispatcher; tool-limitation residual)"
+    },
+    {
+     "op": "Decode8",
+     "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; &v22, line 37)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "meso (v2[67]; ONLY if flag&2, line 38)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64 = i=1..5, lines 46-152), each followed by count*GW_ItemSlotBase::Decode. Per-tab segmentation identical to v83/v95 — unconditional Show fix holds."
+    }
+   ]
+  }
+ }
+}

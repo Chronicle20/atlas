@@ -1,0 +1,56 @@
+{
+  "WriterName": "ShopOperationGift",
+  "IDAName": "CCashShop::SendGiftsPacket",
+  "Address": "0x47a168",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "leading int (*(this+1308)). v87 is a 4-byte INT (line 147), NOT EncodeStr sSPW. The leading SPW string is v95-only; SPW gate \u003e=95 CORRECT.",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "serialNumber (*(this+1312))",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "m_bRequestBuyOneADay byte (*(this+9928)). PRESENT at v87 (line 149) before name — NOT v95-only. oneADay gate tightened to GMS\u003e=87 (split from the v95-only SPW gate).",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "recipient name (v33)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message (*(this+1316))",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

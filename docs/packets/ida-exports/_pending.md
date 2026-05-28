@@ -100,6 +100,79 @@ guarded blocks; deferred to a follow-up.
   AND all version templates (v83/v87/v92/v95/v111/JMS) that share this
   key. Left as-is for now to avoid cross-version breakage.
 
+## Sub-op enum / sub-struct deferrals — commerce domain (task-067)
+
+### Show clientbound — per-tab item segmentation + spurious padding (storage)
+
+`CTrunkDlg::OnPacket#Show` (case 0x16 → `SetTrunkDlg`@0x76a940 →
+`SetGetItems`@0x76a390, v95 GMS_v95.0_U_DEVM 3c71fd88...). The v95 client read
+order for the open-storage ("Show") packet is:
+
+1. `Decode1` mode (22)
+2. `Decode4` npcTemplateId
+3. `Decode1` slotCount
+4. `DecodeBuffer(8)` tab-flag bitmask
+5. **conditional** `Decode4` meso — read **only if** `flag & 2`
+6. **per-tab loop** over tab bits 4/8/16/32/64 (Equip/Use/Setup/Etc/Cash): for
+   each set bit, `Decode1` count then `count × GW_ItemSlotBase::Decode`.
+
+Atlas `storage/clientbound/show.go` `Show.Encode` instead writes:
+`mode, npcId, slots, Long(flags), Int(meso) [UNCONDITIONAL], Short(0), byte(count),
+[flat assets], Short(0), byte(0)`.
+
+Two real divergences (verified ❌ in `Show.md` rows 5-9, v95):
+
+- **Spurious padding** the v95 client never reads: a `WriteShort(0)` *before*
+  the item count, and a trailing `WriteShort(0)` + `WriteByte(0)`.
+- **Single flat count vs per-tab segmented counts.** Atlas is called with
+  `StorageOperationShowBody` which hardcodes `flags = StorageFlagAll` (bits
+  2|4|8|16|32|64 = 0x7E) and `toAllPacketAssets` (a flat, unsegmented list of
+  every inventory type). With all 5 tab bits set the client expects **5
+  separate count+items blocks**; atlas emits one. → wire desync that wedges the
+  storage panel until logout (the durable hot-path failure mode).
+
+**Deferred (not fixed here)** because: (a) the correct fix is a structural
+rewrite of `Show.Encode` — bucket assets by `Asset.inventoryType()`, emit a
+count byte per set tab bit, gate meso on `flag&2`, drop the three padding bytes
+— not a width/order tweak; (b) `Show.Encode` is version-agnostic (no region
+guards) and only the v95 client `SetGetItems` was readable in this session, so a
+change risks the v83/v87/v92/v111/JMS185 clients which may read the trailing
+padding differently; (c) the conservative-rule bar (a speculative hot-path
+rewrite is worse than an honest deferral). Fix warrants its own task with a
+live storage-panel round-trip test across all target versions.
+
+Files: `libs/atlas-packet/storage/clientbound/show.go`.
+
+### UpdateAssets clientbound — loop/sub-struct tool limitation (storage), correct in practice
+
+`CTrunkDlg::OnPacket#UpdateAssets` (cases 9/13/15/19 → `SetGetItems`). Verdict
+🔍 in `UpdateAssets.md` is a packet-audit **tool limitation** (the per-tab item
+loop + `GW_ItemSlotBase`/`Asset` sub-struct can't be flattened row-for-row), NOT
+a wire bug. Runtime callers (`services/atlas-channel/.../storage/consumer.go`)
+always pass `flags = inventoryTypeToFlag(t)` (exactly **one** tab bit, currency
+bit never set) and `toPacketAssets(t, …)` (assets filtered to that one type), so
+the client's per-tab loop runs exactly once → reads one count + items, which
+matches atlas's single-count emission byte-for-byte. No fix needed. (Contrast
+with Show, which sets all bits and sends a flat list — that one is the real bug.)
+
+### OP-FAMILY-storage — serverbound dispatcher op-byte (storage)
+
+`storage/serverbound/operation.go` `Operation.Encode` writes only the op-byte
+(`WriteByte(mode)`); the field payloads live in the sibling sub-bodies. The IDA
+oracle is the family of `CTrunkDlg::Send*Request` senders, each of which
+`COutPacket(…,67=0x43)` then `Encode1(op)` + fields:
+
+| Atlas struct | op-byte | IDA sender | fields after op |
+|---|---|---|---|
+| (Operation dispatcher) | — | — | op byte only |
+| OperationRetrieveAsset | 4 | `CTrunkDlg::SendGetItemRequest`@0x769e00 | `Encode1` invType, `Encode1` slot |
+| OperationStoreAsset | 5 | `CTrunkDlg::SendPutItemRequest`@0x768570 | `Encode2` slot, `Encode4` itemId, `Encode2` qty |
+| OperationMeso | 7 | `CTrunkDlg::SendGetMoneyRequest`@0x7688e0 / `SendPutMoneyRequest`@0x7689e0 | `Encode4` signed amount (+withdraw / −deposit) |
+
+The dispatcher's op-byte is supplied by the caller (the resolved `operations`
+code), so its lone-byte ✅ in `Operation.md` is expected. Sub-bodies audited
+independently — all ✅ in v95. No fix needed; recorded here for traceability.
+
 ## Workflow notes
 
 Refresh procedure:

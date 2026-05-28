@@ -3535,6 +3535,465 @@
           "comment": "target name"
         }
       ]
+    },
+    "CStage::OnSetField": {
+      "address": "0x7eea69",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "SET_FIELD (JMS v185 opcode 0x087/135). JMS CStage::OnSetField@0x7eea69, bCharacterData=1 branch. ENVELOPE-ONLY: CharacterData::Decode (line 165) is a single DecodeBuf boundary (character domain). JMS wire order: DecodeOpt(2 @line119 CClientOptMan::DecodeOpt) + channelId(4 @line121) + JMS-only byte(1 @line122, szCookie[76]) + JMS-only int(4 @line123, szReserved[1976]) + sNotifierMessage(1 @line126) + bCharacterData(1 @line127) + nNotifierCheck/notifierCount(2 @line128) + [if count: DecodeStr loop] + 3x damage seed(4 @lines159-161) + CharacterData + OnSetLogoutGiftConfig@0xae81c0 (Decode4 m_bPredictQuit + 3x Decode4 logoutGiftSN = 4 ints) + timestamp DecodeBuffer(p,8 @line209). Matches atlas set_field.go JMS branch field-for-field — JMS byte+int block, 4-byte nHP path N/A here (CharacterData path), 4 logout gift ints all confirmed.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "DecodeOpt (CClientOptMan::DecodeOpt @line119) — atlas WriteShort(0) gated (GMS>83 || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nChannelID (channel id @line121)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "JMS-only byte (@line122 → szCookie[76]) — atlas WriteByte(0) gated JMS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "JMS-only int (@line123 → szReserved[1976]) — atlas WriteInt(0) gated JMS"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sNotifierMessage flag (@line126)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCharacterData flag (@line127; ==1 here)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nNotifierCheck / notifier-string count (@line128)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 1 (@line159)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 2 (@line160)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 3 (@line161)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "CharacterData::Decode (@line165) — ENVELOPE BOUNDARY; inner shape under character domain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_bPredictQuit (OnSetLogoutGiftConfig@0xae81c0) — logout gift int #1, gated (GMS>83 || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "logout gift commodity SN #1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "logout gift commodity SN #2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "logout gift commodity SN #3"
+        },
+        {
+          "op": "Decode8",
+          "comment": "timestamp DecodeBuffer(p,8 @line209; FILETIME) — atlas WriteInt64"
+        }
+      ]
+    },
+    "CStage::OnSetField#WarpToMap": {
+      "address": "0x7eea69",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "SET_FIELD warp path (JMS v185 opcode 0x087/135). Same JMS CStage::OnSetField@0x7eea69, bCharacterData=0 (else branch @lines168-190). JMS wire order: DecodeOpt(2) + channelId(4) + JMS byte(1) + JMS int(4) + sNotifierMessage(1) + bCharacterData(1=0) + nNotifierCheck(2) + revive(1 Decode1 @line170) + mapId(4 Decode4 @line181 / disasm @0x7eec6b) + portalId(1 Decode1 @line184 / @0x7eec87) + nHP(2 Decode2 @line187 / @0x7eec9d — 2 BYTES, NOT widened to Decode4 like GMS v95) + timestamp(8). NOTE: NO m_dwOldDriverID (GMS-only), NO chase byte (GMS-only). nHP is Decode2 — atlas FIXED to gate the 4-byte width on GMS>=95 only, JMS now writes 2 bytes (warp_to_map.go).",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "DecodeOpt — atlas WriteShort(0) gated (GMS>83 || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nChannelID (channel id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "JMS-only byte — atlas WriteByte(0) gated JMS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "JMS-only int — atlas WriteInt(0) gated JMS"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sNotifierMessage flag (atlas writes 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCharacterData flag (atlas writes 0 — warp path)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nNotifierCheck (atlas writes 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "revive flag (@line170; else branch) — atlas WriteByte(0) gated (GMS>28 || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwPosMap / target map id (@0x7eec6b)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nPortal / target portal id (@0x7eec87)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nHP (@0x7eec9d Decode2 — 2 bytes; JMS did NOT widen with GMS v95) — atlas WriteShort gated (else branch)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "timestamp (DecodeBuffer p,8; FILETIME) — atlas WriteInt64"
+        }
+      ]
+    },
+    "CField::SendTransferFieldRequest": {
+      "address": "0x56d75a",
+      "region": "JMS",
+      "direction": "serverbound",
+      "notes": "FIELD_CHANGE / transfer-field request (JMS v185). JMS CField::SendTransferFieldRequest@0x56d75a: COutPacket(0x1D) then Encode1(fieldKey @line33, get_field()+328) + Encode4(dwTargetField @line34) + EncodeStr(sPortal @line40) + [if sPortal!=NULL: Encode2(x @line44)+Encode2(y @line46)] + Encode1(0 @line48, unused) + Encode1(bPremium @line49). NO chase byte, NO targetX/targetY int pair (GMS v95 has neither either — those are atlas's m.chase-gated tail). atlas change.go JMS path: chase gated GMS>=83 (skipped for JMS), targetX/Y only if m.chase (false) → JMS emits fieldKey+targetId+portal+[x,y if portal]+unused+premium. MATCHES.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "fieldKey (get_field()->m_bFieldKey @line33)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTargetField / targetId (@line34)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sPortal / portalName (@line40; empty ZXString when NULL)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x — only when sPortal!=NULL (@line44)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y — only when sPortal!=NULL (@line46)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "unused (constant 0 @line48)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bPremium / premium (@line49)"
+        }
+      ]
+    },
+    "CField_ContiMove::OnContiState": {
+      "address": "0x58e280",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "CONTI_STATE / field transport state (JMS v185). JMS CField_ContiMove::OnContiState@0x58e280 reads exactly two bytes: Decode1(v3=state @line5; switched 0/1/6 EnterShipMove, 2/5 LeaveShipMove, 3/4 AppearShip) + Decode1(v4=flag @line6; checked v4==1 in AppearShip). Matches atlas Transport: WriteByte(state) + WriteBool(overrideAppear).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nState (transport/ship state 0-6)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "overrideAppear flag (v4; checked v4==1 in AppearShip case)"
+        }
+      ]
+    },
+    "CUserLocal::CheckPortal_Collision": {
+      "address": "0xa0dde7",
+      "region": "JMS",
+      "direction": "serverbound",
+      "notes": "PORTAL_SCRIPT / script-portal collision request (JMS v185). JMS CUserLocal::CheckPortal_Collision@0xa0dde7 case 9 (v8==9, script portal): COutPacket(0x5F) then Encode1(fieldKey @line75, get_field()+328) + EncodeStr(portalName @line79, pt+4) + Encode2(x @line81) + Encode2(y @line83). Matches atlas portal Script (byte fieldKey + string portal + short x + short y).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "fieldKey (get_field()->m_bFieldKey @line75)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "portalName (@line79)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (current user X @line81)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (current user Y @line83)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaCreated": {
+      "address": "0x436572",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "SPAWN_MIST (JMS v185). JMS CAffectedAreaPool::OnAffectedAreaCreated@0x436572 reads: Decode4(dwId @line103) + Decode4(nType @line104) + Decode4(dwOwnerId @line105) + Decode4(nSkillID @line106) + Decode1(nSLV @line107) + Decode2(phase @line108) + DecodeBuffer(16 rcArea RECT @line109) + Decode4(tEnd @line110). 8 fields — SAME as GMS v83 (no leading tStart). JMS does NOT have the v95-only tStart int. atlas affected_area_created.go (10-field v83-ish origin/lt/rb shape) matches NEITHER — STRUCTURAL DEFERRAL carried forward (see _pending.md AFFECTEDAREA-create-shape).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id @line103)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nType (mist type; ==3 item-area-buff branch @line104)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwOwnerId (owner character id @line105)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill id @line106)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level @line107)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "phase/delay (layer-time multiplier @line108)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rcArea RECT (16 bytes = lt/rb as 4x int32 @line109)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "tEnd (end time @line110) — NO leading tStart (v95-only; absent in JMS like v83)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaRemoved": {
+      "address": "0x436eda",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "REMOVE_MIST (JMS v185). JMS CAffectedAreaPool::OnAffectedAreaRemoved@0x436eda reads a single Decode4(v40 @line54) — the affected-area id. Matches atlas affected_area_removed.go (single WriteInt mistKey).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (affected-area object id @line54)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxEnterField": {
+      "address": "0x6d5978",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "KITE_SPAWN / message-box enter field (JMS v185). JMS CMessageBoxPool::OnMessageBoxEnterField@0x6d5978 reads: Decode4(id @line67, v58) + Decode4(itemId @line78, +56) + DecodeStr(@line79, +8) + DecodeStr(@line85, +12) + Decode2(x @line92, +28) + Decode2(y @line94, +32). Field order: int id, int itemId, str, str, short, short — matches atlas kite_spawn.go (id,templateId,message,name,x,kiteType). String-pair semantic order (message vs name) does not affect wire shape.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "id (message-box object id @line67)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId / templateId (@line78)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "string #1 (@line79; atlas message)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "string #2 (@line85; atlas name)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (@line92)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y / kiteType (@line94)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxLeaveField": {
+      "address": "0x6d5f7f",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "KITE_DESTROY / message-box leave field (JMS v185). JMS CMessageBoxPool::OnMessageBoxLeaveField@0x6d5f7f reads: Decode1(animationType @line48, v2) + Decode4(id @line50, v38). Matches atlas kite_destroy.go (WriteByte animationType + WriteInt id).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animationType (@line48)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "id (message-box object id @line50)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnCreateFailed": {
+      "address": "0x6d594d",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "KITE_ERROR / message-box create-failed (JMS v185). JMS CMessageBoxPool::OnCreateFailed@0x6d594d reads NO packet bytes — just shows a StringPool notice (string id 0x200). Matches atlas kite_error.go (empty body).",
+      "calls": []
+    },
+    "CField::OnFieldEffect#Summon": {
+      "address": "0x570359",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 0 / summon (JMS v185 opcode 0x087 dispatcher case via CField::OnFieldEffect@0x570359). Decode1(mode=0 dispatcher) then case 0: Decode1(effect v4 @line44) + Decode4(result @line45) + Decode4(v5 @line46). Maps atlas EffectSummon (mode+effect+x+y).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (effect-type discriminator = 0; summon)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "effect (v4 @line44; summon animation index)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (result @line45)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (v5 @line46)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Tremble": {
+      "address": "0x570359",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 1 / tremble (JMS v185, CField::OnFieldEffect@0x570359). case 1: Decode1(v18 bHeavyNShortTremble @line73) + Decode4(v19 delay @line74). Maps atlas EffectTremble (mode + bool + int).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 1; tremble)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHeavyNShortTremble (v18 @line73)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "delay (v19 @line74)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#String": {
+      "address": "0x570359",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT cases 2 (SetObjectState), 3 (ShowScreenEffect), 4 (play_field_sound), 6 (PlayBGM) — JMS v185 CField::OnFieldEffect@0x570359. Each: Decode1(mode) + DecodeStr(name/path). Maps atlas EffectString.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 2/3/4/6; string-payload effect)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name / path / bgm UOL string"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#BossHp": {
+      "address": "0x570359",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 5 / boss HP tag (JMS v185, CField::OnFieldEffect@0x570359). case 5: Decode4(v32 monsterId @line110) + Decode4(sName currentHp @line111) + Decode4(result maxHp @line112) + Decode1(v14 tagColor @line113) + Decode1(v15 tagBackgroundColor @line114). Maps atlas EffectBossHp.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 5; boss HP tag)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monsterId (v32 @line110)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "currentHp (sName @line111)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maxHp (result @line112)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tagColor (v14 @line113)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tagBackgroundColor (v15 @line114)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#RewardRullet": {
+      "address": "0x570359",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 7 / reward roulette (JMS v185, CField::OnFieldEffect@0x570359). case 7: Decode4(v20 @line137) + Decode4(v21 @line138) + Decode4(v22 @line139). Maps atlas EffectRewardRullet (job/part/lev).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 7; reward roulette)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardJobIdx (v20 @line137)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardPartIdx (v21 @line138)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardLevIdx (v22 @line139)"
+        }
+      ]
+    },
+    "CField::OnBlowWeather": {
+      "address": "0x5723E6",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "BLOW_WEATHER (JMS v185 opcode 0x08B/139). JMS dispatch CField::OnPacket case 0x8B -> sub_5723E6@0x5723E6 (inlined, no OnBlowWeather symbol). JMS reads: Decode4(itemId v2 @line17) + [if get_consume_cash_item_type(itemId)==51: Decode4(v3 @line22)] + [if itemId!=0: DecodeStr(message @line27)]. NO leading blow-type byte (GMS OnBlowWeather reads Decode1 m_nBlowType FIRST). atlas effect_weather.go writes WriteBool(!active)+WriteInt(itemId)+[string if active] — leading byte is a JMS over-write AND atlas lacks the JMS cash-type-51 conditional int. STRUCTURAL per-version divergence on a BAD-FORM struct (no region branch) — DEFERRED to _pending.md WEATHER-jms-shape, not a blind fix.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (v2 @line17) — JMS reads itemId FIRST; NO leading blow-type byte"
+        },
+        {
+          "op": "Decode4",
+          "comment": "extra int — ONLY if get_consume_cash_item_type(itemId)==51 (@line22; cash-weather variant); no atlas field"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message — only if itemId!=0 (@line27)"
+        }
+      ]
+    },
+    "CField::OnClock": {
+      "address": "0x56e849",
+      "region": "JMS",
+      "direction": "clientbound",
+      "notes": "CLOCK (JMS v185 opcode 0x090/144). JMS dispatch CField::OnPacket case 0x90 -> virtual call [vtable+0x2C] (CField::OnClock, inlined/unnamed in JMS185 IDB — no standalone symbol; OnDestroyClock@0x56ec69 confirms the clock family lives on CField). Clock is a BAD-FORM mode-switch struct (clockType byte + per-mode payload); same analyzer flattening limitation as GMS v95 (verdict carried forward as tool-limitation, not a wire bug). JMS clockType-discriminated shape matches the standard MapleStory clock layout; full per-mode decode not resolvable without the vtable target. ⚠️ manual-verify carried forward.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "clockType (mode discriminator; CField::OnClock virtual @vtable+0x2C)"
+        }
+      ]
     }
   }
 }

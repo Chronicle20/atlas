@@ -1373,6 +1373,77 @@ packet is unaffected (single int32 id matches all versions).
 > satisfies all three. Still deferred (structural rewrite + new model fields);
 > when implemented, gate the leading `tStart` int32 behind `GMS && >=95`.
 
+> ⏸ STILL DEFERRED — AFFECTEDAREA-create-shape (task-068 Phase 3 JMS185 finding):
+> JMS185 `CAffectedAreaPool::OnAffectedAreaCreated`@0x436572 reads the SAME 8-field
+> set as v83/v87 — `Decode4 dwId, Decode4 nType, Decode4 dwOwnerId, Decode4
+> nSkillID, Decode1 nSLV, Decode2 phase, DecodeBuffer(16) rcArea, Decode4 tEnd`
+> (@lines 103-110). **JMS185 does NOT have the v95-only leading `tStart` int** — it
+> is the 8-field layout, like the GMS pre-v95 builds. So the full axis is now: v83
+> == v87 == JMS185 (8 fields) vs v95 (9 fields, +leading tStart). Atlas matches
+> none. The deferred structural re-encode (add nType/nSkillID, pack the RECT as a
+> 16-byte buffer, drop origin, gate leading tStart on `GMS && >=95`) is correct for
+> JMS too (no JMS-specific extra field). Still deferred. Sibling
+> `AffectedAreaRemoved` (single Decode4 @0x436eda) ✅ for JMS185.
+
+## WEATHER-jms-shape — `effect_weather.go` BLOW_WEATHER JMS185 divergence (task-068 Phase 3, DEFERRED)
+
+> **task-068 Phase 3 (JMS v185 field+portal pass)** found a genuine JMS185 wire
+> divergence in `field/clientbound/effect_weather.go` (`EffectWeather`). It is a
+> structural per-version difference on a BAD-FORM struct (design §8 keeps it
+> un-refactored) and is **DEFERRED**, not blindly fixed.
+
+JMS185 dispatches BLOW_WEATHER (op 0x08B/139) via `CField::OnPacket`@0x56e721 case
+0x8B → `sub_5723E6`@0x5723E6 (inlined — no `OnBlowWeather` symbol in the JMS185
+IDB). It reads:
+
+1. `Decode4 itemId` (@line17) — **FIRST field; NO leading blow-type byte.**
+2. `[Decode4 extra]` (@line22) — only when `get_consume_cash_item_type(itemId)==51`
+   (a cash-weather variant); atlas has no corresponding field.
+3. `[DecodeStr message]` (@line27) — only when `itemId != 0`.
+
+Atlas (version-agnostic, no region branch) writes: `WriteBool(!active)` (1 leading
+byte) + `WriteInt(itemId)` + `[WriteAsciiString(message) if active]`. The leading
+`!active` byte is correct for GMS (`CField::OnBlowWeather` reads `Decode1
+m_nBlowType` first) but is a 1-byte over-write for JMS185, AND atlas lacks the JMS
+cash-type-51 conditional int. A JMS-correct fix needs a region branch that (a)
+drops the leading byte for JMS and (b) models the conditional cash-int — a
+structural change to a BAD-FORM struct, beyond an audit-cover width tweak. When
+implemented: gate the leading `m_nBlowType` byte on `GMS` only, and add the
+JMS-only conditional `Decode4`/`Encode4` keyed on the cash-weather item type.
+File: `libs/atlas-packet/field/clientbound/effect_weather.go`.
+
+## JMS v185 field+portal pass summary (task-068 Phase 3)
+
+> JMS185 IDB `MapleStory_dump_SCY.exe` (md5 af6652ff9b7c549341f35e3569d7564a).
+> Tally: **12 ✅ / 5 ❌**. Of the 5 ❌: 3 are analyzer/tool-limitation artifacts
+> (FieldSetField seed-loop+CharacterData boundary; FieldChange conditional chase
+> tail; FieldClock mode-switch — all manually verified correct), and 2 are genuine
+> structural divergences DEFERRED above (FieldAffectedAreaCreated, FieldEffectWeather).
+
+### IN-scope JMS fix shipped this pass (1)
+
+| Atlas struct (file) | JMS185 IDA evidence | Bug | Fix |
+|---|---|---|---|
+| `field/clientbound/warp_to_map.go` (`WarpToMap`) | `CStage::OnSetField`@0x7eea69 warp else-branch reads `Decode2` nHP @0x7eec9d (2 bytes) | nHP gate was `(GMS>=95) \|\| JMS` → JMS wrote 4 bytes, but JMS185 reads 2 (the line did NOT widen with GMS v95) → 2-byte clientbound over-write desyncs the warp | Gate narrowed to `GMS && >=95`; JMS falls into the 2-byte `else`. 5-variant test (GMS v28/v83/v87/v95 + JMS185) pins JMS185=31 bytes. ✅ |
+
+### set_field/warp JMS-branch verification (all ✅, no sub-divide)
+
+- **JMS decode-opt short** — JMS185 `CClientOptMan::DecodeOpt` @line119; atlas
+  `WriteShort(0)` gated `(GMS>83 || JMS)`. ✅
+- **JMS `byte+int` block** — JMS185 reads `Decode1` (@line122, szCookie[76]) then
+  `Decode4` (@line123, szReserved[1976]) immediately after channelId; atlas's
+  JMS-only `WriteByte(0); WriteInt(0)` matches. ✅
+- **4-byte nHP** — JMS185 reads `Decode2` (2 bytes) in the warp path, NOT 4. Atlas
+  FIXED (above). set_field's CharacterData path has no standalone nHP field. ✅
+- **oldDriverID** — JMS does NOT read the `m_dwOldDriverID` Decode4 (GMS-v95-only,
+  gated `GMS && >=95`); JMS185 OnSetField goes channelId → JMS byte+int → sNotifier.
+  Atlas correctly omits it for JMS. ✅
+- **4 logout-gift ints** — `OnSetLogoutGiftConfig`@0xae81c0 reads `Decode4` + 3×
+  `Decode4` = 4 ints; atlas's 4× `WriteInt(0)` gated `(GMS>83 || JMS)` matches. ✅
+- **set_field JMS sub-divide HARD CAP: NOT hit.** JMS185's `Region()=="JMS"` block
+  is a single shape (no early-JMS vs 185+ split inside it). The 3-deep set_field
+  nesting cap was respected; no 4th nesting level needed.
+
 ## Tool limitations — world domain (task-068 Phase 2d, field/clientbound effect cluster)
 
 > **task-068 sub-phase 2d** audited the three `field/clientbound` effect-cluster

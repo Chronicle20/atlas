@@ -69,7 +69,7 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 		}
 		w.WriteInt(uint32(m.mapId))
 		w.WriteByte(m.portalId)
-		w.WriteShort(m.hp)
+		w.WriteInt(uint32(m.hp)) // nHP: v95 CStage::OnSetField reads Decode4 (4 bytes), not Decode2
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			w.WriteBool(false) // Chasing
 		}
@@ -97,7 +97,7 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 		}
 		m.mapId = _map.Id(r.ReadUint32())
 		m.portalId = r.ReadByte()
-		m.hp = r.ReadUint16()
+		m.hp = uint16(r.ReadUint32()) // nHP: v95 CStage::OnSetField reads Decode4 (4 bytes), not Decode2
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			_ = r.ReadBool() // Chasing
 		}

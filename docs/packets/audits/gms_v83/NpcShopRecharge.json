@@ -1,0 +1,20 @@
+{
+  "WriterName": "NpcShopRecharge",
+  "IDAName": "CShopDlg::SendRechargeRequest",
+  "Address": "0x756c28",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/npc/serverbound/shop_recharge.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot / nPos (v7)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

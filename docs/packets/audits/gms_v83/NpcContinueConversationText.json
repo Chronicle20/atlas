@@ -1,0 +1,20 @@
+{
+  "WriterName": "NpcContinueConversationText",
+  "IDAName": "CScriptMan::OnAskText#Reply",
+  "Address": "0x746a8b",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/npc/serverbound/continue_conversation_text.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "input text (atlas ContinueConversationText.text; only emitted when action==1)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -25,11 +25,18 @@ func (m OperationChat) String() string {
 	return fmt.Sprintf("updateTime [%d], message [%s]", m.updateTime, m.message)
 }
 
+// hasUpdateTime reports whether the leading get_update_time field precedes the
+// chat message. Present from GMS v87 onward (v83 omits it) AND in JMS v185
+// (CMiniRoomBaseDlg::CheckAndSendChat@0x6db3ce Encode4 update_time + EncodeStr).
+func chatHasUpdateTime(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
+}
+
 func (m OperationChat) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
+		if chatHasUpdateTime(t) {
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteAsciiString(m.message)
@@ -40,7 +47,7 @@ func (m OperationChat) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 func (m *OperationChat) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
+		if chatHasUpdateTime(t) {
 			m.updateTime = r.ReadUint32()
 		}
 		m.message = r.ReadAsciiString()

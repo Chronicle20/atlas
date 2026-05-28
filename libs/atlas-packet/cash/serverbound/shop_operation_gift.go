@@ -13,14 +13,16 @@ import (
 const CashShopOperationGiftHandle = "CashShopOperationGiftHandle"
 
 // ShopOperationGift - CCashShop::SendGiftsPacket. v83 sends two leading ints
-// (Encode4 + Encode4 serialNumber) then EncodeStr name, EncodeStr message. v95
-// replaces the first int with EncodeStr sSPW and inserts a byte oneADay between
-// serialNumber and name.
+// (Encode4 + Encode4 serialNumber) then EncodeStr name, EncodeStr message. The
+// byte oneADay (m_bRequestBuyOneADay) inserted between serialNumber and name
+// appears from v87 onward (v87 SendGiftsPacket@0x47a168 still sends the leading
+// int, NOT the SPW string — only Encode1 oneADay before name). The leading int
+// is replaced by EncodeStr sSPW only at v95+.
 type ShopOperationGift struct {
-	birthday     uint32 // v83 leading int (replaced by spw string in v95)
-	spw          string // v95 leading ask_SPW string
+	birthday     uint32 // v83/v87 leading int (replaced by spw string in v95+)
+	spw          string // v95+ leading ask_SPW string
 	serialNumber uint32
-	oneADay      byte // v95-only byte inserted before name
+	oneADay      byte // v87+ byte inserted before name
 	name         string
 	message      string
 }
@@ -50,7 +52,7 @@ func (m ShopOperationGift) Encode(l logrus.FieldLogger, ctx context.Context) fun
 			w.WriteInt(m.birthday)
 		}
 		w.WriteInt(m.serialNumber)
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 			w.WriteByte(m.oneADay)
 		}
 		w.WriteAsciiString(m.name)
@@ -68,7 +70,7 @@ func (m *ShopOperationGift) Decode(_ logrus.FieldLogger, ctx context.Context) fu
 			m.birthday = r.ReadUint32()
 		}
 		m.serialNumber = r.ReadUint32()
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 			m.oneADay = r.ReadByte()
 		}
 		m.name = r.ReadAsciiString()

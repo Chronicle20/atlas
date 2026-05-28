@@ -18,7 +18,7 @@ func TestOperationChatRoundTrip(t *testing.T) {
 			if output.Message() != input.Message() {
 				t.Errorf("message: got %v, want %v", output.Message(), input.Message())
 			}
-			if v.Region == "GMS" && v.MajorVersion >= 95 {
+			if v.Region == "GMS" && v.MajorVersion >= 87 {
 				if output.UpdateTime() != input.UpdateTime() {
 					t.Errorf("updateTime: got %v, want %v", output.UpdateTime(), input.UpdateTime())
 				}
@@ -30,8 +30,9 @@ func TestOperationChatRoundTrip(t *testing.T) {
 }
 
 // TestOperationChatBytes pins the version gate: v83 sends EncodeStr message only
-// (IDA CMiniRoomBaseDlg::CheckAndSendChat@0x65f438 = Encode1 op + EncodeStr); v95
-// prepends Encode4 get_update_time (@0x6382a0). Gate: GMS && MajorVersion>=95.
+// (IDA CMiniRoomBaseDlg::CheckAndSendChat@0x65f438 = Encode1 op + EncodeStr); v87
+// already prepends Encode4 get_update_time (v87 CheckAndSendChat@0x69973e shows
+// the field present), as does v95. Gate: GMS && MajorVersion>=87.
 func TestOperationChatBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := OperationChat{updateTime: 0x11223344, message: "hi"}
@@ -40,6 +41,12 @@ func TestOperationChatBytes(t *testing.T) {
 	got83 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 83, 1))(nil))
 	if got83 != "02006869" {
 		t.Errorf("v83 bytes: got %s, want 02006869", got83)
+	}
+
+	// v87: leading update_time (LE) then "hi" = 44332211 0200 6869 (matches v95)
+	got87 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 87, 1))(nil))
+	if got87 != "4433221102006869" {
+		t.Errorf("v87 bytes: got %s, want 4433221102006869", got87)
 	}
 
 	// v95: leading update_time (LE) then "hi" = 44332211 0200 6869

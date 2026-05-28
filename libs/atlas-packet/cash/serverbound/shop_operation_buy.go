@@ -18,8 +18,8 @@ type ShopOperationBuy struct {
 	currency     uint32
 	serialNumber uint32
 	zero         uint32 // v83 trailing IsZeroGoods int
-	oneADay      byte   // v95 trailing m_bRequestBuyOneADay byte
-	eventSN      uint32 // v95 trailing nEventSN int
+	oneADay      byte   // v87+ trailing m_bRequestBuyOneADay byte
+	eventSN      uint32 // v87+ trailing nEventSN int
 }
 
 func (m ShopOperationBuy) IsPoints() bool       { return m.isPoints }
@@ -44,7 +44,7 @@ func (m ShopOperationBuy) Encode(l logrus.FieldLogger, ctx context.Context) func
 		w.WriteBool(m.isPoints)
 		w.WriteInt(m.currency)
 		w.WriteInt(m.serialNumber)
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 			w.WriteByte(m.oneADay)
 			w.WriteInt(m.eventSN)
 		} else {
@@ -60,7 +60,7 @@ func (m *ShopOperationBuy) Decode(_ logrus.FieldLogger, ctx context.Context) fun
 		m.isPoints = r.ReadBool()
 		m.currency = r.ReadUint32()
 		m.serialNumber = r.ReadUint32()
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 			m.oneADay = r.ReadByte()
 			m.eventSN = r.ReadUint32()
 		} else {

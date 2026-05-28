@@ -29,7 +29,7 @@ func (m OperationChat) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteAsciiString(m.message)
@@ -40,7 +40,7 @@ func (m OperationChat) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 func (m *OperationChat) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 			m.updateTime = r.ReadUint32()
 		}
 		m.message = r.ReadAsciiString()

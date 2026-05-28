@@ -19,4 +19,8 @@
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 11 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 12 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

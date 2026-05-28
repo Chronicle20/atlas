@@ -26,9 +26,8 @@
 | 13 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 16 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 17 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 18 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

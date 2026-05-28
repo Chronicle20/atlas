@@ -3,7 +3,7 @@
   "IDAName": "CWvsContext::OnGuildResult#Invite",
   "Address": "0xa0d664",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
   "Rows": [
     {

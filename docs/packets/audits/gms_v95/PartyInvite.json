@@ -3,7 +3,7 @@
   "IDAName": "CWvsContext::OnPartyResult#Invite",
   "Address": "0xa10b5f",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/party/clientbound/invite.go",
   "Rows": [
     {

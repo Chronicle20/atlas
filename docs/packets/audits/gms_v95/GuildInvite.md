@@ -3,7 +3,7 @@
 - **IDA:** 0xa0d664
 - **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 1
 - **Verdict:** ✅
 
 ## Wire-level diff

@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildAgreementResponse",
-  "IDAName": "CField::SendCreateGuildAgreeMsg",
-  "Address": "0x52d780",
+  "IDAName": "CWvsContext::OnGuildResult#AgreementResponse",
+  "Address": "0x0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_agreement_response.go",
@@ -11,7 +11,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "guildId (from CWvsContext)",
+      "IDAComment": "unk (partyId or similar)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "bAgree bool (0=no, 1=yes)",
+      "IDAComment": "agreed bool",
       "Verdict": 0,
       "Note": ""
     }

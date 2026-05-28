@@ -3,7 +3,7 @@
 - **IDA:** 0xa10b5f
 - **Atlas file:** `libs/atlas-packet/party/clientbound/invite.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 1
 - **Verdict:** ❌
 
 ## Wire-level diff

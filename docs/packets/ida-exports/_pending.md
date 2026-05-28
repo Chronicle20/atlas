@@ -1359,6 +1359,20 @@ version guard, keeping the v83 path; add a 4-variant Encode test; cite
 `CAffectedAreaPool::OnAffectedAreaCreated`@0x437ec0. The sibling REMOVE_MIST
 packet is unaffected (single int32 id matches all versions).
 
+> ⏸ STILL DEFERRED — AFFECTEDAREA-create-shape (task-068 Phase 3 v87 finding): the
+> cross-version axis is now fully pinned. v87
+> `CAffectedAreaPool::OnAffectedAreaCreated`@0x432f3f reads the SAME 8-field set as
+> **v83** (@0x431a63): `Decode4 dwId, Decode4 nType, Decode4 dwOwnerId, Decode4
+> nSkillID, Decode1 nSLV, Decode2 phase, DecodeBuffer(16) rcArea, Decode4 tEnd` —
+> a single trailing `Decode4` after the RECT, NO leading `tStart`. **v95**
+> (@0x437ec0) is the version that ADDS the leading `tStart` int32 (9 fields, two
+> trailing Decode4s). So: v83 == v87 (8 fields) → v95 (9 fields, +tStart). Atlas
+> matches NEITHER (it carries the legacy origin int16 layout). The earlier (Phase
+> 2c) worry that a v95 fix "would break the v83 client" is fully disproven —
+> v83/v87 share one layout, and a single `tStart`-gated (`GMS>=95`) encode
+> satisfies all three. Still deferred (structural rewrite + new model fields);
+> when implemented, gate the leading `tStart` int32 behind `GMS && >=95`.
+
 ## Tool limitations — world domain (task-068 Phase 2d, field/clientbound effect cluster)
 
 > **task-068 sub-phase 2d** audited the three `field/clientbound` effect-cluster
@@ -1460,6 +1474,25 @@ Audit reports: `FieldSetField.md`, `FieldWarpToMap.md` — both marked ❌ in
 **Sibling-task suggestion:** *"GMS v95 SetField/WarpToMap oldDriverID fix."*
 Scope: read `CStage::OnSetField` in v83/v87/v92 IDA; if field is present from
 v83, add unconditionally; if introduced in v95, gate behind `GMS>=95 || JMS`.
+
+> ✅ RESOLVED (task-068 Phase 3 v83 + v87): the version-introduction point is now
+> pinned. `CStage::OnSetField` reads NO `m_dwOldDriverID` after `channelId` in
+> **v83** (@0x776020) NOR **v87** (@0x7c429c) — in both, `sNotifierMessage`
+> (Decode1) is read immediately after `channelId(Decode4)`. v95 (@0x71a0a0) is the
+> first audited version to insert the unconditional `Decode4 m_dwOldDriverID`
+> there. The field was introduced **between v87 and v95**. Atlas now emits it
+> gated `Region()=="GMS" && MajorVersion()>=95` (set_field.go / warp_to_map.go),
+> which is CORRECT: v83/v87 omit, v95+ emit. Per-version Encode tests
+> (set_field_test.go round-trip; warp_to_map_test.go wire-length: GMS v83=25,
+> v87=27, v95=33, JMS=33) assert this. No further action — the `>=95` gate stays.
+
+> ✅ RESOLVED (task-068 Phase 3 v87) — nHP width (FieldWarpToMap warp branch): v87
+> `CStage::OnSetField`@0x7c429c reads `nHP` as `Decode2` (2 bytes, LOWORD
+> @0x7c44a8), matching **v83** (@0x776020); v95 (@0x71a0a0) reads `Decode4`. The
+> 2→4 width change happened **between v87 and v95**. Atlas's `nHP` width gate
+> (`GMS>=95 || JMS` → WriteInt(4) else WriteShort(2)) is CONFIRMED correct. (This
+> sub-fix's `WriteInt` half landed earlier in `37f072c11`; v87 confirms the gate
+> boundary.)
 
 ## Tool limitations — world domain (task-068 Phase 2e/2g, npc cluster)
 
@@ -1581,3 +1614,50 @@ deferred to Phase 3 cross-version pass.
 | `NpcActionRequest` | tool-limitation, manually verified ✅ (conditional movement sub-struct) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcActionRequest.md` |
 | `NpcContinueConversationSelection` | tool-limitation, manually verified ✅ (wide/narrow exclusive branch) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcContinueConversationSelection.md` |
 | `NpcShopList` | tool-limitation, manually verified ✅ (per-item loop + ammo/non-ammo branch) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcShopList.md` |
+
+## Phase 3 — GMS v87 cross-version pass (world domain: field + portal)
+
+> **task-068 Phase 3 v87 (Task 13a)** audited the FIELD + PORTAL domain against the
+> GMS v87 IDB (`GMSv87_4GB.exe`, md5 `2e692f3ab5078e04138d264f8ea1e668`). 17
+> field/portal FNames resolved + decompiled; entries added to `gms_v87.json`.
+> Tally: **14 ✅ / 3 (tool-limitation/deferral, none new wire bugs)**.
+
+### Primary goal — two provisional gates CONFIRMED (no atlas behavior change)
+
+The v83 pass set provisional `>=95` gates the v87 binary had to confirm or
+tighten. v87 CONFIRMS both — neither tightened:
+
+| Gate | v83 (@0x776020) | v87 (@0x7c429c) | v95 (@0x71a0a0) | Final gate |
+|---|---|---|---|---|
+| `m_dwOldDriverID` after channelId | absent | **absent** (sNotifierMessage read immediately) | present (Decode4) | `GMS>=95` STAYS |
+| `nHP` width (warp branch) | Decode2 (2B) | **Decode2 (2B)** | Decode4 (4B) | `GMS>=95` STAYS |
+
+Atlas code change was COMMENT-ONLY: the IDA-citation comments in
+`set_field.go` / `warp_to_map.go` now cite v87 @0x7c429c alongside v83 @0x776020.
+The existing per-version tests already asserted v87=omit/2B (anticipated by the
+v83 pass); v87 IDA confirms them. No gate behavior changed; v83/v95 audit reports
+were re-run and restored unchanged (regen-only drift).
+
+### Per-packet v87 verdicts (vs v95)
+
+| Packet | v87 verdict | Cross-version note |
+|---|---|---|
+| PortalScript | ✅ | `CUserLocal::CheckPortal_Collision`@0x9c8832 byte-identical to v95. |
+| FieldChange | ✅ | `CField::SendTransferFieldRequest`@0x557b5a byte-identical to v95 (opcode 0x28 vs v95 0x29 — template, not envelope). |
+| FieldSetField | ❌ (artifact) | seed-loop/CharacterData-boundary analyzer FP; manual envelope verdict all ✅. oldDriverID confirmed absent in v87. |
+| FieldWarpToMap | ✅ | All 11 rows match — oldDriverID omitted + nHP 2B both correct for v87. |
+| FieldTransport | ✅ | `CField_ContiMove::OnContiState`@0x577c21 byte-identical to v95. |
+| FieldAffectedAreaCreated | ❌ (deferred) | v87 == v83 (8 fields, tEnd only; v95 adds tStart). Structural deferral, NOT rewritten. |
+| FieldAffectedAreaRemoved | ✅ | `OnAffectedAreaRemoved`@0x43388c single Decode4 id, matches v95. |
+| FieldKiteSpawn | ✅ | `OnMessageBoxEnterField`@0x694e48 byte-identical to v95. |
+| FieldKiteDestroy | ✅ | `OnMessageBoxLeaveField`@0x69544f byte-identical to v95. |
+| FieldKiteError | ✅ | `OnCreateFailed`@0x694e1d empty body, matches v95. |
+| FieldEffect{Summon,Tremble,String,BossHp,RewardRullet} | ✅ | `CField::OnFieldEffect`@0x55a910 — all 5 atlas-mapped arms (cases 0/1/2-3-4-6/5/7) byte-identical to v95. |
+| FieldEffectWeather | ✅ | `CField::OnBlowWeather`@0x55c953 byte-identical to v95 (conditional message tool-limitation). |
+| FieldClock | ❌ (tool-limit) | v87 inlines OnClock as `sub_55DA5F`@0x55DA5F; all 5 modes byte-identical to v95. Mutually-exclusive-switch-arm FP. |
+
+**Conclusion:** v87 introduces NO new field/portal wire bugs beyond v95 and NO
+divergence from v83 on the two gated fields. The atlas `GMS>=95` gates for
+`m_dwOldDriverID` and `nHP` width are verified correct against the v83/v87/v95
+triple. The 3 ❌ SUMMARY rows are the same analyzer artifacts / structural
+deferral documented for v95. No encoder mutations land in this sub-task.

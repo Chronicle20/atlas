@@ -1,6 +1,6 @@
 {
   "binary": "GMSv87_4GB.exe",
-  "md5": "unknown",
+  "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
     "CMiniRoomBaseDlg::CheckAndSendChat": {
@@ -4591,6 +4591,460 @@
           "comment": "tChaseDuration"
         }
       ]
+    },
+    "CStage::OnSetField": {
+      "address": "0x7c429c",
+      "direction": "clientbound",
+      "notes": "SET_FIELD (clientbound, GMS v87). ENVELOPE-ONLY audit: the CharacterData blob (CharacterData::Decode @0x7c440a) is audited under the character domain (task-028) and is represented here by a single DecodeBuf boundary marker. v87 wire order (bCharacterData=1 branch): DecodeOpt(2, CClientOptMan::DecodeOpt @0x7c42c5) + channelId(4, Decode4 @0x7c42db) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + [notifier string loop if !=0] + 3x seed(4) + CharacterData + OnSetLogoutGiftConfig(4x int32) + timestamp(8, DecodeBuffer p,8u). CROSS-VERSION (task-068 Phase 3 v87): v87 reads NO m_dwOldDriverID after channelId — sNotifierMessage (Decode1 @0x7c42fa) is read immediately after channelId(@0x7c42db), matching v83 @0x776020 and unlike v95 @0x71a0a0 which inserts an unconditional Decode4 there. Field introduced between v87 and v95. Atlas gate GMS>=95 CONFIRMED correct.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "DecodeOpt (CClientOptMan::DecodeOpt @0x7c42c5) — atlas WriteShort(0) gated (GMS>83 || JMS); present v87"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nChannelID (channel id, @0x7c42db)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sNotifierMessage flag (HIBYTE, @0x7c42fa) — read immediately after channelId; v87 has NO m_dwOldDriverID Decode4 between (unlike v95)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCharacterData flag (@0x7c4307; atlas always 1)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nNotifierCheck (@0x7c431e; atlas writes 0 — no notifier title/content loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 1 (CalcDamage::SetSeed @0x7c43c2; bCharacterData branch)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 2 (@0x7c43cc)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage seed 3 (@0x7c43e1)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "CharacterData::Decode (@0x7c440a) — ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_bPredictQuit (OnSetLogoutGiftConfig @0x7c4412) — atlas logout-gift int #1, gated (GMS>83 || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "logout gift commodity SN #1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "logout gift commodity SN #2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "logout gift commodity SN #3"
+        },
+        {
+          "op": "Decode8",
+          "comment": "timestamp (DecodeBuffer p,8u @0x7c4558 — FILETIME); atlas WriteInt64"
+        }
+      ]
+    },
+    "CStage::OnSetField#WarpToMap": {
+      "address": "0x7c429c",
+      "direction": "clientbound",
+      "notes": "SET_FIELD warp path (clientbound, GMS v87). Same CStage::OnSetField handler @0x7c429c with bCharacterData=0 — the else branch (no CharacterData blob, @0x7c4423). v87 wire order: DecodeOpt(2) + channelId(4) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + reviveFlag(1, @0x7c4423) + dwPosMap/mapId(4, @0x7c447b) + nPortal(1, @0x7c449d) + nHP(2, Decode2 @0x7c44a8) + bChaseEnable(1, @0x7c44c2) + [if chase: targetX(4)+targetY(4)] + timestamp(8). CROSS-VERSION (task-068 Phase 3 v87): (1) NO m_dwOldDriverID after channelId — matches v83, unlike v95. (2) nHP is Decode2 (2 bytes, @0x7c44a8 LOWORD), matching v83 @0x776020 and unlike v95 @0x71a0a0 which reads Decode4. nHP width widened between v87 and v95. Atlas nHP gate GMS>=95 (4 bytes) CONFIRMED correct.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "DecodeOpt — atlas WriteShort(0) gated (GMS>83 || JMS); present v87"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nChannelID (channel id, @0x7c42db)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sNotifierMessage flag (@0x7c42fa; atlas writes 0) — no m_dwOldDriverID before it in v87"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCharacterData flag (@0x7c4307; atlas writes 0 — warp path)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nNotifierCheck (@0x7c431e; atlas writes 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "revive flag (else branch @0x7c4423) — atlas WriteByte(0) gated (GMS>28 || JMS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwPosMap (target map id, @0x7c447b)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nPortal (target portal id, @0x7c449d)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nHP — v87 Decode2 (2 bytes, LOWORD @0x7c44a8), matches v83; v95 reads Decode4. atlas WriteShort(2) for GMS<95"
+        },
+        {
+          "op": "Decode1",
+          "comment": "m_bChaseEnable (@0x7c44c2) — atlas WriteBool(false) gated (GMS>28)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "timestamp (DecodeBuffer p,8u); atlas WriteInt64"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Summon": {
+      "address": "0x55a948",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 0 (summon). CField::OnFieldEffect@0x55a910 case 0: Decode1(mode=0) + Decode1(effect v4 @0x55a948) + Decode4(x a2 @0x55a952) + Decode4(y v5 @0x55a95c). Maps atlas EffectSummon. v87 byte-identical to v95 (case 0 @0x53b790).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (effect-type discriminator = 0; summon)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "effect (v4; summon animation index, @0x55a948)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (a2, @0x55a952)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (v5, @0x55a95c)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Tremble": {
+      "address": "0x55abbb",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 1 (tremble). CField::OnFieldEffect@0x55a910 case 1: Decode1(mode=1) + Decode1(bHeavyNShortTremble v18 @0x55abbb) + Decode4(delay v19 @0x55abbe) -> Effect_Tremble. Maps atlas EffectTremble. v87 byte-identical to v95 (case 1 @0x53bb74).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 1; tremble)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHeavyNShortTremble (v18; bool, @0x55abbb)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "delay (v19, @0x55abbe)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#String": {
+      "address": "0x55a9fb",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT cases 2 (object/SetObjectState @0x55a9fb), 3 (screen/ShowScreenEffect @0x55aa2a), 4 (sound/play_field_sound @0x55aa7b), 6 (BGM/PlayBGM @0x55ab0c). Each: Decode1(mode) + DecodeStr(name/path). Maps atlas EffectString. v87 byte-identical to v95 (cases @0x53b8b3).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 2/3/4/6; string-payload effect)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name / path / bgm UOL string"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#BossHp": {
+      "address": "0x55aac5",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 5 (boss HP tag / ShowMobHPTag). CField::OnFieldEffect@0x55a910 case 5: Decode1(mode=5) + Decode4(monsterId v34 @0x55aac5) + Decode4(currentHp v40 @0x55aacf) + Decode4(maxHp a2 @0x55aad9) + Decode1(tagColor v14 @0x55aae5) + Decode1(tagBackgroundColor v15 @0x55aae7). Maps atlas EffectBossHp. v87 byte-identical to v95 (case 5 @0x53b9c1).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 5; boss HP tag)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "monsterId (v34, @0x55aac5)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "currentHp (v40, @0x55aacf)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maxHp (a2, @0x55aad9)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tagColor (v14, @0x55aae5)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tagBackgroundColor (v15, @0x55aae7)"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#RewardRullet": {
+      "address": "0x55abea",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 7 (reward roulette / Effect_RewardRullet). CField::OnFieldEffect@0x55a910 case 7: Decode1(mode=7) + Decode4(nRewardJobIdx v20 @0x55abea) + Decode4(nRewardPartIdx v21 @0x55abf3) + Decode4(nRewardLevIdx v22 @0x55abf5). Maps atlas EffectRewardRullet. v87 byte-identical to v95 (case 7 @0x53bba4).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (= 7; reward roulette)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardJobIdx (v20, @0x55abea)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardPartIdx (v21, @0x55abf3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nRewardLevIdx (v22, @0x55abf5)"
+        }
+      ]
+    },
+    "CField::OnBlowWeather": {
+      "address": "0x55c953",
+      "direction": "clientbound",
+      "notes": "BLOW_WEATHER (GMS v87). CField::OnBlowWeather@0x55c953: Decode1(m_nBlowType v3 @0x55c967) + Decode4(itemId v5 @0x55c97f); DecodeStr(message @0x55c99a) ONLY in the else branch (itemId!=0 && m_nBlowType==0, gated by if(!v5 || this[162]) @0x55c98b). Atlas EffectWeather (BAD-FORM single struct): WriteBool(!active)=blowType + WriteInt(itemId) + if active: WriteAsciiString(message). v87 byte-identical to v95 (@0x5468f0); conditional message is a tool limitation (per-mode table in FieldEffectWeather.md).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "m_nBlowType (v3 @0x55c967; atlas !active; 0=start admin-weather w/ message, 1=item/end)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (v5, @0x55c97f)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (only when itemId!=0 && m_nBlowType==0; start path, @0x55c99a)"
+        }
+      ]
+    },
+    "CField::OnClock": {
+      "address": "0x55DA5F",
+      "direction": "clientbound",
+      "notes": "CLOCK (GMS v87). v87 has NO standalone CField::OnClock symbol — the clock-set handler is inlined as sub_55DA5F@0x55DA5F (3x CClock::SetTimer callers). Dispatches on a leading clockType byte (Decode1 v4 @0x55da76) to 5 arms: case 0 EventClock (Decode4 seconds @0x55dd6d), case 1 TownClock (3x Decode1 hour/min/sec @0x55dd40-4d), case 2 TimerClock (Decode4 seconds @0x55dd0f), case 3 EventTimerClock (Decode1 enable @0x55dac2 + Decode4 seconds @0x55dae6), case 0x64 CakePieEventTimerClock (Decode1 enable + Decode1 flag2 v9 @0x55dadd + Decode4 seconds @0x55dae6). Atlas Clock (BAD-FORM single struct) Encode switches on the same clockType. v87 ALL 5 ARMS byte-identical to v95 (CField::OnClock@0x531510). The flat analyzer cannot model the mutually-exclusive arms; export lists the EventTimerClock(case 3) shape as a representative — verdict is a TOOL LIMITATION (all 5 modes manually verified). See FieldClock.md.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "clockType (mode discriminator, v4 @0x55da76)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag1 (EventTimerClock enable byte; representative arm = case 3 @0x55dac2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "seconds (@0x55dae6)"
+        }
+      ]
+    },
+    "CField_ContiMove::OnContiState": {
+      "address": "0x577c21",
+      "direction": "clientbound",
+      "notes": "CONTI_STATE / field transport state (clientbound, GMS v87). CField_ContiMove::OnContiState@0x577c21: Decode1(nState v3 @0x577c32) + Decode1(overrideAppear v4 @0x577c35). Switched: 0/1/6 EnterShipMove, 2/5 LeaveShipMove, 3/4 AppearShip (checks v4==1). Matches atlas Transport: WriteByte(state) + WriteBool(overrideAppear). v87 byte-identical to v95 (@0x54d5a0).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nState (transport/ship state 0-6, v3 @0x577c32)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "overrideAppear flag (v4; checked v4==1 in AppearShip case, @0x577c35)"
+        }
+      ]
+    },
+    "CField::SendTransferFieldRequest": {
+      "address": "0x557b5a",
+      "direction": "serverbound",
+      "notes": "CHANGE_MAP (GMS v87, COutPacket @0x557b97). Client field-transfer request. fieldKey=get_field()->m_bFieldKey @0x557bad. x/y (Encode2 each) emitted only when arg4(sPortal)!=NULL (test @0x557bf4); real callers pass a portal name so x/y travels WITH a non-empty portalName, while the null-portal Revive path sends an empty portalName and no x/y. chase = global dword_CA02A0 @0x557c50 (always present in v87); targetX/targetY only when chase. v87 byte-identical to v95 (@0x5345c0).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (v8 = get_field()->m_bFieldKey, @0x557bbc)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetId (arg0 dwTargetField, @0x557bc7)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "portalName (sPortal; empty ZXString when arg4==NULL, @0x557bec)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (target position X, @0x557c0e)",
+          "guard": "arg4 != NULL"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (target position Y, @0x557c2c)",
+          "guard": "arg4 != NULL"
+        },
+        {
+          "op": "Encode1",
+          "comment": "unused (constant 0, @0x557c35)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "premium (a2 bPremium, @0x557c40)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "chase (global dword_CA02A0, @0x557c50)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetX (a5, @0x557c63)",
+          "guard": "chase"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetY (a6, @0x557c6e)",
+          "guard": "chase"
+        }
+      ]
+    },
+    "CUserLocal::CheckPortal_Collision": {
+      "address": "0x9c8832",
+      "direction": "serverbound",
+      "notes": "CHANGE_MAP_SPECIAL (GMS v87). Client portal-script-enter request. Build site @0x9c88bb (type-9 script portal, COutPacket 0x67). fieldKey=get_field()+328 @0x9c88ce. v87 byte-identical to v95 (@0x919a10).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (get_field()->m_bFieldKey, @0x9c88ce)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "portalName (PORTAL::sName, @0x9c88f0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (GetPos().x, @0x9c8907)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (GetPos().y, @0x9c891f)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaCreated": {
+      "address": "0x432f3f",
+      "direction": "clientbound",
+      "notes": "SPAWN_MIST (clientbound, GMS v87). v87 layout (8 fields): Decode4(dwId v89 @0x432f6e) + Decode4(nType v91[0] @0x432f78) + Decode4(dwOwnerId v4 @0x432f82) + Decode4(nSkillID a2 @0x432f8b) + Decode1(nSLV Value @0x432f98) + Decode2(phase/delay v87 @0x432fa3) + DecodeBuffer(16, rcArea RECT @0x432fae) + Decode4(tEnd/phase Skill @0x432fba). CROSS-VERSION (task-068 Phase 3 v87): v87 reads ONLY ONE trailing Decode4 after the 16-byte RECT (no tStart), MATCHING v83 @0x431a63; v95 @0x437ec0 adds a leading tStart int32 (2 trailing Decode4s). Atlas matches NEITHER version (atlas writes v83-era origin int16s). STRUCTURAL DEFERRAL — see _pending.md AFFECTEDAREA-create-shape; NOT rewritten in this pass.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id, v89 @0x432f6e)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nType (mist type; ==3 is item-area-buff branch, v91[0] @0x432f78)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwOwnerId (owner character id, v4 @0x432f82)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill id, a2 @0x432f8b)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level, Value @0x432f98)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "phase/delay (v87; layer-time multiplier, @0x432fa3)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rcArea RECT (16 bytes = ltX,ltY,rbX,rbY as 4x int32, @0x432fae)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "tEnd/nPhase (end time, Skill @0x432fba) — v87 has NO leading tStart (matches v83; v95 adds tStart)"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaRemoved": {
+      "address": "0x43388c",
+      "direction": "clientbound",
+      "notes": "REMOVE_MIST (clientbound, GMS v87). OnAffectedAreaRemoved@0x43388c reads a single Decode4 (affected-area id, v37 @0x4338ae) then despawns; matches atlas. v87 byte-identical to v95 (@0x4360a0).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwId (mist/affected-area object id, v37 @0x4338ae)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxEnterField": {
+      "address": "0x694e48",
+      "direction": "clientbound",
+      "notes": "SPAWN_KITE (clientbound, GMS v87). Kite = MessageBox field object. Decode4(dwMessageBoxID v58 @0x694e6f) + Decode4(nItemID +56 @0x694eb2) + DecodeStr(sMsg +8 @0x694ebb) + DecodeStr(sCharacterName +12 @0x694eea) + Decode2(ptMessageBox.x +28 @0x694f20) + Decode2(nType +32 @0x694f30). v87 byte-identical to v95 (@0x6369c0).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "dwMessageBoxID (kite object id, v58 @0x694e6f)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID (kite template/item id, +56 @0x694eb2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMsg (kite message, +8 @0x694ebb)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCharacterName (owner name, +12 @0x694eea)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptMessageBox.x (spawn x, +28 @0x694f20)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nType (kite type, +32 @0x694f30)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxLeaveField": {
+      "address": "0x69544f",
+      "direction": "clientbound",
+      "notes": "REMOVE_KITE (clientbound, GMS v87). Reads animation flag then id: Decode1(bAnimation v1 @0x69546f) + Decode4(dwID v36 @0x69547b). v87 byte-identical to v95 (@0x635d60).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bAnimation (leave animation type; 0 = play despawn animation, v1 @0x69546f)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwID (kite object id, v36 @0x69547b)"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnCreateFailed": {
+      "address": "0x694e1d",
+      "direction": "clientbound",
+      "notes": "CANNOT_SPAWN_KITE (clientbound, GMS v87). Empty body — client reads nothing and shows a StringPool notice (485 @0x694e38). v87 byte-identical to v95 (@0x636760, empty body).",
+      "calls": []
     }
   }
 }

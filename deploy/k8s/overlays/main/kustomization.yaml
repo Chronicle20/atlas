@@ -240,7 +240,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-d23ab84
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-d23ab84
+    newTag: main-b998f9a
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-d23ab84
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
@@ -248,7 +248,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-d23ab84
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-d23ab84
+    newTag: main-b998f9a
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
     newTag: main-d23ab84
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations

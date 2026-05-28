@@ -83,6 +83,29 @@ func TestSayImageConversationDetailEncode(t *testing.T) {
 	}
 }
 
+// TestAskMemberShopAvatarConversationDetailEncode verifies the candidate-count
+// prefix is a single byte, matching CScriptMan::OnAskMembershopAvatar@0x6dd340
+// (case 9) which reads the count via CInPacket::Decode1 (line 55, 0x6dd394)
+// before looping Decode4 per candidate.
+func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			d := &AskMemberShopAvatarConversationDetail{Message: "pick one", Candidates: []uint32{0x11223344, 0x55667788}}
+			got := d.Encode(l, ctx)(nil)
+
+			want := asciiBytes("pick one")
+			want = append(want, byte(2))
+			want = append(want, 0x44, 0x33, 0x22, 0x11)
+			want = append(want, 0x88, 0x77, 0x66, 0x55)
+			if !bytesEqual(got, want) {
+				t.Errorf("AskMemberShopAvatar encode mismatch\n got=%v\nwant=%v", got, want)
+			}
+		})
+	}
+}
+
 func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false

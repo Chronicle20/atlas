@@ -268,7 +268,7 @@ func (a *AskMemberShopAvatarConversationDetail) Encode(l logrus.FieldLogger, _ c
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(a.Message)
-		w.WriteInt(uint32(len(a.Candidates)))
+		w.WriteByte(byte(len(a.Candidates)))
 		for _, candidate := range a.Candidates {
 			w.WriteInt(candidate)
 		}

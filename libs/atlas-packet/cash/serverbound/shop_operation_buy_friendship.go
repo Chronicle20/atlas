@@ -6,14 +6,18 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CashShopOperationBuyFriendshipHandle = "CashShopOperationBuyFriendshipHandle"
 
-// ShopOperationBuyFriendship - CCashShop::SendBuyFriendship
+// ShopOperationBuyFriendship - CCashShop::OnBuyFriendship. The leading field is
+// the secondary-password gate (ask_SPW): a 4-byte int in v83, a length-prefixed
+// string (EncodeStr) in v95.
 type ShopOperationBuyFriendship struct {
-	birthday     uint32
+	birthday     uint32 // v83 leading ask_SPW int
+	spw          string // v95 leading ask_SPW string
 	option       uint32
 	serialNumber uint32
 	name         string
@@ -21,6 +25,7 @@ type ShopOperationBuyFriendship struct {
 }
 
 func (m ShopOperationBuyFriendship) Birthday() uint32     { return m.birthday }
+func (m ShopOperationBuyFriendship) SPW() string           { return m.spw }
 func (m ShopOperationBuyFriendship) Option() uint32       { return m.option }
 func (m ShopOperationBuyFriendship) SerialNumber() uint32  { return m.serialNumber }
 func (m ShopOperationBuyFriendship) Name() string          { return m.name }
@@ -31,13 +36,18 @@ func (m ShopOperationBuyFriendship) Operation() string {
 }
 
 func (m ShopOperationBuyFriendship) String() string {
-	return fmt.Sprintf("birthday [%d], option [%d], serialNumber [%d], name [%s], message [%s]", m.birthday, m.option, m.serialNumber, m.name, m.message)
+	return fmt.Sprintf("birthday [%d], spw [%s], option [%d], serialNumber [%d], name [%s], message [%s]", m.birthday, m.spw, m.option, m.serialNumber, m.name, m.message)
 }
 
-func (m ShopOperationBuyFriendship) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ShopOperationBuyFriendship) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteInt(m.birthday)
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteAsciiString(m.spw)
+		} else {
+			w.WriteInt(m.birthday)
+		}
 		w.WriteInt(m.option)
 		w.WriteInt(m.serialNumber)
 		w.WriteAsciiString(m.name)
@@ -46,9 +56,14 @@ func (m ShopOperationBuyFriendship) Encode(l logrus.FieldLogger, _ context.Conte
 	}
 }
 
-func (m *ShopOperationBuyFriendship) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ShopOperationBuyFriendship) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.birthday = r.ReadUint32()
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			m.spw = r.ReadAsciiString()
+		} else {
+			m.birthday = r.ReadUint32()
+		}
 		m.option = r.ReadUint32()
 		m.serialNumber = r.ReadUint32()
 		m.name = r.ReadAsciiString()

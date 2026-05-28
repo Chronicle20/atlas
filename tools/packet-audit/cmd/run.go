@@ -1334,6 +1334,44 @@ func candidatesFromFName(fname string) []candidate {
 		// CSV: CONTI_STATE (GMS v95 opcode 0xA5/165). Field transport/ship boarding
 		// state effect. Struct is Transport (transport.go) → report FieldTransport.
 		return []candidate{{name: "Transport", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// --- World: field (clientbound, effects) ---
+	// FIELD_EFFECT (CSV opcode 0x09A/154 in GMS v95) → CField::OnFieldEffect@0x53b790
+	// dispatches on a leading effect-type byte (mode). Each field-effect sub-type is a
+	// separate atlas struct in field/clientbound/effect.go; modelled via #-suffixed
+	// synthetic IDA entries (one per sub-type). Each atlas struct writes the mode byte
+	// as its first field, so the synthetic export entry leads with the Decode1 mode.
+	case "CField::OnFieldEffect#Summon":
+		// case 0: Decode1(mode=0) + Decode1(effect) + Decode4(x) + Decode4(y).
+		return []candidate{{name: "EffectSummon", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#Tremble":
+		// case 1: Decode1(mode=1) + Decode1(bHeavyNShortTremble) + Decode4(delay).
+		return []candidate{{name: "EffectTremble", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#String":
+		// cases 2/3/4/6 (object/screen/sound/BGM): Decode1(mode) + DecodeStr(name).
+		return []candidate{{name: "EffectString", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#BossHp":
+		// case 5: Decode1(mode=5) + Decode4(monsterId) + Decode4(currentHp) +
+		// Decode4(maxHp) + Decode1(tagColor) + Decode1(tagBackgroundColor).
+		return []candidate{{name: "EffectBossHp", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#RewardRullet":
+		// case 7: Decode1(mode=7) + Decode4(jobIdx) + Decode4(partIdx) + Decode4(levIdx).
+		return []candidate{{name: "EffectRewardRullet", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// BLOW_WEATHER (CSV opcode 0x09E/158 in GMS v95) → CField::OnBlowWeather@0x5468f0.
+	// BAD-FORM single struct (EffectWeather) whose mode byte (!active) is set at
+	// construction (NewFieldEffectWeatherStart / End). Analyzer produces one flat
+	// verdict; the conditional message string (start-only) is a tool limitation —
+	// per-mode table appended manually to the report (NOT refactored).
+	case "CField::OnBlowWeather":
+		return []candidate{{name: "EffectWeather", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// CLOCK (CSV opcode 0x0A3/163 in GMS v95) → CField::OnClock@0x531510 dispatches on
+	// a leading clockType byte (0/1/2/3/0x64). BAD-FORM single struct (Clock) with the
+	// mode set at construction; the Encode switch is mode-keyed. Analyzer produces one
+	// flat verdict; per-mode table appended manually to the report (NOT refactored).
+	case "CField::OnClock":
+		return []candidate{{name: "Clock", pkg: "field", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

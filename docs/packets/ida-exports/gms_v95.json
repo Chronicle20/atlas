@@ -6557,6 +6557,80 @@
         { "op": "Decode1", "comment": "nState (transport/ship state 0-6)" },
         { "op": "Decode1", "comment": "overrideAppear flag (v4; checked v4==1 in AppearShip case)" }
       ]
+    },
+    "CField::OnFieldEffect#Summon": {
+      "address": "0x53b790",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 0 (summon). CField::OnFieldEffect@0x53b790: Decode1(mode=0) + Decode1(effect) + Decode4(x) + Decode4(y). Maps atlas EffectSummon.",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (effect-type discriminator = 0; summon)" },
+        { "op": "Decode1", "comment": "effect (v3; summon animation index)" },
+        { "op": "Decode4", "comment": "x (v4)" },
+        { "op": "Decode4", "comment": "y (v5)" }
+      ]
+    },
+    "CField::OnFieldEffect#Tremble": {
+      "address": "0x53bb74",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 1 (tremble). CField::OnFieldEffect@0x53b790 case 1: Decode1(mode=1) + Decode1(bHeavyNShortTremble) + Decode4(delay). Maps atlas EffectTremble.",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (= 1; tremble)" },
+        { "op": "Decode1", "comment": "bHeavyNShortTremble (v21; bool)" },
+        { "op": "Decode4", "comment": "delay (v22)" }
+      ]
+    },
+    "CField::OnFieldEffect#String": {
+      "address": "0x53b8b3",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT cases 2 (object/SetObjectState), 3 (screen/ShowScreenEffect), 4 (sound/play_field_sound), 6 (BGM/PlayBGM). Each: Decode1(mode) + DecodeStr(name/path). Maps atlas EffectString (NewFieldEffectObject/Screen/Sound/BackgroundMusic).",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (= 2/3/4/6; string-payload effect)" },
+        { "op": "DecodeStr", "comment": "name / path / bgm UOL string" }
+      ]
+    },
+    "CField::OnFieldEffect#BossHp": {
+      "address": "0x53b9c1",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 5 (boss HP tag / ShowMobHPTag). CField::OnFieldEffect@0x53b790 case 5: Decode1(mode=5) + Decode4(monsterId v12) + Decode4(currentHp v13) + Decode4(maxHp nMaxHP) + Decode1(tagColor nColor) + Decode1(tagBackgroundColor). Maps atlas EffectBossHp.",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (= 5; boss HP tag)" },
+        { "op": "Decode4", "comment": "monsterId (v12)" },
+        { "op": "Decode4", "comment": "currentHp (v13)" },
+        { "op": "Decode4", "comment": "maxHp (nMaxHP)" },
+        { "op": "Decode1", "comment": "tagColor (nColor)" },
+        { "op": "Decode1", "comment": "tagBackgroundColor" }
+      ]
+    },
+    "CField::OnFieldEffect#RewardRullet": {
+      "address": "0x53bba4",
+      "direction": "clientbound",
+      "notes": "FIELD_EFFECT case 7 (reward roulette / Effect_RewardRullet). CField::OnFieldEffect@0x53b790 case 7: Decode1(mode=7) + Decode4(nRewardJobIdx v23) + Decode4(nRewardPartIdx v24) + Decode4(nRewardLevIdx v25). Maps atlas EffectRewardRullet.",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (= 7; reward roulette)" },
+        { "op": "Decode4", "comment": "nRewardJobIdx (v23)" },
+        { "op": "Decode4", "comment": "nRewardPartIdx (v24)" },
+        { "op": "Decode4", "comment": "nRewardLevIdx (v25)" }
+      ]
+    },
+    "CField::OnBlowWeather": {
+      "address": "0x5468f0",
+      "direction": "clientbound",
+      "notes": "BLOW_WEATHER (v95 opcode 0x09E/158). CField::OnBlowWeather@0x5468f0: Decode1(m_nBlowType) + Decode4(itemId v4); DecodeStr(message) ONLY in the else branch (itemId!=0 && m_nBlowType==0). Atlas EffectWeather (BAD-FORM single struct): WriteBool(!active)=blowType + WriteInt(itemId) + if active: WriteAsciiString(message). Start(active=true)=>blowType 0 (string); End(active=false)=>blowType 1 (no string). Export models the active/start shape; conditional message is a tool limitation (per-mode table in FieldEffectWeather.md).",
+      "calls": [
+        { "op": "Decode1", "comment": "m_nBlowType (atlas !active; 0=start admin-weather w/ message, 1=item/end)" },
+        { "op": "Decode4", "comment": "itemId (v4)" },
+        { "op": "DecodeStr", "comment": "message (only when itemId!=0 && m_nBlowType==0; start path)" }
+      ]
+    },
+    "CField::OnClock": {
+      "address": "0x531510",
+      "direction": "clientbound",
+      "notes": "CLOCK (v95 opcode 0x0A3/163). CField::OnClock@0x531510 dispatches on a leading clockType byte to 5 arms: case 0 EventClock (Decode4 seconds), case 1 TownClock (3x Decode1 hour/min/sec), case 2 TimerClock (Decode4 seconds), case 3 EventTimerClock (Decode1 flag + Decode4 seconds), case 0x64 CakePieEventTimerClock (Decode1 flag1 + Decode1 flag2 + Decode4 seconds). Atlas Clock (BAD-FORM single struct) Encode switches on the same clockType. The flat analyzer cannot model the mutually-exclusive arms; export lists the EventTimerClock(case 3) shape as a representative \u2014 verdict is a TOOL LIMITATION, see per-mode table in FieldClock.md (all 5 modes manually verified \u2705).",
+      "calls": [
+        { "op": "Decode1", "comment": "clockType (mode discriminator)" },
+        { "op": "Decode1", "comment": "flag1 (EventTimerClock enable byte; representative arm = case 3)" },
+        { "op": "Decode4", "comment": "seconds" }
+      ]
     }
   }
 }

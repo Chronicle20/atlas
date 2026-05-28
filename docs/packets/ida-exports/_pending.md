@@ -1358,3 +1358,67 @@ Scope: rewrite `AffectedAreaCreated.Encode` to the v95 layout above behind a
 version guard, keeping the v83 path; add a 4-variant Encode test; cite
 `CAffectedAreaPool::OnAffectedAreaCreated`@0x437ec0. The sibling REMOVE_MIST
 packet is unaffected (single int32 id matches all versions).
+
+## Tool limitations — world domain (task-068 Phase 2d, field/clientbound effect cluster)
+
+> **task-068 sub-phase 2d** audited the three `field/clientbound` effect-cluster
+> files against GMS v95 IDA: `effect.go` (5 structs), `effect_weather.go`,
+> `clock.go`. Tally: **7 ✅ / 0 ❌ wire bugs** (auto-verdict shows `FieldClock` ❌
+> = tool limitation only; manually verified ✅ across all 5 modes). No atlas wire
+> bug found in the entire cluster.
+
+### `effect.go` — GOOD FORM (one struct per field-effect sub-type) — all ✅
+
+`CField::OnFieldEffect`@0x53b790 (FIELD_EFFECT, v95 opcode 0x09A/154) dispatches
+on a leading effect-type byte. Each sub-type is its own atlas struct; each writes
+the mode byte as its first field. Modelled via `#`-suffixed synthetic IDA export
+entries. All matched the IDA case bodies exactly:
+
+| effect-type byte | IDA case (addr) | atlas struct | payload | verdict |
+|---|---|---|---|---|
+| 0 | case 0 @0x53b7e6 | `EffectSummon` | effect(1) + x(4) + y(4) | ✅ |
+| 1 | case 1 @0x53bb74 | `EffectTremble` | bHeavyNShortTremble(1) + delay(4) | ✅ |
+| 2/3/4/6 | cases @0x53b8b3/0x53b8fa/0x53b958/0x53bab8 | `EffectString` | name(str) | ✅ |
+| 5 | case 5 @0x53b9c1 | `EffectBossHp` | monsterId(4)+currentHp(4)+maxHp(4)+tagColor(1)+tagBg(1) | ✅ |
+| 7 | case 7 @0x53bba4 | `EffectRewardRullet` | jobIdx(4)+partIdx(4)+levIdx(4) | ✅ |
+
+(The mode byte itself is written by every struct's `Encode` as `WriteByte(mode)`,
+so each `#`-entry's leading `Decode1` aligns row 0.)
+
+### `effect_weather.go` — BAD FORM (single struct, mode via constructor) — ✅
+
+`CField::OnBlowWeather`@0x5468f0 (BLOW_WEATHER, v95 opcode 0x09E/158). Single
+`EffectWeather` struct; the leading `!active` byte and the trailing conditional
+message string are decided at construction. Auto-verdict ✅. Per design §8 NOT
+refactored. Per-mode table lives in `FieldEffectWeather.md`:
+
+- start (`NewFieldEffectWeatherStart`): blowType byte `0` + itemId(4) + message(str)
+- end (`NewFieldEffectWeatherEnd`): blowType byte `1` + itemId(4) (no string)
+
+Atlas's `active` flag inverts to the IDA `m_nBlowType` byte; the message string is
+gated by `active` exactly as the IDA `else` branch (`itemId!=0 && m_nBlowType==0`)
+gates `DecodeStr`. **Unreachable edge (not a bug):** IDA also suppresses the
+string when `itemId==0`; atlas's start path would write a string at `itemId==0`,
+but `itemId==0` is never a valid weather item.
+
+### `clock.go` — BAD FORM (single struct, mode-keyed Encode switch) — ⚠️ tool limitation, manually verified ✅
+
+`CField::OnClock`@0x531510 (CLOCK, v95 opcode 0x0A3/163). Single `Clock` struct
+whose `clockType` mode byte is set at construction and whose `Encode` switch emits
+a different payload per mode. The flat analyzer concatenates every switch arm and
+reports the auto-verdict as **❌ in `SUMMARY.md`** — this is purely the
+mutually-exclusive-switch-arm limitation, **not a wire bug**. Per design §8 this
+file is NOT refactored into per-mode structs. All 5 modes verified ✅ against the
+IDA switch arms (full table in `FieldClock.md`):
+
+| clockType | IDA case (addr) | atlas payload (after mode byte) | verdict |
+|---|---|---|---|
+| 0x00 EventClock | case 0 @0x53156e | seconds(4) | ✅ |
+| 0x01 TownClock | case 1 @0x5315ab | hour(1)+minute(1)+second(1) | ✅ |
+| 0x02 TimerClock | case 2 @0x5315d7 | seconds(4) | ✅ |
+| 0x03 EventTimerClock | case 3 @0x5316bb | flag1(1)+seconds(4) | ✅ |
+| 0x64 CakePieEventTimerClock | case 0x64 @0x5317c4 | flag1(1)+flag2(1)+seconds(4) | ✅ |
+
+The export entry `CField::OnClock` models the case-3 (EventTimerClock) arm as a
+representative; the `SUMMARY.md` ❌ for `FieldClock` should be read as ⚠️
+(tool-limitation, manually verified).

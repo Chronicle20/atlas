@@ -10,6 +10,11 @@
 | [CashOperationError](CashOperationError.md) | ✅ | `libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [CashWishList](CashWishList.md) | ❌ | `libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
 | [GuildInviteReject](GuildInviteReject.md) | ✅ | `libs/atlas-packet/guild/serverbound/invite_reject.go` |
+| [FieldEffectBossHp](FieldEffectBossHp.md) | ✅ | `libs/atlas-packet/field/clientbound/effect.go` |
+| [FieldEffectRewardRullet](FieldEffectRewardRullet.md) | ✅ | `libs/atlas-packet/field/clientbound/effect.go` |
+| [FieldEffectString](FieldEffectString.md) | ✅ | `libs/atlas-packet/field/clientbound/effect.go` |
+| [FieldEffectSummon](FieldEffectSummon.md) | ✅ | `libs/atlas-packet/field/clientbound/effect.go` |
+| [FieldEffectTremble](FieldEffectTremble.md) | ✅ | `libs/atlas-packet/field/clientbound/effect.go` |
 | [PartyOperationJoin](PartyOperationJoin.md) | ✅ | `libs/atlas-packet/party/serverbound/operation_join.go` |
 | [AuthLoginFailed](AuthLoginFailed.md) | ✅ | `libs/atlas-packet/login/clientbound/auth_login_failed.go` |
 | [AuthPermanentBan](AuthPermanentBan.md) | ✅ | `libs/atlas-packet/login/clientbound/auth_permanent_ban.go` |
@@ -127,6 +132,8 @@
 | [InteractionOperationFieldAddToBlackList](InteractionOperationFieldAddToBlackList.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go` |
 | [InteractionOperationFieldRemoveFromBlackList](InteractionOperationFieldRemoveFromBlackList.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_field_remove_from_black_list.go` |
 | [GuildRequestCreate](GuildRequestCreate.md) | ✅ | `libs/atlas-packet/guild/serverbound/operation_request_create.go` |
+| [FieldEffectWeather](FieldEffectWeather.md) | ✅ | `libs/atlas-packet/field/clientbound/effect_weather.go` |
+| [FieldClock](FieldClock.md) | ❌ | `libs/atlas-packet/field/clientbound/clock.go` |
 | [BuddyOperationAccept](BuddyOperationAccept.md) | ❌ | `libs/atlas-packet/buddy/serverbound/operation_accept.go` |
 | [PartyOperationChangeLeader](PartyOperationChangeLeader.md) | ❌ | `libs/atlas-packet/party/serverbound/operation_change_leader.go` |
 | [ChatGeneral](ChatGeneral.md) | ✅ | `libs/atlas-packet/chat/serverbound/general.go` |

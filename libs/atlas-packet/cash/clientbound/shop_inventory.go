@@ -97,7 +97,7 @@ func (m CashShopInventory) Encode(l logrus.FieldLogger, ctx context.Context) fun
 		}
 		w.WriteShort(m.storageSlots)
 		w.WriteInt16(m.characterSlots)
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if cashInventoryHasExtraCounts(t) {
 			w.WriteInt16(m.buyCharacterCount)
 			w.WriteInt16(m.characterCount)
 		}
@@ -116,11 +116,20 @@ func (m *CashShopInventory) Decode(_ logrus.FieldLogger, ctx context.Context) fu
 		}
 		m.storageSlots = r.ReadUint16()
 		m.characterSlots = r.ReadInt16()
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if cashInventoryHasExtraCounts(t) {
 			m.buyCharacterCount = r.ReadInt16()
 			m.characterCount = r.ReadInt16()
 		}
 	}
+}
+
+// cashInventoryHasExtraCounts reports whether the locker-load trailer carries the
+// two extra slot-counter shorts (m_nBuyCharacterCount + m_nCharacterCount) after
+// the trunk + character-slot shorts. Present from GMS v95 onward (v83 reads only
+// the first two) AND in JMS v185 — CCashShop::OnCashItemResLoadLockerDone@0x48bcff
+// reads four trailing Decode2 (this+288..291).
+func cashInventoryHasExtraCounts(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 }
 
 // CashShopPurchaseSuccess - mode, item

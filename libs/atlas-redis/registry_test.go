@@ -124,6 +124,142 @@ func TestRegistry_Exists(t *testing.T) {
 	}
 }
 
+func TestRegistry_PutWithTTL(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+
+	if err := r.PutWithTTL(ctx, "ttlkey", "ttlval", 5*time.Second); err != nil {
+		t.Fatalf("PutWithTTL failed: %v", err)
+	}
+
+	val, err := r.Get(ctx, "ttlkey")
+	if err != nil {
+		t.Fatalf("Get after PutWithTTL failed: %v", err)
+	}
+	if val != "ttlval" {
+		t.Fatalf("expected ttlval, got %s", val)
+	}
+
+	// Verify a TTL was set.
+	rk := namespacedKey("test", "ttlkey")
+	ttlDuration := mr.TTL(rk)
+	if ttlDuration <= 0 {
+		t.Fatalf("expected positive TTL, got %v", ttlDuration)
+	}
+
+	mr.FastForward(6 * time.Second)
+
+	_, err = r.Get(ctx, "ttlkey")
+	if err != ErrNotFound {
+		t.Fatalf("expected ErrNotFound after TTL expiry, got %v", err)
+	}
+}
+
+func TestRegistry_GetAll(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+
+	if err := r.Put(ctx, "a", "val-a"); err != nil {
+		t.Fatalf("Put a: %v", err)
+	}
+	if err := r.Put(ctx, "b", "val-b"); err != nil {
+		t.Fatalf("Put b: %v", err)
+	}
+	if err := r.Put(ctx, "c", "val-c"); err != nil {
+		t.Fatalf("Put c: %v", err)
+	}
+
+	vals, err := r.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll failed: %v", err)
+	}
+	if len(vals) != 3 {
+		t.Fatalf("expected 3 values, got %d: %v", len(vals), vals)
+	}
+
+	// Verify expected key format: atlas:<ns>:<k>
+	wantKey := "atlas:test:a"
+	exists, err := r.Exists(ctx, "a")
+	if err != nil || !exists {
+		t.Fatalf("expected key %q to exist", wantKey)
+	}
+	actualKey := namespacedKey("test", "a")
+	if actualKey != wantKey {
+		t.Fatalf("expected key format %q, got %q", wantKey, actualKey)
+	}
+}
+
+func TestRegistry_GetAll_SkipsInternalKeys(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	// Use a keyFn that can produce _-prefixed suffixes for internal keys.
+	r := NewRegistry[string, string](client, "test:internal", func(k string) string { return k })
+
+	_ = r.Put(ctx, "normal", "val")
+	// Directly insert an internal key using the raw client to simulate internal state.
+	internalKey := namespacedKey("test:internal", "_expiry")
+	_ = r.client.Set(ctx, internalKey, `"internal"`, 0).Err()
+
+	vals, err := r.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll failed: %v", err)
+	}
+	// Only "normal" should be returned; "_expiry" is internal.
+	if len(vals) != 1 {
+		t.Fatalf("expected 1 value (internal key skipped), got %d: %v", len(vals), vals)
+	}
+}
+
+func TestRegistry_Clear(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test:clear", func(k string) string { return k })
+
+	for i := 0; i < 5; i++ {
+		if err := r.Put(ctx, fmt.Sprintf("k%d", i), "v"); err != nil {
+			t.Fatalf("Put: %v", err)
+		}
+	}
+
+	deleted, err := r.Clear(ctx)
+	if err != nil {
+		t.Fatalf("Clear failed: %v", err)
+	}
+	if deleted != 5 {
+		t.Fatalf("expected 5 deleted, got %d", deleted)
+	}
+
+	vals, err := r.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll after Clear failed: %v", err)
+	}
+	if len(vals) != 0 {
+		t.Fatalf("expected empty after Clear, got %d values", len(vals))
+	}
+}
+
 // --- TenantRegistry tests ---
 
 func TestTenantRegistry_PutAndGet(t *testing.T) {

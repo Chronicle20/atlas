@@ -160,5 +160,108 @@ func TestTenantRegistry_Clear_RaceCleanWithPut(t *testing.T) {
 	wg.Wait()
 }
 
+func TestTenantRegistry_GetAllEntries(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer client.Close()
+	reg := NewTenantRegistry[string, string](client, "test:entries", func(k string) string { return k })
+	t1 := newTestTenant(t, "GMS")
+	t2 := newTestTenant(t, "EMS")
+	ctx := context.Background()
+
+	_ = reg.Put(ctx, t1, "100", "v100")
+	_ = reg.Put(ctx, t1, "200", "v200")
+	_ = reg.Put(ctx, t2, "300", "v300")
+
+	entries, err := reg.GetAllEntries(ctx, t1)
+	if err != nil {
+		t.Fatalf("GetAllEntries: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries for t1, got %d: %v", len(entries), entries)
+	}
+	if entries["100"] != "v100" {
+		t.Fatalf("expected entries[\"100\"] = \"v100\", got %q", entries["100"])
+	}
+	if entries["200"] != "v200" {
+		t.Fatalf("expected entries[\"200\"] = \"v200\", got %q", entries["200"])
+	}
+	// t2's key must not appear.
+	if _, ok := entries["300"]; ok {
+		t.Fatal("t2 key \"300\" should not appear in t1 GetAllEntries")
+	}
+}
+
+func TestTenantRegistry_GetAllEntries_SkipsInternalKeys(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer client.Close()
+	reg := NewTenantRegistry[string, string](client, "test:entries:internal", func(k string) string { return k })
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	_ = reg.Put(ctx, tm, "real", "val")
+	// Directly insert an internal key to simulate internal state.
+	internalKey := tenantEntityKey("test:entries:internal", tm, "_expiry")
+	_ = reg.Client().Set(ctx, internalKey, `"internal"`, 0).Err()
+
+	entries, err := reg.GetAllEntries(ctx, tm)
+	if err != nil {
+		t.Fatalf("GetAllEntries: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry (internal key skipped), got %d: %v", len(entries), entries)
+	}
+	if _, ok := entries["real"]; !ok {
+		t.Fatal("expected key \"real\" in entries")
+	}
+}
+
+func TestTenantRegistry_ClearByPrefix(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer client.Close()
+	reg := NewTenantRegistry[string, string](client, "test:prefix", func(k string) string { return k })
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	_ = reg.Put(ctx, tm, "100:a", "va")
+	_ = reg.Put(ctx, tm, "100:b", "vb")
+	_ = reg.Put(ctx, tm, "200:a", "vc")
+
+	deleted, err := reg.ClearByPrefix(ctx, tm, "100")
+	if err != nil {
+		t.Fatalf("ClearByPrefix: %v", err)
+	}
+	if deleted != 2 {
+		t.Fatalf("expected 2 deleted, got %d", deleted)
+	}
+
+	// "100:a" and "100:b" should be gone.
+	if ok, _ := reg.Exists(ctx, tm, "100:a"); ok {
+		t.Fatal("100:a should be deleted")
+	}
+	if ok, _ := reg.Exists(ctx, tm, "100:b"); ok {
+		t.Fatal("100:b should be deleted")
+	}
+	// "200:a" should still exist.
+	if ok, _ := reg.Exists(ctx, tm, "200:a"); !ok {
+		t.Fatal("200:a should still exist")
+	}
+}
+
+func TestTenantRegistry_ClearByPrefix_Empty(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer client.Close()
+	reg := NewTenantRegistry[string, string](client, "test:prefix:empty", func(k string) string { return k })
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	deleted, err := reg.ClearByPrefix(ctx, tm, "999")
+	if err != nil {
+		t.Fatalf("ClearByPrefix on empty: %v", err)
+	}
+	if deleted != 0 {
+		t.Fatalf("expected 0 deleted, got %d", deleted)
+	}
+}
+
 // helper for non-shared use; ensures package compiles with strconv import.
 var _ = strconv.Itoa

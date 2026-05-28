@@ -41,6 +41,11 @@ func (s *TenantKeyedSet[K]) Members(ctx context.Context, t tenant.Model, k K) ([
 	return s.client.SMembers(ctx, s.key(t, k)).Result()
 }
 
+// IsMember reports whether member is in the SET for (t, k).
+func (s *TenantKeyedSet[K]) IsMember(ctx context.Context, t tenant.Model, k K, member string) (bool, error) {
+	return s.client.SIsMember(ctx, s.key(t, k), member).Result()
+}
+
 // Clear removes the entire SET for (t, k).
 func (s *TenantKeyedSet[K]) Clear(ctx context.Context, t tenant.Model, k K) error {
 	return s.client.Del(ctx, s.key(t, k)).Err()

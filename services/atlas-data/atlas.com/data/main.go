@@ -108,7 +108,7 @@ func main() {
 			// heartbeat, every Job's heartbeat went stale at creation+timeout
 			// regardless of actual progress (PR-544: Map worker killed at
 			// 30:28 mid-loop, ~80 maps left without layout.json/minimap.png).
-			go restruntime.Watchdog{L: l, JobCreator: jc, Redis: rdb, TimeoutSecs: 7200}.Run(tdm.Context())
+			go restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: 7200}.Run(tdm.Context())
 		}
 	}
 

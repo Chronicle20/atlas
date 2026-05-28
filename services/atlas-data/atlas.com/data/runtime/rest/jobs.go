@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,17 +30,48 @@ const jobTemplateConfigMapName = "atlas-data-ingest-job-template"
 // definition of a batchv1.Job whose spec is copied into rendered Jobs.
 const jobTemplateConfigMapKey = "job.yaml"
 
+// ingestJobNamespace is the Redis namespace used for all ingest/job-lifecycle
+// keys. The full key shape is <keyPrefix>:data-ingest:<suffix> where
+// <keyPrefix> comes from libs/atlas-redis KeyPrefix() (env-aware, e.g.
+// "atlas" on main or "<env>:atlas" on a PR overlay).
+const ingestJobNamespace = "data-ingest"
+
+// newIngestJobRegistry returns an env-global Registry for ingest job keys.
+// The Registry uses an identity keyFn so callers supply the full suffix
+// ("scope:region:ver" or "scope:region:ver:updatedAt") directly.
+func newIngestJobRegistry(rdb *goredis.Client) *redis.Registry[string, string] {
+	return redis.NewRegistry[string, string](rdb, ingestJobNamespace, func(s string) string { return s })
+}
+
+// ingestJobKeySuffix returns the suffix portion of an ingest job key.
+// The full Redis key is <prefix>:data-ingest:<suffix>.
+func ingestJobKeySuffix(scope, region string, major, minor uint16) string {
+	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
+}
+
+// ingestJobKeySuffixFromLabels reconstructs the per-Job suffix from a Job's
+// labels. Returns "" if any required label is missing.
+func ingestJobKeySuffixFromLabels(j *batchv1.Job) string {
+	scope, region, version := j.Labels["scope"], j.Labels["region"], j.Labels["version"]
+	if scope == "" || region == "" || version == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s:%s:%s", scope, region, version)
+}
+
 // JobCreator constructs k8s Jobs that run atlas-data in MODE=ingest.
 //
 // Template is a JobTemplateSpec used as the base for every Job and must be
-// loaded from the atlas-data-ingest-job-template ConfigMap. Redis is used to
+// loaded from the atlas-data-ingest-job-template ConfigMap. Registry is used to
 // publish a heartbeat key per (scope, region, version) so the Watchdog can
 // notice stuck Jobs.
 type JobCreator struct {
-	K8s       kubernetes.Interface
+	K8s      kubernetes.Interface
 	Namespace string
 	Template  *batchv1.JobTemplateSpec
-	Redis     *goredis.Client
+	// Registry is the env-prefixed store for ingest job heartbeat keys.
+	// Nil means heartbeat publishing is disabled (compose / test paths).
+	Registry *redis.Registry[string, string]
 	// ControllerImage is the container image the running atlas-data pod uses.
 	// Rendered Jobs inherit it so MODE=ingest binaries match the code that
 	// rendered them. Empty string falls back to the template's image (intended
@@ -87,11 +119,15 @@ func NewJobCreatorInClusterWithRedis(rdb *goredis.Client) (*JobCreator, error) {
 		// template's image untouched (sufficient for tests).
 		_ = ierr
 	}
+	var reg *redis.Registry[string, string]
+	if rdb != nil {
+		reg = newIngestJobRegistry(rdb)
+	}
 	return &JobCreator{
 		K8s:             cs,
 		Namespace:       ns,
 		Template:        tmpl,
-		Redis:           rdb,
+		Registry:        reg,
 		ControllerImage: img,
 	}, nil
 }
@@ -166,28 +202,12 @@ func (j *JobCreator) Create(ctx context.Context, scope, region string, major, mi
 	if err != nil {
 		return "", fmt.Errorf("create job: %w", err)
 	}
-	if j.Redis != nil {
-		key := redisJobKey(scope, region, major, minor)
-		_ = j.Redis.Set(ctx, key, created.Name, time.Hour).Err()
-		_ = j.Redis.Set(ctx, key+":updatedAt", time.Now().UTC().Format(time.RFC3339), time.Hour).Err()
+	if j.Registry != nil {
+		suffix := ingestJobKeySuffix(scope, region, major, minor)
+		_ = j.Registry.PutWithTTL(ctx, suffix, created.Name, time.Hour)
+		_ = j.Registry.PutWithTTL(ctx, suffix+":updatedAt", time.Now().UTC().Format(time.RFC3339), time.Hour)
 	}
 	return created.Name, nil
-}
-
-// redisJobKey produces the Redis key used to publish per-Job heartbeat data.
-func redisJobKey(scope, region string, major, minor uint16) string {
-	return fmt.Sprintf("atlas-data:ingest:%s:%s:%d.%d", scope, region, major, minor)
-}
-
-// redisJobKeyFromLabels reconstructs the per-Job Redis key from a Job's
-// labels. Returns the empty string if any required label is missing (so the
-// caller can fall back to the Job's creationTimestamp).
-func redisJobKeyFromLabels(j *batchv1.Job) string {
-	scope, region, version := j.Labels["scope"], j.Labels["region"], j.Labels["version"]
-	if scope == "" || region == "" || version == "" {
-		return ""
-	}
-	return fmt.Sprintf("atlas-data:ingest:%s:%s:%s", scope, region, version)
 }
 
 // renderJob produces a *batchv1.Job derived from template, scoped/labeled and

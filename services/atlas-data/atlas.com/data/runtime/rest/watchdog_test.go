@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
@@ -14,10 +15,11 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func newTestRedis(t *testing.T) *goredis.Client {
+func newTestRedis(t *testing.T) (*goredis.Client, *redis.Registry[string, string]) {
 	t.Helper()
 	mr := miniredis.RunT(t)
-	return goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	return rdb, newIngestJobRegistry(rdb)
 }
 
 func ptrTime(t time.Time) *time.Time { return &t }
@@ -103,7 +105,7 @@ func TestWatchdogSweep(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			rdb := newTestRedis(t)
+			_, reg := newTestRedis(t)
 			objs := make([]runtime.Object, 0, len(tc.jobs))
 			for _, jb := range tc.jobs {
 				k8sJob := &batchv1.Job{
@@ -117,18 +119,18 @@ func TestWatchdogSweep(t *testing.T) {
 				}
 				objs = append(objs, k8sJob)
 				if jb.updatedAt != nil {
-					key := redisJobKeyFromLabels(k8sJob)
-					if key == "" {
+					suffix := ingestJobKeySuffixFromLabels(k8sJob)
+					if suffix == "" {
 						t.Fatalf("test setup: job %q missing scope/region/version labels", jb.name)
 					}
-					if err := rdb.Set(context.Background(), key+":updatedAt", jb.updatedAt.UTC().Format(time.RFC3339), time.Hour).Err(); err != nil {
+					if err := reg.PutWithTTL(context.Background(), suffix+":updatedAt", jb.updatedAt.UTC().Format(time.RFC3339), time.Hour); err != nil {
 						t.Fatal(err)
 					}
 				}
 			}
 			cs := fake.NewSimpleClientset(objs...)
-			jc := &JobCreator{K8s: cs, Namespace: "ns", Redis: rdb}
-			w := Watchdog{L: logrus.New(), JobCreator: jc, Redis: rdb, TimeoutSecs: tc.timeoutSecs}
+			jc := &JobCreator{K8s: cs, Namespace: "ns", Registry: reg}
+			w := Watchdog{L: logrus.New(), JobCreator: jc, TimeoutSecs: tc.timeoutSecs}
 			w.sweep(context.Background())
 
 			for _, name := range tc.wantDeleted {
@@ -151,22 +153,22 @@ func TestWatchdogSweepNoK8sClient(t *testing.T) {
 }
 
 func TestJobCreatorWritesHeartbeatToRedis(t *testing.T) {
-	rdb := newTestRedis(t)
+	_, reg := newTestRedis(t)
 	cs := fake.NewSimpleClientset()
-	jc := &JobCreator{K8s: cs, Namespace: "ns", Template: testTemplate(), Redis: rdb}
+	jc := &JobCreator{K8s: cs, Namespace: "ns", Template: testTemplate(), Registry: reg}
 	name, err := jc.Create(context.Background(), "tenants/t1", "GMS", 83, 1, "t1", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	key := redisJobKey("tenants/t1", "GMS", 83, 1)
-	got, err := rdb.Get(context.Background(), key).Result()
+	suffix := ingestJobKeySuffix("tenants/t1", "GMS", 83, 1)
+	got, err := reg.Get(context.Background(), suffix)
 	if err != nil {
-		t.Fatalf("redis missing job key %q: %v", key, err)
+		t.Fatalf("registry missing job key suffix %q: %v", suffix, err)
 	}
 	if got != name {
-		t.Fatalf("redis job key = %q, want %q", got, name)
+		t.Fatalf("registry job key = %q, want %q", got, name)
 	}
-	if _, err := rdb.Get(context.Background(), key+":updatedAt").Result(); err != nil {
-		t.Fatalf("redis missing updatedAt: %v", err)
+	if _, err := reg.Get(context.Background(), suffix+":updatedAt"); err != nil {
+		t.Fatalf("registry missing updatedAt: %v", err)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
@@ -20,9 +21,20 @@ const heartbeatInterval = 30 * time.Second
 // side does not flag the Job as stuck.
 const heartbeatTTL = time.Hour
 
+// ingestJobNamespace is the Redis namespace used for all ingest/job-lifecycle
+// keys. Must match the value in runtime/rest/jobs.go.
+const ingestJobNamespace = "data-ingest"
+
+// newIngestJobRegistry returns the env-global Registry used for heartbeat
+// writes. The Registry's keyFn is the identity so the caller supplies the
+// full suffix ("scope:region:ver" or "scope:region:ver:updatedAt").
+func newIngestJobRegistry(rdb *goredis.Client) *redis.Registry[string, string] {
+	return redis.NewRegistry[string, string](rdb, ingestJobNamespace, func(s string) string { return s })
+}
+
 // runHeartbeat ticks every heartbeatInterval and refreshes the Redis
-// `<jobKey>:updatedAt` key the REST pod's Watchdog reads to decide whether a
-// Job is stuck (see runtime/rest/watchdog.go:80-92, jobs.go:169-173).
+// `<suffix>:updatedAt` key the REST pod's Watchdog reads to decide whether a
+// Job is stuck (see runtime/rest/watchdog.go:jobIsStuck, jobs.go:Create).
 //
 // Without this refresher the heartbeat is written exactly once at Job creation
 // and goes stale at TimeoutSecs, after which the Watchdog deletes the Job.
@@ -33,14 +45,14 @@ const heartbeatTTL = time.Hour
 //
 // Returns when ctx is cancelled. The first heartbeat fires immediately; we
 // don't wait a full interval to refresh the timestamp the REST pod wrote.
-func runHeartbeat(ctx context.Context, l logrus.FieldLogger, rdb *goredis.Client, key string) {
-	if rdb == nil || key == "" {
+func runHeartbeat(ctx context.Context, l logrus.FieldLogger, reg *redis.Registry[string, string], suffix string) {
+	if reg == nil || suffix == "" {
 		return
 	}
 	tick := func() {
-		err := rdb.Set(ctx, key+":updatedAt", time.Now().UTC().Format(time.RFC3339), heartbeatTTL).Err()
+		err := reg.PutWithTTL(ctx, suffix+":updatedAt", time.Now().UTC().Format(time.RFC3339), heartbeatTTL)
 		if err != nil && ctx.Err() == nil {
-			l.WithError(err).Warnf("ingest heartbeat write failed (key=%s)", key)
+			l.WithError(err).Warnf("ingest heartbeat write failed (suffix=%s)", suffix)
 		}
 	}
 	tick()
@@ -56,11 +68,11 @@ func runHeartbeat(ctx context.Context, l logrus.FieldLogger, rdb *goredis.Client
 	}
 }
 
-// redisJobKeyFromEnv reconstructs the Watchdog's per-Job Redis key from the
-// ingest pod's env vars. Shape matches runtime/rest/jobs.go:redisJobKey.
+// ingestJobSuffixFromEnv reconstructs the Watchdog's per-Job key suffix from
+// the ingest pod's env vars. Shape matches runtime/rest/jobs.go:ingestJobKeySuffix.
 // Returns "" if any required env is missing so callers can skip heartbeating
 // (e.g. unit-test / compose runs without the REST pod's key in Redis).
-func redisJobKeyFromEnv() string {
+func ingestJobSuffixFromEnv() string {
 	scope := os.Getenv("SCOPE")
 	region := os.Getenv("REGION")
 	if scope == "" || region == "" {
@@ -74,5 +86,5 @@ func redisJobKeyFromEnv() string {
 	if err != nil {
 		return ""
 	}
-	return fmt.Sprintf("atlas-data:ingest:%s:%s:%d.%d", scope, region, major, minor)
+	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
 }

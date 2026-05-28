@@ -32,13 +32,14 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 	}
 
 	// Refresh the Watchdog heartbeat every 30s while workers run. The REST pod
-	// writes the key once at Job creation (runtime/rest/jobs.go:172) and never
+	// writes the key once at Job creation (runtime/rest/jobs.go) and never
 	// refreshes — without this goroutine, Map.wz processing exceeds the 30-min
 	// Watchdog cutoff and the Job is deleted mid-execution. See heartbeat.go
 	// for the PR-544 evidence trail.
-	if key := redisJobKeyFromEnv(); key != "" {
+	if suffix := ingestJobSuffixFromEnv(); suffix != "" {
 		rdb := redis.Connect(l)
-		go runHeartbeat(ctx, l, rdb, key)
+		reg := newIngestJobRegistry(rdb)
+		go runHeartbeat(ctx, l, reg, suffix)
 	} else {
 		l.Info("ingest heartbeat skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")
 	}

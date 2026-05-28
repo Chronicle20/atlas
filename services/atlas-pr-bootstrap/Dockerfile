@@ -57,8 +57,9 @@ COPY scripts/lib.sh /atlas/lib.sh
 COPY scripts/bootstrap.sh /atlas/bootstrap.sh
 COPY scripts/cleanup.sh /atlas/cleanup.sh
 COPY scripts/sweep-orphans.sh /atlas/sweep-orphans.sh
+COPY scripts/reclaim-main-bare-keys.sh /atlas/reclaim-main-bare-keys.sh
 COPY canonical/ /atlas/canonical/
 
-RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh /atlas/sweep-orphans.sh
+RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh /atlas/sweep-orphans.sh /atlas/reclaim-main-bare-keys.sh
 
 ENTRYPOINT ["/atlas/bootstrap.sh"]

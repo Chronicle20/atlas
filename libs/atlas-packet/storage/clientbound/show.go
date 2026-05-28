@@ -4,11 +4,38 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
+
+// Storage tab-flag bits (mirrors storage.StorageFlag). The Show packet body is
+// segmented per set tab bit; meso is gated on the currency bit.
+const (
+	showFlagCurrency uint64 = 2
+	showFlagEquip    uint64 = 4
+	showFlagUse      uint64 = 8
+	showFlagSetup    uint64 = 16
+	showFlagEtc      uint64 = 32
+	showFlagCash     uint64 = 64
+)
+
+// showTab pairs a tab bit with the inventory type whose assets it carries, in
+// the client's read order (equip, use, setup, etc, cash).
+type showTab struct {
+	bit uint64
+	typ inventory.Type
+}
+
+var showTabs = []showTab{
+	{showFlagEquip, inventory.TypeValueEquip},
+	{showFlagUse, inventory.TypeValueUse},
+	{showFlagSetup, inventory.TypeValueSetup},
+	{showFlagEtc, inventory.TypeValueETC},
+	{showFlagCash, inventory.TypeValueCash},
+}
 
 // Show - mode, npcId, slots, flags, meso, assets
 type Show struct {
@@ -43,14 +70,24 @@ func (m Show) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 		w.WriteInt(m.npcId)
 		w.WriteByte(m.slots)
 		w.WriteLong(m.flags)
-		w.WriteInt(m.meso)
-		w.WriteShort(0)
-		w.WriteByte(byte(len(m.assets)))
-		for _, a := range m.assets {
-			w.WriteByteArray(a.Encode(l, ctx)(options))
+		if m.flags&showFlagCurrency != 0 {
+			w.WriteInt(m.meso)
 		}
-		w.WriteShort(0)
-		w.WriteByte(0)
+		for _, tab := range showTabs {
+			if m.flags&tab.bit == 0 {
+				continue
+			}
+			var bucket []model.Asset
+			for _, a := range m.assets {
+				if a.InventoryType() == tab.typ {
+					bucket = append(bucket, a)
+				}
+			}
+			w.WriteByte(byte(len(bucket)))
+			for _, a := range bucket {
+				w.WriteByteArray(a.Encode(l, ctx)(options))
+			}
+		}
 		return w.Bytes()
 	}
 }
@@ -61,14 +98,20 @@ func (m *Show) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request
 		m.npcId = r.ReadUint32()
 		m.slots = r.ReadByte()
 		m.flags = r.ReadUint64()
-		m.meso = r.ReadUint32()
-		_ = r.ReadUint16() // padding
-		count := int(r.ReadByte())
-		m.assets = make([]model.Asset, count)
-		for i := 0; i < count; i++ {
-			m.assets[i].Decode(l, ctx)(r, options)
+		if m.flags&showFlagCurrency != 0 {
+			m.meso = r.ReadUint32()
 		}
-		_ = r.ReadUint16() // padding
-		_ = r.ReadByte()   // padding
+		m.assets = nil
+		for _, tab := range showTabs {
+			if m.flags&tab.bit == 0 {
+				continue
+			}
+			count := int(r.ReadByte())
+			for i := 0; i < count; i++ {
+				var a model.Asset
+				a.Decode(l, ctx)(r, options)
+				m.assets = append(m.assets, a)
+			}
+		}
 	}
 }

@@ -1438,6 +1438,76 @@ func candidatesFromFName(fname string) []candidate {
 		// Byte(1) + Int(id) + Int(template) + Int16(x) + Int16(cy) + Byte(f) + Short(fh) +
 		// Int16(rx0) + Int16(rx1) + Bool(miniMap → maps to CNpc::Init enabled). ✓
 		return []candidate{{name: "SpawnRequestController", pkg: "npc", dir: csvpkg.DirClientbound}}
+
+	// --- World: npc (clientbound, conversation) ---
+	// SCRIPT_MESSAGE / NPC_TALK (GMS v95 opcode 363/0x16B). The clientbound NPC
+	// dialog packet. CScriptMan::OnPacket@0x6de360 dispatches nType==363 to
+	// CScriptMan::OnScriptMessage@0x6de0f0, which reads a common header
+	// (speakerType byte + npcTemplateId int + msgType byte + param byte) then
+	// switch(msgType) to 14 per-dialog-type handlers (cases 0,1,2,3,4,5,6,7,8,9,
+	// 10,11,13,14,15). Atlas models this as one NpcConversation wrapper struct
+	// (header + opaque detail byte array) plus 14 separate *ConversationDetail
+	// structs (each its own Encode = the per-type body). We route the wrapper and
+	// each detail individually so each gets a per-dialog-type verdict. Each detail
+	// is modeled as a #-suffixed synthetic IDA entry whose Decode ops cover ONLY
+	// that case's body (the wrapper covers the header + secondary + opaque body).
+	case "CScriptMan::OnScriptMessage":
+		// Wrapper: common header envelope (Decode1 speakerType + Decode4 npcTemplate
+		// + Decode1 msgType + Decode1 param + guarded Decode4 secondary + opaque body).
+		// Per-dialog-type bodies audited in the NpcSay*/NpcAsk* reports below.
+		return []candidate{{name: "NpcConversation", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnSay#Say":
+		// msgType 0. OnSay@0x6dc110 body: DecodeStr(message)+Decode1(prev)+Decode1(next). ✓
+		return []candidate{{name: "SayConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnSayImage#SayImage":
+		// msgType 1. OnSayImage@0x6dc310: Decode1(count)+loop DecodeStr(image).
+		// ✓ fixed: image-count corrected from WriteInt→WriteByte to match Decode1@0x6dc3d9.
+		return []candidate{{name: "SayImageConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskYesNo#AskYesNo":
+		// msgType 2 (AskYesNo) and 13 (AskYesNoQuest) share OnAskYesNo@0x6dc5a0:
+		// DecodeStr(message). Atlas has one struct for both. ✓
+		return []candidate{{name: "AskYesNoConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskText#AskText":
+		// msgType 3. OnAskText@0x6dc790: DecodeStr(msg)+DecodeStr(def)+Decode2(min)+Decode2(max). ✓
+		return []candidate{{name: "AskTextConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskNumber#AskNumber":
+		// msgType 4. OnAskNumber@0x6dcc00: DecodeStr(msg)+Decode4(def)+Decode4(min)+Decode4(max). ✓
+		return []candidate{{name: "AskNumberConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskMenu#AskMenu":
+		// msgType 5. OnAskMenu@0x6dce00: DecodeStr(message). ✓
+		return []candidate{{name: "AskMenuConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskQuiz#AskQuiz":
+		// msgType 6. OnAskQuiz@0x6dbaf0 → CWvsContext::OnInitialQuiz@0x9ffad0:
+		// Decode1(flag); flag==0 → DecodeStr×3 (title/problem/hint)+Decode4×3 (min/max/time).
+		// Atlas Bool(Fail) + guarded body; flag==0/Fail==false same polarity. ✓
+		return []candidate{{name: "AskQuizConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz":
+		// msgType 7. OnAskSpeedQuiz@0x6dbb10 → CWvsContext::OnInitialSpeedQuiz@0x9f1d50:
+		// Decode1(flag); flag==0 → Decode4×5 (type/answer/correct/remain/time). ✓
+		return []candidate{{name: "AskSpeedQuizConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskAvatar#AskAvatar":
+		// msgType 8. OnAskAvatar@0x6dcff0: DecodeStr(msg)+Decode1(count)+loop Decode4(style). ✓
+		return []candidate{{name: "AskAvatarConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar":
+		// msgType 9. OnAskMembershopAvatar@0x6dd340: DecodeStr(msg)+Decode1(count)+loop Decode4(candidate).
+		// ✓ fixed: candidate-count corrected from WriteInt→WriteByte to match Decode1@0x6dd394.
+		return []candidate{{name: "AskMemberShopAvatarConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskPet#AskPet":
+		// msgType 10. OnAskPet@0x6dd6e0: DecodeStr(msg)+Decode1(count)+loop{DecodeBuffer(8)+Decode1}.
+		// cashItemSN 8-byte modeled as Decode8 for width parity with atlas WriteLong. ✓
+		return []candidate{{name: "AskPetConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskPetAll#AskPetAll":
+		// msgType 11. OnAskPetAll@0x6ddbe0: DecodeStr(msg)+Decode1(count)+Decode1(exceptionExist)+
+		// loop{DecodeBuffer(8)+Decode1}. ✓
+		return []candidate{{name: "AskPetAllConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskBoxText#AskBoxText":
+		// msgType 14. OnAskBoxText@0x6dc9c0: DecodeStr(msg)+DecodeStr(def)+Decode2(col)+Decode2(line). ✓
+		return []candidate{{name: "AskBoxTextConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskSlideMenu#AskSlideMenu":
+		// msgType 15. OnAskSlideMenu@0x6dbe50: Decode4(slideDlgType) → CSlideMenuDlgEX::SetSlideMenuDlg@0x7156f0
+		// Decode4(menuType)+DecodeStr(message). Atlas (GMS>83) Int(Unknown)+Int(MenuType)+AsciiString(Message);
+		// leading Int(Unknown) maps to slideDlgType; v95 major>83 so the guard fires. ✓
+		return []candidate{{name: "AskSlideMenuConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

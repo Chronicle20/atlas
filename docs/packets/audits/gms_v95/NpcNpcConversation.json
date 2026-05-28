@@ -1,0 +1,65 @@
+{
+  "WriterName": "NpcNpcConversation",
+  "IDAName": "CScriptMan::OnScriptMessage",
+  "Address": "0x6de0f0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/conversation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nSpeakerTypeID (speaker type)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSpeakerTemplateID (npc template id)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nMsgType (dialog-type discriminator: 0=Say,1=SayImage,2=AskYesNo,3=AskText,4=AskNumber,5=AskMenu,6=AskQuiz,7=AskSpeedQuiz,8=AskAvatar,9=AskMembershopAvatar,10=AskPet,11=AskPetAll,13=AskYesNoQuest,14=AskBoxText,15=AskSlideMenu)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bParam (speaker flags; bit 2 (param\u00264) gates a secondary npc template id read inside the per-type handler)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "secondaryNpcTemplateId (read at start of per-type body when bParam\u00264; e.g. OnSay@0x6dc14b) -- guarded",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "per-type conversation detail body (opaque to wrapper; audited in NpcSay*/NpcAsk* reports) via WriteByteArray",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

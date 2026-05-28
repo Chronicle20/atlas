@@ -36,3 +36,28 @@ func TestRegistryFieldTypeStrips(t *testing.T) {
 		t.Errorf("FieldType(CharacterList, characters) = (%q, %v); want CharacterListEntry", ft, ok)
 	}
 }
+
+func TestRegistryRegistersCommerceSubStructs(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{
+		"CashInventoryItem", // EncodeBytes (flat)
+		"AddEntry",          // EncodeEntry (closure)
+		"QuantityUpdateEntry",
+		"MoveEntry",
+		"RemoveEntry",
+	} {
+		if !reg.HasType(name) {
+			t.Errorf("registry missing type %s", name)
+			continue
+		}
+		calls, ok := reg.Calls(name)
+		if !ok || len(calls) == 0 {
+			t.Errorf("%s produced no calls (ok=%v len=%d)", name, ok, len(calls))
+		}
+	}
+}

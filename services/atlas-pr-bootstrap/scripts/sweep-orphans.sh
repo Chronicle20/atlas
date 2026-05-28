@@ -31,6 +31,11 @@
 #                                       http://atlas-tenants.atlas-main.svc.cluster.local:8080/api/tenants)
 #   MINIO_TENANT_SAFETY_WINDOW_SEC    — seconds; UUIDs touched within
 #                                       this window are skipped (default 7200)
+#   ATLAS_PR_NS_SELECTOR              — kubectl label selector used to
+#                                       enumerate live PR-env namespaces
+#                                       (default: atlas.pr-number); if
+#                                       kubectl fails, sweep aborts
+#                                       fail-closed (task-045 D5/FR-2.5)
 #
 # DRY_RUN_NO_INFRA=1 short-circuits external-command phases (testing only).
 
@@ -318,18 +323,18 @@ sweep_branch() {
 # sweep_minio enumerates per-tenant UUID prefixes under MinIO buckets
 # (atlas-wz, atlas-assets, atlas-renders) and deletes any UUID that
 # is BOTH:
-#   - not present in atlas-main's atlas-tenants list (the long-lived
-#     env's tenant UUIDs — these must never be touched), AND
+#   - not present in the combined allowlist of active tenant UUIDs
+#     (atlas-main's tenants PLUS any live PR-env tenants), AND
 #   - aged past MINIO_TENANT_SAFETY_WINDOW_SEC (default 7200s / 2h)
 #     to protect bringups in progress whose data-ingest is still
 #     writing per-tenant data.
 #
-# We don't enumerate per-PR atlas-tenants services because by the
-# time this sweep runs (cron'd hourly, or after a wedged teardown),
-# the PR env namespace is being deleted; querying its atlas-tenants
-# would race with namespace termination. The age window covers
-# bringups in flight; orphans older than the window cannot belong to
-# an active env.
+# Live PR-env namespaces are enumerated via kubectl (label selector
+# ATLAS_PR_NS_SELECTOR, default atlas.pr-number). If that enumeration
+# fails, the sweep aborts fail-closed rather than risk deleting data
+# from a running-but-idle PR env (task-045 D5/FR-2.5).
+# The age window covers bringups in flight and envelopes any race
+# between namespace termination and the sweep cron.
 #
 # Cleanup target: 13 GiB of leaked tenant data observed on 2026-05-26
 # (see issue #596). Reclaims storage until atlas-data's per-tenant
@@ -376,6 +381,31 @@ sweep_minio() {
         return 1
     fi
 
+    # Extend the allowlist with LIVE PR-env tenants so the sweep never reclaims
+    # data out from under a running-but-idle PR env (task-045 D5/FR-2.5).
+    local ns_selector="${ATLAS_PR_NS_SELECTOR:-atlas.pr-number}"
+    local pr_namespaces
+    if ! pr_namespaces=$(kubectl get ns -l "$ns_selector" \
+            -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null); then
+        ATLAS_STEP=drop-minio log warn \
+            "could not enumerate PR namespaces (selector=${ns_selector}); aborting MinIO sweep (fail-closed)"
+        return 1
+    fi
+    local ns pr_uuids
+    while IFS= read -r ns; do
+        [ -z "$ns" ] && continue
+        if ! pr_uuids=$(curl -fsS -H 'Accept: application/vnd.api+json' \
+                "http://atlas-tenants.${ns}.svc.cluster.local:8080/api/tenants" 2>/dev/null \
+                | jq -r '.data[].id' 2>/dev/null); then
+            ATLAS_STEP=drop-minio log warn \
+                "could not fetch tenants for live ns ${ns}; aborting MinIO sweep (fail-closed)"
+            return 1
+        fi
+        if [ -n "$pr_uuids" ]; then
+            active_uuids=$(printf '%s\n%s\n' "$active_uuids" "$pr_uuids")
+        fi
+    done <<<"$pr_namespaces"
+
     # Configure mc alias under a private CONFIG_DIR so the host's mc
     # config (if any) isn't touched. http vs https is keyed off the
     # endpoint scheme; default to http for in-cluster MinIO.
@@ -406,7 +436,7 @@ sweep_minio() {
         while IFS= read -r uuid; do
             [ -z "$uuid" ] && continue
 
-            # Skip if this UUID is an active main tenant.
+            # Skip if this UUID is an active main tenant or a live PR-env tenant.
             if printf '%s\n' "$active_uuids" | grep -qFx "$uuid"; then
                 continue
             fi
@@ -446,7 +476,7 @@ if [ "$MINIO_MODE" = "1" ]; then
         ATLAS_STEP=init log info "MinIO sweep apply=${APPLY} (dry-run; skipping)"
     else
         ATLAS_STEP=init log info "MinIO sweep apply=${APPLY}"
-        sweep_minio
+        sweep_minio || exit 1
     fi
     ATLAS_STEP=done log info "sweep complete"
     exit 0

@@ -116,6 +116,38 @@ func TestMemberJoinedRoundTrip(t *testing.T) {
 	}
 }
 
+// TestInviteByteOutput verifies the byte output of guild Invite across all tenant variants.
+// IDA evidence:
+//   v83 OnGuildResult@0xa37490 invite path: Decode4(guildId)+DecodeStr(inviterName)
+//        — no unknown/skillId fields.
+//   v95 OnGuildResult: Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId).
+// Wire layout: mode(1)+guildId(4)+name(2+len)+[unknown(4)+skillId(4)].
+// originatorName="InviterName" → 2+11=13 bytes.
+//   v83: 1+4+13 = 18 bytes
+//   v95: 1+4+13+4+4 = 26 bytes
+func TestInviteByteOutput(t *testing.T) {
+	cases := []struct {
+		variant   pt.TenantVariant
+		wantBytes int
+	}{
+		{pt.Variants[0], 18}, // GMS v28  — no unknown/skillId
+		{pt.Variants[1], 18}, // GMS v83  — no unknown/skillId
+		{pt.Variants[2], 18}, // GMS v87  — no unknown/skillId
+		{pt.Variants[3], 26}, // GMS v95  — with unknown+skillId
+		{pt.Variants[4], 26}, // JMS v185 — with unknown+skillId
+	}
+	for _, tc := range cases {
+		t.Run(tc.variant.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(tc.variant.Region, tc.variant.MajorVersion, tc.variant.MinorVersion)
+			input := NewInvite(0x05, 500, "InviterName", 0, 0)
+			got := input.Encode(nil, ctx)(nil)
+			if len(got) != tc.wantBytes {
+				t.Errorf("byte count: got %d, want %d", len(got), tc.wantBytes)
+			}
+		})
+	}
+}
+
 func TestInviteRoundTrip(t *testing.T) {
 	input := NewInvite(0x05, 500, "InviterName", 0, 0)
 	for _, v := range pt.Variants {

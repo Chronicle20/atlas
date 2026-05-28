@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -421,25 +422,33 @@ func (m Invite) String() string {
 	return fmt.Sprintf("mode [%d], guildId [%d], originatorName [%s], unknown [%d], skillId [%d]", m.mode, m.guildId, m.originatorName, m.unknown, m.skillId)
 }
 
-func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
+	v95plus := (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.guildId)
 		w.WriteAsciiString(m.originatorName)
-		w.WriteInt(m.unknown)
-		w.WriteInt(m.skillId)
+		if v95plus {
+			w.WriteInt(m.unknown)
+			w.WriteInt(m.skillId)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *Invite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	v95plus := (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
 		m.originatorName = r.ReadAsciiString()
-		m.unknown = r.ReadUint32()
-		m.skillId = r.ReadUint32()
+		if v95plus {
+			m.unknown = r.ReadUint32()
+			m.skillId = r.ReadUint32()
+		}
 	}
 }
 

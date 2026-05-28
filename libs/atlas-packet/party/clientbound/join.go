@@ -36,22 +36,22 @@ func (m Join) String() string {
 	return fmt.Sprintf("mode [%d], partyId [%d], targetName [%s]", m.mode, m.partyId, m.targetName)
 }
 
-func (m Join) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Join) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.partyId)
 		w.WriteAsciiString(m.targetName)
-		party.WritePartyData(w, m.members, m.leaderId)
+		party.WritePartyData(ctx, w, m.members, m.leaderId)
 		return w.Bytes()
 	}
 }
 
-func (m *Join) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Join) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.partyId = r.ReadUint32()
 		m.targetName = r.ReadAsciiString()
-		m.members, m.leaderId = party.ReadPartyData(r)
+		m.members, m.leaderId = party.ReadPartyData(ctx, r)
 	}
 }

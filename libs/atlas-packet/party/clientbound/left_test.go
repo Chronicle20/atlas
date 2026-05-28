@@ -7,6 +7,38 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestLeftByteOutput verifies the byte output of Left across all tenant variants.
+// Wire layout: mode(1)+partyId(4)+targetId(4)+const1(1)+forced(1)+targetName(2+len)+WritePartyData(?).
+// targetName="Player1" → 2+7=9. Fixed prefix: 1+4+4+1+1+9 = 20. Total:
+//   v83: 20+298 = 318 bytes
+//   v95: 20+378 = 398 bytes
+func TestLeftByteOutput(t *testing.T) {
+	members := []party.PartyMember{
+		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},
+		{Id: 200, Name: "Player2", JobId: 222, Level: 70, ChannelId: -2, MapId: 200000},
+	}
+	cases := []struct {
+		variant   pt.TenantVariant
+		wantBytes int
+	}{
+		{pt.Variants[0], 318}, // GMS v28  — v83 PARTYDATA
+		{pt.Variants[1], 318}, // GMS v83  — v83 PARTYDATA
+		{pt.Variants[2], 318}, // GMS v87  — v83 PARTYDATA
+		{pt.Variants[3], 398}, // GMS v95  — v95 PARTYDATA
+		{pt.Variants[4], 398}, // JMS v185 — v95 PARTYDATA
+	}
+	for _, tc := range cases {
+		t.Run(tc.variant.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(tc.variant.Region, tc.variant.MajorVersion, tc.variant.MinorVersion)
+			input := NewLeft(10, 5000, 100, "Player1", false, members, 200)
+			got := input.Encode(nil, ctx)(nil)
+			if len(got) != tc.wantBytes {
+				t.Errorf("byte count: got %d, want %d", len(got), tc.wantBytes)
+			}
+		})
+	}
+}
+
 func TestLeftRoundTrip(t *testing.T) {
 	members := []party.PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},

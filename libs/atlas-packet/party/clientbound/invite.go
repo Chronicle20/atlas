@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,26 +36,34 @@ func (m Invite) String() string {
 	return fmt.Sprintf("mode [%d], partyId [%d], originatorName [%s], originatorJobId [%d], originatorLevel [%d]", m.mode, m.partyId, m.originatorName, m.originatorJobId, m.originatorLevel)
 }
 
-func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
+	v95plus := (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.partyId)
 		w.WriteAsciiString(m.originatorName)
-		w.WriteInt(m.originatorJobId)
-		w.WriteInt(m.originatorLevel)
+		if v95plus {
+			w.WriteInt(m.originatorJobId)
+			w.WriteInt(m.originatorLevel)
+		}
 		w.WriteByte(0) // autoJoinFlag
 		return w.Bytes()
 	}
 }
 
-func (m *Invite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	v95plus := (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.partyId = r.ReadUint32()
 		m.originatorName = r.ReadAsciiString()
-		m.originatorJobId = r.ReadUint32()
-		m.originatorLevel = r.ReadUint32()
+		if v95plus {
+			m.originatorJobId = r.ReadUint32()
+			m.originatorLevel = r.ReadUint32()
+		}
 		_ = r.ReadByte() // autoJoinFlag
 	}
 }

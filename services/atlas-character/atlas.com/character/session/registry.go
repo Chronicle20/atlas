@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -15,8 +14,8 @@ import (
 )
 
 type Registry struct {
-	reg    *atlas.TenantRegistry[uint32, Model]
-	client *goredis.Client
+	reg     *atlas.TenantRegistry[uint32, Model]
+	tenants *atlas.Set
 }
 
 var registry *Registry
@@ -26,16 +25,12 @@ func InitRegistry(client *goredis.Client) {
 		reg: atlas.NewTenantRegistry[uint32, Model](client, "character-session", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}),
-		client: client,
+		tenants: atlas.NewSet(client, "character-session:_tenants"),
 	}
 }
 
 func GetRegistry() *Registry {
 	return registry
-}
-
-func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
 }
 
 func (r *Registry) Add(ctx context.Context, characterId uint32, ch channel.Model, state State) error {
@@ -60,8 +55,9 @@ func (r *Registry) Add(ctx context.Context, characterId uint32, ch channel.Model
 		return err
 	}
 
-	tb, _ := json.Marshal(&t)
-	r.client.SAdd(ctx, r.tenantSetKey(), tb)
+	if tb, err := json.Marshal(&t); err == nil {
+		_ = r.tenants.Add(ctx, string(tb))
+	}
 	return nil
 }
 
@@ -82,8 +78,9 @@ func (r *Registry) Set(ctx context.Context, characterId uint32, ch channel.Model
 		return err
 	}
 
-	tb, _ := json.Marshal(&t)
-	r.client.SAdd(ctx, r.tenantSetKey(), tb)
+	if tb, err := json.Marshal(&t); err == nil {
+		_ = r.tenants.Add(ctx, string(tb))
+	}
 	return nil
 }
 
@@ -93,7 +90,7 @@ func (r *Registry) Get(ctx context.Context, characterId uint32) (Model, error) {
 }
 
 func (r *Registry) GetAll(ctx context.Context) []Model {
-	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil
 	}

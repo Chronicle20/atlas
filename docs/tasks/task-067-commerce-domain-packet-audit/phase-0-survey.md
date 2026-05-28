@@ -31,3 +31,23 @@ Outcome: **Option A2** — both `CashInventoryItem.EncodeBytes` (flat `[]byte`) 
 `EncodeForeign` (`model/character_temporary_stat.go:575`) is closure-shaped but belongs to task-028 (character scope) and is excluded from this audit.
 
 No entries need to be added to `docs/packets/ida-exports/_pending.md`; all discovered methods were predicted by design §8.
+
+## Cash constructor ↔ struct map (design §4.4)
+
+| Constructor (shop_operation_body.go) | Target struct | Defined in |
+|---|---|---|
+| `CashShopCashGiftsBody()` | `CashShopGifts` | `shop_inventory.go` |
+| `CashShopInventoryCapacityIncreaseSuccessBody(inventoryType, capacity)` | `InventoryCapacitySuccess` | `shop_operation_result.go` |
+| `CashShopInventoryCapacityIncreaseFailedBody(message)` | `InventoryCapacityFailed` | `shop_operation_result.go` |
+| `CashShopWishListBody(update, sns)` | `WishList` | `shop_operation_result.go` |
+| `CashShopCashInventoryBody(items, storageSlots, characterSlots)` | `CashShopInventory` | `shop_inventory.go` |
+| `CashShopCashInventoryPurchaseSuccessBody(item)` | `CashShopPurchaseSuccess` | `shop_inventory.go` |
+| `CashShopCashItemMovedToInventoryBody(slot, asset)` | `CashItemMovedToInventory` | `shop_item_moved.go` |
+| `CashShopCashItemMovedToCashInventoryBody(item)` | `CashItemMovedToCashInventory` | `shop_item_moved.go` |
+
+**Discrepancy vs design prediction:** The design predicted constructor names with a `New` prefix (e.g. `NewCashShopWishListBody`). The actual public body factories have no `New` prefix — they are bare names like `CashShopWishListBody`. The internal `New*` constructors (e.g. `NewWishList`, `NewCashShopInventory`) live in the target-struct files and are called from within the body factories; the design prediction conflated these two layers. The count is the same (8 constructors → 8 target structs across 3 files); only the naming convention differed.
+
+Implication for Phase 1d: `shop_operation_body.go` gets ONE row in SUMMARY.md
+(verdict ⚠️ "router; per-shape rows recorded under target structs above").
+The cash wire-shape denominator stays at ~36; Phase 1d does not duplicate
+constructor rows.

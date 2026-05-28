@@ -1,0 +1,20 @@
+{
+  "WriterName": "ShopOperationGetPurchaseRecord",
+  "IDAName": "CCashShop::RequestCashPurchaseRecord",
+  "Address": "0x4823c0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_get_purchase_record.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nCommoditySN (serialNumber)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -401,6 +401,170 @@ shapes:
 DO share the confirmed `CPersonalShopDlg` entrusted-merchant op-bytes and were
 audited via synthetic `#Merchant` FNames — see OP-FAMILY-interaction.)
 
+### OP-FAMILY-cash — shop_operation_body.go is the clientbound router (cash)
+
+`cash/clientbound/shop_operation_body.go` is the `CashShopOperation` constructor/
+router block (8 `CashShop*Body` factories that resolve the `operations` mode code,
+then build the matching wire struct from `shop_inventory.go` / `shop_item_moved.go`
+/ `shop_operation_result.go`), parallel to interaction's `interaction_body.go`.
+It gets NO SUMMARY row (router). The 78 named `CashShopOperationError*` /
+`CashShopOperation*` constants are the resolved `errors`/`operations` code table,
+NOT distinct wire shapes — they are not audited individually (design §4.3 cap).
+The real clientbound dispatcher is `CCashShop::OnCashItemResult`@0x499370 (a single
+mode-switch over op-bytes 0x54–0xBC, >40 cases) plus the separate
+`CCashShop::OnQueryCashResult`@0x496400 (opcode 0x17F) and `CCashShop::OnPacket`
+@0x4997e0 top-level demux. Each atlas target struct was audited as its own row
+against its `OnCashItemRes*` sub-handler (v95 GMS_v95.0_U_DEVM 3c71fd88…):
+
+| Body factory | target struct | op | IDA sub-handler |
+|---|---|---|---|
+| CashShopCashInventoryBody | CashShopInventory | 0x58 | `OnCashItemResLoadLockerDone`@0x494cb0 |
+| CashShopCashInventoryPurchaseSuccessBody | CashShopPurchaseSuccess | 0x64 | `OnCashItemResBuyDone`@0x494dd0 |
+| CashShopCashItemMovedToCashInventoryBody | CashItemMovedToCashInventory | 0x77 | `OnCashItemResMoveLtoSDone`@0x495050 |
+| CashShopCashItemMovedToInventoryBody | CashItemMovedToInventory | 0x79 | `OnCashItemResMoveStoLDone`@0x4948d0 (asset sub-struct; see below) |
+| CashShopWishListBody | WishList | 0x5C/0x62 | `OnCashItemResSetWishDone`@0x494d60 / `OnCashItemResLoadWishDone`@0x494020 |
+| CashShopInventoryCapacityIncreaseSuccessBody | InventoryCapacitySuccess | 0x6D | `OnCashItemResIncSlotCountDone`@0x497270 |
+| CashShopInventoryCapacityIncreaseFailedBody | InventoryCapacityFailed | 0x6E | `OnCashItemResIncSlotCountFailed`@0x497390 |
+| CashShopCashGiftsBody | CashShopGifts | 0x5A | `OnCashItemResLoadGiftDone`@0x496520 (gift-list loop; see below) |
+
+`OperationError` (mode+errorByte) is the shared shape of every `*Failed` case
+(audited against `OnCashItemResBuyFailed`@0x4969f0, representative). No single
+dispatcher showed >10 stale code values vs the template — the failure cases all
+share the same `mode + NoticeFailReason(byte)` shape, so no enum-drift triage was
+triggered. Recorded for traceability; the router itself needs no fix.
+
+### Cash serverbound SPW-string vs birthday-int divergence (cash) — DEFERRED (version-gated)
+
+Four cash serverbound "gift-family" senders write a leading **`EncodeStr` secondary-
+password (SPW) string** in v95 (built by `ask_SPW`), but atlas models the leading
+field as a 4-byte **`int birthday`**. Confirmed ❌ in v95 GMS_v95.0_U_DEVM 3c71fd88…:
+
+| Atlas struct | IDA sender | v95 leading field | atlas leading field |
+|---|---|---|---|
+| ShopOperationBuyCouple | `OnBuyCouple`@0x490d80 (op 0x1F) | `EncodeStr sSPW` | `int birthday` |
+| ShopOperationBuyFriendship | `OnBuyFriendship`@0x491b30 (op 0x25) | `EncodeStr sSPW` | `int birthday` |
+| ShopOperationGift | `SendGiftsPacket`@0x487b60 (op 4) | `EncodeStr sSPW` | `int birthday` |
+| ShopOperationRebateLockerItem | `OnRebateLockerItem`@0x485840 (op 0x1C) | `EncodeStr sSPW` then `EncodeBuffer 8` | `int birthday` then `uint64 unk` |
+
+The remaining fields after the leading one align (couple/friendship: `int option,
+int serialNumber, str name, str message`; rebate: 8-byte locker SN). The fix would
+replace the leading `birthday uint32` with a `spw string` field (+ for gift, also
+insert a `byte oneADay` between serialNumber and name — see below).
+
+**Deferred (not fixed here):** the SPW (secondary-password / "ask_SPW") system is a
+known per-region/per-version differentiator — older GMS builds and some regions
+carry a `birthday int` instead of an SPW string on these packets (which is almost
+certainly why atlas modeled it as `birthday`). Only v95 IDA was readable this
+session; a blind string-for-int swap risks the v83/v87/v92/v111/JMS185 clients.
+Warrants a cross-version follow-up (`OnBuyCouple`/`OnBuyFriendship`/`SendGiftsPacket`
+/`OnRebateLockerItem` in each target build) to gate the field behind a region/version
+guard. Files: `libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go`,
+`shop_operation_buy_friendship.go`, `shop_operation_gift.go`,
+`shop_operation_rebate_locker_item.go`.
+
+### ShopOperationBuy — trailing oneADay byte + eventSN int (cash) — DEFERRED (version-gated)
+
+`CCashShop::OnBuy`@0x48e530 (op 3, v95). After `bool isMaplePoint, int dwOption,
+int nCommSN` the v95 client sends **`Encode1 m_bRequestBuyOneADay`** then
+**`Encode4 nEventSN`** (zero-goods event SN). Atlas `ShopOperationBuy` reads
+`bool, int, int, int zero` — it models the trailing `byte oneADay + int eventSN`
+(5 bytes) as a single `int zero` (4 bytes), a 1-byte under-read + field
+mislabel. Confirmed ❌ in `ShopOperationBuy.md` rows 3-4 (v95).
+
+`ShopOperationGift` (`SendGiftsPacket`@0x487b60) has the same `byte oneADay` between
+serialNumber and the recipient-name string — atlas omits it entirely (see SPW row
+above; the gift fix must address both the leading SPW string AND this missing byte).
+
+**Deferred (not fixed here):** the "buy-one-a-day" / zero-goods-event mechanic is a
+later GMS addition; v83 almost certainly omits the trailing byte+eventSN. A blind
+add risks older clients. Warrants cross-version IDA confirmation before gating.
+Files: `libs/atlas-packet/cash/serverbound/shop_operation_buy.go`,
+`shop_operation_gift.go`.
+
+### CashShopInventory — missing 2 trailing slot-counter shorts (cash) — DEFERRED (version-gated)
+
+`CCashShop::OnCashItemResLoadLockerDone`@0x494cb0 (CashShopOperation op 0x58, v95).
+The v95 client reads, after the 55-byte-per-item locker loop:
+`Decode2 m_nTrunkCount`, `Decode2 m_nCharacterSlotCount`, **`Decode2
+m_nBuyCharacterCount`**, **`Decode2 m_nCharacterCount`** — four trailing shorts.
+Atlas `CashShopInventory.Encode` writes only the first two
+(`storageSlots`, `characterSlots`) and is **missing the trailing
+`buyCharacterCount` + `characterCount` shorts** (4-byte under-write). Confirmed ❌
+in `CashShopInventory.md` rows 5-6 (v95). (The 55-byte `CashInventoryItem.EncodeBytes`
+per-item body resolved correctly inline via the Phase 0 analyzer extension — row 2 ✅.)
+
+**Deferred (not fixed here):** the locker-load slot-counter block grew across client
+generations (`buyCharacterCount`/`characterCount` are later additions; earlier builds
+read only 2 or 3 counters). `CashShopInventory.Encode` is version-agnostic (no region
+guards) and only v95 IDA was readable; a blind 2-short append risks the
+v83/v87/v92/v111 clients. Warrants cross-version `OnCashItemResLoadLockerDone`
+confirmation before gating. File: `libs/atlas-packet/cash/clientbound/shop_inventory.go`.
+
+### Cash tool-limitation false positives (loop / exclusive-branch / int64-vs-buffer) — NOT wire bugs
+
+These ❌ rows are packet-audit **tool limitations**, verified correct against v95 IDA;
+no fix needed:
+
+- **ShopOperationSetWishlist** (`OnSetWish`@0x4837d0, op 5). Atlas writes 10×
+  `WriteInt` in a `for` loop (40 bytes); v95 reads `DecodeBuffer 40`. The analyzer
+  flattens the loop to `int32 + 9×byte` → spurious ❌ rows 1-9. Wire-correct (40 bytes
+  either way).
+- **WishList** (`OnCashItemResSetWishDone`@0x494d60, op 0x62). Same loop-flatten:
+  atlas writes `mode + 10×WriteInt` (1+40 bytes); v95 reads `Decode1 mode +
+  DecodeBuffer 40`. Mode ✅; the 10-int loop body is collapsed → spurious ❌ rows 1-2.
+- **ShopOperationIncreaseInventory** (`OnBuySlotInc`@0x491710, op 6/7) row 4 and
+  **ShopOperationIncreaseStorage** (`OnIncTrunkCount`@0x48dc70, op 7) row 3:
+  exclusive-branch over-count. Atlas's `if m.item {WriteInt serialNumber} else
+  {WriteByte invType}` (storage: `if m.item {WriteInt}`) collects BOTH branches'
+  calls statically, but at runtime only one fires. v95 IncSlotCount sends item=1 →
+  int serialNumber (✅); IncTrunkCount sends item=0 → no trailing field (✅). Same
+  early-return-exclusivity limitation documented for login `CharacterList`.
+- **ShopOperationMoveFromCashInventory** (`OnMoveCashItemLtoS`@0x4828e0, op 0xE) row 0
+  and **ShopOperationMoveToCashInventory** (`OnMoveCashItemStoL`@0x482b50, op 0xF)
+  row 0: atlas `WriteLong` (int64, 8 bytes) vs v95 `EncodeBuffer(&liSN, 8)` (raw
+  8-byte _LARGE_INTEGER). Byte-for-byte identical on the wire; representation-only
+  mismatch. Wire-correct.
+
+### Cash shapes with no v95 sender isolated this session (cash) — 🔍 DEFERRED
+
+- **CashShopOpen** (`shop_open.go`) — the cash-shop open packet (opcode 0x12E) is
+  built inline in `CCashShop::Init`@0x484920 / `LoadData`@0x492ea0 (huge functions),
+  not a discrete `Send*`. Its region/version-gated body (CharacterData + SetSaleInfo
+  + Decode Best/Stock/LimitGoods/ZeroGoods blocks) already carries explicit
+  GMS/JMS + MajorVersion guards in atlas. Not isolable in one session; no report
+  this round. Verdict pending a focused Init/LoadData spike. Do NOT speculate.
+- **CashItemMovedToInventory** (`shop_item_moved.go`, op 0x79) — locker→inventory
+  echo carrying a `model.Asset` (`GW_ItemSlotBase`) sub-struct via
+  `OnCashItemResMoveStoLDone`@0x4948d0. The asset body is a sub-struct the analyzer
+  can't flatten (same class as inventory `Add`); no report produced. The leading
+  `mode + slot` header is trivially correct; the asset body is the shared
+  `model.Asset` encoder audited independently. No fix expected; deferred for a
+  loop/sub-struct-aware pass.
+- **CashShopGifts** (`shop_inventory.go`) — `CashShopGiftsBody()` is a stub that
+  hardcodes mode 0x4D and writes `mode + short(0)` (empty gift list). The real v95
+  gift-load reader `OnCashItemResLoadGiftDone`@0x496520 decodes a non-empty
+  per-gift loop (0x433-byte handler). Atlas's empty-list stub is intentionally a
+  placeholder, not a faithful encoder; auditing it against the real loop would be a
+  false ❌. Recorded as a known stub; a faithful implementation + audit is a
+  follow-up, not a wire fix.
+- **item_use family** (`item_use.go`, `item_use_chalkboard.go`,
+  `item_use_field_effect.go`, `item_use_pet_consumable.go`) — all four are built by
+  `CWvsContext::SendConsumeCashItemUseRequest`@0x9eb3e0, a ~248 KB single function
+  switching over every consumable cash-item type, each branch with its own
+  field layout and `update_time` ordering (the `updateTimeFirst` flag atlas threads
+  through). The common prefix (`update_time` gated `GMS && MajorVersion>=95`,
+  `source int16`, `itemId int`) is consistent with the v95 function header, but the
+  per-type bodies could not be exhaustively mapped in one session. Verdict 🔍
+  DEFERRED — needs a focused per-item-type spike; do NOT speculate on the variant
+  field layouts. (`ItemUse.md` in the audit output is the **inventory** `ItemUse`
+  collision winner, not the cash one — the cash `ItemUse` uses `pathHint:"cash/"`
+  but shares the wired `CWvsContext::SendStatChangeItemUseRequest` mapping with
+  inventory; the cash item-use senders have no separate wired FName this round.)
+- **ShopEntry** (`shop_entry.go`) — `CashShopEntryHandle` (opcode 0x28D, single
+  `int updateTime`). The matching client sender (`CCashShop::SendEntry` / transfer-
+  to-CS-field path) was not isolated as a discrete `Send*` this session; the
+  1-int shape is trivial but unverified against a v95 case. Deferred 🔍.
+
 ## Workflow notes
 
 Refresh procedure:

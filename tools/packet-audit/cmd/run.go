@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
@@ -97,16 +98,8 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	// mapping via candidatesFromFName. This prevents opcode-collision false positives that
 	// arise when the template maps multiple writer names to the same opcode and the IDA
 	// export only covers one of them.
-	seen := map[string]bool{}
-	for _, fname := range idaExportFunctions(opts.IDASource) {
-		for _, candidate := range candidatesFromFName(fname) {
-			key := candidate.pkg + "::" + candidate.name
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			process(candidate.dir, candidate.name, candidate.pkg, fname)
-		}
+	for _, sc := range selectCandidates(idaExportFunctions(opts.IDASource)) {
+		process(sc.candidate.dir, sc.candidate.name, sc.candidate.pkg, sc.fname)
 	}
 
 	if err := writeSummary(outDir, summary); err != nil {
@@ -143,6 +136,55 @@ func qualifiedWriterName(pkg, name string) string {
 		return name
 	}
 	return strings.ToUpper(pkg[:1]) + pkg[1:] + name
+}
+
+// selectedCandidate pairs a resolved candidate with the IDA FName that won its
+// (pkg, name) slot.
+type selectedCandidate struct {
+	candidate candidate
+	fname     string
+}
+
+// orderedExportFNames returns fnames in a deterministic order that also encodes
+// candidate-selection precedence. candidatesFromFName is many-to-one in places:
+// a bare dispatcher root (e.g. CWvsContext::OnGuildResult) and its enriched
+// "#"-suffixed synthetic sub-function entry (CWvsContext::OnGuildResult#RequestAgreement)
+// can map to the same pkg::name candidate. The synthetic entry carries the full
+// field list and is the correct model, so it must win. Ordering "#"-suffixed
+// entries first — then lexicographically — gives a stable winner under the
+// first-claim dedup in selectCandidates. Without this, Functions() returns map
+// keys in random order and the per-packet verdict flipped between runs.
+func orderedExportFNames(fnames []string) []string {
+	out := append([]string(nil), fnames...)
+	sort.SliceStable(out, func(i, j int) bool {
+		hi := strings.Contains(out[i], "#")
+		hj := strings.Contains(out[j], "#")
+		if hi != hj {
+			return hi
+		}
+		return out[i] < out[j]
+	})
+	return out
+}
+
+// selectCandidates resolves the deterministic winning FName for each
+// (pkg, name) candidate produced by the export's FNames. The first FName (in
+// orderedExportFNames order) to claim a given pkg::name key wins; later FNames
+// mapping to the same key are skipped.
+func selectCandidates(fnames []string) []selectedCandidate {
+	seen := map[string]bool{}
+	var out []selectedCandidate
+	for _, fname := range orderedExportFNames(fnames) {
+		for _, c := range candidatesFromFName(fname) {
+			key := c.pkg + "::" + c.name
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			out = append(out, selectedCandidate{candidate: c, fname: fname})
+		}
+	}
+	return out
 }
 
 // candidatesFromFName converts an IDA function name into one or more

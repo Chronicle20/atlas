@@ -3,6 +3,8 @@ package monster
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
+	"atlas-messages/data/foothold"
+	monsterdata "atlas-messages/data/monster"
 	"atlas-messages/kafka/message/monster"
 	"atlas-messages/kafka/producer"
 	"atlas-messages/message"
@@ -169,4 +171,92 @@ func isValidStatus(s string) bool {
 		}
 	}
 	return false
+}
+
+const spawnCountCap = 20
+
+var spawnRe = regexp.MustCompile(`^@mob spawn\s+(\d+)(?:\s+(\d+))?$`)
+
+// parseSpawnArgs extracts the template id and raw count from a "@mob spawn"
+// message. ok is false when the message is not a spawn command. A non-numeric
+// or overflowing count is normalized to spawnCountCap+1 so it clamps downstream.
+func parseSpawnArgs(m string) (templateId uint32, rawCount int, ok bool) {
+	match := spawnRe.FindStringSubmatch(m)
+	if match == nil {
+		return 0, 0, false
+	}
+	id, err := strconv.ParseUint(match[1], 10, 32)
+	if err != nil {
+		return 0, 0, false
+	}
+	rawCount = 1
+	if match[2] != "" {
+		c, cerr := strconv.Atoi(match[2])
+		if cerr != nil {
+			c = spawnCountCap + 1
+		}
+		rawCount = c
+	}
+	return uint32(id), rawCount, true
+}
+
+// normalizeCount validates and clamps the requested spawn count. valid is false
+// when below 1; capped is true when the request exceeded the cap.
+func normalizeCount(raw int) (count int, capped bool, valid bool) {
+	if raw < 1 {
+		return 0, false, false
+	}
+	if raw > spawnCountCap {
+		return spawnCountCap, true, true
+	}
+	return raw, false, true
+}
+
+func MobSpawnCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			templateId, rawCount, ok := parseSpawnArgs(m)
+			if !ok {
+				return nil, false
+			}
+
+			if !c.Gm() {
+				return nil, false
+			}
+
+			return func(l logrus.FieldLogger) func(ctx context.Context) error {
+				return func(ctx context.Context) error {
+					msgProc := message.NewProcessor(l, ctx)
+
+					count, capped, valid := normalizeCount(rawCount)
+					if !valid {
+						return msgProc.IssuePinkText(f, 0, "Count must be at least 1.", []uint32{c.Id()})
+					}
+
+					mon, err := monsterdata.NewProcessor(l, ctx).GetById(templateId)
+					if err != nil {
+						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown monster template: %d", templateId), []uint32{c.Id()})
+					}
+
+					var fh int16
+					if fhModel, ferr := foothold.NewProcessor(l, ctx).GetBelow(f.MapId(), c.X(), c.Y()); ferr != nil {
+						l.WithError(ferr).Warnf("Unable to resolve foothold below (%d, %d) on map [%d]; spawning with fh=0.", c.X(), c.Y(), uint32(f.MapId()))
+					} else {
+						fh = int16(fhModel.Id())
+					}
+
+					err = producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.SpawnFieldCommandProvider(f.WorldId(), f.ChannelId(), f.MapId(), f.Instance(), templateId, c.X(), c.Y(), fh, 0, count))
+					if err != nil {
+						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Failed to spawn monster %d.", templateId), []uint32{c.Id()})
+					}
+
+					text := fmt.Sprintf("Spawned %dx monster %d (%s) at (%d, %d).", count, templateId, mon.Name(), c.X(), c.Y())
+					if capped {
+						text += fmt.Sprintf(" Capped to %d.", spawnCountCap)
+					}
+					return msgProc.IssuePinkText(f, 0, text, []uint32{c.Id()})
+				}
+			}, true
+		}
+	}
 }

@@ -110,6 +110,39 @@ func TestCooldownRegistry_ClearAll_NonExistent(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestCooldownRegistry_ClearAll_NumericPrefixIsolation verifies that ClearAll(100)
+// does NOT clear cooldowns belonging to charId 1000 or 1001, whose string
+// representation shares "100" as a prefix. The trailing-colon in the prefix
+// argument ("100:") prevents false glob matches.
+func TestCooldownRegistry_ClearAll_NumericPrefixIsolation(t *testing.T) {
+	setupCooldownRegistryTest(t)
+	ten := setupCooldownTestTenant(t)
+	ctx := cooldownTestCtx(ten)
+
+	// char 100 — target of ClearAll
+	_ = GetRegistry().Apply(ctx, 100, 2001001, 30)
+	_ = GetRegistry().Apply(ctx, 100, 2001002, 60)
+	// char 1000 — numeric prefix of 100 in string form
+	_ = GetRegistry().Apply(ctx, 1000, 3001001, 30)
+	// char 1001 — another numeric prefix match
+	_ = GetRegistry().Apply(ctx, 1001, 3001002, 30)
+
+	err := GetRegistry().ClearAll(ctx, 100)
+	assert.NoError(t, err)
+
+	// char 100 entries must be gone
+	_, err = GetRegistry().Get(ctx, 100, 2001001)
+	assert.Error(t, err)
+	_, err = GetRegistry().Get(ctx, 100, 2001002)
+	assert.Error(t, err)
+
+	// char 1000 and 1001 must be untouched
+	_, err = GetRegistry().Get(ctx, 1000, 3001001)
+	assert.NoError(t, err, "ClearAll(100) must not clear char 1000")
+	_, err = GetRegistry().Get(ctx, 1001, 3001002)
+	assert.NoError(t, err, "ClearAll(100) must not clear char 1001")
+}
+
 func TestCooldownRegistry_GetAll(t *testing.T) {
 	setupCooldownRegistryTest(t)
 	ten := setupCooldownTestTenant(t)

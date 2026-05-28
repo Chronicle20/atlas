@@ -2,22 +2,21 @@ package instance
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )
 
-const characterHashKey = "transport:characters"
-
 type CharacterRegistry struct {
-	client *goredis.Client
+	chars *atlas.Hash
 }
 
 var characterRegistry *CharacterRegistry
 
 func InitCharacterRegistry(client *goredis.Client) {
-	characterRegistry = &CharacterRegistry{client: client}
+	characterRegistry = &CharacterRegistry{chars: atlas.NewHash(client, "transport:characters")}
 }
 
 func getCharacterRegistry() *CharacterRegistry {
@@ -26,26 +25,26 @@ func getCharacterRegistry() *CharacterRegistry {
 
 // Add registers a character as being in an instance transport.
 func (r *CharacterRegistry) Add(characterId uint32, instanceId uuid.UUID) {
-	_ = r.client.HSet(context.Background(), characterHashKey, fmt.Sprintf("%d", characterId), instanceId.String()).Err()
+	_ = r.chars.Set(context.Background(), strconv.FormatUint(uint64(characterId), 10), instanceId.String())
 }
 
 // Remove unregisters a character from instance transport tracking.
 func (r *CharacterRegistry) Remove(characterId uint32) {
-	_ = r.client.HDel(context.Background(), characterHashKey, fmt.Sprintf("%d", characterId)).Err()
+	_ = r.chars.Del(context.Background(), strconv.FormatUint(uint64(characterId), 10))
 }
 
 // IsInTransport checks if a character is currently in an instance transport.
 func (r *CharacterRegistry) IsInTransport(characterId uint32) bool {
-	exists, err := r.client.HExists(context.Background(), characterHashKey, fmt.Sprintf("%d", characterId)).Result()
+	ok, err := r.chars.Exists(context.Background(), strconv.FormatUint(uint64(characterId), 10))
 	if err != nil {
 		return false
 	}
-	return exists
+	return ok
 }
 
 // GetInstanceForCharacter returns the instance ID for a character, if any.
 func (r *CharacterRegistry) GetInstanceForCharacter(characterId uint32) (uuid.UUID, bool) {
-	val, err := r.client.HGet(context.Background(), characterHashKey, fmt.Sprintf("%d", characterId)).Result()
+	val, err := r.chars.Get(context.Background(), strconv.FormatUint(uint64(characterId), 10))
 	if err != nil {
 		return uuid.UUID{}, false
 	}

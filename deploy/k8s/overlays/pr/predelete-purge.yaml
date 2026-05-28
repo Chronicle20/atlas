@@ -1,0 +1,40 @@
+# Argo CD PreDelete hook. Unlike the PostDelete cleanup (which runs in the
+# `argocd` namespace AFTER the per-PR namespace is pruned), this hook runs IN
+# the per-PR namespace while atlas-data / atlas-tenants / atlas-ingress are
+# still Running, so it can call atlas-data's DELETE /api/data/tenants/{id} to
+# purge each tenant's Postgres rows + MinIO objects. A failing hook blocks
+# Application deletion and surfaces the error in Argo CD; the sweep CronJob
+# backstop reclaims storage if atlas-data is genuinely down. See task-045/design.md §4.1.
+#
+# namespace: is intentionally omitted. kustomization.yaml carries a top-level
+# `namespace: atlas-pr-PLACEHOLDER_PR_NUMBER` directive that kustomize injects
+# into every resource in this overlay. Matching the pattern used by
+# sync-bootstrap.yaml and other sibling Jobs.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-predelete-purge
+  annotations:
+    argocd.argoproj.io/hook: PreDelete
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      # ghcr-pull is a dockerconfigjson Secret carrying a GHCR PAT. Source
+      # Secret lives in `argocd` namespace (cluster-infra repo) and is
+      # auto-replicated into every atlas-pr-* namespace by Reflector. Needed
+      # because the atlas-pr-bootstrap package on GHCR is private (every
+      # other atlas-* package the cluster pulls is public).
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: predelete-purge
+          image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+          command: ["/atlas/predelete-purge.sh"]
+          env:
+            - name: PR_NUMBER
+              value: "PLACEHOLDER_PR_NUMBER"
+            - name: ATLAS_INGRESS_BASE
+              value: http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local

@@ -169,6 +169,96 @@ func (r *TenantRegistry[K, V]) Exists(ctx context.Context, t tenant.Model, key K
 	return n > 0, nil
 }
 
+// GetAllEntries returns a map of entity-key-suffix -> value for tenant t.
+// The suffix is the part of the Redis key after tenantEntityKey(namespace, t, "").
+// Lets callers reconstruct typed keys without a second raw Scan. Skips "_"-prefixed internal keys.
+func (r *TenantRegistry[K, V]) GetAllEntries(ctx context.Context, t tenant.Model) (map[string]V, error) {
+	result := make(map[string]V)
+	pattern := tenantScanPattern(r.namespace, t)
+	prefix := tenantEntityKey(r.namespace, t, "")
+	var cursor uint64
+
+	for {
+		keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return nil, fmt.Errorf("redis scan: %w", err)
+		}
+
+		if len(keys) > 0 {
+			pipe := r.client.Pipeline()
+			cmds := make([]*goredis.StringCmd, len(keys))
+			for i, k := range keys {
+				cmds[i] = pipe.Get(ctx, k)
+			}
+			_, _ = pipe.Exec(ctx)
+
+			for i, cmd := range cmds {
+				data, err := cmd.Bytes()
+				if errors.Is(err, goredis.Nil) {
+					continue
+				}
+				if err != nil {
+					continue
+				}
+				// Skip internal keys.
+				suffix := strings.TrimPrefix(keys[i], prefix)
+				if strings.HasPrefix(suffix, "_") {
+					continue
+				}
+				v, err := r.unmarshal(data)
+				if err != nil {
+					continue
+				}
+				result[suffix] = v
+			}
+		}
+
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
+// ClearByPrefix deletes every key for tenant t whose entity-key-suffix begins with keyPrefix.
+// Scan pattern = tenantEntityKey(r.namespace, t, keyPrefix) + "*". Pipelined DEL. Returns count.
+func (r *TenantRegistry[K, V]) ClearByPrefix(ctx context.Context, t tenant.Model, keyPrefix string) (int, error) {
+	pattern := tenantEntityKey(r.namespace, t, keyPrefix) + "*"
+	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := r.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = r.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}
+
 // Client returns the underlying Redis client for advanced operations.
 func (r *TenantRegistry[K, V]) Client() *goredis.Client {
 	return r.client

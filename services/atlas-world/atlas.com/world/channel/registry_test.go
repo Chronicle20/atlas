@@ -381,3 +381,16 @@ func TestConcurrentTenantAccess(t *testing.T) {
 
 	// Test should complete without deadlock or panic
 }
+
+func TestRegistry_TenantSetIsPrefixed(t *testing.T) {
+	setupTestRegistry(t)
+	tenantId := uuid.New()
+	ctx := test.CreateTestContextWithTenant(tenantId)
+	reg := channel.GetChannelRegistry()
+	ch := createTestChannel(t, world.Id(0), channelConstant.Id(1), "192.168.1.1", 8080)
+	reg.Register(ctx, ch)
+	tenants := reg.Tenants()
+	if len(tenants) != 1 {
+		t.Fatalf("Tenants() = %d want 1", len(tenants))
+	}
+}

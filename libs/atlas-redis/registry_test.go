@@ -124,6 +124,186 @@ func TestRegistry_Exists(t *testing.T) {
 	}
 }
 
+func TestRegistry_PutWithTTL(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+
+	if err := r.PutWithTTL(ctx, "ttlkey", "ttlval", 5*time.Second); err != nil {
+		t.Fatalf("PutWithTTL failed: %v", err)
+	}
+
+	val, err := r.Get(ctx, "ttlkey")
+	if err != nil {
+		t.Fatalf("Get after PutWithTTL failed: %v", err)
+	}
+	if val != "ttlval" {
+		t.Fatalf("expected ttlval, got %s", val)
+	}
+
+	// Verify a TTL was set.
+	rk := namespacedKey("test", "ttlkey")
+	ttlDuration := mr.TTL(rk)
+	if ttlDuration <= 0 {
+		t.Fatalf("expected positive TTL, got %v", ttlDuration)
+	}
+
+	mr.FastForward(6 * time.Second)
+
+	_, err = r.Get(ctx, "ttlkey")
+	if err != ErrNotFound {
+		t.Fatalf("expected ErrNotFound after TTL expiry, got %v", err)
+	}
+}
+
+func TestRegistry_GetAll(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+
+	if err := r.Put(ctx, "a", "val-a"); err != nil {
+		t.Fatalf("Put a: %v", err)
+	}
+	if err := r.Put(ctx, "b", "val-b"); err != nil {
+		t.Fatalf("Put b: %v", err)
+	}
+	if err := r.Put(ctx, "c", "val-c"); err != nil {
+		t.Fatalf("Put c: %v", err)
+	}
+
+	vals, err := r.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll failed: %v", err)
+	}
+	if len(vals) != 3 {
+		t.Fatalf("expected 3 values, got %d: %v", len(vals), vals)
+	}
+
+	// Verify expected key format: atlas:<ns>:<k>
+	wantKey := "atlas:test:a"
+	exists, err := r.Exists(ctx, "a")
+	if err != nil || !exists {
+		t.Fatalf("expected key %q to exist", wantKey)
+	}
+	actualKey := namespacedKey("test", "a")
+	if actualKey != wantKey {
+		t.Fatalf("expected key format %q, got %q", wantKey, actualKey)
+	}
+}
+
+func TestRegistry_GetAll_SkipsInternalKeys(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	// Use a keyFn that can produce _-prefixed suffixes for internal keys.
+	r := NewRegistry[string, string](client, "test:internal", func(k string) string { return k })
+
+	_ = r.Put(ctx, "normal", "val")
+	// Directly insert an internal key using the raw client to simulate internal state.
+	internalKey := namespacedKey("test:internal", "_expiry")
+	_ = r.client.Set(ctx, internalKey, `"internal"`, 0).Err()
+
+	vals, err := r.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll failed: %v", err)
+	}
+	// Only "normal" should be returned; "_expiry" is internal.
+	if len(vals) != 1 {
+		t.Fatalf("expected 1 value (internal key skipped), got %d: %v", len(vals), vals)
+	}
+}
+
+func TestRegistry_Clear(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test:clear", func(k string) string { return k })
+
+	for i := 0; i < 5; i++ {
+		if err := r.Put(ctx, fmt.Sprintf("k%d", i), "v"); err != nil {
+			t.Fatalf("Put: %v", err)
+		}
+	}
+
+	deleted, err := r.Clear(ctx)
+	if err != nil {
+		t.Fatalf("Clear failed: %v", err)
+	}
+	if deleted != 5 {
+		t.Fatalf("expected 5 deleted, got %d", deleted)
+	}
+
+	vals, err := r.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll after Clear failed: %v", err)
+	}
+	if len(vals) != 0 {
+		t.Fatalf("expected empty after Clear, got %d values", len(vals))
+	}
+}
+
+func TestRegistry_ClearByPrefix(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "monster", func(k string) string { return k })
+
+	// Put keys with three different prefixes.
+	for _, k := range []string{"100:1", "100:2", "200:1", "1000:9"} {
+		if err := r.Put(ctx, k, "v"); err != nil {
+			t.Fatalf("Put %s: %v", k, err)
+		}
+	}
+
+	// ClearByPrefix("100:") should delete "100:1" and "100:2" but NOT "200:1" or "1000:9".
+	deleted, err := r.ClearByPrefix(ctx, "100:")
+	if err != nil {
+		t.Fatalf("ClearByPrefix: %v", err)
+	}
+	if deleted != 2 {
+		t.Fatalf("expected 2 deleted, got %d", deleted)
+	}
+
+	// "100:1" and "100:2" must be gone.
+	for _, k := range []string{"100:1", "100:2"} {
+		if exists, _ := r.Exists(ctx, k); exists {
+			t.Fatalf("key %q should have been deleted by ClearByPrefix", k)
+		}
+	}
+
+	// "200:1" must still exist.
+	if exists, _ := r.Exists(ctx, "200:1"); !exists {
+		t.Fatal("key \"200:1\" should NOT have been deleted by ClearByPrefix(\"100:\")")
+	}
+
+	// "1000:9" must still exist — trailing-delimiter avoids matching a longer prefix.
+	if exists, _ := r.Exists(ctx, "1000:9"); !exists {
+		t.Fatal("key \"1000:9\" should NOT have been deleted by ClearByPrefix(\"100:\") — trailing delimiter prevents cross-match")
+	}
+}
+
 // --- TenantRegistry tests ---
 
 func TestTenantRegistry_PutAndGet(t *testing.T) {
@@ -486,6 +666,122 @@ func TestLock_AutoExpiry(t *testing.T) {
 	acquired, _ := lock.Acquire(ctx, "char:42:equip")
 	if !acquired {
 		t.Fatal("expected acquire to succeed after auto-expiry")
+	}
+}
+
+func TestLock_AcquireWithToken_AndReleaseToken(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("a3f7")
+
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	lock := NewLockWithTTL(client, "inventory", 30*time.Second)
+	ttl := 30 * time.Second
+
+	// tokA acquires successfully.
+	ok, err := lock.AcquireWithToken(ctx, "char:99:equip", "tokA", ttl)
+	if err != nil {
+		t.Fatalf("AcquireWithToken tokA: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected tokA to acquire the lock")
+	}
+
+	// tokB cannot acquire while tokA holds it.
+	ok2, err := lock.AcquireWithToken(ctx, "char:99:equip", "tokB", ttl)
+	if err != nil {
+		t.Fatalf("AcquireWithToken tokB: %v", err)
+	}
+	if ok2 {
+		t.Fatal("expected tokB to fail acquiring the lock held by tokA")
+	}
+
+	// Verify the key exists with the correct namespaced format.
+	wantKey := "a3f7:atlas:inventory:_lock:char:99:equip"
+	if !mr.Exists(wantKey) {
+		t.Fatalf("expected lock key %q; keys=%v", wantKey, mr.Keys())
+	}
+
+	// tokB cannot release a lock it doesn't hold.
+	released, err := lock.ReleaseToken(ctx, "char:99:equip", "tokB")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokB: %v", err)
+	}
+	if released {
+		t.Fatal("expected tokB ReleaseToken to return false (not the holder)")
+	}
+
+	// tokA releases successfully.
+	released2, err := lock.ReleaseToken(ctx, "char:99:equip", "tokA")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokA: %v", err)
+	}
+	if !released2 {
+		t.Fatal("expected tokA ReleaseToken to return true")
+	}
+
+	// Now tokB can acquire the free lock.
+	ok3, err := lock.AcquireWithToken(ctx, "char:99:equip", "tokB", ttl)
+	if err != nil {
+		t.Fatalf("AcquireWithToken tokB after release: %v", err)
+	}
+	if !ok3 {
+		t.Fatal("expected tokB to acquire the now-free lock")
+	}
+}
+
+func TestLock_ForceAcquire_OverridesHolder(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	lock := NewLockWithTTL(client, "inventory", 30*time.Second)
+	ttl := 30 * time.Second
+
+	// tokA acquires normally.
+	ok, err := lock.AcquireWithToken(ctx, "char:77:use", "tokA", ttl)
+	if err != nil || !ok {
+		t.Fatalf("AcquireWithToken tokA: ok=%v err=%v", ok, err)
+	}
+
+	// tokB force-acquires, overwriting tokA.
+	if err := lock.ForceAcquire(ctx, "char:77:use", "tokB", ttl); err != nil {
+		t.Fatalf("ForceAcquire tokB: %v", err)
+	}
+
+	// tokA can no longer release (it's no longer the holder).
+	released, err := lock.ReleaseToken(ctx, "char:77:use", "tokA")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokA after ForceAcquire: %v", err)
+	}
+	if released {
+		t.Fatal("expected tokA ReleaseToken to return false after force-acquire by tokB")
+	}
+
+	// tokB can release.
+	released2, err := lock.ReleaseToken(ctx, "char:77:use", "tokB")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokB: %v", err)
+	}
+	if !released2 {
+		t.Fatal("expected tokB ReleaseToken to return true")
+	}
+}
+
+func TestLock_ReleaseToken_AbsentKey(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	lock := NewLockWithTTL(client, "inventory", 30*time.Second)
+
+	// ReleaseToken on a key that was never acquired returns (false, nil).
+	released, err := lock.ReleaseToken(ctx, "char:nonexistent:equip", "anyToken")
+	if err != nil {
+		t.Fatalf("ReleaseToken absent key: unexpected error %v", err)
+	}
+	if released {
+		t.Fatal("expected ReleaseToken on absent key to return false")
 	}
 }
 

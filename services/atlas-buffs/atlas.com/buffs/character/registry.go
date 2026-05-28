@@ -21,7 +21,7 @@ var ErrNotFound = errors.New("not found")
 type Registry struct {
 	characters  *atlas.TenantRegistry[uint32, Model]
 	poisonTicks *atlas.TenantRegistry[uint32, time.Time]
-	client      *goredis.Client
+	tenants     *atlas.Set
 }
 
 var registry *Registry
@@ -34,16 +34,12 @@ func InitRegistry(client *goredis.Client) {
 		poisonTicks: atlas.NewTenantRegistry[uint32, time.Time](client, "buffs-poison", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}),
-		client: client,
+		tenants: atlas.NewSet(client, "buffs:_tenants"),
 	}
 }
 
 func GetRegistry() *Registry {
 	return registry
-}
-
-func (r *Registry) tenantSetKey() string {
-	return atlas.KeyPrefix() + ":" + r.characters.Namespace() + ":_tenants"
 }
 
 func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
@@ -74,8 +70,9 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 		return buff.Model{}, err
 	}
 
-	tb, _ := json.Marshal(&t)
-	r.client.SAdd(ctx, r.tenantSetKey(), tb)
+	if tb, err := json.Marshal(&t); err == nil {
+		_ = r.tenants.Add(ctx, string(tb))
+	}
 
 	return b, nil
 }
@@ -90,7 +87,7 @@ func (r *Registry) Get(ctx context.Context, id uint32) (Model, error) {
 }
 
 func (r *Registry) GetTenants(ctx context.Context) ([]tenant.Model, error) {
-	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil, err
 	}

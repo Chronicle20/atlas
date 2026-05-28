@@ -201,6 +201,31 @@ func TestRegistry_PopExpired_MixedExpiration(t *testing.T) {
 	assert.False(t, found)
 }
 
+func TestRegistry_GetTrackedTenants_RoundTrip(t *testing.T) {
+	setupRegistryTest(t)
+
+	ten1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ten2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
+
+	ctx1 := testCtx(ten1)
+	ctx2 := testCtx(ten2)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	GetRegistry().add(ctx1, 1000, f, 5)
+	GetRegistry().add(ctx2, 2000, f, 10)
+
+	tracked := GetRegistry().getTrackedTenants(context.Background())
+
+	assert.Len(t, tracked, 2)
+
+	ids := make(map[string]bool)
+	for _, ten := range tracked {
+		ids[ten.Id().String()] = true
+	}
+	assert.True(t, ids[ten1.Id().String()])
+	assert.True(t, ids[ten2.Id().String()])
+}
+
 func TestRegistry_TenantIsolation(t *testing.T) {
 	setupRegistryTest(t)
 

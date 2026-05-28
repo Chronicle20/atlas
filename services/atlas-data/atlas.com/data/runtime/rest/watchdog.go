@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	goredis "github.com/redis/go-redis/v9"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +16,6 @@ import (
 type Watchdog struct {
 	L           logrus.FieldLogger
 	JobCreator  *JobCreator
-	Redis       *goredis.Client
 	TimeoutSecs int
 }
 
@@ -79,9 +78,9 @@ func jobFailed(j *batchv1.Job) bool {
 // heartbeat, the Job's creation timestamp) is older than cutoff.
 func (w Watchdog) jobIsStuck(ctx context.Context, j *batchv1.Job, cutoff time.Time) bool {
 	ref := j.CreationTimestamp.Time
-	if w.Redis != nil {
-		if key := redisJobKeyFromLabels(j); key != "" {
-			if ts, err := w.Redis.Get(ctx, key+":updatedAt").Result(); err == nil && ts != "" {
+	if reg := w.jobRegistry(); reg != nil {
+		if suffix := ingestJobKeySuffixFromLabels(j); suffix != "" {
+			if ts, err := reg.Get(ctx, suffix+":updatedAt"); err == nil && ts != "" {
 				if t, perr := time.Parse(time.RFC3339, ts); perr == nil {
 					ref = t
 				}
@@ -102,9 +101,19 @@ func (w Watchdog) deleteStuckJob(ctx context.Context, j *batchv1.Job) {
 	}); err != nil && w.L != nil {
 		w.L.WithError(err).Warnf("watchdog: delete job %s failed", j.Name)
 	}
-	if w.Redis != nil {
-		if key := redisJobKeyFromLabels(j); key != "" {
-			_ = w.Redis.Del(ctx, key, key+":updatedAt").Err()
+	if reg := w.jobRegistry(); reg != nil {
+		if suffix := ingestJobKeySuffixFromLabels(j); suffix != "" {
+			_ = reg.Remove(ctx, suffix)
+			_ = reg.Remove(ctx, suffix+":updatedAt")
 		}
 	}
+}
+
+// jobRegistry is a convenience accessor that returns the JobCreator's Registry,
+// or nil if either the JobCreator or its Registry is absent.
+func (w Watchdog) jobRegistry() *redis.Registry[string, string] {
+	if w.JobCreator == nil {
+		return nil
+	}
+	return w.JobCreator.Registry
 }

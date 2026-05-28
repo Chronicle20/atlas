@@ -5,6 +5,7 @@ import (
 	"atlas-reactors/reactor/data/state"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -534,4 +535,64 @@ func TestRegistry_ClearAllSpotsForMap(t *testing.T) {
 	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253))
 	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 610, 254))
 	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 1529, 132))
+}
+
+// TestRegistry_ClearAllCooldownsForMap verifies the bulk cooldown wipe used
+// when teardown clears a map instance (mirrors TestRegistry_ClearAllSpotsForMap).
+func TestRegistry_ClearAllCooldownsForMap(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	mk := NewMapKey(f)
+
+	// Record cooldowns with a very long delay so they are definitely still active.
+	GetRegistry().RecordCooldown(ten, mk, 2001, 231, 253, 60000)
+	GetRegistry().RecordCooldown(ten, mk, 2001, 610, 254, 60000)
+	GetRegistry().RecordCooldown(ten, mk, 2002, 100, 200, 60000)
+
+	// All three should be on cooldown before the wipe.
+	assert.True(t, GetRegistry().IsOnCooldown(ten, mk, 2001, 231, 253))
+	assert.True(t, GetRegistry().IsOnCooldown(ten, mk, 2001, 610, 254))
+	assert.True(t, GetRegistry().IsOnCooldown(ten, mk, 2002, 100, 200))
+
+	GetRegistry().ClearAllCooldownsForMap(ten, mk)
+
+	// All three should be off cooldown after the wipe.
+	assert.False(t, GetRegistry().IsOnCooldown(ten, mk, 2001, 231, 253))
+	assert.False(t, GetRegistry().IsOnCooldown(ten, mk, 2001, 610, 254))
+	assert.False(t, GetRegistry().IsOnCooldown(ten, mk, 2002, 100, 200))
+}
+
+// TestCooldown_ExpiresByTimestamp verifies that RecordCooldown stores an
+// expiry timestamp and IsOnCooldown returns false once the delay has elapsed.
+func TestCooldown_ExpiresByTimestamp(t *testing.T) {
+	setupTestRegistry(t)
+	te := setupTestTenant()
+	mk := NewMapKey(field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000)).Build())
+	GetRegistry().RecordCooldown(te, mk, 9101000, 100, 200, 50) // 50ms delay
+	if !GetRegistry().IsOnCooldown(te, mk, 9101000, 100, 200) {
+		t.Fatalf("expected on cooldown immediately after record")
+	}
+	time.Sleep(70 * time.Millisecond)
+	if GetRegistry().IsOnCooldown(te, mk, 9101000, 100, 200) {
+		t.Fatalf("expected cooldown expired after delay")
+	}
+}
+
+// TestSpot_ClaimIsExclusivePerPosition verifies TryClaimSpot exclusivity and
+// that ReleaseSpot re-enables claiming the same position.
+func TestSpot_ClaimIsExclusivePerPosition(t *testing.T) {
+	setupTestRegistry(t)
+	te := setupTestTenant()
+	mk := NewMapKey(field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000)).Build())
+	if !GetRegistry().TryClaimSpot(te, mk, 9101000, 10, 20) {
+		t.Fatalf("first claim should succeed")
+	}
+	if GetRegistry().TryClaimSpot(te, mk, 9101000, 10, 20) {
+		t.Fatalf("second claim on same spot must fail")
+	}
+	GetRegistry().ReleaseSpot(te, mk, 9101000, 10, 20)
+	if !GetRegistry().TryClaimSpot(te, mk, 9101000, 10, 20) {
+		t.Fatalf("claim after release should succeed")
+	}
 }

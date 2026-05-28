@@ -2,6 +2,7 @@ package monster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -13,7 +14,7 @@ import (
 )
 
 type cooldownRegistry struct {
-	client *goredis.Client
+	reg *atlasredis.Registry[string, int64]
 }
 
 var cooldownReg *cooldownRegistry
@@ -21,7 +22,9 @@ var cooldownOnce sync.Once
 
 func InitCooldownRegistry(rc *goredis.Client) {
 	cooldownOnce.Do(func() {
-		cooldownReg = &cooldownRegistry{client: rc}
+		cooldownReg = &cooldownRegistry{
+			reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s }),
+		}
 	})
 }
 
@@ -29,36 +32,32 @@ func GetCooldownRegistry() *cooldownRegistry {
 	return cooldownReg
 }
 
-func cooldownKey(t tenant.Model, monsterId uint32, skillId byte) string {
-	return fmt.Sprintf("%s:monster-cooldown:%s:%s:%s",
-		atlasredis.KeyPrefix(),
+func cooldownSuffix(t tenant.Model, monsterId uint32, skillId byte) string {
+	return fmt.Sprintf("%s:%s:%s",
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 		strconv.FormatUint(uint64(skillId), 10),
 	)
 }
 
-func cooldownScanPattern(t tenant.Model, monsterId uint32) string {
-	return fmt.Sprintf("%s:monster-cooldown:%s:%s:*",
-		atlasredis.KeyPrefix(),
+func cooldownMonsterPrefix(t tenant.Model, monsterId uint32) string {
+	return fmt.Sprintf("%s:%s:",
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 	)
 }
 
 func (r *cooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte) bool {
-	key := cooldownKey(t, monsterId, skillId)
-	result, err := r.client.Exists(ctx, key).Result()
+	ok, err := r.reg.Exists(ctx, cooldownSuffix(t, monsterId, skillId))
 	if err != nil {
 		return false
 	}
-	return result > 0
+	return ok
 }
 
 func (r *cooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte, duration time.Duration) {
-	key := cooldownKey(t, monsterId, skillId)
 	expiryMs := time.Now().Add(duration).UnixMilli()
-	r.client.Set(ctx, key, strconv.FormatInt(expiryMs, 10), duration)
+	_ = r.reg.PutWithTTL(ctx, cooldownSuffix(t, monsterId, skillId), expiryMs, duration)
 }
 
 // Remaining returns the time until the cooldown expires, or zero if there is
@@ -67,13 +66,11 @@ func (r *cooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model, mons
 // IsOnCooldown for the simple boolean answer; Remaining is for picker
 // scheduling.
 func (r *cooldownRegistry) Remaining(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte) time.Duration {
-	key := cooldownKey(t, monsterId, skillId)
-	val, err := r.client.Get(ctx, key).Result()
+	expiryMs, err := r.reg.Get(ctx, cooldownSuffix(t, monsterId, skillId))
 	if err != nil {
-		return 0
-	}
-	expiryMs, perr := strconv.ParseInt(val, 10, 64)
-	if perr != nil {
+		if errors.Is(err, atlasredis.ErrNotFound) {
+			return 0
+		}
 		return 0
 	}
 	now := time.Now().UnixMilli()
@@ -84,19 +81,5 @@ func (r *cooldownRegistry) Remaining(ctx context.Context, t tenant.Model, monste
 }
 
 func (r *cooldownRegistry) ClearCooldowns(ctx context.Context, t tenant.Model, monsterId uint32) {
-	pattern := cooldownScanPattern(t, monsterId)
-	var cursor uint64
-	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
-		if err != nil {
-			return
-		}
-		if len(keys) > 0 {
-			r.client.Del(ctx, keys...)
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
-	}
+	_, _ = r.reg.ClearByPrefix(ctx, cooldownMonsterPrefix(t, monsterId))
 }

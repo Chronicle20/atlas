@@ -75,6 +75,29 @@ jobs:
           force-all: ${{ github.event.inputs.force-all }}
 
   # ============================================
+  # Redis Key Guard
+  # Builds the rediskeyguard analyzer and runs it
+  # over every Go service module. Fails if any
+  # service calls raw go-redis keyed commands
+  # outside libs/atlas-redis (FR-1.5, task-045).
+  # ============================================
+  redis-key-guard:
+    name: Redis Key Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: redis key guard
+        run: ./tools/redis-key-guard.sh
+
+  # ============================================
   # Test Go Libraries
   # ============================================
   test-go-libraries:
@@ -436,7 +459,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard]
     if: always()
     runs-on: ubuntu-latest
 
@@ -452,6 +475,7 @@ jobs:
           UI_RESULT="${{ needs.test-ui.result }}"
           DOCKER_RESULT="${{ needs.build-docker.result }}"
           OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
+          GUARD_RESULT="${{ needs.redis-key-guard.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
@@ -460,11 +484,12 @@ jobs:
           echo "| UI | $UI_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Redis Key Guard | $GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

@@ -39,6 +39,7 @@ type storedSpawnPoint struct {
 // Hash value: JSON-encoded storedSpawnPoint with NextSpawnAt as Unix milliseconds
 type SpawnPointRegistry struct {
 	client *goredis.Client
+	hashes *atlasredis.KeyedHash[character.MapKey]
 }
 
 var (
@@ -49,7 +50,21 @@ var (
 // InitRegistry initializes the singleton SpawnPointRegistry with a Redis client.
 func InitRegistry(rc *goredis.Client) {
 	registryOnce.Do(func() {
-		registryInstance = &SpawnPointRegistry{client: rc}
+		registryInstance = &SpawnPointRegistry{
+			client: rc,
+			hashes: atlasredis.NewKeyedHash[character.MapKey](rc, "maps:spawn", func(mk character.MapKey) string {
+				// Use bare tenant UUID (NOT mk.Tenant.String(), which is the verbose
+				// "Id [..] Region [..] Version [..]" debug form). FlushTenant scans
+				// by bare UUID so write key and flush scan must match.
+				return fmt.Sprintf("%s:%d:%d:%d:%s",
+					mk.Tenant.Id().String(),
+					mk.Field.WorldId(),
+					mk.Field.ChannelId(),
+					mk.Field.MapId(),
+					mk.Field.Instance().String(),
+				)
+			}),
+		}
 	})
 }
 
@@ -59,14 +74,7 @@ func GetRegistry() *SpawnPointRegistry {
 }
 
 func spawnHashKey(mapKey character.MapKey) string {
-	return fmt.Sprintf("%s:maps:spawn:%s:%d:%d:%d:%s",
-		atlasredis.KeyPrefix(),
-		mapKey.Tenant.String(),
-		mapKey.Field.WorldId(),
-		mapKey.Field.ChannelId(),
-		mapKey.Field.MapId(),
-		mapKey.Field.Instance().String(),
-	)
+	return registryInstance.hashes.Key(mapKey)
 }
 
 func toStored(sp monster2.SpawnPoint, nextSpawnAt time.Time) storedSpawnPoint {
@@ -156,11 +164,11 @@ return 1
 func (r *SpawnPointRegistry) InitializeForMap(ctx context.Context, mapKey character.MapKey, dp monster2.Processor, l logrus.FieldLogger) error {
 	key := spawnHashKey(mapKey)
 
-	exists, err := r.client.Exists(ctx, key).Result()
+	n, err := r.hashes.Len(ctx, mapKey)
 	if err != nil {
 		return err
 	}
-	if exists > 0 {
+	if n > 0 {
 		return nil
 	}
 
@@ -260,17 +268,13 @@ func (r *SpawnPointRegistry) ResetCooldown(ctx context.Context, mapKey character
 
 // Reset clears all spawn point registries. Primarily used for testing.
 func (r *SpawnPointRegistry) Reset(ctx context.Context) {
-	iter := r.client.Scan(ctx, 0, atlasredis.KeyPrefix()+":maps:spawn:*", 0).Iterator()
-	for iter.Next(ctx) {
-		r.client.Del(ctx, iter.Val())
-	}
+	_, _ = r.hashes.Clear(ctx)
 }
 
 // GetSpawnPointsForMap returns the spawn points for a specific map key.
 // Primarily used for testing and debugging.
 func (r *SpawnPointRegistry) GetSpawnPointsForMap(ctx context.Context, mapKey character.MapKey) ([]*CooldownSpawnPoint, bool) {
-	key := spawnHashKey(mapKey)
-	entries, err := r.client.HGetAll(ctx, key).Result()
+	entries, err := r.hashes.GetAll(ctx, mapKey)
 	if err != nil || len(entries) == 0 {
 		return nil, false
 	}
@@ -288,61 +292,25 @@ func (r *SpawnPointRegistry) GetSpawnPointsForMap(ctx context.Context, mapKey ch
 }
 
 // FlushTenant deletes every spawn-point hash for tenantId.
-// Uses SCAN with COUNT=100 to avoid blocking the broker on large key
-// spaces; pipelines DEL per batch. Errors are logged at WARN per batch
-// and surfaced via the returned error; partial deletions are not rolled
-// back.
+// Delegates to KeyedHash.Clear which SCAN(COUNT=100) + pipelines DEL per
+// batch. Clear(tenantId.String()) scans <prefix>:maps:spawn:<uuid>:* —
+// identical to the bare-UUID write key, so write and flush always match.
 func (r *SpawnPointRegistry) FlushTenant(ctx context.Context, l logrus.FieldLogger, tenantId uuid.UUID) (int, error) {
-	pattern := fmt.Sprintf("atlas:maps:spawn:%s:*", tenantId.String())
-	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
-
-	deleted := 0
-	pipe := r.client.Pipeline()
-	pipeSize := 0
-	var firstErr error
-
-	flushPipe := func() {
-		if pipeSize == 0 {
-			return
-		}
-		if _, perr := pipe.Exec(ctx); perr != nil {
-			l.WithError(perr).Warnf("Spawn-registry DEL batch failure for tenant [%s].", tenantId)
-			if firstErr == nil {
-				firstErr = perr
-			}
-		}
-		pipe = r.client.Pipeline()
-		pipeSize = 0
+	deleted, err := r.hashes.Clear(ctx, tenantId.String())
+	if err != nil {
+		l.WithError(err).Warnf("Spawn-registry flush failure for tenant [%s].", tenantId)
 	}
-
-	for iter.Next(ctx) {
-		pipe.Del(ctx, iter.Val())
-		deleted++
-		pipeSize++
-		if pipeSize >= 100 {
-			flushPipe()
-		}
-	}
-	flushPipe()
-
-	if ierr := iter.Err(); ierr != nil {
-		l.WithError(ierr).Warnf("Spawn-registry SCAN failure for tenant [%s].", tenantId)
-		if firstErr == nil {
-			firstErr = ierr
-		}
-	}
-	return deleted, firstErr
+	return deleted, err
 }
 
 // SetSpawnPointsForMap sets spawn points for a map key directly. Primarily used for testing.
 func (r *SpawnPointRegistry) SetSpawnPointsForMap(ctx context.Context, mapKey character.MapKey, spawnPoints []*CooldownSpawnPoint) error {
-	key := spawnHashKey(mapKey)
-	pipe := r.client.Pipeline()
 	for _, csp := range spawnPoints {
 		stored := toStored(csp.SpawnPoint, csp.NextSpawnAt)
 		data, _ := json.Marshal(stored)
-		pipe.HSet(ctx, key, strconv.FormatUint(uint64(csp.SpawnPoint.Id), 10), string(data))
+		if err := r.hashes.Set(ctx, mapKey, strconv.FormatUint(uint64(csp.SpawnPoint.Id), 10), string(data)); err != nil {
+			return err
+		}
 	}
-	_, err := pipe.Exec(ctx)
-	return err
+	return nil
 }

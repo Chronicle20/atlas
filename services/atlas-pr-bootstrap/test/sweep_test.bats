@@ -166,6 +166,13 @@ EOF
 # Simulate atlas-main unreachable.
 exit 6
 EOF
+    # kubectl is not reached because curl fails first; shim exits cleanly
+    # so it never masks a real kubectl-not-found error on this path.
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+echo "FAIL: kubectl should not be called when main tenant fetch fails" >&2
+exit 99
+EOF
     chmod +x "$SHIM_DIR"/*
     PATH="$SHIM_DIR:$PATH" run env \
         MINIO_ENDPOINT=fake:9000 \
@@ -190,6 +197,12 @@ case "$*" in
     *)
         exit 7 ;;
 esac
+EOF
+
+    # kubectl returns empty: no live PR namespaces → no extra allowlist entries.
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+exit 0
 EOF
 
     # mc lists three UUIDs per bucket: the active one + two orphans
@@ -258,6 +271,11 @@ case "$*" in
     *) exit 7 ;;
 esac
 EOF
+    # kubectl returns empty: no live PR namespaces → no extra allowlist entries.
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
     cat > "$SHIM_DIR/mc" <<EOF
 #!/usr/bin/env bash
 printf '%s\n' "mc \$*" >> "$CALL_LOG"
@@ -288,5 +306,80 @@ EOF
         return 1
     fi
 
+    rm -rf "$SHIM_DIR"
+}
+
+@test "sweep_minio: protects a live PR-env tenant, deletes a true orphan" {
+    SHIM_DIR="$(mktemp -d)"
+    # kubectl returns one live PR namespace.
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+echo "atlas-pr-700"
+EOF
+    # curl: atlas-main returns UUID 111...; atlas-pr-700 returns UUID 222...
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+for a in "$@"; do url="$a"; done
+case "$url" in
+    *atlas-main*)    echo '{"data":[{"id":"11111111-1111-1111-1111-111111111111"}]}';;
+    *atlas-pr-700*)  echo '{"data":[{"id":"22222222-2222-2222-2222-222222222222"}]}';;
+    *)               echo '{"data":[]}';;
+esac
+EOF
+    # mc lists three UUIDs: one main-active, one PR-env-active, one true orphan.
+    # Recursive JSON listings return an old timestamp so the orphan clears the
+    # safety window (MINIO_TENANT_SAFETY_WINDOW_SEC=0 → age threshold is 0s,
+    # so any non-zero age passes; returning empty also works since the safety
+    # block is skipped when last_mod_iso is empty).
+    cat > "$SHIM_DIR/mc" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+    "alias set"*) exit 0;;
+    "ls --recursive --json"*) exit 0;;
+    "ls"*)
+        printf '[2024-01-01 00:00 UTC]     0B 11111111-1111-1111-1111-111111111111/\n'
+        printf '[2024-01-01 00:00 UTC]     0B 22222222-2222-2222-2222-222222222222/\n'
+        printf '[2024-01-01 00:00 UTC]     0B 33333333-3333-3333-3333-333333333333/\n'
+        ;;
+    "rm"*) exit 0;;
+esac
+EOF
+    chmod +x "$SHIM_DIR"/*
+    run env PATH="$SHIM_DIR:$PATH" \
+        MINIO_ENDPOINT="minio.test:9000" MINIO_ROOT_USER=u MINIO_ROOT_PASSWORD=p \
+        MINIO_TENANT_SAFETY_WINDOW_SEC=0 \
+        bash "$SCRIPT" --minio --apply
+    [ "$status" -eq 0 ] || [ "$status" -eq 1 ]
+    # True orphan must be announced for deletion.
+    [[ "$output" == *"33333333-3333-3333-3333-333333333333"* ]]
+    # Main-active and PR-env-active UUIDs must NOT be deleted.
+    [[ "$output" != *"drop-minio"*"22222222-2222-2222-2222-222222222222"* ]]
+    [[ "$output" != *"drop-minio"*"11111111-1111-1111-1111-111111111111"* ]]
+    rm -rf "$SHIM_DIR"
+}
+
+@test "sweep_minio: namespace-enumeration failure aborts (fail-closed)" {
+    SHIM_DIR="$(mktemp -d)"
+    # kubectl fails → sweep must abort, never touch MinIO.
+    cat > "$SHIM_DIR/kubectl" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+    # curl succeeds for atlas-main so we get past the first allowlist fetch.
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+echo '{"data":[{"id":"11111111-1111-1111-1111-111111111111"}]}'
+EOF
+    cat > "$SHIM_DIR/mc" <<'EOF'
+#!/usr/bin/env bash
+[ "$1 $2" = "alias set" ] && exit 0
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+    run env PATH="$SHIM_DIR:$PATH" \
+        MINIO_ENDPOINT="minio.test:9000" MINIO_ROOT_USER=u MINIO_ROOT_PASSWORD=p \
+        bash "$SCRIPT" --minio --apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"abort"* ]] || [[ "$output" == *"enumerat"* ]]
     rm -rf "$SHIM_DIR"
 }

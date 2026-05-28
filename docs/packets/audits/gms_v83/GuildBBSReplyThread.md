@@ -1,7 +1,7 @@
 # GuildBBSReplyThread (← `CUIGuildBBS::OnComment`)
 
 - **IDA:** 0x0
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_reply_thread.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_reply_thread.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

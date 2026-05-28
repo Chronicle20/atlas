@@ -1,7 +1,7 @@
 # CharacterKeyMap (← `CFuncKeyMappedMan::OnInit`)
 
 - **IDA:** 0x5bd279
-- **Atlas file:** `libs/atlas-packet/character/clientbound/keymap.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/keymap.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ❌

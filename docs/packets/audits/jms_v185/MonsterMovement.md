@@ -1,7 +1,7 @@
 # MonsterMovement (← `CMob::OnMove`)
 
 - **IDA:** 0x6e955a
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/movement.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/movement.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** ❌

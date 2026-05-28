@@ -1,7 +1,7 @@
 # PetMovement (← `CPet::OnMove`)
 
 - **IDA:** 0x70474d
-- **Atlas file:** `libs/atlas-packet/pet/clientbound/movement.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/movement.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

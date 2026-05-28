@@ -1,7 +1,7 @@
 # PetExcludeItem (← `CPet::SendUpdateExceptionListRequest`)
 
 - **IDA:** 0x76c05e
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/exclude_item.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/exclude_item.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

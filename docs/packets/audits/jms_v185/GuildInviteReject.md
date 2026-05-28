@@ -1,7 +1,7 @@
 # GuildInviteReject (← `CFadeWnd::SendCloseMessage#DenyGuildRequest`)
 
 - **IDA:** 0x557267
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/invite_reject.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/invite_reject.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

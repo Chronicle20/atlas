@@ -4,7 +4,7 @@
   "Address": "0x56e66c",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_accept.go",
+  "AtlasFile": "../../libs/atlas-packet/buddy/serverbound/operation_accept.go",
   "Rows": [
     {
       "Index": 0,

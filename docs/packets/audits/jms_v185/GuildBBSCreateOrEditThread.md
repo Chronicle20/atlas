@@ -1,7 +1,7 @@
 # GuildBBSCreateOrEditThread (← `CUIGuildBBS::OnRegister`)
 
 - **IDA:** ABSENT
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ❌

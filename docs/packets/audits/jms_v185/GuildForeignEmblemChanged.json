@@ -4,7 +4,7 @@
   "Address": "0xa57689",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/guild/clientbound/emblem_changed_foreign.go",
+  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/emblem_changed_foreign.go",
   "Rows": [
     {
       "Index": 0,

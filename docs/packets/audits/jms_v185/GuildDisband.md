@@ -1,7 +1,7 @@
 # GuildDisband (← `CWvsContext::OnGuildResult#Disband`)
 
 - **IDA:** 0xb22518
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

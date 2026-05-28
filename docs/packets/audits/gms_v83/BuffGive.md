@@ -1,7 +1,7 @@
 # BuffGive (← `CWvsContext::OnTemporaryStatSet`)
 
 - **IDA:** 0xa202be
-- **Atlas file:** `libs/atlas-packet/character/clientbound/buff_give.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/buff_give.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # GuildNoticeChange (← `CWvsContext::OnGuildResult#NoticeChange`)
 
 - **IDA:** 0xa0e44b
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

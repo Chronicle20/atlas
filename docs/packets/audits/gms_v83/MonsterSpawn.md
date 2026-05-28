@@ -1,7 +1,7 @@
 # MonsterSpawn (← `CMobPool::OnMobEnterField`)
 
 - **IDA:** 0x67945a
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/spawn.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ❌

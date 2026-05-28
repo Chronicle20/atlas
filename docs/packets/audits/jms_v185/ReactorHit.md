@@ -1,7 +1,7 @@
 # ReactorHit (← `CReactorPool::OnReactorChangeState`)
 
 - **IDA:** 0x79e321
-- **Atlas file:** `libs/atlas-packet/reactor/clientbound/hit.go`
+- **Atlas file:** `../../libs/atlas-packet/reactor/clientbound/hit.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

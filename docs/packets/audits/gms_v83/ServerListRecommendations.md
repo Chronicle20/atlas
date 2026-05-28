@@ -1,7 +1,7 @@
 # ServerListRecommendations (← `CLogin::OnRecommendWorldMessage`)
 
 - **IDA:** 0x5f8340
-- **Atlas file:** `libs/atlas-packet/login/clientbound/server_list_recommendations.go`
+- **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_list_recommendations.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

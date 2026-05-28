@@ -4,7 +4,7 @@
   "Address": "0x76a6ab",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/clientbound/command.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/command.go",
   "Rows": [
     {
       "Index": 0,

@@ -1,7 +1,7 @@
 # CreateCharacter (← `CLogin::SendNewCharPacket`)
 
 - **IDA:** 0x62f603
-- **Atlas file:** `libs/atlas-packet/character/serverbound/create.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/create.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 3
 - **Verdict:** ✅

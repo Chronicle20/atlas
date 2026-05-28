@@ -1,7 +1,7 @@
 # AuthSuccess (← `CLogin::OnCheckPasswordResult`)
 
 - **IDA:** 0x66e79f
-- **Atlas file:** `libs/atlas-packet/login/clientbound/auth_success.go`
+- **Atlas file:** `../../libs/atlas-packet/login/clientbound/auth_success.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** ❌

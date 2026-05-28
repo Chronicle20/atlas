@@ -1,7 +1,7 @@
 # PartyChangeLeader (← `CWvsContext::OnPartyResult#ChangeLeader`)
 
 - **IDA:** 0xb297e7
-- **Atlas file:** `libs/atlas-packet/party/clientbound/change_leader.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/change_leader.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

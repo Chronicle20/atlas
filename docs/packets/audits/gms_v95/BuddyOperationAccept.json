@@ -4,7 +4,7 @@
   "Address": "0x52f290",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_accept.go",
+  "AtlasFile": "../../libs/atlas-packet/buddy/serverbound/operation_accept.go",
   "Rows": [
     {
       "Index": 0,

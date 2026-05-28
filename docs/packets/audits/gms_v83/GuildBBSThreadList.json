@@ -1,10 +1,10 @@
 {
   "WriterName": "GuildBBSThreadList",
-  "IDAName": "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList",
+  "IDAName": "CWvsContext::OnGuildBBSPacket",
   "Address": "0xa1233f",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/guild/clientbound/bbs.go",
+  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/bbs.go",
   "Rows": [
     {
       "Index": 0,

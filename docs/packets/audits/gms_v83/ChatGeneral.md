@@ -1,7 +1,7 @@
 # ChatGeneral (← `CField::SendChatMsg`)
 
 - **IDA:** 0x52c315
-- **Atlas file:** `libs/atlas-packet/chat/serverbound/general.go`
+- **Atlas file:** `../../libs/atlas-packet/chat/serverbound/general.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ✅

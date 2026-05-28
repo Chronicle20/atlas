@@ -1,7 +1,7 @@
 # PetChatRequest (← `CPet::DoAction`)
 
 - **IDA:** 0x7055e2
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/chat.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/chat.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # ServerIP (← `CLogin::OnSelectCharacterResult`)
 
 - **IDA:** 0x63319a
-- **Atlas file:** `libs/atlas-packet/login/clientbound/server_ip.go`
+- **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_ip.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 3
 - **Verdict:** ✅

@@ -4,7 +4,7 @@
   "Address": "0x5f95b7",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/login/clientbound/server_list_end.go",
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/server_list_end.go",
   "Rows": [
     {
       "Index": 0,

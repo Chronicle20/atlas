@@ -1,7 +1,7 @@
 # CharacterNameResponse (← `CLogin::OnCheckDuplicatedIDResult`)
 
 - **IDA:** 0x66f957
-- **Atlas file:** `libs/atlas-packet/character/clientbound/name_response.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/name_response.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

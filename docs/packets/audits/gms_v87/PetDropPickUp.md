@@ -1,7 +1,7 @@
 # PetDropPickUp (← `CPet::SendDropPickUpRequest`)
 
 - **IDA:** 0x749be8
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/drop_pick_up.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 3
 - **Verdict:** ❌

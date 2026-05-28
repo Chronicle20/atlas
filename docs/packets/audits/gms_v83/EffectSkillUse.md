@@ -1,7 +1,7 @@
 # EffectSkillUse (← `CUser::OnEffect`)
 
 - **IDA:** 0x9377d9
-- **Atlas file:** `libs/atlas-packet/character/clientbound/effect_skill_use.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/effect_skill_use.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ❌

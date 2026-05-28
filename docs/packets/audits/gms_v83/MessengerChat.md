@@ -1,7 +1,7 @@
 # MessengerChat (← `CUIMessenger::OnPacket#Chat`)
 
 - **IDA:** 0x8511fc
-- **Atlas file:** `libs/atlas-packet/messenger/clientbound/chat.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/chat.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

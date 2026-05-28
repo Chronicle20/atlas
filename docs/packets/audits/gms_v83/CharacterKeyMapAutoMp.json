@@ -4,7 +4,7 @@
   "Address": "0x58de53",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/keymap_auto_mp.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/keymap_auto_mp.go",
   "Rows": [
     {
       "Index": 0,

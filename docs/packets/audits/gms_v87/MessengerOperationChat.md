@@ -1,7 +1,7 @@
 # MessengerOperationChat (← `CUIMessenger::ProcessChat`)
 
 - **IDA:** 0x8b978f
-- **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_chat.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/serverbound/operation_chat.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

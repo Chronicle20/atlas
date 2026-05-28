@@ -1,7 +1,7 @@
 # PartyJoin (← `CWvsContext::OnPartyResult#Join`)
 
 - **IDA:** 0xad697a
-- **Atlas file:** `libs/atlas-packet/party/clientbound/join.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/join.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

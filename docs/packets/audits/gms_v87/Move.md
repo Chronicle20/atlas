@@ -1,7 +1,7 @@
 # Move (← `CVecCtrlUser::EndUpdateActive`)
 
 - **IDA:** 0xa5c937
-- **Atlas file:** `libs/atlas-packet/character/serverbound/move.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/move.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** ❌

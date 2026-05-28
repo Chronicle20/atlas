@@ -5,27 +5,323 @@
   "region": "JMS",
   "notes": "JMS v185 shares C++ mangled symbol names with GMS v95 for all character-domain functions. The login domain differs significantly (separate opcode space, different OnCheckPasswordResult wire layout). Character domain functions are present under the same demangled names.",
   "functions": {
+    "CMiniRoomBaseDlg::CheckAndSendChat": {
+      "address": "0x6db3ce",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time). JMS v185 PRESENT — same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message (s)"
+        }
+      ]
+    },
+    "CPersonalShopDlg::BuyItem": {
+      "address": "0x762365",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "nIdx (index). op-byte 0x14 personal (or 0x1F entrusted) consumed by dispatcher"
+        },
+        {
+          "op": "Encode2",
+          "comment": "Src (quantity)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "ItemCRC (CItemInfo::GetItemCRC). PRESENT in JMS — atlas unconditional itemCRC fix is correct"
+        }
+      ]
+    },
+    "CPersonalShopDlg::BuyItem#Merchant": {
+      "address": "0x762365",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "nIdx (index). entrusted op-byte 0x1F consumed by dispatcher"
+        },
+        {
+          "op": "Encode2",
+          "comment": "Src (quantity)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "ItemCRC (CItemInfo::GetItemCRC). PRESENT in JMS"
+        }
+      ]
+    },
+    "CPersonalShopDlg::DeliverBlackList": {
+      "address": "0x763021",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "count (m_asBlackList size). op-byte 0x1B consumed by dispatcher"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "per-entry name loop (string[]). JMS string[] — atlas unconditional []string fix is correct"
+        }
+      ]
+    },
+    "CTrunkDlg::SendGetItemRequest": {
+      "address": "0x84dea0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "nType (inventory type). op-byte 3 consumed by dispatcher"
+        },
+        {
+          "op": "Encode1",
+          "comment": "slot (*(v5+8))"
+        }
+      ]
+    },
+    "CTrunkDlg::SendPutItemRequest": {
+      "address": "0x84e07d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "slot (v40[0]). op-byte 4 consumed by dispatcher"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (n)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "quantity (v41[0])"
+        }
+      ]
+    },
+    "CCashShop::OnQueryCashResult": {
+      "address": "0x48b3e8",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nCash (credit)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMaplePoint (points). JMS reads only 2 ints — atlas else-branch (no prepaid) matches"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashShopInventory": {
+      "address": "0x48bcff",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x58 LOAD_LOCKER_DONE; op-byte consumed by OnCashItemResult dispatcher)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (locker item count)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "55 * count bytes (per CashInventoryItem.EncodeBytes)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "m_nTrunkCount (storageSlots; *(this+288))"
+        },
+        {
+          "op": "Decode2",
+          "comment": "m_nCharacterSlotCount (characterSlots; *(this+289))"
+        },
+        {
+          "op": "Decode2",
+          "comment": "m_nBuyCharacterCount (*(this+290)). JMS PRESENT — atlas else-branch (2 shorts) is WRONG; JMS reads 4 shorts like GMS v95"
+        },
+        {
+          "op": "Decode2",
+          "comment": "m_nCharacterCount (*(this+291))"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashShopPurchaseSuccess": {
+      "address": "0x48c0f0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x64 BUY_DONE; op-byte consumed by dispatcher)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "0x37 = 55 bytes (per CashInventoryItem). Matches atlas"
+        }
+      ]
+    },
+    "CCashShop::OnBuy": {
+      "address": "0x47eaa7",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "isPoints bool (v47 == 2). op-byte 3 consumed by dispatcher"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCommSN (serialNumber). JMS NX-system: NO dwOption/currency int, NO trailing zero/oneADay/eventSN — diverges from all atlas branches"
+        }
+      ]
+    },
+    "CCashShop::OnBuyNormal": {
+      "address": "0x47f5ba",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nCommSN (serialNumber). op-byte 0x21 consumed by dispatcher. JMS body = serialNumber only"
+        }
+      ]
+    },
+    "CCashShop::SendGiftsPacket": {
+      "address": "0x47bced",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "commSN (serialNumber). op-byte 0x2E (NOT GMS 0x04). JMS gift = serialNumber ONLY — no SPW/birthday, no recipient name, no message, no oneADay. NX-system divergence"
+        }
+      ]
+    },
+    "CCashShop::OnBuyCouple": {
+      "address": "0x48085a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "s (secondary password / SPW). op-byte 0x1E (NOT GMS 0x1F)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCommSN (serialNumber). JMS has NO option int (atlas else-branch has option)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sGiveTo (recipient name)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sText (message)"
+        }
+      ]
+    },
+    "CCashShop::OnBuyFriendship": {
+      "address": "0x481184",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "s (SPW). op-byte 0x24 (NOT GMS 0x25)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCommSN (serialNumber). JMS has NO option int"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "v36 (recipient name)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "v33 (message)"
+        }
+      ]
+    },
+    "CCashShop::OnRebateLockerItem": {
+      "address": "0x47c059",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "spw (secondary password). op-byte 0x1B (NOT GMS 0x1C). JMS has SPW string (atlas else-branch has int birthday)"
+        },
+        {
+          "op": "EncodeBuffer",
+          "comment": "8-byte locker SN (Src). matches atlas unk long"
+        }
+      ]
+    },
     "CLogin::OnCheckPasswordResult": {
       "address": "0x66e79f",
       "region": "JMS",
       "direction": "clientbound",
       "notes": "JMS success path (resultCode==0 or 12) differs from GMS v95. Reads: Decode4(accountId)+Decode1(nGender)+Decode1(nGradeCode)+Decode1(combined)+2×DecodeStr(nexon club IDs)+5×Decode1(flags)+DecodeBuffer(8,chatUnblockDate)+DecodeStr(extra). Fundamentally different wire layout from GMS v95. Atlas login domain tracks this separately (task-027).",
       "calls": [
-        {"op": "Decode1", "comment": "resultCode"},
-        {"op": "Decode1", "comment": "post-auth flag"},
-        {"op": "Decode4", "comment": "accountId (success path, resultCode==0 or 12)"},
-        {"op": "Decode1", "comment": "nGender"},
-        {"op": "Decode1", "comment": "nGradeCode (packed byte, differs from GMS v95 Decode2)"},
-        {"op": "Decode1", "comment": "combined byte (bits for tester/admin flags)"},
-        {"op": "DecodeStr", "comment": "nexon club ID 1 (JMS-specific: two strings instead of one)"},
-        {"op": "DecodeStr", "comment": "nexon club ID 2 (JMS-specific extra string)"},
-        {"op": "Decode1", "comment": "purchaseExp/chatBlockReason"},
-        {"op": "Decode1", "comment": "nChatBlockReason"},
-        {"op": "Decode1", "comment": "flag byte"},
-        {"op": "Decode1", "comment": "flag byte 2"},
-        {"op": "Decode1", "comment": "flag byte 3"},
-        {"op": "Decode1", "comment": "lastByte"},
-        {"op": "DecodeBuffer", "comment": "chatUnblockDate FILETIME (8 bytes)", "size": 8}
+        {
+          "op": "Decode1",
+          "comment": "resultCode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "post-auth flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "accountId (success path, resultCode==0 or 12)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nGender"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nGradeCode (packed byte, differs from GMS v95 Decode2)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "combined byte (bits for tester/admin flags)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "nexon club ID 1 (JMS-specific: two strings instead of one)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "nexon club ID 2 (JMS-specific extra string)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "purchaseExp/chatBlockReason"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nChatBlockReason"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag byte"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag byte 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag byte 3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "lastByte"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "chatUnblockDate FILETIME (8 bytes)",
+          "size": 8
+        }
       ]
     },
     "CLogin::OnSelectWorldResult": {
@@ -34,12 +330,31 @@
       "direction": "clientbound",
       "notes": "JMS success path similar to GMS v95 but reads m_bQuerySSNOnCreateNewCharacter before m_nSlotCount and m_nBuyCharCount. Loop is fixed at 18 iterations (v95 is count-based).",
       "calls": [
-        {"op": "Decode1", "comment": "resultCode"},
-        {"op": "DecodeSub", "comment": "character entry loop (18 × GW_CharacterStat::Decode + AvatarLook::Decode + onFamily + rank)", "guard": "loop 18"},
-        {"op": "Decode1", "comment": "m_bLoginOpt"},
-        {"op": "Decode1", "comment": "m_bQuerySSNOnCreateNewCharacter (JMS extra field)"},
-        {"op": "Decode4", "comment": "m_nSlotCount"},
-        {"op": "Decode4", "comment": "m_nBuyCharCount"}
+        {
+          "op": "Decode1",
+          "comment": "resultCode"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "character entry loop (18 × GW_CharacterStat::Decode + AvatarLook::Decode + onFamily + rank)",
+          "guard": "loop 18"
+        },
+        {
+          "op": "Decode1",
+          "comment": "m_bLoginOpt"
+        },
+        {
+          "op": "Decode1",
+          "comment": "m_bQuerySSNOnCreateNewCharacter (JMS extra field)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nSlotCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "m_nBuyCharCount"
+        }
       ]
     },
     "CLogin::OnWorldInformation": {
@@ -48,23 +363,82 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode1(nWorldID)+DecodeStr(name)+Decode1(state)+DecodeStr(eventDesc)+Decode2+Decode2+Decode1(blockCharCreation)+Decode1(nChannelCount)+loop channels+Decode2(nBalloonCount)+loop balloons.",
       "calls": [
-        {"op": "Decode1", "comment": "nWorldID"},
-        {"op": "DecodeStr", "comment": "sName"},
-        {"op": "Decode1", "comment": "nWorldState"},
-        {"op": "DecodeStr", "comment": "sWorldEventDesc"},
-        {"op": "Decode2", "comment": "nWorldEventEXP_WSE"},
-        {"op": "Decode2", "comment": "nWorldEventDrop_WSE"},
-        {"op": "Decode1", "comment": "nBlockCharCreation"},
-        {"op": "Decode1", "comment": "nChannelCount"},
-        {"op": "DecodeStr", "comment": "channel sName (loop body)", "guard": "loop nChannelCount"},
-        {"op": "Decode4", "comment": "channel nUserNo (load)", "guard": "loop nChannelCount"},
-        {"op": "Decode1", "comment": "channel nWorldID", "guard": "loop nChannelCount"},
-        {"op": "Decode1", "comment": "channel nChannelID", "guard": "loop nChannelCount"},
-        {"op": "Decode1", "comment": "channel bAdultChannel", "guard": "loop nChannelCount"},
-        {"op": "Decode2", "comment": "nBalloonCount"},
-        {"op": "Decode2", "comment": "balloon x (loop body)", "guard": "loop nBalloonCount"},
-        {"op": "Decode2", "comment": "balloon y", "guard": "loop nBalloonCount"},
-        {"op": "DecodeStr", "comment": "balloon msg", "guard": "loop nBalloonCount"}
+        {
+          "op": "Decode1",
+          "comment": "nWorldID"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nWorldState"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sWorldEventDesc"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nWorldEventEXP_WSE"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nWorldEventDrop_WSE"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nBlockCharCreation"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nChannelCount"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "channel sName (loop body)",
+          "guard": "loop nChannelCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channel nUserNo (load)",
+          "guard": "loop nChannelCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel nWorldID",
+          "guard": "loop nChannelCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel nChannelID",
+          "guard": "loop nChannelCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel bAdultChannel",
+          "guard": "loop nChannelCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nBalloonCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "balloon x (loop body)",
+          "guard": "loop nBalloonCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "balloon y",
+          "guard": "loop nBalloonCount"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "balloon msg",
+          "guard": "loop nBalloonCount"
+        }
       ]
     },
     "CLogin::OnSelectCharacterResult": {
@@ -73,13 +447,34 @@
       "direction": "clientbound",
       "notes": "Success path (resultCode==0 or 12, subMode==0 or 11) reads: Decode4(ip)+Decode2(port)+Decode4(charId)+Decode1(authenCode)+Decode4(ulPremiumArgument). Same as GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "resultCode (v3)"},
-        {"op": "Decode1", "comment": "subMode (v14)"},
-        {"op": "DecodeBuf", "comment": "ipv4 (4 bytes)"},
-        {"op": "Decode2", "comment": "port"},
-        {"op": "Decode4", "comment": "dwCharacterID"},
-        {"op": "Decode1", "comment": "bAuthenCode"},
-        {"op": "Decode4", "comment": "ulPremiumArgument"}
+        {
+          "op": "Decode1",
+          "comment": "resultCode (v3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "subMode (v14)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ipv4 (4 bytes)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "port"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwCharacterID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bAuthenCode"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ulPremiumArgument"
+        }
       ]
     },
     "CLogin::OnCheckDuplicatedIDResult": {
@@ -88,8 +483,14 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: DecodeStr(name)+Decode1(resultCode).",
       "calls": [
-        {"op": "DecodeStr", "comment": "character name string (ZXString)"},
-        {"op": "Decode1", "comment": "v3 result code: 0=OK, 1=alreadyRegistered, 2=notAllowed, else=systemError"}
+        {
+          "op": "DecodeStr",
+          "comment": "character name string (ZXString)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v3 result code: 0=OK, 1=alreadyRegistered, 2=notAllowed, else=systemError"
+        }
       ]
     },
     "CLogin::OnDeleteCharacterResult": {
@@ -98,8 +499,14 @@
       "direction": "clientbound",
       "notes": "Wire layout: Decode4(dwCharacterID)+Decode1(resultCode). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode4", "comment": "dwCharacterID (characterId of the deleted character)"},
-        {"op": "Decode1", "comment": "result code (0=success; error codes match GMS v95)"}
+        {
+          "op": "Decode4",
+          "comment": "dwCharacterID (characterId of the deleted character)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result code (0=success; error codes match GMS v95)"
+        }
       ]
     },
     "CLogin::OnCreateNewCharacterResult": {
@@ -108,8 +515,15 @@
       "direction": "clientbound",
       "notes": "Success path reads GW_CharacterStat::Decode + AvatarLook::Decode. Same structure as GMS v95 success path. Error codes differ slightly (case -24 = JMS account notice). No trailing rank/viewAll bytes.",
       "calls": [
-        {"op": "Decode1", "comment": "v3/v5 result code: 0=success, 10=limit, -24=JMS notice, 30=cannotUse"},
-        {"op": "DecodeSub", "comment": "GW_CharacterStat::Decode + AvatarLook::Decode (success path)", "guard": "code == 0"}
+        {
+          "op": "Decode1",
+          "comment": "v3/v5 result code: 0=success, 10=limit, -24=JMS notice, 30=cannotUse"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "GW_CharacterStat::Decode + AvatarLook::Decode (success path)",
+          "guard": "code == 0"
+        }
       ]
     },
     "CUser::ShowItemUpgradeEffect": {
@@ -118,12 +532,30 @@
       "direction": "clientbound",
       "notes": "JMS v185 reads Decode1×5: bSuccess+bCursed+bEnchantSkill+v5+v6. NO Decode4(nEnchantCategory). enchantResultFlag (v6) IS present in JMS — same as GMS v95 position. Only enchantCategory (Decode4, GMS>87 only) is absent from JMS. The || JMS clause on the enchantCategory gate was incorrect; the || JMS clause on enchantResultFlag gate is correct.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher before calling this function"},
-        {"op": "Decode1", "comment": "bSuccess"},
-        {"op": "Decode1", "comment": "bCursed"},
-        {"op": "Decode1", "comment": "bEnchantSkill (JMS: no nEnchantCategory Decode4 follows this)"},
-        {"op": "Decode1", "comment": "v5 (lucky/white-scroll display flag)"},
-        {"op": "Decode1", "comment": "v6 / enchantResultFlag (display flag — present in JMS v185 even though not passed to CUIEnchantDlg)"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher before calling this function"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bSuccess"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCursed"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bEnchantSkill (JMS: no nEnchantCategory Decode4 follows this)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v5 (lucky/white-scroll display flag)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v6 / enchantResultFlag (display flag — present in JMS v185 even though not passed to CUIEnchantDlg)"
+        }
       ]
     },
     "CUser::OnEmotion": {
@@ -132,9 +564,18 @@
       "direction": "clientbound",
       "notes": "JMS v185 CUser::OnEmotion@0x9f636b reads Decode4(nEmotion)+Decode4(tDuration) only — no bByItemOption. JMS v185 is older code than GMS v95; the || JMS clause on the byItemOption gate was incorrect.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId (consumed by CUserPool::OnUserRemotePacket dispatcher)"},
-        {"op": "Decode4", "comment": "nEmotion (expression/emote ID)"},
-        {"op": "Decode4", "comment": "tDuration (display duration in ms — JMS has duration but NOT byItemOption)"}
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserRemotePacket dispatcher)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEmotion (expression/emote ID)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "tDuration (display duration in ms — JMS has duration but NOT byItemOption)"
+        }
       ]
     },
     "CWvsContext::SendEmotionChange": {
@@ -143,7 +584,10 @@
       "direction": "serverbound",
       "notes": "JMS v185 SendEmotionChange@0xb0b8be encodes ONLY Encode4(charId) from the local user (ms_pInstance+252). Does NOT encode emotionId, duration, or byItemOption. Fundamentally different wire format. Atlas server opcode 0x2B reads a single int4 which JMS client sends as charId; server reinterprets as emotionId. No duration/byItemOption for JMS.",
       "calls": [
-        {"op": "Encode4", "comment": "characterId (local user's charId from CUserLocal — NOT emotionId)"}
+        {
+          "op": "Encode4",
+          "comment": "characterId (local user's charId from CUserLocal — NOT emotionId)"
+        }
       ]
     },
     "CVecCtrlUser::EndUpdateActive": {
@@ -152,10 +596,25 @@
       "direction": "serverbound",
       "notes": "JMS v185 EndUpdateActive@0xaaa076 encodes Encode1(detectFlag/bDetect). If detectFlag: Encode1(fieldKey from CField+328) + Encode4(crc from CField+756) + CMovePath::Flush. NO dr0/dr1/dr2/dr3/dwKey/crc32 fields. JMS movement is GMS v83-equivalent layout. The || JMS clause on all dr-field gates was incorrect.",
       "calls": [
-        {"op": "Encode1", "comment": "detectFlag (v26 = a1[151])"},
-        {"op": "Encode1", "comment": "fieldKey (CField+328, only if detectFlag)", "guard": "detectFlag"},
-        {"op": "Encode4", "comment": "crc (CField+756, only if detectFlag)", "guard": "detectFlag"},
-        {"op": "EncodeBuf", "comment": "CMovePath::Flush — movement data (only if detectFlag)", "guard": "detectFlag"}
+        {
+          "op": "Encode1",
+          "comment": "detectFlag (v26 = a1[151])"
+        },
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (CField+328, only if detectFlag)",
+          "guard": "detectFlag"
+        },
+        {
+          "op": "Encode4",
+          "comment": "crc (CField+756, only if detectFlag)",
+          "guard": "detectFlag"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "CMovePath::Flush — movement data (only if detectFlag)",
+          "guard": "detectFlag"
+        }
       ]
     },
     "CWvsContext::OnCharacterInfo": {
@@ -164,28 +623,99 @@
       "direction": "clientbound",
       "notes": "JMS v185 OnCharacterInfo@0xb0aa6e INCLUDES monster book block (SomethingMonsterBook call at 0xb0ac66). The gate (GMS<=87 || JMS) in info.go is CORRECT for JMS. Decode sequence differs from GMS v95: reads Decode4+Decode4 for medals (not Decode1(medalSlot)), and reads monster book before MedalAchievementInfo::Decode.",
       "calls": [
-        {"op": "Decode4", "comment": "dwCharacterId"},
-        {"op": "Decode1", "comment": "nLevel"},
-        {"op": "Decode2", "comment": "nJob"},
-        {"op": "Decode2", "comment": "nPOP (fame)"},
-        {"op": "Decode1", "comment": "bIsMarried (bool)"},
-        {"op": "DecodeStr", "comment": "sCommunity (guild name)"},
-        {"op": "DecodeStr", "comment": "sAlliance (alliance name)"},
-        {"op": "Decode4", "comment": "v32 (medal-related int32 — JMS reads Decode4 not Decode1)"},
-        {"op": "Decode4", "comment": "p (second medal int32)"},
-        {"op": "Decode1", "comment": "v26 (taming mob active flag)"},
-        {"op": "Decode1", "comment": "v7 (pet count for SetMultiPetInfo loop)"},
-        {"op": "DecodeSub", "comment": "SetMultiPetInfo bool-terminated loop (v7 iterations)"},
-        {"op": "Decode1", "comment": "taming mob active bool"},
-        {"op": "Decode4", "comment": "taming mob field 1 (if active)", "guard": "tamingMobActive"},
-        {"op": "Decode4", "comment": "taming mob field 2 (if active)", "guard": "tamingMobActive"},
-        {"op": "Decode4", "comment": "taming mob field 3 (if active)", "guard": "tamingMobActive"},
-        {"op": "Decode1", "comment": "wish list count (v12)"},
-        {"op": "DecodeBuffer", "comment": "wish items (4 * count bytes)", "guard": "wishCount > 0"},
-        {"op": "DecodeSub", "comment": "monster book block (SomethingMonsterBook — present in JMS v185)"},
-        {"op": "DecodeSub", "comment": "MedalAchievementInfo::Decode"},
-        {"op": "Decode4", "comment": "chair list count"},
-        {"op": "DecodeBuffer", "comment": "chair list data (4 * count bytes)", "guard": "chairCount > 0"}
+        {
+          "op": "Decode4",
+          "comment": "dwCharacterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nLevel"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nJob"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOP (fame)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bIsMarried (bool)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCommunity (guild name)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sAlliance (alliance name)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v32 (medal-related int32 — JMS reads Decode4 not Decode1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "p (second medal int32)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v26 (taming mob active flag)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v7 (pet count for SetMultiPetInfo loop)"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "SetMultiPetInfo bool-terminated loop (v7 iterations)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "taming mob active bool"
+        },
+        {
+          "op": "Decode4",
+          "comment": "taming mob field 1 (if active)",
+          "guard": "tamingMobActive"
+        },
+        {
+          "op": "Decode4",
+          "comment": "taming mob field 2 (if active)",
+          "guard": "tamingMobActive"
+        },
+        {
+          "op": "Decode4",
+          "comment": "taming mob field 3 (if active)",
+          "guard": "tamingMobActive"
+        },
+        {
+          "op": "Decode1",
+          "comment": "wish list count (v12)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "wish items (4 * count bytes)",
+          "guard": "wishCount > 0"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "monster book block (SomethingMonsterBook — present in JMS v185)"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "MedalAchievementInfo::Decode"
+        },
+        {
+          "op": "Decode4",
+          "comment": "chair list count"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "chair list data (4 * count bytes)",
+          "guard": "chairCount > 0"
+        }
       ]
     },
     "CUserLocal::OnSitResult": {
@@ -194,8 +724,15 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode1(sitting)+Decode2(chairId if sitting). Confirmed by IDA.",
       "calls": [
-        {"op": "Decode1", "comment": "sitting flag (0=cancel sit, 1=sit in chair)"},
-        {"op": "Decode2", "comment": "chairId / nSeat (only if sitting flag == 1)", "guard": "sitting == 1"}
+        {
+          "op": "Decode1",
+          "comment": "sitting flag (0=cancel sit, 1=sit in chair)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "chairId / nSeat (only if sitting flag == 1)",
+          "guard": "sitting == 1"
+        }
       ]
     },
     "CWvsContext::OnChangeSkillRecordResult": {
@@ -204,13 +741,38 @@
       "direction": "clientbound",
       "notes": "Wire layout: Decode1(exclRequestSent)+Decode2(count)+loop(Decode4+Decode4+Decode4+DecodeBuffer(8))+Decode1(sn). Same as GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "exclRequestSent flag"},
-        {"op": "Decode2", "comment": "count of skill entries"},
-        {"op": "Decode4", "comment": "nSkillID (per entry)", "guard": "loop count"},
-        {"op": "Decode4", "comment": "nLevel (nInfo, per entry)", "guard": "loop count"},
-        {"op": "Decode4", "comment": "nMasterLevel (per entry)", "guard": "loop count"},
-        {"op": "DecodeBuf", "comment": "dateExpire: 8-byte FILETIME (per entry)", "guard": "loop count"},
-        {"op": "Decode1", "comment": "sn / MovementAffectingStat (after loop)"}
+        {
+          "op": "Decode1",
+          "comment": "exclRequestSent flag"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count of skill entries"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (per entry)",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nLevel (nInfo, per entry)",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMasterLevel (per entry)",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "dateExpire: 8-byte FILETIME (per entry)",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sn / MovementAffectingStat (after loop)"
+        }
       ]
     },
     "CWvsContext::SendStatChangeRequestByItemOption": {
@@ -219,12 +781,30 @@
       "direction": "serverbound",
       "notes": "JMS v185 appends Encode4(timeGetTime()) at end vs GMS v95. JMS sends: Encode4(updateTime)+Encode4(0x1400)+Encode2(nHP)+Encode2(nMP)+Encode1(nType)+Encode4(extraTime). The trailing int4 is ignored by atlas server. Low-severity divergence.",
       "calls": [
-        {"op": "Encode4", "comment": "update_time (get_update_time())"},
-        {"op": "Encode4", "comment": "val (constant 0x1400)"},
-        {"op": "Encode2", "comment": "nHP"},
-        {"op": "Encode2", "comment": "nMP"},
-        {"op": "Encode1", "comment": "nType"},
-        {"op": "Encode4", "comment": "extraTime (JMS-only trailing timeGetTime() call)"}
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "val (constant 0x1400)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nHP"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nMP"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nType"
+        },
+        {
+          "op": "Encode4",
+          "comment": "extraTime (JMS-only trailing timeGetTime() call)"
+        }
       ]
     },
     "CWvsContext::SendCharacterInfoRequest": {
@@ -233,9 +813,18 @@
       "direction": "serverbound",
       "notes": "Wire layout identical to GMS v95: Encode4(updateTime)+Encode4(dwCharacterID)+Encode1(bPetInfo).",
       "calls": [
-        {"op": "Encode4", "comment": "update_time (get_update_time())"},
-        {"op": "Encode4", "comment": "dwCharacterID (target character ID)"},
-        {"op": "Encode1", "comment": "bPetInfo (1 = include pet info)"}
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID (target character ID)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bPetInfo (1 = include pet info)"
+        }
       ]
     },
     "CFuncKeyMappedMan::OnInit": {
@@ -244,9 +833,20 @@
       "direction": "clientbound",
       "notes": "Wire layout same structure as GMS v95: Decode1(resetToDefault)+loop(Decode1+Decode4 per key). Loop count not determined from decompile; assumed same as v95 (90 entries). Same tool-limitation as v83/v87.",
       "calls": [
-        {"op": "Decode1", "comment": "resetToDefault flag"},
-        {"op": "Decode1", "comment": "FUNCKEY_MAPPED::nType (loop body)", "guard": "loop ~90, if resetToDefault==0"},
-        {"op": "Decode4", "comment": "FUNCKEY_MAPPED::nID (loop body)", "guard": "loop ~90, if resetToDefault==0"}
+        {
+          "op": "Decode1",
+          "comment": "resetToDefault flag"
+        },
+        {
+          "op": "Decode1",
+          "comment": "FUNCKEY_MAPPED::nType (loop body)",
+          "guard": "loop ~90, if resetToDefault==0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "FUNCKEY_MAPPED::nID (loop body)",
+          "guard": "loop ~90, if resetToDefault==0"
+        }
       ]
     },
     "CFuncKeyMappedMan::OnPetConsumeItemInit": {
@@ -255,7 +855,10 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode4(m_nPetConsumeItemID).",
       "calls": [
-        {"op": "Decode4", "comment": "m_nPetConsumeItemID (HP auto-pot item ID)"}
+        {
+          "op": "Decode4",
+          "comment": "m_nPetConsumeItemID (HP auto-pot item ID)"
+        }
       ]
     },
     "CFuncKeyMappedMan::OnPetConsumeMPItemInit": {
@@ -264,7 +867,10 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode4(m_nPetConsumeMPItemID).",
       "calls": [
-        {"op": "Decode4", "comment": "m_nPetConsumeMPItemID (MP auto-pot item ID)"}
+        {
+          "op": "Decode4",
+          "comment": "m_nPetConsumeMPItemID (MP auto-pot item ID)"
+        }
       ]
     },
     "CFuncKeyMappedMan::SaveFuncKeyMap": {
@@ -273,8 +879,14 @@
       "direction": "serverbound",
       "notes": "Wire layout same as GMS v95: Encode4(mode)+loop of changed key entries.",
       "calls": [
-        {"op": "Encode4", "comment": "mode (0 = key mapping change)"},
-        {"op": "Encode4", "comment": "count (number of changed key slot indices)"}
+        {
+          "op": "Encode4",
+          "comment": "mode (0 = key mapping change)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "count (number of changed key slot indices)"
+        }
       ]
     },
     "CUserRemote::OnAvatarModified": {
@@ -283,22 +895,82 @@
       "direction": "clientbound",
       "notes": "JMS v185 uses list format for couple/friendship: Decode1(flags)+[if bit0: AvatarLook::Decode]+[if bit1: Decode1(speed)]+[if bit2: Decode1(carryItem)]+Decode1(bCouple)+[if: Decode4(count)+loop(DecodeBuf(0x10)+Decode4(pairCharId))]+Decode1(bFriendship)+similar+Decode1(bMarriage)+[if: Decode4+Decode4+Decode4]. GMS v95 had single-entry buffers for couple/friendship. Sub-struct difference, outer flags byte identical.",
       "calls": [
-        {"op": "Decode1", "comment": "v3 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem"},
-        {"op": "DecodeBuf", "comment": "AvatarLook::Decode (if bit0)", "guard": "v3 & 1"},
-        {"op": "Decode1", "comment": "nSpeed (if bit1)", "guard": "v3 & 2"},
-        {"op": "Decode1", "comment": "nCarryItemEffect (if bit2)", "guard": "v3 & 4"},
-        {"op": "Decode1", "comment": "bCouple count / flag"},
-        {"op": "Decode4", "comment": "couple count (if bCouple > 0)", "guard": "bCouple"},
-        {"op": "DecodeBuf", "comment": "couple item SN (16 bytes per entry)", "guard": "bCouple, loop count"},
-        {"op": "Decode4", "comment": "pair characterId (per entry)", "guard": "bCouple, loop count"},
-        {"op": "Decode1", "comment": "bFriendship count / flag"},
-        {"op": "Decode4", "comment": "friendship count (if > 0)", "guard": "bFriendship"},
-        {"op": "DecodeBuf", "comment": "friendship item SN (16 bytes per entry)", "guard": "bFriendship, loop"},
-        {"op": "Decode4", "comment": "friendship pair characterId (per entry)", "guard": "bFriendship, loop"},
-        {"op": "Decode1", "comment": "bMarriage flag"},
-        {"op": "Decode4", "comment": "dwMarriageCharacterID (if bMarriage)", "guard": "bMarriage"},
-        {"op": "Decode4", "comment": "dwMarriagePairCharacterID (if bMarriage)", "guard": "bMarriage"},
-        {"op": "Decode4", "comment": "nWeddingRingID (if bMarriage)", "guard": "bMarriage"}
+        {
+          "op": "Decode1",
+          "comment": "v3 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook::Decode (if bit0)",
+          "guard": "v3 & 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSpeed (if bit1)",
+          "guard": "v3 & 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCarryItemEffect (if bit2)",
+          "guard": "v3 & 4"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bCouple count / flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "couple count (if bCouple > 0)",
+          "guard": "bCouple"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "couple item SN (16 bytes per entry)",
+          "guard": "bCouple, loop count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pair characterId (per entry)",
+          "guard": "bCouple, loop count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bFriendship count / flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "friendship count (if > 0)",
+          "guard": "bFriendship"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "friendship item SN (16 bytes per entry)",
+          "guard": "bFriendship, loop"
+        },
+        {
+          "op": "Decode4",
+          "comment": "friendship pair characterId (per entry)",
+          "guard": "bFriendship, loop"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bMarriage flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwMarriageCharacterID (if bMarriage)",
+          "guard": "bMarriage"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwMarriagePairCharacterID (if bMarriage)",
+          "guard": "bMarriage"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nWeddingRingID (if bMarriage)",
+          "guard": "bMarriage"
+        }
       ]
     },
     "CUser::OnADBoard": {
@@ -307,9 +979,19 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode1(active)+[if active: DecodeStr(message)].",
       "calls": [
-        {"op": "Decode4", "comment": "characterId (consumed by dispatcher before calling this function)"},
-        {"op": "Decode1", "comment": "active (bool: 1=show chalkboard, 0=clear)"},
-        {"op": "DecodeStr", "comment": "message text (only if active != 0)", "guard": "active != 0"}
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by dispatcher before calling this function)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "active (bool: 1=show chalkboard, 0=clear)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message text (only if active != 0)",
+          "guard": "active != 0"
+        }
       ]
     },
     "CUserLocal::OnBalloonMsg": {
@@ -318,12 +1000,32 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: DecodeStr(msg)+Decode2(width)+Decode2(duration)+Decode1(notAtPoint)+[if notAtPoint==0: Decode4(x)+Decode4(y)].",
       "calls": [
-        {"op": "DecodeStr", "comment": "msg (hint text)"},
-        {"op": "Decode2", "comment": "width"},
-        {"op": "Decode2", "comment": "duration/height"},
-        {"op": "Decode1", "comment": "notAtPoint flag"},
-        {"op": "Decode4", "comment": "x coordinate (only if notAtPoint == 0)", "guard": "notAtPoint == 0"},
-        {"op": "Decode4", "comment": "y coordinate (only if notAtPoint == 0)", "guard": "notAtPoint == 0"}
+        {
+          "op": "DecodeStr",
+          "comment": "msg (hint text)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "width"
+        },
+        {
+          "op": "Decode2",
+          "comment": "duration/height"
+        },
+        {
+          "op": "Decode1",
+          "comment": "notAtPoint flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x coordinate (only if notAtPoint == 0)",
+          "guard": "notAtPoint == 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y coordinate (only if notAtPoint == 0)",
+          "guard": "notAtPoint == 0"
+        }
       ]
     },
     "CUserLocal::OnSkillCooltimeSet": {
@@ -332,8 +1034,14 @@
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode4(nSkillID)+Decode2(usRemainSec).",
       "calls": [
-        {"op": "Decode4", "comment": "nSkillID"},
-        {"op": "Decode2", "comment": "usRemainSec cooldown in seconds"}
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode2",
+          "comment": "usRemainSec cooldown in seconds"
+        }
       ]
     },
     "CWvsContext::SendAbilityUpRequest#DistributeAp": {
@@ -342,8 +1050,14 @@
       "direction": "serverbound",
       "notes": "Wire layout identical to GMS v95: Encode4(updateTime)+Encode4(dwFlag).",
       "calls": [
-        {"op": "Encode4", "comment": "update_time"},
-        {"op": "Encode4", "comment": "dwFlag (stat flag to increment)"}
+        {
+          "op": "Encode4",
+          "comment": "update_time"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFlag (stat flag to increment)"
+        }
       ]
     },
     "CMobPool::OnMobEnterField": {
@@ -351,10 +1065,22 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId"},
-        {"op": "Decode1", "comment": "nCalcDamageIndex (controlled — atlas writes for JMS too)"},
-        {"op": "Decode4", "comment": "dwTemplateID"},
-        {"op": "DecodeBuf", "comment": "MonsterModel body"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCalcDamageIndex (controlled — atlas writes for JMS too)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTemplateID"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "MonsterModel body"
+        }
       ]
     },
     "CMobPool::OnMobLeaveField": {
@@ -362,9 +1088,19 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobID"},
-        {"op": "Decode1", "comment": "destroyType"},
-        {"op": "Decode4", "comment": "dwSwallowCharacterID — only destroyType == 4", "guard": "destroyType == 4"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "destroyType"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSwallowCharacterID — only destroyType == 4",
+          "guard": "destroyType == 4"
+        }
       ]
     },
     "CMobPool::OnMobChangeController": {
@@ -373,11 +1109,29 @@
       "direction": "clientbound",
       "notes": "JMS v185 production shape (function size 0x47 — same as v83, no dev seed block). Matches atlas's encoder.",
       "calls": [
-        {"op": "Decode1", "comment": "controlMode"},
-        {"op": "Decode4", "comment": "dwMobID"},
-        {"op": "Decode1", "comment": "aggro byte — atlas hardcodes 5", "guard": "controlMode != 0"},
-        {"op": "Decode4", "comment": "dwTemplateID via sub_6F75D6 — atlas monsterId", "guard": "controlMode != 0"},
-        {"op": "DecodeBuf", "comment": "MonsterModel body", "guard": "controlMode != 0"}
+        {
+          "op": "Decode1",
+          "comment": "controlMode"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwMobID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "aggro byte — atlas hardcodes 5",
+          "guard": "controlMode != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTemplateID via sub_6F75D6 — atlas monsterId",
+          "guard": "controlMode != 0"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "MonsterModel body",
+          "guard": "controlMode != 0"
+        }
       ]
     },
     "CMob::OnMove": {
@@ -385,18 +1139,57 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId — read by dispatcher"},
-        {"op": "Decode1", "comment": "bNotForceLandingWhenDiscard"},
-        {"op": "Decode1", "comment": "bNotChangeAction (JMS: present per atlas `|| JMS` gate)"},
-        {"op": "Decode1", "comment": "bNextAttackPossible"},
-        {"op": "Decode1", "comment": "bLeft"},
-        {"op": "Decode4", "comment": "sEffect.m_Data"},
-        {"op": "Decode4", "comment": "multiTargetForBall count"},
-        {"op": "Decode4", "comment": "multiTargetForBall[i].x", "guard": "loop multiTargetForBall"},
-        {"op": "Decode4", "comment": "multiTargetForBall[i].y", "guard": "loop multiTargetForBall"},
-        {"op": "Decode4", "comment": "randTimeForAreaAttack count"},
-        {"op": "Decode4", "comment": "randTimeForAreaAttack[i]", "guard": "loop randTimeForAreaAttack"},
-        {"op": "DecodeBuf", "comment": "Movement body"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNotForceLandingWhenDiscard"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNotChangeAction (JMS: present per atlas `|| JMS` gate)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNextAttackPossible"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bLeft"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sEffect.m_Data"
+        },
+        {
+          "op": "Decode4",
+          "comment": "multiTargetForBall count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "multiTargetForBall[i].x",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Decode4",
+          "comment": "multiTargetForBall[i].y",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Decode4",
+          "comment": "randTimeForAreaAttack count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "randTimeForAreaAttack[i]",
+          "guard": "loop randTimeForAreaAttack"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "Movement body"
+        }
       ]
     },
     "CMob::OnCtrlAck": {
@@ -404,12 +1197,30 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId — read by dispatcher"},
-        {"op": "Decode2", "comment": "mobCtrlSN"},
-        {"op": "Decode1", "comment": "bNextAttackPossible"},
-        {"op": "Decode2", "comment": "mp"},
-        {"op": "Decode1", "comment": "skillCommand"},
-        {"op": "Decode1", "comment": "skillLevel"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by dispatcher"
+        },
+        {
+          "op": "Decode2",
+          "comment": "mobCtrlSN"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNextAttackPossible"
+        },
+        {
+          "op": "Decode2",
+          "comment": "mp"
+        },
+        {
+          "op": "Decode1",
+          "comment": "skillCommand"
+        },
+        {
+          "op": "Decode1",
+          "comment": "skillLevel"
+        }
       ]
     },
     "CMob::OnStatSet": {
@@ -417,9 +1228,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId — read by dispatcher"},
-        {"op": "DecodeBuf", "comment": "uFlagSet: 16-byte UINT128 stat mask"},
-        {"op": "DecodeBuf", "comment": "per-stat body via CMob::ProcessStatSet"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by dispatcher"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "uFlagSet: 16-byte UINT128 stat mask"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "per-stat body via CMob::ProcessStatSet"
+        }
       ]
     },
     "CMob::OnStatReset": {
@@ -427,9 +1247,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId — read by dispatcher"},
-        {"op": "DecodeBuf", "comment": "uFlagReset: 16-byte UINT128 stat mask"},
-        {"op": "DecodeBuf", "comment": "per-stat reset body via CMob::ProcessStatReset"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by dispatcher"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "uFlagReset: 16-byte UINT128 stat mask"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "per-stat reset body via CMob::ProcessStatReset"
+        }
       ]
     },
     "CMob::OnDamaged": {
@@ -437,11 +1266,28 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId — read by dispatcher"},
-        {"op": "Decode1", "comment": "damageType"},
-        {"op": "Decode4", "comment": "damage amount"},
-        {"op": "Decode4", "comment": "hp current — gated mob.bDamagedByMob", "guard": "mob.bDamagedByMob"},
-        {"op": "Decode4", "comment": "hp max — gated mob.bDamagedByMob", "guard": "mob.bDamagedByMob"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "damageType"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage amount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hp current — gated mob.bDamagedByMob",
+          "guard": "mob.bDamagedByMob"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hp max — gated mob.bDamagedByMob",
+          "guard": "mob.bDamagedByMob"
+        }
       ]
     },
     "CMob::OnHPIndicator": {
@@ -449,8 +1295,14 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwMobId — read by dispatcher"},
-        {"op": "Decode1", "comment": "nHPpercentage"}
+        {
+          "op": "Decode4",
+          "comment": "dwMobId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nHPpercentage"
+        }
       ]
     },
     "CUserRemote::OnPetActivated": {
@@ -458,12 +1310,33 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"},
-        {"op": "Decode1", "comment": "slot"},
-        {"op": "Decode1", "comment": "active flag"},
-        {"op": "Decode1", "comment": "show — gated active != 0", "guard": "active != 0"},
-        {"op": "DecodeBuf", "comment": "CPet::Init body — gated active != 0", "guard": "active != 0"},
-        {"op": "Decode1", "comment": "despawnMode — gated active == 0", "guard": "active == 0"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot"
+        },
+        {
+          "op": "Decode1",
+          "comment": "active flag"
+        },
+        {
+          "op": "Decode1",
+          "comment": "show — gated active != 0",
+          "guard": "active != 0"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "CPet::Init body — gated active != 0",
+          "guard": "active != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "despawnMode — gated active == 0",
+          "guard": "active == 0"
+        }
       ]
     },
     "CPet::OnMove": {
@@ -471,9 +1344,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — read by dispatcher"},
-        {"op": "Decode1", "comment": "slot — read by dispatcher"},
-        {"op": "DecodeBuf", "comment": "Movement body"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by dispatcher"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "Movement body"
+        }
       ]
     },
     "CPet::OnAction": {
@@ -481,12 +1363,30 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — read by dispatcher"},
-        {"op": "Decode1", "comment": "slot — read by dispatcher"},
-        {"op": "Decode1", "comment": "action type"},
-        {"op": "Decode1", "comment": "action no"},
-        {"op": "DecodeStr", "comment": "chat text"},
-        {"op": "Decode1", "comment": "trailing byte flag"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action type"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action no"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "chat text"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing byte flag"
+        }
       ]
     },
     "CPet::OnActionCommand": {
@@ -494,11 +1394,28 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — read by dispatcher"},
-        {"op": "Decode1", "comment": "slot — read by dispatcher"},
-        {"op": "Decode1", "comment": "mode"},
-        {"op": "Decode1", "comment": "reaction index — gated mode <= 1", "guard": "mode <= 1"},
-        {"op": "Decode1", "comment": "success flag — gated mode <= 1", "guard": "mode <= 1"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "reaction index — gated mode <= 1",
+          "guard": "mode <= 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag — gated mode <= 1",
+          "guard": "mode <= 1"
+        }
       ]
     },
     "CPet::OnLoadExceptionList": {
@@ -506,11 +1423,27 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — read by dispatcher"},
-        {"op": "Decode1", "comment": "slot — read by dispatcher"},
-        {"op": "DecodeBuf", "comment": "petLockerSN (8 bytes)"},
-        {"op": "Decode1", "comment": "nCount"},
-        {"op": "Decode4", "comment": "excluded item id per entry", "guard": "loop nCount"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — read by dispatcher"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot — read by dispatcher"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "petLockerSN (8 bytes)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "excluded item id per entry",
+          "guard": "loop nCount"
+        }
       ]
     },
     "CWvsContext::OnCashPetFoodResult": {
@@ -518,8 +1451,15 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode1", "comment": "result"},
-        {"op": "Decode1", "comment": "petSlotIndex — only result == 0", "guard": "result == 0"}
+        {
+          "op": "Decode1",
+          "comment": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "petSlotIndex — only result == 0",
+          "guard": "result == 0"
+        }
       ]
     },
     "CDropPool::OnDropEnterField": {
@@ -527,20 +1467,66 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode1", "comment": "nEnterType"},
-        {"op": "Decode4", "comment": "dwDropID"},
-        {"op": "Decode1", "comment": "nIsMoney"},
-        {"op": "Decode4", "comment": "itemId or meso"},
-        {"op": "Decode4", "comment": "ownerCharId"},
-        {"op": "Decode1", "comment": "dropType"},
-        {"op": "Decode2", "comment": "drop x"},
-        {"op": "Decode2", "comment": "drop y"},
-        {"op": "Decode4", "comment": "sourceObjectId"},
-        {"op": "Decode2", "comment": "sourceX — gated nEnterType != 2", "guard": "nEnterType != 2"},
-        {"op": "Decode2", "comment": "sourceY — gated nEnterType != 2", "guard": "nEnterType != 2"},
-        {"op": "Decode2", "comment": "tDelay — gated nEnterType != 2", "guard": "nEnterType != 2"},
-        {"op": "DecodeBuf", "comment": "cashItemSN (8 bytes) — gated !isMoney", "guard": "isMoney == 0"},
-        {"op": "Decode1", "comment": "questId / pre-pet flag"}
+        {
+          "op": "Decode1",
+          "comment": "nEnterType"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwDropID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nIsMoney"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId or meso"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerCharId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "dropType"
+        },
+        {
+          "op": "Decode2",
+          "comment": "drop x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "drop y"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sourceObjectId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sourceX — gated nEnterType != 2",
+          "guard": "nEnterType != 2"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sourceY — gated nEnterType != 2",
+          "guard": "nEnterType != 2"
+        },
+        {
+          "op": "Decode2",
+          "comment": "tDelay — gated nEnterType != 2",
+          "guard": "nEnterType != 2"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "cashItemSN (8 bytes) — gated !isMoney",
+          "guard": "isMoney == 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "questId / pre-pet flag"
+        }
       ]
     },
     "CDropPool::OnDropLeaveField": {
@@ -548,10 +1534,24 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode1", "comment": "destroyType"},
-        {"op": "Decode4", "comment": "dwDropID"},
-        {"op": "Decode4", "comment": "pickupCharId — gated destroyType in {2,3,5}", "guard": "destroyType in (2,3,5)"},
-        {"op": "Decode2", "comment": "tLeaveDelay — gated destroyType == 4", "guard": "destroyType == 4"}
+        {
+          "op": "Decode1",
+          "comment": "destroyType"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwDropID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pickupCharId — gated destroyType in {2,3,5}",
+          "guard": "destroyType in (2,3,5)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "tLeaveDelay — gated destroyType == 4",
+          "guard": "destroyType == 4"
+        }
       ]
     },
     "CReactorPool::OnReactorEnterField": {
@@ -559,13 +1559,34 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "dwID"},
-        {"op": "Decode4", "comment": "dwTemplateID"},
-        {"op": "Decode1", "comment": "nState"},
-        {"op": "Decode2", "comment": "ptPos.x"},
-        {"op": "Decode2", "comment": "ptPos.y"},
-        {"op": "Decode1", "comment": "bFlip"},
-        {"op": "DecodeStr", "comment": "sName"}
+        {
+          "op": "Decode4",
+          "comment": "dwID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTemplateID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nState"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.y"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bFlip"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sName"
+        }
       ]
     },
     "CReactorPool::OnReactorChangeState": {
@@ -573,13 +1594,34 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "reactorId"},
-        {"op": "Decode1", "comment": "newState"},
-        {"op": "Decode2", "comment": "ptPos.x"},
-        {"op": "Decode2", "comment": "ptPos.y"},
-        {"op": "Decode2", "comment": "tDelay"},
-        {"op": "Decode1", "comment": "frameDelay"},
-        {"op": "Decode1", "comment": "stance"}
+        {
+          "op": "Decode4",
+          "comment": "reactorId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "newState"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.y"
+        },
+        {
+          "op": "Decode2",
+          "comment": "tDelay"
+        },
+        {
+          "op": "Decode1",
+          "comment": "frameDelay"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance"
+        }
       ]
     },
     "CReactorPool::OnReactorLeaveField": {
@@ -587,10 +1629,22 @@
       "region": "JMS",
       "direction": "clientbound",
       "calls": [
-        {"op": "Decode4", "comment": "reactorId"},
-        {"op": "Decode1", "comment": "finalState"},
-        {"op": "Decode2", "comment": "ptPos.x"},
-        {"op": "Decode2", "comment": "ptPos.y"}
+        {
+          "op": "Decode4",
+          "comment": "reactorId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "finalState"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.x"
+        },
+        {
+          "op": "Decode2",
+          "comment": "ptPos.y"
+        }
       ]
     },
     "CWvsContext::SendActivatePetRequest": {
@@ -598,9 +1652,18 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "Encode4", "comment": "get_update_time()"},
-        {"op": "Encode2", "comment": "nPos"},
-        {"op": "Encode1", "comment": "bBossPet"}
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPos"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bBossPet"
+        }
       ]
     },
     "CVecCtrlPet::EndUpdateActive": {
@@ -608,8 +1671,14 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "EncodeBuf", "comment": "petLockerSN (8 bytes)"},
-        {"op": "EncodeBuf", "comment": "CMovePath::Flush body"}
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes)"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "CMovePath::Flush body"
+        }
       ]
     },
     "CPet::DoAction": {
@@ -617,10 +1686,22 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "EncodeBuf", "comment": "petLockerSN (8 bytes)"},
-        {"op": "Encode1", "comment": "action type"},
-        {"op": "Encode1", "comment": "action no"},
-        {"op": "EncodeStr", "comment": "chat text"}
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action type"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action no"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chat text"
+        }
       ]
     },
     "CPet::ParseCommand": {
@@ -628,10 +1709,22 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "EncodeBuf", "comment": "petLockerSN (8 bytes)"},
-        {"op": "Encode1", "comment": "command mode"},
-        {"op": "Encode1", "comment": "reaction index"},
-        {"op": "Encode1", "comment": "success flag"}
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "command mode"
+        },
+        {
+          "op": "Encode1",
+          "comment": "reaction index"
+        },
+        {
+          "op": "Encode1",
+          "comment": "success flag"
+        }
       ]
     },
     "CPet::SendUpdateExceptionListRequest": {
@@ -639,9 +1732,19 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "EncodeBuf", "comment": "petLockerSN (8 bytes)"},
-        {"op": "Encode1", "comment": "nCount"},
-        {"op": "Encode4", "comment": "itemId per entry", "guard": "loop nCount"}
+        {
+          "op": "EncodeBuf",
+          "comment": "petLockerSN (8 bytes)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nCount"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId per entry",
+          "guard": "loop nCount"
+        }
       ]
     },
     "CWvsContext::SendPetFoodItemUseRequest": {
@@ -649,9 +1752,18 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "Encode4", "comment": "get_update_time()"},
-        {"op": "Encode2", "comment": "nPOS"},
-        {"op": "Encode4", "comment": "nItemID"}
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
       ]
     },
     "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
@@ -659,11 +1771,26 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "EncodeBuf", "comment": "liPetSN (8 bytes)"},
-        {"op": "Encode1", "comment": "bBuffSkill"},
-        {"op": "Encode4", "comment": "get_update_time()"},
-        {"op": "Encode2", "comment": "nPOS"},
-        {"op": "Encode4", "comment": "nItemID"}
+        {
+          "op": "EncodeBuf",
+          "comment": "liPetSN (8 bytes)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bBuffSkill"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
       ]
     },
     "CPet::SendDropPickUpRequest": {
@@ -671,20 +1798,66 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "EncodeBuf", "comment": "m_liPetLockerSN (8 bytes)"},
-        {"op": "Encode1", "comment": "bFieldKey"},
-        {"op": "Encode4", "comment": "get_update_time()"},
-        {"op": "Encode2", "comment": "pt.x"},
-        {"op": "Encode2", "comment": "pt.y"},
-        {"op": "Encode4", "comment": "dwID"},
-        {"op": "Encode4", "comment": "dwCliCrc"},
-        {"op": "Encode1", "comment": "m_bPickupOthers"},
-        {"op": "Encode1", "comment": "m_bSweepForDrop"},
-        {"op": "Encode1", "comment": "m_bLongRange"},
-        {"op": "Encode2", "comment": "pet pos.x — gated dwID % 13 == 0", "guard": "dwID % 13 == 0"},
-        {"op": "Encode2", "comment": "pet pos.y", "guard": "dwID % 13 == 0"},
-        {"op": "Encode4", "comment": "m_dwPosCRC", "guard": "dwID % 13 == 0"},
-        {"op": "Encode4", "comment": "dwRectCrc", "guard": "dwID % 13 == 0"}
+        {
+          "op": "EncodeBuf",
+          "comment": "m_liPetLockerSN (8 bytes)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bFieldKey"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.x"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.y"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCliCrc"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bPickupOthers"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bSweepForDrop"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_bLongRange"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pet pos.x — gated dwID % 13 == 0",
+          "guard": "dwID % 13 == 0"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pet pos.y",
+          "guard": "dwID % 13 == 0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_dwPosCRC",
+          "guard": "dwID % 13 == 0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwRectCrc",
+          "guard": "dwID % 13 == 0"
+        }
       ]
     },
     "CWvsContext::SendDropPickUpRequest": {
@@ -692,12 +1865,30 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "Encode1", "comment": "field->m_bFieldKey"},
-        {"op": "Encode4", "comment": "get_update_time()"},
-        {"op": "Encode2", "comment": "pt.x"},
-        {"op": "Encode2", "comment": "pt.y"},
-        {"op": "Encode4", "comment": "dwDropID"},
-        {"op": "Encode4", "comment": "dwCliCrc"}
+        {
+          "op": "Encode1",
+          "comment": "field->m_bFieldKey"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.x"
+        },
+        {
+          "op": "Encode2",
+          "comment": "pt.y"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwDropID"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCliCrc"
+        }
       ]
     },
     "CReactorPool::FindHitReactor": {
@@ -705,11 +1896,26 @@
       "region": "JMS",
       "direction": "serverbound",
       "calls": [
-        {"op": "Encode4", "comment": "reactorId"},
-        {"op": "Encode4", "comment": "reserved (0)"},
-        {"op": "Encode4", "comment": "stance flag"},
-        {"op": "Encode2", "comment": "tDelay"},
-        {"op": "Encode4", "comment": "reserved (0)"}
+        {
+          "op": "Encode4",
+          "comment": "reactorId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "reserved (0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "stance flag"
+        },
+        {
+          "op": "Encode2",
+          "comment": "tDelay"
+        },
+        {
+          "op": "Encode4",
+          "comment": "reserved (0)"
+        }
       ]
     },
     "CMob::GenerateMovePath": {
@@ -718,39 +1924,115 @@
       "direction": "serverbound",
       "notes": "MOB_MOVE (opcode 0xC2). Atlas MovementRequest decoder mirrors this byte-for-byte. The four `>v83 || JMS`-gated blocks in atlas (multiTargetForBall + randTimeForAreaAttack, hackedCodeCRC, bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration) all fire for JMS — verified against this decompile.",
       "calls": [
-        {"op": "Encode4", "comment": "dwMobID (uniqueId)"},
-        {"op": "Encode2", "comment": "nMobCtrlSN (moveId)"},
-        {"op": "Encode1", "comment": "flags byte: nMoveEndingX | (v109 << 1) | (bRiseByToss << 2) | (nMoveTypeb << 3) — atlas dwFlag"},
-        {"op": "Encode1", "comment": "nAction (atlas nActionAndDir)"},
-        {"op": "Encode4", "comment": "ti (TARGETINFO — atlas skillData; LOBYTE=skillId, BYTE1=skillLevel)"},
-        {"op": "Encode4", "comment": "multiTargetForBall count"},
-        {"op": "Encode4", "comment": "multiTargetForBall[i].x — loop", "guard": "loop multiTargetForBall"},
-        {"op": "Encode4", "comment": "multiTargetForBall[i].y — loop", "guard": "loop multiTargetForBall"},
-        {"op": "Encode4", "comment": "randTimeForAreaAttack count"},
-        {"op": "Encode4", "comment": "randTimeForAreaAttack[i] — loop", "guard": "loop randTimeForAreaAttack"},
-        {"op": "Encode1", "comment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) — atlas moveFlags"},
-        {"op": "Encode4", "comment": "TSecType<long>.GetData(sub_6E9537) — atlas hackedCode"},
-        {"op": "Encode4", "comment": "v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX"},
-        {"op": "Encode4", "comment": "v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY"},
-        {"op": "Encode4", "comment": "sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC"},
-        {"op": "EncodeBuf", "comment": "CMovePath::Flush body (Movement elements, variable length)"},
-        {"op": "Encode1", "comment": "bChasing (sub_68664B of m_bChasing)"},
-        {"op": "Encode1", "comment": "hasTarget (LODWORD(v14[1].m_ap._ZtlSecureTear_vx[1]) != 0)"},
-        {"op": "Encode1", "comment": "bChasing2 (m_pLadderOrRope flag)"},
-        {"op": "Encode1", "comment": "bChasingHack (m_lZMass flag)"},
-        {"op": "Encode4", "comment": "tChaseDuration (vy / fall velocity)"}
+        {
+          "op": "Encode4",
+          "comment": "dwMobID (uniqueId)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nMobCtrlSN (moveId)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flags byte: nMoveEndingX | (v109 << 1) | (bRiseByToss << 2) | (nMoveTypeb << 3) — atlas dwFlag"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nAction (atlas nActionAndDir)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "ti (TARGETINFO — atlas skillData; LOBYTE=skillId, BYTE1=skillLevel)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "multiTargetForBall count"
+        },
+        {
+          "op": "Encode4",
+          "comment": "multiTargetForBall[i].x — loop",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Encode4",
+          "comment": "multiTargetForBall[i].y — loop",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Encode4",
+          "comment": "randTimeForAreaAttack count"
+        },
+        {
+          "op": "Encode4",
+          "comment": "randTimeForAreaAttack[i] — loop",
+          "guard": "loop randTimeForAreaAttack"
+        },
+        {
+          "op": "Encode1",
+          "comment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) — atlas moveFlags"
+        },
+        {
+          "op": "Encode4",
+          "comment": "TSecType<long>.GetData(sub_6E9537) — atlas hackedCode"
+        },
+        {
+          "op": "Encode4",
+          "comment": "v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX"
+        },
+        {
+          "op": "Encode4",
+          "comment": "v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY"
+        },
+        {
+          "op": "Encode4",
+          "comment": "sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "CMovePath::Flush body (Movement elements, variable length)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bChasing (sub_68664B of m_bChasing)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "hasTarget (LODWORD(v14[1].m_ap._ZtlSecureTear_vx[1]) != 0)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bChasing2 (m_pLadderOrRope flag)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bChasingHack (m_lZMass flag)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "tChaseDuration (vy / fall velocity)"
+        }
       ]
     },
-
     "CWvsContext::OnMemoResult": {
       "address": "0xb0c6d0",
       "region": "JMS",
       "direction": "clientbound",
       "notes": "Wire layout identical to GMS v95: Decode1(mode)-3 dispatch (0=Display/3, 1=SendSuccess/4, 2=SendError/5, 5=Refresh/special). mode=0 (Display): Decode1(count) + loop(sub_510E70) + new-memo popup if any. Same sub-op values as GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (subtracted by 3 in decompile: 0→3=Display, 1→4=SendSuccess, 2→5=SendError, 5→8=Refresh/notify)"},
-        {"op": "Decode1", "comment": "count of memo entries (mode=0 only)", "guard": "mode==0"},
-        {"op": "DecodeSub", "comment": "memo entry decode loop (sub_510E70 per entry)", "guard": "mode==0, loop count"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (subtracted by 3 in decompile: 0→3=Display, 1→4=SendSuccess, 2→5=SendError, 5→8=Refresh/notify)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count of memo entries (mode=0 only)",
+          "guard": "mode==0"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "memo entry decode loop (sub_510E70 per entry)",
+          "guard": "mode==0, loop count"
+        }
       ]
     },
     "CMemoListDlg::SetRet": {
@@ -759,7 +2041,10 @@
       "direction": "clientbound",
       "notes": "JMS v185 CMemoListDlg::SetRet present at 0x6c2d43. Handles memo list display from CWvsContext::OnMemoResult Display sub-op. Wire structure: reads memo list from iPacket.",
       "calls": [
-        {"op": "DecodeSub", "comment": "memo list entry (called per entry from OnMemoResult Display loop)"}
+        {
+          "op": "DecodeSub",
+          "comment": "memo list entry (called per entry from OnMemoResult Display loop)"
+        }
       ]
     },
     "CWvsContext::OnFriendResult#CapacityUpdate": {
@@ -768,9 +2053,20 @@
       "direction": "clientbound",
       "notes": "JMS CWvsContext::OnFriendResult@0xb2a873. Sub-op 0x14 (CapacityUpdate): Decode1(mode) switch; case 0x14: Decode4(buddyCount). case 0x15: Decode1(capacity). cases 7/10/18: CFriend::Reset. case 8: UpdateFriend. case 9: Invite = Decode4(friendId)+DecodeStr(name)+Decode4(jobId)+Decode4(level). All sub-op values identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "sub-op mode byte"},
-        {"op": "Decode4", "comment": "case 0x14: buddy count (CapacityUpdate)", "guard": "mode==0x14"},
-        {"op": "Decode1", "comment": "case 0x15: new capacity byte", "guard": "mode==0x15"}
+        {
+          "op": "Decode1",
+          "comment": "sub-op mode byte"
+        },
+        {
+          "op": "Decode4",
+          "comment": "case 0x14: buddy count (CapacityUpdate)",
+          "guard": "mode==0x14"
+        },
+        {
+          "op": "Decode1",
+          "comment": "case 0x15: new capacity byte",
+          "guard": "mode==0x15"
+        }
       ]
     },
     "CWvsContext::OnFriendResult#Invite": {
@@ -779,11 +2075,26 @@
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 9 (Invite) in JMS OnFriendResult. Reads: Decode4(dwFriendID)+DecodeStr(name)+Decode4(jobId)+Decode4(level)+CFriend::Insert(). Identical wire layout to GMS v95 case 9.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 9 (Invite)"},
-        {"op": "Decode4", "comment": "dwFriendID (inviter's character id)"},
-        {"op": "DecodeStr", "comment": "inviter name"},
-        {"op": "Decode4", "comment": "jobId (inviter)"},
-        {"op": "Decode4", "comment": "level (inviter)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 9 (Invite)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID (inviter's character id)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "inviter name"
+        },
+        {
+          "op": "Decode4",
+          "comment": "jobId (inviter)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "level (inviter)"
+        }
       ]
     },
     "CWvsContext::OnFriendResult#ListUpdate": {
@@ -792,8 +2103,14 @@
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 7/10/18 (ListUpdate/Reset) in JMS OnFriendResult. Calls CFriend::Reset(iPacket). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 7 or 10 (0xA) or 18 (0x12) — Reset/ListUpdate"},
-        {"op": "DecodeSub", "comment": "CFriend::Reset body — reads full buddy list from packet"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 7 or 10 (0xA) or 18 (0x12) — Reset/ListUpdate"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "CFriend::Reset body — reads full buddy list from packet"
+        }
       ]
     },
     "CWvsContext::OnFriendResult#ChannelChange": {
@@ -802,10 +2119,22 @@
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 0x14 (20) in JMS OnFriendResult handles ChannelChange. Reads Decode4(friendId) + Decode1(channel) + Decode4(map). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 0x14 (20 — ChannelChange)"},
-        {"op": "Decode4", "comment": "friendId"},
-        {"op": "Decode1", "comment": "channelId"},
-        {"op": "Decode4", "comment": "mapId"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 0x14 (20 — ChannelChange)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "friendId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId"
+        }
       ]
     },
     "CWvsContext::OnFriendResult#Error": {
@@ -814,7 +2143,10 @@
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: error cases (11–15, 16, 17, 19, 22) in JMS OnFriendResult show string notices. Identical error sub-ops to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 11–22 range (error codes)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 11–22 range (error codes)"
+        }
       ]
     },
     "CWvsContext::OnFriendResult#Update": {
@@ -823,8 +2155,14 @@
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 8 (Update) in JMS OnFriendResult. Calls CFriend::UpdateFriend(iPacket, 1). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 8 (Update)"},
-        {"op": "DecodeSub", "comment": "CFriend::UpdateFriend body"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 8 (Update)"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "CFriend::UpdateFriend body"
+        }
       ]
     },
     "CField::SendSetFriendMsg": {
@@ -833,10 +2171,22 @@
       "direction": "serverbound",
       "notes": "JMS v185 CField::SendSetFriendMsg@0x56e41d. Wire layout: Encode1(mode) + EncodeStr(name) + EncodeStr(group) + Encode1(flag). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "mode (sub-op: add/accept/delete)"},
-        {"op": "EncodeStr", "comment": "target name"},
-        {"op": "EncodeStr", "comment": "group name"},
-        {"op": "Encode1", "comment": "flag"}
+        {
+          "op": "Encode1",
+          "comment": "mode (sub-op: add/accept/delete)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target name"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "group name"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag"
+        }
       ]
     },
     "CField::SendAcceptFriendMsg": {
@@ -845,8 +2195,14 @@
       "direction": "serverbound",
       "notes": "JMS v185 CField::SendAcceptFriendMsg@0x56e66c. Wire layout: Encode1(mode=0x1) + Encode4(friendId). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "mode = 1 (accept)"},
-        {"op": "Encode4", "comment": "friendId (inviter's character id)"}
+        {
+          "op": "Encode1",
+          "comment": "mode = 1 (accept)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "friendId (inviter's character id)"
+        }
       ]
     },
     "CField::SendDeleteFriendMsg": {
@@ -855,8 +2211,14 @@
       "direction": "serverbound",
       "notes": "JMS v185 CField::SendDeleteFriendMsg@0x56e5bd. Wire layout: Encode1(mode=0x2) + Encode4(friendId). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "mode = 2 (delete)"},
-        {"op": "Encode4", "comment": "friendId"}
+        {
+          "op": "Encode1",
+          "comment": "mode = 2 (delete)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "friendId"
+        }
       ]
     },
     "CUIMessenger::OnPacket#Add": {
@@ -865,12 +2227,30 @@
       "direction": "clientbound",
       "notes": "JMS CUIMessenger::OnPacket@0x8e447e dispatches mode 0 → OnEnter. Wire: Decode1(position)+AvatarLook::Decode+DecodeStr(name)+Decode1(channelId)+Decode1(pad). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 0 (Add/OnEnter)"},
-        {"op": "Decode1", "comment": "position (slot 0–2)"},
-        {"op": "DecodeSub", "comment": "AvatarLook::Decode"},
-        {"op": "DecodeStr", "comment": "character name"},
-        {"op": "Decode1", "comment": "channelId"},
-        {"op": "Decode1", "comment": "pad byte"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 0 (Add/OnEnter)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position (slot 0–2)"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "AvatarLook::Decode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "character name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pad byte"
+        }
       ]
     },
     "CUIMessenger::OnPacket#Join": {
@@ -879,8 +2259,14 @@
       "direction": "clientbound",
       "notes": "JMS mode 1 → OnSelfEnterResult. Wire: Decode1(position). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 1 (Join/OnSelfEnterResult)"},
-        {"op": "Decode1", "comment": "position (slot 0–2)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 1 (Join/OnSelfEnterResult)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position (slot 0–2)"
+        }
       ]
     },
     "CUIMessenger::OnPacket#Remove": {
@@ -889,8 +2275,14 @@
       "direction": "clientbound",
       "notes": "JMS mode 2 → OnLeave. Wire: Decode1(position). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 2 (Remove/OnLeave)"},
-        {"op": "Decode1", "comment": "position (slot 0–2)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 2 (Remove/OnLeave)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position (slot 0–2)"
+        }
       ]
     },
     "CUIMessenger::OnPacket#RequestInvite": {
@@ -899,11 +2291,26 @@
       "direction": "clientbound",
       "notes": "JMS mode 3 → OnInvite (static handler, no instance guard). Wire: DecodeStr(fromName)+Decode1(pad)+Decode4(messengerId)+Decode1(pad). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 3 (RequestInvite) — consumed by OnPacket before calling OnInvite"},
-        {"op": "DecodeStr", "comment": "fromName (inviter)"},
-        {"op": "Decode1", "comment": "pad byte"},
-        {"op": "Decode4", "comment": "messengerId"},
-        {"op": "Decode1", "comment": "pad byte"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 3 (RequestInvite) — consumed by OnPacket before calling OnInvite"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "fromName (inviter)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pad byte"
+        },
+        {
+          "op": "Decode4",
+          "comment": "messengerId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pad byte"
+        }
       ]
     },
     "CUIMessenger::OnPacket#InviteSent": {
@@ -912,9 +2319,18 @@
       "direction": "clientbound",
       "notes": "JMS mode 4 → OnInviteResult. Wire: DecodeStr(msg)+Decode1(success). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 4 (InviteSent/OnInviteResult)"},
-        {"op": "DecodeStr", "comment": "msg"},
-        {"op": "Decode1", "comment": "success flag"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 4 (InviteSent/OnInviteResult)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag"
+        }
       ]
     },
     "CUIMessenger::OnPacket#InviteDeclined": {
@@ -923,9 +2339,18 @@
       "direction": "clientbound",
       "notes": "JMS mode 5 → OnBlocked. Wire: DecodeStr(blockedUser)+Decode1(declineMode). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 5 (InviteDeclined/OnBlocked)"},
-        {"op": "DecodeStr", "comment": "blocked user name"},
-        {"op": "Decode1", "comment": "declineMode"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 5 (InviteDeclined/OnBlocked)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "blocked user name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "declineMode"
+        }
       ]
     },
     "CUIMessenger::OnPacket#Chat": {
@@ -934,8 +2359,14 @@
       "direction": "clientbound",
       "notes": "JMS mode 6 → OnChat. Wire: DecodeStr(chatLine). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 6 (Chat)"},
-        {"op": "DecodeStr", "comment": "chat line (format: 'name : msg')"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 6 (Chat)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "chat line (format: 'name : msg')"
+        }
       ]
     },
     "CUIMessenger::OnPacket#Update": {
@@ -944,9 +2375,18 @@
       "direction": "clientbound",
       "notes": "JMS mode 7 → OnAvatar. Wire: Decode1(position)+AvatarLook::Decode. No name/channelId/pad. Atlas Update wrongly writes name+channelId+pad — confirmed as wire bug in GMS v95 audit (GMS OnAvatar does NOT read those). JMS confirms same shape.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 7 (Update/OnAvatar)"},
-        {"op": "Decode1", "comment": "position (slot 0–2)"},
-        {"op": "DecodeSub", "comment": "AvatarLook::Decode (no name/channelId/pad — atlas writes those incorrectly)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 7 (Update/OnAvatar)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position (slot 0–2)"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "AvatarLook::Decode (no name/channelId/pad — atlas writes those incorrectly)"
+        }
       ]
     },
     "CUIMessenger::OnCreate": {
@@ -955,8 +2395,14 @@
       "direction": "serverbound",
       "notes": "JMS CUIMessenger::OnCreate (client-side handler for accepting invite). Sub-op 0 (ENTER): Encode1(0)+Encode4(messengerId). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 0 (ENTER)"},
-        {"op": "Encode4", "comment": "messengerId"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 0 (ENTER)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "messengerId"
+        }
       ]
     },
     "CUIMessenger::OnDestroy": {
@@ -965,7 +2411,10 @@
       "direction": "serverbound",
       "notes": "JMS CUIMessenger::OnDestroy. Sub-op 2 (LEAVE): Encode1(2). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 2 (LEAVE)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 2 (LEAVE)"
+        }
       ]
     },
     "CUIMessenger::SendInviteMsg": {
@@ -974,8 +2423,14 @@
       "direction": "serverbound",
       "notes": "JMS CUIMessenger::SendInviteMsg. Sub-op 3 (INVITE): Encode1(3)+EncodeStr(targetCharacter). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 3 (INVITE)"},
-        {"op": "EncodeStr", "comment": "target character name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 3 (INVITE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
       ]
     },
     "CFadeWnd::SendCloseMessage": {
@@ -984,10 +2439,22 @@
       "direction": "serverbound",
       "notes": "JMS CFadeWnd::SendCloseMessage@0x557267. Handles decline (sub-op 5): Encode1(5)+EncodeStr(fromName)+EncodeStr(myName)+Encode1(0). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 5 (DECLINE)"},
-        {"op": "EncodeStr", "comment": "fromName (inviter)"},
-        {"op": "EncodeStr", "comment": "myName (self)"},
-        {"op": "Encode1", "comment": "pad = 0"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 5 (DECLINE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "fromName (inviter)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "myName (self)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "pad = 0"
+        }
       ]
     },
     "CUIMessenger::ProcessChat": {
@@ -996,8 +2463,14 @@
       "direction": "serverbound",
       "notes": "JMS CUIMessenger::ProcessChat. Sub-op 6 (CHAT): Encode1(6)+EncodeStr(chatLine). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 6 (CHAT)"},
-        {"op": "EncodeStr", "comment": "chat line (format: 'name : msg')"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 6 (CHAT)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chat line (format: 'name : msg')"
+        }
       ]
     },
     "CUser::OnChat": {
@@ -1006,10 +2479,22 @@
       "direction": "clientbound",
       "notes": "JMS CUser::OnChat@0x9f5c74. Wire: Decode1(isGM)+DecodeStr(msg)+Decode1(bOnlyBalloon). Identical to GMS v95. characterId consumed by dispatcher before this function.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — consumed by CUserPool dispatcher before OnChat"},
-        {"op": "Decode1", "comment": "isGM flag (mode byte: 0=normal, 1=NPC-name)"},
-        {"op": "DecodeStr", "comment": "msg text"},
-        {"op": "Decode1", "comment": "bOnlyBalloon flag"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — consumed by CUserPool dispatcher before OnChat"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isGM flag (mode byte: 0=normal, 1=NPC-name)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg text"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bOnlyBalloon flag"
+        }
       ]
     },
     "CField::SendChatMsg": {
@@ -1018,9 +2503,18 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendChatMsg@0x564a0a. Wire: Encode4(updateTime)+EncodeStr(text)+Encode1(bOnlyBalloon). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode4", "comment": "get_update_time()"},
-        {"op": "EncodeStr", "comment": "chat text"},
-        {"op": "Encode1", "comment": "bOnlyBalloon"}
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chat text"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bOnlyBalloon"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Created": {
@@ -1029,12 +2523,30 @@
       "direction": "clientbound",
       "notes": "JMS CWvsContext::OnPartyResult@0xb297e7 mode=1 (self-created). Wire: Decode1(mode)+Decode4(partyId)+Decode4(memberId)+Decode4(mapId)+Decode2(jobId)+Decode2(level). Same layout as GMS v83 OnPartyResult#Created@0xa3e31c. PARTYDATA (0x12A=298 bytes small) key finding: qmemcpy(v120, &this[1].m_Cookie.szReserved[584], 0x12Au). The v95plus gate in atlas member_data.go incorrectly included JMS — bug fixed in task-066 Task 10.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 1 (Created)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "Decode4", "comment": "memberId (zeros ok — atlas writes EmptyMapId as placeholder)"},
-        {"op": "Decode4", "comment": "mapId (zeros ok — atlas writes EmptyMapId as placeholder)"},
-        {"op": "Decode2", "comment": "jobId (zeros ok — atlas writes 0)"},
-        {"op": "Decode2", "comment": "level (zeros ok — atlas writes 0)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 1 (Created)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "memberId (zeros ok — atlas writes EmptyMapId as placeholder)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId (zeros ok — atlas writes EmptyMapId as placeholder)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId (zeros ok — atlas writes 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "level (zeros ok — atlas writes 0)"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Invite": {
@@ -1043,12 +2555,30 @@
       "direction": "clientbound",
       "notes": "JMS case 4 (Invite): Decode4(partyId)+DecodeStr(name)+Decode4(jobId)+Decode4(level)+Decode1(autoJoin). JMS v185 DOES read jobId+level (same as GMS v87/v95). The v84plus gate in atlas invite.go (GMS > 83 || JMS) is correct.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 4 (Invite)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "DecodeStr", "comment": "originator name"},
-        {"op": "Decode4", "comment": "jobId (present in JMS v185 — v84plus gate correct)"},
-        {"op": "Decode4", "comment": "level (present in JMS v185)"},
-        {"op": "Decode1", "comment": "autoJoin flag"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 4 (Invite)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "originator name"
+        },
+        {
+          "op": "Decode4",
+          "comment": "jobId (present in JMS v185 — v84plus gate correct)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "level (present in JMS v185)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "autoJoin flag"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Join": {
@@ -1057,9 +2587,19 @@
       "direction": "clientbound",
       "notes": "JMS case 7 (Join, mode=Join): Decode4(partyId)+PARTYDATA::Decode. PARTYDATA size = 0x12A=298 bytes. Case 8 (Join, mode=created): Decode4(partyId)+Decode4(charid)+Decode4(mapId)+Decode2(job)+Decode2(level)+memset(0x12A).",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 7 (Join with partydata) or 8 (Join newly created)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "DecodeSub", "comment": "PARTYDATA::Decode (298 bytes — small format; JMS uses 0x12A not 0x17A)", "guard": "mode==7"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte = 7 (Join with partydata) or 8 (Join newly created)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "PARTYDATA::Decode (298 bytes — small format; JMS uses 0x12A not 0x17A)",
+          "guard": "mode==7"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Left": {
@@ -1068,13 +2608,34 @@
       "direction": "clientbound",
       "notes": "JMS cases for party leave (mode ~10/11): Decode4+PARTYDATA (small, 298 bytes). JMS PARTYDATA confirmed 0x12A.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (Left/Expelled)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "Decode4", "comment": "targetId"},
-        {"op": "Decode1", "comment": "const 1"},
-        {"op": "Decode1", "comment": "forced flag"},
-        {"op": "DecodeStr", "comment": "target name"},
-        {"op": "DecodeSub", "comment": "PARTYDATA::Decode (298 bytes small)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (Left/Expelled)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "const 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "forced flag"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target name"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "PARTYDATA::Decode (298 bytes small)"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Update": {
@@ -1083,9 +2644,18 @@
       "direction": "clientbound",
       "notes": "JMS case for party update (mode 33/36): Decode4(partyId)+PARTYDATA (small, 298 bytes). PARTYDATA confirmed 0x12A=298 by qmemcpy at function start.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (Update)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "DecodeSub", "comment": "PARTYDATA::Decode (298 bytes small — JMS uses 0x12A)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (Update)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "PARTYDATA::Decode (298 bytes small — JMS uses 0x12A)"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Disband": {
@@ -1094,10 +2664,22 @@
       "direction": "clientbound",
       "notes": "JMS Disband mode (mode=12, isForced=0). Same as GMS v95@0xa11085: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId — the trailing repeated partyId is atlas-only; pre-existing ❌ in GMS v83/v95 audits too.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (Disband)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "Decode4", "comment": "targetId"},
-        {"op": "Decode1", "comment": "isForced flag (0=leave/disband, 1=expelled)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (Disband)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isForced flag (0=leave/disband, 1=expelled)"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#Error": {
@@ -1106,7 +2688,10 @@
       "direction": "clientbound",
       "notes": "JMS Error modes (mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36). No further reads — error code only. Atlas Error writes mode+string(name), which is atlas-only extra field. Pre-existing ❌ in GMS v83/v95 audits too.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (error code — no further reads)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (error code — no further reads)"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#ChangeLeader": {
@@ -1115,9 +2700,18 @@
       "direction": "clientbound",
       "notes": "JMS ChangeLeader: mode byte + Decode4(newLeaderId) + Decode1(hasChanged). Same as GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (ChangeLeader)"},
-        {"op": "Decode4", "comment": "newLeaderId"},
-        {"op": "Decode1", "comment": "hasChanged flag"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (ChangeLeader)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "newLeaderId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasChanged flag"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#MemberHP": {
@@ -1126,9 +2720,18 @@
       "direction": "clientbound",
       "notes": "JMS CUserRemote::OnReceiveHP@0xa575be. Wire: Decode4(characterId)+Decode4(hp)+Decode4(maxHp). Same as GMS v95.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId"},
-        {"op": "Decode4", "comment": "hp"},
-        {"op": "Decode4", "comment": "maxHp"}
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hp"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maxHp"
+        }
       ]
     },
     "CField::SendCreateNewPartyMsg": {
@@ -1137,7 +2740,10 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendCreateNewPartyMsg@0x56ca8b. Wire: Encode1(sub-op=1). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 1 (CREATE)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 1 (CREATE)"
+        }
       ]
     },
     "CField::SendWithdrawPartyMsg": {
@@ -1146,7 +2752,10 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendWithdrawPartyMsg@0x56cba7. Wire: Encode1(sub-op=2). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 2 (WITHDRAW)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 2 (WITHDRAW)"
+        }
       ]
     },
     "CField::SendKickPartyMsg": {
@@ -1155,8 +2764,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendKickPartyMsg@0x56cf23. Wire: Encode1(sub-op=3)+EncodeStr(name). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 3 (KICK)"},
-        {"op": "EncodeStr", "comment": "target character name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 3 (KICK)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
       ]
     },
     "CField::SendChangePartyBossMsg": {
@@ -1165,8 +2780,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendChangePartyBossMsg@0x56d0cc. Wire: Encode1(sub-op=5)+EncodeStr(name). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 5 (CHANGE_LEADER)"},
-        {"op": "EncodeStr", "comment": "target character name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 5 (CHANGE_LEADER)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
       ]
     },
     "CField::SendJoinPartyMsg": {
@@ -1175,8 +2796,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendJoinPartyMsg@0x56cce9. Wire for Invite sub-op: Encode1(sub-op=4)+EncodeStr(targetName). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 4 (INVITE)"},
-        {"op": "EncodeStr", "comment": "target character name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 4 (INVITE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
       ]
     },
     "CField::SendJoinPartyMsg#OperationJoin": {
@@ -1185,9 +2812,18 @@
       "direction": "serverbound",
       "notes": "JMS SendJoinPartyMsg OperationJoin sub-op: Encode1(sub-op=0)+Encode4(partyId)+Encode1(accepted). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 0 (JOIN_RESPONSE)"},
-        {"op": "Encode4", "comment": "partyId"},
-        {"op": "Encode1", "comment": "accepted flag (1=accept, 0=decline)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 0 (JOIN_RESPONSE)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "accepted flag (1=accept, 0=decline)"
+        }
       ]
     },
     "CWvsContext::OnPartyResult#InviteReject": {
@@ -1196,9 +2832,18 @@
       "direction": "serverbound",
       "notes": "JMS InviteReject serverbound (same opcode as party result, client sends): Encode1(mode=5)+Encode4(partyId)+Encode1(rejected). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "mode = 5 (InviteReject/decline)"},
-        {"op": "Encode4", "comment": "partyId"},
-        {"op": "Encode1", "comment": "rejected = 0 (always 0 for reject)"}
+        {
+          "op": "Encode1",
+          "comment": "mode = 5 (InviteReject/decline)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "rejected = 0 (always 0 for reject)"
+        }
       ]
     },
     "CWvsContext::OnGuildResult": {
@@ -1207,7 +2852,10 @@
       "direction": "clientbound",
       "notes": "JMS CWvsContext::OnGuildResult@0xb22518. Full guild result dispatcher. Mode 5 (Invite) reads: Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId) — same as GMS v87/v95. The v84plus gate (GMS > 83 || JMS) in atlas operation.go is correct. Mode values and wire layouts match GMS v95 for all audited cases. BBS-related modes (above 50) absent (CUIGuildBBS not present in JMS v185).",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte — dispatches to guild sub-handler"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte — dispatches to guild sub-handler"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#RequestAgreement": {
@@ -1216,10 +2864,22 @@
       "direction": "clientbound",
       "notes": "JMS mode 3 (RequestAgreement): Decode4(partyId)+DecodeStr(leaderName)+DecodeStr(guildName). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode = 3 (RequestAgreement)"},
-        {"op": "Decode4", "comment": "partyId"},
-        {"op": "DecodeStr", "comment": "leaderName"},
-        {"op": "DecodeStr", "comment": "guildName"}
+        {
+          "op": "Decode1",
+          "comment": "mode = 3 (RequestAgreement)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "leaderName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "guildName"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#Invite": {
@@ -1228,11 +2888,26 @@
       "direction": "clientbound",
       "notes": "JMS mode 5 (Invite): Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId). v84plus gate (GMS > 83 || JMS) is correct for JMS — JMS reads the full invite fields.",
       "calls": [
-        {"op": "Decode1", "comment": "mode = 5 (Invite)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "DecodeStr", "comment": "inviter name"},
-        {"op": "Decode4", "comment": "unknown (job or level-related)"},
-        {"op": "Decode4", "comment": "skillId"}
+        {
+          "op": "Decode1",
+          "comment": "mode = 5 (Invite)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "inviter name"
+        },
+        {
+          "op": "Decode4",
+          "comment": "unknown (job or level-related)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#ErrorMessage": {
@@ -1241,7 +2916,10 @@
       "direction": "clientbound",
       "notes": "JMS ErrorMessage: mode byte only → string notice. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (ErrorMessage)"}
+        {
+          "op": "Decode1",
+          "comment": "mode byte (ErrorMessage)"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#Disband": {
@@ -1250,9 +2928,18 @@
       "direction": "clientbound",
       "notes": "JMS Disband: Decode4(guildId)+DecodeStr(msg). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (Disband)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "DecodeStr", "comment": "message"}
+        {
+          "op": "Decode1",
+          "comment": "mode (Disband)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#MemberJoined": {
@@ -1261,9 +2948,18 @@
       "direction": "clientbound",
       "notes": "JMS MemberJoined: Decode4(guildId) + full member entry decode. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (MemberJoined)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "DecodeSub", "comment": "new member data (sub_510984)"}
+        {
+          "op": "Decode1",
+          "comment": "mode (MemberJoined)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "new member data (sub_510984)"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#MemberLeft": {
@@ -1272,10 +2968,22 @@
       "direction": "clientbound",
       "notes": "JMS MemberLeft: Decode4(guildId)+Decode4(charId)+DecodeStr(name)+mode-specific. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (MemberLeft/',' or '/')"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode4", "comment": "charId of departing member"},
-        {"op": "DecodeStr", "comment": "departing member name"}
+        {
+          "op": "Decode1",
+          "comment": "mode (MemberLeft/',' or '/')"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "charId of departing member"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "departing member name"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#MemberStatusUpdate": {
@@ -1284,12 +2992,30 @@
       "direction": "clientbound",
       "notes": "JMS MemberStatusUpdate: Decode4(guildId)+Decode4(charId)+Decode1(channel)+Decode4(job)+Decode2(level). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (MemberStatusUpdate)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode4", "comment": "charId"},
-        {"op": "Decode1", "comment": "channelId"},
-        {"op": "Decode4", "comment": "job"},
-        {"op": "Decode2", "comment": "level"}
+        {
+          "op": "Decode1",
+          "comment": "mode (MemberStatusUpdate)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "charId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "job"
+        },
+        {
+          "op": "Decode2",
+          "comment": "level"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#MemberTitleUpdate": {
@@ -1298,10 +3024,22 @@
       "direction": "clientbound",
       "notes": "JMS MemberTitleUpdate: Decode4(guildId)+Decode4(charId)+Decode1(title). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (MemberTitleUpdate)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode4", "comment": "charId"},
-        {"op": "Decode1", "comment": "title index"}
+        {
+          "op": "Decode1",
+          "comment": "mode (MemberTitleUpdate)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "charId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "title index"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#EmblemChange": {
@@ -1310,12 +3048,30 @@
       "direction": "clientbound",
       "notes": "JMS EmblemChange: Decode4(guildId)+emblem fields. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (EmblemChange/'B')"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode2", "comment": "logoId"},
-        {"op": "Decode1", "comment": "logoColor"},
-        {"op": "Decode2", "comment": "backgroundId"},
-        {"op": "Decode1", "comment": "backgroundColor"}
+        {
+          "op": "Decode1",
+          "comment": "mode (EmblemChange/'B')"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "logoId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "logoColor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "backgroundId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "backgroundColor"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#NoticeChange": {
@@ -1324,9 +3080,18 @@
       "direction": "clientbound",
       "notes": "JMS NoticeChange: Decode4(guildId)+DecodeStr(notice). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (NoticeChange/'D')"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "DecodeStr", "comment": "new notice text"}
+        {
+          "op": "Decode1",
+          "comment": "mode (NoticeChange/'D')"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "new notice text"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#TitleChange": {
@@ -1335,13 +3100,34 @@
       "direction": "clientbound",
       "notes": "JMS TitleChange: Decode4(guildId)+5×DecodeStr(titles). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (TitleChange/'>'}"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "DecodeStr", "comment": "title[0]"},
-        {"op": "DecodeStr", "comment": "title[1]"},
-        {"op": "DecodeStr", "comment": "title[2]"},
-        {"op": "DecodeStr", "comment": "title[3]"},
-        {"op": "DecodeStr", "comment": "title[4]"}
+        {
+          "op": "Decode1",
+          "comment": "mode (TitleChange/'>'}"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[4]"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#CapacityChange": {
@@ -1350,9 +3136,18 @@
       "direction": "clientbound",
       "notes": "JMS CapacityChange (':' = 58): Decode4(guildId)+Decode1(newCapacity). If member of this guild and current member: display notice. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode = ':' (58 = CapacityChange)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode1", "comment": "newCapacity"}
+        {
+          "op": "Decode1",
+          "comment": "mode = ':' (58 = CapacityChange)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "newCapacity"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#Info": {
@@ -1361,10 +3156,22 @@
       "direction": "clientbound",
       "notes": "JMS Info ('9' = 57): guildId check + sub_510984 (guild data decode). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode = '\\'' (39 = Info/MemberJoinedUpdate)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode4", "comment": "charId (member who joined)"},
-        {"op": "DecodeSub", "comment": "sub_510984 guild data decode + qmemcpy 0x24 bytes"}
+        {
+          "op": "Decode1",
+          "comment": "mode = '\\'' (39 = Info/MemberJoinedUpdate)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "charId (member who joined)"
+        },
+        {
+          "op": "DecodeSub",
+          "comment": "sub_510984 guild data decode + qmemcpy 0x24 bytes"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#AgreementResponse": {
@@ -1373,10 +3180,22 @@
       "direction": "clientbound",
       "notes": "JMS AgreementResponse (mode 3 or 28): Decode4(guildId)+DecodeStr+DecodeStr. Same as GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (AgreementResponse/RequestAgreement)"},
-        {"op": "Decode4", "comment": "partyId/guildId"},
-        {"op": "DecodeStr", "comment": "leaderName"},
-        {"op": "DecodeStr", "comment": "guildName"}
+        {
+          "op": "Decode1",
+          "comment": "mode (AgreementResponse/RequestAgreement)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId/guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "leaderName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "guildName"
+        }
       ]
     },
     "CUserRemote::OnGuildNameChanged": {
@@ -1385,8 +3204,14 @@
       "direction": "clientbound",
       "notes": "JMS CUserRemote::OnGuildNameChanged@0xa5763e. Wire: Decode4(charId, dispatcher prefix)+DecodeStr(guildName). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — consumed by CUserPool dispatcher before OnGuildNameChanged"},
-        {"op": "DecodeStr", "comment": "new guild name"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — consumed by CUserPool dispatcher before OnGuildNameChanged"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "new guild name"
+        }
       ]
     },
     "CUserRemote::OnGuildMarkChanged": {
@@ -1395,11 +3220,26 @@
       "direction": "clientbound",
       "notes": "JMS CUserRemote::OnGuildMarkChanged@0xa57689. Wire: Decode4(charId, dispatcher prefix)+emblem fields. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId — consumed by dispatcher"},
-        {"op": "Decode2", "comment": "logoId"},
-        {"op": "Decode1", "comment": "logoColor"},
-        {"op": "Decode2", "comment": "backgroundId"},
-        {"op": "Decode1", "comment": "backgroundColor"}
+        {
+          "op": "Decode4",
+          "comment": "characterId — consumed by dispatcher"
+        },
+        {
+          "op": "Decode2",
+          "comment": "logoId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "logoColor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "backgroundId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "backgroundColor"
+        }
       ]
     },
     "CField::InputGuildName": {
@@ -1408,8 +3248,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::InputGuildName@0x56d98c. Wire: Encode1(sub-op=1)+EncodeStr(guildName). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 1 (CREATE request with name)"},
-        {"op": "EncodeStr", "comment": "desired guild name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 1 (CREATE request with name)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "desired guild name"
+        }
       ]
     },
     "CField::SendCreateGuildAgreeMsg": {
@@ -1418,8 +3264,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendCreateGuildAgreeMsg@0x56da47. Wire: Encode1(sub-op=3)+Encode1(agreed). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 3 (AGREE)"},
-        {"op": "Encode1", "comment": "agreed flag (1=yes, 0=no)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 3 (AGREE)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "agreed flag (1=yes, 0=no)"
+        }
       ]
     },
     "CField::SendSetGuildMarkMsg": {
@@ -1428,11 +3280,26 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendSetGuildMarkMsg@0x56e325. Wire: Encode1(sub-op=9)+Encode2(logoId)+Encode1(logoColor)+Encode2(bgId)+Encode1(bgColor). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 9 (SET_EMBLEM)"},
-        {"op": "Encode2", "comment": "logoId (word)"},
-        {"op": "Encode1", "comment": "logoColor (byte)"},
-        {"op": "Encode2", "comment": "backgroundId (word)"},
-        {"op": "Encode1", "comment": "backgroundColor (byte)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 9 (SET_EMBLEM)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "logoId (word)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoColor (byte)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "backgroundId (word)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "backgroundColor (byte)"
+        }
       ]
     },
     "CField::SendInviteGuildMsg": {
@@ -1441,8 +3308,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendInviteGuildMsg@0x56dab9. Wire: Encode1(sub-op=5)+EncodeStr(targetName). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 5 (INVITE)"},
-        {"op": "EncodeStr", "comment": "target character name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 5 (INVITE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
       ]
     },
     "CField::SendWithdrawGuildMsg": {
@@ -1451,7 +3324,10 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendWithdrawGuildMsg@0x56dcc7. Wire: Encode1(sub-op=7). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 7 (WITHDRAW)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 7 (WITHDRAW)"
+        }
       ]
     },
     "CField::SendKickGuildMsg": {
@@ -1460,8 +3336,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendKickGuildMsg@0x56ddf7. Wire: Encode1(sub-op=8)+EncodeStr(targetName). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 8 (KICK)"},
-        {"op": "EncodeStr", "comment": "target character name"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 8 (KICK)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
       ]
     },
     "CField::SendSetGuildNoticeMsg": {
@@ -1470,8 +3352,14 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendSetGuildNoticeMsg@0x56e3a2. Wire: Encode1(sub-op=16)+EncodeStr(notice). Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op = 16 (SET_NOTICE)"},
-        {"op": "EncodeStr", "comment": "new guild notice text"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op = 16 (SET_NOTICE)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "new guild notice text"
+        }
       ]
     },
     "CTabGuildAlliance::OnGradeChange": {
@@ -1480,7 +3368,10 @@
       "direction": "clientbound",
       "notes": "JMS CTabGuildAlliance::OnGradeChange@0x9ce1c7. Present in JMS v185. Wire: Decode1(grade). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "new grade / alliance tier"}
+        {
+          "op": "Decode1",
+          "comment": "new grade / alliance tier"
+        }
       ]
     },
     "CWvsContext::OnGuildBBSPacket": {
@@ -1555,7 +3446,10 @@
       "direction": "serverbound",
       "notes": "JMS CFadeWnd::SendCloseMessage@0x557267 handles DenyGuildRequest (sub-op). Wire: Encode1(sub-op)+mode-specific fields. Identical to GMS v95.",
       "calls": [
-        {"op": "Encode1", "comment": "sub-op (deny/close)"}
+        {
+          "op": "Encode1",
+          "comment": "sub-op (deny/close)"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#MemberExpel": {
@@ -1564,10 +3458,22 @@
       "direction": "clientbound",
       "notes": "JMS MemberExpel ('/') — same wire as MemberLeft but with expulsion flag. Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode = '/' (47 = MemberExpel)"},
-        {"op": "Decode4", "comment": "guildId"},
-        {"op": "Decode4", "comment": "charId of expelled member"},
-        {"op": "DecodeStr", "comment": "expelled member name"}
+        {
+          "op": "Decode1",
+          "comment": "mode = '/' (47 = MemberExpel)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "charId of expelled member"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "expelled member name"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#ForeignNameChanged": {
@@ -1576,8 +3482,14 @@
       "direction": "clientbound",
       "notes": "JMS CUserRemote::OnGuildNameChanged@0xa5763e. Same as OnGuildNameChanged entry above.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId (dispatcher prefix)"},
-        {"op": "DecodeStr", "comment": "new guild name"}
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher prefix)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "new guild name"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#ForeignEmblemChanged": {
@@ -1586,11 +3498,26 @@
       "direction": "clientbound",
       "notes": "JMS CUserRemote::OnGuildMarkChanged@0xa57689. Same as OnGuildMarkChanged entry above.",
       "calls": [
-        {"op": "Decode4", "comment": "characterId (dispatcher prefix)"},
-        {"op": "Decode2", "comment": "logoId"},
-        {"op": "Decode1", "comment": "logoColor"},
-        {"op": "Decode2", "comment": "backgroundId"},
-        {"op": "Decode1", "comment": "backgroundColor"}
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher prefix)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "logoId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "logoColor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "backgroundId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "backgroundColor"
+        }
       ]
     },
     "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
@@ -1599,8 +3526,14 @@
       "direction": "clientbound",
       "notes": "JMS ErrorMessageWithTarget: mode byte + DecodeStr(targetName). Identical to GMS v95.",
       "calls": [
-        {"op": "Decode1", "comment": "mode (ErrorMessageWithTarget)"},
-        {"op": "DecodeStr", "comment": "target name"}
+        {
+          "op": "Decode1",
+          "comment": "mode (ErrorMessageWithTarget)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target name"
+        }
       ]
     }
   }

@@ -4,7 +4,7 @@
   "Address": "0xb102d5",
   "Variant": "JMS/v185",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/pet/clientbound/cash_food_result.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/cash_food_result.go",
   "Rows": [
     {
       "Index": 0,

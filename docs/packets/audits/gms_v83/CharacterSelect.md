@@ -1,7 +1,7 @@
 # CharacterSelect (← `CLogin::SendSelectCharPacket`)
 
 - **IDA:** 0x5f726d
-- **Atlas file:** `libs/atlas-packet/login/serverbound/character_select.go`
+- **Atlas file:** `../../libs/atlas-packet/login/serverbound/character_select.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ✅

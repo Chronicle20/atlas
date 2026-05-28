@@ -1,7 +1,7 @@
 # ItemCancel (← `CWvsContext::SendStatChangeItemCancelRequest`)
 
 - **IDA:** 0xa9ef5b
-- **Atlas file:** `libs/atlas-packet/character/serverbound/item_cancel.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/item_cancel.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

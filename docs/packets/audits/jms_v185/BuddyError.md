@@ -1,7 +1,7 @@
 # BuddyError (← `CWvsContext::OnFriendResult#Error`)
 
 - **IDA:** 0xb2a873
-- **Atlas file:** `libs/atlas-packet/buddy/clientbound/error.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/error.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ❌

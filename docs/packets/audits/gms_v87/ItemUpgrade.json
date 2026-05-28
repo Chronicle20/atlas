@@ -4,7 +4,7 @@
   "Address": "0x9adb79",
   "Variant": "GMS/v87",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/item_upgrade.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/item_upgrade.go",
   "Rows": [
     {
       "Index": 0,

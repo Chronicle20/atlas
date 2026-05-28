@@ -4,7 +4,7 @@
   "Address": "0xad697a",
   "Variant": "GMS/v87",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/party/clientbound/invite.go",
+  "AtlasFile": "../../libs/atlas-packet/party/clientbound/invite.go",
   "Rows": [
     {
       "Index": 0,

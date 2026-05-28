@@ -4,7 +4,7 @@
   "Address": "0xa3f2e8",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/buddy/clientbound/list_update.go",
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/list_update.go",
   "Rows": [
     {
       "Index": 0,

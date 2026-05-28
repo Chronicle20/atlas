@@ -1,7 +1,7 @@
 # CharacterSelectRegisterPic (← `CLogin::SendSelectCharPacket#CharacterSelectRegisterPic`)
 
 - **IDA:** 0x62e9f6
-- **Atlas file:** `libs/atlas-packet/login/serverbound/character_select_register_pic.go`
+- **Atlas file:** `../../libs/atlas-packet/login/serverbound/character_select_register_pic.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ❌

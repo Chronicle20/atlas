@@ -1,7 +1,7 @@
 # DistributeAp (← `CWvsContext::SendAbilityUpRequest#DistributeAp`)
 
 - **IDA:** 0xabb60b
-- **Atlas file:** `libs/atlas-packet/character/serverbound/distribute_ap.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/distribute_ap.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

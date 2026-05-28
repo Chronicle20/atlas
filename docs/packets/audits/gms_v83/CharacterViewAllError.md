@@ -1,7 +1,7 @@
 # CharacterViewAllError (← `CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed`)
 
 - **IDA:** 0x5facca
-- **Atlas file:** `libs/atlas-packet/character/clientbound/view_all.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/view_all.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

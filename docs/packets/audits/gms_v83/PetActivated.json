@@ -4,7 +4,7 @@
   "Address": "0x983aff",
   "Variant": "GMS/v83",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/pet/clientbound/activated.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/activated.go",
   "Rows": [
     {
       "Index": 0,

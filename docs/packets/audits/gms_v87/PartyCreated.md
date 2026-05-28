@@ -1,7 +1,7 @@
 # PartyCreated (← `CWvsContext::OnPartyResult#Created`)
 
 - **IDA:** 0xad697a
-- **Atlas file:** `libs/atlas-packet/party/clientbound/created.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/created.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # PetSpawn (← `CWvsContext::SendActivatePetRequest`)
 
 - **IDA:** 0xabbb70
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/spawn.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

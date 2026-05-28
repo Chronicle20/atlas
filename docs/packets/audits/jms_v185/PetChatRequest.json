@@ -4,7 +4,7 @@
   "Address": "0x76b3a0",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/chat.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/chat.go",
   "Rows": [
     {
       "Index": 0,

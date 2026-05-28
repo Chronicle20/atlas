@@ -1,7 +1,7 @@
 # PartyOperationJoin (← `CField::SendJoinPartyMsg#OperationJoin`)
 
 - **IDA:** 0x56cce9
-- **Atlas file:** `libs/atlas-packet/party/serverbound/operation_join.go`
+- **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation_join.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -4,7 +4,7 @@
   "Address": "0x704d5d",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/command.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/command.go",
   "Rows": [
     {
       "Index": 0,

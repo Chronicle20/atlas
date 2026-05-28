@@ -1,7 +1,7 @@
 # BuffCancelRequest (← `CUserLocal::SendSkillCancelRequest`)
 
 - **IDA:** 0x9f22b8
-- **Atlas file:** `libs/atlas-packet/character/serverbound/buff_cancel.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/buff_cancel.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

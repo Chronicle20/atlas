@@ -1,7 +1,7 @@
 # GuildKick (← `CField::SendKickGuildMsg`)
 
 - **IDA:** 0x56ddf7
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_kick.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_kick.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

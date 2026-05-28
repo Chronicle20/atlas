@@ -1,7 +1,7 @@
 # MonsterMovementRequest (← `CMob::GenerateMovePath`)
 
 - **IDA:** 0x6e8892
-- **Atlas file:** `libs/atlas-packet/monster/serverbound/movement.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/serverbound/movement.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** 🔍

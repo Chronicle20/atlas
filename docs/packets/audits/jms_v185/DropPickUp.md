@@ -1,7 +1,7 @@
 # DropPickUp (← `CWvsContext::SendDropPickUpRequest`)
 
 - **IDA:** 0xaedb0f
-- **Atlas file:** `libs/atlas-packet/drop/serverbound/pick_up.go`
+- **Atlas file:** `../../libs/atlas-packet/drop/serverbound/pick_up.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

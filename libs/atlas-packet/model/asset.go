@@ -101,6 +101,11 @@ func (m Asset) inventoryType() inventory.Type {
 	return t
 }
 
+// InventoryType exposes the asset's inventory type (derived from its template
+// id) for encoders that must segment assets per inventory tab (e.g. storage
+// Show, which emits one count+items block per set tab bit).
+func (m Asset) InventoryType() inventory.Type { return m.inventoryType() }
+
 func (m Asset) IsEquipment() bool     { return m.inventoryType() == inventory.TypeValueEquip }
 func (m Asset) IsCashEquipment() bool { return m.IsEquipment() && m.cashId != 0 }
 func (m Asset) IsConsumable() bool    { return m.inventoryType() == inventory.TypeValueUse }

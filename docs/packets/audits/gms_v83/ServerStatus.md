@@ -1,7 +1,7 @@
 # ServerStatus (← `CLogin::OnCheckUserLimitResult`)
 
 - **IDA:** 0x5f92ae
-- **Atlas file:** `libs/atlas-packet/login/clientbound/server_status.go`
+- **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_status.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

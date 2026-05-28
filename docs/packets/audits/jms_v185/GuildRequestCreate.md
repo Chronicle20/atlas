@@ -1,7 +1,7 @@
 # GuildRequestCreate (← `CField::InputGuildName`)
 
 - **IDA:** 0x56d98c
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_request_create.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_request_create.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

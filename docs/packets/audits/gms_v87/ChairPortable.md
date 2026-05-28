@@ -1,7 +1,7 @@
 # ChairPortable (← `CWvsContext::SendSitOnPortableChairRequest`)
 
 - **IDA:** 0xa9ef5b
-- **Atlas file:** `libs/atlas-packet/character/serverbound/chair_portable.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/chair_portable.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

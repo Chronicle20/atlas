@@ -1,7 +1,7 @@
 # CharacterHint (← `CUserLocal::OnBalloonMsg`)
 
 - **IDA:** 0x95d88b
-- **Atlas file:** `libs/atlas-packet/character/clientbound/hint.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/hint.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

@@ -1,7 +1,7 @@
 # DropSpawn (← `CDropPool::OnDropEnterField`)
 
 - **IDA:** 0x536a8f
-- **Atlas file:** `libs/atlas-packet/drop/clientbound/spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/drop/clientbound/spawn.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ❌

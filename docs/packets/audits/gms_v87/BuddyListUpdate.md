@@ -1,7 +1,7 @@
 # BuddyListUpdate (← `CWvsContext::OnFriendResult#ListUpdate`)
 
 - **IDA:** 0xad7ae5
-- **Atlas file:** `libs/atlas-packet/buddy/clientbound/list_update.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/list_update.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -4,7 +4,7 @@
   "Address": "0x652780",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/monster/clientbound/stat.go",
+  "AtlasFile": "../../libs/atlas-packet/monster/clientbound/stat.go",
   "Rows": [
     {
       "Index": 0,

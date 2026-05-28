@@ -1,7 +1,7 @@
 # PetItemUse (← `CWvsContext::SendStatChangeItemUseRequestByPetQ`)
 
 - **IDA:** 0x9de400
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/item_use.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/item_use.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

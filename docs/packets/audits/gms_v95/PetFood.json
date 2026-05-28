@@ -4,7 +4,7 @@
   "Address": "0x9d9f20",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/food.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/food.go",
   "Rows": [
     {
       "Index": 0,

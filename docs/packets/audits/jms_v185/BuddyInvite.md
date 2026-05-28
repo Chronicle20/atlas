@@ -1,7 +1,7 @@
 # BuddyInvite (← `CWvsContext::OnFriendResult#Invite`)
 
 - **IDA:** 0xb2a873
-- **Atlas file:** `libs/atlas-packet/buddy/clientbound/invite.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/invite.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** 🔍

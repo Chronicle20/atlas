@@ -1,7 +1,7 @@
 # AcceptTos (← `CLogin::OnAcceptLicense`)
 
 - **IDA:** 0x633e1a
-- **Atlas file:** `libs/atlas-packet/account/serverbound/accept_tos.go`
+- **Atlas file:** `../../libs/atlas-packet/account/serverbound/accept_tos.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

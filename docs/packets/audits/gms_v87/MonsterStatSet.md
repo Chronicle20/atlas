@@ -1,7 +1,7 @@
 # MonsterStatSet (← `CMob::OnStatSet`)
 
 - **IDA:** 0x6a71cc
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/stat.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/stat.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ❌

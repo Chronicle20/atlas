@@ -1,7 +1,7 @@
 # PetChatRequest (← `CPet::DoAction`)
 
 - **IDA:** 0x76b3a0
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/chat.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/chat.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** ❌

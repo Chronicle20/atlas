@@ -1,7 +1,7 @@
 # ItemUpgrade (← `CUser::ShowItemUpgradeEffect`)
 
 - **IDA:** 0x9adb79
-- **Atlas file:** `libs/atlas-packet/character/clientbound/item_upgrade.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/item_upgrade.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** ✅

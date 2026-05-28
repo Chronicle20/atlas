@@ -1,0 +1,29 @@
+{
+  "WriterName": "CashInventoryCapacityFailed",
+  "IDAName": "CCashShop::OnCashItemResult#InventoryCapacityFailed",
+  "Address": "0x497390",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_operation_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x6E INC_SLOT_COUNT_FAILED; op-byte consumed by dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "errorCode (NoticeFailReason arg)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

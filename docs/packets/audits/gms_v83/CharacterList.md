@@ -1,7 +1,7 @@
 # CharacterList (← `CLogin::OnSelectWorldResult`)
 
 - **IDA:** 0x5f9891
-- **Atlas file:** `libs/atlas-packet/character/clientbound/list.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/list.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ❌

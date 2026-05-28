@@ -1054,6 +1054,183 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUIGuildBBS::OnDelete":
 		// BBS delete thread: Encode1(op) + Encode4(threadId). Atlas BBSDeleteThread writes: WriteInt(threadId). ✓
 		return []candidate{{name: "BBSDeleteThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+	// --- storage sub-domain (task-067) ---
+	// Clientbound CTrunkDlg::OnPacket is a mode-dispatched writer; use synthetic
+	// #-suffix FNames (one per atlas wire shape) to disambiguate.
+	case "CTrunkDlg::OnPacket#Show":
+		return []candidate{{name: "Show", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#UpdateAssets":
+		return []candidate{{name: "UpdateAssets", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#UpdateMeso":
+		return []candidate{{name: "UpdateMeso", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorSimple":
+		return []candidate{{name: "ErrorSimple", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#ErrorMessage":
+		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	// Serverbound CTrunkDlg senders.
+	case "CTrunkDlg::SendGetItemRequest":
+		return []candidate{{name: "OperationRetrieveAsset", dir: csvpkg.DirServerbound, pkg: "storage"}}
+	case "CTrunkDlg::SendPutItemRequest":
+		return []candidate{{name: "OperationStoreAsset", dir: csvpkg.DirServerbound, pkg: "storage"}}
+	case "CTrunkDlg::SendGetMoneyRequest":
+		return []candidate{{name: "OperationMeso", dir: csvpkg.DirServerbound, pkg: "storage"}}
+	case "CTrunkDlg::OnPacket#Operation":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "storage"}}
+	// --- inventory sub-domain (task-067) ---
+	// Clientbound CWvsContext::OnInventoryOperation is a mode-dispatched reader;
+	// use synthetic #-suffix FNames (one per atlas wire shape) to disambiguate.
+	case "CWvsContext::OnInventoryOperation#QuantityUpdate":
+		return []candidate{{name: "QuantityUpdate", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	case "CWvsContext::OnInventoryOperation#ChangeMove":
+		return []candidate{{name: "ChangeMove", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	case "CWvsContext::OnInventoryOperation#Remove":
+		return []candidate{{name: "Remove", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	case "CWvsContext::OnInventoryOperation#Add":
+		return []candidate{{name: "Add", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	case "CWvsContext::OnInventoryOperation#ChangeBatch":
+		return []candidate{{name: "ChangeBatch", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	case "CWvsContext::OnGatherItemResult":
+		return []candidate{{name: "CompartmentMerge", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	case "CWvsContext::OnSortItemResult":
+		return []candidate{{name: "CompartmentSort", dir: csvpkg.DirClientbound, pkg: "inventory"}}
+	// Serverbound CWvsContext senders.
+	case "CWvsContext::SendChangeSlotPositionRequest":
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendGatherItemRequest":
+		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendSortItemRequest":
+		return []candidate{{name: "CompartmentSortRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendStatChangeItemUseRequest":
+		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendUpgradeItemUseRequest":
+		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// --- interaction sub-domain (task-067) ---
+	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
+	// (collides with storage's CTrunkDlg `Operation` under the flat report layout;
+	// storage wins the dedup). The interaction dispatcher is documented in
+	// docs/packets/ida-exports/_pending.md -> "OP-FAMILY-interaction" instead of a
+	// separate report. Sub-op senders below each map 1:1 to an atlas wire shape.
+	case "CMiniRoomBaseDlg::CheckAndSendChat":
+		return []candidate{{name: "OperationChat", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CField::SendInviteTradingRoomMsg":
+		return []candidate{{name: "OperationInvite", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CField::AddBlackList":
+		return []candidate{{name: "OperationFieldAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CField::DeleteBlackList":
+		return []candidate{{name: "OperationFieldRemoveFromBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::OnClickBanButton":
+		return []candidate{{name: "OperationPersonalStoreAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::DeliverBlackList":
+		return []candidate{{name: "OperationPersonalStoreSetBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CTradingRoomDlg::PutItem":
+		return []candidate{{name: "OperationTradePutItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CTradingRoomDlg::PutMoney":
+		return []candidate{{name: "OperationTradeAddMeso", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CTradingRoomDlg::Trade":
+		return []candidate{{name: "OperationTradeConfirm", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CCashTradingRoomDlg::Trade":
+		return []candidate{{name: "OperationTransaction", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::PutItem":
+		return []candidate{{name: "OperationPersonalStorePutItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::BuyItem":
+		return []candidate{{name: "OperationPersonalStoreBuy", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::MoveItemToInventory":
+		return []candidate{{name: "OperationPersonalStoreRemoveItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CMemoryGameDlg::SendTurnUpCard":
+		return []candidate{{name: "OperationMemoryGameFlipCard", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CMemoryGameDlg::OnTieRequest":
+		return []candidate{{name: "OperationMemoryGameTieAnswer", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "COmokDlg::PutStoneChecker":
+		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "COmokDlg::OnRetreatRequest":
+		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	// Entrusted-merchant sub-ops (share CPersonalShopDlg senders w/ different op-bytes).
+	case "CEntrustedShopDlg::AddBlackList":
+		return []candidate{{name: "OperationMerchantAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CEntrustedShopDlg::DeleteBlackList":
+		return []candidate{{name: "OperationMerchantRemoveFromBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::PutItem#Merchant":
+		return []candidate{{name: "OperationMerchantPutItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::BuyItem#Merchant":
+		return []candidate{{name: "OperationMerchantBuy", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::MoveItemToInventory#Merchant":
+		return []candidate{{name: "OperationMerchantRemoveItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	// Clientbound CMiniRoomBaseDlg::OnPacketBase is a mode-dispatched reader;
+	// synthetic #-suffix FNames disambiguate the per-mode atlas wire shapes.
+	case "CMiniRoomBaseDlg::OnPacketBase#Invite":
+		return []candidate{{name: "InteractionInvite", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#InviteResult":
+		return []candidate{{name: "InteractionInviteResult", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#Enter":
+		return []candidate{{name: "InteractionEnter", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess":
+		return []candidate{{name: "InteractionEnterResultSuccess", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultError":
+		return []candidate{{name: "InteractionEnterResultError", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#Chat":
+		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
+		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CPersonalShopDlg::OnRefresh#UpdateMerchant":
+		return []candidate{{name: "InteractionUpdateMerchant", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// --- cash sub-domain (task-067, Phase 1d) ---
+	// Clientbound: QueryResult routes through CCashShop::OnQueryCashResult (opcode 0x17F),
+	// a SEPARATE dispatcher from OnCashItemResult.
+	case "CCashShop::OnQueryCashResult":
+		return []candidate{{name: "QueryResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound CCashShop::OnCashItemResult is a mode-dispatched reader (op-bytes 0x54-0xBC);
+	// synthetic #-suffix FNames map each CashShopOperation result struct to its OnCashItemRes* sub-handler.
+	case "CCashShop::OnCashItemResult#CashShopInventory":
+		return []candidate{{name: "CashShopInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#WishList":
+		return []candidate{{name: "WishList", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#InventoryCapacitySuccess":
+		return []candidate{{name: "InventoryCapacitySuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#InventoryCapacityFailed":
+		return []candidate{{name: "InventoryCapacityFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#OperationError":
+		return []candidate{{name: "OperationError", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CashShopPurchaseSuccess":
+		return []candidate{{name: "CashShopPurchaseSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CashItemMovedToCashInventory":
+		return []candidate{{name: "CashItemMovedToCashInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
+	case "CCashShop::TrySendQueryCashRequest":
+		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnBuy":
+		return []candidate{{name: "ShopOperationBuy", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnBuyNormal":
+		return []candidate{{name: "ShopOperationBuyNormal", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnBuyPackage":
+		return []candidate{{name: "ShopOperationBuyPackage", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnBuyCouple":
+		return []candidate{{name: "ShopOperationBuyCouple", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnBuyFriendship":
+		return []candidate{{name: "ShopOperationBuyFriendship", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::SendBuyNameChangeItemPacket":
+		return []candidate{{name: "ShopOperationBuyNameChange", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::SendBuyTransferWorldItemPacket":
+		return []candidate{{name: "ShopOperationBuyWorldTransfer", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnEnableEquipSlotExt":
+		return []candidate{{name: "ShopOperationEnableEquipSlot", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::RequestCashPurchaseRecord":
+		return []candidate{{name: "ShopOperationGetPurchaseRecord", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::SendGiftsPacket":
+		return []candidate{{name: "ShopOperationGift", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnIncCharacterSlotCount":
+		return []candidate{{name: "ShopOperationIncreaseCharacterSlot", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnBuySlotInc":
+		return []candidate{{name: "ShopOperationIncreaseInventory", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnIncTrunkCount":
+		return []candidate{{name: "ShopOperationIncreaseStorage", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnMoveCashItemLtoS":
+		return []candidate{{name: "ShopOperationMoveFromCashInventory", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnMoveCashItemStoL":
+		return []candidate{{name: "ShopOperationMoveToCashInventory", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnRebateLockerItem":
+		return []candidate{{name: "ShopOperationRebateLockerItem", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnSetWish":
+		return []candidate{{name: "ShopOperationSetWishlist", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	}
 	return nil
 }

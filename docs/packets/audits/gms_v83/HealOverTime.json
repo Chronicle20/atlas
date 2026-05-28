@@ -4,7 +4,7 @@
   "Address": "0xa1e997",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/heal_over_time.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/heal_over_time.go",
   "Rows": [
     {
       "Index": 0,

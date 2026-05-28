@@ -1,7 +1,7 @@
 # EffectSimple (← `CUser::OnEffect`)
 
 - **IDA:** 0x9b1ef0
-- **Atlas file:** `libs/atlas-packet/character/clientbound/effect.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/effect.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

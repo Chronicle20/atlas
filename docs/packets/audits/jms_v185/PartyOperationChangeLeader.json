@@ -4,7 +4,7 @@
   "Address": "0x56d0cc",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/party/serverbound/operation_change_leader.go",
+  "AtlasFile": "../../libs/atlas-packet/party/serverbound/operation_change_leader.go",
   "Rows": [
     {
       "Index": 0,

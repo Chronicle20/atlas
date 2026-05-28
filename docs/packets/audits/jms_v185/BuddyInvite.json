@@ -4,7 +4,7 @@
   "Address": "0xb2a873",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/buddy/clientbound/invite.go",
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/invite.go",
   "Rows": [
     {
       "Index": 0,

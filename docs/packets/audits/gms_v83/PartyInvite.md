@@ -1,7 +1,7 @@
 # PartyInvite (← `CWvsContext::OnPartyResult#Invite`)
 
 - **IDA:** 0xa3e31c
-- **Atlas file:** `libs/atlas-packet/party/clientbound/invite.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/invite.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ❌

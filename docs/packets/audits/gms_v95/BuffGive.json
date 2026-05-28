@@ -4,7 +4,7 @@
   "Address": "0xa02fc0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/buff_give.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/buff_give.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x631b28",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/add_entry_error.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/add_entry_error.go",
   "Rows": [
     {
       "Index": 0,

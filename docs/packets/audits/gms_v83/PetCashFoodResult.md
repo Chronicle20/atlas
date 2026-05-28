@@ -1,7 +1,7 @@
 # PetCashFoodResult (← `CWvsContext::OnCashPetFoodResult`)
 
 - **IDA:** 0xa29049
-- **Atlas file:** `libs/atlas-packet/pet/clientbound/cash_food_result.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/cash_food_result.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

@@ -1,7 +1,7 @@
 # AllCharacterListSelectWithPic (← `CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic`)
 
 - **IDA:** 0x5f76ae
-- **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_select_with_pic.go`
+- **Atlas file:** `../../libs/atlas-packet/login/serverbound/all_character_list_select_with_pic.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

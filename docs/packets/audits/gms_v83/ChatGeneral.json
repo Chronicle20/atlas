@@ -4,7 +4,7 @@
   "Address": "0x52c315",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/chat/serverbound/general.go",
+  "AtlasFile": "../../libs/atlas-packet/chat/serverbound/general.go",
   "Rows": [
     {
       "Index": 0,

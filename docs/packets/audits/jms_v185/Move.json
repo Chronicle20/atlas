@@ -4,7 +4,7 @@
   "Address": "0xaaa076",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/move.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/move.go",
   "Rows": [
     {
       "Index": 0,

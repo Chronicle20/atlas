@@ -4,7 +4,7 @@
   "Address": "0x6a6cb3",
   "Variant": "GMS/v87",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/monster/clientbound/movement.go",
+  "AtlasFile": "../../libs/atlas-packet/monster/clientbound/movement.go",
   "Rows": [
     {
       "Index": 0,

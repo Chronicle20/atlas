@@ -1,7 +1,7 @@
 # PetActivated (← `CUserRemote::OnPetActivated`)
 
 - **IDA:** 0xa576d3
-- **Atlas file:** `libs/atlas-packet/pet/clientbound/activated.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/activated.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ❌

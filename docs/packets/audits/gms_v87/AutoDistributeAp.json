@@ -4,7 +4,7 @@
   "Address": "0xabb60b",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/auto_distribute_ap.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/auto_distribute_ap.go",
   "Rows": [
     {
       "Index": 0,

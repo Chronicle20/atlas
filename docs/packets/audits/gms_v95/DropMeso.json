@@ -4,7 +4,7 @@
   "Address": "0x9f6650",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/drop_meso.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/drop_meso.go",
   "Rows": [
     {
       "Index": 0,

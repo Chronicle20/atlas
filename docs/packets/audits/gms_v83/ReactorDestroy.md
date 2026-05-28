@@ -1,7 +1,7 @@
 # ReactorDestroy (← `CReactorPool::OnReactorLeaveField`)
 
 - **IDA:** 0x73551f
-- **Atlas file:** `libs/atlas-packet/reactor/clientbound/destroy.go`
+- **Atlas file:** `../../libs/atlas-packet/reactor/clientbound/destroy.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

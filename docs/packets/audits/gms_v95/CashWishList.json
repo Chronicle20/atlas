@@ -1,0 +1,29 @@
+{
+  "WriterName": "CashWishList",
+  "IDAName": "CCashShop::OnCashItemResult#WishList",
+  "Address": "0x494d60",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_operation_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x62 SET_WISH_DONE; op-byte consumed by dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "40 bytes = 10 x int32 wishlist SNs",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    }
+  ],
+  "Verdict": 2
+}

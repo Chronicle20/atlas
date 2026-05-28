@@ -1,7 +1,7 @@
 # PartyOperationInvite (← `CField::SendJoinPartyMsg`)
 
 - **IDA:** 0x56cce9
-- **Atlas file:** `libs/atlas-packet/party/serverbound/operation_invite.go`
+- **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation_invite.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

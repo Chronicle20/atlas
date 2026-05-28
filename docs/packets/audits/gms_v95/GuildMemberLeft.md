@@ -1,7 +1,7 @@
 # GuildMemberLeft (← `CWvsContext::OnGuildResult#MemberLeft`)
 
 - **IDA:** 0xa0dd06
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

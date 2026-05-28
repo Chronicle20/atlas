@@ -4,7 +4,7 @@
   "Address": "0xaee1d4",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/item_use.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/item_use.go",
   "Rows": [
     {
       "Index": 0,

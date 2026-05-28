@@ -4,7 +4,7 @@
   "Address": "0x6ccea0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/reactor/clientbound/destroy.go",
+  "AtlasFile": "../../libs/atlas-packet/reactor/clientbound/destroy.go",
   "Rows": [
     {
       "Index": 0,

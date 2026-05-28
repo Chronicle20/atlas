@@ -1,7 +1,7 @@
 # DistributeSp (← `CWvsContext::SendSkillUpRequest`)
 
 - **IDA:** 0xabb7c1
-- **Atlas file:** `libs/atlas-packet/character/serverbound/distribute_sp.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/distribute_sp.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

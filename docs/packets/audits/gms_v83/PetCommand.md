@@ -1,7 +1,7 @@
 # PetCommand (← `CPet::ParseCommand`)
 
 - **IDA:** 0x704d5d
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/command.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/command.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

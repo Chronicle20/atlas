@@ -1,7 +1,7 @@
 # CharacterViewAllSearchFailed (← `CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed`)
 
 - **IDA:** 0x6328eb
-- **Atlas file:** `libs/atlas-packet/character/clientbound/view_all.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/view_all.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

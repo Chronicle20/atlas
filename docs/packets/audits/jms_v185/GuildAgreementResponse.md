@@ -1,7 +1,7 @@
 # GuildAgreementResponse (← `CWvsContext::OnGuildResult#AgreementResponse`)
 
 - **IDA:** 0xb22518
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_agreement_response.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_agreement_response.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

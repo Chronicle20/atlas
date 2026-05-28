@@ -4,7 +4,7 @@
   "Address": "0x79ea6a",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/reactor/serverbound/hit.go",
+  "AtlasFile": "../../libs/atlas-packet/reactor/serverbound/hit.go",
   "Rows": [
     {
       "Index": 0,

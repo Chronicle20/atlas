@@ -1,0 +1,29 @@
+{
+  "WriterName": "StorageOperationRetrieveAsset",
+  "IDAName": "CTrunkDlg::SendGetItemRequest",
+  "Address": "0x84dea0",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nType (inventory type). op-byte 3 consumed by dispatcher",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "slot (*(v5+8))",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

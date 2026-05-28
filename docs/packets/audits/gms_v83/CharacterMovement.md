@@ -1,7 +1,7 @@
 # CharacterMovement (← `CUserRemote::OnMove`)
 
 - **IDA:** 0x9726ae
-- **Atlas file:** `libs/atlas-packet/character/clientbound/movement.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/movement.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

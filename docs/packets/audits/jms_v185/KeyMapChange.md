@@ -1,7 +1,7 @@
 # KeyMapChange (← `CFuncKeyMappedMan::SaveFuncKeyMap`)
 
 - **IDA:** 0x5e7b48
-- **Atlas file:** `libs/atlas-packet/character/serverbound/key_map_change.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/key_map_change.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ❌

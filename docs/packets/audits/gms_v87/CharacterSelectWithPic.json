@@ -4,7 +4,7 @@
   "Address": "0x62e9f6",
   "Variant": "GMS/v87",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/login/serverbound/character_select_with_pic.go",
+  "AtlasFile": "../../libs/atlas-packet/login/serverbound/character_select_with_pic.go",
   "Rows": [
     {
       "Index": 0,

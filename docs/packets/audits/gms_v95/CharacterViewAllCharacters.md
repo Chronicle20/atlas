@@ -1,7 +1,7 @@
 # CharacterViewAllCharacters (← `CLogin::OnViewAllCharResult#CharacterViewAllCharacters`)
 
 - **IDA:** 0x5de435
-- **Atlas file:** `libs/atlas-packet/character/clientbound/view_all.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/view_all.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ❌

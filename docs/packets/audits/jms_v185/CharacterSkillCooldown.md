@@ -1,7 +1,7 @@
 # CharacterSkillCooldown (← `CUserLocal::OnSkillCooltimeSet`)
 
 - **IDA:** 0xa2747f
-- **Atlas file:** `libs/atlas-packet/character/clientbound/skill_cooldown.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/skill_cooldown.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

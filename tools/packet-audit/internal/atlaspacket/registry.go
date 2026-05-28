@@ -133,6 +133,25 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 					body = fd.Body
 				}
 				entry.Calls = collectCallsWithCtx(body, fc.fset, reg, qual)
+			case "EncodeEntry":
+				// EncodeEntry returns a closure (same shape as Encode) but the method
+				// name differs because the type is a list-entry sub-struct (e.g.
+				// inventory/change_entry.go's AddEntry/MoveEntry). Encode wins over
+				// EncodeEntry per the precedence below.
+				if entry.Calls == nil {
+					body := findReturnClosure(fd.Body)
+					if body == nil {
+						body = fd.Body
+					}
+					entry.Calls = collectCallsWithCtx(body, fc.fset, reg, qual)
+				}
+			case "EncodeBytes":
+				// EncodeBytes returns a flat []byte (no closure). Used for sub-structs
+				// embedded inside a top-level Encode via WriteByteArray (e.g.
+				// cash/clientbound/shop_inventory.go's CashInventoryItem).
+				if entry.Calls == nil {
+					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, qual)
+				}
 			case "EncodeForeign":
 				// Register under the "<Type>::EncodeForeign" key so callers can pick it
 				// explicitly without colliding with the primary Encode entry.

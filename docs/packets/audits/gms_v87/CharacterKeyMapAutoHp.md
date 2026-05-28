@@ -1,7 +1,7 @@
 # CharacterKeyMapAutoHp (← `CFuncKeyMappedMan::OnPetConsumeItemInit`)
 
 - **IDA:** 0x5bd2f2
-- **Atlas file:** `libs/atlas-packet/character/clientbound/keymap_auto_hp.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/keymap_auto_hp.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -1,7 +1,7 @@
 # PartyOperation (← `CField::SendWithdrawPartyMsg`)
 
 - **IDA:** 0x56cba7
-- **Atlas file:** `libs/atlas-packet/party/serverbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

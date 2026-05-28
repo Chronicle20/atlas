@@ -1,7 +1,7 @@
 # AddCharacterError (← `CLogin::OnCreateNewCharacterResult#AddCharacterError`)
 
 - **IDA:** 0x5fa26c
-- **Atlas file:** `libs/atlas-packet/character/clientbound/add_entry_error.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/add_entry_error.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

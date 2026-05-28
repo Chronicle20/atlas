@@ -1,7 +1,7 @@
 # MonsterHealth (← `CMob::OnHPIndicator`)
 
 - **IDA:** 0x66d639
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/health.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/health.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

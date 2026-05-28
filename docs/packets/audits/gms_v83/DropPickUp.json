@@ -4,7 +4,7 @@
   "Address": "0xa09118",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/drop/serverbound/pick_up.go",
+  "AtlasFile": "../../libs/atlas-packet/drop/serverbound/pick_up.go",
   "Rows": [
     {
       "Index": 0,

@@ -1,7 +1,7 @@
 # ChatGeneralChat (← `CUser::OnChat`)
 
 - **IDA:** 0x8e86c0
-- **Atlas file:** `libs/atlas-packet/chat/clientbound/general.go`
+- **Atlas file:** `../../libs/atlas-packet/chat/clientbound/general.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

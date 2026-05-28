@@ -1,7 +1,7 @@
 # MessengerJoin (← `CUIMessenger::OnPacket#Join`)
 
 - **IDA:** 0x8b978f
-- **Atlas file:** `libs/atlas-packet/messenger/clientbound/join.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/join.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

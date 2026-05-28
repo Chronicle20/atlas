@@ -4,7 +4,7 @@
   "Address": "0x5e7b48",
   "Variant": "JMS/v185",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/key_map_change.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/key_map_change.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x9b1d1e",
   "Variant": "GMS/v87",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/chalkboard.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/chalkboard.go",
   "Rows": [
     {
       "Index": 0,

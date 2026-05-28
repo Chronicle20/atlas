@@ -1,7 +1,7 @@
 # CheckName (← `CLogin::SendCheckDuplicateIDPacket`)
 
 - **IDA:** 0x62f779
-- **Atlas file:** `libs/atlas-packet/character/serverbound/check_name.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/check_name.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

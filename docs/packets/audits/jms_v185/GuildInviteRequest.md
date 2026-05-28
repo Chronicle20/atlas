@@ -1,7 +1,7 @@
 # GuildInviteRequest (← `CField::SendInviteGuildMsg`)
 
 - **IDA:** 0x56dab9
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_invite.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_invite.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

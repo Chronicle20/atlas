@@ -1,7 +1,7 @@
 # GuildMemberExpel (← `CWvsContext::OnGuildResult#MemberExpel`)
 
 - **IDA:** 0xacf7d3
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

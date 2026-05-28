@@ -1,7 +1,7 @@
 # PartyDisband (← `CWvsContext::OnPartyResult#Disband`)
 
 - **IDA:** 0xb297e7
-- **Atlas file:** `libs/atlas-packet/party/clientbound/disband.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/disband.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

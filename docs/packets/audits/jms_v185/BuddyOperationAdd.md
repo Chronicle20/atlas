@@ -1,7 +1,7 @@
 # BuddyOperationAdd (← `CField::SendSetFriendMsg`)
 
 - **IDA:** 0x56e41d
-- **Atlas file:** `libs/atlas-packet/buddy/serverbound/operation_add.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/serverbound/operation_add.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

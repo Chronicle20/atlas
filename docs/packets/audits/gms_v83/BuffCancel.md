@@ -1,7 +1,7 @@
 # BuffCancel (← `CWvsContext::OnTemporaryStatReset`)
 
 - **IDA:** 0xa2071f
-- **Atlas file:** `libs/atlas-packet/character/clientbound/buff_cancel.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/buff_cancel.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

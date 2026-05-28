@@ -1,7 +1,7 @@
 # MessengerOperation (← `CUIMessenger::OnDestroy`)
 
 - **IDA:** 0x8511fc
-- **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/serverbound/operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

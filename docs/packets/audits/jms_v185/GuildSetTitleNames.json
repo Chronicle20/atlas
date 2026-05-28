@@ -4,7 +4,7 @@
   "Address": "ABSENT",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/guild/serverbound/operation_set_title_names.go",
+  "AtlasFile": "../../libs/atlas-packet/guild/serverbound/operation_set_title_names.go",
   "Rows": [
     {
       "Index": 0,

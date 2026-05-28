@@ -4,7 +4,7 @@
   "Address": "0xa2508b",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/note/clientbound/display.go",
+  "AtlasFile": "../../libs/atlas-packet/note/clientbound/display.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x5e79aa",
   "Variant": "JMS/v185",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/keymap.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/keymap.go",
   "Rows": [
     {
       "Index": 0,

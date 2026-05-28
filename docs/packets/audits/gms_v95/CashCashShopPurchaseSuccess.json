@@ -1,0 +1,29 @@
+{
+  "WriterName": "CashCashShopPurchaseSuccess",
+  "IDAName": "CCashShop::OnCashItemResult#CashShopPurchaseSuccess",
+  "Address": "0x494dd0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_inventory.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x64 BUY_DONE; op-byte consumed by dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

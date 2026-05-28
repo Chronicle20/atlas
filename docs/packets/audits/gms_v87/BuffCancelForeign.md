@@ -1,7 +1,7 @@
 # BuffCancelForeign (← `CUserRemote::OnResetTemporaryStat`)
 
 - **IDA:** 0xa093ab
-- **Atlas file:** `libs/atlas-packet/character/clientbound/buff_cancel.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/buff_cancel.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

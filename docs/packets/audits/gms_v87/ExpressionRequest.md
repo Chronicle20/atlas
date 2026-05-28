@@ -1,7 +1,7 @@
 # ExpressionRequest (← `CWvsContext::SendEmotionChange`)
 
 - **IDA:** 0xabbfbb
-- **Atlas file:** `libs/atlas-packet/character/serverbound/expression.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/expression.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** ✅

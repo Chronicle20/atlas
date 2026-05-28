@@ -1,7 +1,7 @@
 # PartyOperationExpel (← `CField::SendKickPartyMsg`)
 
 - **IDA:** 0x56cf23
-- **Atlas file:** `libs/atlas-packet/party/serverbound/operation_expel.go`
+- **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation_expel.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

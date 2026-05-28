@@ -4,7 +4,7 @@
   "Address": "0x66f107",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/login/clientbound/server_list_entry.go",
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/server_list_entry.go",
   "Rows": [
     {
       "Index": 0,

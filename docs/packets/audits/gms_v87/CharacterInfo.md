@@ -1,7 +1,7 @@
 # CharacterInfo (← `CWvsContext::OnCharacterInfo`)
 
 - **IDA:** 0xabb181
-- **Atlas file:** `libs/atlas-packet/character/clientbound/info.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/info.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** ❌

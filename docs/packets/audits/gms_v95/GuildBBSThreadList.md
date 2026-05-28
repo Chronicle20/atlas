@@ -1,7 +1,7 @@
 # GuildBBSThreadList (← `CWvsContext::OnGuildBBSPacket`)
 
 - **IDA:** 0x9ccf20
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/bbs.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/bbs.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # PetExcludeResponse (← `CPet::OnLoadExceptionList`)
 
 - **IDA:** 0x74a17a
-- **Atlas file:** `libs/atlas-packet/pet/clientbound/exclude.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/exclude.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # NoteSendError (← `CWvsContext::OnMemoResult#SendError`)
 
 - **IDA:** 0xabccc2
-- **Atlas file:** `libs/atlas-packet/note/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/note/clientbound/operation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -1,7 +1,7 @@
 # GuildSetEmblem (← `CField::SendSetGuildMarkMsg`)
 
 - **IDA:** 0x56e325
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_set_emblem.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_set_emblem.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

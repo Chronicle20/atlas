@@ -1,7 +1,7 @@
 # GuildInvite (← `CWvsContext::OnGuildResult#Invite`)
 
 - **IDA:** 0xacf7d3
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ✅

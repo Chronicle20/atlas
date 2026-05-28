@@ -4,7 +4,7 @@
   "Address": "0x76bcc6",
   "Variant": "JMS/v185",
   "BranchDepth": 3,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/drop_pick_up.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/drop_pick_up.go",
   "Rows": [
     {
       "Index": 0,

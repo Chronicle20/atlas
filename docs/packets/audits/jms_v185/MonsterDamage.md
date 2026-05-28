@@ -1,7 +1,7 @@
 # MonsterDamage (← `CMob::OnDamaged`)
 
 - **IDA:** 0x6e9e43
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/damage.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/damage.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

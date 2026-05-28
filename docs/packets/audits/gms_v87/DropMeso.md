@@ -1,7 +1,7 @@
 # DropMeso (← `CWvsContext::SendDropMoneyRequest`)
 
 - **IDA:** 0xabb8b3
-- **Atlas file:** `libs/atlas-packet/character/serverbound/drop_meso.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/drop_meso.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

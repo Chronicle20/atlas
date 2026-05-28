@@ -4,7 +4,7 @@
   "Address": "0x537726",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/drop/clientbound/destroy.go",
+  "AtlasFile": "../../libs/atlas-packet/drop/clientbound/destroy.go",
   "Rows": [
     {
       "Index": 0,

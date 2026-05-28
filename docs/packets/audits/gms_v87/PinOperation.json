@@ -4,7 +4,7 @@
   "Address": "0x6342b0",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/login/clientbound/pin_operation.go",
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/pin_operation.go",
   "Rows": [
     {
       "Index": 0,

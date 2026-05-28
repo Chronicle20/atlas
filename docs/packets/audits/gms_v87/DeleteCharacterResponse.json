@@ -4,7 +4,7 @@
   "Address": "0x6315de",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/delete_response.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/delete_response.go",
   "Rows": [
     {
       "Index": 0,

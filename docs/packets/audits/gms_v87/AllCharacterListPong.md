@@ -1,7 +1,7 @@
 # AllCharacterListPong (← `CLogin::MakeVACDlg`)
 
 - **IDA:** 0x632d3a
-- **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_pong.go`
+- **Atlas file:** `../../libs/atlas-packet/login/serverbound/all_character_list_pong.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

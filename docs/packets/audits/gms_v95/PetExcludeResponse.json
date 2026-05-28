@@ -4,7 +4,7 @@
   "Address": "0x6a1510",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/clientbound/exclude.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/exclude.go",
   "Rows": [
     {
       "Index": 0,

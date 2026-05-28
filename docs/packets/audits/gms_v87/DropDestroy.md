@@ -1,7 +1,7 @@
 # DropDestroy (← `CDropPool::OnDropLeaveField`)
 
 - **IDA:** 0x5287e3
-- **Atlas file:** `libs/atlas-packet/drop/clientbound/destroy.go`
+- **Atlas file:** `../../libs/atlas-packet/drop/clientbound/destroy.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

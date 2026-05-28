@@ -1,7 +1,7 @@
 # InfoRequest (← `CWvsContext::SendCharacterInfoRequest`)
 
 - **IDA:** 0xa23fba
-- **Atlas file:** `libs/atlas-packet/character/serverbound/info_request.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/info_request.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

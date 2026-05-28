@@ -1,7 +1,7 @@
 # DeleteCharacterResponse (← `CLogin::OnDeleteCharacterResult`)
 
 - **IDA:** 0x66f9fe
-- **Atlas file:** `libs/atlas-packet/character/clientbound/delete_response.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/delete_response.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

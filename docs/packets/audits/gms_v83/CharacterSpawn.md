@@ -1,7 +1,7 @@
 # CharacterSpawn (← `CUserPool::OnUserEnterField`)
 
 - **IDA:** 0x972100
-- **Atlas file:** `libs/atlas-packet/character/clientbound/spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/spawn.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ❌

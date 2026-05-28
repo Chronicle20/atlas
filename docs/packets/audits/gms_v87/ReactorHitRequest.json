@@ -4,7 +4,7 @@
   "Address": "0x77b5eb",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/reactor/serverbound/hit.go",
+  "AtlasFile": "../../libs/atlas-packet/reactor/serverbound/hit.go",
   "Rows": [
     {
       "Index": 0,

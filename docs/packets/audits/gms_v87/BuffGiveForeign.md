@@ -1,7 +1,7 @@
 # BuffGiveForeign (← `CUserRemote::OnSetTemporaryStat`)
 
 - **IDA:** 0xa092e7
-- **Atlas file:** `libs/atlas-packet/character/clientbound/buff_give.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/buff_give.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

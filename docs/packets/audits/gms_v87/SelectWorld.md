@@ -1,7 +1,7 @@
 # SelectWorld (← `CLogin::OnLatestConnectedWorld`)
 
 - **IDA:** 0x62fa8a
-- **Atlas file:** `libs/atlas-packet/login/clientbound/select_world.go`
+- **Atlas file:** `../../libs/atlas-packet/login/clientbound/select_world.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

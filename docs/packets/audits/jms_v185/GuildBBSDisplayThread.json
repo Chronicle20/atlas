@@ -4,7 +4,7 @@
   "Address": "ABSENT",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/guild/serverbound/bbs_display_thread.go",
+  "AtlasFile": "../../libs/atlas-packet/guild/serverbound/bbs_display_thread.go",
   "Rows": [
     {
       "Index": 0,

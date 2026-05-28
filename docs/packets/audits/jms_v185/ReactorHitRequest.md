@@ -1,7 +1,7 @@
 # ReactorHitRequest (← `CReactorPool::FindHitReactor`)
 
 - **IDA:** 0x79ea6a
-- **Atlas file:** `libs/atlas-packet/reactor/serverbound/hit.go`
+- **Atlas file:** `../../libs/atlas-packet/reactor/serverbound/hit.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

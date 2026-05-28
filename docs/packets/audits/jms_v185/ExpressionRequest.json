@@ -4,7 +4,7 @@
   "Address": "0xb0b8be",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/expression.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/expression.go",
   "Rows": [
     {
       "Index": 0,

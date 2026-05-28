@@ -1,7 +1,7 @@
 # CharacterSkillChange (← `CWvsContext::OnChangeSkillRecordResult`)
 
 - **IDA:** 0xab57c5
-- **Atlas file:** `libs/atlas-packet/character/clientbound/skill_change.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/skill_change.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # PetMovementRequest (← `CVecCtrlPet::EndUpdateActive`)
 
 - **IDA:** 0xa558b6
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/movement.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/movement.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ❌

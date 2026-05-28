@@ -4,7 +4,7 @@
   "Address": "0xb04ff3",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/skill_change.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/skill_change.go",
   "Rows": [
     {
       "Index": 0,

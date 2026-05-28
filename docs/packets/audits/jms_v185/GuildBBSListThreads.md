@@ -1,7 +1,7 @@
 # GuildBBSListThreads (← `CUIGuildBBS::SendLoadListRequest`)
 
 - **IDA:** ABSENT
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_list_threads.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_list_threads.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # PartyUpdate (← `CWvsContext::OnPartyResult#Update`)
 
 - **IDA:** 0xa10ea1
-- **Atlas file:** `libs/atlas-packet/party/clientbound/update.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/update.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

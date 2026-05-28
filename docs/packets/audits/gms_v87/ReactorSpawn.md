@@ -1,7 +1,7 @@
 # ReactorSpawn (← `CReactorPool::OnReactorEnterField`)
 
 - **IDA:** 0x77af9c
-- **Atlas file:** `libs/atlas-packet/reactor/clientbound/spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/reactor/clientbound/spawn.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -1,7 +1,7 @@
 # GuildBBSReplyThread (← `CUIGuildBBS::OnComment`)
 
 - **IDA:** ABSENT
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_reply_thread.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_reply_thread.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

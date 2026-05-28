@@ -1,7 +1,7 @@
 # CharacterExpression (← `CUser::OnEmotion`)
 
 - **IDA:** 0x9f636b
-- **Atlas file:** `libs/atlas-packet/character/clientbound/expression.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/expression.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 3
 - **Verdict:** ✅

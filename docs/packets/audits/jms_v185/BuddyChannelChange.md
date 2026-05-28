@@ -1,7 +1,7 @@
 # BuddyChannelChange (← `CWvsContext::OnFriendResult#ChannelChange`)
 
 - **IDA:** 0xb2a873
-- **Atlas file:** `libs/atlas-packet/buddy/clientbound/channel_change.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/channel_change.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

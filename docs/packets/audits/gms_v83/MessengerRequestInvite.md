@@ -1,7 +1,7 @@
 # MessengerRequestInvite (← `CUIMessenger::OnPacket#RequestInvite`)
 
 - **IDA:** 0x8511fc
-- **Atlas file:** `libs/atlas-packet/messenger/clientbound/request_invite.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/request_invite.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

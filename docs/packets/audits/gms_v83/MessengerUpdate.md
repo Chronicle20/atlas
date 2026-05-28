@@ -1,7 +1,7 @@
 # MessengerUpdate (← `CUIMessenger::OnPacket#Update`)
 
 - **IDA:** 0x8511fc
-- **Atlas file:** `libs/atlas-packet/messenger/clientbound/update.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/update.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ❌

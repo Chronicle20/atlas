@@ -1,7 +1,7 @@
 # CharacterSelectWithPic (← `CLogin::SendSelectCharPacket#CharacterSelectWithPic`)
 
 - **IDA:** 0x5f726d
-- **Atlas file:** `libs/atlas-packet/login/serverbound/character_select_with_pic.go`
+- **Atlas file:** `../../libs/atlas-packet/login/serverbound/character_select_with_pic.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

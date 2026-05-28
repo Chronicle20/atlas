@@ -1,7 +1,7 @@
 # GuildJoin (← `CWvsContext::SendGuildJoinMsg`)
 
 - **IDA:** ABSENT
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_join.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_join.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ❌

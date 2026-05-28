@@ -4,7 +4,7 @@
   "Address": "0x96d873",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/buff_cancel.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/buff_cancel.go",
   "Rows": [
     {
       "Index": 0,

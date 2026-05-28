@@ -37,3 +37,19 @@ why it was deferred, and what evidence is needed to resolve it.
 | Reason | The packet audit tool cannot align atlas `WriteByteArray` (AvatarLook encoded as []byte) with IDA `DecodeBuf`. Both use the same AvatarLook encoding; the mismatch is a tool limitation, not a wire bug. Reports show ❌ for Add and Update but the actual encoding is correct. |
 | Evidence needed | Tool enhancement to recognize DecodeBuf as opaque byte-blob and compare structurally rather than field-by-field. |
 | Verdict | ⚠️ tool limitation — atlas wire is correct |
+
+---
+
+## Still pending — world domain (task-068 Phase 2c, field/clientbound)
+
+### SETFIELD-old-driver-id
+
+| Field | Value |
+|---|---|
+| Affected packets | `field/clientbound/set_field.go` — `SetField`; `field/clientbound/warp_to_map.go` — `WarpToMap` |
+| Atlas files | `libs/atlas-packet/field/clientbound/set_field.go`, `libs/atlas-packet/field/clientbound/warp_to_map.go` |
+| IDA | `CStage::OnSetField` @0x71a0a0 (SET_FIELD, GMS v95 opcode 0x8D/141) |
+| Reason | v95 reads `m_dwOldDriverID` as a `Decode4` (line 129) immediately after `m_nChannelID` (line 128), unconditionally — before the `bCharacterData` split, so it affects BOTH the SetField (full) and WarpToMap (warp) paths. Atlas writes only the channelId int32, then emits a `WriteByte(0)+WriteInt(0)` pair under the JMS-only guard; it never emits a 4-byte old-driver-id for GMS. A GMS v95 client therefore reads the following envelope bytes shifted by 4. Every other envelope field matches v95 exactly. |
+| Why deferred (not fixed) | The version-introduction point of `m_dwOldDriverID` is unknown. Atlas runs production GMS at v83/v87; only the v95 IDB is loaded. Adding a `(GMS && MajorVersion>83)`-gated `WriteInt` could be correct for v95 yet wrong for v87/v92 if the field was introduced later, breaking the very versions atlas serves. A speculative version gate is riskier than the current (also-wrong-for-v95) state. |
+| Evidence needed | v83 / v87 / v92 GMS IDA for `CStage::OnSetField` to pin the exact version where `m_dwOldDriverID` (Decode4 after channelId) was added; then add the correctly-gated 4-byte write to both set_field.go and warp_to_map.go. |
+| Verdict | ❌ cross-version structural divergence (v95 confirmed; gate unverifiable) |

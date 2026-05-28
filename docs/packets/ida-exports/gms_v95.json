@@ -6507,6 +6507,56 @@
       "direction": "clientbound",
       "notes": "CANNOT_SPAWN_KITE (clientbound, GMS v95 opcode 0x13D/317). Empty body — client reads nothing and shows a StringPool notice (0x1EA).",
       "calls": []
+    },
+    "CStage::OnSetField": {
+      "address": "0x71a0a0",
+      "direction": "clientbound",
+      "notes": "SET_FIELD (clientbound, GMS v95 opcode 0x8D/141). ENVELOPE-ONLY audit: the CharacterData blob (CharacterData::Decode @0x71a26a) is audited under the character domain (task-028) and is represented here by a single DecodeBuf boundary marker. Envelope wire order is the bCharacterData=1 branch: DecodeOpt(2) + channelId(4) + m_dwOldDriverID(4) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + 3x seed(4) [CalcDamage::SetSeed/SetActionRndSeed] + CharacterData + OnSetLogoutGiftConfig (m_bPredictQuit(4) + 3x logoutGiftSN(4)) + timestamp(8, DecodeBuffer p,8u). NOTE: atlas omits m_dwOldDriverID(4) for GMS (writes it only behind the JMS guard as byte+int); v95 reads it unconditionally after channelId — see report + _pending.md (version-introduction unverifiable without v83/v87/v92 IDA).",
+      "calls": [
+        { "op": "Decode2", "comment": "DecodeOpt (CClientOptMan::DecodeOpt) — atlas WriteShort(0) gated (GMS>83 || JMS)" },
+        { "op": "Decode4", "comment": "m_nChannelID (channel id)" },
+        { "op": "Decode4", "comment": "m_dwOldDriverID — v95 reads unconditionally; atlas omits for GMS (DIVERGENCE)" },
+        { "op": "Decode1", "comment": "sNotifierMessage flag (HIBYTE)" },
+        { "op": "Decode1", "comment": "bCharacterData flag (atlas always 1)" },
+        { "op": "Decode2", "comment": "nNotifierCheck (atlas writes 0 — no notifier title/content loop)" },
+        { "op": "Decode4", "comment": "damage seed 1 (CalcDamage::SetSeed)" },
+        { "op": "Decode4", "comment": "damage seed 2" },
+        { "op": "Decode4", "comment": "damage seed 3" },
+        { "op": "DecodeBuf", "comment": "CharacterData::Decode — ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)" },
+        { "op": "Decode4", "comment": "m_bPredictQuit (OnSetLogoutGiftConfig) — atlas logout-gift int #1, gated (GMS>83 || JMS)" },
+        { "op": "Decode4", "comment": "logout gift commodity SN #1" },
+        { "op": "Decode4", "comment": "logout gift commodity SN #2" },
+        { "op": "Decode4", "comment": "logout gift commodity SN #3" },
+        { "op": "Decode8", "comment": "timestamp (DecodeBuffer p,8u — FILETIME); atlas WriteInt64" }
+      ]
+    },
+    "CStage::OnSetField#WarpToMap": {
+      "address": "0x71a0a0",
+      "direction": "clientbound",
+      "notes": "SET_FIELD warp path (clientbound, GMS v95 opcode 0x8D/141). Same CStage::OnSetField handler with bCharacterData=0 — the else branch (no CharacterData blob). Envelope wire order: DecodeOpt(2) + channelId(4) + m_dwOldDriverID(4) + sNotifierMessage(1) + bCharacterData(1) + nNotifierCheck(2) + reviveFlag(1) + dwPosMap/mapId(4) + nPortal(1) + nHP(4) + bChaseEnable(1) + [if chase: targetX(4)+targetY(4)] + timestamp(8). NOTE 1: atlas omits m_dwOldDriverID(4) for GMS (DIVERGENCE — see _pending.md). NOTE 2: atlas wrote nHP as WriteShort(2); v95 reads Decode4 (FIXED to WriteInt).",
+      "calls": [
+        { "op": "Decode2", "comment": "DecodeOpt — atlas WriteShort(0) gated (GMS>83 || JMS)" },
+        { "op": "Decode4", "comment": "m_nChannelID (channel id)" },
+        { "op": "Decode4", "comment": "m_dwOldDriverID — v95 reads unconditionally; atlas omits for GMS (DIVERGENCE)" },
+        { "op": "Decode1", "comment": "sNotifierMessage flag (atlas writes 0)" },
+        { "op": "Decode1", "comment": "bCharacterData flag (atlas writes 0 — warp path)" },
+        { "op": "Decode2", "comment": "nNotifierCheck (atlas writes 0)" },
+        { "op": "Decode1", "comment": "revive flag (else branch, line 180) — atlas WriteByte(0) gated (GMS>28 || JMS)" },
+        { "op": "Decode4", "comment": "dwPosMap (target map id)" },
+        { "op": "Decode1", "comment": "nPortal (target portal id)" },
+        { "op": "Decode4", "comment": "nHP — v95 Decode4; atlas was WriteShort(2), FIXED to WriteInt(4)" },
+        { "op": "Decode1", "comment": "m_bChaseEnable — atlas WriteBool(false) gated (GMS>28)" },
+        { "op": "Decode8", "comment": "timestamp (DecodeBuffer p,8u); atlas WriteInt64" }
+      ]
+    },
+    "CField_ContiMove::OnContiState": {
+      "address": "0x54d5a0",
+      "direction": "clientbound",
+      "notes": "CONTI_STATE / field transport state (clientbound, GMS v95 opcode 0xA5/165; GMS v83 opcode 0x95/149). Ship/transport boarding-state effect. Reads state byte (switched: 0/1/6 EnterShipMove, 2/5 LeaveShipMove, 3/4 AppearShip) + a second byte v4 (checked v4==1 in the 3/4 case). Matches atlas Transport: WriteByte(state) + WriteBool(overrideAppear).",
+      "calls": [
+        { "op": "Decode1", "comment": "nState (transport/ship state 0-6)" },
+        { "op": "Decode1", "comment": "overrideAppear flag (v4; checked v4==1 in AppearShip case)" }
+      ]
     }
   }
 }

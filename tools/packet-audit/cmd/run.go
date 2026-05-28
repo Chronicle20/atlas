@@ -1317,6 +1317,23 @@ func candidatesFromFName(fname string) []candidate {
 	case "CMessageBoxPool::OnCreateFailed":
 		// CSV: CANNOT_SPAWN_KITE. Empty body — client reads nothing.
 		return []candidate{{name: "KiteError", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CStage::OnSetField":
+		// CSV: SET_FIELD (GMS v95 opcode 0x8D/141). Field-entry packet carrying the
+		// full CharacterData blob. ENVELOPE-ONLY audit — CharacterData inner shape
+		// audited under the character domain (task-028); represented in the IDA
+		// export by a single DecodeBuf boundary marker. Struct is SetField
+		// (set_field.go) → report FieldSetField.
+		return []candidate{{name: "SetField", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CStage::OnSetField#WarpToMap":
+		// Same CStage::OnSetField handler, bCharacterData=0 (else branch) — an
+		// in-game warp without full re-init. Struct is WarpToMap (warp_to_map.go)
+		// → report FieldWarpToMap. Synthetic #-suffixed FName so it claims its own
+		// (field, WarpToMap) slot without colliding with the SetField entry.
+		return []candidate{{name: "WarpToMap", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_ContiMove::OnContiState":
+		// CSV: CONTI_STATE (GMS v95 opcode 0xA5/165). Field transport/ship boarding
+		// state effect. Struct is Transport (transport.go) → report FieldTransport.
+		return []candidate{{name: "Transport", pkg: "field", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

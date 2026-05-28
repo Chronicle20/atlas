@@ -42,6 +42,9 @@
 | [InteractionOperationMerchantRemoveItem](InteractionOperationMerchantRemoveItem.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_merchant_remove_item.go` |
 | [InteractionInteractionUpdateMerchant](InteractionInteractionUpdateMerchant.md) | ❌ | `libs/atlas-packet/interaction/clientbound/interaction.go` |
 | [InteractionOperationMerchantPutItem](InteractionOperationMerchantPutItem.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_merchant_put_item.go` |
+| [NpcShopOperationGenericError](NpcShopOperationGenericError.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
+| [NpcShopOperationLevelRequirement](NpcShopOperationLevelRequirement.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
+| [NpcShopOperationSimple](NpcShopOperationSimple.md) | ✅ | `libs/atlas-packet/npc/clientbound/shop_operation.go` |
 | [FieldWarpToMap](FieldWarpToMap.md) | ❌ | `libs/atlas-packet/field/clientbound/warp_to_map.go` |
 | [StorageErrorMessage](StorageErrorMessage.md) | ✅ | `libs/atlas-packet/storage/clientbound/error.go` |
 | [StorageErrorSimple](StorageErrorSimple.md) | ✅ | `libs/atlas-packet/storage/clientbound/error.go` |
@@ -59,6 +62,8 @@
 | [MessengerRemove](MessengerRemove.md) | ✅ | `libs/atlas-packet/messenger/clientbound/remove.go` |
 | [MessengerRequestInvite](MessengerRequestInvite.md) | ✅ | `libs/atlas-packet/messenger/clientbound/request_invite.go` |
 | [MessengerUpdate](MessengerUpdate.md) | ❌ | `libs/atlas-packet/messenger/clientbound/update.go` |
+| [NpcGuideTalkIdx](NpcGuideTalkIdx.md) | ✅ | `libs/atlas-packet/npc/clientbound/guide_talk.go` |
+| [NpcGuideTalkMessage](NpcGuideTalkMessage.md) | ✅ | `libs/atlas-packet/npc/clientbound/guide_talk.go` |
 | [BuddyCapacityUpdate](BuddyCapacityUpdate.md) | ✅ | `libs/atlas-packet/buddy/clientbound/capacity_update.go` |
 | [BuddyChannelChange](BuddyChannelChange.md) | ✅ | `libs/atlas-packet/buddy/clientbound/channel_change.go` |
 | [BuddyError](BuddyError.md) | ❌ | `libs/atlas-packet/buddy/clientbound/error.go` |
@@ -195,6 +200,9 @@
 | [MonsterControl](MonsterControl.md) | ❌ | `libs/atlas-packet/monster/clientbound/control.go` |
 | [MonsterSpawn](MonsterSpawn.md) | ❌ | `libs/atlas-packet/monster/clientbound/spawn.go` |
 | [MonsterDestroy](MonsterDestroy.md) | ✅ | `libs/atlas-packet/monster/clientbound/destroy.go` |
+| [NpcAction](NpcAction.md) | ❌ | `libs/atlas-packet/npc/clientbound/action.go` |
+| [NpcSpawnRequestController](NpcSpawnRequestController.md) | ✅ | `libs/atlas-packet/npc/clientbound/spawn_request_controller.go` |
+| [NpcSpawn](NpcSpawn.md) | ✅ | `libs/atlas-packet/npc/clientbound/spawn.go` |
 | [InteractionOperationMemoryGameRetreatAnswer](InteractionOperationMemoryGameRetreatAnswer.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_memory_game_retreat_answer.go` |
 | [InteractionOperationMemoryGameMoveStone](InteractionOperationMemoryGameMoveStone.md) | ❌ | `libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone.go` |
 | [InteractionOperationPersonalStoreBuy](InteractionOperationPersonalStoreBuy.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go` |
@@ -214,6 +222,7 @@
 | [ReactorHit](ReactorHit.md) | ✅ | `libs/atlas-packet/reactor/clientbound/hit.go` |
 | [ReactorSpawn](ReactorSpawn.md) | ✅ | `libs/atlas-packet/reactor/clientbound/spawn.go` |
 | [ReactorDestroy](ReactorDestroy.md) | ✅ | `libs/atlas-packet/reactor/clientbound/destroy.go` |
+| [NpcShopList](NpcShopList.md) | ❌ | `libs/atlas-packet/npc/clientbound/shop_list.go` |
 | [FieldSetField](FieldSetField.md) | ❌ | `libs/atlas-packet/field/clientbound/set_field.go` |
 | [GuildSetMemberTitle](GuildSetMemberTitle.md) | ✅ | `libs/atlas-packet/guild/serverbound/operation_set_member_title.go` |
 | [InteractionOperationTradePutItem](InteractionOperationTradePutItem.md) | ✅ | `libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go` |

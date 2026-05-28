@@ -6631,6 +6631,115 @@
         { "op": "Decode1", "comment": "flag1 (EventTimerClock enable byte; representative arm = case 3)" },
         { "op": "Decode4", "comment": "seconds" }
       ]
+    },
+    "CNpc::OnMove": {
+      "address": "0x678060",
+      "direction": "clientbound",
+      "notes": "NPC_ACTION (v95 opcode 0x13A/314). Dispatched via CNpcPool::OnNpcPacket@0x679260 which Decode4(npcId) BEFORE calling CNpc::OnMove@0x678060 (dispatcher-prefix; atlas Action writes objectId as the first int). OnMove reads Decode1(action/oneTimeAction) + Decode1(chatIdx), then (if the client template flag m_pTemplate->bMove is set) a CMovePath::OnMovePacket movement body. The movement presence is server-controlled in atlas (hasMovement) and template-gated client-side — conditional movement is a tool limitation. Export models the dispatcher-prefix int + the two action bytes.",
+      "calls": [
+        { "op": "Decode4", "comment": "npcId (consumed by CNpcPool::OnNpcPacket@0x679260 dispatcher before OnMove; atlas Action.objectId)" },
+        { "op": "Decode1", "comment": "action / m_nOneTimeAction (atlas unk)" },
+        { "op": "Decode1", "comment": "chatIdx / nChatIdx (atlas unk2)" }
+      ]
+    },
+    "CUserLocal::OnTutorMsg#Message": {
+      "address": "0x916f60",
+      "direction": "clientbound",
+      "notes": "TALK_GUIDE (v95 opcode 0x157/343). CUserLocal::OnTutorMsg@0x916f60 reads Decode1(bByMessage); the FALSE (==0) arm at 0x916fd8 calls DecodeStr(message) + Decode4(width) + Decode4(duration) -> CTutor::OnMessage(ZXString,int,int)@0x74c880. Atlas GuideTalkMessage encodes the leading bool as false (FIXED from true) to select this string branch.",
+      "calls": [
+        { "op": "Decode1", "comment": "bByMessage = 0 (false) selects the string/message arm" },
+        { "op": "DecodeStr", "comment": "message" },
+        { "op": "Decode4", "comment": "width" },
+        { "op": "Decode4", "comment": "duration" }
+      ]
+    },
+    "CUserLocal::OnTutorMsg#Idx": {
+      "address": "0x916f60",
+      "direction": "clientbound",
+      "notes": "TALK_GUIDE (v95 opcode 0x157/343). Same CUserLocal::OnTutorMsg@0x916f60 handler; the TRUE (!=0) arm at 0x916faa calls Decode4(hintId) + Decode4(duration) -> CTutor::OnMessage(int,int)@0x74eee0, with NO string. Atlas GuideTalkIdx encodes the leading bool as true (FIXED from false) to select this index/hint branch.",
+      "calls": [
+        { "op": "Decode1", "comment": "bByMessage = 1 (true) selects the hint-index arm" },
+        { "op": "Decode4", "comment": "hintId / balloon type" },
+        { "op": "Decode4", "comment": "duration" }
+      ]
+    },
+    "CShopDlg::SetShopDlg": {
+      "address": "0x6eab00",
+      "direction": "clientbound",
+      "notes": "OPEN_NPC_SHOP (v95 opcode 0x12F/303). CShopDlg::OnPacket@0x6eb7d0 (nType==364) -> CShopDlg::SetShopDlg@0x6eab00. Decode4(npcTemplateId) + Decode2(count) + a per-commodity loop running 'while idx < count' with NO max-commodity cap. Per item (0x6eabc3..0x6eac62): Decode4 itemId + Decode4 mesoPrice + Decode1 discountRate + Decode4 tokenItemId + Decode4 tokenPrice + Decode4 period + Decode4 levelLimit + (itemId/10000 in {207,233} ? DecodeBuffer(8) unitPrice(double) : Decode2 quantity) + Decode2 slotMax. Atlas ShopList loop body matches this per-item shape (DiscountRate GMS>=87, TokenTemplateId GMS>=95 — both fire for v95). The analyzer flattens the loop so the loop-body rows mismatch by count — TOOL LIMITATION, manually verified (see NpcShopList.md ## Loop bounds). Export models the templateId + count + one representative non-ammo item entry.",
+      "calls": [
+        { "op": "Decode4", "comment": "npcTemplateId (m_dwNpcTemplateID)" },
+        { "op": "Decode2", "comment": "commodity count (loop bound; no max cap)" },
+        { "op": "Decode4", "comment": "[item] itemId / TemplateId" },
+        { "op": "Decode4", "comment": "[item] mesoPrice (v95)" },
+        { "op": "Decode1", "comment": "[item] discountRate (GMS>=87; v96)" },
+        { "op": "Decode4", "comment": "[item] tokenItemId (GMS>=95; v97)" },
+        { "op": "Decode4", "comment": "[item] tokenPrice (v98)" },
+        { "op": "Decode4", "comment": "[item] period (v99)" },
+        { "op": "Decode4", "comment": "[item] levelLimit (v100)" },
+        { "op": "Decode2", "comment": "[item] quantity (non-ammo arm; ammo itemId/10000 in {207,233} uses DecodeBuffer(8) unitPrice instead)" },
+        { "op": "Decode2", "comment": "[item] slotMax (v102)" }
+      ]
+    },
+    "CShopDlg::OnPacket#Simple": {
+      "address": "0x6eb7d0",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION (v95 opcode 0x130/304). CShopDlg::OnPacket@0x6eb7d0 (nType==365) switch(Decode1 mode). Mode-only arms (cases 0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x12 and default) read no further packet fields — they show a StringPool Notice. Atlas ShopOperationSimple writes Byte(mode) only. OP-FAMILY: full mode enum deferred to _pending.md (OP-FAMILY-npc-shop-operation).",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (sub-op discriminator; mode-only arm)" }
+      ]
+    },
+    "CShopDlg::OnPacket#LevelRequirement": {
+      "address": "0x6eb7d0",
+      "direction": "clientbound",
+      "notes": "Same CShopDlg::OnPacket@0x6eb7d0 (nType==365). Cases 0xE (0x6eba48) and 0xF (0x6ebaf7) read Decode4 (a level/count value used to format an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). The leading mode byte is the switch discriminator (dispatcher-prefix).",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (over/under level-requirement sub-op)" },
+        { "op": "Decode4", "comment": "levelLimit" }
+      ]
+    },
+    "CShopDlg::OnPacket#GenericError": {
+      "address": "0x6eb7d0",
+      "direction": "clientbound",
+      "notes": "Same CShopDlg::OnPacket@0x6eb7d0 (nType==365). Case 0x13 (0x6eb9a4): Decode1(hasReason); if non-zero, DecodeStr(reason) and show it as a Notice, else fall through to the default Notice. Atlas ShopOperationGenericError writes Byte(mode) + Bool(hasReason) + optional AsciiString(reason). The leading mode byte is the switch discriminator.",
+      "calls": [
+        { "op": "Decode1", "comment": "mode (generic-error sub-op)" },
+        { "op": "Decode1", "comment": "hasReason flag" },
+        { "op": "DecodeStr", "comment": "reason (only when hasReason != 0)" }
+      ]
+    },
+    "CNpcPool::OnNpcEnterField": {
+      "address": "0x679680",
+      "direction": "clientbound",
+      "notes": "SPAWN_NPC (v95 opcode 0x12F/303). CNpcPool::OnNpcEnterField@0x679680 reads Decode4(npcId) then (new-entry path) Decode4(templateId), then CNpc::Init@0x676770 reads Decode2(x) + Decode2(cy) + Decode1(moveAction) + Decode2(fh foothold) + Decode2(rgHorz.low rx0) + Decode2(rgHorz.high rx1) + Decode1(bEnabled). Atlas Spawn writes Int(id) + Int(template) + Int16(x) + Int16(cy) + Byte(f) + Short(fh) + Int16(rx0) + Int16(rx1) + Byte(1). Field-for-field match.",
+      "calls": [
+        { "op": "Decode4", "comment": "npcId (dwNpcId)" },
+        { "op": "Decode4", "comment": "templateId (CNpcTemplate id)" },
+        { "op": "Decode2", "comment": "x (m_ptPosPrev.x)" },
+        { "op": "Decode2", "comment": "cy (y)" },
+        { "op": "Decode1", "comment": "moveAction (atlas f flag)" },
+        { "op": "Decode2", "comment": "fh (foothold)" },
+        { "op": "Decode2", "comment": "rx0 (m_rgHorz.low)" },
+        { "op": "Decode2", "comment": "rx1 (m_rgHorz.high)" },
+        { "op": "Decode1", "comment": "enabled (m_bEnabled; atlas trailing 1)" }
+      ]
+    },
+    "CNpcPool::OnNpcChangeController": {
+      "address": "0x679730",
+      "direction": "clientbound",
+      "notes": "SPAWN_NPC_REQUEST_CONTROLLER (v95 opcode 0x131/305). CNpcPool::OnNpcChangeController@0x679730 reads Decode1(localFlag) + Decode4(npcId); when localFlag != 0 it calls CNpcPool::SetLocalNpc@0x679440 which (new-entry path) reads Decode4(templateId) then CNpc::Init@0x676770 reads the same x/cy/moveAction/fh/rx0/rx1/enabled tail. Atlas SpawnRequestController writes Byte(1) + Int(id) + Int(template) + Int16(x) + Int16(cy) + Byte(f) + Short(fh) + Int16(rx0) + Int16(rx1) + Bool(miniMap). The trailing bool maps to CNpc::Init's bEnabled.",
+      "calls": [
+        { "op": "Decode1", "comment": "localFlag (controller assigned to local user; atlas leading 1)" },
+        { "op": "Decode4", "comment": "npcId" },
+        { "op": "Decode4", "comment": "templateId (SetLocalNpc)" },
+        { "op": "Decode2", "comment": "x" },
+        { "op": "Decode2", "comment": "cy (y)" },
+        { "op": "Decode1", "comment": "moveAction (atlas f flag)" },
+        { "op": "Decode2", "comment": "fh (foothold)" },
+        { "op": "Decode2", "comment": "rx0" },
+        { "op": "Decode2", "comment": "rx1" },
+        { "op": "Decode1", "comment": "enabled (m_bEnabled; atlas miniMap bool)" }
+      ]
     }
   }
 }

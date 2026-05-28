@@ -1372,6 +1372,72 @@ func candidatesFromFName(fname string) []candidate {
 	// flat verdict; per-mode table appended manually to the report (NOT refactored).
 	case "CField::OnClock":
 		return []candidate{{name: "Clock", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// --- World: npc (clientbound) ---
+	// Non-conversation NPC packets. FNames + addresses verified against the
+	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live
+	// GMS v95 IDA. Report files become Npc<Struct>.{md,json}.
+	case "CNpc::OnMove":
+		// CSV: NPC_ACTION (GMS v95 opcode 0x13A/314) dispatched via
+		// CNpcPool::OnNpcPacket@0x679260 which Decode4(npcId) BEFORE calling
+		// CNpc::OnMove. OnMove@0x678060 then reads Decode1(action) + Decode1(chatIdx),
+		// and (if m_pTemplate->bMove, a client template flag) a CMovePath movement
+		// body. Atlas Action writes Int(objectId — dispatcher prefix) + Byte(unk) +
+		// Byte(unk2) + optional movement. Dispatcher-prefix pattern; the movement
+		// presence is server-controlled (hasMovement) and template-gated client-side.
+		return []candidate{{name: "Action", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnTutorMsg#Message":
+		// CSV: TALK_GUIDE (GMS v95 opcode 0x157/343) → CUserLocal::OnTutorMsg@0x916f60.
+		// bByMessage==0 (false) arm: DecodeStr(message) + Decode4(width) + Decode4(duration)
+		// → CTutor::OnMessage(string,int,int). Atlas GuideTalkMessage. ✓ fixed: leading
+		// bool corrected from true→false to match the client's message branch.
+		return []candidate{{name: "GuideTalkMessage", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnTutorMsg#Idx":
+		// Same OnTutorMsg handler, bByMessage!=0 (true) arm: Decode4(hintId) +
+		// Decode4(duration) → CTutor::OnMessage(int,int), NO string. Atlas GuideTalkIdx.
+		// ✓ fixed: leading bool corrected from false→true to match the client's index branch.
+		return []candidate{{name: "GuideTalkIdx", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::SetShopDlg":
+		// CSV: OPEN_NPC_SHOP (GMS v95 opcode 0x12F/303) → CShopDlg::OnPacket@0x6eb7d0
+		// (nType==364) → CShopDlg::SetShopDlg@0x6eab00. Decode4(npcTemplateId) +
+		// Decode2(count) + count×{Decode4 itemId + Decode4 mesoPrice + Decode1 discount +
+		// Decode4 tokenItemId + Decode4 tokenPrice + Decode4 period + Decode4 levelLimit +
+		// (itemId/10000∈{207,233} ? DecodeBuffer(8) unitPrice : Decode2 quantity) +
+		// Decode2 slotMax}. Atlas ShopList loop body matches per-item; analyzer flattens
+		// the loop → ⚠️ tool-limitation (manually verified — see NpcShopList ## Loop bounds).
+		return []candidate{{name: "ShopList", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#Simple":
+		// CSV: CONFIRM_SHOP_TRANSACTION (GMS v95 opcode 0x12F? no — 0x130/304) →
+		// CShopDlg::OnPacket@0x6eb7d0 (nType==365) switch(Decode1 mode). Most modes
+		// (0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x12) read no further fields (mode byte only,
+		// then a StringPool Notice). Atlas ShopOperationSimple writes Byte(mode). ✓
+		// ⚠️ OP-FAMILY-npc-shop-operation: full mode enum deferred to _pending.md.
+		return []candidate{{name: "ShopOperationSimple", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#LevelRequirement":
+		// Same handler, cases 0xE/0xF (over/under level requirement): Decode4(level).
+		// Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). ✓
+		return []candidate{{name: "ShopOperationLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#GenericError":
+		// Same handler, case 0x13: Decode1(hasReason) + (hasReason ? DecodeStr(reason)).
+		// Atlas ShopOperationGenericError writes Byte(mode) + Bool(hasReason) +
+		// optional AsciiString(reason). ✓
+		return []candidate{{name: "ShopOperationGenericError", pkg: "npc", dir: csvpkg.DirClientbound}}
+	// shop_operation_body.go has no exported struct (pure helper functions); no candidate entry.
+	case "CNpcPool::OnNpcEnterField":
+		// CSV: SPAWN_NPC (GMS v95 opcode 0x12F/303). OnNpcEnterField@0x679680 reads
+		// Decode4(npcId) + Decode4(templateId), then CNpc::Init@0x676770 reads
+		// Decode2(x) + Decode2(cy) + Decode1(moveAction/f) + Decode2(fh) + Decode2(rx0) +
+		// Decode2(rx1) + Decode1(enabled). Atlas Spawn writes Int(id) + Int(template) +
+		// Int16(x) + Int16(cy) + Byte(f) + Short(fh) + Int16(rx0) + Int16(rx1) + Byte(1). ✓
+		return []candidate{{name: "Spawn", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CNpcPool::OnNpcChangeController":
+		// CSV: SPAWN_NPC_REQUEST_CONTROLLER (GMS v95 opcode 0x131/305).
+		// OnNpcChangeController@0x679730 reads Decode1(localFlag) + Decode4(npcId); when
+		// localFlag→SetLocalNpc@0x679440 reads Decode4(templateId) then CNpc::Init reads
+		// the same x/cy/f/fh/rx0/rx1/enabled tail. Atlas SpawnRequestController writes
+		// Byte(1) + Int(id) + Int(template) + Int16(x) + Int16(cy) + Byte(f) + Short(fh) +
+		// Int16(rx0) + Int16(rx1) + Bool(miniMap → maps to CNpc::Init enabled). ✓
+		return []candidate{{name: "SpawnRequestController", pkg: "npc", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

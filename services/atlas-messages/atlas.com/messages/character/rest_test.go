@@ -346,3 +346,29 @@ func TestRestModel_GetReferencedStructs(t *testing.T) {
 		t.Errorf("Expected 0 referenced structs, got %d", len(refs))
 	}
 }
+
+// TestExtract_Position verifies Extract maps X/Y onto the model (regression:
+// these were previously dropped, breaking @mob spawn position).
+func TestExtract_Position(t *testing.T) {
+	rm := RestModel{Id: 1, X: 250, Y: -130}
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract returned error: %v", err)
+	}
+	if m.X() != 250 {
+		t.Errorf("X() = %d, want 250", m.X())
+	}
+	if m.Y() != -130 {
+		t.Errorf("Y() = %d, want -130", m.Y())
+	}
+}
+
+// TestModel_PositionRoundTripsThroughSetSkills guards the SetSkills path, which
+// rebuilds the model via Clone(m).SetSkills(...).Build(); position must survive.
+func TestModel_PositionRoundTripsThroughSetSkills(t *testing.T) {
+	m := NewModelBuilder().SetId(1).SetX(99).SetY(-7).Build()
+	m2 := m.SetSkills(nil)
+	if m2.X() != 99 || m2.Y() != -7 {
+		t.Errorf("position lost after SetSkills: got (%d, %d), want (99, -7)", m2.X(), m2.Y())
+	}
+}

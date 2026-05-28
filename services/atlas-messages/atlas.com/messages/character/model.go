@@ -39,6 +39,8 @@ type Model struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
+	x                  int16
+	y                  int16
 	skills             []skill.Model
 }
 
@@ -211,11 +213,11 @@ func (m Model) Meso() uint32 {
 }
 
 func (m Model) X() int16 {
-	return 0
+	return m.x
 }
 
 func (m Model) Y() int16 {
-	return 0
+	return m.y
 }
 
 func (m Model) Stance() byte {
@@ -264,6 +266,8 @@ func Clone(m Model) *ModelBuilder {
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		meso:               m.meso,
+		x:                  m.x,
+		y:                  m.y,
 		skills:             m.skills,
 	}
 }
@@ -338,6 +342,8 @@ func (b *ModelBuilder) SetMapId(v _map.Id) *ModelBuilder        { b.mapId = v; r
 func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder    { b.spawnPoint = v; return b }
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder               { b.gm = v; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder          { b.meso = v; return b }
+func (b *ModelBuilder) SetX(v int16) *ModelBuilder              { b.x = v; return b }
+func (b *ModelBuilder) SetY(v int16) *ModelBuilder              { b.y = v; return b }
 func (b *ModelBuilder) SetSkills(v []skill.Model) *ModelBuilder { b.skills = v; return b }
 
 func (b *ModelBuilder) Build() Model {
@@ -370,6 +376,8 @@ func (b *ModelBuilder) Build() Model {
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
 		meso:               b.meso,
+		x:                  b.x,
+		y:                  b.y,
 		skills:             b.skills,
 	}
 }

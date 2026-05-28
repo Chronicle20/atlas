@@ -48,7 +48,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	worstVerdict := diff.VerdictMatch
 	var summary []report.Packet
 
-	process := func(direction csvpkg.Direction, name string, fname string) {
+	process := func(direction csvpkg.Direction, name string, fname string, pathHint string) {
 		fields, err := src.Resolve(context.Background(), fname)
 		if err != nil {
 			if errors.Is(err, idasrc.ErrMCPUnavailable) {
@@ -61,7 +61,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "resolve", fname+":", err)
 			return
 		}
-		atlasPath, found := locateAtlasFile(opts.AtlasPacket, name, direction)
+		atlasPath, found := locateAtlasFile(opts.AtlasPacket, name, direction, pathHint)
 		if !found {
 			return
 		}
@@ -103,7 +103,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 				continue
 			}
 			seen[candidate.name] = true
-			process(candidate.dir, candidate.name, fname)
+			process(candidate.dir, candidate.name, fname, candidate.pathHint)
 		}
 	}
 
@@ -124,6 +124,10 @@ func runPipeline(opts Options, stderr io.Writer) int {
 type candidate struct {
 	name string
 	dir  csvpkg.Direction
+	// pathHint, when non-empty, constrains locateAtlasFile to a file whose path
+	// contains this substring. Required for sub-domains whose struct names (e.g.
+	// Operation, ErrorSimple, ErrorMessage) collide across packages.
+	pathHint string
 }
 
 // candidatesFromFName converts an IDA function name into one or more
@@ -192,6 +196,28 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthPermanentBan", dir: csvpkg.DirClientbound}}
 	case "CLogin::SendViewAllCharPacket":
 		return []candidate{{name: "AllCharacterListRequest", dir: csvpkg.DirServerbound}}
+	// --- storage sub-domain (task-067) ---
+	// Clientbound CTrunkDlg::OnPacket is a mode-dispatched writer; use synthetic
+	// #-suffix FNames (one per atlas wire shape) to disambiguate.
+	case "CTrunkDlg::OnPacket#Show":
+		return []candidate{{name: "Show", dir: csvpkg.DirClientbound, pathHint: "storage/"}}
+	case "CTrunkDlg::OnPacket#UpdateAssets":
+		return []candidate{{name: "UpdateAssets", dir: csvpkg.DirClientbound, pathHint: "storage/"}}
+	case "CTrunkDlg::OnPacket#UpdateMeso":
+		return []candidate{{name: "UpdateMeso", dir: csvpkg.DirClientbound, pathHint: "storage/"}}
+	case "CTrunkDlg::OnPacket#ErrorSimple":
+		return []candidate{{name: "ErrorSimple", dir: csvpkg.DirClientbound, pathHint: "storage/"}}
+	case "CTrunkDlg::OnPacket#ErrorMessage":
+		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pathHint: "storage/"}}
+	// Serverbound CTrunkDlg senders.
+	case "CTrunkDlg::SendGetItemRequest":
+		return []candidate{{name: "OperationRetrieveAsset", dir: csvpkg.DirServerbound, pathHint: "storage/"}}
+	case "CTrunkDlg::SendPutItemRequest":
+		return []candidate{{name: "OperationStoreAsset", dir: csvpkg.DirServerbound, pathHint: "storage/"}}
+	case "CTrunkDlg::SendGetMoneyRequest":
+		return []candidate{{name: "OperationMeso", dir: csvpkg.DirServerbound, pathHint: "storage/"}}
+	case "CTrunkDlg::OnPacket#Operation":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pathHint: "storage/"}}
 	}
 	return nil
 }
@@ -259,7 +285,7 @@ func lookupFName(name string, dir csvpkg.Direction, cb, sb csvpkg.Map, template 
 	return "", false
 }
 
-func locateAtlasFile(root, name string, dir csvpkg.Direction) (string, bool) {
+func locateAtlasFile(root, name string, dir csvpkg.Direction, pathHint string) (string, bool) {
 	needle := "type " + name + " struct"
 	var hit string
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -272,6 +298,11 @@ func locateAtlasFile(root, name string, dir csvpkg.Direction) (string, bool) {
 			expectDir = "serverbound"
 		}
 		if !strings.Contains(path, string(os.PathSeparator)+expectDir+string(os.PathSeparator)) {
+			return nil
+		}
+		// pathHint disambiguates struct-name collisions across packages (e.g. the
+		// generic Operation/ErrorSimple/ErrorMessage names used by several domains).
+		if pathHint != "" && !strings.Contains(path, pathHint) {
 			return nil
 		}
 		b, err := os.ReadFile(path)

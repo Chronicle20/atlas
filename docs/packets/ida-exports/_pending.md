@@ -102,7 +102,38 @@ guarded blocks; deferred to a follow-up.
 
 ## Sub-op enum / sub-struct deferrals — commerce domain (task-067)
 
+> **task-067 Phase 2 (GMS v83 cross-version pass) RESOLVED the 11 deferred wire
+> bugs below.** v83 IDB (md5 80ff438ced539b831f0d2ed95099275d) gave the second
+> cross-version data point. Verdicts:
+>
+> | Deferred bug | v83 finding | Resolution |
+> |---|---|---|
+> | storage/Show segmentation + padding | identical to v95 (SetGetItems@0x7c5dfd) | FIXED unconditional |
+> | interaction OperationChat update_time | ABSENT in v83 (CheckAndSendChat@0x65f438) | FIXED, gated GMS>=95 |
+> | interaction PersonalStoreBuy/MerchantBuy itemCRC | PRESENT in v83 (BuyItem@0x6fd261) | FIXED unconditional |
+> | interaction PersonalStoreSetBlackList byte[]→string[] | string[] in v83 (DeliverBlackList@0x6fdeda) | FIXED unconditional |
+> | cash SPW BuyCouple/BuyFriendship/RebateLockerItem | v83=int (ask_SPW), v95=string | FIXED, gated GMS>=95 |
+> | cash SPW + oneADay Gift | v83=int+int+str+str (no oneADay/SPW) | FIXED, gated GMS>=95 |
+> | cash ShopOperationBuy oneADay+eventSN | v83=single int IsZeroGoods (OnBuy@0x46dadd) | FIXED, gated GMS>=95 |
+> | cash CashShopInventory 2 trailing shorts | v83 reads only 2 (OnCashItemResLoadLockerDone@0x4794f6) | FIXED, gated GMS>=95 |
+>
+> The version-gated fixes use `Region()=="GMS" && MajorVersion()>=95`, leaving v83
+> at its (confirmed-correct) old shape and JMS untouched (no JMS data this pass).
+> The unconditional fixes apply to all versions (field present/correct in both
+> v83 and v95). World-transfer (op 0x31, SendBuyTransferWorldItemPacket@0x473601)
+> and name-change (op 0x2E, SendBuyNameChangeItemPacket@0x47342f) were confirmed
+> PRESENT in v83 with shapes matching atlas's unconditional encoders — no gate
+> needed (✅ N/A). The original deferral text is preserved below for traceability.
+
 ### Show clientbound — per-tab item segmentation + spurious padding (storage)
+
+> ✅ RESOLVED (task-067 Phase 2): v83 `CTrunkDlg::SetGetItems`@0x7c5dfd reads the
+> per-tab loop + conditional meso IDENTICALLY to v95 — segmentation is NOT
+> version-gated. Fixed unconditionally: `Show.Encode` now buckets assets by
+> `model.Asset.InventoryType()` per set tab bit (4/8/16/32/64), gates meso on
+> flag&2, and drops the 3 spurious padding bytes. Residual ❌ on the audit is the
+> per-tab loop-flatten tool limitation (same class as UpdateAssets); wire output
+> is byte-correct (see show_test.go segmentation+meso-gate tests).
 
 `CTrunkDlg::OnPacket#Show` (case 0x16 → `SetTrunkDlg`@0x76a940 →
 `SetGetItems`@0x76a390, v95 GMS_v95.0_U_DEVM 3c71fd88...). The v95 client read
@@ -281,7 +312,12 @@ mode dispatcher @0x639e10) + per-mode sub-handlers:
 for interaction stays 8 CB + 29 SB sub-ops + 1 dispatcher = 38 atlas shapes;
 26 produced reports this round (12 SB unmapped/shared, see below).
 
-### OperationChat — missing leading update_time field (interaction) — DEFERRED
+### OperationChat — missing leading update_time field (interaction) — ✅ RESOLVED
+
+> ✅ RESOLVED (task-067 Phase 2): v83 `CheckAndSendChat`@0x65f438 sends EncodeStr
+> message ONLY (no leading update_time) — confirms the field is v95-only. Fixed by
+> gating `Encode4 updateTime` behind `Region()=="GMS" && MajorVersion()>=95`; v83
+> keeps the single-string shape, JMS untouched.
 
 `CMiniRoomBaseDlg::CheckAndSendChat`@0x6382a0 (op 6, v95). After the dispatcher
 op-byte the v95 client sends `Encode4 update_time (get_update_time)` THEN
@@ -299,7 +335,12 @@ follow-up with cross-version IDA (`CheckAndSendChat` in each target build) to
 gate the field behind a region/version guard. File:
 `libs/atlas-packet/interaction/serverbound/operation_chat.go`.
 
-### OperationPersonalStoreBuy / OperationMerchantBuy — missing trailing itemCRC (interaction) — DEFERRED
+### OperationPersonalStoreBuy / OperationMerchantBuy — missing trailing itemCRC (interaction) — ✅ RESOLVED
+
+> ✅ RESOLVED (task-067 Phase 2): v83 `CPersonalShopDlg::BuyItem`@0x6fd261 sends
+> Encode1 index, Encode2 quantity, Encode4 CItemInfo::GetItemCRC — itemCRC PRESENT
+> in v83 (op 0x17/0x22). Fixed unconditionally: added trailing `itemCRC uint32` to
+> both OperationPersonalStoreBuy and OperationMerchantBuy.
 
 `CPersonalShopDlg::BuyItem`@0x69a7f0 (op 23 personal-store / op 34 entrusted-
 merchant, v95). After the op-byte the v95 client sends `Encode1 nIdx (index)`,
@@ -317,7 +358,12 @@ Blind add risks other versions. Warrants a cross-version follow-up. Files:
 `libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go`,
 `operation_merchant_buy.go`.
 
-### OperationPersonalStoreSetBlackList — byte[] vs string[] structural mismatch (interaction) — DEFERRED
+### OperationPersonalStoreSetBlackList — byte[] vs string[] structural mismatch (interaction) — ✅ RESOLVED
+
+> ✅ RESOLVED (task-067 Phase 2): v83 `CPersonalShopDlg::DeliverBlackList`@0x6fdeda
+> sends Encode2 count then a per-entry EncodeStr loop — string[] in BOTH versions.
+> Fixed unconditionally: `entries` changed from `[]byte` to `[]string`
+> (ReadAsciiString/WriteAsciiString). Channel handler uses only len(Entries()).
 
 `CPersonalShopDlg::DeliverBlackList`@0x69b0d0 (op 0x1E=30, v95). After the op-byte
 the v95 client sends `Encode2 count` then a per-entry loop of `EncodeStr(name)`
@@ -433,7 +479,16 @@ dispatcher showed >10 stale code values vs the template — the failure cases al
 share the same `mode + NoticeFailReason(byte)` shape, so no enum-drift triage was
 triggered. Recorded for traceability; the router itself needs no fix.
 
-### Cash serverbound SPW-string vs birthday-int divergence (cash) — DEFERRED (version-gated)
+### Cash serverbound SPW-string vs birthday-int divergence (cash) — ✅ RESOLVED (version-gated)
+
+> ✅ RESOLVED (task-067 Phase 2): v83 confirms the leading field is a 4-byte int
+> (the `ask_SPW()` return), v95 a length-prefixed string. v83 anchors:
+> OnBuyCouple@0x46ffe7, OnBuyFriendship@0x470a5a, SendGiftsPacket@0x46f940,
+> OnRebateLockerItem@0x46bde1. atlas's prior `birthday uint32` matched v83. Fixed
+> by gating the leading field behind `Region()=="GMS" && MajorVersion()>=95` (int
+> for v83, spw string for v95). The Gift fix ALSO adds the v95-only `byte oneADay`
+> before the recipient name (v83 has neither SPW string nor oneADay — its leading
+> two ints match atlas's birthday+serialNumber). JMS untouched.
 
 Four cash serverbound "gift-family" senders write a leading **`EncodeStr` secondary-
 password (SPW) string** in v95 (built by `ask_SPW`), but atlas models the leading
@@ -462,7 +517,13 @@ guard. Files: `libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go`,
 `shop_operation_buy_friendship.go`, `shop_operation_gift.go`,
 `shop_operation_rebate_locker_item.go`.
 
-### ShopOperationBuy — trailing oneADay byte + eventSN int (cash) — DEFERRED (version-gated)
+### ShopOperationBuy — trailing oneADay byte + eventSN int (cash) — ✅ RESOLVED (version-gated)
+
+> ✅ RESOLVED (task-067 Phase 2): v83 `CCashShop::OnBuy`@0x46dadd sends a SINGLE
+> trailing Encode4 (IsZeroGoods int) after nCommSN — NO byte oneADay, NO eventSN.
+> atlas's prior `zero uint32` matched v83. The v95 byte oneADay + int eventSN are
+> a later addition. Fixed by gating the tail behind `Region()=="GMS" &&
+> MajorVersion()>=95`: v83 emits the single int, v95 emits byte+int. JMS untouched.
 
 `CCashShop::OnBuy`@0x48e530 (op 3, v95). After `bool isMaplePoint, int dwOption,
 int nCommSN` the v95 client sends **`Encode1 m_bRequestBuyOneADay`** then
@@ -481,7 +542,14 @@ add risks older clients. Warrants cross-version IDA confirmation before gating.
 Files: `libs/atlas-packet/cash/serverbound/shop_operation_buy.go`,
 `shop_operation_gift.go`.
 
-### CashShopInventory — missing 2 trailing slot-counter shorts (cash) — DEFERRED (version-gated)
+### CashShopInventory — missing 2 trailing slot-counter shorts (cash) — ✅ RESOLVED (version-gated)
+
+> ✅ RESOLVED (task-067 Phase 2): v83 `OnCashItemResLoadLockerDone`@0x4794f6 reads
+> ONLY 2 trailing shorts (m_nTrunkCount + m_nCharacterSlotCount). The extra
+> m_nBuyCharacterCount + m_nCharacterCount are v95-only. Fixed by gating the 2
+> extra shorts behind `Region()=="GMS" && MajorVersion()>=95`
+> (buyCharacterCount/characterCount are non-constructor fields defaulting to 0, so
+> no caller-signature ripple). v83 keeps the 2-short tail; JMS untouched.
 
 `CCashShop::OnCashItemResLoadLockerDone`@0x494cb0 (CashShopOperation op 0x58, v95).
 The v95 client reads, after the 55-byte-per-item locker loop:

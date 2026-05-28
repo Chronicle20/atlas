@@ -106,6 +106,37 @@ func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 	}
 }
 
+// TestAskSlideMenuConversationDetailEncode verifies the leading slideDlgType
+// int is written for GMS major>83 and for JMS185, and omitted for GMS v83.
+// JMS185 sub_7E2A97@0x7e2a97 reads two leading Decode4s (slideDlgType + menuType)
+// then DecodeStr(message) unconditionally; GMS v83 reads a single Decode4.
+func TestAskSlideMenuConversationDetailEncode(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	intBytes := func(v uint32) []byte {
+		out := make([]byte, 4)
+		binary.LittleEndian.PutUint32(out, v)
+		return out
+	}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			d := &AskSlideMenuConversationDetail{Unknown: true, MenuType: 0x000000AA, Message: "slide"}
+			got := d.Encode(l, ctx)(nil)
+
+			leadingPresent := (v.Region == "GMS" && v.MajorVersion > 83) || v.Region == "JMS"
+			var want []byte
+			if leadingPresent {
+				want = append(want, intBytes(1)...) // slideDlgType (Unknown=true)
+			}
+			want = append(want, intBytes(0x000000AA)...) // menuType
+			want = append(want, asciiBytes("slide")...)
+			if !bytesEqual(got, want) {
+				t.Errorf("AskSlideMenu encode mismatch (leading=%v)\n got=%v\nwant=%v", leadingPresent, got, want)
+			}
+		})
+	}
+}
+
 func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false

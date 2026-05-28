@@ -1,7 +1,7 @@
 # AddCharacterEntry (← `CLogin::OnCreateNewCharacterResult`)
 
 - **IDA:** 0x5dab90
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/add_entry.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/add_entry.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # AllCharacterListRequest (← `CLogin::SendViewAllCharPacket`)
 
 - **IDA:** 0x5dfb40
-- **Atlas file:** `../../libs/atlas-packet/login/serverbound/all_character_list_request.go`
+- **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_request.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

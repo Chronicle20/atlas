@@ -1,7 +1,7 @@
 # InventoryCompartmentSortRequest (← `CWvsContext::SendSortItemRequest`)
 
 - **IDA:** 0x9d5c60
-- **Atlas file:** `../../libs/atlas-packet/inventory/serverbound/compartment_sort.go`
+- **Atlas file:** `libs/atlas-packet/inventory/serverbound/compartment_sort.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

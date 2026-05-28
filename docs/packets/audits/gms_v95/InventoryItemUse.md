@@ -1,7 +1,7 @@
 # InventoryItemUse (← `CWvsContext::SendStatChangeItemUseRequest`)
 
 - **IDA:** 0x9ddfe0
-- **Atlas file:** `../../libs/atlas-packet/inventory/serverbound/item_use.go`
+- **Atlas file:** `libs/atlas-packet/inventory/serverbound/item_use.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

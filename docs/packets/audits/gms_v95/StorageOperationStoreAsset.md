@@ -1,7 +1,7 @@
 # StorageOperationStoreAsset (← `CTrunkDlg::SendPutItemRequest`)
 
 - **IDA:** 0x768570
-- **Atlas file:** `../../libs/atlas-packet/storage/serverbound/operation_store_asset.go`
+- **Atlas file:** `libs/atlas-packet/storage/serverbound/operation_store_asset.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

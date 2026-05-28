@@ -4,7 +4,7 @@
   "Address": "0x485840",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
   "Rows": [
     {
       "Index": 0,

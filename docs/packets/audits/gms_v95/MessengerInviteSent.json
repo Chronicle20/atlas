@@ -4,7 +4,7 @@
   "Address": "0x7f5030",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/messenger/clientbound/invite_sent.go",
+  "AtlasFile": "libs/atlas-packet/messenger/clientbound/invite_sent.go",
   "Rows": [
     {
       "Index": 0,

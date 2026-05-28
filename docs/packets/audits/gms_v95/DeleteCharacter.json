@@ -4,7 +4,7 @@
   "Address": "0x5d53a0",
   "Variant": "GMS/v95",
   "BranchDepth": 3,
-  "AtlasFile": "../../libs/atlas-packet/character/serverbound/delete.go",
+  "AtlasFile": "libs/atlas-packet/character/serverbound/delete.go",
   "Rows": [
     {
       "Index": 0,

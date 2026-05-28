@@ -1,7 +1,7 @@
 # CharacterSitResult (← `CUserLocal::OnSitResult`)
 
 - **IDA:** 0x905e70
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/sit_result.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/sit_result.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌

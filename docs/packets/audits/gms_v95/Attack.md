@@ -1,7 +1,7 @@
 # Attack (← `CUserRemote::OnAttack`)
 
 - **IDA:** 0x95a670
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/attack.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/attack.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 3
 - **Verdict:** ❌

@@ -4,7 +4,7 @@
   "Address": "0x534310",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/party/serverbound/operation_join.go",
+  "AtlasFile": "libs/atlas-packet/party/serverbound/operation_join.go",
   "Rows": [
     {
       "Index": 0,

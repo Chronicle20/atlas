@@ -4,7 +4,7 @@
   "Address": "0x9a0d20",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/character/serverbound/move.go",
+  "AtlasFile": "libs/atlas-packet/character/serverbound/move.go",
   "Rows": [
     {
       "Index": 0,

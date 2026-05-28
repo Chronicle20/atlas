@@ -4,7 +4,7 @@
   "Address": "0x5d7bd0",
   "Variant": "GMS/v95",
   "BranchDepth": 3,
-  "AtlasFile": "../../libs/atlas-packet/character/serverbound/create.go",
+  "AtlasFile": "libs/atlas-packet/character/serverbound/create.go",
   "Rows": [
     {
       "Index": 0,

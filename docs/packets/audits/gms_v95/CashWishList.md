@@ -1,7 +1,7 @@
 # CashWishList (← `CCashShop::OnCashItemResult#WishList`)
 
 - **IDA:** 0x494d60
-- **Atlas file:** `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go`
+- **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_operation_result.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

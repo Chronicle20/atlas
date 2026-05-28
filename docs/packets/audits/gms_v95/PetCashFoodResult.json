@@ -4,7 +4,7 @@
   "Address": "0x9f7180",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/cash_food_result.go",
+  "AtlasFile": "libs/atlas-packet/pet/clientbound/cash_food_result.go",
   "Rows": [
     {
       "Index": 0,

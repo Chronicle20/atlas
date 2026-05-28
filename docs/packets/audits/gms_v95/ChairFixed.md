@@ -1,7 +1,7 @@
 # ChairFixed (← `CUserLocal::HandleXKeyDown`)
 
 - **IDA:** 0x90f6d0
-- **Atlas file:** `../../libs/atlas-packet/character/serverbound/chair_fixed.go`
+- **Atlas file:** `libs/atlas-packet/character/serverbound/chair_fixed.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

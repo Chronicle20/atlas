@@ -1,7 +1,7 @@
 # CashShopOperationBuyWorldTransfer (← `CCashShop::SendBuyTransferWorldItemPacket`)
 
 - **IDA:** 0x482f30
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_world_transfer.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_buy_world_transfer.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

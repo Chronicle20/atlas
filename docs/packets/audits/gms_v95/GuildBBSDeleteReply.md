@@ -1,7 +1,7 @@
 # GuildBBSDeleteReply (← `CUIGuildBBS::OnCommentDelete`)
 
 - **IDA:** 0x7c3b70
-- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_delete_reply.go`
+- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_delete_reply.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

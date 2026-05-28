@@ -1,7 +1,7 @@
 # InteractionOperationChat (← `CMiniRoomBaseDlg::CheckAndSendChat`)
 
 - **IDA:** 0x6382a0
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_chat.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_chat.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ✅

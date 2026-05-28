@@ -1,7 +1,7 @@
 # InventoryScrollUse (← `CWvsContext::SendUpgradeItemUseRequest`)
 
 - **IDA:** 0x9d6260
-- **Atlas file:** `../../libs/atlas-packet/inventory/serverbound/scroll_use.go`
+- **Atlas file:** `libs/atlas-packet/inventory/serverbound/scroll_use.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

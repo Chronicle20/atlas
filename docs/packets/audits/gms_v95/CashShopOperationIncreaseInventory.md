@@ -1,7 +1,7 @@
 # CashShopOperationIncreaseInventory (← `CCashShop::OnBuySlotInc`)
 
 - **IDA:** 0x491710
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_increase_inventory.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_increase_inventory.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌

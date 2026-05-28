@@ -1,7 +1,7 @@
 # CharacterDamage (← `CUserRemote::OnHit`)
 
 - **IDA:** 0x954c50
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/damage.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/damage.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 3
 - **Verdict:** ❌

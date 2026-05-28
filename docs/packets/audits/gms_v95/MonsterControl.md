@@ -1,7 +1,7 @@
 # MonsterControl (← `CMobPool::OnMobChangeController`)
 
 - **IDA:** 0x658d10
-- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/control.go`
+- **Atlas file:** `libs/atlas-packet/monster/clientbound/control.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌

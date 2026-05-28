@@ -1,7 +1,7 @@
 # DeleteCharacter (← `CLogin::SendDeleteCharPacket`)
 
 - **IDA:** 0x5d53a0
-- **Atlas file:** `../../libs/atlas-packet/character/serverbound/delete.go`
+- **Atlas file:** `libs/atlas-packet/character/serverbound/delete.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 3
 - **Verdict:** ✅

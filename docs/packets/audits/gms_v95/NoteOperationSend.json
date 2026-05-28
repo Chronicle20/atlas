@@ -4,7 +4,7 @@
   "Address": "0x496520",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/note/serverbound/operation_send.go",
+  "AtlasFile": "libs/atlas-packet/note/serverbound/operation_send.go",
   "Rows": [
     {
       "Index": 0,

@@ -1,7 +1,7 @@
 # MessengerInviteDeclined (← `CUIMessenger::OnPacket#InviteDeclined`)
 
 - **IDA:** 0x7f51a0
-- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/invite_declined.go`
+- **Atlas file:** `libs/atlas-packet/messenger/clientbound/invite_declined.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

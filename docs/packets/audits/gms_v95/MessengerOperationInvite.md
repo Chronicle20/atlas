@@ -1,7 +1,7 @@
 # MessengerOperationInvite (← `CUIMessenger::SendInviteMsg`)
 
 - **IDA:** 0x7f5820
-- **Atlas file:** `../../libs/atlas-packet/messenger/serverbound/operation_invite.go`
+- **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_invite.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

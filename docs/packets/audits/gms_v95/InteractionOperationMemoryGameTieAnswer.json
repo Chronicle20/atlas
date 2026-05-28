@@ -4,7 +4,7 @@
   "Address": "0x627e60",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_memory_game_tie_answer.go",
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_memory_game_tie_answer.go",
   "Rows": [
     {
       "Index": 0,

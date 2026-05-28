@@ -1,7 +1,7 @@
 # PartyMemberHP (← `CUserRemote::OnReceiveHP`)
 
 - **IDA:** 0x953f50
-- **Atlas file:** `../../libs/atlas-packet/party/clientbound/member_hp.go`
+- **Atlas file:** `libs/atlas-packet/party/clientbound/member_hp.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # CashInventoryCapacitySuccess (← `CCashShop::OnCashItemResult#InventoryCapacitySuccess`)
 
 - **IDA:** 0x497270
-- **Atlas file:** `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go`
+- **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_operation_result.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

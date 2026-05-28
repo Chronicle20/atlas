@@ -4,7 +4,7 @@
   "Address": "0x91d780",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/hint.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/hint.go",
   "Rows": [
     {
       "Index": 0,

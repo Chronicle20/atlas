@@ -1,7 +1,7 @@
 # CharacterDespawn (← `CUserPool::OnUserLeaveField`)
 
 - **IDA:** 0x94d4c0
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/despawn.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/despawn.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

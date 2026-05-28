@@ -1,7 +1,7 @@
 # CashCashItemMovedToCashInventory (← `CCashShop::OnCashItemResult#CashItemMovedToCashInventory`)
 
 - **IDA:** 0x495050
-- **Atlas file:** `../../libs/atlas-packet/cash/clientbound/shop_item_moved.go`
+- **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_item_moved.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

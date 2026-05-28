@@ -1,7 +1,7 @@
 # GuildSetTitleNames (← `CWvsContext::SendSetGuildTitleNames`)
 
 - **IDA:** 0x0
-- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_set_title_names.go`
+- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_set_title_names.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

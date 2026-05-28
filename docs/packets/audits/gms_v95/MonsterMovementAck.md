@@ -1,7 +1,7 @@
 # MonsterMovementAck (← `CMob::OnCtrlAck`)
 
 - **IDA:** 0x640c50
-- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/movement_ack.go`
+- **Atlas file:** `libs/atlas-packet/monster/clientbound/movement_ack.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

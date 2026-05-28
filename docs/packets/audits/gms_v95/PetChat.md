@@ -1,7 +1,7 @@
 # PetChat (← `CPet::OnAction`)
 
 - **IDA:** 0x6a3860
-- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/chat.go`
+- **Atlas file:** `libs/atlas-packet/pet/clientbound/chat.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

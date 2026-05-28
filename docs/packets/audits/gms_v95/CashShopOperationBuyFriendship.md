@@ -1,7 +1,7 @@
 # CashShopOperationBuyFriendship (← `CCashShop::OnBuyFriendship`)
 
 - **IDA:** 0x491b30
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

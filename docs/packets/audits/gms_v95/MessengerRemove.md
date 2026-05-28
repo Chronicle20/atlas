@@ -1,7 +1,7 @@
 # MessengerRemove (← `CUIMessenger::OnPacket#Remove`)
 
 - **IDA:** 0x7f5e20
-- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/remove.go`
+- **Atlas file:** `libs/atlas-packet/messenger/clientbound/remove.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

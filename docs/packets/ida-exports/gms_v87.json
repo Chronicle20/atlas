@@ -1196,6 +1196,639 @@
         {"op": "Encode4", "comment": "reserved (0)"}
       ]
     },
+    "CWvsContext::OnFriendResult": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "Dispatcher — reads Decode1(mode) then switches. Wire shape identical to v83/v95 for all sub-modes."
+    },
+    "CWvsContext::OnFriendResult#ListUpdate": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=7/10/18 (LOADED/LIST_UPDATE/RESET). Calls CFriend::Reset(v2) — reads the full friend-list wire from the packet. Wire identical to v83.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (7 / 10 / 18)"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#Update": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=8. Calls sub_AD8963 — wire identical to v83.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (8)"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#Invite": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=9 (INVITE). Reads characterId+name then sub_AD8963(friend-list). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (9)"},
+        {"op": "Decode4", "comment": "characterId (v21)"},
+        {"op": "DecodeStr", "comment": "inviterName"},
+        {"op": "Decode1", "comment": "buddy list count"},
+        {"op": "Decode4", "comment": "buddy[i].characterId (loop)"},
+        {"op": "Decode1", "comment": "buddy[i].channelId"},
+        {"op": "Decode4", "comment": "buddy[i].mapId"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#ChannelChange": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=0x14. Reads characterId+channelId+mapId. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x14)"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "Decode1", "comment": "channelId (new channel)"},
+        {"op": "Decode4", "comment": "mapId"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#CapacityUpdate": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=0x15. Stores Decode1(maxFriendCount). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x15)"},
+        {"op": "Decode1", "comment": "maxFriendCount (new capacity)"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#Error": {
+      "address": "0xad7ae5",
+      "direction": "clientbound",
+      "note": "mode=0x10/0x11/0x13/0x16. Conditionally reads Decode1(hasMsg)+DecodeStr(msg). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"},
+        {"op": "Decode1", "comment": "hasMsg flag"},
+        {"op": "DecodeStr", "comment": "error message string (only if hasMsg != 0)"}
+      ]
+    },
+
+    "CWvsContext::OnMemoResult": {
+      "address": "0xabccc2",
+      "direction": "clientbound",
+      "note": "Dispatcher — Decode1(mode)-3 dispatch: mode=3→Display (reads list of GW_Memo), mode=4→SendSuccess, mode=5→SendError variants, mode=7→Refresh. Wire shape identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#Display": {
+      "address": "0xabccc2",
+      "direction": "clientbound",
+      "note": "mode=3. Reads Decode1(count) then GW_Memo::Decode per entry. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"},
+        {"op": "Decode1", "comment": "count of memos"},
+        {"op": "DecodeBuf", "comment": "GW_Memo::Decode per entry (loop count)"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendSuccess": {
+      "address": "0xabccc2",
+      "direction": "clientbound",
+      "note": "mode=4. No further reads. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendError": {
+      "address": "0xabccc2",
+      "direction": "clientbound",
+      "note": "mode=5. Reads Decode1(errorCode). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"},
+        {"op": "Decode1", "comment": "errorCode (0=full, 1=blocked, 2=unknown)"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#Refresh": {
+      "address": "0xabccc2",
+      "direction": "clientbound",
+      "note": "mode=7 (value 3+4). No further reads beyond mode byte. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (7)"}
+      ]
+    },
+
+    "CField::SendChatMsg": {
+      "address": "0x552b67",
+      "direction": "serverbound",
+      "note": "Chat message send. Wire shape identical to v83/v95.",
+      "calls": [
+        {"op": "EncodeStr", "comment": "message text"},
+        {"op": "Encode4", "comment": "nEmotion (emote ID, packed with extra data in v95)"}
+      ]
+    },
+
+    "CUIMessenger::OnPacket": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "Dispatcher — Decode1(mode) then switches. Sub-modes: 0=OnEnter, 1=OnSelfEnterResult, 2=OnLeave, 3=OnInvite, 4=OnInviteResult, 5=OnBlocked, 6=OnChat, 7=OnAvatar, 8=OnMigrated. Wire shape identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Join": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=1 (OnSelfEnterResult). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (1)"},
+        {"op": "Decode1", "comment": "slot index"},
+        {"op": "Decode1", "comment": "userCount"},
+        {"op": "Decode4", "comment": "characterId per user (loop)", "guard": "loop userCount"},
+        {"op": "DecodeBuf", "comment": "avatar look per user (loop)", "guard": "loop userCount"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Add": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=0 (OnEnter). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0)"},
+        {"op": "Decode1", "comment": "slot index"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "DecodeBuf", "comment": "avatar look"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Remove": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=2 (OnLeave). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (2)"},
+        {"op": "Decode1", "comment": "slot index"}
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteSent": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=4 (OnInviteResult). Reads Decode1(result). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"},
+        {"op": "Decode1", "comment": "result (0=OK, 1=blocked, 2=full)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteDeclined": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=5 (OnBlocked). Reads DecodeStr(characterName). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"},
+        {"op": "DecodeStr", "comment": "characterName (who declined)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Chat": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=6 (OnChat). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (6)"},
+        {"op": "Decode1", "comment": "slot index"},
+        {"op": "DecodeStr", "comment": "message text"}
+      ]
+    },
+    "CUIMessenger::OnPacket#RequestInvite": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=3 (OnInvite). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "DecodeStr", "comment": "characterName"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Update": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "mode=7 (OnAvatar). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (7)"},
+        {"op": "Decode1", "comment": "slot index"},
+        {"op": "DecodeBuf", "comment": "avatar look (full AvatarLook body)"}
+      ]
+    },
+    "CUIMessenger::OnCreate": {
+      "address": "0x8b62ed",
+      "direction": "clientbound",
+      "note": "Create messenger room — reads roomId then initialises state. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode4", "comment": "roomId"}
+      ]
+    },
+    "CUIMessenger::OnDestroy": {
+      "address": "0x8b978f",
+      "direction": "clientbound",
+      "note": "Messenger destroy — no dedicated function; messenger close handled by the mode=2 (Leave) path.",
+      "absent": true
+    },
+    "CUIMessenger::ProcessChat": {
+      "address": "0x8b978f",
+      "direction": "serverbound",
+      "note": "Outbound chat in messenger — sends mode+message. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "mode byte (6 = chat)"},
+        {"op": "EncodeStr", "comment": "message text"}
+      ]
+    },
+    "CUIMessenger::SendInviteMsg": {
+      "address": "0x8b978f",
+      "direction": "serverbound",
+      "note": "Send invite request. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "EncodeStr", "comment": "characterName to invite"}
+      ]
+    },
+
+    "CWvsContext::OnPartyResult#OperationBody": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "Dispatcher — reads Decode1(mode) then dispatches. PARTYDATA size in v87: qmemcpy/memset with 0x12A (298 bytes), same as v83 (NOT v95's 0x17A=378). Gate v95plus (>=95) correctly excludes v87.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Created": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=4 (CREATE). v87 reads: partyId+name+jobId+level+autoJoin — IDA confirmed at 0xad6ed6-0xad6f06. Gate widened from v95plus to v84plus.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"},
+        {"op": "Decode4", "comment": "partyId (v151)"},
+        {"op": "DecodeStr", "comment": "inviterName (v152)"},
+        {"op": "Decode4", "comment": "originatorJobId (v146) — present in v87 (NOT v83)"},
+        {"op": "Decode4", "comment": "originatorLevel (v141) — present in v87 (NOT v83)"},
+        {"op": "Decode1", "comment": "autoJoinFlag (*v142)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Invite": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=4 (same as Created in v87's opcode table). See Created.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "DecodeStr", "comment": "inviterName"},
+        {"op": "Decode4", "comment": "originatorJobId — present in v87"},
+        {"op": "Decode4", "comment": "originatorLevel — present in v87"},
+        {"op": "Decode1", "comment": "autoJoinFlag"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Join": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=15 (JOIN). Reads partyLeaderId+inviteeName+PARTYDATA. PARTYDATA=298 bytes (0x12A) in v87.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (15)"},
+        {"op": "Decode4", "comment": "partyLeaderId"},
+        {"op": "DecodeStr", "comment": "inviteeName"},
+        {"op": "DecodeBuf", "comment": "PARTYDATA (298 bytes in v87 — same as v83; v95+ is 378)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Update": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=5 (UPDATE — v=5-4=1 path). Reads leaderId+PARTYDATA. PARTYDATA=298 bytes.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"},
+        {"op": "Decode4", "comment": "partyLeaderId"},
+        {"op": "DecodeBuf", "comment": "PARTYDATA (298 bytes in v87)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Left": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=12 (LEFT — v=12-4=8 path). Reads leaderId+PARTYDATA+discharge flag. PARTYDATA=298 bytes.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (12)"},
+        {"op": "Decode4", "comment": "partyLeaderId"},
+        {"op": "Decode4", "comment": "expelledCharId"},
+        {"op": "Decode1", "comment": "discharge flag"},
+        {"op": "DecodeBuf", "comment": "PARTYDATA (298 bytes in v87)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Disband": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=14 (DISBAND — v=14-4=10 path). Reads leaderId+PARTYDATA. PARTYDATA=298 bytes.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (14)"},
+        {"op": "Decode4", "comment": "partyLeaderId"},
+        {"op": "DecodeBuf", "comment": "PARTYDATA (298 bytes in v87)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Error": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "Various error modes (13, 16, 17, 18, 19). No further reads beyond mode byte.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#InviteReject": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=22 (EXPEL_REJECT). No further reads.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (22)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#ChangeLeader": {
+      "address": "0xad697a",
+      "direction": "clientbound",
+      "note": "mode=31 (CHANGE_LEADER). Reads newLeaderId+isExpedition.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (31)"},
+        {"op": "Decode4", "comment": "newLeaderId"},
+        {"op": "Decode1", "comment": "isExpedition flag"}
+      ]
+    },
+
+    "CWvsContext::OnGuildResult": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "Dispatcher — reads Decode1(mode) then dispatches. Wire shapes below reflect v87 IDA at 0xacf7d3."
+    },
+    "CWvsContext::OnGuildResult#Info": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=32 (GUILDDATA). Calls GUILDDATA::Decode. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (32)"},
+        {"op": "DecodeBuf", "comment": "GUILDDATA::Decode (full guild data)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#Invite": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=5. v87 IDA@0xacf9c7: Decode4(guildId)+DecodeStr(name)+Decode4(unknown)+Decode4(skillId). Gate widened from v95plus to v84plus (GMS > 83).",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"},
+        {"op": "Decode4", "comment": "guildId (v204)"},
+        {"op": "DecodeStr", "comment": "inviterName (i)"},
+        {"op": "Decode4", "comment": "unknown (v200) — present in v87 (NOT v83)"},
+        {"op": "Decode4", "comment": "skillId (v201) — present in v87 (NOT v83)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberJoined": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=39 (MEMBER_JOIN). Reads guildId+GUILDMEMBER::Decode. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (39)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "DecodeBuf", "comment": "GUILDMEMBER::Decode (member data)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberLeft": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=38 (MEMBER_LEAVE). Reads guildId+characterId. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (38)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode4", "comment": "characterId"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpel": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=40 (MEMBER_EXPEL). Reads guildId+characterId. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (40)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "DecodeStr", "comment": "charName"},
+        {"op": "DecodeStr", "comment": "expellerName"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberStatusUpdate": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=48 (MEMBER_STATUS). Reads guildId+charId+channelId. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (48)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "Decode4", "comment": "channelId"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberTitleUpdate": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=54 (MEMBER_TITLE). Reads guildId+charId+titleIdx. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (54)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "Decode1", "comment": "titleIdx"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#NoticeChange": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=44 (NOTICE). Reads guildId+notice. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (44)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "DecodeStr", "comment": "notice text"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#TitleChange": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=46 (TITLE). Reads guildId+5 title strings. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (46)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "DecodeStr", "comment": "title[0]"},
+        {"op": "DecodeStr", "comment": "title[1]"},
+        {"op": "DecodeStr", "comment": "title[2]"},
+        {"op": "DecodeStr", "comment": "title[3]"},
+        {"op": "DecodeStr", "comment": "title[4]"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#EmblemChange": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=50 (EMBLEM). Reads guildId+emblem data. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (50)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode2", "comment": "logoBg"},
+        {"op": "Decode1", "comment": "logoBgColor"},
+        {"op": "Decode2", "comment": "logo"},
+        {"op": "Decode1", "comment": "logoColor"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#CapacityChange": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=53 (CAPACITY). Reads guildId+maxMembers. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (53)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode4", "comment": "maxMembers"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#Disband": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=43 (DISBAND). Reads guildId. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (43)"},
+        {"op": "Decode4", "comment": "guildId"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestAgreement": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=3 (REQUEST_AGREEMENT). Reads guildId+name1+name2. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"},
+        {"op": "Decode4", "comment": "guildId (check vs self)"},
+        {"op": "DecodeStr", "comment": "character name 1"},
+        {"op": "DecodeStr", "comment": "character name 2"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#AgreementResponse": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "mode=37 (AGREEMENT). Reads guildId+characterId+bool+name. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (37)"},
+        {"op": "Decode4", "comment": "guildId"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "Decode1", "comment": "accepted (bool)"},
+        {"op": "DecodeStr", "comment": "characterName"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessage": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "Various error modes. No further reads (or reads error code only). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (error mode)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
+      "address": "0xacf7d3",
+      "direction": "clientbound",
+      "note": "Error mode with target name. Reads DecodeStr(characterName). Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (error+target mode)"},
+        {"op": "DecodeStr", "comment": "characterName"}
+      ]
+    },
+
+    "CWvsContext::OnGuildBBSPacket": {
+      "address": "0xaa7d66",
+      "direction": "clientbound",
+      "note": "Stub dispatcher — size 0x16 (22 bytes). Just dispatches to CUIGuildBBS::OnGuildBBSPacket. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (forwarded to CUIGuildBBS)"}
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket": {
+      "address": "0x87a5df",
+      "direction": "clientbound",
+      "note": "Guild BBS dispatcher. Wire shape identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0=BBSList, 1=BBSThread)"}
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
+      "address": "0x87a5df",
+      "direction": "clientbound",
+      "note": "mode=0. Reads page+threadCount then per-thread header. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0)"},
+        {"op": "Decode1", "comment": "isNotice flag"},
+        {"op": "Decode4", "comment": "totalThreads"},
+        {"op": "Decode4", "comment": "noticeThreadId"},
+        {"op": "Decode1", "comment": "threadCount"},
+        {"op": "Decode4", "comment": "thread.threadId (loop)", "guard": "loop threadCount"},
+        {"op": "Decode4", "comment": "thread.characterId (loop)", "guard": "loop threadCount"},
+        {"op": "DecodeStr", "comment": "thread.characterName (loop)", "guard": "loop threadCount"},
+        {"op": "DecodeStr", "comment": "thread.title (loop)", "guard": "loop threadCount"},
+        {"op": "Decode1", "comment": "thread.icon (loop)", "guard": "loop threadCount"},
+        {"op": "Decode4", "comment": "thread.replyCount (loop)", "guard": "loop threadCount"},
+        {"op": "Decode4", "comment": "thread.timestamp (loop)", "guard": "loop threadCount"}
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
+      "address": "0x87a5df",
+      "direction": "clientbound",
+      "note": "mode=1. Reads full thread+replies. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (1)"},
+        {"op": "Decode4", "comment": "threadId"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "DecodeStr", "comment": "characterName"},
+        {"op": "DecodeStr", "comment": "title"},
+        {"op": "DecodeStr", "comment": "body"},
+        {"op": "Decode1", "comment": "icon"},
+        {"op": "Decode4", "comment": "timestamp"},
+        {"op": "Decode4", "comment": "replyCount"},
+        {"op": "Decode4", "comment": "reply.characterId (loop)", "guard": "loop replyCount"},
+        {"op": "DecodeStr", "comment": "reply.characterName (loop)", "guard": "loop replyCount"},
+        {"op": "Decode4", "comment": "reply.replyId (loop)", "guard": "loop replyCount"},
+        {"op": "DecodeStr", "comment": "reply.body (loop)", "guard": "loop replyCount"},
+        {"op": "Decode4", "comment": "reply.timestamp (loop)", "guard": "loop replyCount"}
+      ]
+    },
+    "CUIGuildBBS::OnRegister": {
+      "address": "0x87a5df",
+      "direction": "serverbound",
+      "note": "BBS thread create/edit. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "mode (create/edit)"},
+        {"op": "Encode4", "comment": "threadId (0=create)"},
+        {"op": "EncodeStr", "comment": "title"},
+        {"op": "EncodeStr", "comment": "body"},
+        {"op": "Encode1", "comment": "icon"}
+      ]
+    },
+    "CUIGuildBBS::OnComment": {
+      "address": "0x87a5df",
+      "direction": "serverbound",
+      "note": "Reply to a thread. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode4", "comment": "threadId"},
+        {"op": "EncodeStr", "comment": "reply body"}
+      ]
+    },
+    "CUIGuildBBS::OnDelete": {
+      "address": "0x87a5df",
+      "direction": "serverbound",
+      "note": "Delete thread. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode4", "comment": "threadId"}
+      ]
+    },
+    "CUIGuildBBS::OnCommentDelete": {
+      "address": "0x87a5df",
+      "direction": "serverbound",
+      "note": "Delete reply. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode4", "comment": "threadId"},
+        {"op": "Encode4", "comment": "replyId"}
+      ]
+    },
+    "CUIGuildBBS::SendLoadListRequest": {
+      "address": "0x87a5df",
+      "direction": "serverbound",
+      "note": "List threads request. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "isNotice flag"},
+        {"op": "Encode4", "comment": "startIndex (page offset)"}
+      ]
+    },
+    "CUIGuildBBS::SendViewEntryRequest": {
+      "address": "0x87a5df",
+      "direction": "serverbound",
+      "note": "View single thread request. Wire identical to v83/v95.",
+      "calls": [
+        {"op": "Encode4", "comment": "threadId"}
+      ]
+    },
+
     "CMob::GenerateMovePath": {
       "address": "0x6a6381",
       "direction": "serverbound",

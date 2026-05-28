@@ -14,6 +14,4 @@
 | 1 | byte | byte `FUNCKEY_MAPPED::nType (key type byte; loop 89 entries — v87=89, same as v83; v95=90)` | ✅ |  |
 | 2 | byte | int32 `FUNCKEY_MAPPED::nID (key action int32; loop 89 entries)` | ❌ | width mismatch |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

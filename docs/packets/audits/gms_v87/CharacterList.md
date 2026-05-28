@@ -4,7 +4,7 @@
 - **Atlas file:** `libs/atlas-packet/character/clientbound/list.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
-- **Verdict:** ✅
+- **Verdict:** ❌
 
 ## Wire-level diff
 
@@ -52,13 +52,13 @@
 | 39 | int32 | int32 `AvatarLook::nWeaponStickerID` | ✅ |  |
 | 40 | int32 | int32 `AvatarLook::anPetID[0]` | ✅ |  |
 | 41 | int32 | int32 `AvatarLook::anPetID[1]` | ✅ |  |
-| 42 | int32 | int32 `AvatarLook::anPetID[2]` | ✅ |  |
+| 42 | byte | int32 `AvatarLook::anPetID[2]` | ❌ | width mismatch |
 | 43 | byte | byte `onFamily byte` | ✅ |  |
-| 44 | byte | byte `rankEnabled / hasRank byte` | ✅ |  |
+| 44 | int32 | byte `rankEnabled / hasRank byte` | ❌ | width mismatch |
 | 45 | int32 | int32 `worldRank` | ✅ |  |
 | 46 | int32 | int32 `worldRankMove` | ✅ |  |
 | 47 | int32 | int32 `jobRank` | ✅ |  |
-| 48 | int32 | int32 `jobRankMove` | ✅ |  |
-| 49 | byte | byte `m_bLoginOpt (hasPic)` | ✅ |  |
-| 50 | int32 | int32 `m_nSlotCount — final field; NO m_nBuyCharCount in v87 (added >v87, gate MajorVersion()>87 in atlas already correct)` | ✅ |  |
+| 48 | byte | int32 `jobRankMove` | ❌ | width mismatch |
+| 49 | int32 | byte `m_bLoginOpt (hasPic)` | ❌ | width mismatch |
+| 50 | byte | int32 `m_nSlotCount — final field; NO m_nBuyCharCount in v87 (added >v87, gate MajorVersion()>87 in atlas already correct)` | ❌ | atlas: short — missing trailing field |
 

@@ -3994,6 +3994,642 @@
           "comment": "clockType (mode discriminator; CField::OnClock virtual @vtable+0x2C)"
         }
       ]
+    },
+    "CNpc::OnMove": {
+      "address": "0x7194d1",
+      "direction": "clientbound",
+      "notes": "NPC_ACTION (JMS185 opcode 0x119/281). Dispatched via CNpcPool::OnNpcPacket which Decode4(npcId) BEFORE CNpc::OnMove@0x7194d1 (dispatcher-prefix; atlas Action writes objectId as the first int). OnMove@0x7194e6 reads Decode1(nAction/oneTimeAction) + Decode1(nChatIdx) then (if has-move-path) CMovePath::OnMovePacket. SAME shape as GMS v95.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "npcId (dispatcher prefix via CNpcPool::OnNpcPacket)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nAction / oneTimeAction (@0x7194e6)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nChatIdx (@0x7194f4)"
+        }
+      ]
+    },
+    "CNpcPool::OnNpcEnterField": {
+      "address": "0x72068f",
+      "direction": "clientbound",
+      "notes": "SPAWN_NPC (JMS185 opcode 0x116/278). CNpcPool::OnNpcEnterField@0x72068f reads Decode4(npcId @0x7206a1); the new-entry path then Decode4(templateId @0x7206d8) and CNpc::Init reads x/cy/moveAction/foothold/rx0/rx1. SAME shape as GMS v95.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "npcId (object id @0x7206a1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "templateId (new-entry path @0x7206d8)"
+        }
+      ]
+    },
+    "CNpcPool::OnNpcChangeController": {
+      "address": "0x720782",
+      "direction": "clientbound",
+      "notes": "SPAWN_NPC_REQUEST_CONTROLLER (JMS185 opcode 0x118/280). CNpcPool::OnNpcChangeController@0x720782 reads Decode1(localFlag @0x720794) + Decode4(npcId @0x720797); when localFlag!=0 it calls SetLocalNpc (new-entry path reads templateId + CNpc::Init fields). SAME shape as GMS v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "localFlag (@0x720794)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "npcId (@0x720797)"
+        }
+      ]
+    },
+    "CShopDlg::SetShopDlg": {
+      "address": "0x7c6536",
+      "direction": "clientbound",
+      "notes": "OPEN_NPC_SHOP (JMS185 opcode 0x14A/330). CShopDlg::OnPacket@0x7cb04e (nType==0x14A) -> CShopDlg::SetShopDlg@0x7c6536. Decode4(npcTemplateId @0x7c655a) + Decode2(count @0x7c6560) + per-commodity loop ('while ++idx < count', no max cap). Per item (@0x7c658d..0x7c661e): Decode4 itemId + Decode4 price + Decode4 tokenPrice + Decode4 itemPeriod + Decode4 levelLimited + (itemId/10000 in {207,233} ? DecodeBuffer(8) unitPrice(double) : Decode2 quantity) + Decode2 maxPerSlot. NOTE: JMS185 has NO discountRate byte and NO tokenItemId int that GMS v87/v95 inserted -- it is 5xDecode4 + qty/buffer + Decode2. Atlas ShopList gates DiscountRate (GMS>=87) and TokenTemplateId (GMS>=95) on Region==GMS; both are FALSE for JMS, so atlas emits exactly the JMS185 5-int layout -- MATCH. Analyzer flattens the loop -> loop-body rows are manually verified.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "npcTemplateId (m_dwNpcTemplateID @0x7c655a)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "commodity count (loop bound; no max cap @0x7c6560)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "[item] itemId / TemplateId (@0x7c658d)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "[item] price / mesoPrice (@0x7c65a7) -- NO discountRate byte, NO tokenItemId int (JMS lacks the GMS>=87/>=95 fields)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "[item] tokenPrice (@0x7c65b1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "[item] itemPeriod (@0x7c65bb)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "[item] levelLimited (@0x7c65be)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "[item] quantity (non-ammo arm; ammo itemId/10000 in {207,233} uses DecodeBuffer(8) unitPrice instead @0x7c6605/0x7c65f4)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "[item] maxPerSlot (@0x7c661e)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#Simple": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION (JMS185 opcode 0x14B/331). CShopDlg::OnPacket@0x7cb04e (nType==0x14B) switch(Decode1 mode @0x7cb0e5). Mode-only arms (cases 0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x14 and default) read no further packet fields (StringPool Notice only). Atlas ShopOperationSimple writes only Byte(mode). MATCH (mode is the dispatcher discriminator).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#LevelRequirement": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "Same CShopDlg::OnPacket@0x7cb04e (nType==0x14B). Cases 0xE (@0x7cb1c0) and 0xF (@0x7cb23d) read Decode4 (level/count value formatted into an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). MATCH.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xE over / 0xF under level requirement)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "levelLimit / count (@0x7cb1c0 case 0xE; @0x7cb23d case 0xF)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#GenericError": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "Same CShopDlg::OnPacket@0x7cb04e (nType==0x14B). NOTE: JMS185 has NO reason-string mode. Case 0x13 (@0x7cb0e5 arm 'case 4u/8u/0x13u') simply RETURNS with no further reads -- there is no Decode1(hasReason)/DecodeStr(reason) like GMS v95. Atlas ShopOperationGenericError writes Byte(mode)+Bool(hasReason)+optional AsciiString(reason); the discriminator/opcode is config-driven and the GMS shape is correct. For JMS the reason path is a client no-op (feature absent) -- OUT OF SCOPE for an atlas wire fix (template/config concern; GMS shape unchanged).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (generic-error discriminator; JMS case 0x13 is a no-op return -- NO hasReason/reason bytes)"
+        }
+      ]
+    },
+    "CScriptMan::OnScriptMessage": {
+      "address": "0x7b7160",
+      "direction": "clientbound",
+      "notes": "NPC_TALK wrapper (JMS185 opcode 0x149/329 via CScriptMan::OnPacket). CScriptMan::OnScriptMessage@0x7b7160 reads Decode1(nSpeakerTypeID @0x7b71a9) + Decode4(nSpeakerTemplateID @0x7b71b2) + Decode1(nMsgType @0x7b71bf) + Decode1(bParam @0x7b71c7), then switch(nMsgType). JMS185 dialog-type switch order: 0=Say,1=SayImage,2=AskYesNo,3=AskText,4=AskNumber,5=AskMenu,6=AskQuiz,7=AskSpeedQuiz,8/16=AskAvatar,9=AskPet,10=AskPetAll,12=AskYesNo(quest variant),13=AskBoxText,14=AskSlideMenu. SayImage=1 (NOT v83-shifted). NOTE: JMS185 has NO AskMembershopAvatar case (GMS v95 case 9 was AskMembershopAvatar; in JMS185 case 9 is AskPet). The secondaryNpcTemplateId (param&4) is read inside the per-type handler (OnSay) not the wrapper. Atlas NpcConversation writes speakerTypeId(byte)+speakerTemplateId(int)+msgType(byte)+param(byte)+[secondaryNpcTemplateId int if param&4]+detail. MATCH for the wrapper shape.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nSpeakerTypeID (@0x7b71a9)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSpeakerTemplateID (@0x7b71b2)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMsgType (dialog type; switch discriminator @0x7b71bf)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bParam (@0x7b71c7)"
+        }
+      ]
+    },
+    "CScriptMan::OnSay#Say": {
+      "address": "0x7b7315",
+      "direction": "clientbound",
+      "notes": "Dialog type 0 (Say). CScriptMan::OnSay@0x7b7315: (if bParam&4) Decode4(nSpeakerTemplateID override @0x7b7337) + DecodeStr(message @0x7b7340) + Decode1(bPrev @0x7b7356) + Decode1(bNext @0x7b7368). Atlas SayConversationDetail writes AsciiString(Message)+Bool(Previous)+Bool(Next). MATCH (param&4 override int is handled by the wrapper's secondaryNpcTemplateId).",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b7340)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bPrev / previous (@0x7b7356)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNext / next (@0x7b7368)"
+        }
+      ]
+    },
+    "CScriptMan::OnSayImage#SayImage": {
+      "address": "0x7b7496",
+      "direction": "clientbound",
+      "notes": "Dialog type 1 (SayImage). CScriptMan::OnSayImage@0x7b7496: Decode1(count @0x7b7524) + loop count x DecodeStr(image @0x7b753a). Count is a single byte (Decode1), matching atlas SayImageConversationDetail post-fix Byte(len)+loop AsciiString(image). FIX#2 re-check: SayImage byte-count MATCHES JMS185 -- no gate needed. Analyzer flattens the loop.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "image count (nCount @0x7b7524)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "image path -- loop body (count iterations; analyzer flattens @0x7b753a)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskYesNo#AskYesNo": {
+      "address": "0x7b765d",
+      "direction": "clientbound",
+      "notes": "Dialog type 2 (AskYesNo) and 12 (AskYesNo quest variant). CScriptMan::OnAskYesNo@0x7b765d: DecodeStr(message @0x7b7676) only. Atlas AskYesNoConversationDetail writes AsciiString(Message). MATCH.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b7676)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskText#AskText": {
+      "address": "0x7b77bd",
+      "direction": "clientbound",
+      "notes": "Dialog type 3 (AskText). CScriptMan::OnAskText@0x7b77bd: DecodeStr(message @0x7b77d8) + DecodeStr(default @0x7b77e8) + Decode2(nStrMin @0x7b77fd) + Decode2(nStrMax @0x7b780f). Atlas AskTextConversationDetail writes AsciiString(Message)+AsciiString(Def)+Short(Min)+Short(Max). MATCH.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b77d8)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "default text (@0x7b77e8)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nStrMin (@0x7b77fd)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nStrMax (@0x7b780f)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskNumber#AskNumber": {
+      "address": "0x7b7b0d",
+      "direction": "clientbound",
+      "notes": "Dialog type 4 (AskNumber). CScriptMan::OnAskNumber@0x7b7b0d: DecodeStr(message @0x7b7b28) + Decode4(default @0x7b7b3b) + Decode4(min @0x7b7b45) + Decode4(max @0x7b7b57). Atlas AskNumberConversationDetail writes AsciiString(Message)+Int(Def)+Int(Min)+Int(Max). MATCH.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b7b28)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "default value (@0x7b7b3b)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "min (@0x7b7b45)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "max (@0x7b7b57)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskMenu#AskMenu": {
+      "address": "0x7b7c95",
+      "direction": "clientbound",
+      "notes": "Dialog type 5 (AskMenu). CScriptMan::OnAskMenu@0x7b7c95: DecodeStr(message @0x7b7cae) only (menu items are embedded in the message string). Atlas AskMenuConversationDetail writes AsciiString(Message). MATCH.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message / menu (@0x7b7cae)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskQuiz#AskQuiz": {
+      "address": "0x7b84ef",
+      "direction": "clientbound",
+      "notes": "Dialog type 6 (AskQuiz). CScriptMan::OnAskQuiz@0x7b84ef -> CWvsContext::OnInitialQuiz@0xb0e336: Decode1(flag @0xb0e34d); the flag==0 (show) arm @0xb0e394 reads DecodeStr(title) + DecodeStr(problem) + DecodeStr(hint) + Decode4(min @0xb0e3c3) + Decode4(max @0xb0e3cd) + Decode4(remainingTime @0xb0e3e1). Atlas AskQuizConversationDetail writes Bool(Fail)+[if !Fail: AsciiString(Title)+AsciiString(Problem)+AsciiString(Hint)+Int(Min)+Int(Max)+Int(TimeRemaining)]. MATCH (SAME as GMS v95). Guarded fields are collected unconditionally by the analyzer.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "flag (0=show quiz / Fail==false; nonzero=close @0xb0e34d)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title -- guarded (flag==0)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "problem -- guarded"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "hint -- guarded"
+        },
+        {
+          "op": "Decode4",
+          "comment": "min -- guarded (@0xb0e3c3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "max -- guarded (@0xb0e3cd)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remaining time (1000x sec) -- guarded (@0xb0e3e1)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz": {
+      "address": "0x7b8501",
+      "direction": "clientbound",
+      "notes": "Dialog type 7 (AskSpeedQuiz). CScriptMan::OnAskSpeedQuiz@0x7b8501 -> CWvsContext::OnInitialSpeedQuiz@0xb0e493: Decode1(flag @0xb0e4a2); the flag==0 arm @0xb0e4ef reads Decode4(type) + Decode4(answer @0xb0e4f8) + Decode4(correct @0xb0e502) + Decode4(remain @0xb0e50c) + Decode4(remainingTime @0xb0e520). Atlas AskSpeedQuizConversationDetail writes Bool(Fail)+[if !Fail: Int(Type)+Int(Answer)+Int(Correct)+Int(Remain)+Int(TimeRemaining)]. MATCH (SAME as GMS v95).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "flag (0=show / Fail==false @0xb0e4a2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "type -- guarded (flag==0 @0xb0e4ef)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "answer -- guarded (@0xb0e4f8)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "correct -- guarded (@0xb0e502)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remain -- guarded (@0xb0e50c)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remaining time (1000x sec) -- guarded (@0xb0e520)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskAvatar#AskAvatar": {
+      "address": "0x7b7e1d",
+      "direction": "clientbound",
+      "notes": "Dialog type 8/16 (AskAvatar). CScriptMan::OnAskAvatar@0x7b7e1d: DecodeStr(message @0x7b7e3e) + Decode1(count @0x7b7e52) + loop count x Decode4(style @0x7b7e6e). Atlas AskAvatarConversationDetail writes AsciiString(Message)+Byte(len)+loop Int(style). MATCH. Analyzer flattens the loop.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b7e3e)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "style count (@0x7b7e52)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "style id -- loop body (count iterations; analyzer flattens @0x7b7e6e)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskPet#AskPet": {
+      "address": "0x7b7fc2",
+      "direction": "clientbound",
+      "notes": "Dialog type 9 (AskPet) -- NOTE: in GMS v95 case 9 was AskMembershopAvatar; JMS185 maps case 9 to AskPet (AskMembershopAvatar is ABSENT in JMS185). CScriptMan::OnAskPet@0x7b7fc2: DecodeStr(message @0x7b7fde) + Decode1(count @0x7b7ff8) + loop count x [DecodeBuffer(8) cashId @0x7b8046 + Decode1(unused @0x7b804e)]. Atlas AskPetConversationDetail writes AsciiString(Message)+Byte(len)+loop[Long(cashId)+Byte(0)]. MATCH. Analyzer flattens the loop.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b7fde)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pet count (@0x7b7ff8)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "cashId (8 bytes) -- loop body (@0x7b8046)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "unused -- loop body (@0x7b804e)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskPetAll#AskPetAll": {
+      "address": "0x7b8250",
+      "direction": "clientbound",
+      "notes": "Dialog type 10 (AskPetAll). CScriptMan::OnAskPetAll@0x7b8250: DecodeStr(message @0x7b826a) + Decode1(count @0x7b8281) + Decode1(exceptionExists @0x7b8290) + loop count x [DecodeBuffer(8) cashId @0x7b82d7 + Decode1(unused @0x7b82df)]. Atlas AskPetAllConversationDetail writes AsciiString(Message)+Byte(len)+Bool(ExceptionExists)+loop[Long(cashId)+Byte(0)]. MATCH. Analyzer flattens the loop.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b826a)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pet count (@0x7b8281)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "exceptionExists (@0x7b8290)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "cashId (8 bytes) -- loop body (@0x7b82d7)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "unused -- loop body (@0x7b82df)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskBoxText#AskBoxText": {
+      "address": "0x7b7966",
+      "direction": "clientbound",
+      "notes": "Dialog type 13 (AskBoxText). CScriptMan::OnAskBoxText@0x7b7966: DecodeStr(message @0x7b7981) + DecodeStr(default @0x7b7991) + Decode2(col @0x7b79a6) + Decode2(line @0x7b79b8). Atlas AskBoxTextConversationDetail writes AsciiString(Message)+AsciiString(Def)+Short(Col)+Short(Line). MATCH.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0x7b7981)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "default text (@0x7b7991)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "col (@0x7b79a6)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "line (@0x7b79b8)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskSlideMenu#AskSlideMenu": {
+      "address": "0x7b8513",
+      "direction": "clientbound",
+      "notes": "Dialog type 14 (AskSlideMenu). CScriptMan::OnAskSlideMenu@0x7b8513 -> sub_7E2A97@0x7e2a97 reads Decode4(slideDlgType / this[37] @0x7e2ab4) + Decode4(menuType / v13 @0x7e2ac2) + DecodeStr(message @0x7e2ac9). JMS185 reads BOTH leading ints UNCONDITIONALLY (2x Decode4 + string). Atlas AskSlideMenuConversationDetail gates the FIRST int (Unknown 0/1) on Region==GMS && major>83 and writes only Int(MenuType)+AsciiString(Message) for JMS -- i.e. atlas writes 1 int + string for JMS but JMS185 expects 2 ints + string. POTENTIAL JMS GAP: the leading slideDlgType int is omitted for JMS by the GMS>83 gate. This matches the existing carry-forward manual-verify status for AskSlideMenu; documented as a concern. (Whether JMS templates actually wire AskSlideMenu determines runtime impact; the GMS shape is correct and the gate is GMS-major-driven.)",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "slideDlgType (this[37] @0x7e2ab4) -- JMS reads this unconditionally; atlas gates it GMS>83"
+        },
+        {
+          "op": "Decode4",
+          "comment": "menuType (v13; compared in selection loop @0x7e2ac2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "button info / message text (@0x7e2ac9)"
+        }
+      ]
+    },
+    "CUserLocal::OnTutorMsg#Message": {
+      "address": "0xa2d342",
+      "direction": "clientbound",
+      "notes": "TALK_GUIDE / tutor message. CUserLocal::OnTutorMsg@0xa2d342 reads Decode1(bByMessage @0xa2d35f); the FALSE (==0) arm @0xa2d38d calls DecodeStr(message) + Decode4(width) + Decode4(duration) -> CTutor::OnMessage(ZXString,int,int). FIX#1 re-check: JMS185 has the SAME tutor split as GMS v95 -- leading bool FALSE selects the string/message arm. Atlas GuideTalkMessage encodes the leading bool as false. MATCH -- no gate needed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bByMessage = 0 (false) selects the string/message arm (@0xa2d35f)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (@0xa2d38d)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "width (@0xa2d39f)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "duration (@0xa2d3a1)"
+        }
+      ]
+    },
+    "CUserLocal::OnTutorMsg#Idx": {
+      "address": "0xa2d342",
+      "direction": "clientbound",
+      "notes": "TALK_GUIDE / tutor hint-index. Same CUserLocal::OnTutorMsg@0xa2d342; the TRUE (!=0) arm @0xa2d371 calls Decode4(hintId) + Decode4(duration) -> CTutor::OnMessage(int,int), NO string. FIX#1 re-check: JMS185 matches GMS v95 -- leading bool TRUE selects the hint-index arm. Atlas GuideTalkIdx encodes the leading bool as true. MATCH -- no gate needed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bByMessage = 1 (true) selects the hint-index arm (@0xa2d35f)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hintId / balloon type (@0xa2d371)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "duration (@0xa2d373)"
+        }
+      ]
+    },
+    "CUserLocal::TalkToNpc": {
+      "address": "0xa2cc90",
+      "direction": "serverbound",
+      "notes": "NPC_TALK (JMS185 opcode 0x32/50). CUserLocal::TalkToNpc@0xa2cc90 (non-quest branch): COutPacket(0x32 @0xa2cd00) + Encode4(npcId / m_dwNpcId @0xa2cd15) + Encode2(GetPos.x @0xa2cd30) + Encode2(GetPos.y @0xa2cd48). Atlas StartConversation writes Int(npcId)+Short(x)+Short(y). MATCH.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "npcId (m_dwNpcId @0xa2cd15)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (GetPos.x @0xa2cd30)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (GetPos.y @0xa2cd48)"
+        }
+      ]
+    },
+    "CNpc::GenerateMovePath": {
+      "address": "0x7199ce",
+      "direction": "serverbound",
+      "notes": "NPC_ACTION (JMS185 opcode 0xD0/208). CNpc::GenerateMovePath@0x7199ce: COutPacket(0xD0 @0x719a6d) + Encode4(m_dwNpcId @0x719a7e) + Encode1(nAction @0x719a89) + Encode1(nChatIdx @0x719a94) then (if has-move-path) CMovePath::Flush. Atlas serverbound Action writes Int(npcId)+Byte(action)+Byte(chatIdx)+movePath. MATCH.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "npcId (m_dwNpcId @0x719a7e)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nAction (@0x719a89)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nChatIdx (@0x719a94)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#ShopDispatch": {
+      "address": "0x7ca2c9",
+      "direction": "serverbound",
+      "notes": "NPC_SHOP (JMS185 opcode 0x35/53) op-byte dispatcher. The shop senders (CShopDlg::SendBuyRequest@0x7ca2c9, SendSellRequest@0x7cacab, SendRechargeRequest@0x7caecf) each build COutPacket(53) with a leading Encode1(op) discriminator (0=buy,1=sell,2=recharge). Atlas serverbound Shop wraps the op byte + per-op body. MATCH (op byte is the discriminator).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (0=buy,1=sell,2=recharge)"
+        }
+      ]
+    },
+    "CShopDlg::SendBuyRequest": {
+      "address": "0x7ca2c9",
+      "direction": "serverbound",
+      "notes": "NPC_SHOP (JMS185 opcode 0x35/53) BUY body (op=0). CShopDlg::SendBuyRequest@0x7ca2c9: COutPacket(53 @0x7caae1) + Encode1(0 @0x7caaf3) + Encode2(slot/commodity index @0x7cab10) + Encode4(itemId @0x7cab20) + Encode2(quantity @0x7cab2b). Atlas ShopBuy writes Byte(0)+Short(slot)+Int(itemId)+Short(quantity). MATCH.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op = 0 (buy @0x7caaf3)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot / commodity index (@0x7cab10)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (@0x7cab20)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "quantity (@0x7cab2b)"
+        }
+      ]
+    },
+    "CShopDlg::SendSellRequest": {
+      "address": "0x7cacab",
+      "direction": "serverbound",
+      "notes": "NPC_SHOP (JMS185 opcode 0x35/53) SELL body (op=1). CShopDlg::SendSellRequest@0x7cacab: COutPacket(53 @0x7cae58) + Encode1(1 @0x7cae68) + Encode2(nPOS/slot @0x7cae73) + Encode4(nItemID @0x7cae7e) + Encode2(quantity @0x7cae89). Atlas ShopSell writes Byte(1)+Short(slot)+Int(itemId)+Short(quantity). MATCH.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op = 1 (sell @0x7cae68)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS / slot (@0x7cae73)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID (@0x7cae7e)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "quantity (@0x7cae89)"
+        }
+      ]
+    },
+    "CShopDlg::SendRechargeRequest": {
+      "address": "0x7caecf",
+      "direction": "serverbound",
+      "notes": "NPC_SHOP (JMS185 opcode 0x35/53) RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x7caecf: COutPacket(53 @0x7cafea) + Encode1(2 @0x7caff8) + Encode2(nPos/slot @0x7cb001). Atlas ShopRecharge writes Byte(2)+Short(slot). MATCH.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op = 2 (recharge @0x7caff8)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPos / slot (@0x7cb001)"
+        }
+      ]
+    },
+    "CScriptMan::OnSay#Reply": {
+      "address": "0x7b7315",
+      "direction": "serverbound",
+      "notes": "NPC_TALK_MORE (JMS185 opcode 0x33/51) generic continue reply (Say). Built inside CScriptMan::OnSay@0x7b7315 after DoModal: COutPacket(0x34 @0x7b7418) + Encode1(0 = msgType SAY @0x7b7425) + Encode1(action @0x7b7447). No trailing body for SAY. Atlas ContinueConversation writes Byte(msgType)+Byte(action). MATCH.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "msgType = 0 (SAY @0x7b7425)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action (@0x7b7447)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskMenu#Selection": {
+      "address": "0x7b7c95",
+      "direction": "serverbound",
+      "notes": "NPC_TALK_MORE (JMS185 opcode 0x33/51) menu-selection reply trailing field. Built inside CScriptMan::OnAskMenu@0x7b7c95 after DoModal: COutPacket(0x34 @0x7b7d74) + Encode1(5 = msgType AskMenu @0x7b7d82) + Encode1(action @0x7b7da4/0x7b7d98) + (if action==1: Encode4 selection @0x7b7daf). Atlas ContinueConversationSelection writes Byte(msgType)+Byte(action)+[Int(selection) if action==1]. MATCH.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "msgType = 5 (AskMenu @0x7b7d82)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action (@0x7b7da4)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "selection (only if action==1 @0x7b7daf)"
+        }
+      ]
+    },
+    "CScriptMan::OnAskText#Reply": {
+      "address": "0x7b77bd",
+      "direction": "serverbound",
+      "notes": "NPC_TALK_MORE (JMS185 opcode 0x33/51) text-answer reply trailing field. Built inside CScriptMan::OnAskText@0x7b77bd after DoModal: COutPacket(0x34 @0x7b78c6) + Encode1(3 = msgType AskText @0x7b78d4) + Encode1(action @0x7b78e2/0x7b790b) + (if action==1: EncodeStr answer @0x7b7900). Atlas ContinueConversationText writes Byte(msgType)+Byte(action)+[AsciiString(answer) if action==1]. MATCH.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "msgType = 3 (AskText @0x7b78d4)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action (@0x7b78e2)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "answer text (only if action==1 @0x7b7900)"
+        }
+      ]
     }
   }
 }

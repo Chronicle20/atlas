@@ -1,0 +1,20 @@
+{
+  "WriterName": "OperationTradeAddMeso",
+  "IDAName": "CTradingRoomDlg::PutMoney",
+  "Address": "0x764450",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "amount (m_nInputNo_Result)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

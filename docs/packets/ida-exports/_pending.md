@@ -216,6 +216,191 @@ its IDA sender byte-for-byte; `change.go:ChangeMove` ✅ matches the dispatcher
 (including the conditional addMov). No mismatch, no fix needed; recorded for
 traceability.
 
+### OP-FAMILY-interaction — serverbound dispatcher op-byte (interaction)
+
+`interaction/serverbound/operation.go` `Operation.Encode` writes only the op-byte
+(`WriteByte(mode)`); each sub-op's payload lives in a sibling
+`operation_*.go` file. The v95 IDA oracle is the family of client-side
+`CMiniRoomBaseDlg` / `CTradingRoomDlg` / `CPersonalShopDlg` / `CEntrustedShopDlg`
+/ `CMemoryGameDlg` / `COmokDlg` / `CField` send functions, each of which builds
+`COutPacket(…, 144 = 0x90 PLAYER_INTERACTION)` then `Encode1(op)` + the sub-op
+payload. The dispatcher's lone-byte ✅ in `Operation.md` is expected (op-byte
+supplied by the caller's resolved `operations` code). Sub-bodies audited
+independently. Confirmed op-byte map (v95 GMS_v95.0_U_DEVM 3c71fd88…):
+
+| atlas sub-op | op | IDA sender |
+|---|---|---|
+| OperationInvite | 2 | `CField::SendInviteTradingRoomMsg`@0x52e9e0 |
+| OperationChat | 6 | `CMiniRoomBaseDlg::CheckAndSendChat`@0x6382a0 |
+| OperationTradePutItem | 0xF | `CTradingRoomDlg::PutItem`@0x7641d0 |
+| OperationTradeAddMeso | 0x10 | `CTradingRoomDlg::PutMoney`@0x764450 |
+| OperationTradeConfirm | 0x11 | `CTradingRoomDlg::Trade`@0x7646b0 |
+| OperationTransaction | 0x11 | `CCashTradingRoomDlg::Trade`@0x49e180 |
+| OperationPersonalStorePutItem | 0x16(22)/0x21(33) | `CPersonalShopDlg::PutItem`@0x69c880 |
+| OperationPersonalStoreBuy | 0x17(23)/0x22(34) | `CPersonalShopDlg::BuyItem`@0x69a7f0 |
+| OperationPersonalStoreAddToBlackList | 0x1C(28) | `CPersonalShopDlg::OnClickBanButton`@0x69b1c0 |
+| OperationPersonalStoreSetBlackList | 0x1E(30) | `CPersonalShopDlg::DeliverBlackList`@0x69b0d0 |
+| OperationPersonalStoreRemoveItem | 0x1B(27)/0x26(38) | `CPersonalShopDlg::MoveItemToInventory`@0x6987a0 |
+| OperationFieldAddToBlackList | 0x1F(31) | `CField::AddBlackList`@0x539710 |
+| OperationFieldRemoveFromBlackList | 0x20(32) | `CField::DeleteBlackList`@0x5397d0 |
+| OperationMerchantAddToBlackList | 0x30(48) | `CEntrustedShopDlg::AddBlackList`@0x51ed50 |
+| OperationMerchantRemoveFromBlackList | 0x31(49) | `CEntrustedShopDlg::DeleteBlackList`@0x51ee20 |
+| OperationMemoryGameTieAnswer | 0x33(51) | `CMemoryGameDlg::OnTieRequest`@0x627e60 |
+| OperationMemoryGameRetreatAnswer | 0x37(55) | `COmokDlg::OnRetreatRequest`@0x6804b0 |
+| OperationMemoryGameMoveStone | 0x40(64) | `COmokDlg::PutStoneChecker`@0x6801e0 |
+| OperationMemoryGameFlipCard | 0x44(68) | `CMemoryGameDlg::SendTurnUpCard`@0x6279b0 |
+
+### INTERACTION-MODE-MAP — mode-byte → sub-op routing (atlas-channel, outside libs/atlas-packet)
+
+The mode-byte → `operation_*.go` reader dispatch lives in atlas-channel routing
+(the resolved `operations` code table + the channel handler switch), NOT in
+`libs/atlas-packet`. Out of scope for this packet-audit; recorded so a future
+maintainer knows the mode map is centralised there, not in the packet structs.
+
+### INTERACTION-CB-MODE-MAP — clientbound interaction_body.go is a router (interaction)
+
+`interaction/clientbound/interaction_body.go` is a constructor/router block (8
+`CharacterInteraction*Body` factories that resolve the `operations` mode code,
+then build the matching wire struct from `interaction.go`), parallel to cash's
+`shop_operation_body.go`. The 8 target structs are the real wire shapes and were
+each audited as their own row against `CMiniRoomBaseDlg::OnPacketBase` (clientbound
+mode dispatcher @0x639e10) + per-mode sub-handlers:
+
+| Body factory | target struct | mode | IDA handler |
+|---|---|---|---|
+| CharacterInteractionInviteBody | InteractionInvite | 2 | `OnInviteStatic`@0x637a40 |
+| CharacterInteractionInviteResultBody | InteractionInviteResult | 3 | `OnInviteResultStatic`@0x637d70 |
+| CharacterInteractionEnterBody | InteractionEnter | 4 | `OnEnterBase`@0x638f80 |
+| CharacterInteractionEnterResultSuccessBody | InteractionEnterResultSuccess | 5 | `OnEnterResultBase`@0x638e30 |
+| CharacterInteractionEnterResultErrorBody | InteractionEnterResultError | 5 | `OnEnterResultStatic`@0x639500 |
+| CharacterInteractionChatBody | InteractionChat | 6 | `OnChat`@0x639ad0 |
+| CharacterInteractionLeaveBody | InteractionLeave | 10 | `OnLeaveBase`@0x637510 |
+| CharacterInteractionUpdateMerchantBody | InteractionUpdateMerchant | 25 | `CEntrustedShopDlg::OnRefresh`@0x51cc30 |
+
+`interaction_body.go` itself gets no SUMMARY row (router). Wire-shape denominator
+for interaction stays 8 CB + 29 SB sub-ops + 1 dispatcher = 38 atlas shapes;
+26 produced reports this round (12 SB unmapped/shared, see below).
+
+### OperationChat — missing leading update_time field (interaction) — DEFERRED
+
+`CMiniRoomBaseDlg::CheckAndSendChat`@0x6382a0 (op 6, v95). After the dispatcher
+op-byte the v95 client sends `Encode4 update_time (get_update_time)` THEN
+`EncodeStr message`. Atlas `operation_chat.go` `OperationChat.Decode` reads only
+`ReadAsciiString message` — it is **missing the leading 4-byte update_time**, a
+hot-path 4-byte read desync on every mini-room chat. Verified ❌ in
+`OperationChat.md` rows 0-1 (v95).
+
+**Deferred (not fixed here):** the fix is to prepend a `uint32 updateTime` field
+to the struct + Encode/Decode. This is version-sensitive — `update_time`
+prefixing on mini-room chat is a known per-version differentiator (some older
+GMS/JMS builds omit it) and only v95 IDA was readable this session. A blind
+unconditional add risks the v83/v87/v92/v111/JMS185 clients. Warrants a focused
+follow-up with cross-version IDA (`CheckAndSendChat` in each target build) to
+gate the field behind a region/version guard. File:
+`libs/atlas-packet/interaction/serverbound/operation_chat.go`.
+
+### OperationPersonalStoreBuy / OperationMerchantBuy — missing trailing itemCRC (interaction) — DEFERRED
+
+`CPersonalShopDlg::BuyItem`@0x69a7f0 (op 23 personal-store / op 34 entrusted-
+merchant, v95). After the op-byte the v95 client sends `Encode1 nIdx (index)`,
+`Encode2 quantity`, **`Encode4 itemCRC` (`CItemInfo::GetItemCRC`)**. Atlas
+`operation_personal_store_buy.go` / `operation_merchant_buy.go` read only
+`{byte index, short quantity}` — both are **missing the trailing 4-byte itemCRC**.
+Verified ❌ in `OperationPersonalStoreBuy.md` / `OperationMerchantBuy.md` row 2
+(v95). (CRC is an anti-tamper checksum the server validates; missing it leaves a
+4-byte tail unconsumed.)
+
+**Deferred (not fixed here):** add a `uint32 itemCRC` trailing field. The
+item-CRC scheme is version-sensitive (CRC presence/width varies across client
+generations; `GetItemCRC` is not in all builds), and only v95 IDA was readable.
+Blind add risks other versions. Warrants a cross-version follow-up. Files:
+`libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go`,
+`operation_merchant_buy.go`.
+
+### OperationPersonalStoreSetBlackList — byte[] vs string[] structural mismatch (interaction) — DEFERRED
+
+`CPersonalShopDlg::DeliverBlackList`@0x69b0d0 (op 0x1E=30, v95). After the op-byte
+the v95 client sends `Encode2 count` then a per-entry loop of `EncodeStr(name)`
+(length-prefixed strings — one character name per blacklisted user). Atlas
+`operation_personal_store_set_black_list.go` reads `ReadUint16 count` then
+`count × ReadByte` (a flat byte array). The count short is ✅ but the body is a
+**structural mismatch** (per-entry strings vs raw bytes) — verified ❌ in
+`OperationPersonalStoreSetBlackList.md` row 1 (v95).
+
+**Deferred (not fixed here):** the correct shape is `[]string` decoded via
+`count × ReadAsciiString`. This is a structural rewrite of the entry loop (and
+the `entries []byte` field type), version-sensitive (blacklist wire format is a
+per-version differentiator), and only v95 IDA was readable. Warrants a focused
+follow-up. File:
+`libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go`.
+
+### Interaction tool-limitation false positives (sub-struct / representation)
+
+These ❌/diff rows are packet-audit **tool limitations**, NOT wire bugs (verified
+against v95 IDA):
+
+- **OperationMemoryGameMoveStone** (`COmokDlg::PutStoneChecker`@0x6801e0, op 0x40).
+  Atlas writes `WriteInt64 point` (8 bytes); the v95 client reads
+  `EncodeBuffer(&pt, 8)` = a `tagPOINT` (two int32 x,y, 8 bytes). Byte-for-byte
+  identical on the wire (9 bytes total incl. trailing color byte). The ❌ in
+  `OperationMemoryGameMoveStone.md` row 0 is only an int64-vs-8-byte-buffer
+  representation mismatch; wire-correct. No fix.
+- **InteractionEnter** (`OnEnterBase`@0x638f80, mode 4). Atlas writes
+  `mode + visitor.Encode` where `interaction.Visitor` is a sub-struct (slot +
+  avatar look + userID string + jobCode). The analyzer flattens the atlas Visitor
+  field-by-field but the IDA side is one opaque `DecodeBuffer`/`DecodeAvatar` →
+  spurious ❌. The leading mode byte ✅; the body is the shared Visitor sub-struct
+  audited independently. No fix.
+- **InteractionEnterResultSuccess** (`OnEnterResultBase`@0x638e30, mode 5). Same:
+  `interaction.Room` sub-struct (roomType + maxUsers + myPosition + per-slot
+  avatar loop) flattened vs single buffer. Mode byte ✅; body is the Room
+  sub-struct. No fix.
+- **InteractionUpdateMerchant** (`CEntrustedShopDlg::OnRefresh`@0x51cc30, mode 25).
+  Header `mode + meso(int) + count(byte)` all ✅; the per-item loop
+  (perBundle short, quantity short, price int, `GW_ItemSlotBase` asset sub-struct)
+  is a sub-struct the analyzer can't flatten → spurious ❌ from row 3. Note:
+  atlas's `meso` int matches the **entrusted-merchant** `OnRefresh` variant
+  (`CEntrustedShopDlg::OnRefresh` reads `Decode4 m_nMoney` then delegates to
+  `CPersonalShopDlg::OnRefresh`); the personal-store variant has no meso prefix.
+  No fix.
+
+### InteractionInviteResult — conditional trailing string (interaction), informational
+
+`OnInviteResultStatic`@0x637d70 (mode 3) reads `Decode1 result` then a trailing
+`DecodeStr name` **only for result codes 2/3/4**, NOT for result 1 (or 0). Atlas
+`InteractionInviteResult.Encode` writes the message string unconditionally. For
+result code 1 the client would not consume atlas's 2-byte empty-string length →
+potential 2-byte tail. The audit reports ✅ (atlas always writes a string and the
+common-path result codes 2/3/4 read it), and atlas in practice only emits this
+writer for the trade-result family (codes 2/3/4). Recorded as a latent
+conditional-emit nuance, not a confirmed v95 bug; revisit if the result-1 path is
+ever exercised. File: `libs/atlas-packet/interaction/clientbound/interaction.go`.
+
+### Interaction sub-ops with no v95 IDA sender located (interaction) — 🔍 DEFERRED
+
+The following atlas serverbound sub-op structs have no report this round because a
+single v95 client-side send function could not be confidently located (the create/
+open/visit/name-change/set-visitor/cash-trade-open senders are built inline in
+field/inventory-drag/cash-shop UI paths that were not isolated in this session).
+Each needs a focused IDA spike before a verdict; do NOT speculate on their wire
+shapes:
+
+- **OperationCreate** — mini-room/store/game create request (op 0/1; built by the
+  create dialogs `CCashTradingRoomDlg::OnCreate` / personal-shop create / omok/
+  memory-game create + `CField` open paths). Multi-variant by roomType.
+- **OperationOpen** — store "open for business" request (single bool).
+- **OperationCashTradeOpen** — cash-shop trade-open request (nProc/roomType-gated
+  multi-field; likely a `CCashShop`/`CWvsContext` cash-trade path).
+- **OperationInviteDecline** — decline-invite reply (serialNumber + errorCode);
+  likely `CUIFadeYesNo` trade-invite "No" callback.
+- **OperationVisit** — store-visit reply (serialNumber + conditional error/cash SN).
+- **OperationMerchantNameChange** — hired-merchant name-change request (single int).
+- **OperationPersonalStoreSetVisitor** — set-visitor-slot request (slot + name).
+
+(`OperationMerchantBuy`/`OperationMerchantPutItem`/`OperationMerchantRemoveItem`
+DO share the confirmed `CPersonalShopDlg` entrusted-merchant op-bytes and were
+audited via synthetic `#Merchant` FNames — see OP-FAMILY-interaction.)
+
 ## Workflow notes
 
 Refresh procedure:

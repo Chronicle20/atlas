@@ -247,10 +247,11 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
 	// --- interaction sub-domain (task-067) ---
-	// Serverbound dispatcher (op-byte only; sub-op payloads in sibling files).
-	case "CMiniRoomBaseDlg::OnPacketBase#Operation":
-		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
-	// Serverbound sub-op senders (one IDA client-send fn per atlas wire shape).
+	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
+	// (collides with storage's CTrunkDlg `Operation` under the flat report layout;
+	// storage wins the dedup). The interaction dispatcher is documented in
+	// docs/packets/ida-exports/_pending.md -> "OP-FAMILY-interaction" instead of a
+	// separate report. Sub-op senders below each map 1:1 to an atlas wire shape.
 	case "CMiniRoomBaseDlg::CheckAndSendChat":
 		return []candidate{{name: "OperationChat", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
 	case "CField::SendInviteTradingRoomMsg":
@@ -285,6 +286,17 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
 	case "COmokDlg::OnRetreatRequest":
 		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	// Entrusted-merchant sub-ops (share CPersonalShopDlg senders w/ different op-bytes).
+	case "CEntrustedShopDlg::AddBlackList":
+		return []candidate{{name: "OperationMerchantAddToBlackList", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CEntrustedShopDlg::DeleteBlackList":
+		return []candidate{{name: "OperationMerchantRemoveFromBlackList", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::PutItem#Merchant":
+		return []candidate{{name: "OperationMerchantPutItem", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::BuyItem#Merchant":
+		return []candidate{{name: "OperationMerchantBuy", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::MoveItemToInventory#Merchant":
+		return []candidate{{name: "OperationMerchantRemoveItem", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
 	// Clientbound CMiniRoomBaseDlg::OnPacketBase is a mode-dispatched reader;
 	// synthetic #-suffix FNames disambiguate the per-mode atlas wire shapes.
 	case "CMiniRoomBaseDlg::OnPacketBase#Invite":

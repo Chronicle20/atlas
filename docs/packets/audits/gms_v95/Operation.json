@@ -1,0 +1,20 @@
+{
+  "WriterName": "Operation",
+  "IDAName": "CTrunkDlg::OnPacket#Operation",
+  "Address": "0x76a990",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/storage/serverbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op-byte (4=get,5=put,7=meso; supplied by caller)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

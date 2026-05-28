@@ -15,15 +15,16 @@ import (
 //   nNotifierCheck(2) + revive(1) + mapId(4) + portal(1) + hp(2) + chase(1) +
 //   timestamp(8) = 25 bytes.
 // GMS v95 adds DecodeOpt(2) + oldDriverID(4) and widens hp 2→4 => 25+2+4+2 = 33.
-// JMS adds DecodeOpt(2) + JMS pair(5) and widens hp => 25+2+5+2 = 34.
+// JMS adds DecodeOpt(2) + JMS pair(5) but has NO chase byte (gated GMS only) and
+// hp stays 2 (JMS185 @0x7eec9d Decode2) => 25 - chase(1) + 2 + 5 = 31.
 func TestWarpToMapWireLength(t *testing.T) {
 	cases := map[string]int{
-		// DecodeOpt is gated >83 (present v87+); oldDriverID is gated >=95; hp is 4 bytes for >=95/JMS else 2.
+		// DecodeOpt is gated >83 (present v87+); oldDriverID is gated GMS>=95; hp is 4 bytes only for GMS>=95, else 2 (incl. JMS).
 		"GMS v28":  21, // channelId(4)+sNotifier(1)+bCharData(1)+mapId(4)+portal(1)+hp(2)+timestamp(8); no DecodeOpt/nNotifierCheck/revive/chase (gated >28)
 		"GMS v83":  25, // v28 + nNotifierCheck(2)+revive(1)+chase(1); no DecodeOpt (gated >83), hp 2
 		"GMS v87":  27, // v83 + DecodeOpt(2); still no oldDriverID (gated >=95), hp 2
 		"GMS v95":  33, // v87 + oldDriverID(4); hp widened 2->4
-		"JMS v185": 33, // v83 + DecodeOpt(2)+JMSpair(5); no oldDriverID (GMS-only); hp widened 2->4
+		"JMS v185": 31, // v83(25) - chase(1) + DecodeOpt(2)+JMSpair(5); no oldDriverID (GMS-only); hp stays 2 (JMS185 @0x7eec9d Decode2)
 	}
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

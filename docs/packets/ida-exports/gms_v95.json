@@ -1304,6 +1304,406 @@
      "comment": "bEnchantSkill legendarySpirit (line 26)"
     }
    ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#Operation": {
+   "address": "0x639e10",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "op-byte/mode (supplied by caller; sub-op payloads in sibling bodies)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::CheckAndSendChat": {
+   "address": "0x6382a0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "update_time (get_update_time)"
+    },
+    {
+     "op": "Str",
+     "comment": "message (chat text)"
+    }
+   ]
+  },
+  "CField::SendInviteTradingRoomMsg": {
+   "address": "0x52e9e0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "targetCharacterId (m_dwCharacterId)"
+    }
+   ]
+  },
+  "CField::AddBlackList": {
+   "address": "0x539710",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Str",
+     "comment": "name (sCharacterName)"
+    }
+   ]
+  },
+  "CField::DeleteBlackList": {
+   "address": "0x5397d0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Str",
+     "comment": "name (sCharacterName)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::OnClickBanButton": {
+   "address": "0x69b1c0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "slot (nSlot byte)"
+    },
+    {
+     "op": "Str",
+     "comment": "name (user id)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::DeliverBlackList": {
+   "address": "0x69b0d0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "count (config blacklist size)"
+    },
+    {
+     "op": "Str",
+     "comment": "name[] (per-entry EncodeStr, count times)"
+    }
+   ]
+  },
+  "CTradingRoomDlg::PutItem": {
+   "address": "0x7641d0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "inventoryType (nItemTI)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot (nSlotPosition)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity (m_nInputNo_Result)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "targetSlot (ItemIndexFromPoint)"
+    }
+   ]
+  },
+  "CTradingRoomDlg::PutMoney": {
+   "address": "0x764450",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "amount (m_nInputNo_Result)"
+    }
+   ]
+  },
+  "CTradingRoomDlg::Trade": {
+   "address": "0x7646b0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "count (number of crc entries)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "data/itemId (per-entry first)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "crc (per-entry second)"
+    }
+   ]
+  },
+  "CCashTradingRoomDlg::Trade": {
+   "address": "0x49e180",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "count (number of crc entries)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "data/itemId (per-entry first)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "crc (per-entry second)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::PutItem": {
+   "address": "0x69c880",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "inventoryType (nTI)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "slot (nPos)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity (count/v23)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "set (nSet)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "price (nPrice)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::BuyItem": {
+   "address": "0x69a7f0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "index (nIdx)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "quantity (v32)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "itemCRC (CItemInfo::GetItemCRC)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::MoveItemToInventory": {
+   "address": "0x6987a0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "index (nIdx)"
+    }
+   ]
+  },
+  "CMemoryGameDlg::SendTurnUpCard": {
+   "address": "0x6279b0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "first (bFirstCard)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "index (nIdx)"
+    }
+   ]
+  },
+  "CMemoryGameDlg::OnTieRequest": {
+   "address": "0x627e60",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "response (YesNo==6 bool)"
+    }
+   ]
+  },
+  "COmokDlg::PutStoneChecker": {
+   "address": "0x6801e0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Buffer",
+     "comment": "point (tagPOINT x,y = 8 bytes)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "color (m_nPlayerColor)"
+    }
+   ]
+  },
+  "COmokDlg::OnRetreatRequest": {
+   "address": "0x6804b0",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "response (YesNo==6 bool)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#Invite": {
+   "address": "0x637a40",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (2; dispatch byte)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "roomType (v2)"
+    },
+    {
+     "op": "Str",
+     "comment": "name (sInviter)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "dwSN (v3)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#InviteResult": {
+   "address": "0x637d70",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (3; dispatch byte)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "result (v1)"
+    },
+    {
+     "op": "Str",
+     "comment": "message (sTargetName; ONLY read for result 2/3/4, NOT result 1)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#Enter": {
+   "address": "0x638f80",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (4; dispatch byte)"
+    },
+    {
+     "op": "Buffer",
+     "comment": "visitor (slot + DecodeAvatar + userID str + jobCode; interaction.Visitor substruct)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess": {
+   "address": "0x639500",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (5; dispatch byte)"
+    },
+    {
+     "op": "Buffer",
+     "comment": "room (roomType + maxUsers + myPosition + per-slot avatar loop; interaction.Room substruct)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#EnterResultError": {
+   "address": "0x639500",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (5; dispatch byte)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "discriminator (v1==0 -> error path)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "errorCode (switch value)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#Chat": {
+   "address": "0x639ad0",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (6; dispatch byte)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "chatType (7=game-msg else font/0..3)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "slot (v7 speaker position)"
+    },
+    {
+     "op": "Str",
+     "comment": "message (sText)"
+    }
+   ]
+  },
+  "CMiniRoomBaseDlg::OnPacketBase#Leave": {
+   "address": "0x637510",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (10; dispatch byte)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "slot (v4)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "status (read by subclass OnLeave; e.g. CTradingRoomDlg)"
+    }
+   ]
+  },
+  "CPersonalShopDlg::OnRefresh#UpdateMerchant": {
+   "address": "0x51cc30",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (25; dispatch byte)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "meso (m_nMoney; CEntrustedShopDlg::OnRefresh prefix)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "count (m_nItem)"
+    },
+    {
+     "op": "Buffer",
+     "comment": "items (count x: perBundle short, quantity short, price int, GW_ItemSlotBase substruct)"
+    }
+   ]
   }
  }
 }

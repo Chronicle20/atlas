@@ -246,6 +246,63 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
+	// --- interaction sub-domain (task-067) ---
+	// Serverbound dispatcher (op-byte only; sub-op payloads in sibling files).
+	case "CMiniRoomBaseDlg::OnPacketBase#Operation":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	// Serverbound sub-op senders (one IDA client-send fn per atlas wire shape).
+	case "CMiniRoomBaseDlg::CheckAndSendChat":
+		return []candidate{{name: "OperationChat", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CField::SendInviteTradingRoomMsg":
+		return []candidate{{name: "OperationInvite", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CField::AddBlackList":
+		return []candidate{{name: "OperationFieldAddToBlackList", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CField::DeleteBlackList":
+		return []candidate{{name: "OperationFieldRemoveFromBlackList", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::OnClickBanButton":
+		return []candidate{{name: "OperationPersonalStoreAddToBlackList", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::DeliverBlackList":
+		return []candidate{{name: "OperationPersonalStoreSetBlackList", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CTradingRoomDlg::PutItem":
+		return []candidate{{name: "OperationTradePutItem", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CTradingRoomDlg::PutMoney":
+		return []candidate{{name: "OperationTradeAddMeso", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CTradingRoomDlg::Trade":
+		return []candidate{{name: "OperationTradeConfirm", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CCashTradingRoomDlg::Trade":
+		return []candidate{{name: "OperationTransaction", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::PutItem":
+		return []candidate{{name: "OperationPersonalStorePutItem", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::BuyItem":
+		return []candidate{{name: "OperationPersonalStoreBuy", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::MoveItemToInventory":
+		return []candidate{{name: "OperationPersonalStoreRemoveItem", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CMemoryGameDlg::SendTurnUpCard":
+		return []candidate{{name: "OperationMemoryGameFlipCard", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "CMemoryGameDlg::OnTieRequest":
+		return []candidate{{name: "OperationMemoryGameTieAnswer", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "COmokDlg::PutStoneChecker":
+		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	case "COmokDlg::OnRetreatRequest":
+		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pathHint: "interaction/"}}
+	// Clientbound CMiniRoomBaseDlg::OnPacketBase is a mode-dispatched reader;
+	// synthetic #-suffix FNames disambiguate the per-mode atlas wire shapes.
+	case "CMiniRoomBaseDlg::OnPacketBase#Invite":
+		return []candidate{{name: "InteractionInvite", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#InviteResult":
+		return []candidate{{name: "InteractionInviteResult", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#Enter":
+		return []candidate{{name: "InteractionEnter", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess":
+		return []candidate{{name: "InteractionEnterResultSuccess", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultError":
+		return []candidate{{name: "InteractionEnterResultError", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#Chat":
+		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
+		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	case "CPersonalShopDlg::OnRefresh#UpdateMerchant":
+		return []candidate{{name: "InteractionUpdateMerchant", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
 	}
 	return nil
 }

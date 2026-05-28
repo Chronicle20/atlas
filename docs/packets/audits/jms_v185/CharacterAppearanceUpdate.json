@@ -152,7 +152,7 @@
     },
     {
       "Index": 16,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -179,15 +179,6 @@
     },
     {
       "Index": 19,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 20,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,

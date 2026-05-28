@@ -1,0 +1,20 @@
+{
+  "WriterName": "MessengerOperation",
+  "IDAName": "CUIMessenger::OnDestroy",
+  "Address": "0x8e171b",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/messenger/serverbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sub-op = 2 (LEAVE)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

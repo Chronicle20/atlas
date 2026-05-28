@@ -14,6 +14,4 @@
 | 1 | byte | byte `FUNCKEY_MAPPED::nType (loop body)` | ✅ |  |
 | 2 | byte | int32 `FUNCKEY_MAPPED::nID (loop body)` | ❌ | width mismatch |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

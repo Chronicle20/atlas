@@ -1027,9 +1027,14 @@
       "address": "0xb297e7",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS CWvsContext::OnPartyResult@0xb297e7. Confirmed via decompile. Key finding: PARTYDATA uses 0x12A=298 bytes (small, same as GMS v83): qmemcpy(v120, &this[1].m_Cookie.szReserved[584], 0x12Au). The v95plus gate in atlas member_data.go incorrectly included JMS — bug fixed in task-066 Task 10.",
+      "notes": "JMS CWvsContext::OnPartyResult@0xb297e7 mode=1 (self-created). Wire: Decode1(mode)+Decode4(partyId)+Decode4(memberId)+Decode4(mapId)+Decode2(jobId)+Decode2(level). Same layout as GMS v83 OnPartyResult#Created@0xa3e31c. PARTYDATA (0x12A=298 bytes small) key finding: qmemcpy(v120, &this[1].m_Cookie.szReserved[584], 0x12Au). The v95plus gate in atlas member_data.go incorrectly included JMS — bug fixed in task-066 Task 10.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte = 1 (Created)"}
+        {"op": "Decode1", "comment": "mode byte = 1 (Created)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "Decode4", "comment": "memberId (zeros ok — atlas writes EmptyMapId as placeholder)"},
+        {"op": "Decode4", "comment": "mapId (zeros ok — atlas writes EmptyMapId as placeholder)"},
+        {"op": "Decode2", "comment": "jobId (zeros ok — atlas writes 0)"},
+        {"op": "Decode2", "comment": "level (zeros ok — atlas writes 0)"}
       ]
     },
     "CWvsContext::OnPartyResult#Invite": {
@@ -1087,18 +1092,21 @@
       "address": "0xb297e7",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS Disband/error messages: mode byte only (no extra fields). Same as GMS v95.",
+      "notes": "JMS Disband mode (mode=12, isForced=0). Same as GMS v95@0xa11085: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId — the trailing repeated partyId is atlas-only; pre-existing ❌ in GMS v83/v95 audits too.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (Disband/Error)"}
+        {"op": "Decode1", "comment": "mode byte (Disband)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "Decode4", "comment": "targetId"},
+        {"op": "Decode1", "comment": "isForced flag (0=leave/disband, 1=expelled)"}
       ]
     },
     "CWvsContext::OnPartyResult#Error": {
       "address": "0xb297e7",
       "region": "JMS",
       "direction": "clientbound",
-      "notes": "JMS Error modes: mode byte shows string notice. Same as GMS v95.",
+      "notes": "JMS Error modes (mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36). No further reads — error code only. Atlas Error writes mode+string(name), which is atlas-only extra field. Pre-existing ❌ in GMS v83/v95 audits too.",
       "calls": [
-        {"op": "Decode1", "comment": "mode byte (Error)"}
+        {"op": "Decode1", "comment": "mode byte (error code — no further reads)"}
       ]
     },
     "CWvsContext::OnPartyResult#ChangeLeader": {

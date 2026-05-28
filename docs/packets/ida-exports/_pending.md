@@ -636,3 +636,59 @@ Affected serverbound packets (all ❌ due to this tool-limitation):
 `GuildInfo.md` (verdict 🔍): packed array reads (`count×charId` + `count×GuildMember(37 bytes)`) are modelled as `DecodeBuffer` in IDA. Atlas encodes each array element via a loop which the flat analyzer cannot expand. Wire is correct per `model.GuildMember.Encode` (37 bytes = PaddedString(13)+6×WriteInt(4)) matching `GUILDMEMBER::Decode(DecodeBuffer(0x25=37))` verified byte-for-byte.
 
 `GuildMemberJoined.md` (verdict 🔍): `GuildMember` sub-struct embedded inline. Same sub-struct expansion gap — atlas calls `gm.Encode(l, ctx)(options)` which writes 37 bytes; IDA reads `GUILDMEMBER::Decode` (37 bytes). Wire is ✅.
+
+## Cross-version — social domain (JMS v185)
+
+Results of the JMS v185 cross-version pass (Task 10, task-066). Social-domain FNames were
+looked up in JMS v185 IDA (base 0x400000, `MapleStory_dump_SCY.exe`, md5 af6652ff9b7c549341f35e3569d7564a).
+
+**Coverage:** 32 present / 10 absent = 76% of social FNames found in JMS v185 (above 60% threshold).
+
+### Real wire bug fixed (task-066 Task 10)
+
+| Atlas struct | Bug | Fix commit |
+|---|---|---|
+| `party/member_data.go` `WritePartyData` / `ReadPartyData` | `v95plus` gate incorrectly included `|| t.Region() == "JMS"`, causing JMS clients to receive the large 378-byte PARTYDATA format. IDA evidence: JMS v185 `CWvsContext::OnPartyResult@0xb297e7` `qmemcpy(v120,...,0x12Au=298)` — JMS uses the 298-byte (GMS v83-equivalent) PARTYDATA. Fix: remove `|| t.Region() == "JMS"` from both `WritePartyData` and `ReadPartyData`. | `ab8511fee` |
+
+4-variant test sweep: GMS v28/v83/v87 (300/312/318 bytes) unchanged; GMS v95 (383/392/398 bytes) unchanged; JMS v185 now 303/312/318 bytes (matching small PARTYDATA).
+
+### Absent FNames in JMS v185 — out-of-scope deferrals
+
+| FName | Atlas struct(s) | Reason absent | Status |
+|---|---|---|---|
+| `CUIGuildBBS::SendLoadListRequest` | `GuildBBSListThreads` | BBS feature entirely absent from JMS v185 | Out of scope |
+| `CUIGuildBBS::SendViewEntryRequest` | `GuildBBSDisplayThread` | BBS feature entirely absent from JMS v185 | Out of scope |
+| `CUIGuildBBS::OnCommentDelete` | `GuildBBSDeleteReply` | BBS feature entirely absent from JMS v185 | Out of scope |
+| `CUIGuildBBS::OnRegister` | `GuildBBSCreateOrEditThread` | BBS feature entirely absent from JMS v185 | Out of scope |
+| `CUIGuildBBS::OnComment` | `GuildBBSReplyThread` | BBS feature entirely absent from JMS v185 | Out of scope |
+| `CUIGuildBBS::OnDelete` | `GuildBBSDeleteThread` | BBS feature entirely absent from JMS v185 | Out of scope |
+| `CWvsContext::OnGuildBBSPacket` (clientbound BBS) | `GuildBBSThread`, `GuildBBSThreadList` | BBS clientbound handler absent from JMS v185 | Out of scope |
+| `CWvsContext::SendSetGuildTitleNames` | `GuildSetTitleNames` | JMS v185 binary has no `SendSetGuildTitleNames` symbol | Out of scope (JMS-specific feature difference) |
+| `CField::SendSetGuildEmblemMsg` | `GuildSetEmblem` | Absent in JMS v185 binary | Out of scope |
+
+### JMS v185 gate confirmations (no change needed)
+
+| FName | Gate in atlas | JMS v185 verdict |
+|---|---|---|
+| `CWvsContext::OnPartyResult#Invite@0xb297e7` | `v84plus := (GMS>83 \|\| JMS)` in `invite.go` | Correct — JMS reads jobId+level+autoJoin (same as GMS v84+) |
+| `CWvsContext::OnGuildResult#Invite@0xb297e7` | `v84plus := (GMS>83 \|\| JMS)` in `operation.go` | Correct — JMS reads unknown+skillId after inviterName (same as GMS v84+) |
+| `party/member_data.go` PARTYDATA `v95plus` | `v95plus := GMS>=95` (after fix) | Correct — JMS uses 298-byte PARTYDATA (same as GMS v83) |
+
+### Hard-cap gate check (Task 10, social domain)
+
+After Task 10 changes, no encoder/decoder in the social domain contains more than **2 sequential** (never nested) region/version guards. The fixed `member_data.go` now has a single flat `v95plus` variable used in two sequential positions (portal loop + PQ reward block). Hard cap not triggered.
+
+### Verdict summary — social domain JMS v185
+
+| Domain | Packets audited | ✅ | ❌ | Notes |
+|---|---|---|---|---|
+| Note | 3 | 3 | 0 | All match JMS wire |
+| Buddy | 6 | 2 | 4 | ❌ are tool-limitation FPs (op-byte prefix, same as GMS) |
+| Messenger | 9 | 6 | 3 | ❌ are tool-limitation FPs |
+| Chat | 2 | 2 | 0 | ChatGeneral + ChatGeneralChat match |
+| Party | 15 | 4 | 11 | 1 real bug fixed (PARTYDATA gate); remaining ❌ are tool-limitation FPs |
+| Guild | 30 | 15 | 15 | BBS ❌ = JMS feature absence; remaining ❌ are tool-limitation FPs carried from GMS v95 audit |
+
+**Total real bugs fixed in this pass:** 1 (`member_data.go` PARTYDATA gate — `ab8511fee`).
+
+**Total analyzer FPs:** same pattern as GMS (op-byte prefix, sub-struct expansion gap, DecodeSub unknown primitive). No new FP categories introduced by JMS v185 pass.

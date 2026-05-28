@@ -315,6 +315,64 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
 	case "CPersonalShopDlg::OnRefresh#UpdateMerchant":
 		return []candidate{{name: "InteractionUpdateMerchant", dir: csvpkg.DirClientbound, pathHint: "interaction/"}}
+	// --- cash sub-domain (task-067, Phase 1d) ---
+	// Clientbound: QueryResult routes through CCashShop::OnQueryCashResult (opcode 0x17F),
+	// a SEPARATE dispatcher from OnCashItemResult.
+	case "CCashShop::OnQueryCashResult":
+		return []candidate{{name: "QueryResult", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	// Clientbound CCashShop::OnCashItemResult is a mode-dispatched reader (op-bytes 0x54-0xBC);
+	// synthetic #-suffix FNames map each CashShopOperation result struct to its OnCashItemRes* sub-handler.
+	case "CCashShop::OnCashItemResult#CashShopInventory":
+		return []candidate{{name: "CashShopInventory", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	case "CCashShop::OnCashItemResult#WishList":
+		return []candidate{{name: "WishList", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	case "CCashShop::OnCashItemResult#InventoryCapacitySuccess":
+		return []candidate{{name: "InventoryCapacitySuccess", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	case "CCashShop::OnCashItemResult#InventoryCapacityFailed":
+		return []candidate{{name: "InventoryCapacityFailed", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	case "CCashShop::OnCashItemResult#OperationError":
+		return []candidate{{name: "OperationError", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	case "CCashShop::OnCashItemResult#CashShopPurchaseSuccess":
+		return []candidate{{name: "CashShopPurchaseSuccess", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	case "CCashShop::OnCashItemResult#CashItemMovedToCashInventory":
+		return []candidate{{name: "CashItemMovedToCashInventory", dir: csvpkg.DirClientbound, pathHint: "cash/"}}
+	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
+	case "CCashShop::TrySendQueryCashRequest":
+		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnBuy":
+		return []candidate{{name: "ShopOperationBuy", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnBuyNormal":
+		return []candidate{{name: "ShopOperationBuyNormal", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnBuyPackage":
+		return []candidate{{name: "ShopOperationBuyPackage", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnBuyCouple":
+		return []candidate{{name: "ShopOperationBuyCouple", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnBuyFriendship":
+		return []candidate{{name: "ShopOperationBuyFriendship", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::SendBuyNameChangeItemPacket":
+		return []candidate{{name: "ShopOperationBuyNameChange", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::SendBuyTransferWorldItemPacket":
+		return []candidate{{name: "ShopOperationBuyWorldTransfer", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnEnableEquipSlotExt":
+		return []candidate{{name: "ShopOperationEnableEquipSlot", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::RequestCashPurchaseRecord":
+		return []candidate{{name: "ShopOperationGetPurchaseRecord", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::SendGiftsPacket":
+		return []candidate{{name: "ShopOperationGift", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnIncCharacterSlotCount":
+		return []candidate{{name: "ShopOperationIncreaseCharacterSlot", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnBuySlotInc":
+		return []candidate{{name: "ShopOperationIncreaseInventory", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnIncTrunkCount":
+		return []candidate{{name: "ShopOperationIncreaseStorage", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnMoveCashItemLtoS":
+		return []candidate{{name: "ShopOperationMoveFromCashInventory", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnMoveCashItemStoL":
+		return []candidate{{name: "ShopOperationMoveToCashInventory", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnRebateLockerItem":
+		return []candidate{{name: "ShopOperationRebateLockerItem", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
+	case "CCashShop::OnSetWish":
+		return []candidate{{name: "ShopOperationSetWishlist", dir: csvpkg.DirServerbound, pathHint: "cash/"}}
 	}
 	return nil
 }

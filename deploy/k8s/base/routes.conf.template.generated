@@ -192,7 +192,14 @@ location ~ ^/api/configurations(/.*)?$ {
 # 1. Character render (most specific; must match before the generic assets block).
 # Hostname is held in $u so nginx defers DNS resolution to request time
 # (matches the convention in the rest of this file).
-location ~ "^/api/assets/(?<tenant>[^/]+)/(?<region>[^/]+)/(?<v>[0-9]+\.[0-9]+)/character/(?<hash>[a-f0-9]{32,64})\.png$" {
+# The loadout hash is the first 16 hex chars of SHA-256(canonical) — both the
+# UI producer (services/atlas-ui/.../characterRender.service.ts loadoutHash:
+# sha256(...).slice(0,16)) and the Go consumer (services/atlas-renders/.../
+# character/hash.go LoadoutHash: hex(...)[:16]) emit exactly 16 chars. The
+# quantifier MUST be {16}; a wider gate ({32,64}, as task-071 #544 shipped)
+# never matches a real hash, so requests fall through to the generic-asset
+# block below and 404 against MinIO instead of reaching atlas-renders.
+location ~ "^/api/assets/(?<tenant>[^/]+)/(?<region>[^/]+)/(?<v>[0-9]+\.[0-9]+)/character/(?<hash>[a-f0-9]{16})\.png$" {
   set $major "";
   set $minor "";
   if ($v ~ ^(?<maj>[0-9]+)\.(?<min>[0-9]+)$) {

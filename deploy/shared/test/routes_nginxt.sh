@@ -101,6 +101,24 @@ if fail:
 print("routes.conf atlas-renders tenant header check: OK")
 PY
 
+# Character-render hash-length guard: the loadout hash is the first 16 hex
+# chars of SHA-256(canonical). Both the UI producer (characterRender.service.ts
+# loadoutHash → .slice(0,16)) and the Go consumer (renders/character/hash.go
+# LoadoutHash → [:16]) emit exactly 16 chars. The character-render location's
+# hash capture MUST accept 16 chars; the original {32,64} quantifier (task-071
+# #544) never matched a real hash, so every character image request fell
+# through to the generic-asset block and 404'd against MinIO instead of
+# reaching atlas-renders. Guard the exact-16 contract here.
+if ! grep -nE 'character/\(\?<hash>\[a-f0-9\]\{16\}\)' "$ROUTES" >/dev/null; then
+  echo "error: character-render location must capture a 16-char hex hash" \
+       "(/character/(?<hash>[a-f0-9]{16})). The loadout hash is" \
+       "SHA-256(canonical)[:16]; a wider/narrower quantifier routes character" \
+       "images to MinIO (404) instead of atlas-renders." >&2
+  grep -nE 'character/\(\?<hash>' "$ROUTES" >&2 || true
+  exit 1
+fi
+echo "routes.conf character-render hash-length check: OK"
+
 # F18: confirm the generated k8s routes file is in sync with the canonical
 # shared source. If shared/routes.conf changes, the committer MUST also run
 # tools/gen-routes.sh and commit the resulting routes.conf.template.generated.

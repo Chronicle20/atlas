@@ -260,6 +260,50 @@ func TestRegistry_Clear(t *testing.T) {
 	}
 }
 
+func TestRegistry_ClearByPrefix(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "monster", func(k string) string { return k })
+
+	// Put keys with three different prefixes.
+	for _, k := range []string{"100:1", "100:2", "200:1", "1000:9"} {
+		if err := r.Put(ctx, k, "v"); err != nil {
+			t.Fatalf("Put %s: %v", k, err)
+		}
+	}
+
+	// ClearByPrefix("100:") should delete "100:1" and "100:2" but NOT "200:1" or "1000:9".
+	deleted, err := r.ClearByPrefix(ctx, "100:")
+	if err != nil {
+		t.Fatalf("ClearByPrefix: %v", err)
+	}
+	if deleted != 2 {
+		t.Fatalf("expected 2 deleted, got %d", deleted)
+	}
+
+	// "100:1" and "100:2" must be gone.
+	for _, k := range []string{"100:1", "100:2"} {
+		if exists, _ := r.Exists(ctx, k); exists {
+			t.Fatalf("key %q should have been deleted by ClearByPrefix", k)
+		}
+	}
+
+	// "200:1" must still exist.
+	if exists, _ := r.Exists(ctx, "200:1"); !exists {
+		t.Fatal("key \"200:1\" should NOT have been deleted by ClearByPrefix(\"100:\")")
+	}
+
+	// "1000:9" must still exist — trailing-delimiter avoids matching a longer prefix.
+	if exists, _ := r.Exists(ctx, "1000:9"); !exists {
+		t.Fatal("key \"1000:9\" should NOT have been deleted by ClearByPrefix(\"100:\") — trailing delimiter prevents cross-match")
+	}
+}
+
 // --- TenantRegistry tests ---
 
 func TestTenantRegistry_PutAndGet(t *testing.T) {

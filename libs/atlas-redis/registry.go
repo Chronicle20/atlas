@@ -196,6 +196,45 @@ func (r *Registry[K, V]) Clear(ctx context.Context) (int, error) {
 	return deleted, firstErr
 }
 
+// ClearByPrefix deletes every key in this namespace whose entity-key begins
+// with keyPrefix. Scan pattern = namespacedKey(namespace, keyPrefix) + "*"
+// (no extra separator). Pipelined DEL. Returns count deleted.
+func (r *Registry[K, V]) ClearByPrefix(ctx context.Context, keyPrefix string) (int, error) {
+	pattern := namespacedKey(r.namespace, keyPrefix) + "*"
+	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := r.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = r.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}
+
 func (r *Registry[K, V]) Client() *goredis.Client {
 	return r.client
 }

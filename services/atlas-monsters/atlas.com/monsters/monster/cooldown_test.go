@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -18,7 +19,9 @@ func newTestCooldownRegistry(t *testing.T) (*cooldownRegistry, *miniredis.Minire
 		t.Fatalf("miniredis: %v", err)
 	}
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
-	return &cooldownRegistry{client: rc}, mr
+	return &cooldownRegistry{
+		reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s }),
+	}, mr
 }
 
 func newTestTenant(t *testing.T) tenant.Model {
@@ -73,10 +76,10 @@ func TestCooldown_RemainingPastTimestampZero(t *testing.T) {
 	ctx := context.Background()
 	tm := newTestTenant(t)
 
-	// Simulate a stale legacy value or past-expiry value by writing directly.
-	key := cooldownKey(tm, 100, byte(42))
-	if err := r.client.Set(ctx, key, "1", 5*time.Second).Err(); err != nil {
-		t.Fatalf("set: %v", err)
+	// Simulate a stale/past-expiry value by storing expiryMs=1 (1ms epoch,
+	// which is always in the past). Remaining should return 0.
+	if err := r.reg.PutWithTTL(ctx, cooldownSuffix(tm, 100, byte(42)), int64(1), 5*time.Second); err != nil {
+		t.Fatalf("PutWithTTL: %v", err)
 	}
 
 	if rem := r.Remaining(ctx, tm, 100, byte(42)); rem != 0 {
@@ -100,5 +103,44 @@ func TestCooldown_ClearAll(t *testing.T) {
 
 	if r.IsOnCooldown(ctx, tm, 100, byte(1)) || r.IsOnCooldown(ctx, tm, 100, byte(2)) {
 		t.Fatalf("expected all cleared")
+	}
+}
+
+func TestCooldown_ClearDoesNotAffectNumericPrefixMonster(t *testing.T) {
+	r, mr := newTestCooldownRegistry(t)
+	defer mr.Close()
+	ctx := context.Background()
+	tm := newTestTenant(t)
+
+	// monsterId 100 and 1000: clearing 100 must NOT clear 1000.
+	r.SetCooldown(ctx, tm, 100, byte(1), time.Minute)
+	r.SetCooldown(ctx, tm, 1000, byte(1), time.Minute)
+
+	r.ClearCooldowns(ctx, tm, 100)
+
+	if r.IsOnCooldown(ctx, tm, 100, byte(1)) {
+		t.Fatalf("monsterId 100 cooldown should be cleared")
+	}
+	if !r.IsOnCooldown(ctx, tm, 1000, byte(1)) {
+		t.Fatalf("monsterId 1000 cooldown must NOT be cleared when clearing monsterId 100")
+	}
+}
+
+func TestCooldown_ExpiresAfterTTL(t *testing.T) {
+	r, mr := newTestCooldownRegistry(t)
+	defer mr.Close()
+	ctx := context.Background()
+	tm := newTestTenant(t)
+
+	r.SetCooldown(ctx, tm, 100, byte(5), 500*time.Millisecond)
+	if !r.IsOnCooldown(ctx, tm, 100, byte(5)) {
+		t.Fatalf("expected on cooldown before TTL expires")
+	}
+
+	// Use miniredis FastForward to advance time past TTL.
+	mr.FastForward(1 * time.Second)
+
+	if r.IsOnCooldown(ctx, tm, 100, byte(5)) {
+		t.Fatalf("expected cooldown expired after TTL")
 	}
 }

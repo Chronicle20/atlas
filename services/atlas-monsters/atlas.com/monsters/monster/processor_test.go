@@ -17,6 +17,7 @@ import (
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -1491,7 +1492,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1536,7 +1537,7 @@ func TestUseBasicAttack_OnCooldown_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1573,7 +1574,7 @@ func TestUseBasicAttack_InsufficientMp_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1610,7 +1611,7 @@ func TestUseBasicAttack_NoAttackInfo_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1644,7 +1645,7 @@ func TestUseBasicAttack_ZeroConMpAndZeroAttackAfter_NoOp(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1681,7 +1682,7 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup

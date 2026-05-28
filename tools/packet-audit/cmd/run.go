@@ -218,6 +218,34 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationMeso", dir: csvpkg.DirServerbound, pathHint: "storage/"}}
 	case "CTrunkDlg::OnPacket#Operation":
 		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pathHint: "storage/"}}
+	// --- inventory sub-domain (task-067) ---
+	// Clientbound CWvsContext::OnInventoryOperation is a mode-dispatched reader;
+	// use synthetic #-suffix FNames (one per atlas wire shape) to disambiguate.
+	case "CWvsContext::OnInventoryOperation#QuantityUpdate":
+		return []candidate{{name: "QuantityUpdate", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	case "CWvsContext::OnInventoryOperation#ChangeMove":
+		return []candidate{{name: "ChangeMove", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	case "CWvsContext::OnInventoryOperation#Remove":
+		return []candidate{{name: "Remove", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	case "CWvsContext::OnInventoryOperation#Add":
+		return []candidate{{name: "Add", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	case "CWvsContext::OnInventoryOperation#ChangeBatch":
+		return []candidate{{name: "ChangeBatch", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	case "CWvsContext::OnGatherItemResult":
+		return []candidate{{name: "CompartmentMerge", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	case "CWvsContext::OnSortItemResult":
+		return []candidate{{name: "CompartmentSort", dir: csvpkg.DirClientbound, pathHint: "inventory/"}}
+	// Serverbound CWvsContext senders.
+	case "CWvsContext::SendChangeSlotPositionRequest":
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
+	case "CWvsContext::SendGatherItemRequest":
+		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
+	case "CWvsContext::SendSortItemRequest":
+		return []candidate{{name: "CompartmentSortRequest", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
+	case "CWvsContext::SendStatChangeItemUseRequest":
+		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
+	case "CWvsContext::SendUpgradeItemUseRequest":
+		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pathHint: "inventory/"}}
 	}
 	return nil
 }

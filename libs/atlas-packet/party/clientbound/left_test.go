@@ -10,8 +10,8 @@ import (
 // TestLeftByteOutput verifies the byte output of Left across all tenant variants.
 // Wire layout: mode(1)+partyId(4)+targetId(4)+const1(1)+forced(1)+targetName(2+len)+WritePartyData(?).
 // targetName="Player1" → 2+7=9. Fixed prefix: 1+4+4+1+1+9 = 20. Total:
-//   v83: 20+298 = 318 bytes
-//   v95: 20+378 = 398 bytes
+//   v83/JMS: 20+298 = 318 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
+//   v95 (GMS only): 20+378 = 398 bytes
 func TestLeftByteOutput(t *testing.T) {
 	members := []party.PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},
@@ -25,7 +25,7 @@ func TestLeftByteOutput(t *testing.T) {
 		{pt.Variants[1], 318}, // GMS v83  — v83 PARTYDATA
 		{pt.Variants[2], 318}, // GMS v87  — v83 PARTYDATA
 		{pt.Variants[3], 398}, // GMS v95  — v95 PARTYDATA
-		{pt.Variants[4], 398}, // JMS v185 — v95 PARTYDATA
+		{pt.Variants[4], 318}, // JMS v185 — small PARTYDATA (298 bytes); IDA @0xb297e7 qmemcpy 0x12A
 	}
 	for _, tc := range cases {
 		t.Run(tc.variant.Name, func(t *testing.T) {

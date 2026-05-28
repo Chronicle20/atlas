@@ -58,7 +58,7 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 		}
 		w.WriteInt(uint32(m.channelId))
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			w.WriteInt(0) // m_dwOldDriverID: GMS reads Decode4 after channelId (v95+); v83/v87 omit it (verified CStage::OnSetField v83 @0x776020)
+			w.WriteInt(0) // m_dwOldDriverID: GMS reads Decode4 after channelId (v95+); v83/v87 omit it (verified CStage::OnSetField v83 @0x776020 and v87 @0x7c429c — no Decode4 between channelId and sNotifierMessage in either)
 		}
 		if t.Region() == "JMS" {
 			w.WriteByte(0)
@@ -73,7 +73,8 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 		w.WriteInt(uint32(m.mapId))
 		w.WriteByte(m.portalId)
 		// nHP: GMS v95 CStage::OnSetField @0x71a0a0 reads Decode4 (4 bytes); v83
-		// CStage::OnSetField @0x776020 reads Decode2 (2 bytes). Gate width by version.
+		// CStage::OnSetField @0x776020 and v87 @0x7c429c both read Decode2 (2 bytes).
+		// Width widened to Decode4 between v87 and v95. Gate width by version.
 		if (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS" {
 			w.WriteInt(uint32(m.hp))
 		} else {
@@ -109,7 +110,7 @@ func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *re
 		}
 		m.mapId = _map.Id(r.ReadUint32())
 		m.portalId = r.ReadByte()
-		// nHP: 4 bytes for GMS v95+/JMS, 2 bytes for GMS v83/v87 (see Encode)
+		// nHP: 4 bytes for GMS v95+/JMS, 2 bytes for GMS v83/v87 (see Encode; v83 @0x776020, v87 @0x7c429c both Decode2)
 		if (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS" {
 			m.hp = uint16(r.ReadUint32())
 		} else {

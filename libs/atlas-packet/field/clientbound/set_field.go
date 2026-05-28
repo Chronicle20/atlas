@@ -48,7 +48,7 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 		}
 		w.WriteInt(uint32(m.channelId))
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			w.WriteInt(0) // m_dwOldDriverID: GMS reads Decode4 after channelId (v95+); v83/v87 omit it (verified CStage::OnSetField v83 @0x776020 — no read between channelId and sNotifierMessage)
+			w.WriteInt(0) // m_dwOldDriverID: GMS reads Decode4 after channelId (v95+); v83/v87 omit it (verified CStage::OnSetField v83 @0x776020 and v87 @0x7c429c — both read sNotifierMessage (Decode1) immediately after channelId, no Decode4 in between; field introduced between v87 and v95)
 		}
 		if t.Region() == "JMS" {
 			w.WriteByte(0)
@@ -94,7 +94,7 @@ func (m *SetField) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 		}
 		m.channelId = channel.Id(r.ReadUint32())
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			_ = r.ReadUint32() // m_dwOldDriverID (GMS v95+)
+			_ = r.ReadUint32() // m_dwOldDriverID (GMS v95+; v83 @0x776020 and v87 @0x7c429c omit it)
 		}
 		if t.Region() == "JMS" {
 			_ = r.ReadByte()

@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Tutorial advice portal - shows instruction on how to use portals",
+      "mapId": 0,
+      "portalId": "adviceMap",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "height": "5",
+                  "hint": "Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.",
+                  "width": "230"
+                },
+                "type": "show_hint"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "adviceMap",
+    "type": "portal-action"
+  }
+}

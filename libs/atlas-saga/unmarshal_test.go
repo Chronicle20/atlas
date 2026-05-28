@@ -218,3 +218,56 @@ func TestCharacterCreatePayload_GmAndMeso_RoundTrip(t *testing.T) {
 		t.Fatalf("expected gm=0 meso=0 from legacy payload")
 	}
 }
+
+func TestUnmarshalAwaitInventoryCreatedStep(t *testing.T) {
+	raw := `{
+		"stepId": "await_inventory_created-1",
+		"status": "pending",
+		"action": "await_inventory_created",
+		"payload": {
+			"characterId": 12345
+		},
+		"createdAt": "2026-05-15T00:00:00Z",
+		"updatedAt": "2026-05-15T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != AwaitInventoryCreated {
+		t.Fatalf("expected action AwaitInventoryCreated, got %q", step.Action)
+	}
+	p, ok := step.Payload.(AwaitInventoryCreatedPayload)
+	if !ok {
+		t.Fatalf("expected AwaitInventoryCreatedPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 12345 {
+		t.Errorf("characterId: expected 12345, got %d", p.CharacterId)
+	}
+}
+
+func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
+	// Mirrors the sentinel-payload shape that character-factory emits before
+	// orchestrator result-forwarding substitutes the real characterId.
+	raw := `{
+		"stepId": "await_inventory_created-1",
+		"status": "pending",
+		"action": "await_inventory_created",
+		"payload": {"characterId": 0},
+		"createdAt": "2026-05-15T00:00:00Z",
+		"updatedAt": "2026-05-15T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	p, ok := step.Payload.(AwaitInventoryCreatedPayload)
+	if !ok {
+		t.Fatalf("expected AwaitInventoryCreatedPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 0 {
+		t.Errorf("expected sentinel characterId=0, got %d", p.CharacterId)
+	}
+}

@@ -12,12 +12,19 @@ spec:
       restartPolicy: Never
       containers:
         - name: pihole-register
-          image: curlimages/curl:8.10.1
+          # alpine + apk add at startup: need curl AND jq to parse the v6 auth
+          # session response. curlimages/curl is too minimal for jq.
+          image: alpine:3.20
           command: ["/bin/sh", "-c"]
           args:
             - |
               set -eu
+              apk add --no-cache --quiet curl jq >/dev/null
               host="${PR_NUMBER}.atlas.home"
+              # The DNS-host entry in Pi-hole v6 is the literal "IP hostname" string,
+              # URL-encoded (space → %20) for the path-based add/delete endpoints.
+              entry="${TRAEFIK_LB_IP} ${host}"
+              encoded_entry=$(printf '%s' "$entry" | sed 's/ /%20/g')
               ok=0
               for i in 1 2; do
                   base_var="PIHOLE_API_BASE_${i}"
@@ -25,11 +32,38 @@ spec:
                   base=$(eval echo \$${base_var})
                   token=$(eval echo \$${token_var})
                   [ -z "$base" ] && continue
-                  if curl -fsS -X POST \
-                          -H "X-Pi-Auth: $token" \
-                          -H "Content-Type: application/json" \
-                          -d "{\"name\":\"$host\",\"address\":\"$TRAEFIK_LB_IP\"}" \
-                          "$base/api/config/dns/hosts"; then
+                  # -k: PIHOLE_API_BASE_* points at internal Pi-hole admin URLs
+                  # behind a self-signed (homelab) cert that the default CA bundle
+                  # does not trust. Acceptable for homelab use — the call only
+                  # happens cluster-internally to add a DNS A-record.
+                  #
+                  # Pi-hole v6 uses session-based auth: POST /api/auth with the
+                  # webpassword / app-password returns a session.sid; subsequent
+                  # requests pass it via the X-FTL-SID header. The pre-v6 query-
+                  # string-token and X-Pi-Auth header styles are no longer
+                  # accepted (v5 → v6 breaking change).
+                  sid=$(curl -k -fsS -X POST "$base/api/auth" \
+                      -H "Content-Type: application/json" \
+                      -d "{\"password\":\"$token\"}" 2>/dev/null \
+                      | jq -r '.session.sid // empty')
+                  if [ -z "$sid" ]; then
+                      echo "Pi-hole $i: auth failed, skipping" >&2
+                      continue
+                  fi
+                  # PUT /api/config/dns/hosts/<encoded entry> on a duplicate
+                  # entry returns 4xx with an "already exists"-class error;
+                  # `-f` would treat that as failure. Check existence first
+                  # (idempotent: same Job re-running after a successful add).
+                  if curl -k -fsS -H "X-FTL-SID: $sid" \
+                          "$base/api/config/dns/hosts" 2>/dev/null \
+                          | jq -e --arg e "$entry" '.config.dns.hosts | any(. == $e)' >/dev/null; then
+                      echo "Pi-hole $i: entry already exists, skipping"
+                      ok=$((ok+1))
+                      continue
+                  fi
+                  if curl -k -fsS -X PUT \
+                          -H "X-FTL-SID: $sid" \
+                          "$base/api/config/dns/hosts/$encoded_entry"; then
                       ok=$((ok+1))
                   fi
               done

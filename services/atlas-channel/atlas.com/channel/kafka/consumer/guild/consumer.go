@@ -5,6 +5,7 @@ import (
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	guild2 "atlas-channel/kafka/message/guild"
+	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/party"
 	"atlas-channel/server"
@@ -34,56 +35,85 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(guild2.EnvCommandTopic)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestName(sc, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestName(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestEmblem(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestEmblem(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				t, _ = topic.EnvProvider(l)(guild2.EnvStatusEventTopic)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp)))); err != nil {
-					return err
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDisbanded(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleDisbanded(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestAgreement(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestAgreement(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEmblemUpdated(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleEmblemUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberStatusUpdated(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberStatusUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberTitleUpdated(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberTitleUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleNoticeUpdated(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleNoticeUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCapacityUpdated(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCapacityUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberLeft(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberLeft(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberJoined(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleMemberJoined(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTitlesUpdated(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleTitlesUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleError(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleError(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}
@@ -328,7 +358,7 @@ func announceCapacityChanged(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, capacity uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, capacity uint32) model.Operator[session.Model] {
 			return func(guildId uint32, capacity uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildCapacityChangedBody(guildId, capacity))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildCapacityChangedBody(guildId, byte(capacity)))
 			}
 		}
 	}

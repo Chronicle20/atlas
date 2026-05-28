@@ -1,0 +1,65 @@
+{
+  "WriterName": "PartyInvite",
+  "IDAName": "CWvsContext::OnPartyResult#Invite",
+  "Address": "0xa10b5f",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/party/clientbound/invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "v7 = partyId",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sApplierName = inviter character name",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSkillID = inviter job id",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "sName = inviter level",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sMsg = auto-join flag (0=show dialog, 1=auto-accept)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

@@ -1,0 +1,38 @@
+{
+  "WriterName": "CharacterExpression",
+  "IDAName": "CUser::OnEmotion",
+  "Address": "0x9f636b",
+  "Variant": "JMS/v185",
+  "BranchDepth": 3,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/expression.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterId (consumed by CUserPool::OnUserRemotePacket dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nEmotion (expression/emote ID)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "tDuration (display duration in ms — JMS has duration but NOT byItemOption)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

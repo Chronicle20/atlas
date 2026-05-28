@@ -52,3 +52,10 @@ func (r *Registry) GetAll() []Model {
 	}
 	return values
 }
+
+// Unregister removes id from the process-wide tenant registry. Mirrors
+// the existing Registry.Remove method as a free function so listener
+// evictors can drop a tenant without holding a Registry pointer.
+func Unregister(id uuid.UUID) {
+	getRegistry().Remove(id)
+}

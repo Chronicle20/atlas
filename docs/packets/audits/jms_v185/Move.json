@@ -1,0 +1,56 @@
+{
+  "WriterName": "Move",
+  "IDAName": "CVecCtrlUser::EndUpdateActive",
+  "Address": "0xaaa076",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/move.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "detectFlag (v26 = a1[151])",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "fieldKey (CField+328, only if detectFlag)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "crc (CField+756, only if detectFlag)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "CMovePath::Flush — movement data (only if detectFlag)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

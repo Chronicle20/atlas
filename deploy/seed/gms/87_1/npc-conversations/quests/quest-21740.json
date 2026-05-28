@@ -1,0 +1,127 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "end",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "lilinTeachesSkill",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "NPC",
+              "text": "Oh, hi #h0#! You won't believe what I just uncovered. It's one of your lost skills... What, the seal of Orbis got stolen by the Black Wings? Oh my..."
+            },
+            "id": "end",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "end",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "completeQuestAndTeachSkill",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "NPC",
+              "text": "For now, let me teach you the #bCombo Smash#k, with it you will be able to deal massive amount of damage to many monsters at once. We will need to use it if we want to stand a chance against the Black Wings now, so don't forget it!"
+            },
+            "id": "lilinTeachesSkill",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21100004"
+                  },
+                  "type": "update_skill"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestAndTeachSkill",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21740,
+      "questName": "Aran Combo Smash Quest",
+      "startStateMachine": {
+        "startState": "start",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "NPC",
+              "text": "The Orbis seal has been stolen by the Black Wings? Hmm, that has gone awry. Go tell #bLilin#k about this, she must have something in mind on this situation."
+            },
+            "id": "start",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21740",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "WriterName": "CharacterAppearanceUpdate",
+  "IDAName": "CUserRemote::OnAvatarModified",
+  "Address": "0xa57221",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/appearance_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "v3 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "AvatarLook::Decode (if bit0)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nSpeed (if bit1)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nCarryItemEffect (if bit2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bCouple count / flag",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "couple count (if bCouple \u003e 0)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "couple item SN (16 bytes per entry)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "pair characterId (per entry)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bFriendship count / flag",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "friendship count (if \u003e 0)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "friendship item SN (16 bytes per entry)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "friendship pair characterId (per entry)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bMarriage flag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwMarriageCharacterID (if bMarriage)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwMarriagePairCharacterID (if bMarriage)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nWeddingRingID (if bMarriage)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

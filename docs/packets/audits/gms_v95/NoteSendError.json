@@ -1,0 +1,29 @@
+{
+  "WriterName": "NoteSendError",
+  "IDAName": "CWvsContext::OnMemoResult#SendError",
+  "Address": "0x9f9da0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/note/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=5, SEND_ERROR)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "errorCode — 0=RECEIVER_ONLINE, 1=RECEIVER_UNKNOWN, 2=RECEIVER_INBOX_FULL",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

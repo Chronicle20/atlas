@@ -8,6 +8,7 @@ import (
 	"atlas-character-factory/configuration/tenant/characters/preset"
 	"atlas-character-factory/data"
 	dmock "atlas-character-factory/data/mock"
+	"atlas-character-factory/saga"
 	"context"
 	"errors"
 	"testing"
@@ -160,6 +161,46 @@ func TestCreateFromPreset_SkillNotFoundInResponse(t *testing.T) {
 	}
 }
 
+func TestBuildPresetCharacterCreationSaga_HasAwaitInventoryCreatedStep(t *testing.T) {
+	transactionId := uuid.New()
+	in := PresetCreateRestModel{AccountId: 1, WorldId: 0, Name: "Test", PresetId: uuid.New().String()}
+	pr := preset.RestModel{
+		Attributes: preset.Attributes{
+			Stats:     preset.StatBlock{Hp: 50, Mp: 5},
+			MapId:     100000000,
+			Inventory: []preset.InventoryEntry{{TemplateId: 2010000, Quantity: 1}},
+		},
+	}
+
+	sg := buildPresetCharacterCreationSaga(transactionId, in, pr, map[uint32]data.SkillInfo{})
+
+	createIdx, awaitIdx, awardIdx := -1, -1, -1
+	for i, st := range sg.Steps {
+		switch st.Action {
+		case saga.CreateCharacter:
+			createIdx = i
+		case saga.AwaitInventoryCreated:
+			awaitIdx = i
+		case saga.AwardAsset:
+			if awardIdx == -1 {
+				awardIdx = i
+			}
+		}
+	}
+	if createIdx == -1 {
+		t.Fatalf("expected CreateCharacter step")
+	}
+	if awaitIdx == -1 {
+		t.Fatalf("expected AwaitInventoryCreated step")
+	}
+	if awardIdx == -1 {
+		t.Fatalf("expected at least one AwardAsset step")
+	}
+	if !(createIdx < awaitIdx && awaitIdx < awardIdx) {
+		t.Fatalf("expected ordering CreateCharacter(%d) < AwaitInventoryCreated(%d) < AwardAsset(%d)", createIdx, awaitIdx, awardIdx)
+	}
+}
+
 // TestBuildPresetCharacterCreationSaga_StepShape tests the pure saga-building helper.
 func TestBuildPresetCharacterCreationSaga_StepShape(t *testing.T) {
 	pr := preset.RestModel{
@@ -190,8 +231,8 @@ func TestBuildPresetCharacterCreationSaga_StepShape(t *testing.T) {
 		skillsById,
 	)
 
-	// 1 create_character + 1 award_asset_0 + 2 create_and_equip_asset + 1 create_skill_0 = 5
-	const expectedSteps = 5
+	// 1 create_character + 1 await_inventory_created + 1 award_asset_0 + 2 create_and_equip_asset + 1 create_skill_0 = 6
+	const expectedSteps = 6
 	if len(sg.Steps) != expectedSteps {
 		t.Fatalf("expected %d steps, got %d", expectedSteps, len(sg.Steps))
 	}
@@ -203,6 +244,7 @@ func TestBuildPresetCharacterCreationSaga_StepShape(t *testing.T) {
 	// Verify step ordering
 	expectedIds := []string{
 		"create_character",
+		"await_inventory_created",
 		"award_asset_0",
 		"create_and_equip_asset_0",
 		"create_and_equip_asset_1",

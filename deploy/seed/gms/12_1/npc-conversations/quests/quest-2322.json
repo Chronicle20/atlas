@@ -1,0 +1,181 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "observeEntrance",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuestEnd",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Hmmm I see... so they have completely shut off the entrance and everything."
+            },
+            "id": "observeEntrance",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "11000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionMessageEnd"
+                }
+              ]
+            },
+            "id": "completeQuestEnd",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Good job navigating through the area."
+            },
+            "id": "completionMessageEnd",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "npcId": 1300003,
+      "questId": 2322,
+      "questName": "Over the Castle Wall (2)",
+      "startStateMachine": {
+        "startState": "askInvestigate",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "giveDirections",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "Like I told you, just breaking the barrier cannot be a cause for celebration. That's because our castle for the Kingdom of Mushroom completely denies entry of anyone outside our kingdom, so it'll be hard for you to do that. Hmmm... to figure out a way to enter, can you...investigate the outer walls of the castle first?"
+            },
+            "id": "askInvestigate",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Really? Is there another way you can penetrate the castle? If you don't know of one, then just come see me."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Walk past the Mushroom Forest and when you reach the #bSplit Road of Choice#k, just walk towards the castle. Good luck."
+            },
+            "id": "giveDirections",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "11000"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionMessage"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Good job navigating through the area."
+            },
+            "id": "completionMessage",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "2322",
+    "type": "quest-conversation"
+  }
+}

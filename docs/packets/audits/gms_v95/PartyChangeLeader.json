@@ -1,0 +1,38 @@
+{
+  "WriterName": "PartyChangeLeader",
+  "IDAName": "CWvsContext::OnPartyResult#ChangeLeader",
+  "Address": "0xa1169e",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/party/clientbound/change_leader.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "v66 = newLeaderId — stored as dwPartyBossCharacterID",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "v67 = disconnected flag (0=normal transfer, 1=due to disconnect)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

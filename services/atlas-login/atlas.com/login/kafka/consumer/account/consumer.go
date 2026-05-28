@@ -4,6 +4,7 @@ import (
 	"atlas-login/account"
 	consumer2 "atlas-login/kafka/consumer"
 	account2 "atlas-login/kafka/message/account"
+	"atlas-login/listener"
 	"atlas-login/socket/writer"
 	"context"
 
@@ -24,15 +25,18 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, de
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+				var handles []listener.HandlerHandle
 				t, _ := topic.EnvProvider(l)(account2.EnvEventTopicAccountStatus)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(ten)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(ten))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}

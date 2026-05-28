@@ -1,0 +1,20 @@
+{
+  "WriterName": "PartyOperationJoin",
+  "IDAName": "CField::SendJoinPartyMsg#OperationJoin",
+  "Address": "0x534310",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/party/serverbound/operation_join.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "partyId — the party to join",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

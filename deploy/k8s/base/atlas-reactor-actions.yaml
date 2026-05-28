@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-reactor-actions
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-reactor-actions
     spec:
+      volumes: []
       containers:
       - name: reactor-actions
         image: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:
@@ -36,8 +40,6 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
-        - name: REACTOR_ACTIONS_DIR
-          value: "/scripts/reactors"
 ---
 apiVersion: v1
 kind: Service

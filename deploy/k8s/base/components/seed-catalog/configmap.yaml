@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seed-catalog-config
+data:
+  GITSYNC_REPO: "https://github.com/Chronicle20/atlas"
+  GITSYNC_REF: "main"
+  GITSYNC_ROOT: "/git"
+  # git-sync writes the worktree to <ROOT>/<hash-prefix>/ and a symlink
+  # <ROOT>/<LINK> -> <hash-prefix>. With LINK=catalog, the main container's
+  # mount at /var/run/seed-catalog sees a stable `catalog` symlink pointing
+  # at the latest checkout, regardless of which SHA git-sync resolved.
+  # SEED_CATALOG_ROOT (set in patch-mount.yaml) lands inside that symlink.
+  GITSYNC_LINK: "catalog"
+  GITSYNC_PERIOD: "60s"

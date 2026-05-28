@@ -14,8 +14,8 @@ import (
 )
 
 type Registry struct {
-	reg    *atlas.TenantRegistry[string, time.Time]
-	client *goredis.Client
+	reg     *atlas.TenantRegistry[string, time.Time]
+	tenants *atlas.Set
 }
 
 var registry *Registry
@@ -25,7 +25,8 @@ func InitRegistry(client *goredis.Client) {
 		reg: atlas.NewTenantRegistry[string, time.Time](client, "cooldown", func(k string) string {
 			return k
 		}),
-		client: client,
+		// "atlas:cooldown:_tenants" — byte-identical to the old hand-rolled key.
+		tenants: atlas.NewSet(client, "cooldown:_tenants"),
 	}
 }
 
@@ -33,10 +34,6 @@ func GetRegistry() *Registry { return registry }
 
 func compositeKey(characterId, skillId uint32) string {
 	return fmt.Sprintf("%d:%d", characterId, skillId)
-}
-
-func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
 }
 
 func (r *Registry) Apply(ctx context.Context, characterId uint32, skillId uint32, cooldown uint32) error {
@@ -47,8 +44,7 @@ func (r *Registry) Apply(ctx context.Context, characterId uint32, skillId uint32
 		return err
 	}
 	tb, _ := json.Marshal(&t)
-	r.client.SAdd(ctx, r.tenantSetKey(), tb)
-	return nil
+	return r.tenants.Add(ctx, string(tb))
 }
 
 func (r *Registry) Get(ctx context.Context, characterId uint32, skillId uint32) (time.Time, error) {
@@ -56,26 +52,15 @@ func (r *Registry) Get(ctx context.Context, characterId uint32, skillId uint32) 
 	return r.reg.Get(ctx, t, compositeKey(characterId, skillId))
 }
 
+// ClearAll removes all cooldown entries for the given character under the current tenant.
+// The prefix "<charId>:" (with trailing colon) is used so that e.g. charId 100
+// never accidentally matches charId 1000 or 1001 — a safer invariant than the old
+// raw "<charId>*" glob.
 func (r *Registry) ClearAll(ctx context.Context, characterId uint32) error {
 	t := tenant.MustFromContext(ctx)
 	charPrefix := strconv.FormatUint(uint64(characterId), 10) + ":"
-	pattern := fmt.Sprintf("%s:%s:%s:%s*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t), charPrefix)
-
-	var cursor uint64
-	for {
-		keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
-		if err != nil {
-			return err
-		}
-		if len(keys) > 0 {
-			r.client.Del(ctx, keys...)
-		}
-		cursor = next
-		if cursor == 0 {
-			break
-		}
-	}
-	return nil
+	_, err := r.reg.ClearByPrefix(ctx, t, charPrefix)
+	return err
 }
 
 func (r *Registry) Clear(ctx context.Context, characterId uint32, skillId uint32) error {
@@ -109,7 +94,7 @@ func (h CooldownHolder) SkillId() uint32 {
 func (r *Registry) GetAll(ctx context.Context) []CooldownHolder {
 	result := make([]CooldownHolder, 0)
 
-	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return result
 	}
@@ -120,59 +105,31 @@ func (r *Registry) GetAll(ctx context.Context) []CooldownHolder {
 			continue
 		}
 
-		pattern := fmt.Sprintf("%s:%s:%s:*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
-		prefix := fmt.Sprintf("%s:%s:%s:", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
-		var cursor uint64
-		for {
-			keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
-			if err != nil {
-				break
-			}
-			if len(keys) > 0 {
-				pipe := r.client.Pipeline()
-				cmds := make([]*goredis.StringCmd, len(keys))
-				for i, k := range keys {
-					cmds[i] = pipe.Get(ctx, k)
-				}
-				_, _ = pipe.Exec(ctx)
+		entries, err := r.reg.GetAllEntries(ctx, t)
+		if err != nil {
+			continue
+		}
 
-				for i, cmd := range cmds {
-					data, err := cmd.Bytes()
-					if err != nil {
-						continue
-					}
-					keySuffix := strings.TrimPrefix(keys[i], prefix)
-					if strings.HasPrefix(keySuffix, "_") {
-						continue
-					}
-					parts := strings.SplitN(keySuffix, ":", 2)
-					if len(parts) != 2 {
-						continue
-					}
-					charId, err := strconv.ParseUint(parts[0], 10, 32)
-					if err != nil {
-						continue
-					}
-					sId, err := strconv.ParseUint(parts[1], 10, 32)
-					if err != nil {
-						continue
-					}
-					var expiresAt time.Time
-					if err := json.Unmarshal(data, &expiresAt); err != nil {
-						continue
-					}
-					result = append(result, CooldownHolder{
-						tenant:            t,
-						characterId:       uint32(charId),
-						skillId:           uint32(sId),
-						cooldownExpiresAt: expiresAt,
-					})
-				}
+		for suffix, expiresAt := range entries {
+			// suffix = "<charId>:<skillId>"
+			parts := strings.SplitN(suffix, ":", 2)
+			if len(parts) != 2 {
+				continue
 			}
-			cursor = next
-			if cursor == 0 {
-				break
+			charId, err := strconv.ParseUint(parts[0], 10, 32)
+			if err != nil {
+				continue
 			}
+			sId, err := strconv.ParseUint(parts[1], 10, 32)
+			if err != nil {
+				continue
+			}
+			result = append(result, CooldownHolder{
+				tenant:            t,
+				characterId:       uint32(charId),
+				skillId:           uint32(sId),
+				cooldownExpiresAt: expiresAt,
+			})
 		}
 	}
 	return result

@@ -1,0 +1,29 @@
+{
+  "WriterName": "PetCashFoodResult",
+  "IDAName": "CWvsContext::OnCashPetFoodResult",
+  "Address": "0x9f7180",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/cash_food_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "result (v3: 0 = success, 1 = error notice)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "petSlotIndex — only on result == 0 (success path picks pet)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -17,7 +17,9 @@ func newTestAttackCooldownRegistry(t *testing.T) (*attackCooldownRegistry, *mini
 		t.Fatalf("miniredis: %v", err)
 	}
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
-	return &attackCooldownRegistry{client: rc}, mr
+	return &attackCooldownRegistry{
+		reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s }),
+	}, mr
 }
 
 func TestAttackCooldown_SetAndIsOnCooldown(t *testing.T) {
@@ -80,5 +82,43 @@ func TestAttackCooldown_ZeroDurationDoesNotPersist(t *testing.T) {
 	r.SetCooldown(ctx, tm, 100, uint8(0), 0)
 	if r.IsOnCooldown(ctx, tm, 100, uint8(0)) {
 		t.Fatalf("zero-duration cooldown must not register")
+	}
+}
+
+func TestAttackCooldown_ClearDoesNotAffectNumericPrefixMonster(t *testing.T) {
+	r, mr := newTestAttackCooldownRegistry(t)
+	defer mr.Close()
+	ctx := context.Background()
+	tm := newTestTenant(t)
+
+	// monsterId 100 and 1000: clearing 100 must NOT clear 1000.
+	r.SetCooldown(ctx, tm, 100, uint8(0), time.Minute)
+	r.SetCooldown(ctx, tm, 1000, uint8(0), time.Minute)
+
+	r.ClearCooldowns(ctx, tm, 100)
+
+	if r.IsOnCooldown(ctx, tm, 100, uint8(0)) {
+		t.Fatalf("monsterId 100 cooldown should be cleared")
+	}
+	if !r.IsOnCooldown(ctx, tm, 1000, uint8(0)) {
+		t.Fatalf("monsterId 1000 cooldown must NOT be cleared when clearing monsterId 100")
+	}
+}
+
+func TestAttackCooldown_ExpiresAfterTTL(t *testing.T) {
+	r, mr := newTestAttackCooldownRegistry(t)
+	defer mr.Close()
+	ctx := context.Background()
+	tm := newTestTenant(t)
+
+	r.SetCooldown(ctx, tm, 100, uint8(3), 500*time.Millisecond)
+	if !r.IsOnCooldown(ctx, tm, 100, uint8(3)) {
+		t.Fatalf("expected on cooldown before TTL expires")
+	}
+
+	mr.FastForward(1 * time.Second)
+
+	if r.IsOnCooldown(ctx, tm, 100, uint8(3)) {
+		t.Fatalf("expected cooldown expired after TTL")
 	}
 }

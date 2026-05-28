@@ -4,6 +4,7 @@ import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	"atlas-channel/listener"
 	model2 "atlas-channel/socket/model"
 	asset2 "atlas-channel/kafka/message/asset"
 	_map "atlas-channel/map"
@@ -43,37 +44,54 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(sc, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetAcceptedEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetAcceptedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetReleasedEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetReleasedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetExpiredEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetExpiredEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}
@@ -358,7 +376,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 							ava := model2.NewFromCharacter(c, true)
 							for _, mm := range m.Members() {
 								_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
-									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
+									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava))(os)
 								})
 							}
 						}()
@@ -460,6 +478,15 @@ func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handl
 
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		// Cash item being moved back to the cash shop. The cash compartment
+		// ACCEPTED handler emits CashShopCashItemMovedToCashInventory, which the
+		// v83 client uses to both clear the source slot and update the cash UI.
+		// Firing a RemoveEntry first leaves the client trying to animate a move
+		// from an already-empty slot and crashes the game.
+		if e.Body.CashId != 0 {
 			return
 		}
 

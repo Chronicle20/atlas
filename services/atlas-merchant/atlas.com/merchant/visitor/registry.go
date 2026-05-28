@@ -2,7 +2,6 @@ package visitor
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -13,7 +12,7 @@ import (
 )
 
 type Registry struct {
-	client        *goredis.Client
+	shopVisitors  *atlas.TenantKeyedSortedSet[uuid.UUID]
 	characterShop *atlas.Index // characterId → shopId (reverse lookup)
 }
 
@@ -21,7 +20,7 @@ var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
 	registry = &Registry{
-		client:        client,
+		shopVisitors:  atlas.NewTenantKeyedSortedSet[uuid.UUID](client, "merchant:shop-visitors", func(shopId uuid.UUID) string { return shopId.String() }),
 		characterShop: atlas.NewIndex(client, "merchant", "character-shop"),
 	}
 }
@@ -30,16 +29,10 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-// shopVisitorKey returns the Redis key for the sorted set of visitors in a shop.
-func shopVisitorKey(t tenant.Model, shopId uuid.UUID) string {
-	return fmt.Sprintf("%s:merchant:shop-visitors:%s", t.String(), shopId.String())
-}
-
 func (r *Registry) AddVisitor(ctx context.Context, t tenant.Model, shopId uuid.UUID, characterId uint32) error {
 	cidStr := strconv.FormatUint(uint64(characterId), 10)
-	key := shopVisitorKey(t, shopId)
 	score := float64(time.Now().UnixNano())
-	if err := r.client.ZAdd(ctx, key, goredis.Z{Score: score, Member: cidStr}).Err(); err != nil {
+	if err := r.shopVisitors.Add(ctx, t, shopId, cidStr, score); err != nil {
 		return err
 	}
 	return r.characterShop.Add(ctx, t, cidStr, shopId.String())
@@ -47,19 +40,14 @@ func (r *Registry) AddVisitor(ctx context.Context, t tenant.Model, shopId uuid.U
 
 func (r *Registry) RemoveVisitor(ctx context.Context, t tenant.Model, shopId uuid.UUID, characterId uint32) error {
 	cidStr := strconv.FormatUint(uint64(characterId), 10)
-	key := shopVisitorKey(t, shopId)
-	if err := r.client.ZRem(ctx, key, cidStr).Err(); err != nil {
+	if err := r.shopVisitors.Remove(ctx, t, shopId, cidStr); err != nil {
 		return err
 	}
 	return r.characterShop.Remove(ctx, t, cidStr, shopId.String())
 }
 
 func (r *Registry) GetVisitors(ctx context.Context, t tenant.Model, shopId uuid.UUID) ([]uint32, error) {
-	key := shopVisitorKey(t, shopId)
-	members, err := r.client.ZRangeByScore(ctx, key, &goredis.ZRangeBy{
-		Min: "-inf",
-		Max: "+inf",
-	}).Result()
+	members, err := r.shopVisitors.Range(ctx, t, shopId)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +63,7 @@ func (r *Registry) GetVisitors(ctx context.Context, t tenant.Model, shopId uuid.
 }
 
 func (r *Registry) GetVisitorCount(ctx context.Context, t tenant.Model, shopId uuid.UUID) (int, error) {
-	key := shopVisitorKey(t, shopId)
-	count, err := r.client.ZCard(ctx, key).Result()
+	count, err := r.shopVisitors.Count(ctx, t, shopId)
 	if err != nil {
 		return 0, err
 	}
@@ -92,8 +79,7 @@ func (r *Registry) RemoveAllVisitors(ctx context.Context, t tenant.Model, shopId
 		cidStr := strconv.FormatUint(uint64(characterId), 10)
 		_ = r.characterShop.Remove(ctx, t, cidStr, shopId.String())
 	}
-	key := shopVisitorKey(t, shopId)
-	_ = r.client.Del(ctx, key).Err()
+	_ = r.shopVisitors.Clear(ctx, t, shopId)
 	return visitors, nil
 }
 

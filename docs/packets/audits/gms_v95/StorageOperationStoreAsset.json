@@ -1,0 +1,38 @@
+{
+  "WriterName": "StorageOperationStoreAsset",
+  "IDAName": "CTrunkDlg::SendPutItemRequest",
+  "Address": "0x768570",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/storage/serverbound/operation_store_asset.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot (nPOS; mode byte 5 written by dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (nItemID)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "quantity (nCount)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

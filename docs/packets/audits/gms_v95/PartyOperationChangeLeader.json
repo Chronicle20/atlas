@@ -1,0 +1,29 @@
+{
+  "WriterName": "PartyOperationChangeLeader",
+  "IDAName": "CField::SendChangePartyBossMsg",
+  "Address": "0x530370",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/party/serverbound/operation_change_leader.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op=6 (CHANGE_PARTY_BOSS)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "PartyMemberByName = targetCharacterId",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

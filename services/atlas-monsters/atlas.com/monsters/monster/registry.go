@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -19,8 +20,6 @@ import (
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )
-
-const maxRetries = 10
 
 // storedMonster is the JSON-serializable representation stored in Redis.
 type storedMonster struct {
@@ -256,8 +255,21 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 	}, nil
 }
 
+// errMonsterNotFound is the package-internal sentinel returned when a monster
+// key is absent. Preserves the exact error string the raw-redis implementation
+// surfaced to callers (no caller string-matches it; they only check err != nil).
+var errMonsterNotFound = errors.New("monster not found")
+
 type Registry struct {
-	client *goredis.Client
+	// reg backs the monster store. namespace "monster", identity keyFn, so the
+	// stored key is atlas:monster:<tenantId>:<uniqueId> — byte-identical to the
+	// pre-migration fmt.Sprintf("%s:monster:%s:%d", ...) shape.
+	reg *atlasredis.Registry[string, storedMonster]
+	// mapIdx backs the per-field membership SET. namespace "monster-map",
+	// identity keyFn, so the SET key is
+	// atlas:monster-map:<tenantId>:<world>:<channel>:<map>:<instance> —
+	// byte-identical to the pre-migration shape.
+	mapIdx *atlasredis.KeyedSet[string]
 }
 
 var registry *Registry
@@ -265,7 +277,10 @@ var once sync.Once
 
 func InitMonsterRegistry(rc *goredis.Client) {
 	once.Do(func() {
-		registry = &Registry{client: rc}
+		registry = &Registry{
+			reg:    atlasredis.NewRegistry[string, storedMonster](rc, "monster", func(s string) string { return s }),
+			mapIdx: atlasredis.NewKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
+		}
 	})
 }
 
@@ -273,103 +288,80 @@ func GetMonsterRegistry() *Registry {
 	return registry
 }
 
+// monsterSuffix reproduces the entity-key tail of the legacy monster key. The
+// full Redis key is namespacedKey("monster", monsterSuffix(t, uniqueId)) =
+// atlas:monster:<tenantId>:<uniqueId> — byte-identical to the old shape.
+func monsterSuffix(t tenant.Model, uniqueId uint32) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), uniqueId)
+}
+
+// monsterKey returns the full Redis key for a monster. Retained for tests that
+// seed raw blobs into Redis; equals namespacedKey("monster", monsterSuffix(...)).
 func monsterKey(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("%s:monster:%s:%d", atlasredis.KeyPrefix(), t.Id().String(), uniqueId)
+	return fmt.Sprintf("%s:monster:%s", atlasredis.KeyPrefix(), monsterSuffix(t, uniqueId))
 }
 
-func mapIndexKey(t tenant.Model, f field.Model) string {
-	return fmt.Sprintf("%s:monster-map:%s:%d:%d:%d:%s",
-		atlasredis.KeyPrefix(), t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+// mapIndexSuffix reproduces the entity-key tail of the legacy map-index SET key.
+// The full Redis key is namespacedKey("monster-map", mapIndexSuffix(...)) =
+// atlas:monster-map:<tenantId>:<world>:<channel>:<map>:<instance>.
+func mapIndexSuffix(t tenant.Model, worldId byte, channelId byte, mapId uint32, instance string) string {
+	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), worldId, channelId, mapId, instance)
 }
 
-func mapIndexKeyFromModel(t tenant.Model, m Model) string {
-	return fmt.Sprintf("%s:monster-map:%s:%d:%d:%d:%s",
-		atlasredis.KeyPrefix(), t.Id().String(), m.worldId, m.channelId, m.mapId, m.instance.String())
+func mapIndexSuffixFromField(t tenant.Model, f field.Model) string {
+	return mapIndexSuffix(t, byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()), f.Instance().String())
+}
+
+func mapIndexSuffixFromModel(t tenant.Model, m Model) string {
+	return mapIndexSuffix(t, byte(m.worldId), byte(m.channelId), uint32(m.mapId), m.instance.String())
 }
 
 func (r *Registry) storeMonster(ctx context.Context, t tenant.Model, m Model) error {
-	sm := toStored(t, m)
-	data, err := json.Marshal(sm)
-	if err != nil {
-		return err
-	}
-	return r.client.Set(ctx, monsterKey(t, m.uniqueId), data, 0).Err()
+	return r.reg.Put(ctx, monsterSuffix(t, m.uniqueId), toStored(t, m))
 }
 
 func (r *Registry) loadMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, error) {
-	data, err := r.client.Get(ctx, monsterKey(t, uniqueId)).Result()
-	if err == goredis.Nil {
-		return Model{}, errors.New("monster not found")
+	sm, err := r.reg.Get(ctx, monsterSuffix(t, uniqueId))
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return Model{}, errMonsterNotFound
 	}
 	if err != nil {
-		return Model{}, err
-	}
-	var sm storedMonster
-	if err := json.Unmarshal([]byte(data), &sm); err != nil {
 		return Model{}, err
 	}
 	_, m, err := fromStored(sm)
 	return m, err
 }
 
+// atomicUpdate applies fn to the monster under optimistic lock (Registry.Update
+// does Watch+GET+fn+TxPipelined(SET) with retry on contention). fn must be pure
+// in its observable effects — it may run multiple times under retry.
 func (r *Registry) atomicUpdate(ctx context.Context, t tenant.Model, uniqueId uint32, fn func(m Model) Model) (Model, error) {
-	key := monsterKey(t, uniqueId)
-	var result Model
-
-	for i := 0; i < maxRetries; i++ {
-		err := r.client.Watch(ctx, func(tx *goredis.Tx) error {
-			data, err := tx.Get(ctx, key).Result()
-			if err == goredis.Nil {
-				return errors.New("monster not found")
-			}
-			if err != nil {
-				return err
-			}
-			var sm storedMonster
-			if err := json.Unmarshal([]byte(data), &sm); err != nil {
-				return err
-			}
-			_, m, err := fromStored(sm)
-			if err != nil {
-				return err
-			}
-
-			result = fn(m)
-
-			updatedSm := toStored(t, result)
-			updatedData, err := json.Marshal(updatedSm)
-			if err != nil {
-				return err
-			}
-			_, err = tx.TxPipelined(ctx, func(pipe goredis.Pipeliner) error {
-				pipe.Set(ctx, key, updatedData, 0)
-				return nil
-			})
-			return err
-		}, key)
-
-		if err == nil {
-			return result, nil
+	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+		_, m, derr := fromStored(cur)
+		if derr != nil {
+			// Cannot decode current state; leave it untouched. The decode error
+			// surfaces below via the re-decode of the returned (unchanged) value.
+			return cur
 		}
-		if err == goredis.TxFailedErr {
-			continue
-		}
+		return toStored(t, fn(m))
+	})
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return Model{}, errMonsterNotFound
+	}
+	if err != nil {
 		return Model{}, err
 	}
-	return Model{}, errors.New("optimistic lock failed after max retries")
+	_, m, err := fromStored(sm)
+	return m, err
 }
 
 func (r *Registry) CreateMonster(ctx context.Context, t tenant.Model, f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	uniqueId := GetIdAllocator().Allocate(ctx, t)
 	m := NewMonster(f, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
-	sm := toStored(t, m)
-	data, _ := json.Marshal(sm)
-
-	pipe := r.client.Pipeline()
-	pipe.Set(ctx, monsterKey(t, uniqueId), data, 0)
-	pipe.SAdd(ctx, mapIndexKey(t, f), strconv.FormatUint(uint64(uniqueId), 10))
-	pipe.Exec(ctx)
+	// The old pipeline issued Set+SAdd ignoring errors; sequential calls match.
+	_ = r.reg.Put(ctx, monsterSuffix(t, uniqueId), toStored(t, m))
+	_ = r.mapIdx.Add(ctx, mapIndexSuffixFromField(t, f), strconv.FormatUint(uint64(uniqueId), 10))
 
 	return m
 }
@@ -380,31 +372,23 @@ func (r *Registry) GetMonster(tenant tenant.Model, uniqueId uint32) (Model, erro
 
 func (r *Registry) GetMonstersInMap(tenant tenant.Model, f field.Model) []Model {
 	ctx := context.Background()
-	members, err := r.client.SMembers(ctx, mapIndexKey(tenant, f)).Result()
+	members, err := r.mapIdx.Members(ctx, mapIndexSuffixFromField(tenant, f))
 	if err != nil || len(members) == 0 {
 		return nil
 	}
 
-	pipe := r.client.Pipeline()
-	cmds := make([]*goredis.StringCmd, len(members))
-	for i, idStr := range members {
-		uid, _ := strconv.ParseUint(idStr, 10, 32)
-		cmds[i] = pipe.Get(ctx, monsterKey(tenant, uint32(uid)))
-	}
-	pipe.Exec(ctx)
-
 	var result []Model
-	for _, cmd := range cmds {
-		data, err := cmd.Result()
-		if err != nil {
+	for _, idStr := range members {
+		uid, perr := strconv.ParseUint(idStr, 10, 32)
+		if perr != nil {
 			continue
 		}
-		var sm storedMonster
-		if err := json.Unmarshal([]byte(data), &sm); err != nil {
+		sm, gerr := r.reg.Get(ctx, monsterSuffix(tenant, uint32(uid)))
+		if gerr != nil {
 			continue
 		}
-		_, m, err := fromStored(sm)
-		if err != nil {
+		_, m, gerr := fromStored(sm)
+		if gerr != nil {
 			continue
 		}
 		result = append(result, m)
@@ -434,81 +418,57 @@ func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, er
 	})
 }
 
-var applyDamageScript = goredis.NewScript(`
-local key = KEYS[1]
-local charId = tonumber(ARGV[1])
-local damage = tonumber(ARGV[2])
-local nowMs = tonumber(ARGV[3])
-local j = redis.call('GET', key)
-if not j then
-    return redis.error_reply("monster not found")
-end
-local m = cjson.decode(j)
-local hp = m.hp
-local actual = hp - math.max(hp - damage, 0)
-m.hp = hp - actual
-
-local entries = m.damageEntries
-if type(entries) ~= 'table' then
-    entries = {}
-end
-
-local found = false
-for _, e in ipairs(entries) do
-    if e.characterId == charId then
-        e.damage = e.damage + actual
-        e.lastHitMs = nowMs
-        found = true
-        break
-    end
-end
-if not found then
-    table.insert(entries, {
-        characterId = charId,
-        damage = actual,
-        lastHitMs = nowMs
-    })
-end
-m.damageEntries = entries
-m.lastDamageTakenMs = nowMs
-
-local hadAggro = m.controllerHasAggro
-local wasFirstHit = false
-if m.controlCharacterId ~= 0 and not hadAggro then
-    m.controllerHasAggro = true
-    wasFirstHit = true
-end
-
-redis.call('SET', key, cjson.encode(m))
-return cjson.encode({wasFirstHit = wasFirstHit, monster = m})
-`)
-
+// ApplyDamage atomically applies clamped damage to the monster, aggregates the
+// per-character damage entry (summing damage and stamping lastHitMs=nowMs),
+// stamps lastDamageTakenMs=nowMs, and flips controllerHasAggro true on the first
+// hit of a controlled monster. Ported from the former applyDamageScript Lua via
+// Registry.Update; the closure is pure (wasFirstHit derives only from cur), so
+// the captured summary reflects the final successful invocation under retry.
 func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32, uniqueId uint32, nowMs int64) (DamageSummary, error) {
 	ctx := context.Background()
-	key := monsterKey(t, uniqueId)
 
-	result, err := applyDamageScript.Run(ctx, r.client, []string{key},
-		strconv.FormatUint(uint64(characterId), 10),
-		strconv.FormatUint(uint64(damage), 10),
-		strconv.FormatInt(nowMs, 10),
-	).Result()
+	var wasFirstHit bool
+	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+		hp := cur.Hp
+		// actual = hp - max(hp - damage, 0): clamp at 0, never below.
+		var actual uint32
+		if damage >= hp {
+			actual = hp
+		} else {
+			actual = damage
+		}
+		cur.Hp = hp - actual
+
+		found := false
+		for i := range cur.DamageEntries {
+			if cur.DamageEntries[i].CharacterId == characterId {
+				cur.DamageEntries[i].Damage += actual
+				cur.DamageEntries[i].LastHitMs = nowMs
+				found = true
+				break
+			}
+		}
+		if !found {
+			cur.DamageEntries = append(cur.DamageEntries, storedDamageEntry{
+				CharacterId: characterId,
+				Damage:      actual,
+				LastHitMs:   nowMs,
+			})
+		}
+		cur.LastDamageTakenMs = nowMs
+
+		wasFirstHit = cur.ControlCharacterId != 0 && !cur.ControllerHasAggro
+		if wasFirstHit {
+			cur.ControllerHasAggro = true
+		}
+		return cur
+	})
 	if err != nil {
-		return DamageSummary{}, errors.New("monster not found")
+		// Old Lua collapsed every failure (including absent key) to "monster not found".
+		return DamageSummary{}, errMonsterNotFound
 	}
 
-	resultStr, ok := result.(string)
-	if !ok {
-		return DamageSummary{}, errors.New("unexpected response type")
-	}
-
-	var env struct {
-		WasFirstHit bool          `json:"wasFirstHit"`
-		Monster     storedMonster `json:"monster"`
-	}
-	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
-		return DamageSummary{}, err
-	}
-	_, m, err := fromStored(env.Monster)
+	_, m, err := fromStored(sm)
 	if err != nil {
 		return DamageSummary{}, err
 	}
@@ -518,53 +478,9 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 		Monster:       m,
 		VisibleDamage: damage,
 		Killed:        m.Hp() == 0,
-		WasFirstHit:   env.WasFirstHit,
+		WasFirstHit:   wasFirstHit,
 	}, nil
 }
-
-var applyRecoveryScript = goredis.NewScript(`
-local key = KEYS[1]
-local hpRecovery = tonumber(ARGV[1])
-local mpRecovery = tonumber(ARGV[2])
-local idleThresholdMs = tonumber(ARGV[3])
-local nowMs = tonumber(ARGV[4])
-
-local raw = redis.call('GET', key)
-if not raw then
-    return redis.error_reply("monster not found")
-end
-local mon = cjson.decode(raw)
-
-if mon.hp == 0 then
-    return cjson.encode({hpApplied = false, mpApplied = false, monster = mon})
-end
-
-local hpApplied = false
-local mpApplied = false
-
-if hpRecovery > 0 and mon.hp < mon.maxHp then
-    local lastDamage = mon.lastDamageTakenMs or 0
-    if (nowMs - lastDamage) > idleThresholdMs then
-        local newHp = mon.hp + hpRecovery
-        if newHp > mon.maxHp then newHp = mon.maxHp end
-        mon.hp = newHp
-        hpApplied = true
-    end
-end
-
-if mpRecovery > 0 and mon.mp < mon.maxMp then
-    local newMp = mon.mp + mpRecovery
-    if newMp > mon.maxMp then newMp = mon.maxMp end
-    mon.mp = newMp
-    mpApplied = true
-end
-
-if hpApplied or mpApplied then
-    redis.call('SET', key, cjson.encode(mon))
-end
-
-return cjson.encode({hpApplied = hpApplied, mpApplied = mpApplied, monster = mon})
-`)
 
 // ApplyRecovery atomically applies HP/MP recovery to the monster. Returns the
 // updated Model along with flags indicating whether HP and MP were actually
@@ -572,52 +488,65 @@ return cjson.encode({hpApplied = hpApplied, mpApplied = mpApplied, monster = mon
 // nowMs - lastDamageTakenMs > AggroIdleThresholdMs. MP recovery is unconditional
 // (independent of SEAL and other cast-blocking statuses, per design D5).
 // A dead mob (hp == 0) is skipped — healing the dead is forbidden.
+//
+// Ported from the former applyRecoveryScript Lua via Registry.Update. The Lua
+// skipped the SET when nothing applied; Update always writes, but in that case
+// it writes back identical state, so the observable result is the same. The
+// hpApplied/mpApplied flags derive purely from cur, so the captured values
+// reflect the final successful invocation under optimistic-lock retry.
 func (r *Registry) ApplyRecovery(t tenant.Model, uniqueId uint32, hpRecovery, mpRecovery uint32, nowMs int64) (Model, bool, bool, error) {
 	ctx := context.Background()
-	key := monsterKey(t, uniqueId)
 
-	result, err := applyRecoveryScript.Run(ctx, r.client, []string{key},
-		strconv.FormatUint(uint64(hpRecovery), 10),
-		strconv.FormatUint(uint64(mpRecovery), 10),
-		strconv.FormatInt(AggroIdleThresholdMs, 10),
-		strconv.FormatInt(nowMs, 10),
-	).Result()
+	var hpApplied, mpApplied bool
+	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+		hpApplied = false
+		mpApplied = false
+
+		if cur.Hp == 0 {
+			return cur
+		}
+
+		if hpRecovery > 0 && cur.Hp < cur.MaxHp {
+			if (nowMs - cur.LastDamageTakenMs) > AggroIdleThresholdMs {
+				newHp := cur.Hp + hpRecovery
+				if newHp > cur.MaxHp {
+					newHp = cur.MaxHp
+				}
+				cur.Hp = newHp
+				hpApplied = true
+			}
+		}
+
+		if mpRecovery > 0 && cur.Mp < cur.MaxMp {
+			newMp := cur.Mp + mpRecovery
+			if newMp > cur.MaxMp {
+				newMp = cur.MaxMp
+			}
+			cur.Mp = newMp
+			mpApplied = true
+		}
+
+		return cur
+	})
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return Model{}, false, false, errMonsterNotFound
+	}
 	if err != nil {
 		return Model{}, false, false, err
 	}
-
-	resultStr, ok := result.(string)
-	if !ok {
-		return Model{}, false, false, errors.New("unexpected response type")
-	}
-
-	var env struct {
-		HpApplied bool          `json:"hpApplied"`
-		MpApplied bool          `json:"mpApplied"`
-		Monster   storedMonster `json:"monster"`
-	}
-	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
-		return Model{}, false, false, err
-	}
-	_, m, err := fromStored(env.Monster)
+	_, m, err := fromStored(sm)
 	if err != nil {
 		return Model{}, false, false, err
 	}
-	return m, env.HpApplied, env.MpApplied, nil
+	return m, hpApplied, mpApplied, nil
 }
 
 func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, error) {
-	key := monsterKey(t, uniqueId)
-	data, err := r.client.Get(ctx, key).Result()
-	if err == goredis.Nil {
-		return Model{}, errors.New("monster not found")
+	sm, err := r.reg.Get(ctx, monsterSuffix(t, uniqueId))
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return Model{}, errMonsterNotFound
 	}
 	if err != nil {
-		return Model{}, err
-	}
-
-	var sm storedMonster
-	if err := json.Unmarshal([]byte(data), &sm); err != nil {
 		return Model{}, err
 	}
 	_, m, err := fromStored(sm)
@@ -625,11 +554,9 @@ func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId u
 		return Model{}, err
 	}
 
-	idxKey := mapIndexKeyFromModel(t, m)
-	pipe := r.client.Pipeline()
-	pipe.Del(ctx, key)
-	pipe.SRem(ctx, idxKey, strconv.FormatUint(uint64(uniqueId), 10))
-	pipe.Exec(ctx)
+	// Old pipeline issued Del+SRem ignoring errors; sequential calls match.
+	_ = r.reg.Remove(ctx, monsterSuffix(t, uniqueId))
+	_ = r.mapIdx.Remove(ctx, mapIndexSuffixFromModel(t, m), strconv.FormatUint(uint64(uniqueId), 10))
 
 	GetIdAllocator().Release(ctx, t, uniqueId)
 	return m, nil
@@ -702,64 +629,23 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 	ctx := context.Background()
 	result := make(map[tenant.Model][]Model)
 
-	var cursor uint64
-	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, atlasredis.KeyPrefix()+":monster:*", 100).Result()
-		if err != nil {
-			break
+	all, err := r.reg.GetAll(ctx)
+	if err != nil {
+		return result
+	}
+	for _, sm := range all {
+		t, m, derr := fromStored(sm)
+		if derr != nil {
+			continue
 		}
-		if len(keys) > 0 {
-			pipe := r.client.Pipeline()
-			cmds := make([]*goredis.StringCmd, len(keys))
-			for i, key := range keys {
-				cmds[i] = pipe.Get(ctx, key)
-			}
-			pipe.Exec(ctx)
-
-			for _, cmd := range cmds {
-				data, err := cmd.Result()
-				if err != nil {
-					continue
-				}
-				var sm storedMonster
-				if err := json.Unmarshal([]byte(data), &sm); err != nil {
-					continue
-				}
-				t, m, err := fromStored(sm)
-				if err != nil {
-					continue
-				}
-				result[t] = append(result[t], m)
-			}
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
+		result[t] = append(result[t], m)
 	}
 	return result
 }
 
 func (r *Registry) Clear(ctx context.Context) {
-	r.scanAndDelete(ctx, atlasredis.KeyPrefix()+":monster:*")
-	r.scanAndDelete(ctx, atlasredis.KeyPrefix()+":monster-map:*")
-}
-
-func (r *Registry) scanAndDelete(ctx context.Context, pattern string) {
-	var cursor uint64
-	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
-		if err != nil {
-			return
-		}
-		if len(keys) > 0 {
-			r.client.Del(ctx, keys...)
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
-	}
+	_, _ = r.reg.Clear(ctx)
+	_, _ = r.mapIdx.ClearAll(ctx)
 }
 
 // DecaySummary is returned by DecayDamageEntries. AggroFlippedOff is true when
@@ -774,86 +660,55 @@ type DecaySummary struct {
 	AggroFlippedOff       bool
 }
 
-var decayDamageEntriesScript = goredis.NewScript(`
-local key = KEYS[1]
-local now = tonumber(ARGV[1])
-local idleMs = tonumber(ARGV[2])
-local mult = tonumber(ARGV[3])
-local floorVal = tonumber(ARGV[4])
-local j = redis.call('GET', key)
-if not j then
-    return redis.error_reply("monster not found")
-end
-local m = cjson.decode(j)
-
-local entries = m.damageEntries
-if type(entries) ~= 'table' then
-    entries = {}
-end
-
-local kept = {}
-for _, e in ipairs(entries) do
-    -- Legacy entries written before this branch shipped have no lastHitMs.
-    -- Treat them as having a lastHit of 0 (effectively always idle).
-    local lastHit = e.lastHitMs or 0
-    if (now - lastHit) > idleMs then
-        e.damage = math.floor(e.damage * mult)
-        e.lastHitMs = lastHit
-    end
-    if e.damage >= floorVal then
-        table.insert(kept, e)
-    end
-end
-m.damageEntries = kept
-
-local hadAggro = m.controllerHasAggro
-local aggroFlippedOff = false
-if #kept == 0 and hadAggro then
-    m.controllerHasAggro = false
-    aggroFlippedOff = true
-end
-
-redis.call('SET', key, cjson.encode(m))
-return cjson.encode({
-    aggroFlippedOff = aggroFlippedOff,
-    controllerCharacterId = m.controlCharacterId,
-    monster = m,
-})
-`)
-
+// DecayDamageEntries atomically decays idle damage entries, prunes any that
+// fall below AggroDecayFloor, and flips controllerHasAggro false when the entry
+// list empties on a monster that had aggro. Ported from the former
+// decayDamageEntriesScript Lua via Registry.Update. aggroFlippedOff and
+// controllerCharacterId derive purely from cur, so the captured values reflect
+// the final successful invocation under optimistic-lock retry.
 func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int64) (DecaySummary, error) {
 	ctx := context.Background()
-	key := monsterKey(t, uniqueId)
 
-	result, err := decayDamageEntriesScript.Run(ctx, r.client, []string{key},
-		strconv.FormatInt(nowMs, 10),
-		strconv.FormatInt(AggroIdleThresholdMs, 10),
-		strconv.FormatFloat(AggroDecayMultiplier, 'f', -1, 64),
-		strconv.FormatUint(uint64(AggroDecayFloor), 10),
-	).Result()
+	var aggroFlippedOff bool
+	var controllerCharacterId uint32
+	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+		aggroFlippedOff = false
+
+		kept := make([]storedDamageEntry, 0, len(cur.DamageEntries))
+		for _, e := range cur.DamageEntries {
+			// Legacy entries written before lastHitMs shipped default to 0
+			// (treated as idle).
+			if (nowMs - e.LastHitMs) > AggroIdleThresholdMs {
+				// Mirror the Lua math.floor(e.damage * mult).
+				e.Damage = uint32(math.Floor(float64(e.Damage) * AggroDecayMultiplier))
+			}
+			if e.Damage >= AggroDecayFloor {
+				kept = append(kept, e)
+			}
+		}
+		cur.DamageEntries = kept
+
+		if len(kept) == 0 && cur.ControllerHasAggro {
+			cur.ControllerHasAggro = false
+			aggroFlippedOff = true
+		}
+
+		controllerCharacterId = cur.ControlCharacterId
+		return cur
+	})
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return DecaySummary{}, errMonsterNotFound
+	}
 	if err != nil {
 		return DecaySummary{}, err
 	}
-	resultStr, ok := result.(string)
-	if !ok {
-		return DecaySummary{}, errors.New("unexpected response type")
-	}
-
-	var env struct {
-		AggroFlippedOff       bool          `json:"aggroFlippedOff"`
-		ControllerCharacterId uint32        `json:"controllerCharacterId"`
-		Monster               storedMonster `json:"monster"`
-	}
-	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
-		return DecaySummary{}, err
-	}
-	_, m, err := fromStored(env.Monster)
+	_, m, err := fromStored(sm)
 	if err != nil {
 		return DecaySummary{}, err
 	}
 	return DecaySummary{
 		Monster:               m,
-		ControllerCharacterId: env.ControllerCharacterId,
-		AggroFlippedOff:       env.AggroFlippedOff,
+		ControllerCharacterId: controllerCharacterId,
+		AggroFlippedOff:       aggroFlippedOff,
 	}, nil
 }

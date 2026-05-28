@@ -1,0 +1,22 @@
+{
+  "data": {
+    "type": "continent-drop",
+    "id": "-1",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 2049100,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "chance": 1200
+        },
+        {
+          "itemId": 4001126,
+          "minimumQuantity": 1,
+          "maximumQuantity": 2,
+          "chance": 8000
+        }
+      ]
+    }
+  }
+}

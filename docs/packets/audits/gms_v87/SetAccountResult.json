@@ -1,0 +1,29 @@
+{
+  "WriterName": "SetAccountResult",
+  "IDAName": "CLogin::OnSetAccountResult",
+  "Address": "0x634144",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/set_account_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "gender",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "success",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

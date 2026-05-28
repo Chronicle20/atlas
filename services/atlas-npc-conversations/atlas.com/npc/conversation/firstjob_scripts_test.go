@@ -26,19 +26,19 @@ type scriptCase struct {
 // advancement state, that reset_stats is not used in the advancement state,
 // and that no stat-minimum gate condition remains anywhere in the script.
 func TestFirstJobScriptsUseRebalanceAP(t *testing.T) {
-	root := filepath.Join("..", "..", "..", "conversations")
+	root := filepath.Join("..", "..", "..", "..", "..", "deploy", "seed", "gms", "83_1", "npc-conversations")
 
 	cases := []scriptCase{
-		{name: "Bowman", relPath: filepath.Join("npc", "npc_1012100.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
-		{name: "Warrior", relPath: filepath.Join("npc", "npc_1022000.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"strength"}},
-		{name: "Magician", relPath: filepath.Join("npc", "npc_1032001.json"), advanceState: "performFirstJobAdvancement", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"intelligence"}},
-		{name: "Thief", relPath: filepath.Join("npc", "npc_1052001.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
-		{name: "Pirate", relPath: filepath.Join("npc", "npc_1090000.json"), advanceState: "firstJobPerformAdvance", targets: []expectedTarget{{"dexterity", 20}}, bannedStats: []string{"dexterity"}},
-		{name: "Dawn Warrior", relPath: filepath.Join("quests", "quest_20101.json"), advanceState: "performJobChange", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"str"}},
-		{name: "Blaze Wizard", relPath: filepath.Join("quests", "quest_20102.json"), advanceState: "performJobChange", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"int"}},
-		{name: "Wind Archer", relPath: filepath.Join("quests", "quest_20103.json"), advanceState: "performJobChange", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dex"}},
-		{name: "Night Walker", relPath: filepath.Join("quests", "quest_20104.json"), advanceState: "performJobChange", targets: []expectedTarget{{"luck", 25}}, bannedStats: []string{"luk"}},
-		{name: "Thunder Breaker", relPath: filepath.Join("quests", "quest_20105.json"), advanceState: "performJobChange", targets: []expectedTarget{{"strength", 20}, {"dexterity", 20}}, bannedStats: []string{"str", "dex"}},
+		{name: "Bowman", relPath: filepath.Join("npc", "npc-1012100.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
+		{name: "Warrior", relPath: filepath.Join("npc", "npc-1022000.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"strength"}},
+		{name: "Magician", relPath: filepath.Join("npc", "npc-1032001.json"), advanceState: "performFirstJobAdvancement", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"intelligence"}},
+		{name: "Thief", relPath: filepath.Join("npc", "npc-1052001.json"), advanceState: "firstJobAdvance", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dexterity"}},
+		{name: "Pirate", relPath: filepath.Join("npc", "npc-1090000.json"), advanceState: "firstJobPerformAdvance", targets: []expectedTarget{{"dexterity", 20}}, bannedStats: []string{"dexterity"}},
+		{name: "Dawn Warrior", relPath: filepath.Join("quests", "quest-20101.json"), advanceState: "performJobChange", targets: []expectedTarget{{"strength", 35}}, bannedStats: []string{"str"}},
+		{name: "Blaze Wizard", relPath: filepath.Join("quests", "quest-20102.json"), advanceState: "performJobChange", targets: []expectedTarget{{"intelligence", 20}}, bannedStats: []string{"int"}},
+		{name: "Wind Archer", relPath: filepath.Join("quests", "quest-20103.json"), advanceState: "performJobChange", targets: []expectedTarget{{"dexterity", 25}}, bannedStats: []string{"dex"}},
+		{name: "Night Walker", relPath: filepath.Join("quests", "quest-20104.json"), advanceState: "performJobChange", targets: []expectedTarget{{"luck", 25}}, bannedStats: []string{"luk"}},
+		{name: "Thunder Breaker", relPath: filepath.Join("quests", "quest-20105.json"), advanceState: "performJobChange", targets: []expectedTarget{{"strength", 20}, {"dexterity", 20}}, bannedStats: []string{"str", "dex"}},
 	}
 
 	for _, tc := range cases {
@@ -114,15 +114,28 @@ func TestFirstJobScriptsUseRebalanceAP(t *testing.T) {
 }
 
 // helpers
+
+// unwrapDoc unwraps the seed catalog envelope {"data": {"attributes": {...}}}
+// if present, returning the attributes map; otherwise returns doc unchanged.
+func unwrapDoc(doc map[string]any) map[string]any {
+	if data, ok := doc["data"].(map[string]any); ok {
+		if attrs, ok := data["attributes"].(map[string]any); ok {
+			return attrs
+		}
+	}
+	return doc
+}
+
 func collectOps(t *testing.T, doc map[string]any, stateId string) []map[string]any {
 	t.Helper()
-	if states, ok := doc["states"].([]any); ok {
+	inner := unwrapDoc(doc)
+	if states, ok := inner["states"].([]any); ok {
 		if ops := opsFromStates(states, stateId); ops != nil {
 			return ops
 		}
 	}
 	for _, key := range []string{"startStateMachine", "endStateMachine"} {
-		if sm, ok := doc[key].(map[string]any); ok {
+		if sm, ok := inner[key].(map[string]any); ok {
 			if states, ok := sm["states"].([]any); ok {
 				if ops := opsFromStates(states, stateId); ops != nil {
 					return ops

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "type": "gachapon",
+    "id": "ellinia",
+    "attributes": {
+      "name": "Ellinia Gachapon",
+      "npcIds": [
+        9100101
+      ],
+      "commonWeight": 85,
+      "uncommonWeight": 10,
+      "rareWeight": 5,
+      "items": [
+        {
+          "itemId": 2050001,
+          "quantity": 1,
+          "tier": "rare"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "WriterName": "CharacterDespawn",
+  "IDAName": "CUserPool::OnUserLeaveField",
+  "Address": "0x94d4c0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/despawn.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwCharacterID — user leaving the field",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

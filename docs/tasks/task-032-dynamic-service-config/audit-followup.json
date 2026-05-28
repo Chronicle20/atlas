@@ -1,0 +1,117 @@
+{
+  "scope": "task-032 follow-up commits e5fbabadc and 0b33ee5ee",
+  "services": ["atlas-channel", "atlas-login"],
+  "date": "2026-05-27",
+  "build": "pass",
+  "testsPassed": 2,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "files": [
+    "services/atlas-channel/atlas.com/channel/configuration/registry.go",
+    "services/atlas-channel/atlas.com/channel/configuration/registry_test.go",
+    "services/atlas-channel/atlas.com/channel/main.go",
+    "services/atlas-login/atlas.com/login/configuration/registry.go",
+    "services/atlas-login/atlas.com/login/configuration/registry_test.go",
+    "services/atlas-login/atlas.com/login/main.go"
+  ],
+  "checks": [
+    {
+      "id": "FU-01",
+      "name": "Concurrency: readyCh close happens-before configMu write ordering",
+      "status": "pass",
+      "evidence": "registry.go:121-138 (both services). configMu.Lock brackets write, readyOnce.Do(close(readyCh)) runs after Unlock; readers RLock, so happens-before edge holds."
+    },
+    {
+      "id": "FU-02",
+      "name": "time.After allocation under high call rate",
+      "status": "warn",
+      "evidence": "registry.go:48 (both services). Hot path short-circuits via closed channel in select; timer only allocated during cold-start ≤60s window."
+    },
+    {
+      "id": "FU-03",
+      "name": "GetServiceConfig nil-check returns wrong sentinel after PublishSnapshot(nil, ...)",
+      "status": "fail",
+      "evidence": "registry.go:59-61 returns ErrNotReady when serviceConfig is nil even after readyCh closed; PublishSnapshot(nil,...) at registry.go:127 can produce this state. ErrNotReady misrepresents the situation."
+    },
+    {
+      "id": "FU-04",
+      "name": "configuration.Init legacy REST path is dead code",
+      "status": "fail",
+      "evidence": "registry.go:89-111 (both services). grep -rn 'configuration.Init' returns zero hits. Still log.Fatalf-s — reintroduction risk."
+    },
+    {
+      "id": "FU-05",
+      "name": "GetTenantConfigs silently swallows ErrNotReady",
+      "status": "fail",
+      "evidence": "registry.go:65-74 (atlas-channel only). _ = waitReady() drops error; no production caller exists today. Either change signature or delete."
+    },
+    {
+      "id": "FU-06",
+      "name": "Callers distinguish ErrTenantNotConfigured from ErrNotReady",
+      "status": "fail",
+      "evidence": "services/atlas-login/atlas.com/login/socket/handler/accept_tos.go:45-49 and services/atlas-login/atlas.com/login/kafka/consumer/account/session/consumer.go:88-92 both log 'Unable to find server configuration' for either sentinel. Observability regression vs prior fatal."
+    },
+    {
+      "id": "FU-07",
+      "name": "session.NewTimeout swallows error into 1-hour default without logging",
+      "status": "fail",
+      "evidence": "services/atlas-login/atlas.com/login/session/task.go:22-40 and services/atlas-channel/atlas.com/channel/session/task.go:22-40. err != nil branch sets to=3600000 with no log."
+    },
+    {
+      "id": "FU-08",
+      "name": "Per-process projection group id leaves orphan Kafka groups",
+      "status": "warn",
+      "evidence": "services/atlas-channel/atlas.com/channel/main.go:235 and services/atlas-login/atlas.com/login/main.go:106. New uuid per restart; eventually GC'd by Kafka offsets.retention.minutes default 7d."
+    },
+    {
+      "id": "FU-09",
+      "name": "Projection group id inherits env override via consumergroup.Resolve prefix",
+      "status": "pass",
+      "evidence": "main.go:62 (login) / main.go:150 (channel): consumerGroupId = consumergroup.Resolve(...); projection id Sprintf prepends this resolved value."
+    },
+    {
+      "id": "FU-10",
+      "name": "Tests reset package state",
+      "status": "fail",
+      "evidence": "registry_test.go (both services). No t.Cleanup, no TestMain, no test-only reset export; PublishSnapshot mutates package vars and closes readyCh permanently for the test binary."
+    },
+    {
+      "id": "FU-11",
+      "name": "PublishSnapshot value-copy doc claim is accurate (deep vs shallow)",
+      "status": "warn",
+      "evidence": "registry.go:121-134 doc says 'value-copy so caller's projection State can mutate independently'. c := *svc is shallow — Tasks/Tenants slice headers still share backing arrays."
+    },
+    {
+      "id": "FU-12",
+      "name": "waitReady accepts a context.Context for cancellation",
+      "status": "warn",
+      "evidence": "registry.go:44-51 (both services). No ctx parameter; Kafka/handler caller cannot cancel a 60s wait, risking partition rebalance."
+    },
+    {
+      "id": "FU-13",
+      "name": "go build ./... clean",
+      "status": "pass",
+      "evidence": "Zero output from go build ./... in both services."
+    },
+    {
+      "id": "FU-14",
+      "name": "go test -race -count=1 ./configuration/... clean",
+      "status": "pass",
+      "evidence": "ok atlas-login/configuration 1.114s; ok atlas-channel/configuration 1.114s."
+    }
+  ],
+  "blocking": [
+    "FU-03: GetServiceConfig returns ErrNotReady for the cleared-after-ready case (wrong sentinel)",
+    "FU-04: configuration.Init is dead code, still log.Fatalf-s, no callers",
+    "FU-05: GetTenantConfigs silently swallows ErrNotReady because signature has no error return",
+    "FU-06: accept_tos.go:45 and kafka/consumer/account/session/consumer.go:88 do not distinguish ErrTenantNotConfigured from ErrNotReady",
+    "FU-07: session.NewTimeout falls back to 1h default with no log on configuration error",
+    "FU-10: registry_test.go has no test isolation; pollutes package state for any second test"
+  ],
+  "nonBlocking": [
+    "FU-02: time.After allocation pattern (not actually hot-path; comment-worthy)",
+    "FU-08: per-process projection group id leaves orphan Kafka consumer groups on restart",
+    "FU-11: PublishSnapshot doc claims value-copy but performs shallow copy",
+    "FU-12: waitReady ignores context.Context; risks Kafka partition rebalance on stall"
+  ]
+}

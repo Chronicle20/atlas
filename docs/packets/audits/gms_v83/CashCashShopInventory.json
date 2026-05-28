@@ -1,0 +1,74 @@
+{
+  "WriterName": "CashCashShopInventory",
+  "IDAName": "CCashShop::OnCashItemResult#CashShopInventory",
+  "Address": "0x4794f6",
+  "Variant": "GMS/v83",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_inventory.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x58 LOAD_LOCKER_DONE; op-byte consumed by OnCashItemResult dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "count (m_aCashItemInfo size)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "55 * count bytes (per GW_CashItemInfo = CashInventoryItem.EncodeBytes, 55 bytes each)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "m_nTrunkCount (storageSlots; *(this+291))",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "m_nCharacterSlotCount (characterSlots; *(this+292))",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

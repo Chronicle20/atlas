@@ -14,21 +14,17 @@ import (
 )
 
 type Registry struct {
-	client *goredis.Client
+	channels *atlas.TenantSet
 }
 
 var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
-	registry = &Registry{client: client}
+	registry = &Registry{channels: atlas.NewTenantSet(client, "transport:channels")}
 }
 
 func getRegistry() *Registry {
 	return registry
-}
-
-func channelSetKey(t tenant.Model) string {
-	return fmt.Sprintf("transport:channels:%s", atlas.TenantKey(t))
 }
 
 func channelMember(ch channelConstant.Model) string {
@@ -53,17 +49,17 @@ func parseChannelMember(member string) (channelConstant.Model, bool) {
 
 func (r *Registry) Add(ctx context.Context, model channelConstant.Model) {
 	t := tenant.MustFromContext(ctx)
-	_ = r.client.SAdd(ctx, channelSetKey(t), channelMember(model)).Err()
+	_ = r.channels.Add(ctx, t, channelMember(model))
 }
 
 func (r *Registry) Remove(ctx context.Context, ch channelConstant.Model) {
 	t := tenant.MustFromContext(ctx)
-	_ = r.client.SRem(ctx, channelSetKey(t), channelMember(ch)).Err()
+	_ = r.channels.Remove(ctx, t, channelMember(ch))
 }
 
 func (r *Registry) GetAll(ctx context.Context) []channelConstant.Model {
 	t := tenant.MustFromContext(ctx)
-	members, err := r.client.SMembers(ctx, channelSetKey(t)).Result()
+	members, err := r.channels.Members(ctx, t)
 	if err != nil {
 		return nil
 	}

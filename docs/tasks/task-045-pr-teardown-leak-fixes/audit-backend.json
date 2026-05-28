@@ -1,0 +1,34 @@
+{
+  "task": "task-045-pr-teardown-leak-fixes",
+  "auditor": "backend-guidelines-reviewer",
+  "base": "6815a919e58855eae4b8fa0db51675913740287b",
+  "date": "2026-05-27",
+  "build": "pass",
+  "tests": "pass",
+  "redisKeyGuard": "exit 0",
+  "overallStatus": "pass",
+  "scopeNote": "Redis-key-namespacing refactor of registries/caches; DOM-01..DOM-20 (model/handler/REST) checks N/A. Verified: lib key composition, Update retry loop, Lua port, 3 bare-key fixes, DOM-21, test quality, guard analyzer.",
+  "blocking": [],
+  "important": [],
+  "minor": [
+    {
+      "id": "MIN-1",
+      "summary": "Duplicated ingestJobNamespace const + newIngestJobRegistry across runtime/rest and runtime/ingest packages",
+      "evidence": "services/atlas-data/atlas.com/data/runtime/rest/jobs.go:37,42; services/atlas-data/atlas.com/data/runtime/ingest/heartbeat.go:26,31"
+    },
+    {
+      "id": "MIN-2",
+      "summary": "GetAll/GetAllEntries/Clear-family swallow pipeline+unmarshal errors (consistent with pre-existing GetAllValues convention)",
+      "evidence": "libs/atlas-redis/registry.go:154,158-172; libs/atlas-redis/tenant_registry.go GetAllEntries"
+    },
+    {
+      "id": "MIN-3",
+      "summary": "ApplyDamage collapses all Update failures (incl. retry-exhausted, transport) to errMonsterNotFound; intentional, behavior-preserving",
+      "evidence": "services/atlas-monsters/atlas.com/monsters/monster/registry.go:466-469"
+    }
+  ],
+  "acceptedByDesign": [
+    "Key/data-shape churn on main (TenantKey migration + atlas-rates HASH re-model) cleaned by FR-1.6 reclaim script; context.md Gotchas",
+    "atlas-reactors cooldown semantics change to expiry-unix-ms hash fields; context.md P2"
+  ]
+}

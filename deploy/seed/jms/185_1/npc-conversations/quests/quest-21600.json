@@ -1,0 +1,91 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21600,
+      "questName": "Wolf Rider",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey, Aran. You seem pretty strong, since that time from when you got freed from the glacier. Suitable enough to #bride a wolf#k, if you ask me."
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Picked your interest, huh? Very well, first you must make your way to #bAqua#k, there is a person there who makes #rfood for wolf cubs#k. Bring one portion to me, and I shall deem you able to tame and take care of one. What do you say, will you try for it?"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "instructions"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Alright. The one you must meet is #bNanuke#k, she is on top of a #rsnowy whale#k, somewhere in the ocean. Good luck!"
+            },
+            "id": "instructions",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "21600",
+    "type": "quest-conversation"
+  }
+}

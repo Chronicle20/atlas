@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2041024,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "For those capable of great feats and bearers of an unwavering resolve, the #bfinal destination#k lies ahead past the gate. The Machine Room accepts only #rone party at a time#k, so make sure your party is ready when crossing the gate."
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2041024",
+    "type": "npc-conversation"
+  }
+}

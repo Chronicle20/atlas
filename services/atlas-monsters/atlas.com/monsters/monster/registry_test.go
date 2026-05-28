@@ -12,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -21,6 +22,8 @@ import (
 var testMiniRedis *miniredis.Miniredis
 
 func TestMain(m *testing.M) {
+	producertest.InstallNoop()
+
 	mr, err := miniredis.Run()
 	if err != nil {
 		panic(err)

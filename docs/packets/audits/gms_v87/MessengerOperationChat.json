@@ -1,0 +1,29 @@
+{
+  "WriterName": "MessengerOperationChat",
+  "IDAName": "CUIMessenger::ProcessChat",
+  "Address": "0x8b978f",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/serverbound/operation_chat.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (6 = chat)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message text",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

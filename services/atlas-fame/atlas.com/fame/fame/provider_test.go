@@ -6,6 +6,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -149,6 +150,28 @@ func TestByCharacterIdLastMonthEntityProvider_ReturnsEmptyForNoMatches(t *testin
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 0)
+}
+
+func TestDeleteByCharacterId_ScopedToTenant(t *testing.T) {
+	// Two tenants, both with a fame row mentioning characterId 1000. Without
+	// tenant scoping the WHERE clause would hit both rows; with scoping only
+	// tenant A's row is deleted. Uses NewInMemoryTenantDB for fresh per-test
+	// isolation (testDatabase above shares state across tests via a shared
+	// cache).
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tidA := uuid.New()
+	tidB := uuid.New()
+	now := time.Now()
+	createTestEntity(db, tidA, 1000, 2000, 1, now.AddDate(0, 0, -1))
+	createTestEntity(db, tidB, 1000, 2000, 1, now.AddDate(0, 0, -1))
+
+	err := deleteByCharacterId(db.WithContext(databasetest.TenantContext(tidA)), 1000)
+	assert.NoError(t, err)
+
+	var rows []Entity
+	assert.NoError(t, db.Unscoped().Order("tenant_id").Find(&rows).Error)
+	assert.Len(t, rows, 1, "tenant B's row must survive")
+	assert.Equal(t, tidB, rows[0].TenantId)
 }
 
 func TestByCharacterIdLastMonthEntityProvider_BoundaryDateExactlyOneMonth(t *testing.T) {

@@ -1,0 +1,29 @@
+{
+  "WriterName": "GuildForeignNameChanged",
+  "IDAName": "CUserRemote::OnGuildNameChanged",
+  "Address": "0x0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/name_changed_foreign.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterId (dispatcher-prefix pattern — consumed by CUserPool before OnGuildNameChanged)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "newGuildName",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

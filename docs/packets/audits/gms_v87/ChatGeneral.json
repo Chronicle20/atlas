@@ -1,0 +1,38 @@
+{
+  "WriterName": "ChatGeneral",
+  "IDAName": "CField::SendChatMsg",
+  "Address": "0x552b67",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/chat/serverbound/general.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message text",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nEmotion (emote ID, packed with extra data in v95)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

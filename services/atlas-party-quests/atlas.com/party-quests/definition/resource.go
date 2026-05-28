@@ -27,7 +27,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/party-quests/definitions", registerInputHandler("create_definition", CreateDefinitionHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/party-quests/definitions/{definitionId}", registerInputHandler("update_definition", UpdateDefinitionHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/party-quests/definitions/{definitionId}", registerHandler("delete_definition", DeleteDefinitionHandler)).Methods(http.MethodDelete)
-			router.HandleFunc("/party-quests/definitions/seed", registerHandler("seed_definitions", SeedDefinitionsHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/party-quests/definitions/validate", registerHandler("validate_definitions", ValidateDefinitionsHandler)).Methods(http.MethodPost)
 		}
 	}
@@ -177,22 +176,6 @@ func DeleteDefinitionHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) 
 			w.WriteHeader(http.StatusNoContent)
 		}
 	})
-}
-
-func SeedDefinitionsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Seeding definitions.")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
-	}
 }
 
 func ValidateDefinitionsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {

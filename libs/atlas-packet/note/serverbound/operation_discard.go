@@ -23,22 +23,17 @@ func (e DiscardEntry) Flag() byte {
 }
 
 type OperationDiscard struct {
-	count   byte
-	val1    byte
-	val2    byte
-	entries []DiscardEntry
+	count         byte
+	emptySlotCount byte
+	entries       []DiscardEntry
 }
 
 func (m OperationDiscard) Count() byte {
 	return m.count
 }
 
-func (m OperationDiscard) Val1() byte {
-	return m.val1
-}
-
-func (m OperationDiscard) Val2() byte {
-	return m.val2
+func (m OperationDiscard) EmptySlotCount() byte {
+	return m.emptySlotCount
 }
 
 func (m OperationDiscard) Entries() []DiscardEntry {
@@ -50,15 +45,14 @@ func (m OperationDiscard) Operation() string {
 }
 
 func (m OperationDiscard) String() string {
-	return fmt.Sprintf("count [%d] val1 [%d] val2 [%d] entries [%d]", m.count, m.val1, m.val2, len(m.entries))
+	return fmt.Sprintf("count [%d] emptySlotCount [%d] entries [%d]", m.count, m.emptySlotCount, len(m.entries))
 }
 
 func (m OperationDiscard) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.count)
-		w.WriteByte(m.val1)
-		w.WriteByte(m.val2)
+		w.WriteByte(m.emptySlotCount)
 		for _, e := range m.entries {
 			w.WriteInt(e.id)
 			w.WriteByte(e.flag)
@@ -70,8 +64,7 @@ func (m OperationDiscard) Encode(l logrus.FieldLogger, _ context.Context) func(o
 func (m *OperationDiscard) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.count = r.ReadByte()
-		m.val1 = r.ReadByte()
-		m.val2 = r.ReadByte()
+		m.emptySlotCount = r.ReadByte()
 		m.entries = make([]DiscardEntry, 0, m.count)
 		for i := byte(0); i < m.count; i++ {
 			e := DiscardEntry{

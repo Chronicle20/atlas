@@ -12,25 +12,21 @@ import (
 )
 
 type Registry struct {
-	client    *goredis.Client
-	namespace string
+	sets *atlas.TenantKeyedSet[uint32]
 }
 
 var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
 	registry = &Registry{
-		client:    client,
-		namespace: "blocked-portal",
+		sets: atlas.NewTenantKeyedSet[uint32](client, "blocked-portal", func(characterId uint32) string {
+			return strconv.FormatUint(uint64(characterId), 10)
+		}),
 	}
 }
 
 func GetRegistry() *Registry {
 	return registry
-}
-
-func (r *Registry) setKey(t tenant.Model, characterId uint32) string {
-	return fmt.Sprintf("%s:%s:%s:%s", atlas.KeyPrefix(), r.namespace, atlas.TenantKey(t), strconv.FormatUint(uint64(characterId), 10))
 }
 
 func portalKey(mapId _map.Id, portalId uint32) string {
@@ -46,27 +42,28 @@ func parsePortalKey(key string) (_map.Id, uint32) {
 
 func (r *Registry) IsBlocked(ctx context.Context, characterId uint32, mapId _map.Id, portalId uint32) bool {
 	t := tenant.MustFromContext(ctx)
-	return r.client.SIsMember(ctx, r.setKey(t, characterId), portalKey(mapId, portalId)).Val()
+	ok, _ := r.sets.IsMember(ctx, t, characterId, portalKey(mapId, portalId))
+	return ok
 }
 
 func (r *Registry) Block(ctx context.Context, characterId uint32, mapId _map.Id, portalId uint32) {
 	t := tenant.MustFromContext(ctx)
-	r.client.SAdd(ctx, r.setKey(t, characterId), portalKey(mapId, portalId))
+	_ = r.sets.Add(ctx, t, characterId, portalKey(mapId, portalId))
 }
 
 func (r *Registry) Unblock(ctx context.Context, characterId uint32, mapId _map.Id, portalId uint32) {
 	t := tenant.MustFromContext(ctx)
-	r.client.SRem(ctx, r.setKey(t, characterId), portalKey(mapId, portalId))
+	_ = r.sets.Remove(ctx, t, characterId, portalKey(mapId, portalId))
 }
 
 func (r *Registry) ClearForCharacter(ctx context.Context, characterId uint32) {
 	t := tenant.MustFromContext(ctx)
-	r.client.Del(ctx, r.setKey(t, characterId))
+	_ = r.sets.Clear(ctx, t, characterId)
 }
 
 func (r *Registry) GetForCharacter(ctx context.Context, characterId uint32) []Model {
 	t := tenant.MustFromContext(ctx)
-	members, err := r.client.SMembers(ctx, r.setKey(t, characterId)).Result()
+	members, err := r.sets.Members(ctx, t, characterId)
 	if err != nil {
 		return []Model{}
 	}

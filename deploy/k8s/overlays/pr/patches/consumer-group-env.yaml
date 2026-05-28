@@ -410,6 +410,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-monster-book
+spec:
+  template:
+    spec:
+      containers:
+        - name: monster-book
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Monster Book Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-monster-death
 spec:
   template:

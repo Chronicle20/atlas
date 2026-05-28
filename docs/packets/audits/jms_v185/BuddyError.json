@@ -1,0 +1,29 @@
+{
+  "WriterName": "BuddyError",
+  "IDAName": "CWvsContext::OnFriendResult#Error",
+  "Address": "0xb2a873",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/error.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte = 11–22 range (error codes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

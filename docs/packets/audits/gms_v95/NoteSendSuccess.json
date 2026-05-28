@@ -1,0 +1,20 @@
+{
+  "WriterName": "NoteSendSuccess",
+  "IDAName": "CWvsContext::OnMemoResult#SendSuccess",
+  "Address": "0x9f9da0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/note/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=4, SEND_SUCCESS) — no further bytes; success path shows UI notification only",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

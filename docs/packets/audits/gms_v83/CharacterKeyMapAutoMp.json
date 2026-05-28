@@ -1,0 +1,20 @@
+{
+  "WriterName": "CharacterKeyMapAutoMp",
+  "IDAName": "CFuncKeyMappedMan::OnPetConsumeMPItemInit",
+  "Address": "0x58de53",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/keymap_auto_mp.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nPetConsumeMPItemID (MP auto-pot item ID; 0 = use config default)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

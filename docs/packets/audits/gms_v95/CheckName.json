@@ -1,0 +1,20 @@
+{
+  "WriterName": "CheckName",
+  "IDAName": "CLogin::SendCheckDuplicateIDPacket",
+  "Address": "0x5d5690",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/check_name.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sCharName (character name to check)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -1,0 +1,29 @@
+{
+  "WriterName": "CharacterSkillCooldown",
+  "IDAName": "CUserLocal::OnSkillCooltimeSet",
+  "Address": "0x908b90",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/skill_cooldown.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSkillID (v2 = Decode4)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "usRemainSec cooldown in seconds (Decode2)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

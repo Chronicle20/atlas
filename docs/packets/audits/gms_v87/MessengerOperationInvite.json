@@ -1,0 +1,20 @@
+{
+  "WriterName": "MessengerOperationInvite",
+  "IDAName": "CUIMessenger::SendInviteMsg",
+  "Address": "0x8b978f",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/serverbound/operation_invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "characterName to invite",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -1,0 +1,17 @@
+{
+  "data": {
+    "type": "monster-drop",
+    "id": "4300017",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 0,
+          "minimumQuantity": 540,
+          "maximumQuantity": 800,
+          "questId": 0,
+          "chance": 400000
+        }
+      ]
+    }
+  }
+}

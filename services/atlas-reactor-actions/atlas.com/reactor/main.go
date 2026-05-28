@@ -6,6 +6,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-reactor-actions/logger"
 	"atlas-reactor-actions/script"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
@@ -13,6 +14,7 @@ import (
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-reactor-actions"
@@ -51,7 +53,10 @@ func main() {
 	}
 
 	// Initialize database connection
-	db := database.Connect(l, database.SetMigrations(script.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(
+		script.MigrateTable,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	// Initialize Kafka consumers
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
@@ -71,6 +76,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(script.InitResource(GetServer())(db)).
+		AddRouteInitializer(script.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

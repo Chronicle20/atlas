@@ -1,0 +1,38 @@
+{
+  "WriterName": "InteractionOperationPersonalStoreBuy",
+  "IDAName": "CPersonalShopDlg::BuyItem",
+  "Address": "0x74076b",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "index (a2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "quantity (v71)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemCRC (CItemInfo::GetItemCRC) — PRESENT in v83 AND v87 AND v95. Unconditional fix holds.",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

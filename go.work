@@ -1,4 +1,4 @@
-go 1.25.5
+go 1.26.0
 
 use (
 	./libs/atlas-constants
@@ -8,16 +8,19 @@ use (
 	./libs/atlas-model
 	./libs/atlas-object-id
 	./libs/atlas-opcodes
+	./libs/atlas-outbox
 	./libs/atlas-packet
 	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-retry
 	./libs/atlas-saga
 	./libs/atlas-script-core
+	./libs/atlas-seeder
 	./libs/atlas-service
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./libs/atlas-tracing
+	./libs/atlas-wz
 	./services/atlas-account/atlas.com/account
 	./services/atlas-asset-expiration/atlas.com/asset-expiration
 	./services/atlas-ban/atlas.com/ban
@@ -66,13 +69,15 @@ use (
 	./services/atlas-rates/atlas.com/rates
 	./services/atlas-reactor-actions/atlas.com/reactor
 	./services/atlas-reactors/atlas.com/reactors
+	./services/atlas-renders/atlas.com/renders
 	./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
 	./services/atlas-skills/atlas.com/skills
 	./services/atlas-storage/atlas.com/storage
 	./services/atlas-tenants/atlas.com/tenants
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
-	./services/atlas-wz-extractor/atlas.com/wz-extractor
+	./tools/catalog-lint
 	./tools/cideps
 	./tools/packet-audit
+	./tools/seed-splitters
 )

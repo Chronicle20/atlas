@@ -1,0 +1,249 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1061016,
+      "startState": "initialGreeting",
+      "states": [
+        {
+          "id": "initialGreeting",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "selectItem",
+                "text": "Redeem items"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Hello, #h0#. I can exchange your Balrog Leathers."
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "selectItem",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selectedItem": "2040728"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040728##z2040728#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040729"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040729##z2040729#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040730"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040730##z2040730#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040731"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040731##z2040731#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040732"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040732##z2040732#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040733"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040733##z2040733#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040734"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040734##z2040734#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040735"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040735##z2040735#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040736"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040736##z2040736#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040737"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040737##z2040737#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040738"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040738##z2040738#"
+              },
+              {
+                "context": {
+                  "selectedItem": "2040739"
+                },
+                "nextState": "checkRequirements",
+                "text": "#i2040739##z2040739#"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Well, okay. These are what you can redeem..."
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.selectedItem}",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4001261",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performExchange"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "{context.selectedItem}",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "noLeathers"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkRequirements",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please make room"
+          },
+          "id": "noInventorySpace",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You don't have enough leathers."
+          },
+          "id": "noLeathers",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4001261",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "{context.selectedItem}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "exchangeSuccess"
+              }
+            ]
+          },
+          "id": "performExchange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Thank you for your redemption"
+          },
+          "id": "exchangeSuccess",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1061016",
+    "type": "npc-conversation"
+  }
+}

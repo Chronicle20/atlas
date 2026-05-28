@@ -1,0 +1,20 @@
+{
+  "WriterName": "GuildBBSDeleteThread",
+  "IDAName": "CUIGuildBBS::OnDelete",
+  "Address": "0x87a5df",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/guild/serverbound/bbs_delete_thread.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "threadId",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

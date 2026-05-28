@@ -15,37 +15,38 @@ type (
 	Step   = sharedsaga.Step[any]
 
 	// Payload types
-	AwardItemActionPayload                = sharedsaga.AwardItemActionPayload
-	ItemPayload                           = sharedsaga.ItemPayload
-	WarpToRandomPortalPayload             = sharedsaga.WarpToRandomPortalPayload
-	WarpToPortalPayload                   = sharedsaga.WarpToPortalPayload
-	AwardExperiencePayload                = sharedsaga.AwardExperiencePayload
-	AwardLevelPayload                     = sharedsaga.AwardLevelPayload
-	AwardMesosPayload                     = sharedsaga.AwardMesosPayload
-	DestroyAssetPayload                   = sharedsaga.DestroyAssetPayload
-	EquipAssetPayload                     = sharedsaga.EquipAssetPayload
-	UnequipAssetPayload                   = sharedsaga.UnequipAssetPayload
-	ChangeJobPayload                      = sharedsaga.ChangeJobPayload
-	CreateSkillPayload                    = sharedsaga.CreateSkillPayload
-	UpdateSkillPayload                    = sharedsaga.UpdateSkillPayload
-	RequestGuildNamePayload               = sharedsaga.RequestGuildNamePayload
-	RequestGuildEmblemPayload             = sharedsaga.RequestGuildEmblemPayload
-	RequestGuildDisbandPayload            = sharedsaga.RequestGuildDisbandPayload
-	RequestGuildCapacityIncreasePayload   = sharedsaga.RequestGuildCapacityIncreasePayload
-	CreateInvitePayload                   = sharedsaga.CreateInvitePayload
-	CharacterCreatePayload                = sharedsaga.CharacterCreatePayload
-	CreateAndEquipAssetPayload            = sharedsaga.CreateAndEquipAssetPayload
-	AwaitCharacterCreatedPayload          = sharedsaga.AwaitCharacterCreatedPayload
-	ExperienceDistributions               = sharedsaga.ExperienceDistributions
+	AwardItemActionPayload              = sharedsaga.AwardItemActionPayload
+	ItemPayload                         = sharedsaga.ItemPayload
+	WarpToRandomPortalPayload           = sharedsaga.WarpToRandomPortalPayload
+	WarpToPortalPayload                 = sharedsaga.WarpToPortalPayload
+	AwardExperiencePayload              = sharedsaga.AwardExperiencePayload
+	AwardLevelPayload                   = sharedsaga.AwardLevelPayload
+	AwardMesosPayload                   = sharedsaga.AwardMesosPayload
+	DestroyAssetPayload                 = sharedsaga.DestroyAssetPayload
+	EquipAssetPayload                   = sharedsaga.EquipAssetPayload
+	UnequipAssetPayload                 = sharedsaga.UnequipAssetPayload
+	ChangeJobPayload                    = sharedsaga.ChangeJobPayload
+	CreateSkillPayload                  = sharedsaga.CreateSkillPayload
+	UpdateSkillPayload                  = sharedsaga.UpdateSkillPayload
+	RequestGuildNamePayload             = sharedsaga.RequestGuildNamePayload
+	RequestGuildEmblemPayload           = sharedsaga.RequestGuildEmblemPayload
+	RequestGuildDisbandPayload          = sharedsaga.RequestGuildDisbandPayload
+	RequestGuildCapacityIncreasePayload = sharedsaga.RequestGuildCapacityIncreasePayload
+	CreateInvitePayload                 = sharedsaga.CreateInvitePayload
+	CharacterCreatePayload              = sharedsaga.CharacterCreatePayload
+	CreateAndEquipAssetPayload          = sharedsaga.CreateAndEquipAssetPayload
+	AwaitCharacterCreatedPayload        = sharedsaga.AwaitCharacterCreatedPayload
+	AwaitInventoryCreatedPayload        = sharedsaga.AwaitInventoryCreatedPayload
+	ExperienceDistributions             = sharedsaga.ExperienceDistributions
 )
 
 // Re-export constants from atlas-saga shared library
 const (
 	// Saga types
-	InventoryTransaction      = sharedsaga.InventoryTransaction
-	QuestReward               = sharedsaga.QuestReward
-	TradeTransaction          = sharedsaga.TradeTransaction
-	CharacterCreation = sharedsaga.CharacterCreation
+	InventoryTransaction = sharedsaga.InventoryTransaction
+	QuestReward          = sharedsaga.QuestReward
+	TradeTransaction     = sharedsaga.TradeTransaction
+	CharacterCreation    = sharedsaga.CharacterCreation
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -74,6 +75,7 @@ const (
 	CreateCharacter              = sharedsaga.CreateCharacter
 	CreateAndEquipAsset          = sharedsaga.CreateAndEquipAsset
 	AwaitCharacterCreated        = sharedsaga.AwaitCharacterCreated
+	AwaitInventoryCreated        = sharedsaga.AwaitInventoryCreated
 )
 
 // ValidateCharacterStatePayload uses the character-factory service's validation.ConditionInput.

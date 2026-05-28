@@ -1,0 +1,20 @@
+{
+  "WriterName": "SelectWorld",
+  "IDAName": "CLogin::OnLatestConnectedWorld",
+  "Address": "0x62fa8a",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/select_world.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "latestConnectedWorldID",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

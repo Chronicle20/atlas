@@ -117,7 +117,7 @@ func GuildMemberJoinedBody(guildId uint32, characterId uint32, name string, jobI
 
 func GuildInviteBody(guildId uint32, originatorName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationInvite, func(mode byte) packet.Encoder {
-		return clientbound.NewInvite(mode, guildId, originatorName)
+		return clientbound.NewInvite(mode, guildId, originatorName, 0, 0)
 	})
 }
 
@@ -137,7 +137,7 @@ func GuildDisbandBody(guildId uint32) func(logrus.FieldLogger, context.Context) 
 	})
 }
 
-func GuildCapacityChangedBody(guildId uint32, capacity uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+func GuildCapacityChangedBody(guildId uint32, capacity byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationIncreaseCapacitySuccess, func(mode byte) packet.Encoder {
 		return clientbound.NewCapacityChange(mode, guildId, capacity)
 	})

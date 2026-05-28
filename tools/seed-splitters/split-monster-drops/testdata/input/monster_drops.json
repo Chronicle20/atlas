@@ -1,0 +1,5 @@
+[
+  {"monsterId":100,"itemId":2000,"minimumQuantity":1,"maximumQuantity":1,"questId":0,"chance":1000},
+  {"monsterId":100,"itemId":2001,"minimumQuantity":2,"maximumQuantity":3,"questId":0,"chance":500},
+  {"monsterId":200,"itemId":2100,"minimumQuantity":1,"maximumQuantity":1,"questId":0,"chance":2000}
+]

@@ -26,10 +26,6 @@ type ScriptProcessor interface {
 	ByReactorIdProvider(reactorId string) model.Provider[ReactorScript]
 	AllProvider() model.Provider[[]ReactorScript]
 
-	// Seeding
-	DeleteAllForTenant() (int64, error)
-	Seed() (SeedResult, error)
-
 	// Count returns the number of reactor scripts for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
 	Count() (int64, *time.Time, error)
@@ -108,58 +104,6 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 		return err
 	}
 	return nil
-}
-
-// DeleteAllForTenant deletes all reactor scripts for the current tenant
-func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
-	p.l.Debugf("Deleting all reactor scripts for tenant [%s]", p.t.Id())
-
-	count, err := deleteAllReactorScripts(p.db.WithContext(p.ctx))
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to delete reactor scripts for tenant [%s]", p.t.Id())
-		return 0, err
-	}
-	p.l.Debugf("Deleted [%d] reactor scripts for tenant [%s]", count, p.t.Id())
-	return count, nil
-}
-
-// Seed clears existing reactor scripts and loads them from the scripts directory
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding reactor scripts for tenant [%s]", p.t.Id())
-
-	result := SeedResult{}
-
-	// Delete all existing scripts for this tenant
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing reactor scripts: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load script files from the filesystem
-	scripts, loadErrors := LoadReactorScriptFiles()
-
-	// Track load errors
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each script
-	for _, script := range scripts {
-		_, err = p.Create(script)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", script.ReactorId(), err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 // ProcessHit processes a reactor hit event

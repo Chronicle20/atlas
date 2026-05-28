@@ -1,0 +1,38 @@
+{
+  "WriterName": "ChatGeneral",
+  "IDAName": "CField::SendChatMsg",
+  "Address": "0x534000",
+  "Variant": "GMS/v95",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/chat/serverbound/general.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time(); gated GMS\u003e83 in atlas — v95 always present)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "chat message text (sText)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bOnlyBalloon flag",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

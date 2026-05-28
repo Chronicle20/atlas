@@ -1,0 +1,38 @@
+{
+  "WriterName": "CharacterSitResult",
+  "IDAName": "CUserLocal::OnSitResult",
+  "Address": "0x905e70",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/sit_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sitting flag (0=cancel sit / stand up, 1=sit in chair)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "chairId / nSeat (only if sitting flag == 1)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

@@ -1,0 +1,29 @@
+{
+  "WriterName": "PartyOperationExpel",
+  "IDAName": "CField::SendKickPartyMsg",
+  "Address": "0x530140",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/party/serverbound/operation_expel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op=5 (EXPEL_PARTY_MEMBER)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "PartyMemberByName = targetCharacterId",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

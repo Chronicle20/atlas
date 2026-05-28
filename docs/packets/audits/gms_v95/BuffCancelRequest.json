@@ -1,0 +1,20 @@
+{
+  "WriterName": "BuffCancelRequest",
+  "IDAName": "CUserLocal::SendSkillCancelRequest",
+  "Address": "0x93d730",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/buff_cancel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSkillID (skill to cancel; remapped for Aran/Evan aliases)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

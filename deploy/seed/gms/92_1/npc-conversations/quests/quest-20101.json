@@ -1,0 +1,332 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "askConfirmation",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkRequirements",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "Have you made your decision? The decision will be final, so think carefully before deciding what to do. Are you sure you want to become a Dawn Warrior?"
+            },
+            "id": "askConfirmation",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "This is an important decision to make."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "type": "jobId",
+                      "value": "1100"
+                    }
+                  ],
+                  "nextState": "alreadyDawnWarrior"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "level",
+                      "value": "10"
+                    }
+                  ],
+                  "nextState": "requirementsNotMet"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1302077",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "inventoryFull"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1142066",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "inventoryFull"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "performJobChange"
+                }
+              ]
+            },
+            "id": "checkRequirements",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "jobChangeComplete"
+                }
+              ]
+            },
+            "id": "alreadyDawnWarrior",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Train a bit more until you reach #blevel 10, STR 35#k and I can show you the way of the #rDawn Warrior#k."
+            },
+            "id": "requirementsNotMet",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Make some room in your inventory and talk back to me."
+            },
+            "id": "inventoryFull",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "targets": "[{\"stat\":\"strength\",\"floor\":35}]"
+                  },
+                  "type": "rebalance_ap"
+                },
+                {
+                  "params": {
+                    "itemId": "1302077",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1142066",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "jobId": "1100"
+                  },
+                  "type": "change_job"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "jobChangeComplete"
+                }
+              ]
+            },
+            "id": "performJobChange",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "inventoryExpanded",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I have just molded your body to make it perfect for a Dawn Warrior. If you wish to become more powerful, use Stat Window (S) to raise the appropriate stats. If you aren't sure what to raise, just click on #bAuto#k."
+            },
+            "id": "jobChangeComplete",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "jobChangeComplete",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "spHint",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "I have also expanded your inventory slot counts for your equipment and etc. inventory. Use those slots wisely and fill them up with items required for Knights to carry."
+            },
+            "id": "inventoryExpanded",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "inventoryExpanded",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "expLossWarning",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "I have also given you a hint of #bSP#k, so open the #bSkill Menu#k to acquire new skills. Of course, you can't raise them at all once, and there are some skills out there where you won't be able to acquire them unless you master the basic skills first."
+            },
+            "id": "spHint",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "spHint",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "farewell",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Unlike your time as a Noblesse, once you become the Dawn Warrior, you will lost a portion of your EXP when you run out of HP, okay?"
+            },
+            "id": "expLossWarning",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "expLossWarning",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Now... I want you to go out there and show the world how the Knights of Cygnus operate."
+            },
+            "id": "farewell",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 20101,
+      "questName": "Cygnus 1st Job advancement - Dawn Warrior",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "20101",
+    "type": "quest-conversation"
+  }
+}

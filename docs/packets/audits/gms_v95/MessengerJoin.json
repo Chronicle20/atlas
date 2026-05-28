@@ -1,0 +1,29 @@
+{
+  "WriterName": "MessengerJoin",
+  "IDAName": "CUIMessenger::OnPacket#Join",
+  "Address": "0x7f5e00",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/clientbound/join.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=1, JOIN) — dispatcher switch byte consumed by CUIMessenger::OnPacket",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "position — self slot index in messenger room (Decode1 → OnSelfEnter)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -1,0 +1,6 @@
+F1 PRE-FIX REPRO
+
+Skipped: kubectl access to atlas-main was unavailable in this worktree. The
+fix below is still warranted because the current code path swallows errors —
+the test added in this commit pins the post-fix contract (publish: prefix on
+errors) so future regressions surface immediately.

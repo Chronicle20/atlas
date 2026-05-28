@@ -7,33 +7,15 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-// noopWriter is a kafka.Writer stub that discards all messages. Used in tests
-// to prevent real Kafka connections.
-type noopWriter struct{ topic string }
-
-func (w *noopWriter) Topic() string                                          { return w.topic }
-func (w *noopWriter) WriteMessages(_ context.Context, _ ...kafka.Message) error { return nil }
-func (w *noopWriter) Close() error                                           { return nil }
-
 func setupProcessorTest(t *testing.T) (Processor, tenant.Model, context.Context) {
 	t.Helper()
 	setupTestRegistry(t)
-
-	// Inject a noop Kafka writer so message.Emit does not attempt a real TCP
-	// connection during unit tests.
-	kafkaProducer.ResetInstance()
-	kafkaProducer.GetManager(kafkaProducer.ConfigWriterFactory(func(topicName string) kafkaProducer.Writer {
-		return &noopWriter{topic: topicName}
-	}))
-	t.Cleanup(kafkaProducer.ResetInstance)
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)

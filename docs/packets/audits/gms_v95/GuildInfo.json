@@ -1,0 +1,191 @@
+{
+  "WriterName": "GuildInfo",
+  "IDAName": "CWvsContext::OnGuildResult#Info",
+  "Address": "0x4fb760",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/info.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (sub-op 0x1A=26 in GUILD_OPERATION)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inGuild bool",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "guildId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "guildName",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "title[0]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "title[1]",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "title[2]",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 4,
+      "IDAComment": "title[3]",
+      "Verdict": 3,
+      "Note": "sub-struct: gm — see _substruct/"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "title[4]",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "memberCount",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "count × charId (4 bytes each, packed via DecodeBuffer)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "count × GUILDMEMBER (37 bytes each, packed via DecodeBuffer)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMaxMemberNum (capacity)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nMarkBg (logoBackground)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nMarkBgColor (logoBackgroundColor)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nMark (logo)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nMarkColor (logoColor)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "notice",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nPoint (points)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nAllianceID",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3
+}

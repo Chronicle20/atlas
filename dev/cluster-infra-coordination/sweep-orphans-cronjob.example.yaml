@@ -1,0 +1,39 @@
+# EXAMPLE — owned by the sibling cluster-infra repo, NOT applied from this repo.
+# A cluster-wide SINGLETON CronJob (do not place under overlays/pr-cleanup,
+# which CI renders once per PR). Runs the sweep backstop every 6h. The script
+# logic lives in this repo's atlas-pr-bootstrap image; this manifest only
+# schedules it. See task-045/design.md §4.4.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: atlas-pr-sweep-orphans
+  namespace: argocd
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          # Reuses the existing PostDelete cleanup SA. cluster-infra must grant
+          # it cluster-wide `list namespaces` + egress to cross-namespace
+          # atlas-tenants services (for the live-PR-env allowlist).
+          serviceAccountName: atlas-pr-cleanup
+          containers:
+            - name: sweep
+              image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+              command: ["/atlas/sweep-orphans.sh", "--minio", "--apply"]
+              envFrom:
+                - configMapRef:
+                    name: atlas-pr-cleanup-env
+                - secretRef:
+                    name: minio-root-creds
+              env:
+                - name: ATLAS_PR_NS_SELECTOR
+                  value: "atlas.pr-number"
+                - name: MINIO_TENANT_SAFETY_WINDOW_SEC
+                  value: "7200"

@@ -81,3 +81,26 @@ func deleteAllMapScripts(db *gorm.DB) (int64, error) {
 	}
 	return result.RowsAffected, nil
 }
+
+// DeleteAllByType hard-deletes all map scripts of a given script_type in the tenant context.
+func DeleteAllByType(db *gorm.DB, scriptType string) (int64, error) {
+	result := db.Unscoped().Where("script_type = ?", scriptType).Delete(&Entity{})
+	return result.RowsAffected, result.Error
+}
+
+// BulkCreate inserts a slice of MapScript models into the database.
+func BulkCreate(db *gorm.DB, tenantId uuid.UUID, models []MapScript) error {
+	if len(models) == 0 {
+		return nil
+	}
+	entities := make([]Entity, 0, len(models))
+	for _, m := range models {
+		e, err := ToEntity(m, tenantId)
+		if err != nil {
+			return err
+		}
+		e.ID = uuid.New()
+		entities = append(entities, e)
+	}
+	return db.Create(&entities).Error
+}

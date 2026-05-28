@@ -1,0 +1,199 @@
+name: PR-Env Smoke Test
+
+# Open + close a synthetic PR labeled deploy-env; assert every per-env
+# artifact is reclaimed within the timeout. Catches regressions in the
+# task-070 fixes (and any subsequent teardown refactor).
+#
+# Triggers: workflow_dispatch + nightly.
+#
+# If no self-hosted runner with the atlas-cluster label exists yet, set the
+# `assert-reclamation` job's `if:` to `false` so the workflow can land
+# without failing nightly. Flip back to the gating condition once the
+# runner is provisioned.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17 4 * * *'   # 04:17 UTC daily
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: read
+
+concurrency:
+  group: pr-env-smoke
+  cancel-in-progress: false
+
+jobs:
+  open-synthetic-pr:
+    name: Open synthetic PR
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.open.outputs.pr_number }}
+      branch:    ${{ steps.open.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create no-op commit on a smoke branch
+        id: branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ts=$(date -u +%Y%m%d-%H%M%S)
+          br="smoke/pr-env-${ts}"
+          git config user.name 'atlas-smoke-bot'
+          git config user.email 'atlas-smoke-bot@users.noreply.github.com'
+          git checkout -b "$br"
+          mkdir -p docs/smoke
+          echo "$ts" > docs/smoke/touch.txt
+          git add docs/smoke/touch.txt
+          git commit -m "smoke(pr-env): touch $ts [skip ci]"
+          git push origin "$br"
+          echo "branch=$br" >> "$GITHUB_OUTPUT"
+
+      - name: Open PR with deploy-env label
+        id: open
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH:   ${{ steps.branch.outputs.branch }}
+        run: |
+          set -euo pipefail
+          url=$(gh pr create --base main --head "$BRANCH" \
+            --title "[smoke-test] pr-env reclamation $(date -u +%FT%TZ)" \
+            --body "Automated nightly smoke test for ephemeral PR-env teardown. Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --label deploy-env)
+          n=$(basename "$url")
+          echo "pr_number=$n" >> "$GITHUB_OUTPUT"
+          echo "Opened PR #$n on $BRANCH"
+
+  wait-for-healthy:
+    name: Wait for Application Healthy
+    needs: open-synthetic-pr
+    runs-on: [self-hosted, atlas-cluster]
+    timeout-minutes: 25
+    if: false   # FLIP TO TRUE once a self-hosted runner with the atlas-cluster label is provisioned.
+    steps:
+      - name: Poll Application health
+        env:
+          PR_NUMBER: ${{ needs.open-synthetic-pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + 1200 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+              s=$(kubectl -n argocd get application "atlas-pr-${PR_NUMBER}" \
+                  -o jsonpath='{.status.health.status}' 2>/dev/null || echo "")
+              echo "$(date -u +%FT%TZ) atlas-pr-${PR_NUMBER} health=${s:-<absent>}"
+              [ "$s" = "Healthy" ] && exit 0
+              sleep 30
+          done
+          echo "::error::Application atlas-pr-${PR_NUMBER} never became Healthy"
+          exit 1
+
+  trigger-teardown:
+    name: Remove deploy-env label
+    needs: [open-synthetic-pr, wait-for-healthy]
+    if: ${{ always() && needs.wait-for-healthy.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: gh pr edit --remove-label deploy-env
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ needs.open-synthetic-pr.outputs.pr_number }}
+        run: gh pr edit "$PR_NUMBER" --repo "${GITHUB_REPOSITORY}" --remove-label deploy-env
+
+  assert-reclamation:
+    name: Assert per-env state reclaimed
+    needs: [open-synthetic-pr, trigger-teardown]
+    if: false   # FLIP TO TRUE when wait-for-healthy is enabled.
+    runs-on: [self-hosted, atlas-cluster]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute ATLAS_ENV
+        id: env
+        env:
+          PR_NUMBER: ${{ needs.open-synthetic-pr.outputs.pr_number }}
+        run: |
+          atlas_env=$(printf "pr-%d" "$PR_NUMBER" | sha256sum | cut -c1-4)
+          echo "atlas_env=$atlas_env" >> "$GITHUB_OUTPUT"
+          echo "ATLAS_ENV=$atlas_env"
+
+      - name: Poll until all artifacts reclaimed
+        env:
+          PR_NUMBER:  ${{ needs.open-synthetic-pr.outputs.pr_number }}
+          ATLAS_ENV:  ${{ steps.env.outputs.atlas_env }}
+          GH_TOKEN:   ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + 900 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+              ok=1
+
+              kubectl -n argocd get application "atlas-pr-${PR_NUMBER}" \
+                  >/dev/null 2>&1 && ok=0
+              kubectl get ns "atlas-pr-${PR_NUMBER}" >/dev/null 2>&1 && ok=0
+
+              dbs=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" \
+                  -U "$DB_USER" -d postgres -tAc \
+                  "SELECT count(*) FROM pg_database WHERE datname ~ '-${ATLAS_ENV}\$';")
+              [ "$dbs" = "0" ] || ok=0
+
+              t=$(kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list 2>/dev/null \
+                  | grep -E -- "-${ATLAS_ENV}\$" | wc -l)
+              [ "$t" = "0" ] || ok=0
+
+              g=$(kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list 2>/dev/null \
+                  | grep -E -- "\\[${ATLAS_ENV}\\]\$" | wc -l)
+              [ "$g" = "0" ] || ok=0
+
+              r=$(redis-cli -u "redis://$REDIS_URL" --scan --pattern "${ATLAS_ENV}:*" | wc -l)
+              [ "$r" = "0" ] || ok=0
+
+              br=$(gh api -H "Authorization: Bearer $GH_TOKEN" \
+                  "/repos/Chronicle20/atlas/git/refs/heads/bot%2Fpr-${PR_NUMBER}-resolved" \
+                  --jq '.ref // empty' 2>/dev/null || true)
+              [ -z "$br" ] || ok=0
+
+              echo "$(date -u +%FT%TZ) PR=${PR_NUMBER} env=${ATLAS_ENV} dbs=${dbs} topics=${t} groups=${g} redis=${r} branch=${br:-gone} ok=${ok}"
+              [ "$ok" = "1" ] && exit 0
+              sleep 30
+          done
+          echo "::error::Some per-env state was not reclaimed within the timeout"
+          exit 1
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        env:
+          PR_NUMBER: ${{ needs.open-synthetic-pr.outputs.pr_number }}
+        run: |
+          mkdir -p /tmp/smoke-artifacts
+          kubectl -n argocd describe application "atlas-pr-${PR_NUMBER}" \
+            > /tmp/smoke-artifacts/application.txt 2>&1 || true
+          kubectl -n argocd logs -l app=atlas-pr-cleanup,atlas.pr-number=${PR_NUMBER} \
+            --tail=200 > /tmp/smoke-artifacts/cleanup-job.log 2>&1 || true
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-diagnostics-${{ needs.open-synthetic-pr.outputs.pr_number }}
+          path: /tmp/smoke-artifacts/
+
+  cleanup-synthetic-pr:
+    name: Close PR + delete smoke branch
+    needs: [open-synthetic-pr, assert-reclamation]
+    if: always() && needs.open-synthetic-pr.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close PR and delete branch
+        env:
+          GH_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ needs.open-synthetic-pr.outputs.pr_number }}
+          BRANCH:    ${{ needs.open-synthetic-pr.outputs.branch }}
+        run: |
+          gh pr close "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --delete-branch || \
+            gh api --method DELETE "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH}" || true

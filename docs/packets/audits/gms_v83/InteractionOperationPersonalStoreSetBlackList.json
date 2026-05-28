@@ -1,0 +1,29 @@
+{
+  "WriterName": "InteractionOperationPersonalStoreSetBlackList",
+  "IDAName": "CPersonalShopDlg::DeliverBlackList",
+  "Address": "0x6fdeda",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "count (config blacklist size)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "per-entry character name; repeated count times (string[], NOT byte[])",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

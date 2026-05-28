@@ -1,0 +1,96 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1101002,
+      "questId": 20200,
+      "questName": "The End of Knight-in-Training",
+      "startStateMachine": {
+        "startState": "askAccept",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startAndCompleteQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "#h0#? Wow, your level has sky-rocketed since the last time I saw you. You also look like you've taken care of a number of missions as well... You seem much more ready to move on now than the last time I saw you. What do you think? Are you interested in taking the #bKnighthood Exam#k? It's time for you to grow out of the Knight-in-Training and become a bonafide Knight, right?"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hmmm... do you feel like you still have missions to take care of as a trainee? I commend your level of patience, but this has gone too far. Cygnus Knights is in dire need of new, more powerful knights."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmCompletion"
+                }
+              ]
+            },
+            "id": "startAndCompleteQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "If you wish to take the Knighthood Exam, please come to Ereve. Each Chief Knight will test your abilities, and if you meet their standards, then you will officially become a Knight."
+            },
+            "id": "confirmCompletion",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "20200",
+    "type": "quest-conversation"
+  }
+}

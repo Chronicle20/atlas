@@ -1,0 +1,20 @@
+{
+  "WriterName": "PartyOperation",
+  "IDAName": "CField::SendWithdrawPartyMsg",
+  "Address": "0x56cba7",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/party/serverbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sub-op = 2 (WITHDRAW)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

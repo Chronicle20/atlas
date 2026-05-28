@@ -1,0 +1,74 @@
+{
+  "WriterName": "NoteDisplay",
+  "IDAName": "CWvsContext::OnMemoResult#Display",
+  "Address": "0x9f9da0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/note/clientbound/display.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=3, SHOW)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "count — number of GW_Memo entries",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwSN (memo id) — GW_Memo::Decode loop body (count iterations; analyzer flattens)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sSender (sender name, max 13 chars)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sContent (message body, max 201 chars)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "dateSent (8-byte FILETIME timestamp via DecodeBuffer(8))",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nFlag (memo status flag)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 2
+}

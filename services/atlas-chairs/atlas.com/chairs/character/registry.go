@@ -5,22 +5,25 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	client    *goredis.Client
-	namespace string
+	sets   *atlas.TenantKeyedSet[field.Model]
+	client *goredis.Client // retained for ResetForTesting only
 }
 
 var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
 	registry = &Registry{
-		client:    client,
-		namespace: "chair-char",
+		sets: atlas.NewTenantKeyedSet[field.Model](client, "chair-char", func(f field.Model) string {
+			return fmt.Sprintf("%d:%d:%d:%s", f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+		}),
+		client: client,
 	}
 }
 
@@ -28,27 +31,16 @@ func getRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) setKey(key MapKey) string {
-	tk := atlas.TenantKey(key.Tenant)
-	f := key.Field
-	return fmt.Sprintf("%s:%s:%s:%d:%d:%d:%s",
-		atlas.KeyPrefix(), r.namespace, tk,
-		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
-}
-
 func (r *Registry) AddCharacter(ctx context.Context, key MapKey, characterId uint32) {
-	rk := r.setKey(key)
-	r.client.SAdd(ctx, rk, strconv.FormatUint(uint64(characterId), 10))
+	_ = r.sets.Add(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
 }
 
 func (r *Registry) RemoveCharacter(ctx context.Context, key MapKey, characterId uint32) {
-	rk := r.setKey(key)
-	r.client.SRem(ctx, rk, strconv.FormatUint(uint64(characterId), 10))
+	_ = r.sets.Remove(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
 }
 
 func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
-	rk := r.setKey(key)
-	members, err := r.client.SMembers(ctx, rk).Result()
+	members, err := r.sets.Members(ctx, key.Tenant, key.Field)
 	if err != nil {
 		return nil
 	}
@@ -64,21 +56,7 @@ func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
 }
 
 // ResetForTesting clears all registry state. Only for use in tests.
+// FlushDB: test-only full reset; tests use an isolated miniredis instance.
 func (r *Registry) ResetForTesting(ctx context.Context, t tenant.Model) {
-	// Flush by scanning and deleting keys with our namespace prefix.
-	pattern := fmt.Sprintf("%s:%s:*", atlas.KeyPrefix(), r.namespace)
-	var cursor uint64
-	for {
-		keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
-		if err != nil {
-			return
-		}
-		if len(keys) > 0 {
-			r.client.Del(ctx, keys...)
-		}
-		cursor = next
-		if cursor == 0 {
-			break
-		}
-	}
+	_ = r.client.FlushDB(ctx).Err()
 }

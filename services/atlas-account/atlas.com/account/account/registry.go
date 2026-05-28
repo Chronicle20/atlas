@@ -45,8 +45,8 @@ type sessionEntry struct {
 type sessionsData map[string]sessionEntry
 
 type Registry struct {
-	reg    *atlas.TenantRegistry[uint32, sessionsData]
-	client *goredis.Client
+	reg     *atlas.TenantRegistry[uint32, sessionsData]
+	tenants *atlas.Set
 }
 
 var registry *Registry
@@ -56,7 +56,7 @@ func InitRegistry(client *goredis.Client) {
 		reg: atlas.NewTenantRegistry[uint32, sessionsData](client, "account-session", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}),
-		client: client,
+		tenants: atlas.NewSet(client, "account-session:_tenants"),
 	}
 }
 
@@ -80,10 +80,6 @@ func parseServiceKey(s string) (ServiceKey, error) {
 	return ServiceKey{SessionId: id, Service: Service(s[idx+1:])}, nil
 }
 
-func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
-}
-
 func (r *Registry) getSessions(ctx context.Context, key AccountKey) (sessionsData, error) {
 	return r.reg.Get(ctx, key.Tenant, key.AccountId)
 }
@@ -93,9 +89,9 @@ func (r *Registry) putSessions(ctx context.Context, key AccountKey, sm sessionsD
 	if err != nil {
 		return err
 	}
-	t := key.Tenant
-	tb, _ := json.Marshal(&t)
-	r.client.SAdd(ctx, r.tenantSetKey(), tb)
+	if tb, err := json.Marshal(&key.Tenant); err == nil {
+		_ = r.tenants.Add(ctx, string(tb))
+	}
 	return nil
 }
 
@@ -226,7 +222,7 @@ func (r *Registry) Terminate(ctx context.Context, key AccountKey) bool {
 }
 
 func (r *Registry) GetExpiredInTransition(ctx context.Context, timeout time.Duration) []AccountKey {
-	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil
 	}
@@ -238,54 +234,30 @@ func (r *Registry) GetExpiredInTransition(ctx context.Context, timeout time.Dura
 			continue
 		}
 
-		vals, err := r.reg.GetAllValues(ctx, t)
+		entries, err := r.reg.GetAllEntries(ctx, t)
 		if err != nil {
 			continue
 		}
 
-		// We need to reconstruct account IDs from the keys, but GetAllValues only returns values.
-		// Instead, scan the keys directly.
-		pattern := fmt.Sprintf("%s:%s:%s:*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
-		prefix := fmt.Sprintf("%s:%s:%s:", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
-		var cursor uint64
-		for {
-			keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
+		for accountIdStr, sm := range entries {
+			accountId, err := strconv.ParseUint(accountIdStr, 10, 32)
 			if err != nil {
-				break
+				continue
 			}
-			for _, k := range keys {
-				suffix := strings.TrimPrefix(k, prefix)
-				if strings.HasPrefix(suffix, "_") {
-					continue
+			ak := AccountKey{Tenant: t, AccountId: uint32(accountId)}
+			for _, entry := range sm {
+				if entry.State == StateTransition && time.Since(entry.UpdatedAt) > timeout {
+					accounts = append(accounts, ak)
+					break
 				}
-				accountId, err := strconv.ParseUint(suffix, 10, 32)
-				if err != nil {
-					continue
-				}
-				ak := AccountKey{Tenant: t, AccountId: uint32(accountId)}
-				sm, err := r.getSessions(ctx, ak)
-				if err != nil {
-					continue
-				}
-				for _, entry := range sm {
-					if entry.State == StateTransition && time.Since(entry.UpdatedAt) > timeout {
-						accounts = append(accounts, ak)
-						break
-					}
-				}
-			}
-			cursor = next
-			if cursor == 0 {
-				break
 			}
 		}
-		_ = vals // GetAllValues not needed, using SCAN instead
 	}
 	return accounts
 }
 
 func (r *Registry) Tenants(ctx context.Context) []tenant.Model {
-	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil
 	}

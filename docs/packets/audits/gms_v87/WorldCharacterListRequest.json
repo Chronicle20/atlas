@@ -1,0 +1,47 @@
+{
+  "WriterName": "WorldCharacterListRequest",
+  "IDAName": "CLogin::SendLoginPacket",
+  "Address": "0x62e463",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/login/serverbound/world_character_list_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "gameStartMode",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nWorldID",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nChannelID",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "socket addr (S_addr from getsockname)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -12,13 +12,24 @@ import (
 // TypeRegistry catalogs struct types in libs/atlas-packet/ that have an
 // Encode or Write method, and pre-analyzes their bodies so the diff engine
 // can inline KindRecurse markers.
+//
+// Storage is keyed on a qualified name "<pkgPath>.<structName>" where
+// pkgPath is the directory of the struct relative to the atlas-packet root
+// (e.g. "monster/clientbound.Spawn"). This prevents the previous
+// last-write-wins collision across sub-domains that reuse short struct
+// names like Spawn, Destroy, Movement.
+//
+// A short-name index (byShort) maps unqualified names back to their
+// qualified registry keys for callers that don't know the package context.
 type TypeRegistry struct {
-	types map[string]*TypeEntry
+	types   map[string]*TypeEntry // qualified key
+	byShort map[string][]string   // short name → qualified keys
 }
 
 // TypeEntry holds the pre-analyzed wire shape for one struct type.
 type TypeEntry struct {
 	File       string
+	PkgPath    string // directory of the struct relative to atlas-packet root, e.g. "monster/clientbound"
 	StructDecl *ast.StructType
 	// Pre-analyzed calls for whichever method this type exposes for wire encoding.
 	// Encode preferred over Write when both exist (atlas convention).
@@ -32,12 +43,16 @@ type TypeEntry struct {
 //     and analyze it (including resolving its own KindRecurse markers via this
 //     registry).
 func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
-	reg := &TypeRegistry{types: map[string]*TypeEntry{}}
+	reg := &TypeRegistry{
+		types:   map[string]*TypeEntry{},
+		byShort: map[string][]string{},
+	}
 
 	type fileCtx struct {
-		path string
-		file *ast.File
-		fset *token.FileSet
+		path    string
+		pkgPath string
+		file    *ast.File
+		fset    *token.FileSet
 	}
 
 	// Pass 1: collect struct declarations.
@@ -46,12 +61,20 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
+		rel, relErr := filepath.Rel(atlasPacketRoot, filepath.Dir(path))
+		if relErr != nil {
+			rel = ""
+		}
+		rel = filepath.ToSlash(rel)
+		if rel == "." {
+			rel = ""
+		}
 		fset := token.NewFileSet()
 		f, parseErr := parser.ParseFile(fset, path, nil, 0)
 		if parseErr != nil {
 			return nil // ignore broken files
 		}
-		files = append(files, fileCtx{path: path, file: f, fset: fset})
+		files = append(files, fileCtx{path: path, pkgPath: rel, file: f, fset: fset})
 		for _, decl := range f.Decls {
 			gd, ok := decl.(*ast.GenDecl)
 			if !ok || gd.Tok != token.TYPE {
@@ -66,10 +89,13 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 				if !ok {
 					continue
 				}
-				reg.types[ts.Name.Name] = &TypeEntry{
+				qual := qualify(rel, ts.Name.Name)
+				reg.types[qual] = &TypeEntry{
 					File:       path,
+					PkgPath:    rel,
 					StructDecl: st,
 				}
+				reg.byShort[ts.Name.Name] = append(reg.byShort[ts.Name.Name], qual)
 			}
 		}
 		return nil
@@ -90,12 +116,14 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 			if recvType == "" {
 				continue
 			}
-			entry, ok := reg.types[recvType]
+			qual := qualify(fc.pkgPath, recvType)
+			entry, ok := reg.types[qual]
 			if !ok {
 				continue
 			}
 			// Skip if we already have an Encode entry (Encode wins over Write).
-			if entry.Calls != nil && fd.Name.Name != "Encode" {
+			// EncodeForeign always proceeds since it registers under its own alt-key.
+			if entry.Calls != nil && fd.Name.Name != "Encode" && fd.Name.Name != "EncodeForeign" {
 				continue
 			}
 			switch fd.Name.Name {
@@ -104,7 +132,7 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 				if body == nil {
 					body = fd.Body
 				}
-				entry.Calls = collectCallsWithCtx(body, fc.fset, reg, recvType)
+				entry.Calls = collectCallsWithCtx(body, fc.fset, reg, qual)
 			case "EncodeEntry":
 				// EncodeEntry returns a closure (same shape as Encode) but the method
 				// name differs because the type is a list-entry sub-struct (e.g.
@@ -115,20 +143,36 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 					if body == nil {
 						body = fd.Body
 					}
-					entry.Calls = collectCallsWithCtx(body, fc.fset, reg, recvType)
+					entry.Calls = collectCallsWithCtx(body, fc.fset, reg, qual)
 				}
 			case "EncodeBytes":
 				// EncodeBytes returns a flat []byte (no closure). Used for sub-structs
 				// embedded inside a top-level Encode via WriteByteArray (e.g.
 				// cash/clientbound/shop_inventory.go's CashInventoryItem).
 				if entry.Calls == nil {
-					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, recvType)
+					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, qual)
 				}
+			case "EncodeForeign":
+				// Register under the "<Type>::EncodeForeign" key so callers can pick it
+				// explicitly without colliding with the primary Encode entry.
+				body := findReturnClosure(fd.Body)
+				if body == nil {
+					body = fd.Body
+				}
+				altQual := qual + "::EncodeForeign"
+				altShort := recvType + "::EncodeForeign"
+				reg.types[altQual] = &TypeEntry{
+					File:       entry.File,
+					PkgPath:    fc.pkgPath,
+					StructDecl: entry.StructDecl,
+					Calls:      collectCallsWithCtx(body, fc.fset, reg, altQual),
+				}
+				reg.byShort[altShort] = append(reg.byShort[altShort], altQual)
 			case "Write":
 				// Write methods have a flat body (no closure return) and accept *response.Writer.
 				// Only register if no Encode method was already found.
 				if entry.Calls == nil {
-					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, recvType)
+					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, qual)
 				}
 			}
 		}
@@ -137,19 +181,29 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 }
 
 // Calls returns the pre-analyzed Call list for the named type, if registered.
+// Accepts either a qualified key ("<pkgPath>.<name>") or an unqualified short
+// name. For short-name lookups, only returns calls when there is exactly one
+// qualified match — ambiguous short names return (nil, false) so callers must
+// disambiguate via Qualify or a context-aware resolver.
 func (r *TypeRegistry) Calls(typeName string) ([]Call, bool) {
-	e, ok := r.types[typeName]
-	if !ok {
-		return nil, false
+	if e, ok := r.types[typeName]; ok {
+		return e.Calls, e.Calls != nil
 	}
-	return e.Calls, e.Calls != nil
+	if quals, ok := r.byShort[typeName]; ok && len(quals) == 1 {
+		e := r.types[quals[0]]
+		return e.Calls, e.Calls != nil
+	}
+	return nil, false
 }
 
 // FieldType returns the type name of the named field on a struct type, with
-// slice/array/pointer/package indirection stripped. Returns ("", false) if unknown.
+// slice/array/pointer/package indirection stripped. Returns the bare Go
+// identifier (no package qualifier) — callers needing the qualified form
+// should pass the result through Qualify with the enclosing pkgPath.
+// Accepts qualified or unambiguously-short typeName.
 func (r *TypeRegistry) FieldType(typeName, fieldName string) (string, bool) {
-	e, ok := r.types[typeName]
-	if !ok {
+	e := r.resolveEntry(typeName)
+	if e == nil {
 		return "", false
 	}
 	for _, field := range e.StructDecl.Fields.List {
@@ -163,9 +217,81 @@ func (r *TypeRegistry) FieldType(typeName, fieldName string) (string, bool) {
 }
 
 // HasType reports whether the registry knows about the named type at all.
+// Accepts qualified or unqualified — for unqualified, returns true if any
+// package has a struct by that name.
 func (r *TypeRegistry) HasType(name string) bool {
-	_, ok := r.types[name]
+	if _, ok := r.types[name]; ok {
+		return true
+	}
+	_, ok := r.byShort[name]
 	return ok
+}
+
+// Qualify resolves a possibly-unqualified type hint to a qualified registry
+// key, preferring same-package matches over global short-name matches.
+// Returns the hint unchanged when no registered type matches.
+//
+// EncodeForeign suffixes ("::EncodeForeign") are preserved across the
+// qualification.
+func (r *TypeRegistry) Qualify(hint, contextPkg string) string {
+	if hint == "" {
+		return hint
+	}
+	if _, ok := r.types[hint]; ok {
+		return hint
+	}
+	// Strip an EncodeForeign suffix for the lookup, re-attach at the end.
+	suffix := ""
+	name := hint
+	if strings.HasSuffix(hint, "::EncodeForeign") {
+		suffix = "::EncodeForeign"
+		name = strings.TrimSuffix(hint, "::EncodeForeign")
+	}
+	// Try direct qualified lookup with the context package.
+	if contextPkg != "" {
+		if cand := qualify(contextPkg, name) + suffix; ifTypeExists(r, cand) {
+			return cand
+		}
+	}
+	// Fall back to short-name index.
+	if quals, ok := r.byShort[name+suffix]; ok && len(quals) > 0 {
+		if contextPkg != "" {
+			// Prefer a same-pkg or sibling-pkg match.
+			for _, q := range quals {
+				if strings.HasPrefix(q, contextPkg+".") {
+					return q
+				}
+			}
+		}
+		return quals[0]
+	}
+	return hint
+}
+
+func ifTypeExists(r *TypeRegistry, key string) bool {
+	_, ok := r.types[key]
+	return ok
+}
+
+// resolveEntry looks up an entry by qualified key, or by unambiguously-short
+// name. Returns nil for ambiguous short names or unknown keys.
+func (r *TypeRegistry) resolveEntry(name string) *TypeEntry {
+	if e, ok := r.types[name]; ok {
+		return e
+	}
+	if quals, ok := r.byShort[name]; ok && len(quals) == 1 {
+		return r.types[quals[0]]
+	}
+	return nil
+}
+
+// qualify joins a pkgPath and struct name into the canonical registry key.
+// Falls back to just the name when pkgPath is empty (root of atlas-packet).
+func qualify(pkgPath, name string) string {
+	if pkgPath == "" {
+		return name
+	}
+	return pkgPath + "." + name
 }
 
 // receiverIdent extracts the type name from a receiver type expression.

@@ -1,0 +1,38 @@
+{
+  "WriterName": "BuddyCapacityUpdate",
+  "IDAName": "CWvsContext::OnFriendResult#CapacityUpdate",
+  "Address": "0xb2a873",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/capacity_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sub-op mode byte",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "case 0x14: buddy count (CapacityUpdate)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "case 0x15: new capacity byte",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

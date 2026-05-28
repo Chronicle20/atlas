@@ -1,0 +1,47 @@
+{
+  "WriterName": "BuddyUpdate",
+  "IDAName": "CWvsContext::OnFriendResult#Update",
+  "Address": "0xa12630",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=0x08, UPDATE) — dispatcher switch byte consumed by OnFriendResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwFriendID — characterId used to locate the buddy via CFriend::FindIndex",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "GW_Friend update — 39 bytes via GW_Friend::Decode → DecodeBuffer(this,0x27): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)",
+      "Verdict": 3,
+      "Note": "sub-struct: bm — see _substruct/"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inShop — updated inShop flag stored in m_aInShop[Index]",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 3
+}

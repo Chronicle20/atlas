@@ -145,15 +145,10 @@ func (t TrackedItem) IsActiveAt(checkTime time.Time, isHoliday bool) bool {
 	return false
 }
 
-// itemTrackerKey is a composite key for characterId:templateId
-type itemTrackerKey struct {
-	CharacterId uint32
-	TemplateId  uint32
-}
-
-// ItemTracker tracks time-based rate items per character using Redis
+// ItemTracker tracks time-based rate items per character: one Redis HASH per
+// (tenant, character), hash field = templateId, value = TrackedItem JSON.
 type ItemTracker struct {
-	items *atlas.TenantRegistry[itemTrackerKey, TrackedItem]
+	items *atlas.TenantKeyedHash[uint32] // key = characterId
 }
 
 var itemTracker *ItemTracker
@@ -166,44 +161,60 @@ func GetItemTracker() *ItemTracker {
 // InitItemTracker initializes the item tracker with a Redis client
 func InitItemTracker(client *goredis.Client) {
 	itemTracker = &ItemTracker{
-		items: atlas.NewTenantRegistry[itemTrackerKey, TrackedItem](client, "rates-items", func(k itemTrackerKey) string {
-			return strconv.FormatUint(uint64(k.CharacterId), 10) + ":" + strconv.FormatUint(uint64(k.TemplateId), 10)
+		items: atlas.NewTenantKeyedHash[uint32](client, "rates-items", func(characterId uint32) string {
+			return strconv.FormatUint(uint64(characterId), 10)
 		}),
 	}
+}
+
+func templateField(templateId uint32) string {
+	return strconv.FormatUint(uint64(templateId), 10)
 }
 
 // TrackItem starts tracking a time-based rate item
 func (t *ItemTracker) TrackItem(ctx context.Context, characterId uint32, item TrackedItem) {
 	ten := tenant.MustFromContext(ctx)
-	key := itemTrackerKey{CharacterId: characterId, TemplateId: item.TemplateId}
-	_ = t.items.Put(ctx, ten, key, item)
+	data, err := json.Marshal(item)
+	if err != nil {
+		return
+	}
+	_ = t.items.Set(ctx, ten, characterId, templateField(item.TemplateId), string(data))
 }
 
 // UntrackItem stops tracking an item
 func (t *ItemTracker) UntrackItem(ctx context.Context, characterId uint32, templateId uint32) {
 	ten := tenant.MustFromContext(ctx)
-	key := itemTrackerKey{CharacterId: characterId, TemplateId: templateId}
-	_ = t.items.Remove(ctx, ten, key)
+	_ = t.items.Del(ctx, ten, characterId, templateField(templateId))
 }
 
 // UpdateEquippedSince updates the equippedSince timestamp for a bonusExp item
 func (t *ItemTracker) UpdateEquippedSince(ctx context.Context, characterId uint32, templateId uint32, equippedSince *time.Time) {
 	ten := tenant.MustFromContext(ctx)
-	key := itemTrackerKey{CharacterId: characterId, TemplateId: templateId}
-	item, err := t.items.Get(ctx, ten, key)
+	raw, err := t.items.Get(ctx, ten, characterId, templateField(templateId))
 	if err != nil {
 		return
 	}
+	var item TrackedItem
+	if err := json.Unmarshal([]byte(raw), &item); err != nil {
+		return
+	}
 	item.EquippedSince = equippedSince
-	_ = t.items.Put(ctx, ten, key, item)
+	data, err := json.Marshal(item)
+	if err != nil {
+		return
+	}
+	_ = t.items.Set(ctx, ten, characterId, templateField(templateId), string(data))
 }
 
 // GetTrackedItem returns a tracked item if it exists
 func (t *ItemTracker) GetTrackedItem(ctx context.Context, characterId uint32, templateId uint32) (TrackedItem, bool) {
 	ten := tenant.MustFromContext(ctx)
-	key := itemTrackerKey{CharacterId: characterId, TemplateId: templateId}
-	item, err := t.items.Get(ctx, ten, key)
+	raw, err := t.items.Get(ctx, ten, characterId, templateField(templateId))
 	if err != nil {
+		return TrackedItem{}, false
+	}
+	var item TrackedItem
+	if err := json.Unmarshal([]byte(raw), &item); err != nil {
 		return TrackedItem{}, false
 	}
 	return item, true
@@ -212,31 +223,17 @@ func (t *ItemTracker) GetTrackedItem(ctx context.Context, characterId uint32, te
 // GetAllTrackedItems returns all tracked items for a character
 func (t *ItemTracker) GetAllTrackedItems(ctx context.Context, characterId uint32) []TrackedItem {
 	ten := tenant.MustFromContext(ctx)
-	c := t.items.Client()
-	scanPattern := atlas.KeyPrefix() + ":" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"
-
-	result := make([]TrackedItem, 0)
-	var cursor uint64
-	for {
-		keys, next, err := c.Scan(ctx, cursor, scanPattern, 100).Result()
-		if err != nil {
-			break
+	all, err := t.items.GetAll(ctx, ten, characterId)
+	if err != nil {
+		return make([]TrackedItem, 0)
+	}
+	result := make([]TrackedItem, 0, len(all))
+	for _, raw := range all {
+		var item TrackedItem
+		if err := json.Unmarshal([]byte(raw), &item); err != nil {
+			continue
 		}
-		for _, k := range keys {
-			data, err := c.Get(ctx, k).Bytes()
-			if err != nil {
-				continue
-			}
-			var item TrackedItem
-			if err := json.Unmarshal(data, &item); err != nil {
-				continue
-			}
-			result = append(result, item)
-		}
-		cursor = next
-		if cursor == 0 {
-			break
-		}
+		result = append(result, item)
 	}
 	return result
 }

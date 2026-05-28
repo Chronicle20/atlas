@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Leafre Flight - Exit transit to Leafre Station Entrance from Minar Forest flight",
+      "mapId": 200090510,
+      "portalId": "dracoout",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "240000100",
+                  "portalName": "east00"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "dracoout",
+    "type": "portal-action"
+  }
+}

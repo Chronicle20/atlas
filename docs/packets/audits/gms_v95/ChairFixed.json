@@ -1,0 +1,20 @@
+{
+  "WriterName": "ChairFixed",
+  "IDAName": "CUserLocal::HandleXKeyDown",
+  "Address": "0x90f6d0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/chair_fixed.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "chairId (seat index from CField::FindSeatByPosition; 0xFFFF = get-up-from-chair)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

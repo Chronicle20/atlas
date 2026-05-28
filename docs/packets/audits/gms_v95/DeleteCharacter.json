@@ -1,0 +1,29 @@
+{
+  "WriterName": "DeleteCharacter",
+  "IDAName": "CLogin::SendDeleteCharPacket",
+  "Address": "0x5d53a0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 3,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/delete.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sSPW (PIC/soft-keyboard password; v95 always uses PIC path, m_bLoginOpt==1)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterStat.dwCharacterID",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

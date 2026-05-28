@@ -1,0 +1,29 @@
+{
+  "WriterName": "InteractionOperationPersonalStoreSetBlackList",
+  "IDAName": "CPersonalShopDlg::DeliverBlackList",
+  "Address": "0x763021",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "count (m_asBlackList size). op-byte 0x1B consumed by dispatcher",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "per-entry name loop (string[]). JMS string[] — atlas unconditional []string fix is correct",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

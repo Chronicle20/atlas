@@ -1,0 +1,164 @@
+{
+  "WriterName": "AuthSuccess",
+  "IDAName": "CLogin::OnCheckPasswordResult",
+  "Address": "0x62fb84",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/auth_success.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "resultCode",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "post-auth flag (m_nRegStatID stored)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "reserved (always decoded before branch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "accountId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "gender",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GM/admin flag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "admin byte (v87 still 2×Decode1; v95 widened to Decode2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "countryCode",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "nexonClubID",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "purchaseExp/quiet-ban reason",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "quiet-ban code",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 3,
+      "IDAComment": "chatUnblockDate (DecodeBuffer 8 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 3,
+      "IDAComment": "registerDate (DecodeBuffer 8 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "numOfCharacter",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "pinFlag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "picFlag (m_bLoginOpt)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 3,
+      "IDAComment": "clientKey (DecodeBuffer 8 bytes — identical to v83/v95)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

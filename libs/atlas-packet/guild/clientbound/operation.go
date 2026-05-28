@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -405,35 +406,53 @@ func (m *MemberJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 // Invite
 
 type Invite struct {
-	mode            byte
-	guildId         uint32
-	originatorName  string
+	mode           byte
+	guildId        uint32
+	originatorName string
+	unknown        uint32
+	skillId        uint32
 }
 
-func NewInvite(mode byte, guildId uint32, originatorName string) Invite {
-	return Invite{mode: mode, guildId: guildId, originatorName: originatorName}
+func NewInvite(mode byte, guildId uint32, originatorName string, unknown uint32, skillId uint32) Invite {
+	return Invite{mode: mode, guildId: guildId, originatorName: originatorName, unknown: unknown, skillId: skillId}
 }
 
 func (m Invite) Operation() string { return GuildOperationWriter }
 func (m Invite) String() string {
-	return fmt.Sprintf("mode [%d], guildId [%d], originatorName [%s]", m.mode, m.guildId, m.originatorName)
+	return fmt.Sprintf("mode [%d], guildId [%d], originatorName [%s], unknown [%d], skillId [%d]", m.mode, m.guildId, m.originatorName, m.unknown, m.skillId)
 }
 
-func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
+	// v83 mode-5 reads guildId+inviterName only (IDA v83 OnGuildResult@0xa3b57a).
+	// v87 mode-5 reads guildId+inviterName+unknown+skillId (IDA v87 OnGuildResult@0xacf7d3@0xacf9c7).
+	// v95+ same as v87. Gate: GMS > 83 or JMS.
+	v84plus := (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS"
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.guildId)
 		w.WriteAsciiString(m.originatorName)
+		if v84plus {
+			w.WriteInt(m.unknown)
+			w.WriteInt(m.skillId)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *Invite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	// v84plus gate: see Encode comment above.
+	v84plus := (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS"
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
 		m.originatorName = r.ReadAsciiString()
+		if v84plus {
+			m.unknown = r.ReadUint32()
+			m.skillId = r.ReadUint32()
+		}
 	}
 }
 
@@ -513,10 +532,10 @@ func (m *Disband) Decode(_ logrus.FieldLogger, _ context.Context) func(r *reques
 type CapacityChange struct {
 	mode     byte
 	guildId  uint32
-	capacity uint32
+	capacity byte
 }
 
-func NewCapacityChange(mode byte, guildId uint32, capacity uint32) CapacityChange {
+func NewCapacityChange(mode byte, guildId uint32, capacity byte) CapacityChange {
 	return CapacityChange{mode: mode, guildId: guildId, capacity: capacity}
 }
 
@@ -530,7 +549,7 @@ func (m CapacityChange) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.guildId)
-		w.WriteInt(m.capacity)
+		w.WriteByte(m.capacity)
 		return w.Bytes()
 	}
 }
@@ -539,6 +558,6 @@ func (m *CapacityChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
-		m.capacity = r.ReadUint32()
+		m.capacity = r.ReadByte()
 	}
 }

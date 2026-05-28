@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlas-pr-bootstrap
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: atlas-pr-bootstrap
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: atlas-pr-bootstrap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: atlas-pr-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: atlas-pr-bootstrap
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-bootstrap
+  annotations:
+    # `Sync` hook (was PostSync, see incident 2026-05-15). PostSync waits for
+    # the entire Sync phase to reach Healthy before firing. But several Atlas
+    # services (atlas-channel, atlas-login, atlas-world, atlas-drops) panic
+    # on startup if they cannot fetch their tenant config from
+    # atlas-configurations — and atlas-configurations is empty until
+    # bootstrap seeds it via atlas-tenants. On a cold-start PR env (no
+    # leftover tenant rows in Postgres) those four services CrashLoopBackOff
+    # forever and Argo never declares the Sync phase Healthy, so PostSync
+    # never fires. Classic chicken-and-egg.
+    #
+    # `Sync` hooks run *in parallel* with the sync wave's normal resource
+    # apply, so bootstrap starts the moment Argo applies the manifests. The
+    # bootstrap script (`scripts/bootstrap.sh`) already polls atlas-tenants
+    # / atlas-configurations / atlas-data with `retry
+    # 60 5` (5 minutes per dependency) before doing any work, so racing
+    # with the Deployments coming up is fine — it just waits.
+    #
+    # `sync-wave: "10"` pins this hook to the same wave as the Deployments
+    # (base/kustomization.yaml patches every Deployment to wave 10). Without
+    # this, the Sync hook defaults to wave 0 and Argo gates wave 10 on
+    # wave-0 completion — bootstrap polls for /api/tenants on a ClusterIP
+    # whose backing Deployment has not yet been applied and times out after
+    # 5 min. Cold-start incident 2026-05-16 task-063: PR 493 moved bootstrap
+    # from PostSync to Sync but did not pin the wave, so cold starts of any
+    # PR env deadlocked the same way PostSync did. Co-locating bootstrap
+    # with the Deployments restores PR 493's intended parallel-apply: the
+    # four provider services (tenants/configurations/data/wz-extractor) do
+    # not need tenant config to start, so they come up; bootstrap polls
+    # them via atlas-ingress, seeds config, and bumps the four panicking
+    # consumer services (channel/login/world/drops) via its RBAC.
+    #
+    # `BeforeHookCreation` ensures Argo deletes any prior Job from a
+    # previous (possibly failed) sync before applying a new one. Without
+    # this, a Failed Job from a half-completed sync wedges all subsequent
+    # syncs with "spec.template: Invalid value … field is immutable"
+    # because Argo tries to patch the immutable Job spec.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: atlas-pr-bootstrap
+      # ghcr-pull is a dockerconfigjson Secret carrying a GHCR PAT. Source
+      # Secret lives in `argocd` namespace (cluster-infra repo) and is
+      # auto-replicated into every atlas-pr-* namespace by Reflector. Needed
+      # because the atlas-pr-bootstrap package on GHCR is private (every
+      # other atlas-* package the cluster pulls is public).
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: bootstrap
+          image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+          command: ["/atlas/bootstrap.sh"]
+          env:
+            - name: ATLAS_UI_BASE
+              value: http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local
+            - name: TENANT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: TENANT_ID
+            - name: REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: REGION
+            - name: MAJOR_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: MAJOR_VERSION
+            - name: MINOR_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: MINOR_VERSION
+          envFrom:
+            - configMapRef:
+                name: atlas-env-tokens
+          volumeMounts:
+            - name: wz-canonical
+              mountPath: /opt/wz
+              readOnly: true
+      initContainers:
+        # Canonical WZ atlas.zip lives in cluster-internal MinIO (namespace
+        # `minio`, bucket `atlas-canonical`, anonymous read). PVC mounts can't
+        # cross namespaces, so we fetch into an emptyDir instead.
+        # See runbook §9.1 for MinIO setup.
+        - name: fetch-wz-canonical
+          image: curlimages/curl:8.10.1
+          command:
+            - sh
+            - -c
+            - |
+              set -euo pipefail
+              curl -fsSL --connect-timeout 10 \
+                  --retry 5 --retry-delay 5 --retry-connrefused \
+                  -o /opt/wz/atlas.zip \
+                  "http://minio.minio.svc.cluster.local:9000/atlas-canonical/atlas.zip"
+          volumeMounts:
+            - name: wz-canonical
+              mountPath: /opt/wz
+      volumes:
+        - name: wz-canonical
+          # atlas.zip is ~1GB as of v83 canonical; 8Gi cap matches the prior
+          # PVC budget and gives ample headroom for future WZ revisions.
+          emptyDir:
+            sizeLimit: 8Gi

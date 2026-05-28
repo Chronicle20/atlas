@@ -1,0 +1,20 @@
+{
+  "WriterName": "GuildOperation",
+  "IDAName": "CUIFadeYesNo::OnButtonClicked",
+  "Address": "0x0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/guild/serverbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

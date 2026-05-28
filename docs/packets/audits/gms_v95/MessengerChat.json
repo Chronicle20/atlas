@@ -1,0 +1,29 @@
+{
+  "WriterName": "MessengerChat",
+  "IDAName": "CUIMessenger::OnPacket#Chat",
+  "Address": "0x7f52d0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/clientbound/chat.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=6, CHAT) — dispatcher switch byte consumed by CUIMessenger::OnPacket",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "chatLine — formatted as 'name : message' (parsed client-side to extract speaker)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

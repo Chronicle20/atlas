@@ -1,0 +1,29 @@
+{
+  "WriterName": "InteractionOperationChat",
+  "IDAName": "CMiniRoomBaseDlg::CheckAndSendChat",
+  "Address": "0x6382a0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_chat.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message (chat text)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

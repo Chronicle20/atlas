@@ -1,0 +1,74 @@
+{
+  "WriterName": "ItemUpgrade",
+  "IDAName": "CUser::ShowItemUpgradeEffect",
+  "Address": "0x8e7b00",
+  "Variant": "GMS/v95",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/item_upgrade.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher (case 186 = 0xBA) before calling this function",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bSuccess (scroll succeeded flag)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "v4 / bCursed (cursed/failed outcome flag)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bEnchantSkill (true = Vega/enchant scroll category; false = normal scroll)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nEnchantCategory (enchant category type; 0 for normal scrolls; passed to CUIEnchantDlg::SetResult)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "v5 (lucky/white-scroll display flag; selects 'Lucky Day' vs 'Scroll of Goodness' string)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "v6 (enchant result flag; passed to CUIEnchantDlg::SetResult; 0 for normal scrolls)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

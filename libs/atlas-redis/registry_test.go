@@ -625,6 +625,122 @@ func TestLock_AutoExpiry(t *testing.T) {
 	}
 }
 
+func TestLock_AcquireWithToken_AndReleaseToken(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("a3f7")
+
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	lock := NewLockWithTTL(client, "inventory", 30*time.Second)
+	ttl := 30 * time.Second
+
+	// tokA acquires successfully.
+	ok, err := lock.AcquireWithToken(ctx, "char:99:equip", "tokA", ttl)
+	if err != nil {
+		t.Fatalf("AcquireWithToken tokA: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected tokA to acquire the lock")
+	}
+
+	// tokB cannot acquire while tokA holds it.
+	ok2, err := lock.AcquireWithToken(ctx, "char:99:equip", "tokB", ttl)
+	if err != nil {
+		t.Fatalf("AcquireWithToken tokB: %v", err)
+	}
+	if ok2 {
+		t.Fatal("expected tokB to fail acquiring the lock held by tokA")
+	}
+
+	// Verify the key exists with the correct namespaced format.
+	wantKey := "a3f7:atlas:inventory:_lock:char:99:equip"
+	if !mr.Exists(wantKey) {
+		t.Fatalf("expected lock key %q; keys=%v", wantKey, mr.Keys())
+	}
+
+	// tokB cannot release a lock it doesn't hold.
+	released, err := lock.ReleaseToken(ctx, "char:99:equip", "tokB")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokB: %v", err)
+	}
+	if released {
+		t.Fatal("expected tokB ReleaseToken to return false (not the holder)")
+	}
+
+	// tokA releases successfully.
+	released2, err := lock.ReleaseToken(ctx, "char:99:equip", "tokA")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokA: %v", err)
+	}
+	if !released2 {
+		t.Fatal("expected tokA ReleaseToken to return true")
+	}
+
+	// Now tokB can acquire the free lock.
+	ok3, err := lock.AcquireWithToken(ctx, "char:99:equip", "tokB", ttl)
+	if err != nil {
+		t.Fatalf("AcquireWithToken tokB after release: %v", err)
+	}
+	if !ok3 {
+		t.Fatal("expected tokB to acquire the now-free lock")
+	}
+}
+
+func TestLock_ForceAcquire_OverridesHolder(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	lock := NewLockWithTTL(client, "inventory", 30*time.Second)
+	ttl := 30 * time.Second
+
+	// tokA acquires normally.
+	ok, err := lock.AcquireWithToken(ctx, "char:77:use", "tokA", ttl)
+	if err != nil || !ok {
+		t.Fatalf("AcquireWithToken tokA: ok=%v err=%v", ok, err)
+	}
+
+	// tokB force-acquires, overwriting tokA.
+	if err := lock.ForceAcquire(ctx, "char:77:use", "tokB", ttl); err != nil {
+		t.Fatalf("ForceAcquire tokB: %v", err)
+	}
+
+	// tokA can no longer release (it's no longer the holder).
+	released, err := lock.ReleaseToken(ctx, "char:77:use", "tokA")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokA after ForceAcquire: %v", err)
+	}
+	if released {
+		t.Fatal("expected tokA ReleaseToken to return false after force-acquire by tokB")
+	}
+
+	// tokB can release.
+	released2, err := lock.ReleaseToken(ctx, "char:77:use", "tokB")
+	if err != nil {
+		t.Fatalf("ReleaseToken tokB: %v", err)
+	}
+	if !released2 {
+		t.Fatal("expected tokB ReleaseToken to return true")
+	}
+}
+
+func TestLock_ReleaseToken_AbsentKey(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	lock := NewLockWithTTL(client, "inventory", 30*time.Second)
+
+	// ReleaseToken on a key that was never acquired returns (false, nil).
+	released, err := lock.ReleaseToken(ctx, "char:nonexistent:equip", "anyToken")
+	if err != nil {
+		t.Fatalf("ReleaseToken absent key: unexpected error %v", err)
+	}
+	if released {
+		t.Fatal("expected ReleaseToken on absent key to return false")
+	}
+}
+
 // --- Key tests ---
 
 func TestTenantKey(t *testing.T) {

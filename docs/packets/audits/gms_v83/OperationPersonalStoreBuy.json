@@ -1,17 +1,17 @@
 {
-  "WriterName": "OperationMerchantBuy",
-  "IDAName": "CPersonalShopDlg::BuyItem#Merchant",
-  "Address": "0x69a7f0",
-  "Variant": "GMS/v95",
+  "WriterName": "OperationPersonalStoreBuy",
+  "IDAName": "CPersonalShopDlg::BuyItem",
+  "Address": "0x6fd261",
+  "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_merchant_buy.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "index (nIdx; op 0x22 entrusted)",
+      "IDAComment": "index (arg0)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "quantity",
+      "IDAComment": "quantity (a2[0])",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "itemCRC (trailing field; not in atlas)",
+      "IDAComment": "itemCRC (CItemInfo::GetItemCRC) — present in v83 AND v95",
       "Verdict": 0,
       "Note": ""
     }

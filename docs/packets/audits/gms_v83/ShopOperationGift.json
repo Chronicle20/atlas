@@ -1,17 +1,17 @@
 {
   "WriterName": "ShopOperationGift",
   "IDAName": "CCashShop::SendGiftsPacket",
-  "Address": "0x487b60",
-  "Variant": "GMS/v95",
+  "Address": "0x46f940",
+  "Variant": "GMS/v83",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)",
+      "IDAOp": 2,
+      "IDAComment": "field A (*(this+1304)). NOTE: v83 leading is int; v95 sends EncodeStr sSPW here",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,16 +20,16 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "m_sg.nCommSN (serialNumber)",
+      "IDAComment": "serialNumber (*(this+1308))",
       "Verdict": 0,
       "Note": ""
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "m_bRequestBuyOneADay (NOT in atlas - missing byte between serialNumber and name)",
+      "IDAOp": 4,
+      "IDAComment": "recipient name (v33). NOTE: v83 has NO byte oneADay before name (v95-only)",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,16 +38,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "recipient name (sDone)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "m_sg.sText (message)",
+      "IDAComment": "message (*(this+1312))",
       "Verdict": 0,
       "Note": ""
     }

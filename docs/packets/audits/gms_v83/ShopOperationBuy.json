@@ -1,8 +1,8 @@
 {
   "WriterName": "ShopOperationBuy",
   "IDAName": "CCashShop::OnBuy",
-  "Address": "0x48e530",
-  "Variant": "GMS/v95",
+  "Address": "0x46dadd",
+  "Variant": "GMS/v83",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go",
   "Rows": [
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "isMaplePoint bool (dwOption==2)",
+      "IDAComment": "isMaplePoint bool (a2==2)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "dwOption (currency)",
+      "IDAComment": "dwOption (a2)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,25 +29,16 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "nCommSN (serialNumber)",
+      "IDAComment": "nCommSN (arg0 serialNumber)",
       "Verdict": 0,
       "Note": ""
     },
     {
       "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "m_bRequestBuyOneADay (NOT in atlas - atlas reads int zero spanning this+eventSN)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 4,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "nEventSN (NOT correctly modeled by atlas)",
+      "IDAComment": "IsZeroGoods int (zero-goods flag). NOTE: v83 has NO trailing byte oneADay (v95-only)",
       "Verdict": 0,
       "Note": ""
     }

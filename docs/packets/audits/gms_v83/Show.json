@@ -1,8 +1,8 @@
 {
   "WriterName": "Show",
   "IDAName": "CTrunkDlg::OnPacket#Show",
-  "Address": "0x76a990",
-  "Variant": "GMS/v95",
+  "Address": "0x7c5dae",
+  "Variant": "GMS/v83",
   "BranchDepth": 1,
   "AtlasFile": "../../libs/atlas-packet/storage/clientbound/show.go",
   "Rows": [
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (22)",
+      "IDAComment": "mode (16/21/22; consumed by OnPacket dispatcher then SetTrunkDlg)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "npcTemplateId (m_dwNpcTemplateID)",
+      "IDAComment": "npcTemplateId (SetTrunkDlg *(this+50))",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "slotCount (m_nSlotCount)",
+      "IDAComment": "slotCount (SetGetItems *(this+62))",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 3,
-      "IDAComment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)",
+      "IDAComment": "tab-flag bitmask (8 bytes via DecodeBuffer; v21)",
       "Verdict": 0,
       "Note": ""
     },
@@ -47,7 +47,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "meso (m_nMoney; ONLY if flag\u00262)",
+      "IDAComment": "meso (*(this+63); ONLY if flag\u00262)",
       "Verdict": 0,
       "Note": ""
     },
@@ -56,7 +56,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+      "IDAComment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64 = i=1..5), each followed by count*GW_ItemSlotBase::Decode",
       "Verdict": 0,
       "Note": ""
     },

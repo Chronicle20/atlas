@@ -3,17 +3,17 @@
   "IDAName": "CCashShop::OnBuyCouple",
   "Address": "0x490d80",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -52,5 +52,5 @@
       "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

@@ -26,13 +26,13 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "itemCRC (CItemInfo::GetItemCRC)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

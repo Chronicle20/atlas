@@ -1,17 +1,17 @@
 {
   "WriterName": "ShopOperationRebateLockerItem",
   "IDAName": "CCashShop::OnRebateLockerItem",
-  "Address": "0x485840",
-  "Variant": "GMS/v95",
+  "Address": "0x46bde1",
+  "Variant": "GMS/v83",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)",
+      "IDAOp": 2,
+      "IDAComment": "ask_SPW() int (a2). NOTE: v83 is a 4-byte int; v95 sends EncodeStr sSPW",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "v5 8 bytes locker SN (atlas reads uint64 unk)",
+      "IDAComment": "8-byte locker serial (v4)",
       "Verdict": 2,
       "Note": "width mismatch"
     }

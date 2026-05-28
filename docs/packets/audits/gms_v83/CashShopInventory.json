@@ -1,8 +1,8 @@
 {
   "WriterName": "CashShopInventory",
   "IDAName": "CCashShop::OnCashItemResult#CashShopInventory",
-  "Address": "0x494cb0",
-  "Variant": "GMS/v95",
+  "Address": "0x4794f6",
+  "Variant": "GMS/v83",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_inventory.go",
   "Rows": [
@@ -38,7 +38,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "m_nTrunkCount (storageSlots)",
+      "IDAComment": "m_nTrunkCount (storageSlots; *(this+291))",
       "Verdict": 0,
       "Note": ""
     },
@@ -47,25 +47,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "m_nCharacterSlotCount (characterSlots)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "m_nBuyCharacterCount (NOT in atlas - missing trailing short)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 6,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "m_nCharacterCount (NOT in atlas - missing trailing short)",
+      "IDAComment": "m_nCharacterSlotCount (characterSlots; *(this+292))",
       "Verdict": 0,
       "Note": ""
     }

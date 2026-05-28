@@ -1,8 +1,8 @@
 # OperationChat (← `CMiniRoomBaseDlg::CheckAndSendChat`)
 
-- **IDA:** 0x6382a0
+- **IDA:** 0x65f438
 - **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_chat.go`
-- **Variant:** GMS/v95
+- **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ✅
 
@@ -10,6 +10,5 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | int32 `update_time (get_update_time)` | ✅ |  |
-| 1 | string | string `message (chat text)` | ✅ |  |
+| 0 | string | string `message (chat text). NOTE: v83 has NO leading update_time (v95-only addition)` | ✅ |  |
 

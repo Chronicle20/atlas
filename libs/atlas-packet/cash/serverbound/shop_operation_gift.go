@@ -43,15 +43,14 @@ func (m ShopOperationGift) String() string {
 func (m ShopOperationGift) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
-	v95 := t.Region() == "GMS" && t.MajorVersion() >= 95
 	return func(options map[string]interface{}) []byte {
-		if v95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			w.WriteAsciiString(m.spw)
 		} else {
 			w.WriteInt(m.birthday)
 		}
 		w.WriteInt(m.serialNumber)
-		if v95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			w.WriteByte(m.oneADay)
 		}
 		w.WriteAsciiString(m.name)
@@ -62,15 +61,14 @@ func (m ShopOperationGift) Encode(l logrus.FieldLogger, ctx context.Context) fun
 
 func (m *ShopOperationGift) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	v95 := t.Region() == "GMS" && t.MajorVersion() >= 95
 	return func(r *request.Reader, options map[string]interface{}) {
-		if v95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.spw = r.ReadAsciiString()
 		} else {
 			m.birthday = r.ReadUint32()
 		}
 		m.serialNumber = r.ReadUint32()
-		if v95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.oneADay = r.ReadByte()
 		}
 		m.name = r.ReadAsciiString()

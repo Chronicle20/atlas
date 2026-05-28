@@ -411,3 +411,19 @@ func TestRegistry_CancelByStatTypes_UnknownCharacter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, cancelled)
 }
+
+func TestRegistry_TenantSetIsPrefixed(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+	changes := setupTestChanges()
+
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2001001), byte(5), int32(60), changes)
+	assert.NoError(t, err)
+
+	tenants, err := GetRegistry().GetTenants(context.Background())
+	assert.NoError(t, err)
+	if len(tenants) != 1 {
+		t.Fatalf("GetTenants() = %d want 1", len(tenants))
+	}
+}

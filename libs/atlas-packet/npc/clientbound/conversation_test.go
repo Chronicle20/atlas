@@ -2,11 +2,22 @@ package clientbound
 
 import (
 	"context"
+	"encoding/binary"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
+
+// asciiBytes returns the on-wire encoding of an ASCII string: a 2-byte
+// little-endian length prefix followed by the raw bytes. Mirrors
+// response.Writer.WriteAsciiString for plain-ASCII inputs.
+func asciiBytes(s string) []byte {
+	out := make([]byte, 2+len(s))
+	binary.LittleEndian.PutUint16(out[:2], uint16(len(s)))
+	copy(out[2:], s)
+	return out
+}
 
 func TestNpcConversationSay(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
@@ -49,6 +60,39 @@ func TestNpcConversationAskMenu(t *testing.T) {
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})
 	}
+}
+
+// TestSayImageConversationDetailEncode verifies the image-count prefix is a
+// single byte, matching CScriptMan::OnSayImage@0x6dc310 which reads the count
+// via CInPacket::Decode1 (line 61, 0x6dc3d9) before looping DecodeStr.
+func TestSayImageConversationDetailEncode(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			d := &SayImageConversationDetail{Images: []string{"img/a", "img/b"}}
+			got := d.Encode(l, ctx)(nil)
+
+			want := []byte{byte(2)}
+			want = append(want, asciiBytes("img/a")...)
+			want = append(want, asciiBytes("img/b")...)
+			if !bytesEqual(got, want) {
+				t.Errorf("SayImage encode mismatch\n got=%v\nwant=%v", got, want)
+			}
+		})
+	}
+}
+
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestNpcConversationAccessors(t *testing.T) {

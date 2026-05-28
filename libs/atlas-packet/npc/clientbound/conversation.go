@@ -116,7 +116,7 @@ type SayImageConversationDetail struct {
 func (s *SayImageConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteInt(uint32(len(s.Images)))
+		w.WriteByte(byte(len(s.Images)))
 		for _, image := range s.Images {
 			w.WriteAsciiString(image)
 		}

@@ -26,9 +26,8 @@
 | 13 | int32 | int32 `dwMarriageCharacterID (if bMarriage)` | ✅ |  |
 | 14 | int32 | int32 `dwMarriagePairCharacterID (if bMarriage)` | ✅ |  |
 | 15 | int32 | int32 `nWeddingRingID (if bMarriage)` | ✅ |  |
-| 16 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 16 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 17 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 18 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

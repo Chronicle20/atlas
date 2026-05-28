@@ -51,14 +51,14 @@
 | 38 | int32 | int32 `AvatarLook::nWeaponStickerID` | ✅ |  |
 | 39 | int32 | int32 `AvatarLook::anPetID[0]` | ✅ |  |
 | 40 | int32 | int32 `AvatarLook::anPetID[1]` | ✅ |  |
-| 41 | int32 | int32 `AvatarLook::anPetID[2]` | ✅ |  |
+| 41 | byte | int32 `AvatarLook::anPetID[2]` | ❌ | width mismatch |
 | 42 | byte | byte `viewAll/onFamily byte` | ✅ |  |
-| 43 | byte | byte `rankEnabled / hasRank byte` | ✅ |  |
+| 43 | int32 | byte `rankEnabled / hasRank byte` | ❌ | width mismatch |
 | 44 | int32 | int32 `worldRank` | ✅ |  |
 | 45 | int32 | int32 `worldRankMove` | ✅ |  |
 | 46 | int32 | int32 `jobRank` | ✅ |  |
-| 47 | int32 | int32 `jobRankMove` | ✅ |  |
-| 48 | byte | byte `m_bLoginOpt (hasPic)` | ✅ |  |
-| 49 | int32 | int32 `m_nSlotCount` | ✅ |  |
+| 47 | byte | int32 `jobRankMove` | ❌ | width mismatch |
+| 48 | int32 | byte `m_bLoginOpt (hasPic)` | ❌ | width mismatch |
+| 49 | byte | int32 `m_nSlotCount` | ❌ | atlas: short — missing trailing field |
 | 50 | byte | int32 `m_nBuyCharCount` | ❌ | atlas: short — missing trailing field |
 

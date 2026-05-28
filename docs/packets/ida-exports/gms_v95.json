@@ -1928,7 +1928,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher (case 186 = 0xBA) before calling this function"
+          "comment": "characterId \u2014 consumed by CUserPool::OnUserCommonPacket dispatcher (case 186 = 0xBA) before calling this function"
         },
         {
           "op": "Decode1",
@@ -2041,7 +2041,7 @@
         },
         {
           "op": "EncodeBuf",
-          "comment": "movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation"
+          "comment": "movement: CMovePath::Encode \u2014 Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop \u2014 ack:tool-limitation"
         }
       ]
     },
@@ -2348,7 +2348,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "nCalcDamageIndex (atlas: controlled — region/version gated >v12 GMS || JMS)"
+          "comment": "nCalcDamageIndex (atlas: controlled \u2014 region/version gated >v12 GMS || JMS)"
         },
         {
           "op": "Decode4",
@@ -2356,7 +2356,7 @@
         },
         {
           "op": "DecodeBuf",
-          "comment": "MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init — variable-length sub-struct)"
+          "comment": "MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init \u2014 variable-length sub-struct)"
         }
       ]
     },
@@ -2374,7 +2374,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "dwSwallowCharacterID — conditional: only if destroyType == 4 (swallowed by character/eater)",
+          "comment": "dwSwallowCharacterID \u2014 conditional: only if destroyType == 4 (swallowed by character/eater)",
           "guard": "destroyType == 4"
         }
       ]
@@ -2382,13 +2382,31 @@
     "CMobPool::OnMobChangeController": {
       "address": "0x658d10",
       "direction": "clientbound",
-      "notes": "Production wire shape only — v95 dev builds (CClientOptMan::GetOpt(2)) prepend an extra 12-byte moveRandSeed block before dwMobID. Atlas server never sends seeds (server-side never sets opt 2) so atlas's encoder is correct for production. Seeds previously listed here caused false-❌ diff misalignments; removed since production traffic never carries them. SetLocalMob's Decode4(templateId) + MonsterModel body when controlMode != 0 is delegated and not expanded inline; atlas writes WriteByte(5) at the aggro position (hardcoded; semantic but not wire concern) + WriteInt(monsterId) + MonsterModel.",
+      "notes": "Production wire shape only \u2014 v95 dev builds (CClientOptMan::GetOpt(2)) prepend an extra 12-byte moveRandSeed block before dwMobID. Atlas server never sends seeds (server-side never sets opt 2) so atlas's encoder is correct for production. Seeds previously listed here caused false-\u274c diff misalignments; removed since production traffic never carries them. SetLocalMob's Decode4(templateId) + MonsterModel body when controlMode != 0 is delegated and not expanded inline; atlas writes WriteByte(5) at the aggro position (hardcoded; semantic but not wire concern) + WriteInt(monsterId) + MonsterModel.",
       "calls": [
-        {"op": "Decode1", "comment": "controlMode (v4/v5 — 0 = remote, non-zero = local-controlled)"},
-        {"op": "Decode4", "comment": "dwMobID (uniqueId / v7)"},
-        {"op": "Decode1", "comment": "aggro byte — atlas hardcodes 5, v95 reads as aggro flag", "guard": "controlMode != 0"},
-        {"op": "Decode4", "comment": "dwTemplateID via SetLocalMob — atlas monsterId", "guard": "controlMode != 0"},
-        {"op": "DecodeBuf", "comment": "MonsterModel body via SetLocalMob's CMob::Init delegate", "guard": "controlMode != 0"}
+        {
+          "op": "Decode1",
+          "comment": "controlMode (v4/v5 \u2014 0 = remote, non-zero = local-controlled)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwMobID (uniqueId / v7)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "aggro byte \u2014 atlas hardcodes 5, v95 reads as aggro flag",
+          "guard": "controlMode != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwTemplateID via SetLocalMob \u2014 atlas monsterId",
+          "guard": "controlMode != 0"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "MonsterModel body via SetLocalMob's CMob::Init delegate",
+          "guard": "controlMode != 0"
+        }
       ]
     },
     "CMob::OnMove": {
@@ -2397,7 +2415,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -2425,12 +2443,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "multiTargetForBall[i].x — per entry, loop nCount times",
+          "comment": "multiTargetForBall[i].x \u2014 per entry, loop nCount times",
           "guard": "loop multiTargetForBall"
         },
         {
           "op": "Decode4",
-          "comment": "multiTargetForBall[i].y — per entry",
+          "comment": "multiTargetForBall[i].y \u2014 per entry",
           "guard": "loop multiTargetForBall"
         },
         {
@@ -2439,7 +2457,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "randTimeForAreaAttack[i] — per entry, loop nCount times",
+          "comment": "randTimeForAreaAttack[i] \u2014 per entry, loop nCount times",
           "guard": "loop randTimeForAreaAttack"
         },
         {
@@ -2454,11 +2472,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode2",
-          "comment": "mobCtrlSN (v5 — int16)"
+          "comment": "mobCtrlSN (v5 \u2014 int16)"
         },
         {
           "op": "Decode1",
@@ -2484,11 +2502,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
-          "comment": "uFlagSet: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask"
+          "comment": "uFlagSet: 16-byte UINT128 stat mask (DecodeBuffer 0x10) \u2014 atlas: MonsterTemporaryStat.Encode mask"
         },
         {
           "op": "DecodeBuf",
@@ -2502,11 +2520,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
-          "comment": "uFlagReset: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask"
+          "comment": "uFlagReset: 16-byte UINT128 stat mask (DecodeBuffer 0x10) \u2014 atlas: MonsterTemporaryStat.Encode mask"
         },
         {
           "op": "DecodeBuf",
@@ -2520,11 +2538,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "damageType (v3 — 2 = friendly/no-show)"
+          "comment": "damageType (v3 \u2014 2 = friendly/no-show)"
         },
         {
           "op": "Decode4",
@@ -2532,12 +2550,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "hp current — conditional: only if mobTemplate.bDamagedByMob (friendly-mob field)",
+          "comment": "hp current \u2014 conditional: only if mobTemplate.bDamagedByMob (friendly-mob field)",
           "guard": "mob.bDamagedByMob"
         },
         {
           "op": "Decode4",
-          "comment": "hp max — conditional: only if mobTemplate.bDamagedByMob",
+          "comment": "hp max \u2014 conditional: only if mobTemplate.bDamagedByMob",
           "guard": "mob.bDamagedByMob"
         }
       ]
@@ -2548,7 +2566,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "dwMobId — read by CMobPool::OnMobPacket before dispatch"
+          "comment": "dwMobId \u2014 read by CMobPool::OnMobPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -2562,7 +2580,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -2574,7 +2592,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "show (active path only) — gated active != 0",
+          "comment": "show (active path only) \u2014 gated active != 0",
           "guard": "active != 0"
         },
         {
@@ -2595,11 +2613,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
@@ -2613,11 +2631,11 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "Decode1",
@@ -2643,24 +2661,24 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "mode (v5 — 0/1 picks reaction table; 2+ falls through)"
+          "comment": "mode (v5 \u2014 0/1 picks reaction table; 2+ falls through)"
         },
         {
           "op": "Decode1",
-          "comment": "reaction index — gated on mode == 0 (interaction) or mode == 1 (food)",
+          "comment": "reaction index \u2014 gated on mode == 0 (interaction) or mode == 1 (food)",
           "guard": "mode <= 1"
         },
         {
           "op": "Decode1",
-          "comment": "success flag — gated same as reaction index",
+          "comment": "success flag \u2014 gated same as reaction index",
           "guard": "mode <= 1"
         }
       ]
@@ -2671,15 +2689,15 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch"
         },
         {
           "op": "Decode1",
-          "comment": "slot — read by CUser::OnPetPacket before dispatch"
+          "comment": "slot \u2014 read by CUser::OnPetPacket before dispatch"
         },
         {
           "op": "DecodeBuf",
-          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+          "comment": "petLockerSN (8 bytes \u2014 _LARGE_INTEGER)"
         },
         {
           "op": "Decode1",
@@ -2687,7 +2705,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "excluded item id — per entry, loop nCount times",
+          "comment": "excluded item id \u2014 per entry, loop nCount times",
           "guard": "loop nCount"
         }
       ]
@@ -2702,7 +2720,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "petSlotIndex — only on result == 0 (success path picks pet)",
+          "comment": "petSlotIndex \u2014 only on result == 0 (success path picks pet)",
           "guard": "result == 0"
         }
       ]
@@ -2731,7 +2749,7 @@
       "calls": [
         {
           "op": "EncodeBuf",
-          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER) from owner ZRef"
+          "comment": "petLockerSN (8 bytes \u2014 _LARGE_INTEGER) from owner ZRef"
         },
         {
           "op": "EncodeBuf",
@@ -2745,7 +2763,7 @@
       "calls": [
         {
           "op": "EncodeBuf",
-          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER) from this->m_liPetLockerSN"
+          "comment": "petLockerSN (8 bytes \u2014 _LARGE_INTEGER) from this->m_liPetLockerSN"
         },
         {
           "op": "Encode1",
@@ -2767,7 +2785,7 @@
       "calls": [
         {
           "op": "EncodeBuf",
-          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+          "comment": "petLockerSN (8 bytes \u2014 _LARGE_INTEGER)"
         },
         {
           "op": "Encode1",
@@ -2789,7 +2807,7 @@
       "calls": [
         {
           "op": "EncodeBuf",
-          "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+          "comment": "petLockerSN (8 bytes \u2014 _LARGE_INTEGER)"
         },
         {
           "op": "Encode1",
@@ -2797,7 +2815,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "itemId per entry — loop nCount times",
+          "comment": "itemId per entry \u2014 loop nCount times",
           "guard": "loop nCount"
         }
       ]
@@ -2826,7 +2844,7 @@
       "calls": [
         {
           "op": "EncodeBuf",
-          "comment": "liPetSN (8 bytes — _LARGE_INTEGER)"
+          "comment": "liPetSN (8 bytes \u2014 _LARGE_INTEGER)"
         },
         {
           "op": "Encode1",
@@ -2852,7 +2870,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "nEnterType (v3 — 0=disappear, 1=fresh, 2=existing-on-map, 3/4=animations)"
+          "comment": "nEnterType (v3 \u2014 0=disappear, 1=fresh, 2=existing-on-map, 3/4=animations)"
         },
         {
           "op": "Decode4",
@@ -2884,26 +2902,26 @@
         },
         {
           "op": "Decode4",
-          "comment": "sourceObjectId (dropperId — mob or character)"
+          "comment": "sourceObjectId (dropperId \u2014 mob or character)"
         },
         {
           "op": "Decode2",
-          "comment": "sourceX — gated nEnterType != 2",
+          "comment": "sourceX \u2014 gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "Decode2",
-          "comment": "sourceY — gated nEnterType != 2",
+          "comment": "sourceY \u2014 gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "Decode2",
-          "comment": "tDelay — gated nEnterType != 2",
+          "comment": "tDelay \u2014 gated nEnterType != 2",
           "guard": "nEnterType != 2"
         },
         {
           "op": "DecodeBuf",
-          "comment": "cashItemSN (8 bytes _FILETIME-like; atlas writes WriteInt64(-1)) — gated !isMoney",
+          "comment": "cashItemSN (8 bytes _FILETIME-like; atlas writes WriteInt64(-1)) \u2014 gated !isMoney",
           "guard": "isMoney == 0"
         },
         {
@@ -3036,27 +3054,93 @@
       "address": "0x651100",
       "direction": "serverbound",
       "calls": [
-        {"op": "Encode4", "comment": "dwMobID (uniqueId)"},
-        {"op": "Encode2", "comment": "nMobCtrlSN (moveId)"},
-        {"op": "Encode1", "comment": "flags byte (atlas dwFlag — multiBitFlag with nMoveType / bRiseByToss / etc.)"},
-        {"op": "Encode1", "comment": "nAction (atlas nActionAndDir)"},
-        {"op": "Encode4", "comment": "ti (TARGETINFO — atlas skillData packed)"},
-        {"op": "Encode4", "comment": "multiTargetForBall count"},
-        {"op": "Encode4", "comment": "multiTargetForBall[i].x — loop", "guard": "loop multiTargetForBall"},
-        {"op": "Encode4", "comment": "multiTargetForBall[i].y — loop", "guard": "loop multiTargetForBall"},
-        {"op": "Encode4", "comment": "randTimeForAreaAttack count"},
-        {"op": "Encode4", "comment": "randTimeForAreaAttack[i] — loop", "guard": "loop randTimeForAreaAttack"},
-        {"op": "Encode1", "comment": "state byte (atlas moveFlags)"},
-        {"op": "Encode4", "comment": "hackedCode"},
-        {"op": "Encode4", "comment": "flyCtxTargetX (or 16768460 default)"},
-        {"op": "Encode4", "comment": "flyCtxTargetY (or 16768460 default)"},
-        {"op": "Encode4", "comment": "hackedCodeCRC (fall start CRC)"},
-        {"op": "EncodeBuf", "comment": "CMovePath::Flush body (Movement elements)"},
-        {"op": "Encode1", "comment": "bChasing"},
-        {"op": "Encode1", "comment": "hasTarget"},
-        {"op": "Encode1", "comment": "bChasing2 (ladder)"},
-        {"op": "Encode1", "comment": "bChasingHack (zMass)"},
-        {"op": "Encode4", "comment": "tChaseDuration"}
+        {
+          "op": "Encode4",
+          "comment": "dwMobID (uniqueId)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nMobCtrlSN (moveId)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flags byte (atlas dwFlag \u2014 multiBitFlag with nMoveType / bRiseByToss / etc.)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nAction (atlas nActionAndDir)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "ti (TARGETINFO \u2014 atlas skillData packed)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "multiTargetForBall count"
+        },
+        {
+          "op": "Encode4",
+          "comment": "multiTargetForBall[i].x \u2014 loop",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Encode4",
+          "comment": "multiTargetForBall[i].y \u2014 loop",
+          "guard": "loop multiTargetForBall"
+        },
+        {
+          "op": "Encode4",
+          "comment": "randTimeForAreaAttack count"
+        },
+        {
+          "op": "Encode4",
+          "comment": "randTimeForAreaAttack[i] \u2014 loop",
+          "guard": "loop randTimeForAreaAttack"
+        },
+        {
+          "op": "Encode1",
+          "comment": "state byte (atlas moveFlags)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "hackedCode"
+        },
+        {
+          "op": "Encode4",
+          "comment": "flyCtxTargetX (or 16768460 default)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "flyCtxTargetY (or 16768460 default)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "hackedCodeCRC (fall start CRC)"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "CMovePath::Flush body (Movement elements)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bChasing"
+        },
+        {
+          "op": "Encode1",
+          "comment": "hasTarget"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bChasing2 (ladder)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bChasingHack (zMass)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "tChaseDuration"
+        }
       ]
     },
     "CReactorPool::FindHitReactor": {
@@ -3073,7 +3157,7 @@
         },
         {
           "op": "Encode4",
-          "comment": "stance flag (v21[13] — combined user-state bits)"
+          "comment": "stance flag (v21[13] \u2014 combined user-state bits)"
         },
         {
           "op": "Encode2",
@@ -3091,7 +3175,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "destroyType (v3 — 0=expire, 2=pickup-char, 3=pickup-mob, 4=explode, 5=ftxs)"
+          "comment": "destroyType (v3 \u2014 0=expire, 2=pickup-char, 3=pickup-mob, 4=explode, 5=ftxs)"
         },
         {
           "op": "Decode4",
@@ -3099,12 +3183,12 @@
         },
         {
           "op": "Decode4",
-          "comment": "pickupCharId — gated destroyType in {2,3,5}",
+          "comment": "pickupCharId \u2014 gated destroyType in {2,3,5}",
           "guard": "destroyType in (2,3,5)"
         },
         {
           "op": "Decode2",
-          "comment": "tLeaveDelay — gated destroyType == 4 (explode)",
+          "comment": "tLeaveDelay \u2014 gated destroyType == 4 (explode)",
           "guard": "destroyType == 4"
         }
       ]
@@ -3115,7 +3199,7 @@
       "calls": [
         {
           "op": "EncodeBuf",
-          "comment": "m_liPetLockerSN (8 bytes — _LARGE_INTEGER)"
+          "comment": "m_liPetLockerSN (8 bytes \u2014 _LARGE_INTEGER)"
         },
         {
           "op": "Encode1",
@@ -3155,23 +3239,1719 @@
         },
         {
           "op": "Encode2",
-          "comment": "pet pos.x — conditional: only when dwID % 13 == 0",
+          "comment": "pet pos.x \u2014 conditional: only when dwID % 13 == 0",
           "guard": "dwID % 13 == 0"
         },
         {
           "op": "Encode2",
-          "comment": "pet pos.y — conditional with above",
+          "comment": "pet pos.y \u2014 conditional with above",
           "guard": "dwID % 13 == 0"
         },
         {
           "op": "Encode4",
-          "comment": "m_dwPosCRC — conditional with above",
+          "comment": "m_dwPosCRC \u2014 conditional with above",
           "guard": "dwID % 13 == 0"
         },
         {
           "op": "Encode4",
-          "comment": "dwRectCrc — conditional with above",
+          "comment": "dwRectCrc \u2014 conditional with above",
           "guard": "dwID % 13 == 0"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult": {
+      "address": "0x9f9da0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode/sub-op byte: 3=SHOW, 4=SEND_SUCCESS, 5=SEND_ERROR, 7=REFRESH \u2014 dispatcher; sub-op modelled via #-suffixed synthetic entries"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#Display": {
+      "address": "0x9f9da0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, SHOW)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count \u2014 number of GW_Memo entries"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSN (memo id) \u2014 GW_Memo::Decode loop body (count iterations; analyzer flattens)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sSender (sender name, max 13 chars)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sContent (message body, max 201 chars)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "dateSent (8-byte FILETIME timestamp via DecodeBuffer(8))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nFlag (memo status flag)"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendSuccess": {
+      "address": "0x9f9da0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=4, SEND_SUCCESS) \u2014 no further bytes; success path shows UI notification only"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendError": {
+      "address": "0x9f9da0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=5, SEND_ERROR)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode \u2014 0=RECEIVER_ONLINE, 1=RECEIVER_UNKNOWN, 2=RECEIVER_INBOX_FULL"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#Refresh": {
+      "address": "0x9f9da0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=7, REFRESH) \u2014 no further bytes; calls OnMemoNotify_Receive internally to send REQUEST packet"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoNotify_Receive": {
+      "address": "0x9f3830",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=2, REQUEST) \u2014 byte sent as NOTE_ACTION sub-op by OnMemoNotify_Receive@0x9f3830"
+        }
+      ]
+    },
+    "CMemoListDlg::SetRet": {
+      "address": "0x624280",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "count \u2014 number of checked (nFlag==3) memos to discard"
+        },
+        {
+          "op": "Encode1",
+          "comment": "emptySlotCount \u2014 free inventory slots (tab 4, from CharacterData::GetEmptySlotCount)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwSN (memo serial number) \u2014 per-entry loop body (count iterations; analyzer flattens)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nFlag (memo type flag)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResLoadGiftDone": {
+      "address": "0x496520",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "senderName (gift sender name \u2014 from gift list entry)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message (acceptance note from CUIReceiveGift::GetResult)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CapacityUpdate": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x15/21, CAPACITY_UPDATE) \u2014 dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nFriendMax \u2014 new buddy-list capacity written into CharacterData.nFriendMax"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ChannelChange": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x14/20, CHANNEL_CHANGE) \u2014 dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID \u2014 characterId of the buddy whose channel changed"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inShop \u2014 0=not in cash shop, 1=in cash shop (m_aInShop[Index])"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nChannelID \u2014 new channel id (stored in m_aFriend[Index].nChannelID; -1=offline)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Error": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode \u2014 error sub-op byte (0x0B=11..0x0F=15, 0x10=16..0x13=19, 0x16=22, 0x17=23); each arm shows a StringPool notice dialog with no further packet reads except cases 0x10/0x11/0x13/0x16 which do Decode1 + optional DecodeStr"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Invite": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x09, INVITE) \u2014 dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID \u2014 originatorId (characterId of the player sending the friend request)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "originatorName \u2014 display name of the requester (ZXString, variable length)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v25 \u2014 extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v26 \u2014 extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_Friend entry (39 bytes via CFriend::Insert \u2192 GW_Friend::Decode \u2192 DecodeBuffer(this,0x27)): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inShop \u2014 after GW_Friend::Insert, CFriend::Insert reads Decode1 for m_aInShop[new_entry]"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListUpdate": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x07/0x0A/0x12, LIST_UPDATE variants) \u2014 dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count \u2014 number of buddy entries (v4); used for ZArray realloc"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "buddy entries \u2014 count \u00d7 39 bytes (GW_Friend array) decoded as DecodeBuffer(m_aFriend.a, 39*count)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "inShop flags \u2014 count \u00d7 4 bytes (int array) decoded as DecodeBuffer(m_aInShop.a, 4*count)"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Update": {
+      "address": "0xa12630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0x08, UPDATE) \u2014 dispatcher switch byte consumed by OnFriendResult"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwFriendID \u2014 characterId used to locate the buddy via CFriend::FindIndex"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_Friend update \u2014 39 bytes via GW_Friend::Decode \u2192 DecodeBuffer(this,0x27): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inShop \u2014 updated inShop flag stored in m_aInShop[Index]"
+        }
+      ]
+    },
+    "CField::SendSetFriendMsg": {
+      "address": "0x535240",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=1, ADD) \u2014 sub-op byte for BUDDYLIST_MODIFY (opcode 153)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sTarget \u2014 name of the character to add as buddy"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sFriendGroup \u2014 buddy group name"
+        }
+      ]
+    },
+    "CField::SendAcceptFriendMsg": {
+      "address": "0x52f290",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=2, ACCEPT) \u2014 sub-op byte for BUDDYLIST_MODIFY (opcode 153)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFriendID \u2014 characterId of the buddy whose request is being accepted"
+        }
+      ]
+    },
+    "CField::SendDeleteFriendMsg": {
+      "address": "0x52f170",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=3, DELETE) \u2014 sub-op byte for BUDDYLIST_MODIFY (opcode 153)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFriendID \u2014 characterId of the buddy to remove"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Add": {
+      "address": "0x7f5e40",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=0 (OnEnter)",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=0, ADD) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position \u2014 slot index in messenger room (0\u20132)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook::AvatarLook(&v7, iPacket) \u2014 avatar appearance"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sID \u2014 character name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId \u2014 channel the character is on"
+        },
+        {
+          "op": "Decode1",
+          "comment": "padding (extra flag, always discarded)"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Join": {
+      "address": "0x7f5e00",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=1 (OnSelfEnterResult)",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=1, JOIN) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position \u2014 self slot index in messenger room (Decode1 \u2192 OnSelfEnter)"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Remove": {
+      "address": "0x7f5e20",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=2 (OnLeave)",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=2, REMOVE) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position \u2014 slot index of the character that left"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#RequestInvite": {
+      "address": "0x7f2cb0",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=3 (OnInvite); static handler \u2014 runs before instance guard",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, REQUEST_INVITE) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sInviter \u2014 name of the character sending the invite"
+        },
+        {
+          "op": "Decode1",
+          "comment": "padding byte (v2, used for blacklist check)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "messengerId \u2014 room id to join"
+        },
+        {
+          "op": "Decode1",
+          "comment": "padding byte (v4, checked against config flag)"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteSent": {
+      "address": "0x7f5030",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=4 (OnInviteResult)",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=4, INVITE_SENT) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMsg \u2014 invitee character name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success \u2014 0=failure (blocked/offline), non-zero=success"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteDeclined": {
+      "address": "0x7f51a0",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=5 (OnBlocked)",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=5, INVITE_DECLINED) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sBlockedUser \u2014 name of the character who declined"
+        },
+        {
+          "op": "Decode1",
+          "comment": "declineMode \u2014 sub-enum (0=declined, non-zero=blocked); exact values deferred to _pending.md"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Chat": {
+      "address": "0x7f52d0",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=6 (OnChat)",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=6, CHAT) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "chatLine \u2014 formatted as 'name : message' (parsed client-side to extract speaker)"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Update": {
+      "address": "0x7f2ea0",
+      "direction": "clientbound",
+      "note": "synthetic sub-mode entry for CUIMessenger::OnPacket dispatcher mode=7 (OnAvatar); atlas Update also writes name+channelId+pad which OnAvatar does NOT read \u2014 wire mismatch",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=7, UPDATE) \u2014 dispatcher switch byte consumed by CUIMessenger::OnPacket"
+        },
+        {
+          "op": "Decode1",
+          "comment": "position \u2014 slot index whose avatar changed"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook::AvatarLook(&v5, iPacket) \u2014 updated avatar appearance"
+        }
+      ]
+    },
+    "CUIMessenger::OnCreate": {
+      "address": "0x7f59d0",
+      "direction": "serverbound",
+      "note": "client accepts a messenger invite; sends op=0 + messengerId. Op-byte consumed by atlas Operation dispatcher; sub-handler sees only messengerId.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "messengerId \u2014 room id passed in pData (the invite's room id); op byte (=0) stripped by atlas Operation dispatcher"
+        }
+      ]
+    },
+    "CUIMessenger::OnDestroy": {
+      "address": "0x7f03f0",
+      "direction": "serverbound",
+      "note": "client closes the messenger window; sends op=2 only. Op-byte is the entire payload \u2014 handled by atlas Operation struct directly.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op (=2, LEAVE) \u2014 only field; atlas Operation struct reads this as mode byte"
+        }
+      ]
+    },
+    "CUIMessenger::SendInviteMsg": {
+      "address": "0x7f5820",
+      "direction": "serverbound",
+      "note": "client invites a character by name; sends op=3 + targetName. Op-byte consumed by dispatcher; sub-handler sees only targetCharacter.",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sTarget \u2014 target character name to invite; op byte (=3) stripped by atlas Operation dispatcher"
+        }
+      ]
+    },
+    "CFadeWnd::SendCloseMessage": {
+      "address": "0x524180",
+      "direction": "serverbound",
+      "note": "CFadeWnd type=0 declines a messenger invite; sends op=5 + fromName + myName + pad. Op-byte consumed by dispatcher; sub-handler sees fromName + myName + pad.",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "m_sInviter (fromName) \u2014 name of the character who sent the invite; op byte (=5) stripped by atlas Operation dispatcher"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "selfCharName (myName) \u2014 own character name"
+        },
+        {
+          "op": "Encode1",
+          "comment": "always 0 (alwaysZero padding byte)"
+        }
+      ]
+    },
+    "CUIMessenger::ProcessChat": {
+      "address": "0x7f6140",
+      "direction": "serverbound",
+      "note": "client sends a chat message; sends op=6 + chatLine. Op-byte consumed by dispatcher; sub-handler sees only msg.",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sText \u2014 formatted chat message ('name : msg'); op byte (=6) stripped by atlas Operation dispatcher"
+        }
+      ]
+    },
+    "CUser::OnChat": {
+      "address": "0x8e86c0",
+      "direction": "clientbound",
+      "note": "CHATTEXT (0xB5) / CHATTEXT1 (0xB6). characterId (Decode4) is consumed by CUserPool dispatcher before calling OnChat \u2014 not visible here. Sub-op mode byte (Decode1 line 65): 0=normal, 1=npc-name. Then DecodeStr(msg), Decode1(bOnlyBalloon). Atlas GeneralChat writes characterId+gm+msg+show; the characterId is the dispatcher prefix, gm maps to the mode byte, show maps to bOnlyBalloon.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "isGM / chat type byte (0=normal player, 1=npc-name; consumed as gm flag in atlas)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "chat message text"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bOnlyBalloon (show flag: 0=show in chat log, 1=balloon only)"
+        }
+      ]
+    },
+    "CField::SendChatMsg": {
+      "address": "0x534000",
+      "direction": "serverbound",
+      "note": "GENERAL_CHAT (0x36). Client sends: Encode4(update_time) + EncodeStr(msg) + Encode1(bOnlyBalloon). Atlas General.Encode writes updateTime (GMS>83 gate) + msg + bOnlyBalloon \u2014 matches v95 wire exactly.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time(); gated GMS>83 in atlas \u2014 v95 always present)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chat message text (sText)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bOnlyBalloon flag"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Created": {
+      "address": "0xa10efc",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=8 (CREATE). Server sends: Decode4(partyId) + Decode4(townPortalFromId) + Decode4(townPortalToId) + Decode2(x) + Decode2(y). Client sets local party state. Atlas Created writes mode+partyId+2\u00d7EmptyMapId+2\u00d7shorts.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "partyId \u2014 stored as m_nPartyID"
+        },
+        {
+          "op": "Decode2",
+          "comment": "townPortalFromId (map4 in atlas Created)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "townPortalToId (map4 in atlas Created)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "door x (short)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "door y (short)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Invite": {
+      "address": "0xa10b5f",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=4 (INVITE). Server sends: Decode4(partyId) + DecodeStr(inviterName) + Decode4(inviterJobId) + Decode4(inviterLevel) + Decode1(autoJoinFlag). Atlas Invite writes mode+partyId+name+0x00 \u2014 missing inviterJobId, inviterLevel fields.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "v7 = partyId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sApplierName = inviter character name"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID = inviter job id"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sName = inviter level"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sMsg = auto-join flag (0=show dialog, 1=auto-accept)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Disband": {
+      "address": "0xa11085",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=12 with isForced=0 path (DISBAND/LEAVE). Reads: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId \u2014 the repeated partyId is a known pattern. When isForced=0 and no party data follows, layout matches atlas structure.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nPartyID = partyId (stored, zeroed after)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v37 = targetId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isForced flag \u2014 0=leave/disband, 1=expelled"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Error": {
+      "address": "0xa10e9e",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) error sub-modes (9,10,13,17,18,22,29,32-34,36). These modes only display string-pool chat messages; no Decode calls beyond the mode byte consumed by the dispatcher. Atlas Error writes mode+name where name is a server-supplied string. Sub-op enum deferred.",
+      "calls": []
+    },
+    "CWvsContext::OnPartyResult#ChangeLeader": {
+      "address": "0xa1169e",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=31 (CHANGE_LEADER). Reads: Decode4(newLeaderId) + Decode1(disconnected). Atlas ChangeLeader writes mode+targetCharacterId(4)+disconnected(1). Wire matches.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "v66 = newLeaderId \u2014 stored as dwPartyBossCharacterID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v67 = disconnected flag (0=normal transfer, 1=due to disconnect)"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Join": {
+      "address": "0xa11405",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=15 (JOIN). Reads: Decode4(partyId) + DecodeStr(targetName) + PARTYDATA::Decode(378 bytes). Atlas Join writes mode+partyId+name+WritePartyData(298 bytes). WritePartyData is 80 bytes short: missing aTownPortal[6].skillId (24 bytes) + aPQReward/aPQRewardType/dwPQRewardMobTemplateID/bPQReward (56 bytes).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nPartyID = partyId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCharacterName = joining member name"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "PARTYDATA::Decode(0x17A=378 bytes) \u2014 includes PARTYMEMBER+adwFieldID+aTownPortal+aPQReward fields"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Left": {
+      "address": "0xa11085",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=12 with isForced=1 path (LEFT/EXPELLED). Reads: Decode4(partyId)+Decode4(targetId)+Decode1(1)+Decode1(isForced)+DecodeStr(targetName)+PARTYDATA::Decode(378 bytes). Atlas Left writes mode+partyId+targetId+0x01+forced+name+WritePartyData(298 bytes). WritePartyData 80-byte shortfall same as Join/Update.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nPartyID = partyId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v37 = targetId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isForced branch discriminator (1 = member leaving with PARTYDATA)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "v38 = forced flag (0=voluntary leave, 1=expelled by leader)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCharacterName = leaving member name"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "PARTYDATA::Decode(0x17A=378 bytes) \u2014 full party state after member left"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Update": {
+      "address": "0xa10ea1",
+      "direction": "clientbound",
+      "note": "PARTY_OPERATION (0x3E) mode=7/38 (UPDATE). Reads: Decode4(partyId) + PARTYDATA::Decode(378 bytes). Atlas Update writes mode+partyId+WritePartyData(298 bytes). WritePartyData is 80 bytes short: missing aTownPortal[6].m_nSKillID (6\u00d74=24 bytes) + aPQReward[6](24)+aPQRewardType[6](24)+dwPQRewardMobTemplateID(4)+bPQReward(4)=56 bytes. HOT PATH.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "m_nPartyID = partyId"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "PARTYDATA::Decode(0x17A=378 bytes) \u2014 full PARTYDATA struct including PQ reward fields"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OperationBody": {
+      "address": "0xa10ab0",
+      "direction": "clientbound",
+      "note": "Synthetic entry for operation_body.go helper (assembles sub-op packets via WithResolvedCode). No independent wire shape; OP-FAMILY-party sub-op enum deferred to _pending.md.",
+      "calls": []
+    },
+    "CUserRemote::OnReceiveHP": {
+      "address": "0x953f50",
+      "direction": "clientbound",
+      "note": "UPDATE_PARTYMEMBER_HP (0xD6). CUserRemote::OnReceiveHP reads Decode4(hp)+Decode4(maxHp). The characterId is consumed upstream by CUserPool::OnUserRemotePacket before this function is called (dispatcher-prefix pattern). Atlas MemberHP writes WriteInt(characterId)+WriteInt(hp)+WriteInt(maxHp) \u2014 characterId is the packet-level prefix prepended by the opcode writer, correct. HOT PATH.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "hp \u2014 current HP of the remote party member"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maxHp \u2014 max HP of the remote party member"
+        }
+      ]
+    },
+    "CField::SendCreateNewPartyMsg": {
+      "address": "0x52ebc0",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=1 (CREATE). Client sends: Encode1(1). No further fields.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op=1 (CREATE_PARTY)"
+        }
+      ]
+    },
+    "CField::SendWithdrawPartyMsg": {
+      "address": "0x52edb0",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=2 (LEAVE). Client sends: Encode1(2)+Encode1(0). Atlas Operation only carries op byte; the trailing 0x00 is not in atlas OperationJoin/Leave separate struct.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op=2 (LEAVE_PARTY)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "trailing 0 \u2014 not modelled in atlas Operation dispatcher"
+        }
+      ]
+    },
+    "CField::SendKickPartyMsg": {
+      "address": "0x530140",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=5 (EXPEL). Client sends: Encode1(5)+Encode4(targetCharacterId). Atlas OperationExpel writes WriteInt(targetCharacterId) \u2014 op byte consumed by dispatcher.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op=5 (EXPEL_PARTY_MEMBER)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "PartyMemberByName = targetCharacterId"
+        }
+      ]
+    },
+    "CField::SendChangePartyBossMsg": {
+      "address": "0x530370",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=6 (CHANGE_LEADER). Client sends: Encode1(6)+Encode4(targetCharacterId). Atlas OperationChangeLeader writes WriteInt(targetCharacterId) \u2014 op byte consumed by dispatcher.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op=6 (CHANGE_PARTY_BOSS)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "PartyMemberByName = targetCharacterId"
+        }
+      ]
+    },
+    "CField::SendJoinPartyMsg": {
+      "address": "0x534310",
+      "direction": "serverbound",
+      "note": "PARTY_OPERATION (0x91) op=4 (INVITE). Client sends: Encode1(4)+EncodeStr(targetName). Atlas OperationInvite writes WriteAsciiString(name) \u2014 op byte consumed by dispatcher.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op=4 (INVITE_PARTY_MEMBER)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "v22 = target character name to invite"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#InviteReject": {
+      "address": "0xa10ab0",
+      "direction": "serverbound",
+      "note": "DENY_PARTY_REQUEST (0x92). Synthetic entry: no direct IDA function for the reject path. Wire: Encode1(declineCode)+EncodeStr(inviterName). Atlas InviteReject writes WriteByte(unk)+WriteAsciiString(from). The unk maps to the decline response code; from is the inviter name. Layout matches.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "unk = decline response code"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "from = inviter character name"
+        }
+      ]
+    },
+    "CField::SendJoinPartyMsg#OperationJoin": {
+      "address": "0x534310",
+      "direction": "serverbound",
+      "note": "Synthetic entry for OperationJoin (accept party invite). After receiving an invite the client sends partyId to the server. Atlas OperationJoin writes WriteInt(partyId). Wire: Encode4(partyId).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "partyId \u2014 the party to join"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op (mode byte)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildBBSPacket": {
+      "address": "0x9ccf20",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-mode (Decode1 - 6; 0=list, 1=view, 2=not-found)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestAgreement": {
+      "address": "0xa0d3b0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "leaderName (gradeName in IDA)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "guildName (skillID string in IDA)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#Invite": {
+      "address": "0xa0d664",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (5)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "inviterName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "v21 (unknown \u2014 atlas MISSING this field)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (unknown \u2014 atlas MISSING this field)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessage": {
+      "address": "0xa0d99e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (error sub-op \u2014 no further reads)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
+      "address": "0xa0d7d2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (55=invite_sent, 56=invite_blocked, 57=invite_expired)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target character name"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#Disband": {
+      "address": "0xa0dfcb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (52)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CapacityChange": {
+      "address": "0xa0dfe2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (60)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMaxMemberNum (capacity) \u2014 atlas writes WriteInt (4 bytes), IDA reads Decode1 (1 byte); REAL BUG"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberJoined": {
+      "address": "0xa0dbc0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (41)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "GUILDMEMBER::Decode (37 bytes raw = name[13] + job[4] + level[4] + title[4] + online[4] + signature[4] + allianceTitle[4])"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberLeft": {
+      "address": "0xa0dd06",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (46)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpel": {
+      "address": "0xa0dd06",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (49)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberStatusUpdate": {
+      "address": "0xa0e563",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (63)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "online flag (0/1)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberTitleUpdate": {
+      "address": "0xa0e0b5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (66)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "newGrade/title (1-based)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#TitleChange": {
+      "address": "0xa0e239",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (64)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[4]"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#EmblemChange": {
+      "address": "0xa0e394",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (69)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMarkBg (logoBackground)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkBgColor (logoBackgroundColor)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMark (logo)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkColor (logoColor)"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#NoticeChange": {
+      "address": "0xa0e44b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (71)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "notice text"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#Info": {
+      "address": "0x4fb760",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (sub-op 0x1A=26 in GUILD_OPERATION)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inGuild bool"
+        },
+        {
+          "op": "Decode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "guildName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title[4]"
+        },
+        {
+          "op": "Decode1",
+          "comment": "memberCount"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "count \u00d7 charId (4 bytes each, packed via DecodeBuffer)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "count \u00d7 GUILDMEMBER (37 bytes each, packed via DecodeBuffer)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMaxMemberNum (capacity)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMarkBg (logoBackground)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkBgColor (logoBackgroundColor)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMark (logo)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkColor (logoColor)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "notice"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nPoint (points)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nAllianceID"
+        }
+      ]
+    },
+    "CUserRemote::OnGuildNameChanged": {
+      "address": "0x0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern \u2014 consumed by CUserPool before OnGuildNameChanged)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "newGuildName"
+        }
+      ]
+    },
+    "CUserRemote::OnGuildMarkChanged": {
+      "address": "0x0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMarkBg (logoBackground)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkBgColor (logoBackgroundColor)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMark (logo)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMarkColor (logoColor)"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
+      "address": "0x7c46c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (6 = list mode 0x06)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasNotice (0 or 1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "notice.nEntryID (if hasNotice)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "notice.nCharacterID (if hasNotice)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "notice.sTitle (if hasNotice)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "notice.ftDate (8 bytes, if hasNotice)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "notice.nEmoticon (if hasNotice)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "notice.nComments (if hasNotice)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEntryListTotalCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageEntryCount (if total > 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "entry.nEntryID (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "entry.nCharacterID (loop)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "entry.sTitle (loop)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "entry.ftDate 8 bytes (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "entry.nEmoticon (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "entry.nComments (loop)"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
+      "address": "0x7c6630",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (7 = view mode 0x07)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCurEntryID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCurCharacterID"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ftCurDate (8 bytes)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCurTitle"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sCurText"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEmoticon"
+        },
+        {
+          "op": "Decode4",
+          "comment": "replyCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reply.m_nSN (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reply.m_nCharacterID (loop)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "reply.m_ftDate (8 bytes, loop)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "reply.m_sComment (loop)"
+        }
+      ]
+    },
+    "CUIFadeYesNo::OnButtonClicked": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
+        }
+      ]
+    },
+    "CFadeWnd::SendCloseMessage#DenyGuildRequest": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "unk/declineCode byte"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "fromCharacterName (inviter name)"
+        }
+      ]
+    },
+    "CField::InputGuildName": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "proposed guild name"
+        }
+      ]
+    },
+    "CField::SendCreateGuildAgreeMsg": {
+      "address": "0x52d780",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId (from CWvsContext)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bAgree bool (0=no, 1=yes)"
+        }
+      ]
+    },
+    "CField::SendSetGuildMarkMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "logoBackground"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoBackgroundColor"
+        },
+        {
+          "op": "Encode2",
+          "comment": "logo"
+        },
+        {
+          "op": "Encode1",
+          "comment": "logoColor"
+        }
+      ]
+    },
+    "CField::SendInviteGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "target character name"
+        }
+      ]
+    },
+    "CField::SendWithdrawGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CField::SendKickGuildMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "character name"
+        }
+      ]
+    },
+    "CField::SendSetGuildNoticeMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "notice text"
+        }
+      ]
+    },
+    "CUIGuildBBS::SendLoadListRequest": {
+      "address": "0x7c3680",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (list sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "startIndex"
+        }
+      ]
+    },
+    "CUIGuildBBS::SendViewEntryRequest": {
+      "address": "0x7c3710",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (view sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (entryID)"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnCommentDelete": {
+      "address": "0x7c3b70",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (delete-reply sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "replyId"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnRegister": {
+      "address": "0x7c4250",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (create/edit sub-op)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "modify bool"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId (if modify)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "notice bool"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Encode4",
+          "comment": "emoticonId"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnComment": {
+      "address": "0x7c4530",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (reply sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnDelete": {
+      "address": "0x7c6520",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (delete-thread sub-op)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "threadId"
+        }
+      ]
+    },
+    "CTabGuildAlliance::OnGradeChange": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "targetId"
+        },
+        {
+          "op": "Encode1",
+          "comment": "newTitle byte"
+        }
+      ]
+    },
+    "CWvsContext::SendSetGuildTitleNames": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "title[0]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[1]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[2]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[3]"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "title[4]"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#AgreementResponse": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "unk (partyId or similar)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "agreed bool"
+        }
+      ]
+    },
+    "CWvsContext::SendGuildJoinMsg": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "guildId"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterId"
         }
       ]
     }

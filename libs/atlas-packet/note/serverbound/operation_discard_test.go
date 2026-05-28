@@ -11,9 +11,8 @@ func TestOperationDiscardRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			input := OperationDiscard{
-				count: 2,
-				val1:  1,
-				val2:  0,
+				count:          2,
+				emptySlotCount: 3,
 				entries: []DiscardEntry{
 					{id: 100, flag: 1},
 					{id: 200, flag: 2},
@@ -24,11 +23,8 @@ func TestOperationDiscardRoundTrip(t *testing.T) {
 			if output.Count() != input.Count() {
 				t.Errorf("count: got %v, want %v", output.Count(), input.Count())
 			}
-			if output.Val1() != input.Val1() {
-				t.Errorf("val1: got %v, want %v", output.Val1(), input.Val1())
-			}
-			if output.Val2() != input.Val2() {
-				t.Errorf("val2: got %v, want %v", output.Val2(), input.Val2())
+			if output.EmptySlotCount() != input.EmptySlotCount() {
+				t.Errorf("emptySlotCount: got %v, want %v", output.EmptySlotCount(), input.EmptySlotCount())
 			}
 			if len(output.Entries()) != len(input.Entries()) {
 				t.Fatalf("entries length: got %v, want %v", len(output.Entries()), len(input.Entries()))

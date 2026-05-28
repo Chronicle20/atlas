@@ -50,11 +50,10 @@
 | 37 | int32 | int32 `AvatarLook::nWeaponStickerID` | ✅ |  |
 | 38 | int32 | int32 `AvatarLook::anPetID[0]` | ✅ |  |
 | 39 | int32 | int32 `AvatarLook::anPetID[1]` | ✅ |  |
-| 40 | int32 | int32 `AvatarLook::anPetID[2]` | ✅ |  |
+| 40 | byte | int32 `AvatarLook::anPetID[2]` | ❌ | width mismatch |
 | 41 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 42 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 42 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 43 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 44 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 45 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 46 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

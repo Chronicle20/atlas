@@ -14,6 +14,4 @@
 | 1 | byte | byte `FUNCKEY_MAPPED::nType (key type byte; loop 90 entries, only if resetToDefault==0 and packet length >= 0x1BD)` | ✅ |  |
 | 2 | byte | int32 `FUNCKEY_MAPPED::nID (key action int32; loop 90 entries, only if resetToDefault==0)` | ❌ | width mismatch |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

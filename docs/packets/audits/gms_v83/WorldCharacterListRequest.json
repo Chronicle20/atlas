@@ -3,7 +3,7 @@
   "IDAName": "CLogin::SendLoginPacket",
   "Address": "0x5f6d6a",
   "Variant": "GMS/v83",
-  "BranchDepth": 3,
+  "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/login/serverbound/world_character_list_request.go",
   "Rows": [
     {

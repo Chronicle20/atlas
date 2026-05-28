@@ -4,7 +4,7 @@
 - **Atlas file:** `libs/atlas-packet/monster/clientbound/movement.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
-- **Verdict:** 🔍
+- **Verdict:** ❌
 
 ## Wire-level diff
 
@@ -17,9 +17,22 @@
 | 4 | byte | byte `bLeft (action+flags)` | ✅ |  |
 | 5 | int16 | int32 `sEffect.m_Data (skill effect id+level packed)` | ❌ | width mismatch |
 | 6 | int16 | int32 `multiTargetForBall count` | ❌ | width mismatch |
-| 7 | byte | int32 `multiTargetForBall[i].x — loop` | 🔍 | sub-struct: multiTargets — see _substruct/ |
-| 8 | byte | int32 `multiTargetForBall[i].y — loop` | 🔍 | sub-struct: randTimeForAreaAttack — see _substruct/ |
+| 7 | int32 | int32 `multiTargetForBall[i].x — loop` | ✅ |  |
+| 8 | int32 | int32 `multiTargetForBall[i].y — loop` | ✅ |  |
 | 9 | int32 | int32 `randTimeForAreaAttack count` | ✅ |  |
-| 10 | byte | int32 `randTimeForAreaAttack[i] — loop` | ❌ | width mismatch |
-| 11 | byte | bytes `Movement body via CMovePath::OnMovePacket` | 🔍 | sub-struct: Movement — see _substruct/ |
+| 10 | int32 | int32 `randTimeForAreaAttack[i] — loop` | ✅ |  |
+| 11 | int32 | bytes `Movement body via CMovePath::OnMovePacket` | ❌ | width mismatch |
+| 12 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 13 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 14 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 15 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 16 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 17 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 18 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 21 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 24 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

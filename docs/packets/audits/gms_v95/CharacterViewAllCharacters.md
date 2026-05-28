@@ -53,12 +53,11 @@
 | 40 | int32 | int32 `AvatarLook::nWeaponStickerID` | ✅ |  |
 | 41 | int32 | int32 `AvatarLook::anPetID[0]` | ✅ |  |
 | 42 | int32 | int32 `AvatarLook::anPetID[1]` | ✅ |  |
-| 43 | int32 | int32 `AvatarLook::anPetID[2]` | ✅ |  |
+| 43 | byte | int32 `AvatarLook::anPetID[2]` | ❌ | width mismatch |
 | 44 | byte | byte `rankEnabled / hasRank byte (Decode1(v3) in v95 loop)` | ✅ |  |
-| 45 | byte | bytes `rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap` | ❌ | width mismatch |
+| 45 | int32 | bytes `rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap` | ❌ | width mismatch |
 | 46 | int32 | byte `m_bLoginOpt (PIC handling — GMS v95 guard: >v87)` | ❌ | width mismatch |
 | 47 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 48 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 49 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 50 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 49 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

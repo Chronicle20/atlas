@@ -1,0 +1,29 @@
+{
+  "WriterName": "GuildErrorMessageWithTarget",
+  "IDAName": "CWvsContext::OnGuildResult#ErrorMessageWithTarget",
+  "Address": "0xa0d7d2",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (55=invite_sent, 56=invite_blocked, 57=invite_expired)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "target character name",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

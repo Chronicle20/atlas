@@ -1169,6 +1169,587 @@
         {"op": "Encode4", "comment": "flyCtxTargetY (or 16768460 default)"},
         {"op": "EncodeBuf", "comment": "CMovePath::Flush body (Movement elements). v83 lacks the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail that v87+ carry."}
       ]
+    },
+    "CWvsContext::OnMemoResult": {
+      "address": "0xa2508b",
+      "direction": "clientbound",
+      "note": "v83 OnMemoResult dispatcher. Mode byte consumed by dispatcher; mode=3 (DISPLAY) reads count+items. Wire shape identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#Display": {
+      "address": "0xa2508b",
+      "direction": "clientbound",
+      "note": "mode=3 (DISPLAY). Reads item count then loops calling sub_4E4ADB per item. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"},
+        {"op": "Decode1", "comment": "item count"},
+        {"op": "Decode1", "comment": "item[i].senderFlag (loop — sub_4E4ADB)"},
+        {"op": "Decode4", "comment": "item[i].noteId"},
+        {"op": "DecodeStr", "comment": "item[i].senderName"},
+        {"op": "DecodeStr", "comment": "item[i].message"},
+        {"op": "Decode4", "comment": "item[i].timestamp"},
+        {"op": "Decode1", "comment": "item[i].flags"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendSuccess": {
+      "address": "0xa2508b",
+      "direction": "clientbound",
+      "note": "mode=4 (SEND_SUCCESS). No extra fields; dispatcher reads mode byte then falls into string-pool notice. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"},
+        {"op": "Decode1", "comment": "errorCode (0=success)"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendError": {
+      "address": "0xa2508b",
+      "direction": "clientbound",
+      "note": "mode=5 (SEND_ERROR). errorCode selects string pool notice. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"},
+        {"op": "Decode1", "comment": "errorCode"}
+      ]
+    },
+    "CWvsContext::OnMemoResult#Refresh": {
+      "address": "0xa2508b",
+      "direction": "clientbound",
+      "note": "mode=8 (REFRESH). OnMemoNotify_Receive called, no further reads. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (8)"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListUpdate": {
+      "address": "0xa3f2e8",
+      "direction": "clientbound",
+      "note": "mode=7/0xA/0x12. Calls CWvsContext::CFriend::Reset which reads the full buddy list. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (7/0xA/0x12)"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#Update": {
+      "address": "0xa3f2e8",
+      "direction": "clientbound",
+      "note": "mode=8. UpdateFriend reads characterId+channelId+mapId. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (8)"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#Invite": {
+      "address": "0xa3f2e8",
+      "direction": "clientbound",
+      "note": "mode=9 (INVITE). v83 wire: Decode4(characterId) + DecodeStr(name) + sub_A40028(friendList,packet). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (9)"},
+        {"op": "Decode4", "comment": "characterId (v23)"},
+        {"op": "DecodeStr", "comment": "inviterName"},
+        {"op": "Decode1", "comment": "buddy list count (sub_A40028)"},
+        {"op": "Decode4", "comment": "buddy[i].characterId (loop)"},
+        {"op": "Decode1", "comment": "buddy[i].channelId"},
+        {"op": "Decode4", "comment": "buddy[i].mapId"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#ChannelChange": {
+      "address": "0xa3f2e8",
+      "direction": "clientbound",
+      "note": "mode=0x14. Reads characterId + channelId + mapId. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x14)"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "Decode1", "comment": "channelId"},
+        {"op": "Decode4", "comment": "mapId"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#CapacityUpdate": {
+      "address": "0xa3f2e8",
+      "direction": "clientbound",
+      "note": "mode=0x15. Reads buddyListCapacity byte. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x15)"},
+        {"op": "Decode1", "comment": "buddyListCapacity"}
+      ]
+    },
+    "CWvsContext::OnFriendResult#Error": {
+      "address": "0xa3f2e8",
+      "direction": "clientbound",
+      "note": "mode=0xB/0xC/0xD/0xE/0xF. No extra fields beyond mode. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (error code)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Created": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=8 (CREATED). v83: Decode4(partyId) + Decode4(memberId) + Decode4(mapId) + Decode2(jobId) + Decode2(level) + memset(3732,0,0x12A=298). Self-creation path, no PARTYDATA::Decode called externally.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (8)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "Decode4", "comment": "memberId"},
+        {"op": "Decode4", "comment": "mapId"},
+        {"op": "Decode2", "comment": "jobId"},
+        {"op": "Decode2", "comment": "level"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Invite": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=4 (INVITE). v83 wire: Decode4(partyId) + DecodeStr(inviterName) + Decode1(autoJoin). NO inviterJobId/inviterLevel — those were added in v95. Atlas Invite previously wrote mode+partyId+name+jobId+level+autoJoin; fix gates jobId/level behind v95+.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"},
+        {"op": "Decode4", "comment": "partyId (v147)"},
+        {"op": "DecodeStr", "comment": "inviterName"},
+        {"op": "Decode1", "comment": "autoJoinFlag (*a2)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Disband": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=12/Left with forcedByte=0. v83: Decode4(partyId) + Decode4(targetId) + Decode1(forced) [branch 0=disband] + PARTYDATA::Decode(298). Wire shape identical to v95 except PARTYDATA size.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (12)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "Decode4", "comment": "targetId"},
+        {"op": "Decode1", "comment": "forced (1=expel, 0=disband/leave)"},
+        {"op": "DecodeStr", "comment": "targetName"},
+        {"op": "Decode4", "comment": "PARTYDATA ids[6] × 6"},
+        {"op": "Decode1", "comment": "PARTYDATA names[6] × 6 (padded 13)"},
+        {"op": "Decode4", "comment": "PARTYDATA jobs[6] × 6"},
+        {"op": "Decode4", "comment": "PARTYDATA levels[6] × 6"},
+        {"op": "Decode4", "comment": "PARTYDATA channels[6] × 6"},
+        {"op": "Decode4", "comment": "PARTYDATA leaderId"},
+        {"op": "Decode4", "comment": "PARTYDATA maps[6] × 6"},
+        {"op": "Decode4", "comment": "PARTYDATA portals[6] × 4 ints (v83: no m_nSKillID, no PQ fields)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Error": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36. Error codes — no further reads or trivial string decode. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (error code)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#ChangeLeader": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=27 (CHANGE_LEADER). v83: Decode4(newLeaderId) + Decode1(disconnected). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (27)"},
+        {"op": "Decode4", "comment": "newLeaderId (v64)"},
+        {"op": "Decode1", "comment": "disconnected flag (*a2)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Join": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=15. v83: Decode4(partyId) + DecodeStr(joinedName) + PARTYDATA::Decode(298). Wire shape identical to v95 except PARTYDATA size (298 vs 378).",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (15)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "DecodeStr", "comment": "joinedMemberName"},
+        {"op": "Decode4", "comment": "PARTYDATA ids[6] × 6"},
+        {"op": "Decode1", "comment": "PARTYDATA names[6] (padded 13 × 6)"},
+        {"op": "Decode4", "comment": "PARTYDATA jobs/levels/channels × 6 each"},
+        {"op": "Decode4", "comment": "PARTYDATA leaderId"},
+        {"op": "Decode4", "comment": "PARTYDATA maps[6]"},
+        {"op": "Decode4", "comment": "PARTYDATA portals[6] × 4 ints (v83 no skillId, no PQ)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Left": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=12. v83: Decode4(partyId)+Decode4(targetId)+Decode1(forced)+DecodeStr(targetName)+PARTYDATA::Decode(298). Forced branch reads PARTYDATA. Wire shape identical to v95 except PARTYDATA size.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (12)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "Decode4", "comment": "targetId"},
+        {"op": "Decode1", "comment": "forced (1=expel/forced, 0=leave/disband)"},
+        {"op": "DecodeStr", "comment": "targetName (via ZXString assign)"},
+        {"op": "Decode4", "comment": "PARTYDATA (298 bytes in v83)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#Update": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=7/34. v83: Decode4(partyId)+PARTYDATA::Decode(0x12A=298 bytes). Confirmed via qmemcpy(v111,&szCookie[3732],0x12A). PARTYDATA in v83 has 4-int portals (no m_nSKillID) and no PQ fields. v95 extended to 0x17A=378.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (7 or 34)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "Decode4", "comment": "PARTYDATA ids[0..5]"},
+        {"op": "DecodeStr", "comment": "PARTYDATA names[0..5] (padded 13 each)"},
+        {"op": "Decode4", "comment": "PARTYDATA jobs[0..5]"},
+        {"op": "Decode4", "comment": "PARTYDATA levels[0..5]"},
+        {"op": "Decode4", "comment": "PARTYDATA channels[0..5]"},
+        {"op": "Decode4", "comment": "PARTYDATA leaderId"},
+        {"op": "Decode4", "comment": "PARTYDATA maps[0..5]"},
+        {"op": "Decode4", "comment": "PARTYDATA portals[6] × 4 ints: townId+fieldId+ptX+ptY (v83 no m_nSKillID, no PQ arrays)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#OperationBody": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=35 (member HP update index). v83: Decode4(memberId)+Decode4(hp)+Decode4(maxHp). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (35)"},
+        {"op": "Decode4", "comment": "memberId (*a2)"},
+        {"op": "Decode4", "comment": "hp (v57)"},
+        {"op": "Decode4", "comment": "maxHp (v58)"}
+      ]
+    },
+    "CWvsContext::OnPartyResult#InviteReject": {
+      "address": "0xa3e31c",
+      "direction": "clientbound",
+      "note": "mode=21/22/23 (invite reject variants). v83: DecodeStr(targetName). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (21/22/23)"},
+        {"op": "DecodeStr", "comment": "targetName (v152)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "v83 OnGuildResult dispatcher. Mode byte consumed; social invite case (mode=5) confirmed: Decode4(guildId)+DecodeStr(inviterName) only — no unknown/skillId fields. Those were added in v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestAgreement": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=3. v83: Decode4(partyId)+DecodeStr(leaderName)+DecodeStr(guildName). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"},
+        {"op": "Decode4", "comment": "partyId (v6==0 path: from CWvsContext party field)"},
+        {"op": "DecodeStr", "comment": "leaderName (v238)"},
+        {"op": "DecodeStr", "comment": "guildName (v241)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#Invite": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=5 (INVITE). v83 wire: Decode4(guildId) + DecodeStr(inviterName). NO unknown/skillId — those were added in v95. Fix gates both fields behind v95+.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"},
+        {"op": "Decode4", "comment": "guildId (v239)"},
+        {"op": "DecodeStr", "comment": "inviterName (i)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessage": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x1F+n (error-only modes). No extra reads. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (error code)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x35/0x36/0x37 (invite rejected/busy/denied). v83: DecodeStr(targetName). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x35/0x36/0x37)"},
+        {"op": "DecodeStr", "comment": "targetName (v241)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#Disband": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x21 (Decode4(guildId)+GuildData::Clear). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x21)"},
+        {"op": "Decode4", "comment": "guildId"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#CapacityChange": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x3A. v83: Decode4(guildId)+Decode1(capacity). Wire identical to v95. Fix in v95 audit: capacity is byte (Decode1), not int (Decode4).",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x3A)"},
+        {"op": "Decode4", "comment": "guildId (guard: must match own)"},
+        {"op": "Decode1", "comment": "capacity byte (v97 = Decode1)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberJoined": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x27. v83: Decode4(guildId)+Decode4(characterId)+sub_4E4445(member struct 0x24 bytes)+1 byte online. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x27)"},
+        {"op": "Decode4", "comment": "guildId (v241)"},
+        {"op": "Decode4", "comment": "characterId (v56)"},
+        {"op": "Decode4", "comment": "member.name (padded 13, via sub_4E4445 = 0x24 bytes struct)"},
+        {"op": "Decode4", "comment": "member.jobId"},
+        {"op": "Decode4", "comment": "member.level"},
+        {"op": "Decode4", "comment": "member.title"},
+        {"op": "Decode4", "comment": "member.online flag (uint32)"},
+        {"op": "Decode4", "comment": "member.signature"},
+        {"op": "Decode4", "comment": "member.allianceTitle"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberLeft": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x2C. v83: Decode4(guildId)+Decode4(characterId)+DecodeStr(name). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x2C)"},
+        {"op": "Decode4", "comment": "guildId (v239)"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "DecodeStr", "comment": "name (v240)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpel": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x2F. v83: Decode4(guildId)+Decode4(characterId)+DecodeStr(name). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x2F)"},
+        {"op": "Decode4", "comment": "guildId (v239)"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "DecodeStr", "comment": "name (v240)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberStatusUpdate": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x3D. v83: Decode4(guildId)+Decode4(characterId)+Decode1(online). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x3D)"},
+        {"op": "Decode4", "comment": "guildId (guard)"},
+        {"op": "Decode4", "comment": "characterId (v136)"},
+        {"op": "Decode1", "comment": "online (v137 = Decode1)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberTitleUpdate": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x40. v83: Decode4(guildId)+Decode4(characterId)+Decode1(title). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x40)"},
+        {"op": "Decode4", "comment": "guildId (guard)"},
+        {"op": "Decode4", "comment": "characterId (v101)"},
+        {"op": "Decode1", "comment": "title (v102 = Decode1)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#TitleChange": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x3E. v83: Decode4(guildId)+5×DecodeStr(titles). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x3E)"},
+        {"op": "Decode4", "comment": "guildId (guard)"},
+        {"op": "DecodeStr", "comment": "title[0]"},
+        {"op": "DecodeStr", "comment": "title[1]"},
+        {"op": "DecodeStr", "comment": "title[2]"},
+        {"op": "DecodeStr", "comment": "title[3]"},
+        {"op": "DecodeStr", "comment": "title[4]"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#EmblemChange": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x42. v83: Decode4(guildId)+Decode2(logoBackground)+Decode1(bgColor)+Decode2(logo)+Decode1(logoColor). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x42)"},
+        {"op": "Decode4", "comment": "guildId (guard)"},
+        {"op": "Decode2", "comment": "logoBackground"},
+        {"op": "Decode1", "comment": "logoBackgroundColor"},
+        {"op": "Decode2", "comment": "logo"},
+        {"op": "Decode1", "comment": "logoColor"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#NoticeChange": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x44. v83: Decode4(guildId)+DecodeStr(notice). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x44)"},
+        {"op": "Decode4", "comment": "guildId (guard)"},
+        {"op": "DecodeStr", "comment": "notice (v126)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#Info": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x1E (v4-1=30, v5=29, v6=27 → v40=0 branch). Calls sub_4E4553 to read full GUILDDATA. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0x1E)"}
+      ]
+    },
+    "CWvsContext::OnGuildResult#AgreementResponse": {
+      "address": "0xa37490",
+      "direction": "clientbound",
+      "note": "mode=0x03 RequestAgreement path (v4==3). v83: Decode4(partyId)+DecodeStr(leaderName)+DecodeStr(guildName). Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"},
+        {"op": "Decode4", "comment": "partyId"},
+        {"op": "DecodeStr", "comment": "leaderName"},
+        {"op": "DecodeStr", "comment": "guildName"}
+      ]
+    },
+    "CWvsContext::OnGuildBBSPacket": {
+      "address": "0xa1233f",
+      "direction": "clientbound",
+      "note": "v83 OnGuildBBSPacket is a 0x16-byte thunk — too small to decompile. Delegates to an inner handler. v83 guild BBS functions (BBSThreadList, BBSThread) appear to exist as inner sub-functions called from this thunk. Serverbound BBS functions (SendLoadListRequest, SendViewEntryRequest, OnCommentDelete etc.) are absent as standalone named functions in v83.",
+      "calls": []
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
+      "address": "0xa1233f",
+      "direction": "clientbound",
+      "note": "v83 BBSThreadList sub-handler. Address is the outer thunk; inner function not separately named. Wire assumed identical to v95 (same packet format). Audit cannot confirm without decompiling inner function.",
+      "calls": []
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
+      "address": "0xa1233f",
+      "direction": "clientbound",
+      "note": "v83 BBSThread sub-handler. Address is the outer thunk; inner function not separately named. Wire assumed identical to v95. Audit cannot confirm without decompiling inner function.",
+      "calls": []
+    },
+    "CUIGuildBBS::SendLoadListRequest": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "ABSENT in v83 as a standalone named function — not found in binary. Likely inlined or handled differently in v83. Cannot audit.",
+      "calls": []
+    },
+    "CUIGuildBBS::SendViewEntryRequest": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
+      "calls": []
+    },
+    "CUIGuildBBS::OnCommentDelete": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
+      "calls": []
+    },
+    "CUIGuildBBS::OnRegister": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
+      "calls": []
+    },
+    "CUIGuildBBS::OnComment": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
+      "calls": []
+    },
+    "CUIGuildBBS::OnDelete": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "note": "ABSENT in v83 as a standalone named function. Cannot audit.",
+      "calls": []
+    },
+    "CUIMessenger::OnPacket#Add": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=0 (OnEnter). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (0)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Join": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=1 (OnSelfEnterResult). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (1)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Remove": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=2 (OnLeave). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (2)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#RequestInvite": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=3 (OnInvite). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (3)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteSent": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=4 (OnInviteResult). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (4)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteDeclined": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=5 (OnBlocked). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (5)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Chat": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=6 (OnChat). v83 dispatcher confirmed. Wire identical to v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (6)"}
+      ]
+    },
+    "CUIMessenger::OnPacket#Update": {
+      "address": "0x8511fc",
+      "direction": "clientbound",
+      "note": "mode=7 (OnAvatar). v83 dispatcher confirmed. Wire identical to v95. Note: v83 OnPacket also has mode=8 (OnMigrated) absent from v95.",
+      "calls": [
+        {"op": "Decode1", "comment": "mode byte (7)"}
+      ]
+    },
+    "CUIMessenger::OnCreate": {
+      "address": "0x8511fc",
+      "direction": "serverbound",
+      "note": "Client sends op=0+messengerId when accepting invite. Wire identical to v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "op (0)"},
+        {"op": "Encode4", "comment": "messengerId"}
+      ]
+    },
+    "CUIMessenger::OnDestroy": {
+      "address": "0x8511fc",
+      "direction": "serverbound",
+      "note": "Client sends op=2 when closing window. Wire identical to v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "op (2)"}
+      ]
+    },
+    "CUIMessenger::SendInviteMsg": {
+      "address": "0x8511fc",
+      "direction": "serverbound",
+      "note": "Client sends op=5+fromName+myName when declining. Wire identical to v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "op (5)"},
+        {"op": "EncodeStr", "comment": "fromName"},
+        {"op": "EncodeStr", "comment": "myName"},
+        {"op": "Encode1", "comment": "pad (0)"}
+      ]
+    },
+    "CUIMessenger::ProcessChat": {
+      "address": "0x8511fc",
+      "direction": "serverbound",
+      "note": "Client sends messenger chat op=6+text. Wire identical to v95.",
+      "calls": [
+        {"op": "Encode1", "comment": "op (6)"},
+        {"op": "EncodeStr", "comment": "text"}
+      ]
+    },
+    "CField::SendChatMsg": {
+      "address": "0x52c315",
+      "direction": "serverbound",
+      "note": "v83 SendChatMsg@0x52c315. Confirmed: EncodeStr(text)+Encode1(balloon) only. NO updateTime field (absent in v83; present in v87+ via >83 gate already correct in atlas). Wire identical to what atlas already gates correctly.",
+      "calls": [
+        {"op": "EncodeStr", "comment": "text"},
+        {"op": "Encode1", "comment": "balloon (bShowBalloon)"}
+      ]
     }
   }
 }

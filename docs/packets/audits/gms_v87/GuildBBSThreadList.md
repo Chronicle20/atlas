@@ -1,0 +1,32 @@
+# GuildBBSThreadList (← `CWvsContext::OnGuildBBSPacket`)
+
+- **IDA:** 0xaa7d66
+- **Atlas file:** `libs/atlas-packet/guild/clientbound/bbs.go`
+- **Variant:** GMS/v87
+- **Branch depth:** 2
+- **Verdict:** ❌
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | byte | byte `mode byte (forwarded to CUIGuildBBS)` | ✅ |  |
+| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 6 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 7 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 12 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 13 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 15 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 16 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 17 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 18 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+

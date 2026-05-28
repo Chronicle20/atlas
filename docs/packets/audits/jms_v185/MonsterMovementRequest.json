@@ -53,30 +53,30 @@
     },
     {
       "Index": 5,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "multiTargetForBall count",
-      "Verdict": 3,
-      "Note": "sub-struct: multiTargetForBall — see _substruct/"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "multiTargetForBall[i].x — loop",
-      "Verdict": 3,
-      "Note": "sub-struct: randTimeForAreaAttack — see _substruct/"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "multiTargetForBall[i].y — loop",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
@@ -98,12 +98,12 @@
     },
     {
       "Index": 10,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "state byte: (nTyped == 0) | (16 * (v76 != 0)) — atlas moveFlags",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
@@ -125,25 +125,25 @@
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "v107 ? TSecType\u003clong\u003e.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 14,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC",
-      "Verdict": 3,
-      "Note": "sub-struct: Movement — see _substruct/"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 15,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CMovePath::Flush body (Movement elements, variable length)",
@@ -152,12 +152,12 @@
     },
     {
       "Index": 16,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "bChasing (sub_68664B of m_bChasing)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 17,
@@ -171,20 +171,20 @@
     {
       "Index": 18,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "bChasing2 (m_pLadderOrRope flag)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 3,
+      "Note": "sub-struct: MovementCodec — see _substruct/"
     },
     {
       "Index": 19,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "bChasingHack (m_lZMass flag)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 20,
@@ -193,7 +193,34 @@
       "IDAOp": 2,
       "IDAComment": "tChaseDuration (vy / fall velocity)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
   "Verdict": 3

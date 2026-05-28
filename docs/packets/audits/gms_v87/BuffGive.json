@@ -3,7 +3,7 @@
   "IDAName": "CWvsContext::OnTemporaryStatSet",
   "Address": "0xab77ff",
   "Variant": "GMS/v87",
-  "BranchDepth": 1,
+  "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/character/clientbound/buff_give.go",
   "Rows": [
     {
@@ -89,24 +89,6 @@
     },
     {
       "Index": 9,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 10,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 11,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,

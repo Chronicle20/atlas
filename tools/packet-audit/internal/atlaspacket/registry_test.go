@@ -194,6 +194,25 @@ func TestRegistryQualifyPrefersSamePackage(t *testing.T) {
 	}
 }
 
+func TestRegistryRegistersSocialSubStructs(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"GuildMember", "Buddy", "Avatar"} {
+		if !reg.HasType(name) {
+			t.Errorf("registry missing type %s", name)
+			continue
+		}
+		calls, ok := reg.Calls(name)
+		if !ok || len(calls) == 0 {
+			t.Errorf("%s.Encode produced no calls (ok=%v len=%d)", name, ok, len(calls))
+		}
+	}
+}
+
 func TestRegistryStillRegistersMovementAfterCombatExtension(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")

@@ -284,3 +284,51 @@ func TestRegistryRegistersCommerceSubStructs(t *testing.T) {
 		}
 	}
 }
+
+// TestRegistryRegistersNpcConversation asserts the registry covers the NPC
+// conversation encoder. npc/clientbound/conversation.go has one top-level
+// struct NpcConversation (with Encode) plus multiple per-dialog-type
+// *ConversationDetail structs each with their own Encode method.
+func TestRegistryRegistersNpcConversation(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Top-level wrapper: single struct with constructor NewNpcConversation + Encode.
+	name := "NpcConversation"
+	if !reg.HasType(name) {
+		t.Fatalf("registry missing %s", name)
+	}
+	calls, ok := reg.Calls(name)
+	if !ok || len(calls) == 0 {
+		t.Fatalf("%s.Encode produced no calls (ok=%v len=%d)", name, ok, len(calls))
+	}
+	// Per-dialog-type detail structs — each has its own Encode method.
+	for _, detail := range []string{
+		"SayConversationDetail",
+		"SayImageConversationDetail",
+		"AskYesNoConversationDetail",
+		"AskTextConversationDetail",
+		"AskNumberConversationDetail",
+		"AskMenuConversationDetail",
+		"AskQuizConversationDetail",
+		"AskSpeedQuizConversationDetail",
+		"AskAvatarConversationDetail",
+		"AskMemberShopAvatarConversationDetail",
+		"AskPetConversationDetail",
+		"AskPetAllConversationDetail",
+		"AskBoxTextConversationDetail",
+		"AskSlideMenuConversationDetail",
+	} {
+		if !reg.HasType(detail) {
+			t.Errorf("registry missing conversation detail type %s", detail)
+			continue
+		}
+		dc, dok := reg.Calls(detail)
+		if !dok || len(dc) == 0 {
+			t.Errorf("%s.Encode produced no calls (ok=%v len=%d)", detail, dok, len(dc))
+		}
+	}
+}

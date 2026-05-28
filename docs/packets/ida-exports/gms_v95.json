@@ -6350,6 +6350,57 @@
           "comment": "y (GetPos().y)"
         }
       ]
+    },
+    "CField::SendTransferFieldRequest": {
+      "address": "0x5345c0",
+      "direction": "serverbound",
+      "notes": "CHANGE_MAP (opcode 0x29/41). Client field-transfer request. COutPacket(41)@0x534615. fieldKey=get_field()->m_bFieldKey@0x53465e. x/y (Encode2 each) emitted only when sPortal!=NULL (test ebx,ebx / jz @0x5346d9); real callers pass a portal name (CheckPortal_Collision/HandleUpKeyDown) so the x/y pair travels WITH a non-empty portalName, while the null-portal Revive path (CUIRevive::Revive) sends an empty portalName and no x/y. chase = global s_bChase@0x53473b (always present in v95); targetX/targetY only when s_bChase.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "fieldKey (v9 = get_field()->m_bFieldKey)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetId (dwTargetField)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "portalName (sPortal; empty ZXString when sPortal==NULL)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "x (target position X)",
+          "guard": "sPortal != NULL"
+        },
+        {
+          "op": "Encode2",
+          "comment": "y (target position Y)",
+          "guard": "sPortal != NULL"
+        },
+        {
+          "op": "Encode1",
+          "comment": "unused (constant 0)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "premium (bPremium)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "chase (global s_bChase)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetX (nTargetPosition_X)",
+          "guard": "s_bChase"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetY (nTargetPosition_Y)",
+          "guard": "s_bChase"
+        }
+      ]
     }
   }
 }

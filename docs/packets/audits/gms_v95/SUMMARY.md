@@ -137,6 +137,7 @@
 | [BuddyOperationAdd](BuddyOperationAdd.md) | ❌ | `libs/atlas-packet/buddy/serverbound/operation_add.go` |
 | [GuildSetEmblem](GuildSetEmblem.md) | ✅ | `libs/atlas-packet/guild/serverbound/operation_set_emblem.go` |
 | [GuildSetNotice](GuildSetNotice.md) | ✅ | `libs/atlas-packet/guild/serverbound/operation_set_notice.go` |
+| [FieldChange](FieldChange.md) | ✅ | `libs/atlas-packet/field/serverbound/change.go` |
 | [GuildWithdraw](GuildWithdraw.md) | ✅ | `libs/atlas-packet/guild/serverbound/operation_withdraw.go` |
 | [CharacterKeyMap](CharacterKeyMap.md) | ❌ | `libs/atlas-packet/character/clientbound/keymap.go` |
 | [CharacterKeyMapAutoHp](CharacterKeyMapAutoHp.md) | ✅ | `libs/atlas-packet/character/clientbound/keymap_auto_hp.go` |

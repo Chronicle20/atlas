@@ -1284,6 +1284,16 @@ func candidatesFromFName(fname string) []candidate {
 	// HandleUpKeyDown@0x919e50 (build site @0x91a04b).
 	case "CUserLocal::CheckPortal_Collision":
 		return []candidate{{name: "Script", pkg: "portal", dir: csvpkg.DirServerbound}}
+
+	// --- World: field (serverbound) ---
+	// CSV: CHANGE_MAP (opcode 0x29/41 in GMS v95). The client field-transfer
+	// request built by CField::SendTransferFieldRequest@0x5345c0. Wire (per IDA):
+	// Encode1(fieldKey) + Encode4(targetId) + EncodeStr(portalName) +
+	// [Encode2(x)+Encode2(y) when sPortal!=NULL] + Encode1(unused=0) +
+	// Encode1(premium) + Encode1(chase=s_bChase) + [Encode4(targetX)+Encode4(targetY)
+	// when s_bChase]. Matches atlas field/serverbound/change.go Change.Encode.
+	case "CField::SendTransferFieldRequest":
+		return []candidate{{name: "Change", pkg: "field", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

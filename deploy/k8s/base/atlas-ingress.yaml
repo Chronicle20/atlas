@@ -40,6 +40,14 @@ data:
         proxy_set_header MAJOR_VERSION $http_major_version;
         proxy_set_header MINOR_VERSION $http_minor_version;
 
+        # Local-debug overrides (tools/debug-start.sh). Mounted from the
+        # optional ConfigMap `atlas-ingress-debug-overrides`, which is NOT
+        # tracked by Argo CD (created/edited ad-hoc by the debug script).
+        # Included BEFORE routes.conf so override location blocks win the
+        # nginx first-regex-match rule. Glob include is lenient when the
+        # directory is empty or the CM is absent.
+        include /etc/nginx/conf.d/debug-overrides/*.conf;
+
         include /etc/nginx/conf.d/routes.conf;
       }
     }
@@ -101,6 +109,9 @@ spec:
         - name: nginx-routes-volume
           mountPath: /etc/nginx/templates/routes.conf.template
           subPath: routes.conf.template
+        - name: nginx-debug-overrides-volume
+          mountPath: /etc/nginx/conf.d/debug-overrides
+          readOnly: true
       volumes:
       - name: nginx-conf-volume
         configMap:
@@ -108,6 +119,13 @@ spec:
       - name: nginx-routes-volume
         configMap:
           name: atlas-ingress-routes
+      # Optional ConfigMap holding per-service debug redirects (see
+      # tools/debug-start.sh). `optional: true` lets the pod start even
+      # when no debug session exists in the namespace.
+      - name: nginx-debug-overrides-volume
+        configMap:
+          name: atlas-ingress-debug-overrides
+          optional: true
 ---
 apiVersion: v1
 kind: Service

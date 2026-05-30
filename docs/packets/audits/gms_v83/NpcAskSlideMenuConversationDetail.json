@@ -1,0 +1,29 @@
+{
+  "WriterName": "NpcAskSlideMenuConversationDetail",
+  "IDAName": "CScriptMan::OnAskSlideMenu#AskSlideMenu",
+  "Address": "0x76b5c8",
+  "Variant": "GMS/v83",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "menuType / dwType (this+33)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message text (v11)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

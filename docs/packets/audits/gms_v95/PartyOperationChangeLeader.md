@@ -1,7 +1,7 @@
 # PartyOperationChangeLeader (← `CField::SendChangePartyBossMsg`)
 
 - **IDA:** 0x530370
-- **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation_change_leader.go`
+- **Atlas file:** `libs/atlas-packet/party/serverbound/operation_change_leader.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

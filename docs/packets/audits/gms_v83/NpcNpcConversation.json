@@ -1,0 +1,65 @@
+{
+  "WriterName": "NpcNpcConversation",
+  "IDAName": "CScriptMan::OnScriptMessage",
+  "Address": "0x74660a",
+  "Variant": "GMS/v83",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nSpeakerTypeID / v4 (speaker type)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSpeakerTemplateID / a2a (npc template id)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nMsgType / v5 (dialog-type discriminator; v83 enum: 0=Say,1=AskYesNo,2=AskText,3=AskNumber,4=AskMenu,5=AskQuiz,6=AskSpeedQuiz,7=AskAvatar,8=AskMembershopAvatar,9=AskPet,10=AskPetAll,12=AskYesNoQuest,13=AskBoxText,14=AskSlideMenu — SHIFTED vs v95 which has SayImage=1)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bParam (speaker flags; bit 2 (param\u00264) gates a secondary npc template id read inside the per-type handler)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

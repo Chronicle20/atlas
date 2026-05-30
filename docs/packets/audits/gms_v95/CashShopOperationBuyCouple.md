@@ -1,7 +1,7 @@
 # CashShopOperationBuyCouple (← `CCashShop::OnBuyCouple`)
 
 - **IDA:** 0x490d80
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

@@ -1,17 +1,17 @@
 {
   "WriterName": "GuildRequestAgreement",
-  "IDAName": "CWvsContext::OnGuildResult",
+  "IDAName": "CWvsContext::OnGuildResult#RequestAgreement",
   "Address": "0xa0d3b0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/operation.go",
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "sub-op (mode byte)",
+      "IDAComment": "mode byte (3)",
       "Verdict": 0,
       "Note": ""
     },
@@ -19,29 +19,29 @@
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "partyId",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "leaderName (gradeName in IDA)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "guildName (skillID string in IDA)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

@@ -1,7 +1,7 @@
 # BuddyOperationDelete (← `CField::SendDeleteFriendMsg`)
 
 - **IDA:** 0x52f170
-- **Atlas file:** `../../libs/atlas-packet/buddy/serverbound/operation_delete.go`
+- **Atlas file:** `libs/atlas-packet/buddy/serverbound/operation_delete.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

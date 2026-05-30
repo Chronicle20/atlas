@@ -1,7 +1,7 @@
 # CashShopOperationGift (← `CCashShop::SendGiftsPacket`)
 
 - **IDA:** 0x487b60
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_gift.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

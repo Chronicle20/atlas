@@ -1,7 +1,7 @@
 # CashQueryResult (← `CCashShop::OnQueryCashResult`)
 
 - **IDA:** 0x496400
-- **Atlas file:** `../../libs/atlas-packet/cash/clientbound/query_result.go`
+- **Atlas file:** `libs/atlas-packet/cash/clientbound/query_result.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

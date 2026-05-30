@@ -1,7 +1,7 @@
 # GuildTitleChange (← `CWvsContext::OnGuildResult#TitleChange`)
 
 - **IDA:** 0xa0e239
-- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

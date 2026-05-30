@@ -4,7 +4,7 @@
   "Address": "0x764450",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go",
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go",
   "Rows": [
     {
       "Index": 0,

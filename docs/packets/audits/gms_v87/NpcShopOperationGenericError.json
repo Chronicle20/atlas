@@ -1,0 +1,38 @@
+{
+  "WriterName": "NpcShopOperationGenericError",
+  "IDAName": "CShopDlg::OnPacket#GenericError",
+  "Address": "0x7a290d",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/shop_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (sub-op discriminator)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hasMessage flag (case 0x11)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "error message (only when hasMessage set)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

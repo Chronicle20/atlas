@@ -236,6 +236,30 @@ func TestRegistryStillRegistersMovementAfterCombatExtension(t *testing.T) {
 	}
 }
 
+func TestRegistryRegistersNpcShopItem(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := "ShopCommodity" // npc/clientbound.ShopCommodity in shop_list.go
+	if !reg.HasType(name) {
+		t.Fatalf("registry missing type %s", name)
+	}
+	// ShopCommodity has no Encode/Write/EncodeEntry/EncodeBytes method of its own;
+	// its fields are encoded inline inside ShopList.Encode — the registry therefore
+	// returns no Calls for this type (known registry limitation: inline sub-structs
+	// without their own encode method are not resolvable as KindRecurse targets).
+	calls, ok := reg.Calls(name)
+	if ok && len(calls) > 0 {
+		// If a future change adds an Encode method to ShopCommodity the inline
+		// encoding limitation is resolved — record this as an unexpected pass so
+		// the comment above can be removed.
+		t.Logf("UNEXPECTED: %s.Encode produced calls (ok=%v len=%d) — inline-encoding concern is resolved", name, ok, len(calls))
+	}
+}
+
 func TestRegistryRegistersCommerceSubStructs(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
@@ -257,6 +281,54 @@ func TestRegistryRegistersCommerceSubStructs(t *testing.T) {
 		calls, ok := reg.Calls(name)
 		if !ok || len(calls) == 0 {
 			t.Errorf("%s produced no calls (ok=%v len=%d)", name, ok, len(calls))
+		}
+	}
+}
+
+// TestRegistryRegistersNpcConversation asserts the registry covers the NPC
+// conversation encoder. npc/clientbound/conversation.go has one top-level
+// struct NpcConversation (with Encode) plus multiple per-dialog-type
+// *ConversationDetail structs each with their own Encode method.
+func TestRegistryRegistersNpcConversation(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Top-level wrapper: single struct with constructor NewNpcConversation + Encode.
+	name := "NpcConversation"
+	if !reg.HasType(name) {
+		t.Fatalf("registry missing %s", name)
+	}
+	calls, ok := reg.Calls(name)
+	if !ok || len(calls) == 0 {
+		t.Fatalf("%s.Encode produced no calls (ok=%v len=%d)", name, ok, len(calls))
+	}
+	// Per-dialog-type detail structs — each has its own Encode method.
+	for _, detail := range []string{
+		"SayConversationDetail",
+		"SayImageConversationDetail",
+		"AskYesNoConversationDetail",
+		"AskTextConversationDetail",
+		"AskNumberConversationDetail",
+		"AskMenuConversationDetail",
+		"AskQuizConversationDetail",
+		"AskSpeedQuizConversationDetail",
+		"AskAvatarConversationDetail",
+		"AskMemberShopAvatarConversationDetail",
+		"AskPetConversationDetail",
+		"AskPetAllConversationDetail",
+		"AskBoxTextConversationDetail",
+		"AskSlideMenuConversationDetail",
+	} {
+		if !reg.HasType(detail) {
+			t.Errorf("registry missing conversation detail type %s", detail)
+			continue
+		}
+		dc, dok := reg.Calls(detail)
+		if !dok || len(dc) == 0 {
+			t.Errorf("%s.Encode produced no calls (ok=%v len=%d)", detail, dok, len(dc))
 		}
 	}
 }

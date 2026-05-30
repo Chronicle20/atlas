@@ -1,7 +1,7 @@
 # CashShopOperationMoveFromCashInventory (← `CCashShop::OnMoveCashItemLtoS`)
 
 - **IDA:** 0x4828e0
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_move_from_cash_inventory.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_move_from_cash_inventory.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

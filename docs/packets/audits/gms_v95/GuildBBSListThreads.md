@@ -1,7 +1,7 @@
 # GuildBBSListThreads (← `CUIGuildBBS::SendLoadListRequest`)
 
 - **IDA:** 0x7c3680
-- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_list_threads.go`
+- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_list_threads.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

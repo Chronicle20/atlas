@@ -1,0 +1,20 @@
+{
+  "WriterName": "NpcShop",
+  "IDAName": "CShopDlg::OnPacket#ShopDispatch",
+  "Address": "0x6e4b80",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/npc/serverbound/shop.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op (shop request discriminator: 0=BUY,1=SELL,2=RECHARGE; runtime-config values)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

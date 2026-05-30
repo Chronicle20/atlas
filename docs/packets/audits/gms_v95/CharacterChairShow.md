@@ -1,7 +1,7 @@
 # CharacterChairShow (← `CUserRemote::OnSetActivePortableChair`)
 
 - **IDA:** 0x949240
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/chair_show.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/chair_show.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

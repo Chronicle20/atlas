@@ -1,7 +1,7 @@
 # StatusMessageDropPickUpInventoryFull (← `CWvsContext::OnMessage`)
 
 - **IDA:** 0xa06c90
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/status_message.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/status_message.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # InteractionOperationMerchantAddToBlackList (← `CEntrustedShopDlg::AddBlackList`)
 
 - **IDA:** 0x51ed50
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_merchant_add_to_black_list.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_add_to_black_list.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

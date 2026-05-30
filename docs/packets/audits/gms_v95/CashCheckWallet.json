@@ -4,7 +4,7 @@
   "Address": "0x481bc0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/check_wallet.go",
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/check_wallet.go",
   "Rows": null,
   "Verdict": 0
 }

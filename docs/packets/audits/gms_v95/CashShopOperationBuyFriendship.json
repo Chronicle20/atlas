@@ -4,7 +4,7 @@
   "Address": "0x491b30",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go",
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go",
   "Rows": [
     {
       "Index": 0,

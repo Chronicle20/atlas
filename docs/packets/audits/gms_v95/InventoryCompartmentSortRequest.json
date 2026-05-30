@@ -4,7 +4,7 @@
   "Address": "0x9d5c60",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/inventory/serverbound/compartment_sort.go",
+  "AtlasFile": "libs/atlas-packet/inventory/serverbound/compartment_sort.go",
   "Rows": [
     {
       "Index": 0,

@@ -1,7 +1,7 @@
 # InteractionOperationMemoryGameTieAnswer (← `CMemoryGameDlg::OnTieRequest`)
 
 - **IDA:** 0x627e60
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_memory_game_tie_answer.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_memory_game_tie_answer.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

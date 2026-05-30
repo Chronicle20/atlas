@@ -1,7 +1,7 @@
 # InteractionInteractionEnter (← `CMiniRoomBaseDlg::OnPacketBase#Enter`)
 
 - **IDA:** 0x638f80
-- **Atlas file:** `../../libs/atlas-packet/interaction/clientbound/interaction.go`
+- **Atlas file:** `libs/atlas-packet/interaction/clientbound/interaction.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

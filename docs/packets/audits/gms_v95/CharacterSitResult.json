@@ -4,7 +4,7 @@
   "Address": "0x905e70",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/sit_result.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/sit_result.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x642ef0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/monster/clientbound/health.go",
+  "AtlasFile": "libs/atlas-packet/monster/clientbound/health.go",
   "Rows": [
     {
       "Index": 0,

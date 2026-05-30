@@ -1,7 +1,7 @@
 # NoteDisplay (← `CWvsContext::OnMemoResult#Display`)
 
 - **IDA:** 0x9f9da0
-- **Atlas file:** `../../libs/atlas-packet/note/clientbound/display.go`
+- **Atlas file:** `libs/atlas-packet/note/clientbound/display.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

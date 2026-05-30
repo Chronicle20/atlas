@@ -4,7 +4,7 @@
   "Address": "0x4fb760",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/info.go",
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/info.go",
   "Rows": [
     {
       "Index": 0,

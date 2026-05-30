@@ -1,0 +1,47 @@
+{
+  "WriterName": "NpcAskPetConversationDetail",
+  "IDAName": "CScriptMan::OnAskPet#AskPet",
+  "Address": "0x7b7fc2",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message (@0x7b7fde)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "pet count (@0x7b7ff8)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "cashId (8 bytes) -- loop body (@0x7b8046)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "unused -- loop body (@0x7b804e)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 2
+}

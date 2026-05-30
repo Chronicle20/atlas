@@ -1,7 +1,7 @@
 # InteractionOperationPersonalStoreSetBlackList (← `CPersonalShopDlg::DeliverBlackList`)
 
 - **IDA:** 0x69b0d0
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

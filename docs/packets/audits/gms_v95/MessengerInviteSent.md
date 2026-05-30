@@ -1,7 +1,7 @@
 # MessengerInviteSent (← `CUIMessenger::OnPacket#InviteSent`)
 
 - **IDA:** 0x7f5030
-- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/invite_sent.go`
+- **Atlas file:** `libs/atlas-packet/messenger/clientbound/invite_sent.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

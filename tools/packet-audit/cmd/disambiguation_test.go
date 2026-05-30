@@ -64,6 +64,60 @@ func TestLocateAtlasFileDisambiguatesByPkg(t *testing.T) {
 	}
 }
 
+// fnameForCandidate returns the winning FName for a (pkg,name) candidate in a
+// selectCandidates result, or "" if absent.
+func fnameForCandidate(sel []selectedCandidate, pkg, name string) string {
+	for _, sc := range sel {
+		if sc.candidate.pkg == pkg && sc.candidate.name == name {
+			return sc.fname
+		}
+	}
+	return ""
+}
+
+func TestSelectCandidatesPrefersSyntheticOverDispatcher(t *testing.T) {
+	// Both the bare dispatcher CWvsContext::OnGuildResult and its "#"-suffixed
+	// synthetic entry map to the same guild::RequestAgreement candidate. The
+	// enriched synthetic entry must win deterministically regardless of input
+	// order — otherwise the verdict flips between runs (map-iteration
+	// nondeterminism: the bare dispatcher has no field calls → ❌, the synthetic
+	// entry has the full field list → ✅).
+	for _, in := range [][]string{
+		{"CWvsContext::OnGuildResult", "CWvsContext::OnGuildResult#RequestAgreement"},
+		{"CWvsContext::OnGuildResult#RequestAgreement", "CWvsContext::OnGuildResult"},
+	} {
+		got := fnameForCandidate(selectCandidates(in), "guild", "RequestAgreement")
+		if got != "CWvsContext::OnGuildResult#RequestAgreement" {
+			t.Errorf("input %v: guild::RequestAgreement resolved to %q, want the #-suffixed entry", in, got)
+		}
+	}
+}
+
+func TestSelectCandidatesDeterministicAmongPlainFNames(t *testing.T) {
+	// Two plain (non-"#") FNames map to party::Operation. The winner must be
+	// stable across input orders — lexicographically smallest wins.
+	for _, in := range [][]string{
+		{"CField::SendCreateNewPartyMsg", "CField::SendWithdrawPartyMsg"},
+		{"CField::SendWithdrawPartyMsg", "CField::SendCreateNewPartyMsg"},
+	} {
+		got := fnameForCandidate(selectCandidates(in), "party", "Operation")
+		if got != "CField::SendCreateNewPartyMsg" {
+			t.Errorf("input %v: party::Operation resolved to %q, want CField::SendCreateNewPartyMsg", in, got)
+		}
+	}
+}
+
+func TestOrderedExportFNamesPutsSyntheticFirstThenSorts(t *testing.T) {
+	in := []string{"Bbb", "Aaa#sub", "Aaa", "Bbb#sub"}
+	got := orderedExportFNames(in)
+	want := []string{"Aaa#sub", "Bbb#sub", "Aaa", "Bbb"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("orderedExportFNames(%v) = %v, want %v", in, got, want)
+		}
+	}
+}
+
 func TestLocateAtlasFileEmptyPkgKeepsLegacyBehavior(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..", "..")

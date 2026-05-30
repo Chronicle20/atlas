@@ -1,7 +1,7 @@
 # InteractionOperationMemoryGameMoveStone (← `COmokDlg::PutStoneChecker`)
 
 - **IDA:** 0x6801e0
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

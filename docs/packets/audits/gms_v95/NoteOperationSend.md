@@ -1,7 +1,7 @@
 # NoteOperationSend (← `CCashShop::OnCashItemResLoadGiftDone`)
 
 - **IDA:** 0x496520
-- **Atlas file:** `../../libs/atlas-packet/note/serverbound/operation_send.go`
+- **Atlas file:** `libs/atlas-packet/note/serverbound/operation_send.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

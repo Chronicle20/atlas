@@ -1,7 +1,7 @@
 # InteractionInteractionEnterResultError (← `CMiniRoomBaseDlg::OnPacketBase#EnterResultError`)
 
 - **IDA:** 0x639500
-- **Atlas file:** `../../libs/atlas-packet/interaction/clientbound/interaction.go`
+- **Atlas file:** `libs/atlas-packet/interaction/clientbound/interaction.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

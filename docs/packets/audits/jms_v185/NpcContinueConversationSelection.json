@@ -1,0 +1,38 @@
+{
+  "WriterName": "NpcContinueConversationSelection",
+  "IDAName": "CScriptMan::OnAskMenu#Selection",
+  "Address": "0x7b7c95",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/npc/serverbound/continue_conversation_selection.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "msgType = 5 (AskMenu @0x7b7d82)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "action (@0x7b7da4)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "selection (only if action==1 @0x7b7daf)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

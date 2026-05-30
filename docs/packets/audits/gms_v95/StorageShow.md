@@ -1,7 +1,7 @@
 # StorageShow (← `CTrunkDlg::OnPacket#Show`)
 
 - **IDA:** 0x76a990
-- **Atlas file:** `../../libs/atlas-packet/storage/clientbound/show.go`
+- **Atlas file:** `libs/atlas-packet/storage/clientbound/show.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌

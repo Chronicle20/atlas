@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
@@ -97,16 +98,8 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	// mapping via candidatesFromFName. This prevents opcode-collision false positives that
 	// arise when the template maps multiple writer names to the same opcode and the IDA
 	// export only covers one of them.
-	seen := map[string]bool{}
-	for _, fname := range idaExportFunctions(opts.IDASource) {
-		for _, candidate := range candidatesFromFName(fname) {
-			key := candidate.pkg + "::" + candidate.name
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			process(candidate.dir, candidate.name, candidate.pkg, fname)
-		}
+	for _, sc := range selectCandidates(idaExportFunctions(opts.IDASource)) {
+		process(sc.candidate.dir, sc.candidate.name, sc.candidate.pkg, sc.fname)
 	}
 
 	if err := writeSummary(outDir, summary); err != nil {
@@ -143,6 +136,55 @@ func qualifiedWriterName(pkg, name string) string {
 		return name
 	}
 	return strings.ToUpper(pkg[:1]) + pkg[1:] + name
+}
+
+// selectedCandidate pairs a resolved candidate with the IDA FName that won its
+// (pkg, name) slot.
+type selectedCandidate struct {
+	candidate candidate
+	fname     string
+}
+
+// orderedExportFNames returns fnames in a deterministic order that also encodes
+// candidate-selection precedence. candidatesFromFName is many-to-one in places:
+// a bare dispatcher root (e.g. CWvsContext::OnGuildResult) and its enriched
+// "#"-suffixed synthetic sub-function entry (CWvsContext::OnGuildResult#RequestAgreement)
+// can map to the same pkg::name candidate. The synthetic entry carries the full
+// field list and is the correct model, so it must win. Ordering "#"-suffixed
+// entries first — then lexicographically — gives a stable winner under the
+// first-claim dedup in selectCandidates. Without this, Functions() returns map
+// keys in random order and the per-packet verdict flipped between runs.
+func orderedExportFNames(fnames []string) []string {
+	out := append([]string(nil), fnames...)
+	sort.SliceStable(out, func(i, j int) bool {
+		hi := strings.Contains(out[i], "#")
+		hj := strings.Contains(out[j], "#")
+		if hi != hj {
+			return hi
+		}
+		return out[i] < out[j]
+	})
+	return out
+}
+
+// selectCandidates resolves the deterministic winning FName for each
+// (pkg, name) candidate produced by the export's FNames. The first FName (in
+// orderedExportFNames order) to claim a given pkg::name key wins; later FNames
+// mapping to the same key are skipped.
+func selectCandidates(fnames []string) []selectedCandidate {
+	seen := map[string]bool{}
+	var out []selectedCandidate
+	for _, fname := range orderedExportFNames(fnames) {
+		for _, c := range candidatesFromFName(fname) {
+			key := c.pkg + "::" + c.name
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			out = append(out, selectedCandidate{candidate: c, fname: fname})
+		}
+	}
+	return out
 }
 
 // candidatesFromFName converts an IDA function name into one or more
@@ -1231,6 +1273,304 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ShopOperationRebateLockerItem", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	case "CCashShop::OnSetWish":
 		return []candidate{{name: "ShopOperationSetWishlist", dir: csvpkg.DirServerbound, pkg: "cash"}}
+
+	// --- World: portal (serverbound) ---
+	// CSV: CHANGE_MAP_SPECIAL (opcode 0x70/112 in GMS v95). Two FNames share this
+	// opcode (CUserLocal::HandleUpKeyDown for up-key portals, CUserLocal::CheckPortal_Collision
+	// for type-9 script portals). Both build the identical packet:
+	// Encode1(fieldKey) + EncodeStr(sName) + Encode2(x) + Encode2(y). We route the
+	// collision-based script portal path, which matches atlas portal/serverbound/script.go.
+	// Verified against v95 IDA CheckPortal_Collision@0x919a10 (build site @0x919b07) and
+	// HandleUpKeyDown@0x919e50 (build site @0x91a04b).
+	case "CUserLocal::CheckPortal_Collision":
+		return []candidate{{name: "Script", pkg: "portal", dir: csvpkg.DirServerbound}}
+
+	// --- World: field (serverbound) ---
+	// CSV: CHANGE_MAP (opcode 0x29/41 in GMS v95). The client field-transfer
+	// request built by CField::SendTransferFieldRequest@0x5345c0. Wire (per IDA):
+	// Encode1(fieldKey) + Encode4(targetId) + EncodeStr(portalName) +
+	// [Encode2(x)+Encode2(y) when sPortal!=NULL] + Encode1(unused=0) +
+	// Encode1(premium) + Encode1(chase=s_bChase) + [Encode4(targetX)+Encode4(targetY)
+	// when s_bChase]. Matches atlas field/serverbound/change.go Change.Encode.
+	case "CField::SendTransferFieldRequest":
+		return []candidate{{name: "Change", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// --- World: field (clientbound) ---
+	// Affected-area (mist) + kite (the flying-kite field object, called
+	// "MessageBox" client-side). FNames + addresses verified against the
+	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live
+	// GMS v95 IDA. Report files become Field<Struct>.{md,json}.
+	case "CAffectedAreaPool::OnAffectedAreaCreated":
+		// CSV: SPAWN_MIST. Atlas struct is the v83 layout (AffectedAreaCreated);
+		// the v95 client decodes a structurally different packet — see
+		// FieldAffectedAreaCreated report + _pending.md (v83-vs-v95 divergence).
+		return []candidate{{name: "AffectedAreaCreated", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CAffectedAreaPool::OnAffectedAreaRemoved":
+		// CSV: REMOVE_MIST. Single Decode4 (mist id) — matches atlas.
+		return []candidate{{name: "AffectedAreaRemoved", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CMessageBoxPool::OnMessageBoxEnterField":
+		// CSV: SPAWN_KITE. Decode4 id + Decode4 itemId + 2×DecodeStr + 2×Decode2.
+		return []candidate{{name: "KiteSpawn", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CMessageBoxPool::OnMessageBoxLeaveField":
+		// CSV: REMOVE_KITE. Decode1 animation flag + Decode4 id.
+		return []candidate{{name: "KiteDestroy", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CMessageBoxPool::OnCreateFailed":
+		// CSV: CANNOT_SPAWN_KITE. Empty body — client reads nothing.
+		return []candidate{{name: "KiteError", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CStage::OnSetField":
+		// CSV: SET_FIELD (GMS v95 opcode 0x8D/141). Field-entry packet carrying the
+		// full CharacterData blob. ENVELOPE-ONLY audit — CharacterData inner shape
+		// audited under the character domain (task-028); represented in the IDA
+		// export by a single DecodeBuf boundary marker. Struct is SetField
+		// (set_field.go) → report FieldSetField.
+		return []candidate{{name: "SetField", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CStage::OnSetField#WarpToMap":
+		// Same CStage::OnSetField handler, bCharacterData=0 (else branch) — an
+		// in-game warp without full re-init. Struct is WarpToMap (warp_to_map.go)
+		// → report FieldWarpToMap. Synthetic #-suffixed FName so it claims its own
+		// (field, WarpToMap) slot without colliding with the SetField entry.
+		return []candidate{{name: "WarpToMap", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_ContiMove::OnContiState":
+		// CSV: CONTI_STATE (GMS v95 opcode 0xA5/165). Field transport/ship boarding
+		// state effect. Struct is Transport (transport.go) → report FieldTransport.
+		return []candidate{{name: "Transport", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// --- World: field (clientbound, effects) ---
+	// FIELD_EFFECT (CSV opcode 0x09A/154 in GMS v95) → CField::OnFieldEffect@0x53b790
+	// dispatches on a leading effect-type byte (mode). Each field-effect sub-type is a
+	// separate atlas struct in field/clientbound/effect.go; modelled via #-suffixed
+	// synthetic IDA entries (one per sub-type). Each atlas struct writes the mode byte
+	// as its first field, so the synthetic export entry leads with the Decode1 mode.
+	case "CField::OnFieldEffect#Summon":
+		// case 0: Decode1(mode=0) + Decode1(effect) + Decode4(x) + Decode4(y).
+		return []candidate{{name: "EffectSummon", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#Tremble":
+		// case 1: Decode1(mode=1) + Decode1(bHeavyNShortTremble) + Decode4(delay).
+		return []candidate{{name: "EffectTremble", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#String":
+		// cases 2/3/4/6 (object/screen/sound/BGM): Decode1(mode) + DecodeStr(name).
+		return []candidate{{name: "EffectString", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#BossHp":
+		// case 5: Decode1(mode=5) + Decode4(monsterId) + Decode4(currentHp) +
+		// Decode4(maxHp) + Decode1(tagColor) + Decode1(tagBackgroundColor).
+		return []candidate{{name: "EffectBossHp", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldEffect#RewardRullet":
+		// case 7: Decode1(mode=7) + Decode4(jobIdx) + Decode4(partIdx) + Decode4(levIdx).
+		return []candidate{{name: "EffectRewardRullet", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// BLOW_WEATHER (CSV opcode 0x09E/158 in GMS v95) → CField::OnBlowWeather@0x5468f0.
+	// BAD-FORM single struct (EffectWeather) whose mode byte (!active) is set at
+	// construction (NewFieldEffectWeatherStart / End). Analyzer produces one flat
+	// verdict; the conditional message string (start-only) is a tool limitation —
+	// per-mode table appended manually to the report (NOT refactored).
+	case "CField::OnBlowWeather":
+		return []candidate{{name: "EffectWeather", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// CLOCK (CSV opcode 0x0A3/163 in GMS v95) → CField::OnClock@0x531510 dispatches on
+	// a leading clockType byte (0/1/2/3/0x64). BAD-FORM single struct (Clock) with the
+	// mode set at construction; the Encode switch is mode-keyed. Analyzer produces one
+	// flat verdict; per-mode table appended manually to the report (NOT refactored).
+	case "CField::OnClock":
+		return []candidate{{name: "Clock", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// --- World: npc (clientbound) ---
+	// Non-conversation NPC packets. FNames + addresses verified against the
+	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live
+	// GMS v95 IDA. Report files become Npc<Struct>.{md,json}.
+	case "CNpc::OnMove":
+		// CSV: NPC_ACTION (GMS v95 opcode 0x13A/314) dispatched via
+		// CNpcPool::OnNpcPacket@0x679260 which Decode4(npcId) BEFORE calling
+		// CNpc::OnMove. OnMove@0x678060 then reads Decode1(action) + Decode1(chatIdx),
+		// and (if m_pTemplate->bMove, a client template flag) a CMovePath movement
+		// body. Atlas Action writes Int(objectId — dispatcher prefix) + Byte(unk) +
+		// Byte(unk2) + optional movement. Dispatcher-prefix pattern; the movement
+		// presence is server-controlled (hasMovement) and template-gated client-side.
+		return []candidate{{name: "Action", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnTutorMsg#Message":
+		// CSV: TALK_GUIDE (GMS v95 opcode 0x157/343) → CUserLocal::OnTutorMsg@0x916f60.
+		// bByMessage==0 (false) arm: DecodeStr(message) + Decode4(width) + Decode4(duration)
+		// → CTutor::OnMessage(string,int,int). Atlas GuideTalkMessage. ✓ fixed: leading
+		// bool corrected from true→false to match the client's message branch.
+		return []candidate{{name: "GuideTalkMessage", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnTutorMsg#Idx":
+		// Same OnTutorMsg handler, bByMessage!=0 (true) arm: Decode4(hintId) +
+		// Decode4(duration) → CTutor::OnMessage(int,int), NO string. Atlas GuideTalkIdx.
+		// ✓ fixed: leading bool corrected from false→true to match the client's index branch.
+		return []candidate{{name: "GuideTalkIdx", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::SetShopDlg":
+		// CSV: OPEN_NPC_SHOP (GMS v95 opcode 0x12F/303) → CShopDlg::OnPacket@0x6eb7d0
+		// (nType==364) → CShopDlg::SetShopDlg@0x6eab00. Decode4(npcTemplateId) +
+		// Decode2(count) + count×{Decode4 itemId + Decode4 mesoPrice + Decode1 discount +
+		// Decode4 tokenItemId + Decode4 tokenPrice + Decode4 period + Decode4 levelLimit +
+		// (itemId/10000∈{207,233} ? DecodeBuffer(8) unitPrice : Decode2 quantity) +
+		// Decode2 slotMax}. Atlas ShopList loop body matches per-item; analyzer flattens
+		// the loop → ⚠️ tool-limitation (manually verified — see NpcShopList ## Loop bounds).
+		return []candidate{{name: "ShopList", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#Simple":
+		// CSV: CONFIRM_SHOP_TRANSACTION (GMS v95 opcode 0x12F? no — 0x130/304) →
+		// CShopDlg::OnPacket@0x6eb7d0 (nType==365) switch(Decode1 mode). Most modes
+		// (0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x12) read no further fields (mode byte only,
+		// then a StringPool Notice). Atlas ShopOperationSimple writes Byte(mode). ✓
+		// ⚠️ OP-FAMILY-npc-shop-operation: full mode enum deferred to _pending.md.
+		return []candidate{{name: "ShopOperationSimple", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#LevelRequirement":
+		// Same handler, cases 0xE/0xF (over/under level requirement): Decode4(level).
+		// Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). ✓
+		return []candidate{{name: "ShopOperationLevelRequirement", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#GenericError":
+		// Same handler, case 0x13: Decode1(hasReason) + (hasReason ? DecodeStr(reason)).
+		// Atlas ShopOperationGenericError writes Byte(mode) + Bool(hasReason) +
+		// optional AsciiString(reason). ✓
+		return []candidate{{name: "ShopOperationGenericError", pkg: "npc", dir: csvpkg.DirClientbound}}
+	// shop_operation_body.go has no exported struct (pure helper functions); no candidate entry.
+	case "CNpcPool::OnNpcEnterField":
+		// CSV: SPAWN_NPC (GMS v95 opcode 0x12F/303). OnNpcEnterField@0x679680 reads
+		// Decode4(npcId) + Decode4(templateId), then CNpc::Init@0x676770 reads
+		// Decode2(x) + Decode2(cy) + Decode1(moveAction/f) + Decode2(fh) + Decode2(rx0) +
+		// Decode2(rx1) + Decode1(enabled). Atlas Spawn writes Int(id) + Int(template) +
+		// Int16(x) + Int16(cy) + Byte(f) + Short(fh) + Int16(rx0) + Int16(rx1) + Byte(1). ✓
+		return []candidate{{name: "Spawn", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CNpcPool::OnNpcChangeController":
+		// CSV: SPAWN_NPC_REQUEST_CONTROLLER (GMS v95 opcode 0x131/305).
+		// OnNpcChangeController@0x679730 reads Decode1(localFlag) + Decode4(npcId); when
+		// localFlag→SetLocalNpc@0x679440 reads Decode4(templateId) then CNpc::Init reads
+		// the same x/cy/f/fh/rx0/rx1/enabled tail. Atlas SpawnRequestController writes
+		// Byte(1) + Int(id) + Int(template) + Int16(x) + Int16(cy) + Byte(f) + Short(fh) +
+		// Int16(rx0) + Int16(rx1) + Bool(miniMap → maps to CNpc::Init enabled). ✓
+		return []candidate{{name: "SpawnRequestController", pkg: "npc", dir: csvpkg.DirClientbound}}
+
+	// --- World: npc (clientbound, conversation) ---
+	// SCRIPT_MESSAGE / NPC_TALK (GMS v95 opcode 363/0x16B). The clientbound NPC
+	// dialog packet. CScriptMan::OnPacket@0x6de360 dispatches nType==363 to
+	// CScriptMan::OnScriptMessage@0x6de0f0, which reads a common header
+	// (speakerType byte + npcTemplateId int + msgType byte + param byte) then
+	// switch(msgType) to 14 per-dialog-type handlers (cases 0,1,2,3,4,5,6,7,8,9,
+	// 10,11,13,14,15). Atlas models this as one NpcConversation wrapper struct
+	// (header + opaque detail byte array) plus 14 separate *ConversationDetail
+	// structs (each its own Encode = the per-type body). We route the wrapper and
+	// each detail individually so each gets a per-dialog-type verdict. Each detail
+	// is modeled as a #-suffixed synthetic IDA entry whose Decode ops cover ONLY
+	// that case's body (the wrapper covers the header + secondary + opaque body).
+	case "CScriptMan::OnScriptMessage":
+		// Wrapper: common header envelope (Decode1 speakerType + Decode4 npcTemplate
+		// + Decode1 msgType + Decode1 param + guarded Decode4 secondary + opaque body).
+		// Per-dialog-type bodies audited in the NpcSay*/NpcAsk* reports below.
+		return []candidate{{name: "NpcConversation", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnSay#Say":
+		// msgType 0. OnSay@0x6dc110 body: DecodeStr(message)+Decode1(prev)+Decode1(next). ✓
+		return []candidate{{name: "SayConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnSayImage#SayImage":
+		// msgType 1. OnSayImage@0x6dc310: Decode1(count)+loop DecodeStr(image).
+		// ✓ fixed: image-count corrected from WriteInt→WriteByte to match Decode1@0x6dc3d9.
+		return []candidate{{name: "SayImageConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskYesNo#AskYesNo":
+		// msgType 2 (AskYesNo) and 13 (AskYesNoQuest) share OnAskYesNo@0x6dc5a0:
+		// DecodeStr(message). Atlas has one struct for both. ✓
+		return []candidate{{name: "AskYesNoConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskText#AskText":
+		// msgType 3. OnAskText@0x6dc790: DecodeStr(msg)+DecodeStr(def)+Decode2(min)+Decode2(max). ✓
+		return []candidate{{name: "AskTextConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskNumber#AskNumber":
+		// msgType 4. OnAskNumber@0x6dcc00: DecodeStr(msg)+Decode4(def)+Decode4(min)+Decode4(max). ✓
+		return []candidate{{name: "AskNumberConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskMenu#AskMenu":
+		// msgType 5. OnAskMenu@0x6dce00: DecodeStr(message). ✓
+		return []candidate{{name: "AskMenuConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskQuiz#AskQuiz":
+		// msgType 6. OnAskQuiz@0x6dbaf0 → CWvsContext::OnInitialQuiz@0x9ffad0:
+		// Decode1(flag); flag==0 → DecodeStr×3 (title/problem/hint)+Decode4×3 (min/max/time).
+		// Atlas Bool(Fail) + guarded body; flag==0/Fail==false same polarity. ✓
+		return []candidate{{name: "AskQuizConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz":
+		// msgType 7. OnAskSpeedQuiz@0x6dbb10 → CWvsContext::OnInitialSpeedQuiz@0x9f1d50:
+		// Decode1(flag); flag==0 → Decode4×5 (type/answer/correct/remain/time). ✓
+		return []candidate{{name: "AskSpeedQuizConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskAvatar#AskAvatar":
+		// msgType 8. OnAskAvatar@0x6dcff0: DecodeStr(msg)+Decode1(count)+loop Decode4(style). ✓
+		return []candidate{{name: "AskAvatarConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar":
+		// msgType 9. OnAskMembershopAvatar@0x6dd340: DecodeStr(msg)+Decode1(count)+loop Decode4(candidate).
+		// ✓ fixed: candidate-count corrected from WriteInt→WriteByte to match Decode1@0x6dd394.
+		return []candidate{{name: "AskMemberShopAvatarConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskPet#AskPet":
+		// msgType 10. OnAskPet@0x6dd6e0: DecodeStr(msg)+Decode1(count)+loop{DecodeBuffer(8)+Decode1}.
+		// cashItemSN 8-byte modeled as Decode8 for width parity with atlas WriteLong. ✓
+		return []candidate{{name: "AskPetConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskPetAll#AskPetAll":
+		// msgType 11. OnAskPetAll@0x6ddbe0: DecodeStr(msg)+Decode1(count)+Decode1(exceptionExist)+
+		// loop{DecodeBuffer(8)+Decode1}. ✓
+		return []candidate{{name: "AskPetAllConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskBoxText#AskBoxText":
+		// msgType 14. OnAskBoxText@0x6dc9c0: DecodeStr(msg)+DecodeStr(def)+Decode2(col)+Decode2(line). ✓
+		return []candidate{{name: "AskBoxTextConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CScriptMan::OnAskSlideMenu#AskSlideMenu":
+		// msgType 15. OnAskSlideMenu@0x6dbe50: Decode4(slideDlgType) → CSlideMenuDlgEX::SetSlideMenuDlg@0x7156f0
+		// Decode4(menuType)+DecodeStr(message). Atlas (GMS>83) Int(Unknown)+Int(MenuType)+AsciiString(Message);
+		// leading Int(Unknown) maps to slideDlgType; v95 major>83 so the guard fires. ✓
+		return []candidate{{name: "AskSlideMenuConversationDetail", pkg: "npc", dir: csvpkg.DirClientbound}}
+
+	// --- World: npc (serverbound) ---
+	// Client-built request packets. SERVERBOUND: the client's Send*/dialog-reply
+	// build site writes opcode + body; there is NO characterId dispatcher prefix
+	// (the client writes npcId/op-byte as the first field itself, verified in
+	// CUserLocal::TalkToNpc@0x9321f0 and CNpc::GenerateMovePath@0x671590). Report
+	// files become Npc<Struct>.{md,json}.
+	case "CNpc::GenerateMovePath":
+		// CSV: NPC_ACTION (GMS v95 opcode 241/0xF1). CNpc::GenerateMovePath@0x671590
+		// builds COutPacket(241) + Encode4(npcId) + Encode1(nAction) + Encode1(nChatIdx)
+		// + (m_pTemplate->bMove ? CMovePath::Flush movement body). Atlas ActionRequest
+		// writes Int(objectId) + Byte(unk=action) + Byte(unk2=chatIdx) + optional
+		// WriteByteArray(movement). Movement presence is server-controlled (hasMovement)
+		// and template-gated client-side. ✓ header match.
+		return []candidate{{name: "ActionRequest", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TalkToNpc":
+		// CSV: NPC_TALK (GMS v95 opcode 63/0x3F). CUserLocal::TalkToNpc@0x9321f0
+		// (non-quest branch) builds COutPacket(63) + Encode4(npcId) + Encode2(x) +
+		// Encode2(y). Atlas StartConversation writes Int(oid) + Int16(x) + Int16(y). ✓
+		return []candidate{{name: "StartConversation", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CScriptMan::OnSay#Reply":
+		// CSV: NPC_TALK_MORE (GMS v95 opcode 65/0x41) generic continue reply, built
+		// inside CScriptMan::OnSay@0x6dc110 after DoModal: COutPacket(65) + Encode1(msgType)
+		// + Encode1(action). Atlas ContinueConversation writes Byte(lastMessageType) +
+		// Byte(action). This is the dispatcher header; selection/text trailing fields are
+		// separate structs. ✓
+		return []candidate{{name: "ContinueConversation", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CScriptMan::OnAskMenu#Selection":
+		// Same NPC_TALK_MORE opcode (65). The AskMenu reply (msgType 5) appends
+		// Encode4(m_nSelect) when action==1 (CScriptMan::OnAskMenu@0x6dce00). AskAvatar
+		// (msgType 8) appends a single byte (Encode1@0x6dd26e). Atlas
+		// ContinueConversationSelection.Decode picks width at runtime (r.Available()>=4 →
+		// Int32 wide, else Byte); Encode mirrors via the `wide` flag. Analyzer flattens
+		// the branch; modeled as the wide (Encode4) path. ⚠️ runtime width guard — tool
+		// limitation; both client widths covered by the wide/narrow branch.
+		return []candidate{{name: "ContinueConversationSelection", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CScriptMan::OnAskText#Reply":
+		// Same NPC_TALK_MORE opcode (65). The AskText reply (msgType 3) appends
+		// EncodeStr(input) when action==1 (CScriptMan::OnAskText@0x6dc790). Atlas
+		// ContinueConversationText writes AsciiString(text). ✓
+		return []candidate{{name: "ContinueConversationText", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::OnPacket#ShopDispatch":
+		// CSV: NPC_SHOP (GMS v95 opcode 66/0x42) op-byte dispatcher. The transaction
+		// senders each build COutPacket(66) with a leading Encode1(op) discriminator
+		// (0=BUY/1=SELL/2=RECHARGE) then the per-op body. Atlas Shop reads the op byte,
+		// then the channel handler delegates to ShopBuy/ShopSell/ShopRecharge. Atlas Shop
+		// writes Byte(op). ⚠️ OP-FAMILY-npc-shop-serverbound: op-byte values are runtime
+		// config (operations map), not in the template — deferred to _pending.md.
+		return []candidate{{name: "Shop", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::SendBuyRequest":
+		// NPC_SHOP BUY body (op=0). CShopDlg::SendBuyRequest@0x6e9bb0 after the op byte:
+		// Encode2(slot) + Encode4(itemId) + Encode2(quantity) + Encode4(discountPrice).
+		// Atlas ShopBuy writes Short(slot) + Int(itemId) + Short(quantity) + Int(discountPrice). ✓
+		return []candidate{{name: "ShopBuy", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::SendSellRequest":
+		// NPC_SHOP SELL body (op=1). CShopDlg::SendSellRequest@0x6e7260 after the op byte:
+		// Encode2(slot/nPOS) + Encode4(itemId) + Encode2(quantity). Atlas ShopSell writes
+		// Int16(slot) + Int(itemId) + Short(quantity). ✓
+		return []candidate{{name: "ShopSell", pkg: "npc", dir: csvpkg.DirServerbound}}
+	case "CShopDlg::SendRechargeRequest":
+		// NPC_SHOP RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x6e4e90 after the
+		// op byte: Encode2(slot/nPos). Atlas ShopRecharge writes Short(slot). ✓
+		return []candidate{{name: "ShopRecharge", pkg: "npc", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

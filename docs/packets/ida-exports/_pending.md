@@ -1308,3 +1308,427 @@ After Task 10 changes, no encoder/decoder in the social domain contains more tha
 **Total real bugs fixed in this pass:** 1 (`member_data.go` PARTYDATA gate — `ab8511fee`).
 
 **Total analyzer FPs:** same pattern as GMS (op-byte prefix, sub-struct expansion gap, DecodeSub unknown primitive). No new FP categories introduced by JMS v185 pass.
+
+## Still pending — world domain (task-068 Phase 2c, field/clientbound)
+
+> **task-068 sub-phase 2c** audited five `field/clientbound` packets against GMS
+> v95 IDA: affected-area (mist) create/remove + kite (MessageBox field object)
+> spawn/destroy/error. Tally: **4 ✅ / 0 ⚠️ / 1 ❌-DEFERRED**.
+>
+> ✅: `AffectedAreaRemoved` (`CAffectedAreaPool::OnAffectedAreaRemoved`@0x4360a0,
+> single int32 id), `KiteSpawn` (`CMessageBoxPool::OnMessageBoxEnterField`@0x6369c0),
+> `KiteDestroy` (`CMessageBoxPool::OnMessageBoxLeaveField`@0x635d60),
+> `KiteError` (`CMessageBoxPool::OnCreateFailed`@0x636760, empty body).
+
+### ❌ DEFERRED: AffectedAreaCreated — v83-vs-v95 SPAWN_MIST protocol divergence
+
+`field/clientbound/affected_area_created.go` (`AffectedAreaCreated`) is the
+**v83** SPAWN_MIST layout. The GMS **v95** client
+(`CAffectedAreaPool::OnAffectedAreaCreated`@0x437ec0) decodes a structurally
+different packet:
+
+| pos | v95 reads | atlas (v83) writes |
+|---|---|---|
+| 0 | `Decode4 dwId` | `int32 mistKey` ✅ |
+| 1 | `Decode4 nType` | `int32 ownerId` (meaning differs) |
+| 2 | `Decode4 dwOwnerId` | `int16 originX` ❌ |
+| 3 | `Decode4 nSkillID` | `int16 originY` ❌ |
+| 4 | `Decode1 nSLV` | `int16 ltX` ❌ |
+| 5 | `Decode2 phase` | `int16 ltY` |
+| 6 | `DecodeBuffer(16) rcArea RECT` | `int16 rbX` ❌ |
+| 7 | `Decode4 tStart` | `int16 rbY` ❌ |
+| 8 | `Decode4 tEnd` | `int32 duration` |
+| — | (none) | `int32 skillLevel` (extra) |
+
+v95 adds `nType` + `nSkillID` 4-byte fields, drops `originX/originY`, and packs
+LT/RB as a 16-byte RECT buffer rather than four inline int16s. Atlas's elsewhere
+field-object spawns (drop/reactor/monster) audit ✅ against v95, so atlas is a
+v95 server in general — this `AffectedAreaCreated` is a **stale v83**
+implementation.
+
+**Why deferred (not fixed under audit cover):** a correct v95 re-encode would
+require adding type/skillId, dropping origin, and emitting the RECT as a buffer —
+which would simultaneously **break the v83 client** the struct is written for. A
+proper fix must be region/version-guarded AND cross-version-verified against the
+v83/v87/v92 IDBs (the verify-against-WZ/IDA discipline). That is a versioned
+re-encode effort, out of scope for this clientbound field-shape bucket.
+
+**Sibling-task suggestion:** *"GMS v95 affected-area (mist) SPAWN_MIST re-encode."*
+Scope: rewrite `AffectedAreaCreated.Encode` to the v95 layout above behind a
+version guard, keeping the v83 path; add a 4-variant Encode test; cite
+`CAffectedAreaPool::OnAffectedAreaCreated`@0x437ec0. The sibling REMOVE_MIST
+packet is unaffected (single int32 id matches all versions).
+
+> ⏸ STILL DEFERRED — AFFECTEDAREA-create-shape (task-068 Phase 3 v87 finding): the
+> cross-version axis is now fully pinned. v87
+> `CAffectedAreaPool::OnAffectedAreaCreated`@0x432f3f reads the SAME 8-field set as
+> **v83** (@0x431a63): `Decode4 dwId, Decode4 nType, Decode4 dwOwnerId, Decode4
+> nSkillID, Decode1 nSLV, Decode2 phase, DecodeBuffer(16) rcArea, Decode4 tEnd` —
+> a single trailing `Decode4` after the RECT, NO leading `tStart`. **v95**
+> (@0x437ec0) is the version that ADDS the leading `tStart` int32 (9 fields, two
+> trailing Decode4s). So: v83 == v87 (8 fields) → v95 (9 fields, +tStart). Atlas
+> matches NEITHER (it carries the legacy origin int16 layout). The earlier (Phase
+> 2c) worry that a v95 fix "would break the v83 client" is fully disproven —
+> v83/v87 share one layout, and a single `tStart`-gated (`GMS>=95`) encode
+> satisfies all three. Still deferred (structural rewrite + new model fields);
+> when implemented, gate the leading `tStart` int32 behind `GMS && >=95`.
+
+> ⏸ STILL DEFERRED — AFFECTEDAREA-create-shape (task-068 Phase 3 JMS185 finding):
+> JMS185 `CAffectedAreaPool::OnAffectedAreaCreated`@0x436572 reads the SAME 8-field
+> set as v83/v87 — `Decode4 dwId, Decode4 nType, Decode4 dwOwnerId, Decode4
+> nSkillID, Decode1 nSLV, Decode2 phase, DecodeBuffer(16) rcArea, Decode4 tEnd`
+> (@lines 103-110). **JMS185 does NOT have the v95-only leading `tStart` int** — it
+> is the 8-field layout, like the GMS pre-v95 builds. So the full axis is now: v83
+> == v87 == JMS185 (8 fields) vs v95 (9 fields, +leading tStart). Atlas matches
+> none. The deferred structural re-encode (add nType/nSkillID, pack the RECT as a
+> 16-byte buffer, drop origin, gate leading tStart on `GMS && >=95`) is correct for
+> JMS too (no JMS-specific extra field). Still deferred. Sibling
+> `AffectedAreaRemoved` (single Decode4 @0x436eda) ✅ for JMS185.
+
+## WEATHER-jms-shape — `effect_weather.go` BLOW_WEATHER JMS185 divergence (task-068 Phase 3, DEFERRED)
+
+> **task-068 Phase 3 (JMS v185 field+portal pass)** found a genuine JMS185 wire
+> divergence in `field/clientbound/effect_weather.go` (`EffectWeather`). It is a
+> structural per-version difference on a BAD-FORM struct (design §8 keeps it
+> un-refactored) and is **DEFERRED**, not blindly fixed.
+
+JMS185 dispatches BLOW_WEATHER (op 0x08B/139) via `CField::OnPacket`@0x56e721 case
+0x8B → `sub_5723E6`@0x5723E6 (inlined — no `OnBlowWeather` symbol in the JMS185
+IDB). It reads:
+
+1. `Decode4 itemId` (@line17) — **FIRST field; NO leading blow-type byte.**
+2. `[Decode4 extra]` (@line22) — only when `get_consume_cash_item_type(itemId)==51`
+   (a cash-weather variant); atlas has no corresponding field.
+3. `[DecodeStr message]` (@line27) — only when `itemId != 0`.
+
+Atlas (version-agnostic, no region branch) writes: `WriteBool(!active)` (1 leading
+byte) + `WriteInt(itemId)` + `[WriteAsciiString(message) if active]`. The leading
+`!active` byte is correct for GMS (`CField::OnBlowWeather` reads `Decode1
+m_nBlowType` first) but is a 1-byte over-write for JMS185, AND atlas lacks the JMS
+cash-type-51 conditional int. A JMS-correct fix needs a region branch that (a)
+drops the leading byte for JMS and (b) models the conditional cash-int — a
+structural change to a BAD-FORM struct, beyond an audit-cover width tweak. When
+implemented: gate the leading `m_nBlowType` byte on `GMS` only, and add the
+JMS-only conditional `Decode4`/`Encode4` keyed on the cash-weather item type.
+File: `libs/atlas-packet/field/clientbound/effect_weather.go`.
+
+## JMS v185 field+portal pass summary (task-068 Phase 3)
+
+> JMS185 IDB `MapleStory_dump_SCY.exe` (md5 af6652ff9b7c549341f35e3569d7564a).
+> Tally: **12 ✅ / 5 ❌**. Of the 5 ❌: 3 are analyzer/tool-limitation artifacts
+> (FieldSetField seed-loop+CharacterData boundary; FieldChange conditional chase
+> tail; FieldClock mode-switch — all manually verified correct), and 2 are genuine
+> structural divergences DEFERRED above (FieldAffectedAreaCreated, FieldEffectWeather).
+
+### IN-scope JMS fix shipped this pass (1)
+
+| Atlas struct (file) | JMS185 IDA evidence | Bug | Fix |
+|---|---|---|---|
+| `field/clientbound/warp_to_map.go` (`WarpToMap`) | `CStage::OnSetField`@0x7eea69 warp else-branch reads `Decode2` nHP @0x7eec9d (2 bytes) | nHP gate was `(GMS>=95) \|\| JMS` → JMS wrote 4 bytes, but JMS185 reads 2 (the line did NOT widen with GMS v95) → 2-byte clientbound over-write desyncs the warp | Gate narrowed to `GMS && >=95`; JMS falls into the 2-byte `else`. 5-variant test (GMS v28/v83/v87/v95 + JMS185) pins JMS185=31 bytes. ✅ |
+
+### set_field/warp JMS-branch verification (all ✅, no sub-divide)
+
+- **JMS decode-opt short** — JMS185 `CClientOptMan::DecodeOpt` @line119; atlas
+  `WriteShort(0)` gated `(GMS>83 || JMS)`. ✅
+- **JMS `byte+int` block** — JMS185 reads `Decode1` (@line122, szCookie[76]) then
+  `Decode4` (@line123, szReserved[1976]) immediately after channelId; atlas's
+  JMS-only `WriteByte(0); WriteInt(0)` matches. ✅
+- **4-byte nHP** — JMS185 reads `Decode2` (2 bytes) in the warp path, NOT 4. Atlas
+  FIXED (above). set_field's CharacterData path has no standalone nHP field. ✅
+- **oldDriverID** — JMS does NOT read the `m_dwOldDriverID` Decode4 (GMS-v95-only,
+  gated `GMS && >=95`); JMS185 OnSetField goes channelId → JMS byte+int → sNotifier.
+  Atlas correctly omits it for JMS. ✅
+- **4 logout-gift ints** — `OnSetLogoutGiftConfig`@0xae81c0 reads `Decode4` + 3×
+  `Decode4` = 4 ints; atlas's 4× `WriteInt(0)` gated `(GMS>83 || JMS)` matches. ✅
+- **set_field JMS sub-divide HARD CAP: NOT hit.** JMS185's `Region()=="JMS"` block
+  is a single shape (no early-JMS vs 185+ split inside it). The 3-deep set_field
+  nesting cap was respected; no 4th nesting level needed.
+
+## Tool limitations — world domain (task-068 Phase 2d, field/clientbound effect cluster)
+
+> **task-068 sub-phase 2d** audited the three `field/clientbound` effect-cluster
+> files against GMS v95 IDA: `effect.go` (5 structs), `effect_weather.go`,
+> `clock.go`. Tally: **7 ✅ / 0 ❌ wire bugs** (auto-verdict shows `FieldClock` ❌
+> = tool limitation only; manually verified ✅ across all 5 modes). No atlas wire
+> bug found in the entire cluster.
+
+### `effect.go` — GOOD FORM (one struct per field-effect sub-type) — all ✅
+
+`CField::OnFieldEffect`@0x53b790 (FIELD_EFFECT, v95 opcode 0x09A/154) dispatches
+on a leading effect-type byte. Each sub-type is its own atlas struct; each writes
+the mode byte as its first field. Modelled via `#`-suffixed synthetic IDA export
+entries. All matched the IDA case bodies exactly:
+
+| effect-type byte | IDA case (addr) | atlas struct | payload | verdict |
+|---|---|---|---|---|
+| 0 | case 0 @0x53b7e6 | `EffectSummon` | effect(1) + x(4) + y(4) | ✅ |
+| 1 | case 1 @0x53bb74 | `EffectTremble` | bHeavyNShortTremble(1) + delay(4) | ✅ |
+| 2/3/4/6 | cases @0x53b8b3/0x53b8fa/0x53b958/0x53bab8 | `EffectString` | name(str) | ✅ |
+| 5 | case 5 @0x53b9c1 | `EffectBossHp` | monsterId(4)+currentHp(4)+maxHp(4)+tagColor(1)+tagBg(1) | ✅ |
+| 7 | case 7 @0x53bba4 | `EffectRewardRullet` | jobIdx(4)+partIdx(4)+levIdx(4) | ✅ |
+
+(The mode byte itself is written by every struct's `Encode` as `WriteByte(mode)`,
+so each `#`-entry's leading `Decode1` aligns row 0.)
+
+### `effect_weather.go` — BAD FORM (single struct, mode via constructor) — ✅
+
+`CField::OnBlowWeather`@0x5468f0 (BLOW_WEATHER, v95 opcode 0x09E/158). Single
+`EffectWeather` struct; the leading `!active` byte and the trailing conditional
+message string are decided at construction. Auto-verdict ✅. Per design §8 NOT
+refactored. Per-mode table lives in `FieldEffectWeather.md`:
+
+- start (`NewFieldEffectWeatherStart`): blowType byte `0` + itemId(4) + message(str)
+- end (`NewFieldEffectWeatherEnd`): blowType byte `1` + itemId(4) (no string)
+
+Atlas's `active` flag inverts to the IDA `m_nBlowType` byte; the message string is
+gated by `active` exactly as the IDA `else` branch (`itemId!=0 && m_nBlowType==0`)
+gates `DecodeStr`. **Unreachable edge (not a bug):** IDA also suppresses the
+string when `itemId==0`; atlas's start path would write a string at `itemId==0`,
+but `itemId==0` is never a valid weather item.
+
+### `clock.go` — BAD FORM (single struct, mode-keyed Encode switch) — ⚠️ tool limitation, manually verified ✅
+
+`CField::OnClock`@0x531510 (CLOCK, v95 opcode 0x0A3/163). Single `Clock` struct
+whose `clockType` mode byte is set at construction and whose `Encode` switch emits
+a different payload per mode. The flat analyzer concatenates every switch arm and
+reports the auto-verdict as **❌ in `SUMMARY.md`** — this is purely the
+mutually-exclusive-switch-arm limitation, **not a wire bug**. Per design §8 this
+file is NOT refactored into per-mode structs. All 5 modes verified ✅ against the
+IDA switch arms (full table in `FieldClock.md`):
+
+| clockType | IDA case (addr) | atlas payload (after mode byte) | verdict |
+|---|---|---|---|
+| 0x00 EventClock | case 0 @0x53156e | seconds(4) | ✅ |
+| 0x01 TownClock | case 1 @0x5315ab | hour(1)+minute(1)+second(1) | ✅ |
+| 0x02 TimerClock | case 2 @0x5315d7 | seconds(4) | ✅ |
+| 0x03 EventTimerClock | case 3 @0x5316bb | flag1(1)+seconds(4) | ✅ |
+| 0x64 CakePieEventTimerClock | case 0x64 @0x5317c4 | flag1(1)+flag2(1)+seconds(4) | ✅ |
+
+The export entry `CField::OnClock` models the case-3 (EventTimerClock) arm as a
+representative; the `SUMMARY.md` ❌ for `FieldClock` should be read as ⚠️
+(tool-limitation, manually verified).
+
+## Still pending — world domain (task-068 Phase 2b, field/clientbound envelope)
+
+> **task-068 sub-phase 2b** audited `set_field.go`, `warp_to_map.go`, and
+> `transport.go` against GMS v95 IDA. `FieldTransport` ✅ (after x/y-branch fix).
+> `FieldSetField` and `FieldWarpToMap` share one real structural divergence,
+> deferred below.
+
+### ❌ DEFERRED: FieldSetField / FieldWarpToMap — m_dwOldDriverID missing for GMS
+
+Both `field/clientbound/set_field.go` (`SetField`) and
+`field/clientbound/warp_to_map.go` (`WarpToMap`) share the `CStage::OnSetField`
+envelope (`@0x71a0a0`). Every envelope field matches v95 except one:
+
+| pos after channelId | v95 reads | atlas writes |
+|---|---|---|
+| 0 | `Decode4 m_dwOldDriverID` (unconditional, line 129) | nothing for GMS (only `WriteByte(0)+WriteInt(0)` for JMS) |
+
+v95 reads `m_dwOldDriverID` as an unconditional 4-byte int immediately after
+`m_nChannelID`. Atlas omits it entirely for GMS, shifting the entire
+post-channelId envelope by 4 bytes for any GMS v95 client.
+
+**Why deferred (not fixed under audit cover):** the version-introduction point
+for `m_dwOldDriverID` (v83? v87? v92? first in v95?) cannot be confirmed without
+v83/v87/v92 IDA. A blind unconditional add risks the very GMS versions atlas runs
+in production. A region/version-gated add risks breaking earlier GMS clients if
+the field is absent there. Fix requires a cross-version IDA spike
+(`CStage::OnSetField` in v83/v87/v92) before the correct gate can be written.
+
+Files: `libs/atlas-packet/field/clientbound/set_field.go`,
+`libs/atlas-packet/field/clientbound/warp_to_map.go`.
+
+Audit reports: `FieldSetField.md`, `FieldWarpToMap.md` — both marked ❌ in
+`SUMMARY.md` due to this divergence.
+
+**Sibling-task suggestion:** *"GMS v95 SetField/WarpToMap oldDriverID fix."*
+Scope: read `CStage::OnSetField` in v83/v87/v92 IDA; if field is present from
+v83, add unconditionally; if introduced in v95, gate behind `GMS>=95 || JMS`.
+
+> ✅ RESOLVED (task-068 Phase 3 v83 + v87): the version-introduction point is now
+> pinned. `CStage::OnSetField` reads NO `m_dwOldDriverID` after `channelId` in
+> **v83** (@0x776020) NOR **v87** (@0x7c429c) — in both, `sNotifierMessage`
+> (Decode1) is read immediately after `channelId(Decode4)`. v95 (@0x71a0a0) is the
+> first audited version to insert the unconditional `Decode4 m_dwOldDriverID`
+> there. The field was introduced **between v87 and v95**. Atlas now emits it
+> gated `Region()=="GMS" && MajorVersion()>=95` (set_field.go / warp_to_map.go),
+> which is CORRECT: v83/v87 omit, v95+ emit. Per-version Encode tests
+> (set_field_test.go round-trip; warp_to_map_test.go wire-length: GMS v83=25,
+> v87=27, v95=33, JMS=33) assert this. No further action — the `>=95` gate stays.
+
+> ✅ RESOLVED (task-068 Phase 3 v87) — nHP width (FieldWarpToMap warp branch): v87
+> `CStage::OnSetField`@0x7c429c reads `nHP` as `Decode2` (2 bytes, LOWORD
+> @0x7c44a8), matching **v83** (@0x776020); v95 (@0x71a0a0) reads `Decode4`. The
+> 2→4 width change happened **between v87 and v95**. Atlas's `nHP` width gate
+> (`GMS>=95 || JMS` → WriteInt(4) else WriteShort(2)) is CONFIRMED correct. (This
+> sub-fix's `WriteInt` half landed earlier in `37f072c11`; v87 confirms the gate
+> boundary.)
+
+## Tool limitations — world domain (task-068 Phase 2e/2g, npc cluster)
+
+> **task-068 sub-phases 2e and 2g** audited NPC/clientbound non-conversation
+> (9 files) and NPC/serverbound (9 files) against GMS v95 IDA. All ❌ SUMMARY
+> verdicts in this cluster are tool-limitation false positives — no new wire bugs.
+
+### NpcAction — conditional movement body (tool limitation, manually verified ✅)
+
+`npc/clientbound/action.go` (`Action`) routes via `CNpcPool::OnNpcPacket`
+(@0x679260) dispatcher (Decode4 npcId prefix) then `CNpc::OnMove` (@0x678060).
+Rows 0–2 (`objectId int32`, `action byte`, `chatIdx byte`) match v95 exactly.
+Rows 3–6 are the optional `model.Movement` body; the flat analyzer cannot model
+the `m_pTemplate->bMove` client-side gate — it appends movement fields
+unconditionally. Both code paths (animation-only: 6 bytes; move-action: 6 bytes +
+CMovePath body) are server-controlled and align with the template-gated client
+read. Wire is correct.
+
+SUMMARY row: `NpcAction` ❌ → tool-limitation (conditional sub-struct). See
+`NpcAction.md` for full per-field triage.
+
+### NpcActionRequest — conditional movement body (tool limitation, manually verified ✅)
+
+`npc/serverbound/action.go` (`ActionRequest`). Mirror of the clientbound case:
+`CNpc::GenerateMovePath` (@0x671590) writes `npcId(4)+action(1)+chatIdx(1)` then
+`CMovePath::Flush` only when `m_pTemplate->bMove`. Rows 0–2 ✅; rows 3–6 are the
+same movement-body tool-limitation FP. Wire is correct.
+
+SUMMARY row: `NpcActionRequest` ❌ → tool-limitation (conditional sub-struct). See
+`NpcActionRequest.md` for full per-field triage.
+
+### NpcShopList — per-commodity loop + ammo/non-ammo branch (tool limitation, manually verified ✅)
+
+`npc/clientbound/shop_list.go` (`ShopList`). All 9 per-commodity fields (rows
+0–9) match `CShopDlg::SetShopDlg` (@0x6eab00) exactly. Rows 10–11 are artifacts
+of the flat analyzer: it cannot model the per-item loop OR the mutually-exclusive
+`UnitPrice(int64)` / `Quantity(int16)` branch, inlining both consecutively and
+misaligning `SlotMax`. Wire is correct per per-item IDA trace in `NpcShopList.md`.
+
+SUMMARY row: `NpcShopList` ❌ → tool-limitation (loop + ammo/non-ammo branch). See
+`NpcShopList.md` for full per-item triage.
+
+### NpcContinueConversationSelection — wide/narrow branch (tool limitation, manually verified ✅)
+
+`npc/serverbound/continue_conversation_selection.go`
+(`ContinueConversationSelection`). Row 0 (`int32` selection, wide path) matches
+v95 `CScriptMan::OnAskMenu` (@0x6dce00) exactly. Row 1 (`byte`) is an artifact of
+the flat analyzer inlining both the wide (`int32`) and narrow (`byte`) arms of the
+`if m_wide { WriteInt32 } else { WriteByte }` branch. Both widths are covered:
+AskMenu (4-byte) and AskAvatar (1-byte) selection sizes. Wire is correct.
+
+SUMMARY row: `NpcContinueConversationSelection` ❌ → tool-limitation
+(exclusive-branch flatten). See `NpcContinueConversationSelection.md`.
+
+## Sub-op enum drift — world domain (task-068 Phase 2e/2g, npc shop)
+
+> **task-068 sub-phases 2e and 2g** confirmed NpcShopOperation clientbound sub-op
+> mode bytes and NpcShop serverbound op byte via v95 IDA. All wire shapes ✅.
+> Sub-op value spaces are template-configured; enum drift verification is deferred
+> to the cross-version pass (Phase 3, not yet scheduled for world domain).
+
+### OP-FAMILY-npc-shop-clientbound — `shop_operation.go` mode-byte dispatcher
+
+`npc/clientbound/shop_operation.go` carries three structs dispatched by
+`CShopDlg::OnPacket` via a leading mode byte:
+
+| atlas struct | IDA case | mode | payload |
+|---|---|---|---|
+| `ShopOperationSimple` | `CShopDlg::OnPacket#Simple` (@0x6eb7d0) | mode-only | mode(1) |
+| `ShopOperationLevelRequirement` | `CShopDlg::OnPacket#LevelRequirement` (@0x6eb830) | over/under level sub-op | mode(1) + level(4) |
+| `ShopOperationGenericError` | `CShopDlg::OnPacket#GenericError` (@0x6eb860) | generic-error sub-op | mode(1) + errorCode(1) |
+
+All three ✅ against v95 IDA. Mode byte values are template-configured
+(`operations.{SOLD_OUT, LEVEL_REQUIREMENT, GENERIC_ERROR}`); enum drift
+verification deferred to Phase 3 cross-version pass.
+
+### OP-FAMILY-npc-shop-serverbound — `shop.go` op-byte + sub-bodies
+
+`npc/serverbound/shop.go` (`Shop`) writes only the op byte (sub-op discriminator
+for the NPC_SHOP_ACTION opcode). Sub-bodies are in `shop_buy.go`, `shop_sell.go`,
+`shop_recharge.go`. Op-byte values confirmed in v95 IDA:
+
+| atlas struct | IDA sender | op |
+|---|---|---|
+| `Shop` (dispatcher) | `CShopDlg::OnPacket#ShopDispatch` (@0x6e4b80) | op byte only |
+| `ShopBuy` | `CShopDlg::SendBuyRequest` (@0x6e9bb0) | 0 (BUY) |
+| `ShopSell` | `CShopDlg::SendSellRequest` (@0x6e9c60) | 1 (SELL) |
+| `ShopRecharge` | `CShopDlg::SendRechargeRequest` (@0x6e9cf0) | 2 (RECHARGE) |
+
+All three sub-bodies ✅ against v95 IDA. Op-byte values are
+template-configured (`operations.{BUY,SELL,RECHARGE}`); enum drift verification
+deferred to Phase 3 cross-version pass.
+
+## Phase 2 exit gate — world domain summary (task-068)
+
+> This section is the one-glance ledger for all Phase 2 world-domain SUMMARY ❌
+> rows. Every ❌ has either a fix commit on the branch or a deferral entry in
+> this file. No silent ❌ exists.
+
+### Fix commits on branch
+
+| SUMMARY row | Fix commit | Change |
+|---|---|---|
+| `FieldWarpToMap` (partially) | `37f072c11` | `nHP` field width: `WriteShort` → `WriteInt` (4 bytes) to match v95 `Decode4`. Remaining ❌ is `m_dwOldDriverID` — see above. |
+| `NpcGuideTalkMessage` / `NpcGuideTalkIdx` (verdicts became ✅ after fix) | `0d1a20d9b` | Invert GuideTalk leading bool to match v95 client branch. |
+| `NpcAskMemberShopAvatarConversationDetail` (verdict became ✅ after fix) | `f5be63196` | Candidate-count field is `byte`, not `int`. |
+| `NpcSayImageConversationDetail` (verdict became ✅ after fix) | `9a4dad51d` | Image-count field is `byte`, not `int`. |
+| `FieldTransport` (verdict became ✅ after fix) | `ef6a96392` | Correct field-transfer x/y branch to match v95 client. |
+
+### World-domain ❌ SUMMARY rows — classified
+
+| SUMMARY row | Classification | Evidence |
+|---|---|---|
+| `FieldAffectedAreaCreated` | cross-version-deferred (v83↔v95 structural divergence) | `_pending.md` "Still pending — world domain (Phase 2c)" + `FieldAffectedAreaCreated.md` |
+| `FieldClock` | tool-limitation, manually verified ✅ (mutually-exclusive switch arms) | `_pending.md` "Tool limitations — world domain (Phase 2d)" + `FieldClock.md` |
+| `FieldSetField` | cross-version-deferred (`m_dwOldDriverID` version unknown) | `_pending.md` "Still pending — world domain (Phase 2b)" above + `FieldSetField.md` |
+| `FieldWarpToMap` | cross-version-deferred (`m_dwOldDriverID` version unknown; `nHP` fix already landed) | `_pending.md` "Still pending — world domain (Phase 2b)" above + `FieldWarpToMap.md` |
+| `NpcAction` | tool-limitation, manually verified ✅ (conditional movement sub-struct) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcAction.md` |
+| `NpcActionRequest` | tool-limitation, manually verified ✅ (conditional movement sub-struct) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcActionRequest.md` |
+| `NpcContinueConversationSelection` | tool-limitation, manually verified ✅ (wide/narrow exclusive branch) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcContinueConversationSelection.md` |
+| `NpcShopList` | tool-limitation, manually verified ✅ (per-item loop + ammo/non-ammo branch) | `_pending.md` "Tool limitations — world domain (Phase 2e/2g)" above + `NpcShopList.md` |
+
+## Phase 3 — GMS v87 cross-version pass (world domain: field + portal)
+
+> **task-068 Phase 3 v87 (Task 13a)** audited the FIELD + PORTAL domain against the
+> GMS v87 IDB (`GMSv87_4GB.exe`, md5 `2e692f3ab5078e04138d264f8ea1e668`). 17
+> field/portal FNames resolved + decompiled; entries added to `gms_v87.json`.
+> Tally: **14 ✅ / 3 (tool-limitation/deferral, none new wire bugs)**.
+
+### Primary goal — two provisional gates CONFIRMED (no atlas behavior change)
+
+The v83 pass set provisional `>=95` gates the v87 binary had to confirm or
+tighten. v87 CONFIRMS both — neither tightened:
+
+| Gate | v83 (@0x776020) | v87 (@0x7c429c) | v95 (@0x71a0a0) | Final gate |
+|---|---|---|---|---|
+| `m_dwOldDriverID` after channelId | absent | **absent** (sNotifierMessage read immediately) | present (Decode4) | `GMS>=95` STAYS |
+| `nHP` width (warp branch) | Decode2 (2B) | **Decode2 (2B)** | Decode4 (4B) | `GMS>=95` STAYS |
+
+Atlas code change was COMMENT-ONLY: the IDA-citation comments in
+`set_field.go` / `warp_to_map.go` now cite v87 @0x7c429c alongside v83 @0x776020.
+The existing per-version tests already asserted v87=omit/2B (anticipated by the
+v83 pass); v87 IDA confirms them. No gate behavior changed; v83/v95 audit reports
+were re-run and restored unchanged (regen-only drift).
+
+### Per-packet v87 verdicts (vs v95)
+
+| Packet | v87 verdict | Cross-version note |
+|---|---|---|
+| PortalScript | ✅ | `CUserLocal::CheckPortal_Collision`@0x9c8832 byte-identical to v95. |
+| FieldChange | ✅ | `CField::SendTransferFieldRequest`@0x557b5a byte-identical to v95 (opcode 0x28 vs v95 0x29 — template, not envelope). |
+| FieldSetField | ❌ (artifact) | seed-loop/CharacterData-boundary analyzer FP; manual envelope verdict all ✅. oldDriverID confirmed absent in v87. |
+| FieldWarpToMap | ✅ | All 11 rows match — oldDriverID omitted + nHP 2B both correct for v87. |
+| FieldTransport | ✅ | `CField_ContiMove::OnContiState`@0x577c21 byte-identical to v95. |
+| FieldAffectedAreaCreated | ❌ (deferred) | v87 == v83 (8 fields, tEnd only; v95 adds tStart). Structural deferral, NOT rewritten. |
+| FieldAffectedAreaRemoved | ✅ | `OnAffectedAreaRemoved`@0x43388c single Decode4 id, matches v95. |
+| FieldKiteSpawn | ✅ | `OnMessageBoxEnterField`@0x694e48 byte-identical to v95. |
+| FieldKiteDestroy | ✅ | `OnMessageBoxLeaveField`@0x69544f byte-identical to v95. |
+| FieldKiteError | ✅ | `OnCreateFailed`@0x694e1d empty body, matches v95. |
+| FieldEffect{Summon,Tremble,String,BossHp,RewardRullet} | ✅ | `CField::OnFieldEffect`@0x55a910 — all 5 atlas-mapped arms (cases 0/1/2-3-4-6/5/7) byte-identical to v95. |
+| FieldEffectWeather | ✅ | `CField::OnBlowWeather`@0x55c953 byte-identical to v95 (conditional message tool-limitation). |
+| FieldClock | ❌ (tool-limit) | v87 inlines OnClock as `sub_55DA5F`@0x55DA5F; all 5 modes byte-identical to v95. Mutually-exclusive-switch-arm FP. |
+
+**Conclusion:** v87 introduces NO new field/portal wire bugs beyond v95 and NO
+divergence from v83 on the two gated fields. The atlas `GMS>=95` gates for
+`m_dwOldDriverID` and `nHP` width are verified correct against the v83/v87/v95
+triple. The 3 ❌ SUMMARY rows are the same analyzer artifacts / structural
+deferral documented for v95. No encoder mutations land in this sub-task.

@@ -1,0 +1,20 @@
+{
+  "WriterName": "NpcAskMenuConversationDetail",
+  "IDAName": "CScriptMan::OnAskMenu#AskMenu",
+  "Address": "0x7b7c95",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message / menu (@0x7b7cae)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

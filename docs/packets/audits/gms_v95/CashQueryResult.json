@@ -4,7 +4,7 @@
   "Address": "0x496400",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/query_result.go",
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/query_result.go",
   "Rows": [
     {
       "Index": 0,

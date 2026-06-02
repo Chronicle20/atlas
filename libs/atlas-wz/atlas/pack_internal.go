@@ -63,7 +63,7 @@ func tryPack(sorted []Input, size int) (image.Image, manifest.Manifest, bool) {
 			},
 			Origin:  manifest.Point{X: sp.Origin.X, Y: sp.Origin.Y},
 			Anchors: anchors,
-			Z:       sp.Z,
+			Z:       manifest.ZOrder(sp.Z),
 		}
 	}
 	return sheet, manifest.Manifest{

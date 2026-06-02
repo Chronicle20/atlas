@@ -115,12 +115,13 @@ func applyVslotOcclusion(placed []placement, smap map[string]string, owners []vs
 // empty) default to visible — we never want to drop body, head, or
 // fixture-synthesized parts on a missing slot lookup.
 //
-// In atlas-renders, the "z-string layer name" the donor stored in
-// PartMeta.Z is carried by manifest.Sprite.Part — both originate from the
-// WZ child property name of each part canvas. Donor:
-// characterimage/vslot.go:105-120.
+// The smap is keyed on the render-layer label (the WZ canvas `z` child),
+// carried by manifest.Sprite.Z — NOT by Part (the canvas name). The donor
+// looks up smap by meta.Z (characterimage/vslot.go:105-120,
+// characterimage/compositor.go isPartVisible(p.meta.Z)); keying on Part
+// mislabels any part whose canvas name differs from its z-label.
 func isPartVisible(p placement, claimed map[string]uint32, smap map[string]string) bool {
-	z := smapKey(smap, p.sprite.Part)
+	z := smapKey(smap, string(p.sprite.Z))
 	if z == "" {
 		return true
 	}

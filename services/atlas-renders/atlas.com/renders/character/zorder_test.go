@@ -55,18 +55,18 @@ func TestPlacementSortByZmap(t *testing.T) {
 
 	// Insertion order deliberately scrambled relative to render order.
 	placements := []placement{
-		{sprite: manifest.Sprite{Part: "body"}},
-		{sprite: manifest.Sprite{Part: "weaponOverHand"}},
-		{sprite: manifest.Sprite{Part: "capeBelowBody"}},
-		{sprite: manifest.Sprite{Part: "head"}},
-		{sprite: manifest.Sprite{Part: "weapon"}},
-		{sprite: manifest.Sprite{Part: "face"}},
-		{sprite: manifest.Sprite{Part: "arm"}},
-		{sprite: manifest.Sprite{Part: "hairOverHead"}},
+		{sprite: manifest.Sprite{Z: "body"}},
+		{sprite: manifest.Sprite{Z: "weaponOverHand"}},
+		{sprite: manifest.Sprite{Z: "capeBelowBody"}},
+		{sprite: manifest.Sprite{Z: "head"}},
+		{sprite: manifest.Sprite{Z: "weapon"}},
+		{sprite: manifest.Sprite{Z: "face"}},
+		{sprite: manifest.Sprite{Z: "arm"}},
+		{sprite: manifest.Sprite{Z: "hairOverHead"}},
 	}
 
 	sort.SliceStable(placements, func(i, j int) bool {
-		return zIndex(zmap, placements[i].sprite.Part) > zIndex(zmap, placements[j].sprite.Part)
+		return zIndex(zmap, string(placements[i].sprite.Z)) > zIndex(zmap, string(placements[j].sprite.Z))
 	})
 
 	// Expected draw order = zmap reversed (backmost first, frontmost last).
@@ -74,10 +74,10 @@ func TestPlacementSortByZmap(t *testing.T) {
 		"capeBelowBody", "weapon", "body", "arm", "head", "face", "hairOverHead", "weaponOverHand",
 	}
 	for i, p := range placements {
-		if p.sprite.Part != want[i] {
+		if string(p.sprite.Z) != want[i] {
 			got := make([]string, len(placements))
 			for k, pp := range placements {
-				got[k] = pp.sprite.Part
+				got[k] = string(pp.sprite.Z)
 			}
 			t.Fatalf("draw order = %v, want %v", got, want)
 		}
@@ -89,17 +89,17 @@ func TestPlacementSortByZmap(t *testing.T) {
 func TestPlacementSortUnknownLayerToBack(t *testing.T) {
 	zmap := []string{"face", "head", "body"}
 	placements := []placement{
-		{sprite: manifest.Sprite{Part: "face"}},
-		{sprite: manifest.Sprite{Part: "mysteryLayer"}}, // unknown -> len(zmap)=3, backmost
-		{sprite: manifest.Sprite{Part: "body"}},
+		{sprite: manifest.Sprite{Z: "face"}},
+		{sprite: manifest.Sprite{Z: "mysteryLayer"}}, // unknown -> len(zmap)=3, backmost
+		{sprite: manifest.Sprite{Z: "body"}},
 	}
 	sort.SliceStable(placements, func(i, j int) bool {
-		return zIndex(zmap, placements[i].sprite.Part) > zIndex(zmap, placements[j].sprite.Part)
+		return zIndex(zmap, string(placements[i].sprite.Z)) > zIndex(zmap, string(placements[j].sprite.Z))
 	})
-	if placements[0].sprite.Part != "mysteryLayer" {
-		t.Fatalf("unknown layer should draw first (backmost); got first=%q", placements[0].sprite.Part)
+	if string(placements[0].sprite.Z) != "mysteryLayer" {
+		t.Fatalf("unknown layer should draw first (backmost); got first=%q", string(placements[0].sprite.Z))
 	}
-	if placements[len(placements)-1].sprite.Part != "face" {
-		t.Fatalf("frontmost mapped layer should draw last; got last=%q", placements[len(placements)-1].sprite.Part)
+	if string(placements[len(placements)-1].sprite.Z) != "face" {
+		t.Fatalf("frontmost mapped layer should draw last; got last=%q", string(placements[len(placements)-1].sprite.Z))
 	}
 }

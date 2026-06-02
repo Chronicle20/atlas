@@ -1,5 +1,10 @@
 package manifest
 
+import (
+	"bytes"
+	"encoding/json"
+)
+
 // Manifest is the schema-versioned JSON sidecar produced alongside a sprite
 // atlas PNG. PRD §6.2.
 //
@@ -41,14 +46,44 @@ type Sprite struct {
 	Rect    Rect             `json:"rect"`
 	Origin  Point            `json:"origin"`
 	Anchors map[string]Point `json:"anchors"`
-	// Z is a legacy numeric field. Character part z-order is NOT carried here:
-	// v83 Character.wz encodes draw order as a named layer string resolved via
-	// Base.wz/zmap.img, not a per-canvas integer, so this is 0 in practice.
-	// atlas-renders orders character parts by Part (the layer name) against the
-	// zmap.json sidecar — see renders/character/composite.go zIndex. Retained
-	// for wire compatibility with existing manifests; do not reintroduce as a
-	// sort key.
-	Z int `json:"z"`
+	// Z is the WZ render-layer label for this sprite — the value of the part
+	// canvas's `z` child (e.g. "weaponOverGlove", "armBelowHead"). It is the
+	// key atlas-renders resolves against Base.wz/zmap.img (zmap.json) for draw
+	// order and against smap.img (smap.json) for vslot occlusion.
+	//
+	// This is NOT the same as Part: Part is the canvas NAME (often generic,
+	// e.g. "weapon"), while Z is the specific render layer the sprite occupies
+	// (which varies by stance/frame). Sorting by Part instead of Z mislayers
+	// any part whose canvas name differs from its z-label.
+	Z ZOrder `json:"z"`
 }
 
-const SchemaVersion = 1
+// ZOrder is a WZ render-layer label (a zmap.img key). It is encoded as a JSON
+// string. UnmarshalJSON tolerates the legacy v1 schema, which stored a numeric
+// `z` (always 0, the dropped donor field): a JSON number decodes to "" rather
+// than failing, so atlas-renders can read not-yet-reingested manifests without
+// erroring (they simply fall back to insertion order until re-ingest).
+type ZOrder string
+
+func (z *ZOrder) UnmarshalJSON(b []byte) error {
+	b = bytes.TrimSpace(b)
+	if len(b) == 0 || string(b) == "null" {
+		*z = ""
+		return nil
+	}
+	if b[0] == '"' {
+		var s string
+		if err := json.Unmarshal(b, &s); err != nil {
+			return err
+		}
+		*z = ZOrder(s)
+		return nil
+	}
+	// Legacy numeric z (schema v1) carries no layer label.
+	*z = ""
+	return nil
+}
+
+// SchemaVersion 2 carries the string render-layer label in Sprite.Z (was a
+// dropped numeric in v1). atlas-renders reads both via ZOrder.UnmarshalJSON.
+const SchemaVersion = 2

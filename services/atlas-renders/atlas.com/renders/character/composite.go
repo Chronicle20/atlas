@@ -388,13 +388,15 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 	// 7. Sort by zmap render order. zmap is front-to-back (index 0 = most
 	//    frontward), so the back-most layer — highest index, and unknown
 	//    layers which zIndex maps to len(zmap) — must draw first. The sort key
-	//    is sprite.Part, the WZ canvas child name, which is the same
-	//    layer-name vocabulary zmap.img (and smap.img) are keyed on. When zmap
-	//    is empty (sidecar missing) every part resolves to index 0 and the
-	//    stable sort preserves insertion order. Donor:
-	//    characterimage/compositor.go:240-242.
+	//    is sprite.Z, the WZ render-layer label (e.g. "weaponOverGlove"), NOT
+	//    sprite.Part (the canvas name, often generic like "weapon"): the layer
+	//    a sprite occupies varies by stance/frame and is carried by the `z`
+	//    child, so keying on Part mislayers weapons/shields/etc. When zmap is
+	//    empty (sidecar missing) every part resolves to index 0 and the stable
+	//    sort preserves insertion order. Donor:
+	//    characterimage/compositor.go:240-242 (zIndex(zmap, meta.Z)).
 	sort.SliceStable(placements, func(i, j int) bool {
-		return zIndex(zmap, placements[i].sprite.Part) > zIndex(zmap, placements[j].sprite.Part)
+		return zIndex(zmap, string(placements[i].sprite.Z)) > zIndex(zmap, string(placements[j].sprite.Z))
 	})
 
 	// 8. Blit each placement at `(anchor - origin)` top-left, cropping the

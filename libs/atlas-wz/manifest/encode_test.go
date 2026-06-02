@@ -19,7 +19,7 @@ func TestMarshalSortsMapKeys(t *testing.T) {
 				"armor": {1, 2},
 				"head":  {3, 4},
 			},
-			Z: 1,
+			Z: "armBelowHead",
 		}},
 	}
 	a, err := Marshal(m)

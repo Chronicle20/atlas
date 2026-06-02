@@ -69,11 +69,11 @@ func TestApplyVslotOcclusionFullHelmet(t *testing.T) {
 		"body":          "Bd",
 	}
 	placed := []placement{
-		{templateID: 2000, sprite: manifest.Sprite{Part: "body"}},
-		{templateID: 1002357, sprite: manifest.Sprite{Part: "cap"}},
-		{templateID: 30030, sprite: manifest.Sprite{Part: "hair"}},
-		{templateID: 30030, sprite: manifest.Sprite{Part: "hairOverHead"}},
-		{templateID: 30030, sprite: manifest.Sprite{Part: "hairBelowBody"}},
+		{templateID: 2000, sprite: manifest.Sprite{Part: "body", Z: "body"}},
+		{templateID: 1002357, sprite: manifest.Sprite{Part: "cap", Z: "cap"}},
+		{templateID: 30030, sprite: manifest.Sprite{Part: "hair", Z: "hair"}},
+		{templateID: 30030, sprite: manifest.Sprite{Part: "hairOverHead", Z: "hairOverHead"}},
+		{templateID: 30030, sprite: manifest.Sprite{Part: "hairBelowBody", Z: "hairBelowBody"}},
 	}
 	owners := []vslotOwner{
 		{templateID: 1002357, vslot: "CpH1H2H3H4H5HfHsHbAe", kind: ownerEquipment},
@@ -105,10 +105,10 @@ func TestApplyVslotOcclusionBasicCap(t *testing.T) {
 		"hairBelowBody": "Hb",
 	}
 	placed := []placement{
-		{templateID: 1002069, sprite: manifest.Sprite{Part: "cap"}},
-		{templateID: 30020, sprite: manifest.Sprite{Part: "hair"}},
-		{templateID: 30020, sprite: manifest.Sprite{Part: "hairOverHead"}},
-		{templateID: 30020, sprite: manifest.Sprite{Part: "hairBelowBody"}},
+		{templateID: 1002069, sprite: manifest.Sprite{Part: "cap", Z: "cap"}},
+		{templateID: 30020, sprite: manifest.Sprite{Part: "hair", Z: "hair"}},
+		{templateID: 30020, sprite: manifest.Sprite{Part: "hairOverHead", Z: "hairOverHead"}},
+		{templateID: 30020, sprite: manifest.Sprite{Part: "hairBelowBody", Z: "hairBelowBody"}},
 	}
 	owners := []vslotOwner{
 		{templateID: 1002069, vslot: "CpH5", kind: ownerEquipment},
@@ -128,8 +128,8 @@ func TestApplyVslotOcclusionBasicCap(t *testing.T) {
 func TestApplyVslotOcclusionUnknownLayerKept(t *testing.T) {
 	smap := map[string]string{"body": "Bd"}
 	placed := []placement{
-		{templateID: 2000, sprite: manifest.Sprite{Part: "body"}},
-		{templateID: 2000, sprite: manifest.Sprite{Part: "arm"}}, // arm not in smap
+		{templateID: 2000, sprite: manifest.Sprite{Part: "body", Z: "body"}},
+		{templateID: 2000, sprite: manifest.Sprite{Part: "arm", Z: "arm"}}, // arm not in smap
 	}
 	owners := []vslotOwner{
 		{templateID: 2000, vslot: "Bd", kind: ownerBody},
@@ -146,8 +146,8 @@ func TestApplyVslotOcclusionUnknownLayerKept(t *testing.T) {
 // the smap sidecar is unavailable.
 func TestApplyVslotOcclusionEmptySmapNoOp(t *testing.T) {
 	placed := []placement{
-		{templateID: 2000, sprite: manifest.Sprite{Part: "body"}},
-		{templateID: 30030, sprite: manifest.Sprite{Part: "hair"}},
+		{templateID: 2000, sprite: manifest.Sprite{Part: "body", Z: "body"}},
+		{templateID: 30030, sprite: manifest.Sprite{Part: "hair", Z: "hair"}},
 	}
 	owners := []vslotOwner{
 		{templateID: 1002357, vslot: "CpH1", kind: ownerEquipment},

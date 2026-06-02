@@ -114,7 +114,7 @@ func TestExtractInfoBlock(t *testing.T) {
 func TestExtractPartMetadataParsesAnchors(t *testing.T) {
 	children := []property.Property{
 		property.NewVector("origin", 8, 32),
-		property.NewString("z", "2"),
+		property.NewString("z", "weaponOverGlove"),
 		property.NewSub("map", []property.Property{
 			property.NewVector("neck", 8, 0),
 			property.NewVector("navel", 8, 16),
@@ -124,8 +124,8 @@ func TestExtractPartMetadataParsesAnchors(t *testing.T) {
 	if origin != (image.Point{X: 8, Y: 32}) {
 		t.Errorf("origin = %+v", origin)
 	}
-	if z != 2 {
-		t.Errorf("z = %d, want 2", z)
+	if z != "weaponOverGlove" {
+		t.Errorf("z = %q, want %q", z, "weaponOverGlove")
 	}
 	if anchors["neck"] != (image.Point{X: 8, Y: 0}) {
 		t.Errorf("neck anchor = %+v", anchors["neck"])

@@ -31,6 +31,10 @@ type Caches struct {
 	// worker emits one smap.json per ingest; on read it's a near-singleton —
 	// a 16-entry cache covers multi-tenant deployments comfortably.
 	Smap *lru.Cache[string, map[string]string]
+	// Zmap caches the per-(scope, region, version) character-meta/zmap.json
+	// payload (ordered layer-name list = render order). Same cardinality and
+	// lifecycle as Smap — one payload per active tenant version.
+	Zmap *lru.Cache[string, []string]
 }
 
 // NewCaches allocates the four LRU caches. Sizes are tunables; the design
@@ -41,5 +45,6 @@ func NewCaches(atlasSize, mapSize, scopeSize int) *Caches {
 	m, _ := lru.New[string, MapEntry](mapSize)
 	s, _ := lru.New[string, string](scopeSize)
 	sm, _ := lru.New[string, map[string]string](16)
-	return &Caches{Atlas: a, Map: m, Scope: s, Smap: sm}
+	zm, _ := lru.New[string, []string](16)
+	return &Caches{Atlas: a, Map: m, Scope: s, Smap: sm, Zmap: zm}
 }

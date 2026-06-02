@@ -41,7 +41,14 @@ type Sprite struct {
 	Rect    Rect             `json:"rect"`
 	Origin  Point            `json:"origin"`
 	Anchors map[string]Point `json:"anchors"`
-	Z       int              `json:"z"`
+	// Z is a legacy numeric field. Character part z-order is NOT carried here:
+	// v83 Character.wz encodes draw order as a named layer string resolved via
+	// Base.wz/zmap.img, not a per-canvas integer, so this is 0 in practice.
+	// atlas-renders orders character parts by Part (the layer name) against the
+	// zmap.json sidecar — see renders/character/composite.go zIndex. Retained
+	// for wire compatibility with existing manifests; do not reintroduce as a
+	// sort key.
+	Z int `json:"z"`
 }
 
 const SchemaVersion = 1

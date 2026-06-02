@@ -19,9 +19,10 @@ var ErrZmapMissing = errors.New("charparts: zmap.img not found")
 // ExtractZmap reads Base.wz/zmap.img and returns the ordered list of layer
 // names. The order in the WZ IS the render order: it is front-to-back, so
 // index 0 is the most-frontward layer and the last entry is the most-backward.
-// atlas-renders resolves each part's layer name (manifest.Sprite.Part, which
-// is the WZ canvas child name — the same vocabulary smap.img is keyed on) to
-// its index here and draws back-most first.
+// atlas-renders resolves each sprite's render-layer label (manifest.Sprite.Z,
+// the canvas's `z` child — the same vocabulary smap.img is keyed on) to its
+// index here and draws back-most first. Note this is the `z` label, NOT the
+// canvas name (manifest.Sprite.Part), which is often generic (e.g. "weapon").
 //
 // Returns ErrZmapMissing if zmap.img cannot be located in the file's root.
 // Donor: services/atlas-wz-extractor/atlas.com/wz-extractor/image/zmap.go

@@ -183,8 +183,9 @@ func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client
 // emitZmapSidecar fetches Base.wz, calls charparts.ExtractZmap, and PUTs the
 // resulting ordered layer-name list as character-meta/zmap.json under the
 // worker's scope/region/version prefix. atlas-renders reads this sidecar to
-// resolve each character part's draw order (manifest.Sprite.Part → index into
-// this list). It lives next to smap.json (same character-meta dir, same
+// resolve each character sprite's draw order (manifest.Sprite.Z, the canvas
+// `z` label → index into this list). It lives next to smap.json (same
+// character-meta dir, same
 // Base.wz source vocabulary) and is emitted in the same best-effort manner.
 func emitZmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
 	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")

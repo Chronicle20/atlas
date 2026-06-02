@@ -37,8 +37,8 @@ type Caches struct {
 	Zmap *lru.Cache[string, []string]
 }
 
-// NewCaches allocates the four LRU caches. Sizes are tunables; the design
-// suggests 256/64/1024 for atlas/map/scope and a small 16 for smap (one
+// NewCaches allocates the LRU caches. Sizes are tunables; the design suggests
+// 256/64/1024 for atlas/map/scope and a small 16 each for smap and zmap (one
 // payload per active tenant version).
 func NewCaches(atlasSize, mapSize, scopeSize int) *Caches {
 	a, _ := lru.New[string, AtlasEntry](atlasSize)

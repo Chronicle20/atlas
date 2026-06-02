@@ -38,7 +38,7 @@ func TestZIndex(t *testing.T) {
 }
 
 // TestPlacementSortByZmap exercises the exact comparator Composite uses:
-// sort.SliceStable descending by zIndex(zmap, Part). zmap is front-to-back, so
+// sort.SliceStable descending by zIndex(zmap, sprite.Z). zmap is front-to-back, so
 // after the sort the back-most layer must be first (drawn first) and the
 // front-most layer last (drawn last, on top).
 func TestPlacementSortByZmap(t *testing.T) {

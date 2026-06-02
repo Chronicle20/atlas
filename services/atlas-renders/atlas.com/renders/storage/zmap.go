@@ -10,8 +10,9 @@ import (
 // GetZmap fetches the character-meta/zmap.json sidecar emitted by the
 // atlas-data Character worker. The zmap is an ordered list of layer names
 // (Base.wz/zmap.img declaration order = render order, front-to-back). The
-// character compositor resolves each part's layer name (manifest.Sprite.Part)
-// to its index in this list and draws back-most first.
+// character compositor resolves each sprite's render-layer label
+// (manifest.Sprite.Z, the canvas `z` child — NOT Part, the canvas name) to its
+// index in this list and draws back-most first.
 //
 // The key shape in MinIO mirrors smap.json (same character-meta dir):
 //

@@ -47,7 +47,10 @@ type SpriteInput struct {
 	Img     image.Image
 	Origin  image.Point
 	Anchors map[string]image.Point
-	Z       int
+	// Z is the WZ render-layer label (the canvas's `z` child, e.g.
+	// "weaponOverGlove") — the zmap/smap key, distinct from Part (the canvas
+	// name). See manifest.ZOrder.
+	Z string
 }
 
 // InfoSidecar mirrors the donor's templateInfo block. Vslot is the field
@@ -372,12 +375,19 @@ func decodePartSprite(f *wz.File, cp *property.CanvasProperty, stance string, fr
 }
 
 // extractPartMetadata harvests origin / anchor map / z from the children of a
-// canvas property. Donor: buildPartSidecar (character_parts.go:166-203). The
-// z string ("0".."10") is converted to an int so callers can sort directly.
-func extractPartMetadata(children []property.Property) (image.Point, map[string]image.Point, int) {
+// canvas property. Donor: buildPartSidecar (character_parts.go:166-203).
+//
+// The `z` child is a STRING render-layer label (e.g. "weaponOverGlove"), not a
+// number — it is a key into Base.wz/zmap.img. The donor stored it verbatim and
+// resolved it to an index at composite time; we do the same. (The earlier port
+// strconv.Atoi'd it, which always failed for a label string and silently
+// dropped z to 0, collapsing all character layering — fixed here.) Numeric z,
+// if it ever appears, is preserved as its decimal string; it simply won't
+// match a zmap label and sorts to the back.
+func extractPartMetadata(children []property.Property) (image.Point, map[string]image.Point, string) {
 	var origin image.Point
 	anchors := map[string]image.Point{}
-	z := 0
+	z := ""
 	for _, c := range children {
 		switch v := c.(type) {
 		case *property.VectorProperty:
@@ -386,17 +396,15 @@ func extractPartMetadata(children []property.Property) (image.Point, map[string]
 			}
 		case *property.StringProperty:
 			if v.Name() == "z" {
-				if n, err := strconv.Atoi(v.Value()); err == nil {
-					z = n
-				}
+				z = v.Value()
 			}
 		case *property.IntProperty:
 			if v.Name() == "z" {
-				z = int(v.Value())
+				z = strconv.Itoa(int(v.Value()))
 			}
 		case *property.ShortProperty:
 			if v.Name() == "z" {
-				z = int(v.Value())
+				z = strconv.Itoa(int(v.Value()))
 			}
 		case *property.SubProperty:
 			if v.Name() == "map" {

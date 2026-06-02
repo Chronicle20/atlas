@@ -14,7 +14,9 @@ type Input struct {
 	Img     image.Image
 	Origin  image.Point
 	Anchors map[string]image.Point
-	Z       int
+	// Z is the WZ render-layer label (zmap key), copied verbatim into
+	// manifest.Sprite.Z. See manifest.ZOrder.
+	Z string
 }
 
 // Pack lays sprites out using MaxRects with Best-Short-Side-Fit, grows the bin

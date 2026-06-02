@@ -13,10 +13,12 @@ import (
 // loadout hash. Equipment ids are sorted ascending so that input order does
 // not affect the hash.
 //
-// Ported verbatim from
-// services/atlas-wz-extractor/atlas.com/wz-extractor/characterrender/hash.go
-// so existing /api/wz/character/render/.../<hash>.png URLs continue to
-// resolve after the atlas-renders cutover.
+// Ported from the former atlas-wz-extractor characterrender package (removed
+// in the task-071 MinIO consolidation) so existing
+// /api/wz/character/render/.../<hash>.png URLs continue to resolve after the
+// atlas-renders cutover. LoadoutHash truncates to 16 hex chars; the atlas-ui
+// producer (characterRender.service.ts) and the nginx character-render route
+// (deploy/shared/routes.conf) must stay in lockstep with that length.
 func CanonicalLoadoutString(
 	tenant, region string,
 	majorVersion, minorVersion uint16,

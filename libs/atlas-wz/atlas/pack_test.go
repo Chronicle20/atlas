@@ -31,7 +31,7 @@ func makeSprites(seed int64) []Input {
 			Anchors: map[string]image.Point{
 				"neck": {X: w / 4, Y: h / 4},
 			},
-			Z: i % 4,
+			Z: nameOf(i),
 		}
 	}
 	return out

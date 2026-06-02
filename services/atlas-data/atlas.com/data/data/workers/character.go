@@ -99,6 +99,16 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 		l.WithError(err).Warn("smap sidecar emit failed; vslot-based occlusion will be disabled in atlas-renders")
 	}
 
+	// Cross-archive sidecar: Base.wz/zmap.img is the ordered layer-name list
+	// that drives character part z-ordering (which sprite draws in front of
+	// which). Without zmap.json downstream, atlas-renders cannot resolve a
+	// render order and falls back to insertion order — weapons, shields, and
+	// accessories then layer arbitrarily. Best-effort for the same reason as
+	// the smap sidecar (Base.wz absent in some test fixtures).
+	if err := emitZmapSidecar(ctx, l, mc, p); err != nil {
+		l.WithError(err).Warn("zmap sidecar emit failed; character z-ordering will fall back to insertion order in atlas-renders")
+	}
+
 	// Equipment icons. Character.wz holds equipment under subdirectories
 	// (Cap, Coat, Pants, Glove, Shield, Shoes, Weapon, Cape, Accessory,
 	// Ring, Pendant, Longcoat, Belt, Shoulder, Taming, …). Each per-id .img
@@ -167,6 +177,38 @@ func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client
 		return fmt.Errorf("put %s: %w", key, err)
 	}
 	l.Infof("Character smap sidecar emitted: key=%s entries=%d", key, len(smap))
+	return nil
+}
+
+// emitZmapSidecar fetches Base.wz, calls charparts.ExtractZmap, and PUTs the
+// resulting ordered layer-name list as character-meta/zmap.json under the
+// worker's scope/region/version prefix. atlas-renders reads this sidecar to
+// resolve each character sprite's draw order (manifest.Sprite.Z, the canvas
+// `z` label → index into this list). It lives next to smap.json (same
+// character-meta dir, same
+// Base.wz source vocabulary) and is emitted in the same best-effort manner.
+func emitZmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
+	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")
+	if err != nil {
+		return fmt.Errorf("fetch Base.wz: %w", err)
+	}
+	defer cleanup()
+
+	zmap, err := charparts.ExtractZmap(base)
+	if err != nil {
+		return fmt.Errorf("extract zmap: %w", err)
+	}
+
+	data, err := charparts.MarshalZmap(zmap)
+	if err != nil {
+		return fmt.Errorf("marshal zmap: %w", err)
+	}
+
+	key := fmt.Sprintf("%s/character-meta/zmap.json", minioAssetPrefix(p))
+	if err := putJSON(ctx, mc, key, data); err != nil {
+		return fmt.Errorf("put %s: %w", key, err)
+	}
+	l.Infof("Character zmap sidecar emitted: key=%s layers=%d", key, len(zmap))
 	return nil
 }
 

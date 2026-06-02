@@ -8,6 +8,7 @@ import (
 	"image/draw"
 	"image/png"
 	"sort"
+	"strings"
 
 	"atlas-renders/storage"
 
@@ -355,28 +356,47 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 		}
 	}
 
-	// 6. vslot/smap occlusion. Resolve the smap sidecar's scope and fetch
-	//    the layer-name → slot-codes map; if either step fails we log and
-	//    continue without occlusion (the visible regression is that bangs
-	//    paint over a full helmet, matching the pre-task baseline). Owners
-	//    must be sorted by precedence (equipment < hair < face < head <
-	//    body) before applyVslotOcclusion runs. Donor:
-	//    characterimage/compositor.go:232-235.
-	smapScope, scopeErr := s.ResolveSmapScope(ctx, tenantID, region, version)
+	// 6. Character-meta sidecars (smap + zmap). They are co-located under the
+	//    same scope and emitted together by the atlas-data Character worker,
+	//    so one scope probe serves both.
+	//    - smap drives vslot occlusion (a full helmet's slot claim suppresses
+	//      hair parts mapped to those codes). On failure we log and continue
+	//      without occlusion (bangs paint over a full helmet — pre-task
+	//      baseline). Owners must be precedence-sorted (equipment < hair <
+	//      face < head < body) before applyVslotOcclusion runs.
+	//    - zmap is the ordered layer list that drives part z-order in step 7.
+	//      On failure z-ordering falls back to insertion order.
+	//    Donor: characterimage/compositor.go:232-235.
+	var zmap []string
+	metaScope, scopeErr := s.ResolveSmapScope(ctx, tenantID, region, version)
 	if scopeErr != nil {
-		l.WithError(scopeErr).Warn("smap scope resolve failed; vslot occlusion disabled (full helmets will not hide bangs)")
-	} else if smap, smapErr := s.GetSmap(ctx, smapScope, region, version); smapErr != nil {
-		l.WithError(smapErr).Warn("smap fetch failed; vslot occlusion disabled (full helmets will not hide bangs)")
+		l.WithError(scopeErr).Warn("character-meta scope resolve failed; vslot occlusion and zmap z-ordering disabled")
 	} else {
-		sort.SliceStable(owners, func(i, j int) bool { return owners[i].kind < owners[j].kind })
-		placements = applyVslotOcclusion(placements, smap, owners)
+		if smap, smapErr := s.GetSmap(ctx, metaScope, region, version); smapErr != nil {
+			l.WithError(smapErr).Warn("smap fetch failed; vslot occlusion disabled (full helmets will not hide bangs)")
+		} else {
+			sort.SliceStable(owners, func(i, j int) bool { return owners[i].kind < owners[j].kind })
+			placements = applyVslotOcclusion(placements, smap, owners)
+		}
+		if zm, zmapErr := s.GetZmap(ctx, metaScope, region, version); zmapErr != nil {
+			l.WithError(zmapErr).Warn("zmap fetch failed; character z-ordering falls back to insertion order (weapons/shields/accessories may layer wrong)")
+		} else {
+			zmap = zm
+		}
 	}
 
-	// 7. Sort by Z descending so back-most renders first (lower atlases.Z =
-	//    more frontward per the donor's zmap convention). Donor:
-	//    characterimage/compositor.go:241-243.
+	// 7. Sort by zmap render order. zmap is front-to-back (index 0 = most
+	//    frontward), so the back-most layer — highest index, and unknown
+	//    layers which zIndex maps to len(zmap) — must draw first. The sort key
+	//    is sprite.Z, the WZ render-layer label (e.g. "weaponOverGlove"), NOT
+	//    sprite.Part (the canvas name, often generic like "weapon"): the layer
+	//    a sprite occupies varies by stance/frame and is carried by the `z`
+	//    child, so keying on Part mislayers weapons/shields/etc. When zmap is
+	//    empty (sidecar missing) every part resolves to index 0 and the stable
+	//    sort preserves insertion order. Donor:
+	//    characterimage/compositor.go:240-242 (zIndex(zmap, meta.Z)).
 	sort.SliceStable(placements, func(i, j int) bool {
-		return placements[i].sprite.Z > placements[j].sprite.Z
+		return zIndex(zmap, string(placements[i].sprite.Z)) > zIndex(zmap, string(placements[j].sprite.Z))
 	})
 
 	// 8. Blit each placement at `(anchor - origin)` top-left, cropping the
@@ -582,6 +602,23 @@ func fetchAtlas(ctx context.Context, s *storage.Storage, tenantID, region, versi
 		return nil, fmt.Errorf("resolve scope %s: %w", partClass, err)
 	}
 	return s.GetAtlas(ctx, scope, region, version, partClass, id)
+}
+
+// zIndex returns the render-order index of a layer name within zmap, matching
+// case-insensitively (shipped zmap.img entries are camelCase; the smap and
+// synthetic fixtures sometimes lower-case). zmap is front-to-back, so a lower
+// index is more frontward. Unknown layers return len(zmap) so an unmapped part
+// sorts to the back and never paints over a mapped one. An empty zmap maps
+// every layer to 0, collapsing the sort to insertion order (the graceful
+// fallback when the zmap.json sidecar is absent). Donor:
+// characterimage/compositor.go zIndex().
+func zIndex(zmap []string, layer string) int {
+	for i, name := range zmap {
+		if strings.EqualFold(name, layer) {
+			return i
+		}
+	}
+	return len(zmap)
 }
 
 // pickSprite returns the first manifest sprite matching (stance, frame, part)

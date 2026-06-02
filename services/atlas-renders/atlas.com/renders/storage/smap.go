@@ -19,10 +19,9 @@ import (
 //	<scope>/regions/<region>/versions/<version>/character-meta/smap.json
 //
 // Cached via Caches.Smap so re-renders avoid the round trip; the cache key
-// is "<scope>|<region>|<version>". A nil-valued cache hit means a previous
-// fetch concluded the sidecar is absent (we cache the negative result so
-// renders aren't held back by repeated 404 probes — see GetSmap docstring
-// in the caller wiring for fallback behaviour).
+// is "<scope>|<region>|<version>". Only successful fetches are cached; a miss
+// returns an error each call (no negative caching) so the sidecar is picked up
+// as soon as ingest publishes it.
 func (s *Storage) GetSmap(ctx context.Context, scope, region, version string) (map[string]string, error) {
 	cacheKey := scope + "|" + region + "|" + version
 	if entry, ok := s.Caches.Smap.Get(cacheKey); ok {

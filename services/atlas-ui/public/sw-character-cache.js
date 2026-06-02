@@ -3,7 +3,13 @@
  * Provides offline support for character images with intelligent cache management
  */
 
-const CACHE_NAME = 'atlas-character-images-v2-task071';
+// Bump this on any change that alters character render OUTPUT for an unchanged
+// URL (the loadout hash, and thus the URL, stays the same when only the
+// compositor changes). The `activate` handler deletes every
+// `atlas-character-images-*` cache that isn't the current CACHE_NAME, so a bump
+// transparently drops stale images for all clients on the next SW update.
+// v3: atlas-renders z-order fix (parts re-layered by true z-label) — PR #641.
+const CACHE_NAME = 'atlas-character-images-v3-zorder';
 const CHARACTER_API_PATH = '/api/assets/';
 const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_CACHE_SIZE = 100; // Maximum number of cached images
@@ -65,8 +71,12 @@ async function handleCharacterImageRequest(request) {
       }
     }
     
-    // Fetch from network
-    const networkResponse = await fetch(request);
+    // Fetch from network, bypassing the browser HTTP cache. Renders are served
+    // with `Cache-Control: immutable, max-age=86400`, so a plain fetch on a
+    // cache miss would just re-serve the browser's stale (pre-fix) copy. Using
+    // `cache: 'reload'` forces a revalidated network fetch so a re-rendered
+    // image actually reaches the SW cache.
+    const networkResponse = await fetch(request, { cache: 'reload' });
     
     if (networkResponse.ok) {
       // Clone the response for caching

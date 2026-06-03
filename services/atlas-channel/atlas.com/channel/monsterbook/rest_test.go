@@ -253,4 +253,7 @@ func TestGetCardsByCharacterId_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on 404, got nil")
 	}
+	if !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("expected requests.ErrNotFound, got %T: %v", err, err)
+	}
 }

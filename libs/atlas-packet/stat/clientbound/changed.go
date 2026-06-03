@@ -8,6 +8,7 @@ import (
 	constants "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,9 +42,14 @@ func (m Changed) String() string {
 	return fmt.Sprintf("exclRequestSent [%t], updates [%d]", m.exclRequestSent, len(m.updates))
 }
 
-func (m Changed) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Changed) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
+		t := tenant.MustFromContext(ctx)
+		// v95 widened HP/MaxHP/MP/MaxMP from int16 to int32 in
+		// GW_CharacterStat::DecodeChangeStat (mask bits 0x400/0x800/0x1000/0x2000).
+		v95Plus := t.Region() == "GMS" && t.MajorVersion() >= 95
+
 		w.WriteBool(m.exclRequestSent)
 
 		updates := make([]Update, len(m.updates))
@@ -65,8 +71,14 @@ func (m Changed) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 			switch u.Stat() {
 			case constants.TypeSkin, constants.TypeLevel:
 				w.WriteByte(byte(u.Value()))
+			case constants.TypeHp, constants.TypeMaxHp, constants.TypeMp, constants.TypeMaxMp:
+				if v95Plus {
+					w.WriteInt(uint32(u.Value()))
+				} else {
+					w.WriteInt16(int16(u.Value()))
+				}
 			case constants.TypeJob, constants.TypeStrength, constants.TypeDexterity, constants.TypeIntelligence, constants.TypeLuck,
-				constants.TypeHp, constants.TypeMaxHp, constants.TypeMp, constants.TypeMaxMp, constants.TypeAvailableAP, constants.TypeFame:
+				constants.TypeAvailableAP, constants.TypeFame:
 				w.WriteInt16(int16(u.Value()))
 			case constants.TypeAvailableSP:
 				w.WriteShort(uint16(u.Value()))
@@ -76,13 +88,23 @@ func (m Changed) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 				w.WriteLong(uint64(u.Value()))
 			}
 		}
+		// CWvsContext::OnStatChanged reads two trailing flag bytes after the stat
+		// block: bSecondaryStatChangedPoint then battle-recovery-info. The server
+		// leaves both unset (0). v95 IDA confirms both; gated to v95+ pending
+		// v83/v87/JMS verification in Phase 3.
 		w.WriteByte(0)
+		if v95Plus {
+			w.WriteByte(0)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *Changed) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Changed) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
+		v95Plus := t.Region() == "GMS" && t.MajorVersion() >= 95
+
 		m.exclRequestSent = r.ReadBool()
 		updateMask := r.ReadUint32()
 
@@ -100,8 +122,14 @@ func (m *Changed) Decode(l logrus.FieldLogger, _ context.Context) func(r *reques
 			switch st {
 			case constants.TypeSkin, constants.TypeLevel:
 				val = int64(r.ReadByte())
+			case constants.TypeHp, constants.TypeMaxHp, constants.TypeMp, constants.TypeMaxMp:
+				if v95Plus {
+					val = int64(r.ReadUint32())
+				} else {
+					val = int64(r.ReadInt16())
+				}
 			case constants.TypeJob, constants.TypeStrength, constants.TypeDexterity, constants.TypeIntelligence, constants.TypeLuck,
-				constants.TypeHp, constants.TypeMaxHp, constants.TypeMp, constants.TypeMaxMp, constants.TypeAvailableAP, constants.TypeFame:
+				constants.TypeAvailableAP, constants.TypeFame:
 				val = int64(r.ReadInt16())
 			case constants.TypeAvailableSP:
 				val = int64(r.ReadUint16())
@@ -114,7 +142,12 @@ func (m *Changed) Decode(l logrus.FieldLogger, _ context.Context) func(r *reques
 			}
 			m.updates = append(m.updates, Update{statType: st, value: val})
 		}
-		_ = r.ReadByte() // trailing zero
+		// Trailing flag bytes (see Encode): bSecondaryStatChangedPoint, then
+		// battle-recovery-info on v95+.
+		_ = r.ReadByte()
+		if v95Plus {
+			_ = r.ReadByte()
+		}
 	}
 }
 

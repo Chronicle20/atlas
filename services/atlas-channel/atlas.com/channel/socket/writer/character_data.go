@@ -89,6 +89,15 @@ func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.Character
 		})
 	}
 
+	// Monster book: cover + owned cards (empty when the decorator failed open).
+	cd.MonsterBook.CoverCardId = c.CoverCardId()
+	for _, mc := range c.MonsterBookCards() {
+		cd.MonsterBook.Cards = append(cd.MonsterBook.Cards, charpkt.MonsterBookCard{
+			CardId: mc.CardId(),
+			Level:  mc.Level(),
+		})
+	}
+
 	return cd
 }
 

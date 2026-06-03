@@ -1,11 +1,14 @@
 package character
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestCharacterDataMinimalRoundTrip(t *testing.T) {
@@ -121,5 +124,46 @@ func TestCharacterDataWithQuestsRoundTrip(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEncodeMonsterBook_Empty(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	w := response.NewWriter(l)
+	cd := CharacterData{}
+	cd.encodeMonsterBook(w)
+	got := w.Bytes()
+	// cover int(0) | mode byte(0) | count short(0) — byte-identical to the old stub.
+	want := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("empty book bytes = % x, want % x", got, want)
+	}
+}
+
+func TestEncodeMonsterBook_Populated(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	w := response.NewWriter(l)
+	cd := CharacterData{
+		MonsterBook: MonsterBookData{
+			CoverCardId: 2380001,
+			Cards: []MonsterBookCard{
+				{CardId: 2380005, Level: 2},
+				{CardId: 2382000, Level: 5},
+			},
+		},
+	}
+	cd.encodeMonsterBook(w)
+	got := w.Bytes()
+	// cover 2380001 (LE E1 50 24 00) | mode 00 | count 2 (02 00)
+	// | card 5 (05 00) lvl 2 (02) | card 2000 (D0 07) lvl 5 (05)
+	want := []byte{
+		0xE1, 0x50, 0x24, 0x00,
+		0x00,
+		0x02, 0x00,
+		0x05, 0x00, 0x02,
+		0xD0, 0x07, 0x05,
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("populated book bytes = % x, want % x", got, want)
 	}
 }

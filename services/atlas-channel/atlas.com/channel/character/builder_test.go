@@ -2,9 +2,12 @@ package character_test
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"errors"
 	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -229,5 +232,21 @@ func TestCloneModel_PreservesParty(t *testing.T) {
 	}
 	if cloned.Party().Id() != 99 {
 		t.Errorf("cloned.Party().Id() = %d, want 99", cloned.Party().Id())
+	}
+}
+
+func TestModel_MonsterBookCards(t *testing.T) {
+	cards := []monsterbook.Card{}
+	m := character.NewModelBuilder().SetId(7).SetMonsterBookCards(cards).MustBuild()
+	if got := m.MonsterBookCards(); len(got) != 0 {
+		t.Fatalf("expected empty cards, got %d", len(got))
+	}
+	// Setter on the model returns a clone carrying the new value.
+	m2 := m.SetCoverCardId(item.Id(2380001))
+	if m2.CoverCardId() != item.Id(2380001) {
+		t.Errorf("cover not threaded through clone")
+	}
+	if m2.Id() != 7 {
+		t.Errorf("id not preserved through clone: %d", m2.Id())
 	}
 }

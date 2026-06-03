@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
+	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
@@ -58,6 +59,7 @@ type modelBuilder struct {
 	quests             []quest.Model
 	party              party.Model
 	coverCardId        item.Id
+	monsterBookCards   []monsterbook.Card
 }
 
 // NewModelBuilder creates a new builder instance
@@ -106,6 +108,7 @@ func CloneModel(m Model) *modelBuilder {
 		quests:             m.quests,
 		party:              m.party,
 		coverCardId:        m.coverCardId,
+		monsterBookCards:   m.monsterBookCards,
 	}
 }
 
@@ -147,6 +150,10 @@ func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder      { b.skills 
 func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder      { b.quests = v; return b }
 func (b *modelBuilder) SetParty(v party.Model) *modelBuilder         { b.party = v; return b }
 func (b *modelBuilder) SetCoverCardId(v item.Id) *modelBuilder       { b.coverCardId = v; return b }
+func (b *modelBuilder) SetMonsterBookCards(v []monsterbook.Card) *modelBuilder {
+	b.monsterBookCards = v
+	return b
+}
 
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {
@@ -192,6 +199,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		quests:             b.quests,
 		party:              b.party,
 		coverCardId:        b.coverCardId,
+		monsterBookCards:   b.monsterBookCards,
 	}, nil
 }
 

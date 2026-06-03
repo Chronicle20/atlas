@@ -6,6 +6,7 @@ import (
 	"atlas-channel/compartment"
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
+	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
@@ -60,6 +61,7 @@ type Model struct {
 	quests             []quest.Model
 	party              party.Model
 	coverCardId        item.Id
+	monsterBookCards   []monsterbook.Card
 }
 
 func (m Model) Gm() bool {
@@ -356,4 +358,15 @@ func (m Model) CoverCardId() item.Id {
 // SetCoverCardId returns a clone of the model with coverCardId set.
 func (m Model) SetCoverCardId(v item.Id) Model {
 	return CloneModel(m).SetCoverCardId(v).MustBuild()
+}
+
+// MonsterBookCards returns the character's owned monster-book cards. Empty on an
+// undecorated model; populated by Processor.MonsterBookDecorator on success.
+func (m Model) MonsterBookCards() []monsterbook.Card {
+	return m.monsterBookCards
+}
+
+// SetMonsterBookCards returns a clone of the model with the card list set.
+func (m Model) SetMonsterBookCards(v []monsterbook.Card) Model {
+	return CloneModel(m).SetMonsterBookCards(v).MustBuild()
 }

@@ -232,6 +232,16 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ConfirmManage", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice":
 		return []candidate{{name: "FreeFormNotice", dir: csvpkg.DirClientbound}}
+
+	// --- quest bucket (task-069, sub-phase 2g) ---
+	case "CWvsContext::OnScriptProgressMessage":
+		return []candidate{{name: "ScriptProgress", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::ResignQuest#Action":
+		return []candidate{{name: "Action", dir: csvpkg.DirServerbound}}
+	case "CQuest::StartQuest#ActionScriptStart":
+		return []candidate{{name: "ActionScriptStart", dir: csvpkg.DirServerbound}}
+	case "CQuest::StartQuest#ActionScriptEnd":
+		return []candidate{{name: "ActionScriptEnd", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

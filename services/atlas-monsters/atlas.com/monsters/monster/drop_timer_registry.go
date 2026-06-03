@@ -2,7 +2,6 @@ package monster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -47,8 +46,14 @@ type storedDropTimer struct {
 	LastHitAtMs        int64       `json:"lastHitAtMs"`
 }
 
+// dropTimerSuffix returns the registry key suffix for a drop timer entry:
+// "<tenantId>:<uniqueId>" — identical to the tail of the old dropTimerKey.
+func dropTimerSuffix(t tenant.Model, uniqueId uint32) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), uniqueId)
+}
+
 type DropTimerRegistry struct {
-	client *goredis.Client
+	reg *atlasredis.Registry[string, storedDropTimer]
 }
 
 var dropTimerRegistry *DropTimerRegistry
@@ -56,7 +61,8 @@ var dropTimerOnce sync.Once
 
 func InitDropTimerRegistry(rc *goredis.Client) {
 	dropTimerOnce.Do(func() {
-		dropTimerRegistry = &DropTimerRegistry{client: rc}
+		reg := atlasredis.NewRegistry[string, storedDropTimer](rc, "drop-timer", func(s string) string { return s })
+		dropTimerRegistry = &DropTimerRegistry{reg: reg}
 	})
 }
 
@@ -64,12 +70,7 @@ func GetDropTimerRegistry() *DropTimerRegistry {
 	return dropTimerRegistry
 }
 
-func dropTimerKey(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("%s:drop-timer:%s:%d", atlasredis.KeyPrefix(), t.Id().String(), uniqueId)
-}
-
 func (r *DropTimerRegistry) Register(ctx context.Context, t tenant.Model, uniqueId uint32, e DropTimerEntry) {
-	key := dropTimerKey(t, uniqueId)
 	sd := storedDropTimer{
 		TenantId:           t.Id().String(),
 		TenantRegion:       t.Region(),
@@ -84,112 +85,37 @@ func (r *DropTimerRegistry) Register(ctx context.Context, t tenant.Model, unique
 		LastDropAtMs:       e.lastDropAt.UnixMilli(),
 		LastHitAtMs:        timeToMillis(e.lastHitAt),
 	}
-	data, err := json.Marshal(sd)
-	if err != nil {
-		return
-	}
-	r.client.Set(ctx, key, data, 0)
+	_ = r.reg.Put(ctx, dropTimerSuffix(t, uniqueId), sd)
 }
 
 func (r *DropTimerRegistry) Unregister(ctx context.Context, t tenant.Model, uniqueId uint32) {
-	key := dropTimerKey(t, uniqueId)
-	r.client.Del(ctx, key)
+	_ = r.reg.Remove(ctx, dropTimerSuffix(t, uniqueId))
 }
 
 func (r *DropTimerRegistry) RecordHit(ctx context.Context, t tenant.Model, uniqueId uint32, hitTime time.Time) {
-	key := dropTimerKey(t, uniqueId)
-	err := r.client.Watch(ctx, func(tx *goredis.Tx) error {
-		val, err := tx.Get(ctx, key).Result()
-		if err != nil {
-			return err
-		}
-		var sd storedDropTimer
-		if err := json.Unmarshal([]byte(val), &sd); err != nil {
-			return err
-		}
+	_, _ = r.reg.Update(ctx, dropTimerSuffix(t, uniqueId), func(sd storedDropTimer) storedDropTimer {
 		sd.LastHitAtMs = hitTime.UnixMilli()
-		data, err := json.Marshal(sd)
-		if err != nil {
-			return err
-		}
-		_, err = tx.TxPipelined(ctx, func(pipe goredis.Pipeliner) error {
-			pipe.Set(ctx, key, data, 0)
-			return nil
-		})
-		return err
-	}, key)
-	if err != nil {
-		return
-	}
+		return sd
+	})
 }
 
 func (r *DropTimerRegistry) UpdateLastDrop(ctx context.Context, t tenant.Model, uniqueId uint32, dropTime time.Time) {
-	key := dropTimerKey(t, uniqueId)
-	err := r.client.Watch(ctx, func(tx *goredis.Tx) error {
-		val, err := tx.Get(ctx, key).Result()
-		if err != nil {
-			return err
-		}
-		var sd storedDropTimer
-		if err := json.Unmarshal([]byte(val), &sd); err != nil {
-			return err
-		}
+	_, _ = r.reg.Update(ctx, dropTimerSuffix(t, uniqueId), func(sd storedDropTimer) storedDropTimer {
 		sd.LastDropAtMs = dropTime.UnixMilli()
-		data, err := json.Marshal(sd)
-		if err != nil {
-			return err
-		}
-		_, err = tx.TxPipelined(ctx, func(pipe goredis.Pipeliner) error {
-			pipe.Set(ctx, key, data, 0)
-			return nil
-		})
-		return err
-	}, key)
-	if err != nil {
-		return
-	}
+		return sd
+	})
 }
 
 func (r *DropTimerRegistry) GetAll(ctx context.Context) map[MonsterKey]DropTimerEntry {
 	result := make(map[MonsterKey]DropTimerEntry)
-	var cursor uint64
-	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, atlasredis.KeyPrefix()+":drop-timer:*", 100).Result()
-		if err != nil {
-			return result
-		}
-		if len(keys) > 0 {
-			pipe := r.client.Pipeline()
-			cmds := make([]*goredis.StringCmd, len(keys))
-			for i, k := range keys {
-				cmds[i] = pipe.Get(ctx, k)
-			}
-			_, err := pipe.Exec(ctx)
-			if err != nil && err != goredis.Nil {
-				cursor = nextCursor
-				if cursor == 0 {
-					break
-				}
-				continue
-			}
-			for _, cmd := range cmds {
-				val, err := cmd.Result()
-				if err != nil {
-					continue
-				}
-				var sd storedDropTimer
-				if err := json.Unmarshal([]byte(val), &sd); err != nil {
-					continue
-				}
-				t, entry := fromStoredDropTimer(sd)
-				mk := MonsterKey{Tenant: t, MonsterId: sd.UniqueId}
-				result[mk] = entry
-			}
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
+	items, err := r.reg.GetAll(ctx)
+	if err != nil {
+		return result
+	}
+	for _, sd := range items {
+		t, entry := fromStoredDropTimer(sd)
+		mk := MonsterKey{Tenant: t, MonsterId: sd.UniqueId}
+		result[mk] = entry
 	}
 	return result
 }

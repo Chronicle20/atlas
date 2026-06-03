@@ -210,6 +210,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-monster-book
+spec:
+  template:
+    spec:
+      containers:
+        - name: monster-book
+          env:
+            - name: DB_NAME
+              value: "atlas-monster-book-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-notes
 spec:
   template:

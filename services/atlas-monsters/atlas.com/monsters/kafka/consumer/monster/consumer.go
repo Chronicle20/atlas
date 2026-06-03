@@ -61,6 +61,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyFieldCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnFieldCommand))); err != nil {
+			return err
+		}
 		t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand))); err != nil {
 			return err
@@ -248,5 +251,24 @@ func handleUseSkillFieldCommand(l logrus.FieldLogger, ctx context.Context, c fie
 
 	for _, m := range monsters {
 		p.UseSkillGM(m.UniqueId(), c.Body.SkillId, c.Body.SkillLevel)
+	}
+}
+
+func handleSpawnFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[spawnFieldCommandBody]) {
+	if c.Type != CommandTypeSpawnField {
+		return
+	}
+
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	p := monster.NewProcessor(l, ctx)
+	_, err := p.Create(f, monster.RestModel{
+		MonsterId: c.Body.MonsterId,
+		X:         c.Body.X,
+		Y:         c.Body.Y,
+		Fh:        c.Body.Fh,
+		Team:      c.Body.Team,
+	})
+	if err != nil {
+		l.WithError(err).Errorf("SPAWN_FIELD failed for template [%d] in field [%s].", c.Body.MonsterId, f.Id())
 	}
 }

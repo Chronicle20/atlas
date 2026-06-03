@@ -24,46 +24,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type MockReader struct {
-	msg       kafka.Message
-	read      bool
-	committed []kafka.Message
-	mu        sync.Mutex
-}
-
-func (r *MockReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
-	if !r.read {
-		r.read = true
-		return r.msg, nil
-	}
-
-	<-ctx.Done()
-	return kafka.Message{}, ctx.Err()
-}
-
-func (r *MockReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.committed = append(r.committed, msgs...)
-	return nil
-}
-
-func (r *MockReader) Committed() []kafka.Message {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	result := make([]kafka.Message, len(r.committed))
-	copy(result, r.committed)
-	return result
-}
-
-func (r *MockReader) Close() error {
-	return nil
-}
-
-func SimpleMockReader(msg kafka.Message) *MockReader {
-	return &MockReader{msg: msg}
-}
-
 type MockSpan struct {
 	trace.Span
 	spanContext trace.SpanContext
@@ -153,7 +113,6 @@ func TestGracefulShutdown(t *testing.T) {
 	otel.SetTracerProvider(&MockTracerProvider{})
 
 	msgCh := make(chan kafka.Message, 1)
-	msgCh <- kafka.Message{Value: []byte("test")}
 
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
 		return &ChannelMockReader{msgCh: msgCh}
@@ -174,6 +133,11 @@ func TestGracefulShutdown(t *testing.T) {
 		handlerCompleted.Store(true)
 		return true, nil
 	})
+
+	// Deliver the message only after the handler is registered, otherwise
+	// the consumer can dispatch with an empty handler set and the test
+	// deadlocks on <-handlerStarted.
+	msgCh <- kafka.Message{Value: []byte("test")}
 
 	// Wait for handler to begin executing
 	<-handlerStarted
@@ -206,8 +170,9 @@ func TestSpanPropagation(t *testing.T) {
 		t.Fatalf("Unable to prepare headers for test.")
 	}
 
+	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
-		return SimpleMockReader(msg)
+		return reader
 	})
 
 	errChan := make(chan error)
@@ -227,6 +192,11 @@ func TestSpanPropagation(t *testing.T) {
 		errChan <- nil
 		return true, nil
 	})
+
+	// Deliver the message only after the handler is registered, otherwise
+	// the consumer can dispatch with an empty handler set and the test
+	// deadlocks on <-errChan.
+	reader.msgCh <- msg
 
 	err = <-errChan
 	if err != nil {
@@ -253,8 +223,9 @@ func TestTenantPropagation(t *testing.T) {
 		t.Fatalf("Unable to prepare headers for test.")
 	}
 
+	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
-		return SimpleMockReader(msg)
+		return reader
 	})
 
 	errChan := make(chan error)
@@ -275,6 +246,11 @@ func TestTenantPropagation(t *testing.T) {
 		return true, nil
 	})
 
+	// Deliver the message only after the handler is registered, otherwise
+	// the consumer can dispatch with an empty handler set and the test
+	// deadlocks on <-errChan.
+	reader.msgCh <- msg
+
 	err = <-errChan
 	if err != nil {
 		t.Fatal(err.Error())
@@ -289,7 +265,6 @@ func TestCommitAfterHandlerCompletes(t *testing.T) {
 	otel.SetTracerProvider(&MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
-	reader.msgCh <- kafka.Message{Value: []byte("commit-test")}
 
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
 		return reader
@@ -310,6 +285,11 @@ func TestCommitAfterHandlerCompletes(t *testing.T) {
 		close(handlerDone)
 		return true, nil
 	})
+
+	// Deliver the message only after the handler is registered, otherwise
+	// the consumer can dispatch with an empty handler set and the test
+	// deadlocks on <-handlerDone.
+	reader.msgCh <- kafka.Message{Value: []byte("commit-test")}
 
 	<-handlerDone
 	// Give the consumer loop time to commit after handler returns
@@ -335,7 +315,6 @@ func TestHandlerErrorPreventsCommit(t *testing.T) {
 	otel.SetTracerProvider(&MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
-	reader.msgCh <- kafka.Message{Value: []byte("error-test")}
 
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
 		return reader
@@ -352,6 +331,12 @@ func TestHandlerErrorPreventsCommit(t *testing.T) {
 		defer close(handlerDone)
 		return true, errors.New("handler failed")
 	})
+
+	// Deliver the message only after the handler is registered, otherwise
+	// the consumer can dispatch with an empty handler set, return success,
+	// and commit the message — making the assertion below pass for the wrong
+	// reason and masking real regressions.
+	reader.msgCh <- kafka.Message{Value: []byte("error-test")}
 
 	<-handlerDone
 	time.Sleep(50 * time.Millisecond)
@@ -373,8 +358,6 @@ func TestHandlerPanicPreventsCommit(t *testing.T) {
 	otel.SetTracerProvider(&MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 2)}
-	reader.msgCh <- kafka.Message{Value: []byte("panic-test")}
-	reader.msgCh <- kafka.Message{Value: []byte("after-panic")}
 
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
 		return reader
@@ -397,6 +380,13 @@ func TestHandlerPanicPreventsCommit(t *testing.T) {
 		close(secondHandlerDone)
 		return true, nil
 	})
+
+	// Deliver the messages only after the handler is registered, otherwise
+	// the consumer can dispatch the first message with an empty handler set,
+	// commit it (no panic), and break the post-condition that "panic-test"
+	// remains uncommitted.
+	reader.msgCh <- kafka.Message{Value: []byte("panic-test")}
+	reader.msgCh <- kafka.Message{Value: []byte("after-panic")}
 
 	<-secondHandlerDone
 	time.Sleep(50 * time.Millisecond)
@@ -644,7 +634,6 @@ func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 	otel.SetTracerProvider(&MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
-	reader.msgCh <- kafka.Message{Value: []byte("multi-handler-test")}
 
 	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
 		return reader
@@ -676,6 +665,11 @@ func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 		}()
 		return true, nil
 	})
+
+	// Deliver the message only after both handlers are registered, otherwise
+	// the consumer goroutine can fetch and dispatch with a partial (or empty)
+	// handler set, deadlocking on <-allDone.
+	reader.msgCh <- kafka.Message{Value: []byte("multi-handler-test")}
 
 	<-allDone
 	time.Sleep(50 * time.Millisecond)

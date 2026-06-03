@@ -1,0 +1,228 @@
+{
+  "data": {
+    "attributes": {
+      "duration": 1800,
+      "exit": 930000800,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Forest of Poison Fog Party Quest",
+      "questId": "forest_of_poison_fog_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 300030100,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 9300172,
+              "type": "monster_kill",
+              "value": 0
+            }
+          ],
+          "duration": 0,
+          "index": 0,
+          "mapIds": [
+            930000100
+          ],
+          "name": "Mouth of the Forest",
+          "properties": {
+            "killAll": true,
+            "monsters": [
+              9300172
+            ]
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001162,
+              "type": "item",
+              "value": 4
+            }
+          ],
+          "duration": 0,
+          "index": 1,
+          "mapIds": [
+            930000200
+          ],
+          "name": "Diluted Poison Collection",
+          "properties": {
+            "collectItemId": 4001162,
+            "concentratedPoisonId": 4001161,
+            "monsters": [
+              9300173
+            ],
+            "reactors": [
+              3002000,
+              3009000
+            ]
+          },
+          "rewards": [],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 2,
+          "mapIds": [
+            930000300
+          ],
+          "name": "Portal Maze",
+          "properties": {
+            "npcId": 2133001
+          },
+          "rewards": [],
+          "type": "warp_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001169,
+              "type": "item",
+              "value": 20
+            }
+          ],
+          "duration": 0,
+          "index": 3,
+          "mapIds": [
+            930000400
+          ],
+          "name": "Purification",
+          "properties": {
+            "marblesPerPlayer": 10,
+            "monsterMarble": 4001169,
+            "npcId": 2133001,
+            "poisonFlower": 9300175,
+            "purificationMarbles": 2270004,
+            "totalFlowersRequired": 20
+          },
+          "rewards": [],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001163,
+              "type": "item_count",
+              "value": 1
+            }
+          ],
+          "duration": 0,
+          "index": 4,
+          "mapIds": [
+            930000500
+          ],
+          "name": "Jump Quest",
+          "properties": {
+            "npcId": 2133004,
+            "purpleStoneId": 4001163,
+            "reactors": [
+              3002001,
+              3002002
+            ]
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 5,
+          "mapIds": [
+            930000600
+          ],
+          "name": "Boss Stage",
+          "properties": {
+            "bossMonsters": [
+              9300180,
+              9300181,
+              9300182
+            ],
+            "phases": 3,
+            "summonItemId": 4001163,
+            "summonReactor": 3001000
+          },
+          "rewards": [],
+          "type": "boss",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 6,
+          "mapIds": [
+            930000700
+          ],
+          "name": "Reward Stage",
+          "properties": {
+            "npcId": 2133001,
+            "rewardItemId": 4001198
+          },
+          "rewards": [
+            {
+              "amount": 52000,
+              "type": "experience"
+            },
+            {
+              "amount": 1,
+              "items": [
+                {
+                  "quantity": 1,
+                  "templateId": 4001198,
+                  "weight": 1
+                }
+              ],
+              "type": "item"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "930000100"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 4
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 45
+        },
+        {
+          "operator": "lte",
+          "referenceId": 0,
+          "type": "level_max",
+          "value": 55
+        }
+      ]
+    },
+    "id": "forest_of_poison_fog_pq",
+    "type": "party-quest-definition"
+  }
+}

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	invite2 "atlas-channel/kafka/message/invite"
+	"atlas-channel/listener"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -34,19 +35,24 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var handles []listener.HandlerHandle
 				t, _ = topic.EnvProvider(l)(invite2.EnvEventStatusTopic)()
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(sc, wp)))); err != nil {
-					return err
+				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(sc, wp)))); err != nil {
-					return err
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(sc, wp))))
+				if err != nil {
+					return nil, err
 				}
-				return nil
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				return handles, nil
 			}
 		}
 	}
@@ -70,7 +76,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 
 		var eventHandler model.Operator[session.Model]
 		if e.InviteType == invite.TypeParty {
-			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name())
+			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.ReferenceId), rc.Name(), uint32(rc.JobId()), uint32(rc.Level()))
 		} else if e.InviteType == invite.TypeBuddy {
 			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(uint32(e.Body.TargetId), uint32(e.ReferenceId), rc.Name())
 		} else if e.InviteType == invite.TypeGuild {
@@ -85,11 +91,11 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
-func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
-			return func(partyId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyInviteBody(partyId, originatorName))
+func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+			return func(partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyInviteBody(partyId, originatorName, originatorJobId, originatorLevel))
 			}
 		}
 	}

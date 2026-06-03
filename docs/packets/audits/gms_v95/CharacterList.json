@@ -386,12 +386,12 @@
     },
     {
       "Index": 42,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "AvatarLook::anPetID[2]",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 43,
@@ -404,21 +404,21 @@
     },
     {
       "Index": 44,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "rankEnabled / hasRank byte",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 45,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "worldRank",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 46,
@@ -440,12 +440,12 @@
     },
     {
       "Index": 48,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "jobRankMove",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 49,
@@ -458,30 +458,21 @@
     },
     {
       "Index": 50,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "m_nSlotCount",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 51,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "m_nBuyCharCount",
+      "IDAComment": "m_nSlotCount",
       "Verdict": 0,
       "Note": ""
     },
     {
-      "Index": 52,
-      "AtlasOp": 2,
+      "Index": 51,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 2,
+      "IDAComment": "m_nBuyCharCount",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
     }
   ],
   "Verdict": 2

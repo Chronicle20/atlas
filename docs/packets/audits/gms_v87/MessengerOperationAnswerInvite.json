@@ -1,0 +1,20 @@
+{
+  "WriterName": "MessengerOperationAnswerInvite",
+  "IDAName": "CUIMessenger::OnCreate",
+  "Address": "0x8b62ed",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/serverbound/operation_answer_invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "roomId",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

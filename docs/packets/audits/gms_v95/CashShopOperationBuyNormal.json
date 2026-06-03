@@ -1,0 +1,20 @@
+{
+  "WriterName": "CashShopOperationBuyNormal",
+  "IDAName": "CCashShop::OnBuyNormal",
+  "Address": "0x48f580",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_buy_normal.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nCommSN (serialNumber)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

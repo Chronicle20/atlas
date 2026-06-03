@@ -1,0 +1,410 @@
+{
+  "data": {
+    "attributes": {
+      "bonus": {
+        "duration": 0,
+        "entry": "manual",
+        "mapId": 103000805,
+        "properties": {
+          "npcId": 9020002
+        }
+      },
+      "duration": 1800,
+      "exit": 103000890,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Kerning City Party Quest",
+      "questId": "kerning_city_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 103000000,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001008,
+              "type": "item",
+              "value": 4
+            }
+          ],
+          "duration": 0,
+          "index": 0,
+          "mapIds": [
+            103000800
+          ],
+          "name": "Ligator Coupon Collection",
+          "properties": {
+            "amountsPerPlayer": [
+              8,
+              10,
+              15,
+              20,
+              25,
+              35
+            ],
+            "collectItemId": 4001007,
+            "npcId": 9020001,
+            "passItemId": 4001008
+          },
+          "rewards": [
+            {
+              "amount": 100,
+              "type": "experience"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 1,
+          "mapIds": [
+            103000801
+          ],
+          "name": "Vine Combination",
+          "properties": {
+            "combinationLength": 3,
+            "combinationRange": 4,
+            "npcId": 9020001
+          },
+          "rewards": [
+            {
+              "amount": 200,
+              "type": "experience"
+            }
+          ],
+          "type": "combination_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 2,
+          "mapIds": [
+            103000802
+          ],
+          "name": "Kitten Combination",
+          "properties": {
+            "combinationLength": 3,
+            "combinationRange": 5,
+            "npcId": 9020001
+          },
+          "rewards": [
+            {
+              "amount": 400,
+              "type": "experience"
+            }
+          ],
+          "type": "combination_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 3,
+          "mapIds": [
+            103000803
+          ],
+          "name": "Barrel Combination",
+          "properties": {
+            "combinationLength": 3,
+            "combinationRange": 6,
+            "npcId": 9020001
+          },
+          "rewards": [
+            {
+              "amount": 800,
+              "type": "experience"
+            }
+          ],
+          "type": "combination_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001008,
+              "type": "item",
+              "value": 10
+            }
+          ],
+          "duration": 0,
+          "index": 4,
+          "mapIds": [
+            103000804
+          ],
+          "name": "Boss Stage",
+          "properties": {
+            "bossMonsters": [
+              9300002,
+              9300000,
+              9300003
+            ],
+            "npcId": 9020001,
+            "passItemId": 4001008
+          },
+          "rewards": [
+            {
+              "amount": 1500,
+              "type": "experience"
+            },
+            {
+              "amount": 1,
+              "items": [
+                {
+                  "quantity": 1,
+                  "templateId": 2040505,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040514,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040502,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040002,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040602,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040402,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 2040802,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032009,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032004,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032005,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032006,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032007,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032010,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1032002,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1002026,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1002089,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 1002090,
+                  "weight": 1
+                },
+                {
+                  "quantity": 80,
+                  "templateId": 2000003,
+                  "weight": 1
+                },
+                {
+                  "quantity": 80,
+                  "templateId": 2000001,
+                  "weight": 1
+                },
+                {
+                  "quantity": 80,
+                  "templateId": 2000002,
+                  "weight": 1
+                },
+                {
+                  "quantity": 50,
+                  "templateId": 2000006,
+                  "weight": 1
+                },
+                {
+                  "quantity": 5,
+                  "templateId": 2022003,
+                  "weight": 1
+                },
+                {
+                  "quantity": 15,
+                  "templateId": 2022000,
+                  "weight": 1
+                },
+                {
+                  "quantity": 15,
+                  "templateId": 2000004,
+                  "weight": 1
+                },
+                {
+                  "quantity": 30,
+                  "templateId": 4003000,
+                  "weight": 1
+                },
+                {
+                  "quantity": 15,
+                  "templateId": 4010000,
+                  "weight": 1
+                },
+                {
+                  "quantity": 15,
+                  "templateId": 4010001,
+                  "weight": 1
+                },
+                {
+                  "quantity": 15,
+                  "templateId": 4010002,
+                  "weight": 1
+                },
+                {
+                  "quantity": 15,
+                  "templateId": 4010003,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4010004,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4010005,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4010006,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4010007,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020000,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020001,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020002,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020003,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020004,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020005,
+                  "weight": 1
+                },
+                {
+                  "quantity": 8,
+                  "templateId": 4020006,
+                  "weight": 1
+                },
+                {
+                  "quantity": 3,
+                  "templateId": 4020007,
+                  "weight": 1
+                },
+                {
+                  "quantity": 3,
+                  "templateId": 4020008,
+                  "weight": 1
+                }
+              ],
+              "type": "random_item"
+            }
+          ],
+          "type": "boss",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "103000800"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "eq",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 4
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 21
+        },
+        {
+          "operator": "lte",
+          "referenceId": 0,
+          "type": "level_max",
+          "value": 30
+        }
+      ]
+    },
+    "id": "kerning_city_pq",
+    "type": "party-quest-definition"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "WriterName": "BuddyError",
+  "IDAName": "CWvsContext::OnFriendResult#Error",
+  "Address": "0xad7ae5",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/error.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hasMsg flag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "error message string (only if hasMsg != 0)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

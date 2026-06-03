@@ -116,7 +116,7 @@ type SayImageConversationDetail struct {
 func (s *SayImageConversationDetail) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteInt(uint32(len(s.Images)))
+		w.WriteByte(byte(len(s.Images)))
 		for _, image := range s.Images {
 			w.WriteAsciiString(image)
 		}
@@ -268,7 +268,7 @@ func (a *AskMemberShopAvatarConversationDetail) Encode(l logrus.FieldLogger, _ c
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(a.Message)
-		w.WriteInt(uint32(len(a.Candidates)))
+		w.WriteByte(byte(len(a.Candidates)))
 		for _, candidate := range a.Candidates {
 			w.WriteInt(candidate)
 		}
@@ -346,7 +346,10 @@ func (a *AskSlideMenuConversationDetail) Encode(l logrus.FieldLogger, ctx contex
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// The leading slideDlgType int is present for GMS major>83 and for
+		// JMS185 (CScriptMan::OnAskSlideMenu -> sub_7E2A97@0x7e2a97 reads two
+		// leading Decode4s unconditionally). GMS v83 omits it (single Decode4).
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 			if a.Unknown {
 				w.WriteInt(1)
 			} else {

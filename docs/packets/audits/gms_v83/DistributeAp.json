@@ -1,0 +1,47 @@
+{
+  "WriterName": "DistributeAp",
+  "IDAName": "CWvsContext::SendAbilityUpRequest#DistributeAp",
+  "Address": "0xa23b3d",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/distribute_ap.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time())",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nValue (count of stat pairs = aStatUp-\u003ea[-1].nValue)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwStatFlag (stat flag for each pair)",
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nValue (amount for each stat pair)",
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
+    }
+  ],
+  "Verdict": 1
+}

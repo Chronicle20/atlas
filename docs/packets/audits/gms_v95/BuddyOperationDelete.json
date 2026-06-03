@@ -1,0 +1,29 @@
+{
+  "WriterName": "BuddyOperationDelete",
+  "IDAName": "CField::SendDeleteFriendMsg",
+  "Address": "0x52f170",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_delete.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op (=3, DELETE) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwFriendID — characterId of the buddy to remove",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

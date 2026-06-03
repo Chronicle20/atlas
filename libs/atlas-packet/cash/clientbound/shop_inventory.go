@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -57,12 +58,16 @@ func decodeCashInventoryItemSkipPadding(r *request.Reader) CashInventoryItem {
 	return item
 }
 
-// CashShopInventory - mode, items, storageSlots, characterSlots
+// CashShopInventory - mode, items, storageSlots, characterSlots. The trailing
+// buyCharacterCount + characterCount shorts are v95-only (absent in v83); they
+// are not constructor params and default to 0.
 type CashShopInventory struct {
-	mode           byte
-	items          []CashInventoryItem
-	storageSlots   uint16
-	characterSlots int16
+	mode               byte
+	items              []CashInventoryItem
+	storageSlots       uint16
+	characterSlots     int16
+	buyCharacterCount  int16 // v95-only (m_nBuyCharacterCount)
+	characterCount     int16 // v95-only (m_nCharacterCount)
 }
 
 func NewCashShopInventory(mode byte, items []CashInventoryItem, storageSlots uint16, characterSlots int16) CashShopInventory {
@@ -73,14 +78,17 @@ func (m CashShopInventory) Mode() byte                  { return m.mode }
 func (m CashShopInventory) Items() []CashInventoryItem   { return m.items }
 func (m CashShopInventory) StorageSlots() uint16         { return m.storageSlots }
 func (m CashShopInventory) CharacterSlots() int16        { return m.characterSlots }
+func (m CashShopInventory) BuyCharacterCount() int16     { return m.buyCharacterCount }
+func (m CashShopInventory) CharacterCount() int16        { return m.characterCount }
 func (m CashShopInventory) Operation() string            { return CashShopOperationWriter }
 
 func (m CashShopInventory) String() string {
 	return fmt.Sprintf("cash shop inventory items [%d]", len(m.items))
 }
 
-func (m CashShopInventory) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m CashShopInventory) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteShort(uint16(len(m.items)))
@@ -89,11 +97,16 @@ func (m CashShopInventory) Encode(l logrus.FieldLogger, _ context.Context) func(
 		}
 		w.WriteShort(m.storageSlots)
 		w.WriteInt16(m.characterSlots)
+		if cashInventoryHasExtraCounts(t) {
+			w.WriteInt16(m.buyCharacterCount)
+			w.WriteInt16(m.characterCount)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *CashShopInventory) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CashShopInventory) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		count := int(r.ReadUint16())
@@ -103,7 +116,20 @@ func (m *CashShopInventory) Decode(_ logrus.FieldLogger, _ context.Context) func
 		}
 		m.storageSlots = r.ReadUint16()
 		m.characterSlots = r.ReadInt16()
+		if cashInventoryHasExtraCounts(t) {
+			m.buyCharacterCount = r.ReadInt16()
+			m.characterCount = r.ReadInt16()
+		}
 	}
+}
+
+// cashInventoryHasExtraCounts reports whether the locker-load trailer carries the
+// two extra slot-counter shorts (m_nBuyCharacterCount + m_nCharacterCount) after
+// the trunk + character-slot shorts. Present from GMS v95 onward (v83 reads only
+// the first two) AND in JMS v185 — CCashShop::OnCashItemResLoadLockerDone@0x48bcff
+// reads four trailing Decode2 (this+288..291).
+func cashInventoryHasExtraCounts(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS"
 }
 
 // CashShopPurchaseSuccess - mode, item

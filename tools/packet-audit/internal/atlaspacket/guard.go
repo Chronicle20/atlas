@@ -25,8 +25,13 @@ type GuardExpr struct {
 // Eval evaluates the guard against a GuardContext.
 func (g *GuardExpr) Eval(c GuardContext) bool { return g.eval(c) }
 
-// String returns the original source text of the guard.
-func (g *GuardExpr) String() string { return g.text }
+// String returns the original source text of the guard, or "" for a nil receiver.
+func (g *GuardExpr) String() string {
+	if g == nil {
+		return ""
+	}
+	return g.text
+}
 
 // ParseGuard parses a Go expression string into a GuardExpr that can be evaluated
 // against a GuardContext. Supports:

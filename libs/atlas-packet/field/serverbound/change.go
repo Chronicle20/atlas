@@ -59,7 +59,10 @@ func (m Change) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		w.WriteByte(m.fieldKey)
 		w.WriteInt(m.targetId)
 		w.WriteAsciiString(m.portalName)
-		if len(m.portalName) == 0 {
+		// v95 client (CField::SendTransferFieldRequest @0x5345c0) emits the
+		// target x/y only when a portal name is supplied (sPortal != NULL); the
+		// null-portal Revive path sends an empty name and no coordinates.
+		if len(m.portalName) != 0 {
 			w.WriteInt16(m.x)
 			w.WriteInt16(m.y)
 		}
@@ -86,7 +89,9 @@ func (m *Change) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 		m.fieldKey = r.ReadByte()
 		m.targetId = r.ReadUint32()
 		m.portalName = r.ReadAsciiString()
-		if len(m.portalName) == 0 {
+		// v95 client encodes x/y only alongside a non-empty portal name; see
+		// CField::SendTransferFieldRequest @0x5345c0 (test ebx,ebx / jz @0x5346d9).
+		if len(m.portalName) != 0 {
 			m.x = r.ReadInt16()
 			m.y = r.ReadInt16()
 		}

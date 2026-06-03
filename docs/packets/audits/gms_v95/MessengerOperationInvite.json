@@ -1,0 +1,20 @@
+{
+  "WriterName": "MessengerOperationInvite",
+  "IDAName": "CUIMessenger::SendInviteMsg",
+  "Address": "0x7f5820",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/messenger/serverbound/operation_invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sTarget — target character name to invite; op byte (=3) stripped by atlas Operation dispatcher",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

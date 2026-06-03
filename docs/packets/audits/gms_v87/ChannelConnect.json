@@ -3,7 +3,7 @@
   "IDAName": "CClientSocket::OnConnect#ChannelConnect",
   "Address": "0x4a6e5a",
   "Variant": "GMS/v87",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/socket/serverbound/channel_connect.go",
   "Rows": [
     {

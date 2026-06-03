@@ -26,7 +26,7 @@ spec:
         - name: ban
           env:
             - name: DB_NAME
-              value: "atlas-ban-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-bans-PLACEHOLDER_ATLAS_ENV"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -209,6 +209,19 @@ spec:
           env:
             - name: DB_NAME
               value: "atlas-merchant-PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-monster-book
+spec:
+  template:
+    spec:
+      containers:
+        - name: monster-book
+          env:
+            - name: DB_NAME
+              value: "atlas-monster-book-PLACEHOLDER_ATLAS_ENV"
 ---
 apiVersion: apps/v1
 kind: Deployment

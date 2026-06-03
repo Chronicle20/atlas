@@ -1,0 +1,2577 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2040020,
+      "startState": "mainMenu",
+      "states": [
+        {
+          "id": "mainMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "explainStimulator",
+                "text": "What's a stimulator?"
+              },
+              {
+                "nextState": "warriorGloves",
+                "text": "Create a Warrior glove"
+              },
+              {
+                "nextState": "bowmanGloves",
+                "text": "Create a Bowman glove"
+              },
+              {
+                "nextState": "magicianGloves",
+                "text": "Create a Magician glove"
+              },
+              {
+                "nextState": "thiefGloves",
+                "text": "Create a Thief glove"
+              },
+              {
+                "nextState": "warriorGlovesStim",
+                "text": "Create a Warrior glove with a Stimulator"
+              },
+              {
+                "nextState": "bowmanGlovesStim",
+                "text": "Create a Bowman glove with a Stimulator"
+              },
+              {
+                "nextState": "magicianGlovesStim",
+                "text": "Create a Magician glove with a Stimulator"
+              },
+              {
+                "nextState": "thiefGlovesStim",
+                "text": "Create a Thief glove with a Stimulator"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Hello, and welcome to the Ludibrium Glove Store. How can I help you today?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "A stimulator is a special potion that I can add into the process of creating certain items. It gives it stats as though it had dropped from a monster. However, it is possible to have no change, and it is also possible for the item to be below average. There's also a 10% chance of not getting any item when using a stimulator, so please choose wisely."
+          },
+          "id": "explainStimulator",
+          "type": "dialogue"
+        },
+        {
+          "id": "warriorGloves",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmWarrior0",
+                "text": "Bronze Missel#k - Warrior Lv. 30#b"
+              },
+              {
+                "nextState": "confirmWarrior1",
+                "text": "Steel Briggon#k - Warrior Lv. 35#b"
+              },
+              {
+                "nextState": "confirmWarrior2",
+                "text": "Iron Knuckle#k - Warrior Lv. 40#b"
+              },
+              {
+                "nextState": "confirmWarrior3",
+                "text": "Steel Brist#k - Warrior Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Warrior glove? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarrior0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082007#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# 3 #t4011000#\r\n#i4011001# 2 #t4011001#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 18000 meso"
+          },
+          "id": "confirmWarrior0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082007",
+            "materials": [
+              4011000,
+              4011001,
+              4003000
+            ],
+            "mesoCost": 18000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              2,
+              15
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftWarrior0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarrior1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082008#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 30 #t4000021#\r\n#i4011001# 4 #t4011001#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 27000 meso"
+          },
+          "id": "confirmWarrior1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082008",
+            "materials": [
+              4000021,
+              4011001,
+              4003000
+            ],
+            "mesoCost": 27000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              30,
+              4,
+              15
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftWarrior1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarrior2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082023#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 50 #t4000021#\r\n#i4011001# 5 #t4011001#\r\n#i4003000# 40 #t4003000#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmWarrior2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082023",
+            "materials": [
+              4000021,
+              4011001,
+              4003000
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              50,
+              5,
+              40
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftWarrior2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarrior3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082009#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 3 #t4011001#\r\n#i4021007# 2 #t4021007#\r\n#i4000030# 30 #t4000030#\r\n#i4003000# 45 #t4003000#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmWarrior3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082009",
+            "materials": [
+              4011001,
+              4021007,
+              4000030,
+              4003000
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              2,
+              30,
+              45
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftWarrior3",
+          "type": "craftAction"
+        },
+        {
+          "id": "bowmanGloves",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmBowman0",
+                "text": "Brown Marker#k - Bowman Lv. 30#b"
+              },
+              {
+                "nextState": "confirmBowman1",
+                "text": "Bronze Scaler#k - Bowman Lv. 35#b"
+              },
+              {
+                "nextState": "confirmBowman2",
+                "text": "Aqua Brace#k - Bowman Lv. 40#b"
+              },
+              {
+                "nextState": "confirmBowman3",
+                "text": "Blue Willow#k - Bowman Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Bowman glove? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowman0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082048#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 50 #t4000021#\r\n#i4011006# 2 #t4011006#\r\n#i4021001# 1 #t4021001#\r\n#i4031138# 18000 meso"
+          },
+          "id": "confirmBowman0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082048",
+            "materials": [
+              4000021,
+              4011006,
+              4021001
+            ],
+            "mesoCost": 18000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              50,
+              2,
+              1
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftBowman0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowman1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082068#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011000# 1 #t4011000#\r\n#i4011001# 3 #t4011001#\r\n#i4000021# 60 #t4000021#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 27000 meso"
+          },
+          "id": "confirmBowman1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082068",
+            "materials": [
+              4011000,
+              4011001,
+              4000021,
+              4003000
+            ],
+            "mesoCost": 27000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3,
+              60,
+              15
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftBowman1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowman2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082071#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 3 #t4011001#\r\n#i4021000# 1 #t4021000#\r\n#i4021002# 3 #t4021002#\r\n#i4000021# 80 #t4000021#\r\n#i4003000# 25 #t4003000#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmBowman2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082071",
+            "materials": [
+              4011001,
+              4021000,
+              4021002,
+              4000021,
+              4003000
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              1,
+              3,
+              80,
+              25
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftBowman2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowman3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082084#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011004# 3 #t4011004#\r\n#i4011006# 1 #t4011006#\r\n#i4021002# 2 #t4021002#\r\n#i4000030# 40 #t4000030#\r\n#i4003000# 35 #t4003000#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmBowman3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082084",
+            "materials": [
+              4011004,
+              4011006,
+              4021002,
+              4000030,
+              4003000
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              1,
+              2,
+              40,
+              35
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftBowman3",
+          "type": "craftAction"
+        },
+        {
+          "id": "magicianGloves",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmMagician0",
+                "text": "Red Lutia#k - Magician Lv. 30#b"
+              },
+              {
+                "nextState": "confirmMagician1",
+                "text": "Red Noel#k - Magician Lv. 35#b"
+              },
+              {
+                "nextState": "confirmMagician2",
+                "text": "Red Arten#k - Magician Lv. 40#b"
+              },
+              {
+                "nextState": "confirmMagician3",
+                "text": "Red Pennance#k - Magician Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Magician glove? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagician0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082051#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 60 #t4000021#\r\n#i4021006# 1 #t4021006#\r\n#i4021000# 2 #t4021000#\r\n#i4031138# 22500 meso"
+          },
+          "id": "confirmMagician0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082051",
+            "materials": [
+              4000021,
+              4021006,
+              4021000
+            ],
+            "mesoCost": 22500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              60,
+              1,
+              2
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftMagician0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagician1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082054#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 70 #t4000021#\r\n#i4011006# 1 #t4011006#\r\n#i4011001# 3 #t4011001#\r\n#i4021000# 2 #t4021000#\r\n#i4031138# 27000 meso"
+          },
+          "id": "confirmMagician1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082054",
+            "materials": [
+              4000021,
+              4011006,
+              4011001,
+              4021000
+            ],
+            "mesoCost": 27000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              70,
+              1,
+              3,
+              2
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftMagician1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagician2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082062#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4000021# 80 #t4000021#\r\n#i4021000# 3 #t4021000#\r\n#i4021006# 3 #t4021006#\r\n#i4003000# 30 #t4003000#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmMagician2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082062",
+            "materials": [
+              4000021,
+              4021000,
+              4021006,
+              4003000
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              80,
+              3,
+              3,
+              30
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftMagician2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagician3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082081#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021000# 3 #t4021000#\r\n#i4011006# 2 #t4011006#\r\n#i4000030# 35 #t4000030#\r\n#i4003000# 40 #t4003000#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmMagician3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082081",
+            "materials": [
+              4021000,
+              4011006,
+              4000030,
+              4003000
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              2,
+              35,
+              40
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftMagician3",
+          "type": "craftAction"
+        },
+        {
+          "id": "thiefGloves",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmThief0",
+                "text": "Steel Sylvia#k - Thief Lv. 30#b"
+              },
+              {
+                "nextState": "confirmThief1",
+                "text": "Steel Arbion#k - Thief Lv. 35#b"
+              },
+              {
+                "nextState": "confirmThief2",
+                "text": "Red Cleave#k - Thief Lv. 40#b"
+              },
+              {
+                "nextState": "confirmThief3",
+                "text": "Blue Moon Glove#k - Thief Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Thief glove? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThief0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082042#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 2 #t4011001#\r\n#i4000021# 50 #t4000021#\r\n#i4003000# 10 #t4003000#\r\n#i4031138# 22500 meso"
+          },
+          "id": "confirmThief0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082042",
+            "materials": [
+              4011001,
+              4000021,
+              4003000
+            ],
+            "mesoCost": 22500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              2,
+              50,
+              10
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftThief0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThief1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082046#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4011001# 3 #t4011001#\r\n#i4011000# 1 #t4011000#\r\n#i4000021# 60 #t4000021#\r\n#i4003000# 15 #t4003000#\r\n#i4031138# 27000 meso"
+          },
+          "id": "confirmThief1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082046",
+            "materials": [
+              4011001,
+              4011000,
+              4000021,
+              4003000
+            ],
+            "mesoCost": 27000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              1,
+              60,
+              15
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftThief1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThief2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082075#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021000# 3 #t4021000#\r\n#i4000101# 100 #t4000101#\r\n#i4000021# 80 #t4000021#\r\n#i4003000# 30 #t4003000#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmThief2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082075",
+            "materials": [
+              4021000,
+              4000101,
+              4000021,
+              4003000
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              100,
+              80,
+              30
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftThief2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThief3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082065#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4021005# 3 #t4021005#\r\n#i4021008# 1 #t4021008#\r\n#i4000030# 40 #t4000030#\r\n#i4003000# 30 #t4003000#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmThief3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082065",
+            "materials": [
+              4021005,
+              4021008,
+              4000030,
+              4003000
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              3,
+              1,
+              40,
+              30
+            ],
+            "successState": "craftSuccess"
+          },
+          "id": "craftThief3",
+          "type": "craftAction"
+        },
+        {
+          "id": "warriorGlovesStim",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmWarriorStim0",
+                "text": "Steel Missel#k - Warrior Lv. 30#b"
+              },
+              {
+                "nextState": "confirmWarriorStim1",
+                "text": "Orihalcon Missel#k - Warrior Lv. 30#b"
+              },
+              {
+                "nextState": "confirmWarriorStim2",
+                "text": "Yellow Briggon#k - Warrior Lv. 35#b"
+              },
+              {
+                "nextState": "confirmWarriorStim3",
+                "text": "Dark Briggon#k - Warrior Lv. 35#b"
+              },
+              {
+                "nextState": "confirmWarriorStim4",
+                "text": "Adamantium Knuckle#k - Warrior Lv. 40#b"
+              },
+              {
+                "nextState": "confirmWarriorStim5",
+                "text": "Dark Knuckle#k - Warrior Lv. 40#b"
+              },
+              {
+                "nextState": "confirmWarriorStim6",
+                "text": "Mithril Brist#k - Warrior Lv. 50#b"
+              },
+              {
+                "nextState": "confirmWarriorStim7",
+                "text": "Gold Brist#k - Warrior Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Warrior glove with a stimulator? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082005#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082007# 1 #t1082007#\r\n#i4011001# 1 #t4011001#\r\n#i4031138# 18000 meso"
+          },
+          "id": "confirmWarriorStim0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082005",
+            "materials": [
+              1082007,
+              4011001
+            ],
+            "mesoCost": 18000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082006#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082007# 1 #t1082007#\r\n#i4011005# 2 #t4011005#\r\n#i4031138# 22500 meso"
+          },
+          "id": "confirmWarriorStim1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082006",
+            "materials": [
+              1082007,
+              4011005
+            ],
+            "mesoCost": 22500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082035#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082008# 1 #t1082008#\r\n#i4021006# 3 #t4021006#\r\n#i4031138# 27000 meso"
+          },
+          "id": "confirmWarriorStim2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082035",
+            "materials": [
+              1082008,
+              4021006
+            ],
+            "mesoCost": 27000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082036#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082008# 1 #t1082008#\r\n#i4021008# 1 #t4021008#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmWarriorStim3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082036",
+            "materials": [
+              1082008,
+              4021008
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim3",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim4",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082024#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082023# 1 #t1082023#\r\n#i4011003# 4 #t4011003#\r\n#i4031138# 40500 meso"
+          },
+          "id": "confirmWarriorStim4",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082024",
+            "materials": [
+              1082023,
+              4011003
+            ],
+            "mesoCost": 40500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              4
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim4",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim5",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082025#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082023# 1 #t1082023#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmWarriorStim5",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082025",
+            "materials": [
+              1082023,
+              4021008
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim5",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim6",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082010#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082009# 1 #t1082009#\r\n#i4011002# 5 #t4011002#\r\n#i4031138# 49500 meso"
+          },
+          "id": "confirmWarriorStim6",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082010",
+            "materials": [
+              1082009,
+              4011002
+            ],
+            "mesoCost": 49500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              5
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim6",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftWarriorStim7",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082011#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082009# 1 #t1082009#\r\n#i4011006# 4 #t4011006#\r\n#i4031138# 54000 meso"
+          },
+          "id": "confirmWarriorStim7",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082011",
+            "materials": [
+              1082009,
+              4011006
+            ],
+            "mesoCost": 54000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              4
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftWarriorStim7",
+          "type": "craftAction"
+        },
+        {
+          "id": "bowmanGlovesStim",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmBowmanStim0",
+                "text": "Green Marker#k - Bowman Lv. 30#b"
+              },
+              {
+                "nextState": "confirmBowmanStim1",
+                "text": "Black Marker#k - Bowman Lv. 30#b"
+              },
+              {
+                "nextState": "confirmBowmanStim2",
+                "text": "Mithril Scaler#k - Bowman Lv. 35#b"
+              },
+              {
+                "nextState": "confirmBowmanStim3",
+                "text": "Gold Scaler#k - Bowman Lv. 35#b"
+              },
+              {
+                "nextState": "confirmBowmanStim4",
+                "text": "Gold Brace#k - Bowman Lv. 40#b"
+              },
+              {
+                "nextState": "confirmBowmanStim5",
+                "text": "Dark Brace#k - Bowman Lv. 40#b"
+              },
+              {
+                "nextState": "confirmBowmanStim6",
+                "text": "Red Willow#k - Bowman Lv. 50#b"
+              },
+              {
+                "nextState": "confirmBowmanStim7",
+                "text": "Dark Willow#k - Bowman Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Bowman glove with a stimulator? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082049#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082048# 1 #t1082048#\r\n#i4021003# 3 #t4021003#\r\n#i4031138# 13500 meso"
+          },
+          "id": "confirmBowmanStim0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082049",
+            "materials": [
+              1082048,
+              4021003
+            ],
+            "mesoCost": 13500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082050#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082048# 1 #t1082048#\r\n#i4021008# 1 #t4021008#\r\n#i4031138# 18000 meso"
+          },
+          "id": "confirmBowmanStim1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082050",
+            "materials": [
+              1082048,
+              4021008
+            ],
+            "mesoCost": 18000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082069#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082068# 1 #t1082068#\r\n#i4011002# 4 #t4011002#\r\n#i4031138# 19800 meso"
+          },
+          "id": "confirmBowmanStim2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082069",
+            "materials": [
+              1082068,
+              4011002
+            ],
+            "mesoCost": 19800,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              4
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082070#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082068# 1 #t1082068#\r\n#i4011006# 2 #t4011006#\r\n#i4031138# 22500 meso"
+          },
+          "id": "confirmBowmanStim3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082070",
+            "materials": [
+              1082068,
+              4011006
+            ],
+            "mesoCost": 22500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim3",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim4",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082072#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082071# 1 #t1082071#\r\n#i4011006# 4 #t4011006#\r\n#i4031138# 27000 meso"
+          },
+          "id": "confirmBowmanStim4",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082072",
+            "materials": [
+              1082071,
+              4011006
+            ],
+            "mesoCost": 27000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              4
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim4",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim5",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082073#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082071# 1 #t1082071#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmBowmanStim5",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082073",
+            "materials": [
+              1082071,
+              4021008
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim5",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim6",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082085#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082084# 1 #t1082084#\r\n#i4011000# 1 #t4011000#\r\n#i4021000# 5 #t4021000#\r\n#i4031138# 49500 meso"
+          },
+          "id": "confirmBowmanStim6",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082085",
+            "materials": [
+              1082084,
+              4011000,
+              4021000
+            ],
+            "mesoCost": 49500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1,
+              5
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim6",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftBowmanStim7",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082083#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082084# 1 #t1082084#\r\n#i4011006# 2 #t4011006#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 54000 meso"
+          },
+          "id": "confirmBowmanStim7",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082083",
+            "materials": [
+              1082084,
+              4011006,
+              4021008
+            ],
+            "mesoCost": 54000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftBowmanStim7",
+          "type": "craftAction"
+        },
+        {
+          "id": "magicianGlovesStim",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmMagicianStim0",
+                "text": "Blue Lutia#k - Magician Lv. 30#b"
+              },
+              {
+                "nextState": "confirmMagicianStim1",
+                "text": "Black Lutia#k - Magician Lv. 30#b"
+              },
+              {
+                "nextState": "confirmMagicianStim2",
+                "text": "Blue Noel#k - Magician Lv. 35#b"
+              },
+              {
+                "nextState": "confirmMagicianStim3",
+                "text": "Dark Noel#k - Magician Lv. 35#b"
+              },
+              {
+                "nextState": "confirmMagicianStim4",
+                "text": "Blue Arten#k - Magician Lv. 40#b"
+              },
+              {
+                "nextState": "confirmMagicianStim5",
+                "text": "Dark Arten#k - Magician Lv. 40#b"
+              },
+              {
+                "nextState": "confirmMagicianStim6",
+                "text": "Blue Pennance#k - Magician Lv. 50#b"
+              },
+              {
+                "nextState": "confirmMagicianStim7",
+                "text": "Dark Pennance#k - Magician Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Magician glove with a stimulator? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082052#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082051# 1 #t1082051#\r\n#i4021005# 3 #t4021005#\r\n#i4031138# 31500 meso"
+          },
+          "id": "confirmMagicianStim0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082052",
+            "materials": [
+              1082051,
+              4021005
+            ],
+            "mesoCost": 31500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082053#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082051# 1 #t1082051#\r\n#i4021008# 1 #t4021008#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmMagicianStim1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082053",
+            "materials": [
+              1082051,
+              4021008
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082055#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082054# 1 #t1082054#\r\n#i4021005# 3 #t4021005#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmMagicianStim2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082055",
+            "materials": [
+              1082054,
+              4021005
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082056#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082054# 1 #t1082054#\r\n#i4021008# 1 #t4021008#\r\n#i4031138# 40500 meso"
+          },
+          "id": "confirmMagicianStim3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082056",
+            "materials": [
+              1082054,
+              4021008
+            ],
+            "mesoCost": 40500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim3",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim4",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082063#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082062# 1 #t1082062#\r\n#i4021002# 4 #t4021002#\r\n#i4031138# 40500 meso"
+          },
+          "id": "confirmMagicianStim4",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082063",
+            "materials": [
+              1082062,
+              4021002
+            ],
+            "mesoCost": 40500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              4
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim4",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim5",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082064#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082062# 1 #t1082062#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmMagicianStim5",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082064",
+            "materials": [
+              1082062,
+              4021008
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim5",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim6",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082082#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082081# 1 #t1082081#\r\n#i4021002# 5 #t4021002#\r\n#i4031138# 49500 meso"
+          },
+          "id": "confirmMagicianStim6",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082082",
+            "materials": [
+              1082081,
+              4021002
+            ],
+            "mesoCost": 49500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              5
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim6",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftMagicianStim7",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082080#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082081# 1 #t1082081#\r\n#i4021008# 3 #t4021008#\r\n#i4031138# 54000 meso"
+          },
+          "id": "confirmMagicianStim7",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082080",
+            "materials": [
+              1082081,
+              4021008
+            ],
+            "mesoCost": 54000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftMagicianStim7",
+          "type": "craftAction"
+        },
+        {
+          "id": "thiefGlovesStim",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "confirmThiefStim0",
+                "text": "Silver Sylvia#k - Thief Lv. 30#b"
+              },
+              {
+                "nextState": "confirmThiefStim1",
+                "text": "Gold Sylvia#k - Thief Lv. 30#b"
+              },
+              {
+                "nextState": "confirmThiefStim2",
+                "text": "Orihalcon Arbion#k - Thief Lv. 35#b"
+              },
+              {
+                "nextState": "confirmThiefStim3",
+                "text": "Gold Arbion#k - Thief Lv. 35#b"
+              },
+              {
+                "nextState": "confirmThiefStim4",
+                "text": "Gold Cleave#k - Thief Lv. 40#b"
+              },
+              {
+                "nextState": "confirmThiefStim5",
+                "text": "Dark Cleave#k - Thief Lv. 40#b"
+              },
+              {
+                "nextState": "confirmThiefStim6",
+                "text": "Red Moon Glove#k - Thief Lv. 50#b"
+              },
+              {
+                "nextState": "confirmThiefStim7",
+                "text": "Brown Moon Glove#k - Thief Lv. 50#b"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Thief glove with a stimulator? Sure thing, which kind?#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim0",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082043#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082042# 1 #t1082042#\r\n#i4011004# 2 #t4011004#\r\n#i4031138# 13500 meso"
+          },
+          "id": "confirmThiefStim0",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082043",
+            "materials": [
+              1082042,
+              4011004
+            ],
+            "mesoCost": 13500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim0",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim1",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082044#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082042# 1 #t1082042#\r\n#i4011006# 1 #t4011006#\r\n#i4031138# 18000 meso"
+          },
+          "id": "confirmThiefStim1",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082044",
+            "materials": [
+              1082042,
+              4011006
+            ],
+            "mesoCost": 18000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim1",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim2",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082047#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082046# 1 #t1082046#\r\n#i4011005# 3 #t4011005#\r\n#i4031138# 19800 meso"
+          },
+          "id": "confirmThiefStim2",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082047",
+            "materials": [
+              1082046,
+              4011005
+            ],
+            "mesoCost": 19800,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              3
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim2",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim3",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082045#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082046# 1 #t1082046#\r\n#i4011006# 2 #t4011006#\r\n#i4031138# 22500 meso"
+          },
+          "id": "confirmThiefStim3",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082045",
+            "materials": [
+              1082046,
+              4011006
+            ],
+            "mesoCost": 22500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim3",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim4",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082076#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082075# 1 #t1082075#\r\n#i4011006# 4 #t4011006#\r\n#i4031138# 36000 meso"
+          },
+          "id": "confirmThiefStim4",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082076",
+            "materials": [
+              1082075,
+              4011006
+            ],
+            "mesoCost": 36000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              4
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim4",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim5",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082074#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082075# 1 #t1082075#\r\n#i4021008# 2 #t4021008#\r\n#i4031138# 45000 meso"
+          },
+          "id": "confirmThiefStim5",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082074",
+            "materials": [
+              1082075,
+              4021008
+            ],
+            "mesoCost": 45000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim5",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim6",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082067#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082065# 1 #t1082065#\r\n#i4021000# 5 #t4021000#\r\n#i4031138# 49500 meso"
+          },
+          "id": "confirmThiefStim6",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082067",
+            "materials": [
+              1082065,
+              4021000
+            ],
+            "mesoCost": 49500,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              5
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim6",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "craftThiefStim7",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want me to make a #t1082066#? In that case, I'm going to need specific items from you in order to make it. Make sure you have room in your inventory, though!#b\r\n#i4130000# 1 #t4130000#\r\n#i1082065# 1 #t1082065#\r\n#i4011006# 2 #t4011006#\r\n#i4021008# 1 #t4021008#\r\n#i4031138# 54000 meso"
+          },
+          "id": "confirmThiefStim7",
+          "type": "dialogue"
+        },
+        {
+          "craftAction": {
+            "failureState": "insufficientMeso",
+            "itemId": "1082066",
+            "materials": [
+              1082065,
+              4011006,
+              4021008
+            ],
+            "mesoCost": 54000,
+            "missingMaterialsState": "missingMaterials",
+            "quantities": [
+              1,
+              2,
+              1
+            ],
+            "stimulatorFailChance": 0.1,
+            "stimulatorId": 4130000,
+            "successState": "craftSuccessStim"
+          },
+          "id": "craftThiefStim7",
+          "type": "craftAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There, the gloves are ready. Be careful, they're still hot."
+          },
+          "id": "craftSuccess",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There, the gloves are ready. Be careful, they're still hot."
+          },
+          "id": "craftSuccessStim",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Eek! I think I accidently added too much stimulator and, well, the whole thing is unusable now... Sorry, but I can't offer a refund."
+          },
+          "id": "stimulatorFailed",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Sorry, we only accept meso."
+          },
+          "id": "insufficientMeso",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Sorry, but I have to have those items to get this exactly right. Perhaps next time."
+          },
+          "id": "missingMaterials",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Check your inventory for a free slot first."
+          },
+          "id": "noInventorySpace",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2040020",
+    "type": "npc-conversation"
+  }
+}

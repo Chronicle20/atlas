@@ -35,9 +35,6 @@ type ProcessorMock struct {
 	// DeleteAllForTenantFunc is a function field for the DeleteAllForTenant method
 	DeleteAllForTenantFunc func() (int64, error)
 
-	// SeedFunc is a function field for the Seed method
-	SeedFunc func() (npc.SeedResult, error)
-
 	// ReindexAllRecipesFunc is a function field for the ReindexAllRecipes method
 	ReindexAllRecipesFunc func() (recipe.ReindexResult, error)
 
@@ -116,16 +113,6 @@ func (m *ProcessorMock) DeleteAllForTenant() (int64, error) {
 	}
 	return 0, nil
 }
-
-// Seed is a mock implementation of the npc.Processor.Seed method
-func (m *ProcessorMock) Seed() (npc.SeedResult, error) {
-	if m.SeedFunc != nil {
-		return m.SeedFunc()
-	}
-	return npc.SeedResult{}, nil
-}
-
-// Seed is a mock implementation of the npc.Processor.Seed method — already defined above
 
 // ReindexAllRecipes is a mock implementation of the npc.Processor.ReindexAllRecipes method
 func (m *ProcessorMock) ReindexAllRecipes() (recipe.ReindexResult, error) {

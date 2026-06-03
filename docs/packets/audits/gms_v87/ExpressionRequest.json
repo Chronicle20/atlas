@@ -1,0 +1,20 @@
+{
+  "WriterName": "ExpressionRequest",
+  "IDAName": "CWvsContext::SendEmotionChange",
+  "Address": "0xabbfbb",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/expression.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nEmotion (emotion/expression ID; validated \u003c= 0x16 in v87) — only field. duration and byItemOption absent in v87; added in v95. Gate GMS\u003e83||JMS is wrong for v87.",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

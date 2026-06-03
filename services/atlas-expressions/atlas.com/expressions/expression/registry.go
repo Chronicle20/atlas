@@ -15,9 +15,8 @@ import (
 const defaultTTL = 5 * time.Second
 
 type Registry struct {
-	reg       *atlas.TTLRegistry[uint32, Model]
-	client    *goredis.Client
-	tenantKey string
+	reg     *atlas.TTLRegistry[uint32, Model]
+	tenants *atlas.Set
 }
 
 var registry *Registry
@@ -27,8 +26,7 @@ func InitRegistry(client *goredis.Client) {
 		reg: atlas.NewTTLRegistry[uint32, Model](client, "expression", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}, defaultTTL),
-		client:    client,
-		tenantKey: atlas.KeyPrefix() + ":expression:_tenants",
+		tenants: atlas.NewSet(client, "expression:_tenants"),
 	}
 }
 
@@ -84,11 +82,11 @@ func (r *Registry) trackTenant(ctx context.Context, t tenant.Model) {
 	if err != nil {
 		return
 	}
-	r.client.SAdd(ctx, r.tenantKey, string(data))
+	_ = r.tenants.Add(ctx, string(data))
 }
 
 func (r *Registry) getTrackedTenants(ctx context.Context) []tenant.Model {
-	members, err := r.client.SMembers(ctx, r.tenantKey).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil
 	}

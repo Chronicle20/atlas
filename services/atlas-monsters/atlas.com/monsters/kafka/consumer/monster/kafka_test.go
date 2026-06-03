@@ -57,3 +57,23 @@ func TestUseBasicAttackCommandBody_Decode(t *testing.T) {
 		t.Fatalf("AttackPos = %d, want 1", body.AttackPos)
 	}
 }
+
+func TestSpawnFieldCommandBody_Decode(t *testing.T) {
+	raw := []byte(`{"monsterId":100100,"x":250,"y":-130,"fh":7,"team":0}`)
+	var body spawnFieldCommandBody
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if body.MonsterId != 100100 {
+		t.Errorf("MonsterId = %d, want 100100", body.MonsterId)
+	}
+	if body.X != 250 || body.Y != -130 {
+		t.Errorf("position = (%d, %d), want (250, -130)", body.X, body.Y)
+	}
+	if body.Fh != 7 {
+		t.Errorf("Fh = %d, want 7", body.Fh)
+	}
+	if body.Team != 0 {
+		t.Errorf("Team = %d, want 0", body.Team)
+	}
+}

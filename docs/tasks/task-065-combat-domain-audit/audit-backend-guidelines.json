@@ -1,0 +1,272 @@
+{
+  "task": "task-065-combat-domain-audit",
+  "worktree": ".worktrees/task-065-combat-domain-audit",
+  "branch": "task-065-combat-domain-audit",
+  "base": "main",
+  "date": "2026-05-27",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": "all",
+  "testsFailed": 0,
+  "raceTestsPassed": "monster/clientbound, drop/clientbound, pet/clientbound, atlas-channel/socket, atlas-channel/kafka/consumer/monster",
+  "overallStatus": "pass",
+  "scope": {
+    "libs": [
+      "libs/atlas-packet/monster/clientbound/control.go",
+      "libs/atlas-packet/monster/clientbound/control_test.go",
+      "libs/atlas-packet/monster/clientbound/destroy.go",
+      "libs/atlas-packet/monster/clientbound/destroy_test.go",
+      "libs/atlas-packet/monster/clientbound/movement_test.go",
+      "libs/atlas-packet/drop/clientbound/destroy.go",
+      "libs/atlas-packet/drop/clientbound/destroy_test.go",
+      "libs/atlas-packet/pet/clientbound/movement_test.go"
+    ],
+    "services": [
+      "services/atlas-channel/atlas.com/channel/socket/writer/monster_control.go"
+    ],
+    "tools": [
+      "tools/packet-audit/cmd/run.go",
+      "tools/packet-audit/cmd/disambiguation_test.go",
+      "tools/packet-audit/internal/atlaspacket/analyzer.go",
+      "tools/packet-audit/internal/atlaspacket/analyzer_test.go",
+      "tools/packet-audit/internal/atlaspacket/registry.go",
+      "tools/packet-audit/internal/atlaspacket/registry_test.go",
+      "tools/packet-audit/internal/diff/combat_flatten_test.go",
+      "tools/packet-audit/internal/idasrc/export.go",
+      "tools/packet-audit/internal/idasrc/export_test.go"
+    ]
+  },
+  "checks": [
+    {
+      "id": "LIB-01",
+      "name": "Control struct fields all private",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/control.go:28-34"
+    },
+    {
+      "id": "LIB-02",
+      "name": "No setter methods on Control",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/control.go (zero matches for func.*Set in diff)"
+    },
+    {
+      "id": "LIB-03",
+      "name": "Value-receiver getters on Control",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/control.go:53-58"
+    },
+    {
+      "id": "LIB-04",
+      "name": "NewMonsterControl returns value not pointer",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/control.go:43"
+    },
+    {
+      "id": "LIB-05",
+      "name": "aggro field threaded through Encode + Decode",
+      "status": "pass",
+      "evidence": "control.go:68-73 (encode), control.go:86 (decode), control_test.go:10-45 (round-trip)"
+    },
+    {
+      "id": "LIB-06",
+      "name": "Explicit wire-byte test for aggro semantic",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/control_test.go:51-76 (TestMonsterControlAggroByteReflectsState pins out[5] == 0x01/0x00)"
+    },
+    {
+      "id": "LIB-07",
+      "name": "5-variant round-trip baseline",
+      "status": "pass",
+      "evidence": "control_test.go (iterates test.Variants); monster/clientbound/movement_test.go:10-28; pet/clientbound/movement_test.go:11-18"
+    },
+    {
+      "id": "LIB-08",
+      "name": "No package-level mutable state introduced",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/control.go (only existing const block)"
+    },
+    {
+      "id": "LIB-09",
+      "name": "Reset path does not emit aggro byte",
+      "status": "pass",
+      "evidence": "control.go:68 (guard); services/atlas-channel/atlas.com/channel/socket/writer/monster_control.go:35 (passes false for clarity)"
+    },
+    {
+      "id": "LIB-10",
+      "name": "Constructor signature back-compat verified at every call site",
+      "status": "pass",
+      "evidence": "Only production caller: services/atlas-channel/atlas.com/channel/socket/writer/monster_control.go:52; updated in same commit"
+    },
+    {
+      "id": "LIB-monster-destroy",
+      "name": "MonsterDestroy + Swallow variant: private fields, value getters, conditional wire emission",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/monster/clientbound/destroy.go:26-30,47-53,60-62,71-73; destroy_test.go:20-42 (5-variant + 9-byte/5-byte wire-length assertions)"
+    },
+    {
+      "id": "LIB-drop-destroy",
+      "name": "DropDestroy: private fields, conditional wire emission, legacy ctor + new explode helper",
+      "status": "pass",
+      "evidence": "libs/atlas-packet/drop/clientbound/destroy.go:32-43,51-57,62-68,85-93; destroy_test.go:34-68"
+    },
+    {
+      "id": "DOM-06",
+      "name": "Logger param is logrus.FieldLogger",
+      "status": "pass",
+      "evidence": "services/atlas-channel/atlas.com/channel/socket/writer/monster_control.go:39"
+    },
+    {
+      "id": "DOM-12",
+      "name": "No os.Getenv() in changed code",
+      "status": "pass",
+      "evidence": "zero matches in diff"
+    },
+    {
+      "id": "DOM-13",
+      "name": "Writer does not call other domains directly",
+      "status": "pass",
+      "evidence": "monster_control.go imports atlas-channel/data/map and atlas-channel/monster only"
+    },
+    {
+      "id": "DOM-15",
+      "name": "No direct DB writes in changed code",
+      "status": "pass",
+      "evidence": "zero db.Create/Save/Delete in diff"
+    },
+    {
+      "id": "DOM-21",
+      "name": "No duplication of libs/atlas-constants types",
+      "status": "pass",
+      "evidence": "ControlMonsterType is a packet-protocol enum (pre-existing); atlas-constants does not define MonsterControlType"
+    },
+    {
+      "id": "DOM-22",
+      "name": "Dockerfile lib mentions (no new libs/atlas-* direct require)",
+      "status": "n/a",
+      "evidence": "no service go.mod changed on this branch"
+    },
+    {
+      "id": "DOM-23",
+      "name": "Kafka topic configmap naming",
+      "status": "n/a",
+      "evidence": "no new COMMAND_TOPIC_* / EVENT_TOPIC_* constants on this branch"
+    },
+    {
+      "id": "DOM-24",
+      "name": "Kafka producer stubbed in tests that emit",
+      "status": "n/a",
+      "evidence": "no AndEmit/message.Emit/producer.Produce in any added test"
+    },
+    {
+      "id": "CURRY-PRESERVED",
+      "name": "Curried Announce pattern intact",
+      "status": "pass",
+      "evidence": "consumer.go:150,300,321,343 and kafka/consumer/map/consumer.go:467 (5 call sites updated, curry chain unchanged)"
+    },
+    {
+      "id": "AGGRO-SOURCE",
+      "name": "aggro threaded from real event/model state",
+      "status": "pass",
+      "evidence": "m.ControllerHasAggro() at monster/model.go:63; event field e.Body.ControllerHasAggro at rest.go:22"
+    },
+    {
+      "id": "MONSTER-MODEL-NO-SETTER",
+      "name": "No new setter added to monster.Model",
+      "status": "pass",
+      "evidence": "git diff --stat main..HEAD -- services/atlas-channel/atlas.com/channel/monster/ yields no entries"
+    },
+    {
+      "id": "TOOL-NO-TODO",
+      "name": "Tooling diff has no TODO/FIXME",
+      "status": "pass",
+      "evidence": "zero added TODO/FIXME lines in tools/packet-audit diff"
+    },
+    {
+      "id": "TOOL-NO-PANIC",
+      "name": "No panic introduced",
+      "status": "pass",
+      "evidence": "zero added panic( lines in diff"
+    },
+    {
+      "id": "TOOL-ERRORS",
+      "name": "Errors propagated with context, not swallowed",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/idasrc/export.go:115,132,117-120 wrap with fmt.Errorf"
+    },
+    {
+      "id": "TOOL-CYCLE-DETECT",
+      "name": "Delegate cycle detection",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/idasrc/export.go:94-103 (visited map + defer delete)"
+    },
+    {
+      "id": "TOOL-GUARD-COMBINE",
+      "name": "Delegate inlining AND-s outer/inner guards correctly",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/idasrc/export.go:122-127,141-152"
+    },
+    {
+      "id": "TOOL-REGISTRY-QUALIFIED",
+      "name": "Item 4 — qualified registry keys with short-name fallback",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/atlaspacket/registry.go:169-178,217-250"
+    },
+    {
+      "id": "TOOL-WIRE-MUTEX",
+      "name": "Item 5 — wire-mutex collapse with shape verification",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/atlaspacket/analyzer.go:281-330 (isIfWireMutex + scratchWalk)"
+    },
+    {
+      "id": "TOOL-DISPATCHER",
+      "name": "Item 6 — dispatcher prefix narrowly enumerated",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/idasrc/export.go:172-191"
+    },
+    {
+      "id": "TOOL-ASSIGN-WALK",
+      "name": "Item 7 — AssignStmt walking for Decode methods",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/atlaspacket/analyzer.go:423-432"
+    },
+    {
+      "id": "TOOL-DELEGATE-SPLICE",
+      "name": "Item 8 — Delegate splice preserves nested dispatcher prefixes",
+      "status": "pass",
+      "evidence": "tools/packet-audit/internal/idasrc/export.go:117 (recursive call re-prepends prefix)"
+    },
+    {
+      "id": "LOGGER-TYPE",
+      "name": "No *logrus.Logger in any added signature",
+      "status": "pass",
+      "evidence": "zero matches in Go diff"
+    },
+    {
+      "id": "STANDARD-LOGGER",
+      "name": "No logrus.StandardLogger() usage added",
+      "status": "pass",
+      "evidence": "zero matches in Go diff"
+    },
+    {
+      "id": "SECRETS",
+      "name": "No hardcoded secrets",
+      "status": "pass",
+      "evidence": "no added literals matching key/password/secret patterns"
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    {
+      "id": "NOTE-1",
+      "description": "NewDropDestroyExplode added but not yet called from production atlas-channel (consumer/drop/consumer.go:132 still uses legacy NewDropDestroy explode path with delay=0). Documented at libs/atlas-packet/drop/clientbound/destroy.go:50-57. Not a violation."
+    },
+    {
+      "id": "NOTE-2",
+      "description": "NewMonsterDestroyBySwallow added but not yet called from production (no DestroyTypeSwallow emission path in kafka/consumer/monster yet). Helper is documented and tested. Not a violation."
+    },
+    {
+      "id": "NOTE-3",
+      "description": "ControlMonsterType is duplicated between lib and service (pre-existing pattern, not added on this branch). Service-side enum converts to lib type at the call boundary. Not a regression."
+    }
+  ]
+}

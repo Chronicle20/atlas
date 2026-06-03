@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func testItem() CashInventoryItem {
@@ -59,6 +60,33 @@ func TestCashShopInventoryEmptyRoundTrip(t *testing.T) {
 	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 	if len(output.Items()) != 0 {
 		t.Errorf("items: got %d, want 0", len(output.Items()))
+	}
+}
+
+// TestCashShopInventoryTrailingShortsGate pins the version gate on the trailing
+// slot-counter shorts. IDA v83 CCashShop::OnCashItemResLoadLockerDone@0x4794f6
+// reads only 2 trailing shorts (m_nTrunkCount, m_nCharacterSlotCount). v95
+// @0x494cb0 reads 2 MORE (m_nBuyCharacterCount, m_nCharacterCount); JMS v185
+// @0x48bcff likewise reads all four trailing Decode2. The empty (no-item) body
+// is: byte mode + short count(0) + short storageSlots + short characterSlots =
+// 7 bytes for v83; v95 and JMS add 4 bytes (two shorts) = 11.
+func TestCashShopInventoryTrailingShortsGate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := NewCashShopInventory(0x58, nil, 4, 3)
+
+	b83 := input.Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
+	if len(b83) != 7 {
+		t.Errorf("v83 length: got %d, want 7 (no trailing buyChar/char shorts)", len(b83))
+	}
+
+	b95 := input.Encode(l, pt.CreateContext("GMS", 95, 1))(nil)
+	if len(b95) != 11 {
+		t.Errorf("v95 length: got %d, want 11 (2 extra trailing shorts)", len(b95))
+	}
+
+	bjms := input.Encode(l, pt.CreateContext("JMS", 185, 1))(nil)
+	if len(bjms) != 11 {
+		t.Errorf("JMS v185 length: got %d, want 11 (2 extra trailing shorts)", len(bjms))
 	}
 }
 

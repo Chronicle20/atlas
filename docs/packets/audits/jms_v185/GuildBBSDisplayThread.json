@@ -1,0 +1,20 @@
+{
+  "WriterName": "GuildBBSDisplayThread",
+  "IDAName": "CUIGuildBBS::SendViewEntryRequest",
+  "Address": "ABSENT",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/guild/serverbound/bbs_display_thread.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

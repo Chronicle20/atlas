@@ -1,0 +1,461 @@
+{
+  "WriterName": "CharacterViewAllCharacters",
+  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllCharacters",
+  "Address": "0x5de435",
+  "Variant": "GMS/v95",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/view_all.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "code byte (case 0 = NORMAL)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nWorldID (world for this batch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nCount (character entries in this world)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::dwCharacterID",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "GW_CharacterStat::sCharacterName (padded 13 bytes)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nGender",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nSkin",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nFace",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nHair",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 3,
+      "IDAComment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nLevel",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nJob",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nSTR",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nDEX",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nINT",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nLUK",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nHP (v95 widened from int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nMHP (v95 widened from int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nMP (v95 widened from int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nMMP (v95 widened from int16)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nAP",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nSP (common-job branch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nEXP",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nPOP (fame)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nTempEXP (gachaponExperience)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::dwPosMap (mapId)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 26,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "GW_CharacterStat::nPortal (spawnPoint)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "GW_CharacterStat::nPlaytime",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "GW_CharacterStat::nSubJob",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::nGender (duplicate)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 30,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::nSkin (duplicate)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 31,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::nFace (duplicate)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 32,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::hairBase/mega flag",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 33,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::anHairEquip[0] (hair)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 34,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::equipment slot (WriteKeyValue byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 35,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::equipment itemId (WriteKeyValue int32)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 36,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::equipment-loop terminator (0xFF)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 37,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::masked-equip slot",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 38,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::masked-equip itemId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 39,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "AvatarLook::masked-equipment-loop terminator (0xFF)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 40,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::nWeaponStickerID",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 41,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::anPetID[0]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 42,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::anPetID[1]",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 43,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "AvatarLook::anPetID[2]",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 44,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "rankEnabled / hasRank byte (Decode1(v3) in v95 loop)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 45,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 46,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "m_bLoginOpt (PIC handling — GMS v95 guard: \u003ev87)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 47,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 48,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 49,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2
+}

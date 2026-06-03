@@ -5,21 +5,22 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	client    *goredis.Client
-	namespace string
+	sets *atlas.TenantKeyedSet[field.Model]
 }
 
 var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
 	registry = &Registry{
-		client:    client,
-		namespace: "chalk-char",
+		sets: atlas.NewTenantKeyedSet[field.Model](client, "chalk-char", func(f field.Model) string {
+			return fmt.Sprintf("%d:%d:%d:%s", f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+		}),
 	}
 }
 
@@ -27,27 +28,16 @@ func getRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) setKey(key MapKey) string {
-	tk := atlas.TenantKey(key.Tenant)
-	f := key.Field
-	return fmt.Sprintf("%s:%s:%s:%d:%d:%d:%s",
-		atlas.KeyPrefix(), r.namespace, tk,
-		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
-}
-
 func (r *Registry) AddCharacter(ctx context.Context, key MapKey, characterId uint32) {
-	rk := r.setKey(key)
-	r.client.SAdd(ctx, rk, strconv.FormatUint(uint64(characterId), 10))
+	_ = r.sets.Add(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
 }
 
 func (r *Registry) RemoveCharacter(ctx context.Context, key MapKey, characterId uint32) {
-	rk := r.setKey(key)
-	r.client.SRem(ctx, rk, strconv.FormatUint(uint64(characterId), 10))
+	_ = r.sets.Remove(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
 }
 
 func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
-	rk := r.setKey(key)
-	members, err := r.client.SMembers(ctx, rk).Result()
+	members, err := r.sets.Members(ctx, key.Tenant, key.Field)
 	if err != nil {
 		return nil
 	}

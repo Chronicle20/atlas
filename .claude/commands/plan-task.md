@@ -17,13 +17,9 @@ Same fuzzy-match algorithm as `/design-task` Step 1:
 4. If the task lives only on main with no worktree, stop and tell the user the task needs a worktree.
 5. Resolve to `<worktree>/docs/tasks/<id>/`.
 
-### Step 2 — Verify we're in the right worktree
+### Step 2 — Ensure we're in the right worktree
 
-Run `pwd`. If it does NOT match `<worktree>`, tell the user:
-
-> Task `<id>` lives in `<worktree>`. Please `cd <worktree>` and re-run `/plan-task <id>`.
-
-Stop. Do not proceed from the wrong cwd.
+Run `pwd`. If it does NOT match `<worktree>`, `cd <worktree>` yourself and continue from there. Do NOT ask the user to re-run the command — per CLAUDE.md's "Worktree Discipline" rule, cd into the task worktree yourself.
 
 ### Step 3 — Validate inputs
 

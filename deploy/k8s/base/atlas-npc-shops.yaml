@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-npc-shops
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-npc-shops
     spec:
+      volumes: []
       containers:
       - name: npc-shops
         image: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:

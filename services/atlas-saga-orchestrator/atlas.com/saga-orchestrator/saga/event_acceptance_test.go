@@ -31,7 +31,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ReleaseFromCashShop,
 	sharedsaga.RequestGuildName, sharedsaga.RequestGuildEmblem, sharedsaga.RequestGuildDisband,
 	sharedsaga.RequestGuildCapacityIncrease, sharedsaga.CreateInvite,
-	sharedsaga.CreateCharacter, sharedsaga.AwaitCharacterCreated,
+	sharedsaga.CreateCharacter, sharedsaga.AwaitCharacterCreated, sharedsaga.AwaitInventoryCreated,
 	sharedsaga.StartInstanceTransport,
 	sharedsaga.SelectGachaponReward, sharedsaga.EmitGachaponWin,
 	sharedsaga.RegisterPartyQuest, sharedsaga.WarpPartyQuestMembersToMap, sharedsaga.LeavePartyQuest,
@@ -159,5 +159,17 @@ func TestStepAcceptsEvent_ThiefScenarioMatches(t *testing.T) {
 func TestStepAcceptsEvent_UnknownActionDefaultDenies(t *testing.T) {
 	if StepAcceptsEvent(sharedsaga.Action("nonexistent_action"), EventKindAssetCreated) {
 		t.Errorf("StepAcceptsEvent should default-deny unknown actions")
+	}
+}
+
+func TestStepAcceptsEvent_AwaitInventoryCreated(t *testing.T) {
+	if !StepAcceptsEvent(sharedsaga.AwaitInventoryCreated, EventKindInventoryCreated) {
+		t.Errorf("StepAcceptsEvent(AwaitInventoryCreated, EventKindInventoryCreated) = false; want true")
+	}
+	if !StepAcceptsEvent(sharedsaga.AwaitInventoryCreated, EventKindInventoryCreationFailed) {
+		t.Errorf("StepAcceptsEvent(AwaitInventoryCreated, EventKindInventoryCreationFailed) = false; want true")
+	}
+	if StepAcceptsEvent(sharedsaga.AwaitInventoryCreated, EventKindCompartmentCreated) {
+		t.Errorf("StepAcceptsEvent(AwaitInventoryCreated, EventKindCompartmentCreated) = true; want false (compartment.created is a sub-event, not the rollup)")
 	}
 }

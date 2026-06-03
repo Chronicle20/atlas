@@ -1,0 +1,144 @@
+{
+  "service": "task-071 (atlas-data + atlas-renders + libs/atlas-wz)",
+  "path": "services/atlas-data, services/atlas-renders, libs/atlas-wz",
+  "date": "2026-05-20",
+  "build": "pass",
+  "testsPassed": "all",
+  "testsFailed": 0,
+  "overallStatus": "fail",
+  "domains": [
+    {
+      "name": "wzinput",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "logic out of handler", "status": "warn", "evidence": "wzinput/handler.go:20-83 inlines all logic"},
+        {"id": "SUB-02", "name": "administrator for writes", "status": "fail", "evidence": "wzinput/handler.go:75 calls mc.Put inside handler"},
+        {"id": "SUB-03", "name": "RegisterInputHandler for PATCH", "status": "fail", "evidence": "wzinput/resource.go:20 uses RegisterHandler"},
+        {"id": "SUB-04", "name": "no manual JSON parsing", "status": "pass", "evidence": "multipart not JSON"},
+        {"id": "tenant.MustFromContext", "name": "tenant context", "status": "pass", "evidence": "wzinput/handler.go:27, status.go:28"},
+        {"id": "operator-gate-shared", "name": "operator gate on scope=shared", "status": "pass", "evidence": "wzinput/scope.go:29"},
+        {"id": "zip-slip", "name": "zip-slip protection", "status": "pass", "evidence": "wzinput/validate.go:10-22 + validate_test.go:28-49"}
+      ]
+    },
+    {
+      "name": "baseline",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-03", "name": "RegisterInputHandler for POST", "status": "fail", "evidence": "baseline/handler.go:24-25 both use RegisterHandler"},
+        {"id": "SUB-04", "name": "no manual JSON parsing", "status": "fail", "evidence": "baseline/handler.go:46, 75 use json.NewDecoder"},
+        {"id": "operator-gate-publish", "name": "operator gate on publish", "status": "pass", "evidence": "baseline/handler.go:37"},
+        {"id": "operator-gate-restore", "name": "operator gate on restore", "status": "fail", "evidence": "baseline/handler.go:62-90 missing X-Atlas-Operator check"},
+        {"id": "sha-verification-order", "name": "sha256 verified before mutation", "status": "fail", "evidence": "baseline/restore.go:85-88 — verification runs after DELETE+COPY (line 81 → 110)"},
+        {"id": "schema-version-refuse", "name": "schema-version refusal", "status": "pass", "evidence": "baseline/restore.go:65-67 + handler.go:81 → 422"},
+        {"id": "runCopyOut-stub", "name": "runCopyOut implementation", "status": "fail", "evidence": "baseline/publish.go:94-96 returns not implemented"},
+        {"id": "copyInBinary-stub", "name": "copyInBinary implementation", "status": "fail", "evidence": "baseline/restore.go:160-162 returns not implemented"},
+        {"id": "DOM-18", "name": "JSON:API response shape", "status": "fail", "evidence": "baseline/handler.go:55-57 emits plain JSON"}
+      ]
+    },
+    {
+      "name": "tenantpurge",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "logic out of handler", "status": "pass", "evidence": "tenantpurge/purge.go:34 holds logic"},
+        {"id": "SUB-02", "name": "administrator for writes", "status": "pass", "evidence": "DB mutations in Purge not handler"},
+        {"id": "operator-gate", "name": "operator gate", "status": "pass", "evidence": "tenantpurge/handler.go:35"},
+        {"id": "canonical-refuse", "name": "canonical UUID refusal", "status": "pass", "evidence": "tenantpurge/purge.go:35-37 + purge_test.go:13"},
+        {"id": "best-effort-minio", "name": "best-effort MinIO purge", "status": "pass", "evidence": "tenantpurge/purge.go:48-56"},
+        {"id": "constant-duplication", "name": "CanonicalTenantUUID duplicated", "status": "warn", "evidence": "purge.go:17 vs baseline/dump.go:13"}
+      ]
+    },
+    {
+      "name": "runtime/rest",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-03", "name": "RegisterInputHandler for POST", "status": "fail", "evidence": "runtime/rest/resource.go:23 uses RegisterHandler"},
+        {"id": "operator-gate-shared", "name": "operator gate on scope=shared", "status": "pass", "evidence": "runtime/rest/resource.go:42"},
+        {"id": "job-template-configmap", "name": "ConfigMap-loaded template", "status": "fail", "evidence": "runtime/rest/jobs.go:59-77 hardcoded; loader not implemented"},
+        {"id": "INGEST_IMAGE-handling", "name": "INGEST_IMAGE empty handling", "status": "warn", "evidence": "runtime/rest/jobs.go:71 silently propagates empty image"},
+        {"id": "processStatus-stub", "name": "processStatus returns active jobs", "status": "fail", "evidence": "runtime/rest/resource.go:74-83 hardcoded []"},
+        {"id": "watchdog-sweep-stub", "name": "Watchdog.sweep implementation", "status": "fail", "evidence": "runtime/rest/watchdog.go:34-38 is no-op"},
+        {"id": "restart-recovery", "name": "restart recovery", "status": "pass", "evidence": "runtime/rest/recovery.go + main.go:92-96"}
+      ]
+    },
+    {
+      "name": "data/workers",
+      "type": "support",
+      "checks": [
+        {"id": "ITEM-worker-stub", "name": "Item.Run implementation", "status": "fail", "evidence": "data/workers/item.go:19-20"},
+        {"id": "MOB-worker-stub", "name": "Mob.Run implementation", "status": "fail", "evidence": "data/workers/mob.go:19-20"},
+        {"id": "NPC-worker-stub", "name": "Npc.Run implementation", "status": "fail", "evidence": "data/workers/npc.go:19-20"},
+        {"id": "REACTOR-worker-stub", "name": "Reactor.Run implementation", "status": "fail", "evidence": "data/workers/reactor.go:19-20"},
+        {"id": "SKILL-worker-stub", "name": "Skill.Run implementation", "status": "fail", "evidence": "data/workers/skill.go:19-20"},
+        {"id": "QUEST-worker-stub", "name": "Quest.Run implementation", "status": "fail", "evidence": "data/workers/quest.go:19-20"},
+        {"id": "STRING-worker-stub", "name": "String.Run implementation", "status": "fail", "evidence": "data/workers/stringw.go:19-20"},
+        {"id": "MAP-worker-stub", "name": "Map.Run implementation", "status": "fail", "evidence": "data/workers/mapw.go:19-20"},
+        {"id": "CHARACTER-worker-stub", "name": "Character.Run implementation", "status": "fail", "evidence": "data/workers/character.go:19-20"},
+        {"id": "UI-worker-stub", "name": "UI.Run implementation", "status": "fail", "evidence": "data/workers/ui.go:19-20"},
+        {"id": "registry-shape", "name": "worker registry", "status": "pass", "evidence": "data/workers/registry.go:4-15 + workers_test.go"},
+        {"id": "wz.Image-mismatch", "name": "Worker contract type", "status": "warn", "evidence": "data/runwz.go:42-47 acknowledges mismatch"},
+        {"id": "type-width-drift", "name": "Version field width", "status": "warn", "evidence": "data/workers/worker.go:17-18 uint32 vs tenant uint16"}
+      ]
+    },
+    {
+      "name": "runtime/all",
+      "type": "support",
+      "checks": [
+        {"id": "dead-code", "name": "runtime/all unreferenced", "status": "warn", "evidence": "runtime/all/run.go:9-13 not imported by main.go"}
+      ]
+    },
+    {
+      "name": "atlas-renders",
+      "type": "new-service",
+      "checks": [
+        {"id": "character-handler-stub", "name": "character render", "status": "fail", "evidence": "services/atlas-renders/atlas.com/renders/character/handler.go:16-22 returns 501"},
+        {"id": "mapr-handler-stub", "name": "map render", "status": "fail", "evidence": "services/atlas-renders/atlas.com/renders/mapr/handler.go:17-23 returns 501"},
+        {"id": "tenant-middleware", "name": "tenant header middleware", "status": "fail", "evidence": "services/atlas-renders/atlas.com/renders/main.go:22-37 uses raw mux.NewRouter without middleware"},
+        {"id": "import-lint", "name": "isolated from heavy wz subpkgs", "status": "pass", "evidence": "services/atlas-renders/atlas.com/renders/import_lint_test.go:14-37"},
+        {"id": "secret-logging", "name": "no MinIO secret logging", "status": "pass", "evidence": "services/atlas-renders/atlas.com/renders/storage/{minio,config}.go"},
+        {"id": "SCAFFOLD-01", "name": "services.json entry", "status": "fail", "evidence": "absent in .github/config/services.json"},
+        {"id": "SCAFFOLD-02", "name": "k8s manifest", "status": "pass", "evidence": "deploy/k8s/base/atlas-renders.yaml"},
+        {"id": "SCAFFOLD-03", "name": "Dockerfile", "status": "pass", "evidence": "services/atlas-renders/Dockerfile"},
+        {"id": "SCAFFOLD-04", "name": "ingress route", "status": "pass", "evidence": "deploy/shared/routes.conf has 6 atlas-renders refs"},
+        {"id": "SCAFFOLD-05", "name": "ingress drift", "status": "warn", "evidence": "deploy/scripts/sync-k8s-ingress-routes.sh broken (points at deploy/k8s/ingress.yaml)"},
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry", "status": "fail", "evidence": "absent in deploy/compose/docker-compose.core.yml"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection", "status": "fail", "evidence": "services/atlas-renders/.bruno/ absent"}
+      ]
+    }
+  ],
+  "blocking": [
+    "SEC-01: baseline/handler.go:62-90 restoreInner missing X-Atlas-Operator gate (anyone can wipe any tenant)",
+    "SEC-02: baseline/restore.go:85-88 sha256 verified AFTER DELETE+COPY (post-mutation gate is no gate)",
+    "SUB-04/DOM-08: baseline/handler.go:24-25,46,75 POSTs use RegisterHandler + json.NewDecoder instead of RegisterInputHandler[T]",
+    "Stub: data/workers/item.go:19 Item.Run is TODO + return nil",
+    "Stub: data/workers/mob.go:19 Mob.Run is TODO + return nil",
+    "Stub: data/workers/npc.go:19 Npc.Run is TODO + return nil",
+    "Stub: data/workers/reactor.go:19 Reactor.Run is TODO + return nil",
+    "Stub: data/workers/skill.go:19 Skill.Run is TODO + return nil",
+    "Stub: data/workers/quest.go:19 Quest.Run is TODO + return nil",
+    "Stub: data/workers/stringw.go:19 String.Run is TODO + return nil",
+    "Stub: data/workers/mapw.go:19 Map.Run is TODO + return nil",
+    "Stub: data/workers/character.go:19 Character.Run is TODO + return nil",
+    "Stub: data/workers/ui.go:19 UI.Run is TODO + return nil",
+    "Stub: baseline/publish.go:94-96 runCopyOut not implemented",
+    "Stub: baseline/restore.go:160-162 copyInBinary not implemented",
+    "Stub: runtime/rest/watchdog.go:34-38 sweep no-op",
+    "Stub: runtime/rest/resource.go:74-83 processStatus returns empty list",
+    "Stub: runtime/rest/jobs.go:59-77 defaultTemplate hardcoded; ConfigMap loader missing",
+    "Stub: services/atlas-renders/atlas.com/renders/character/handler.go:20 returns 501",
+    "Stub: services/atlas-renders/atlas.com/renders/mapr/handler.go:21 returns 501",
+    "atlas-renders main.go:22 has no tenant header middleware",
+    "SCAFFOLD-01: atlas-renders missing from .github/config/services.json",
+    "SCAFFOLD-06: atlas-renders missing from deploy/compose/docker-compose.core.yml",
+    "SCAFFOLD-08: services/atlas-renders/.bruno/ collection absent"
+  ],
+  "nonBlocking": [
+    "CanonicalTenantUUID duplicated across baseline/dump.go:13 and tenantpurge/purge.go:17",
+    "Version field width drift: workers/worker.go:17-18 uint32 vs tenant lib uint16",
+    "INGEST_IMAGE empty fall-through in runtime/rest/jobs.go:71 — no fast-fail",
+    "runtime/all/run.go is unreferenced dead code",
+    "DOM-20: tests are mostly single-case rather than table-driven",
+    "DOM-18/DOM-19: admin endpoints don't conform to JSON:API; document carve-out",
+    "Operator header (X-Atlas-Operator: 1) is unauthenticated — document threat model",
+    "deploy/scripts/sync-k8s-ingress-routes.sh points at deploy/k8s/ingress.yaml; file moved to deploy/k8s/base/atlas-ingress.yaml"
+  ]
+}

@@ -84,7 +84,9 @@ export interface ItemReward {
     count: number;
     job?: number;
     gender?: number;   // -1 = any, 0 = male, 1 = female
-    prop?: number;     // Probability (-1 = guaranteed, 0+ = chance)
+    prop?: number;     // -1 = unconditional. Otherwise a weight in a random pool;
+                       // one item per pool is awarded with probability prop / sum(pool).
+                       // 0 is treated as weight 1.
     period?: number;   // Duration in minutes (0 = permanent)
     dateExpire?: string;
     var?: number;

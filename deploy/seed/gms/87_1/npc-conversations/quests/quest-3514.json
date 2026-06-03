@@ -1,0 +1,323 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkPotionUsed",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2022337",
+                      "type": "buff",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "potionWorked"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkHasPotion"
+                }
+              ]
+            },
+            "id": "checkPotionUsed",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2022337",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "scaredToDrink"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkCanRecoverPotion"
+                }
+              ]
+            },
+            "id": "checkHasPotion",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Are you scared to drink the potion? I can assure you it has only a minor #rside effect#k."
+            },
+            "id": "scaredToDrink",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2022337",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "recoverPotionAndGive"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noRoomForRecoveredPotion"
+                }
+              ]
+            },
+            "id": "checkCanRecoverPotion",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "2022337",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "lostItRecovered"
+                }
+              ]
+            },
+            "id": "recoverPotionAndGive",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Lost it? Luckily for you I managed to recover it back. Take it."
+            },
+            "id": "lostItRecovered",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Lost it? Luckily for you I managed to recover it back. Make a room to get it."
+            },
+            "id": "noRoomForRecoveredPotion",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuestAndReward",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "It seems the potion worked and your emotions are no longer frozen. And, oh, my... You're ailing bad, #bpurge#k that out quickly."
+            },
+            "id": "potionWorked",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "891500"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestAndReward",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 3514,
+      "questName": "The Sorcerer Who Sells Emotions",
+      "startStateMachine": {
+        "startState": "checkMesos",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "meso",
+                      "value": "1000000"
+                    }
+                  ],
+                  "nextState": "notEnoughMesos"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkInventorySpace"
+                }
+              ]
+            },
+            "id": "checkMesos",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oy, you don't have the money. I charge #r1,000,000 mesos#k for the emotion potion. No money, no deal."
+            },
+            "id": "notEnoughMesos",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2022337",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "giveItemAndStartQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noInventorySpace"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Check out for a slot on your USE inventory first."
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "2022337",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "amount": "-1000000"
+                  },
+                  "type": "award_mesos"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveItemAndStartQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3514",
+    "type": "quest-conversation"
+  }
+}

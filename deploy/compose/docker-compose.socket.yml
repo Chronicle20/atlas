@@ -17,12 +17,17 @@ services:
     container_name: atlas-login
     build:
       context: ../..
-      dockerfile: services/atlas-login/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-login
     image: atlas-login:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
       SERVICE_ID: e7fb1d7e-47b8-46bd-97dc-867d93530856
       SERVICE_TYPE: login-service
+      EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS: EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS
+      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS
+      DRAIN_DEADLINE_MS: "2000"
     ports:
       - "1200:1200"
       - "8300:8300"
@@ -36,12 +41,17 @@ services:
     container_name: atlas-channel
     build:
       context: ../..
-      dockerfile: services/atlas-channel/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-channel
     image: atlas-channel:${ATLAS_IMAGE_TAG:-local}
     environment:
       LOG_LEVEL: debug
       SERVICE_ID: e7fb1d7e-47b8-46bd-97dc-867d93530000
       SERVICE_TYPE: channel-service
+      EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS: EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS
+      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS
+      DRAIN_DEADLINE_MS: "5000"
     ports:
       - "1201:1201"
       - "8301:8301"

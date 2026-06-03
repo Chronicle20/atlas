@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Key struct {
@@ -60,4 +61,17 @@ func (r *Registry) LoggedIn(key Key) bool {
 		return val
 	}
 	return false
+}
+
+// EvictTenant drops every account entry whose tenant matches tid.
+// Invoked by listener.RegisterEvictor when the last listener for a
+// tenant drains, so a re-Add of that tenant starts from a clean slate.
+func (r *Registry) EvictTenant(tid uuid.UUID) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	for k := range r.accounts {
+		if k.Tenant.Id() == tid {
+			delete(r.accounts, k)
+		}
+	}
 }

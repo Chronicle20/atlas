@@ -67,7 +67,11 @@ func SetMigrations(migrations ...Migrator) Configurator {
 
 type Migrator func(db *gorm.DB) error
 
-func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
+// DSN returns the postgres DSN constructed from the standard DB_*
+// environment variables (DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME).
+// Exposed so callers that need a libpq-compatible DSN (e.g. pq.Listener
+// for LISTEN/NOTIFY) can build one without duplicating env-var logic.
+func DSN() string {
 	dsnBuilder := NewDSNBuilder()
 	if user, ok := os.LookupEnv("DB_USER"); ok {
 		dsnBuilder = dsnBuilder.SetUser(user)
@@ -86,9 +90,14 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 	if databaseName, ok := os.LookupEnv("DB_NAME"); ok {
 		dsnBuilder = dsnBuilder.SetDatabaseName(databaseName)
 	}
+	return dsnBuilder.Build()
+}
+
+func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
+	dsn := DSN()
 
 	c := &Configuration{
-		dsn:        dsnBuilder.Build(),
+		dsn:        dsn,
 		migrations: make([]Migrator, 0),
 	}
 	for _, configurator := range configurators {
@@ -98,7 +107,7 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 	var db *gorm.DB
 	tryToConnect := func(attempt int) (bool, error) {
 		var err error
-		db, err = gorm.Open(postgres.Open(dsnBuilder.Build()), &gorm.Config{})
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			return true, err
 		}

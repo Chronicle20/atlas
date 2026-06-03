@@ -38,7 +38,7 @@ export interface EntityWidgetProps {
   id: number;
   count?: number | undefined;
   state?: 0 | 1 | 2 | undefined;
-  prop?: number | undefined;
+  chance?: number | undefined;
   period?: number | undefined;
   job?: number | undefined;
   gender?: number | undefined;
@@ -216,7 +216,7 @@ function formatPeriod(minutes: number): string {
 
 function renderAffix(props: ShellProps): string | null {
   const parts: string[] = [];
-  const { kind, count, prop, period, job, gender, jobs } = props;
+  const { kind, count, chance, period, job, gender, jobs } = props;
 
   if (count !== undefined) {
     if (kind === "mob") {
@@ -228,10 +228,9 @@ function renderAffix(props: ShellProps): string | null {
     }
   }
 
-  if (prop !== undefined) {
-    if (prop === -1) parts.push("Guaranteed");
-    else if (prop === 0) parts.push("Selection");
-    else parts.push(`${prop}% chance`);
+  if (chance !== undefined) {
+    const rounded = Math.round(chance * 10) / 10;
+    parts.push(`${rounded}% chance`);
   }
 
   if (period !== undefined && period > 0) {

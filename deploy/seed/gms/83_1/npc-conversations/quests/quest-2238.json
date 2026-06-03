@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2238,
+      "questName": "Quest 2238",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2238",
+    "type": "quest-conversation"
+  }
+}

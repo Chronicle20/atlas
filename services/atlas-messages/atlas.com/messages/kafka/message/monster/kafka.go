@@ -16,6 +16,7 @@ const (
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
 	CommandTypeDestroyField      = "DESTROY_FIELD"
+	CommandTypeSpawnField        = "SPAWN_FIELD"
 )
 
 type FieldCommand[E any] struct {
@@ -107,4 +108,35 @@ func CancelStatusFieldCommandProvider(worldId world.Id, channelId channel.Id, ma
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
+}
+
+type SpawnFieldBody struct {
+	MonsterId uint32 `json:"monsterId"`
+	X         int16  `json:"x"`
+	Y         int16  `json:"y"`
+	Fh        int16  `json:"fh"`
+	Team      int8   `json:"team"`
+}
+
+func SpawnFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, monsterId uint32, x int16, y int16, fh int16, team int8, count int) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := FieldCommand[SpawnFieldBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Instance:  instance,
+		Type:      CommandTypeSpawnField,
+		Body: SpawnFieldBody{
+			MonsterId: monsterId,
+			X:         x,
+			Y:         y,
+			Fh:        fh,
+			Team:      team,
+		},
+	}
+	messages := make([]producer.RawMessage, count)
+	for i := range messages {
+		messages[i] = producer.RawMessage{Key: key, Value: value}
+	}
+	return producer.MessageProvider(model.FixedProvider(messages))
 }

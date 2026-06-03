@@ -48,7 +48,7 @@ func TestMessengerUpdateRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			ava := testAvatar()
-			input := NewMessengerUpdate(5, 1, ava, "OtherPlayer", 2)
+			input := NewMessengerUpdate(7, 1, ava)
 			output := Update{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
@@ -56,12 +56,6 @@ func TestMessengerUpdateRoundTrip(t *testing.T) {
 			}
 			if output.Position() != input.Position() {
 				t.Errorf("position: got %v, want %v", output.Position(), input.Position())
-			}
-			if output.Name() != input.Name() {
-				t.Errorf("name: got %v, want %v", output.Name(), input.Name())
-			}
-			if output.ChannelId() != input.ChannelId() {
-				t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
 			}
 			if len(output.Avatar().Equipment()) != len(ava.Equipment()) {
 				t.Errorf("avatar equipment count: got %v, want %v", len(output.Avatar().Equipment()), len(ava.Equipment()))

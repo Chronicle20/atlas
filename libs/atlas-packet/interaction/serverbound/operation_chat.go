@@ -6,31 +6,50 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 type OperationChat struct {
-	message string
+	updateTime uint32
+	message    string
 }
+
+func (m OperationChat) UpdateTime() uint32 { return m.updateTime }
 
 func (m OperationChat) Message() string { return m.message }
 
 func (m OperationChat) Operation() string { return "OperationChat" }
 
 func (m OperationChat) String() string {
-	return fmt.Sprintf("message [%s]", m.message)
+	return fmt.Sprintf("updateTime [%d], message [%s]", m.updateTime, m.message)
 }
 
-func (m OperationChat) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+// hasUpdateTime reports whether the leading get_update_time field precedes the
+// chat message. Present from GMS v87 onward (v83 omits it) AND in JMS v185
+// (CMiniRoomBaseDlg::CheckAndSendChat@0x6db3ce Encode4 update_time + EncodeStr).
+func chatHasUpdateTime(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
+}
+
+func (m OperationChat) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		if chatHasUpdateTime(t) {
+			w.WriteInt(m.updateTime)
+		}
 		w.WriteAsciiString(m.message)
 		return w.Bytes()
 	}
 }
 
-func (m *OperationChat) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *OperationChat) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
+		if chatHasUpdateTime(t) {
+			m.updateTime = r.ReadUint32()
+		}
 		m.message = r.ReadAsciiString()
 	}
 }

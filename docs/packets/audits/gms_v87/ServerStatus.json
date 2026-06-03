@@ -1,0 +1,20 @@
+{
+  "WriterName": "ServerStatus",
+  "IDAName": "CLogin::OnCheckUserLimitResult",
+  "Address": "0x630af9",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/server_status.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "world status (2 bytes — same as v95)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -40,7 +40,7 @@ func (m Left) String() string {
 	return fmt.Sprintf("mode [%d], partyId [%d], targetId [%d], targetName [%s], forced [%t]", m.mode, m.partyId, m.targetId, m.targetName, m.forced)
 }
 
-func (m Left) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Left) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -49,12 +49,12 @@ func (m Left) Encode(l logrus.FieldLogger, _ context.Context) func(options map[s
 		w.WriteByte(1)
 		w.WriteBool(m.forced)
 		w.WriteAsciiString(m.targetName)
-		party.WritePartyData(w, m.members, m.leaderId)
+		party.WritePartyData(ctx, w, m.members, m.leaderId)
 		return w.Bytes()
 	}
 }
 
-func (m *Left) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Left) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.partyId = r.ReadUint32()
@@ -62,6 +62,6 @@ func (m *Left) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.R
 		_ = r.ReadByte() // constant 1
 		m.forced = r.ReadBool()
 		m.targetName = r.ReadAsciiString()
-		m.members, m.leaderId = party.ReadPartyData(r)
+		m.members, m.leaderId = party.ReadPartyData(ctx, r)
 	}
 }

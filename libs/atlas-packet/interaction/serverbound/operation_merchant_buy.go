@@ -12,15 +12,17 @@ import (
 type OperationMerchantBuy struct {
 	index    byte
 	quantity uint16
+	itemCRC  uint32
 }
 
 func (m OperationMerchantBuy) Index() byte       { return m.index }
 func (m OperationMerchantBuy) Quantity() uint16   { return m.quantity }
+func (m OperationMerchantBuy) ItemCRC() uint32    { return m.itemCRC }
 
 func (m OperationMerchantBuy) Operation() string { return "OperationMerchantBuy" }
 
 func (m OperationMerchantBuy) String() string {
-	return fmt.Sprintf("index [%d] quantity [%d]", m.index, m.quantity)
+	return fmt.Sprintf("index [%d] quantity [%d] itemCRC [%d]", m.index, m.quantity, m.itemCRC)
 }
 
 func (m OperationMerchantBuy) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
@@ -28,6 +30,7 @@ func (m OperationMerchantBuy) Encode(l logrus.FieldLogger, _ context.Context) fu
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.index)
 		w.WriteShort(m.quantity)
+		w.WriteInt(m.itemCRC)
 		return w.Bytes()
 	}
 }
@@ -36,5 +39,6 @@ func (m *OperationMerchantBuy) Decode(_ logrus.FieldLogger, _ context.Context) f
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.index = r.ReadByte()
 		m.quantity = r.ReadUint16()
+		m.itemCRC = r.ReadUint32()
 	}
 }

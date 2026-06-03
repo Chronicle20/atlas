@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-party-quests
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 1
   selector:
@@ -13,9 +15,11 @@ spec:
       labels:
         app: atlas-party-quests
     spec:
+      volumes: []
       containers:
       - name: party-quests
         image: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests:latest
+        volumeMounts: []
         ports:
         - containerPort: 8080
         envFrom:

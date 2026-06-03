@@ -6,6 +6,7 @@ import (
 	"atlas-character-factory/saga"
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -56,8 +57,8 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 					t.Errorf("Expected initiatedBy 'account_1001', got '%s'", result.InitiatedBy)
 				}
 
-				// 1 create + 3 items + 4 equipment + 2 skills = 10
-				expectedSteps := 1 + 3 + 4 + 2
+				// 1 create + 1 await_inventory_created + 3 items + 4 equipment + 2 skills = 11
+				expectedSteps := 1 + 1 + 3 + 4 + 2
 				if len(result.Steps) != expectedSteps {
 					t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 				}
@@ -166,8 +167,8 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 				Skills:      []uint32{},
 			},
 			validate: func(t *testing.T, result saga.Saga) {
-				// Only character creation step (no items, no equipment, no skills)
-				expectedSteps := 1
+				// 1 create + 1 await_inventory_created (no items, no equipment, no skills)
+				expectedSteps := 2
 				if len(result.Steps) != expectedSteps {
 					t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 				}
@@ -208,8 +209,8 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 				Skills:      []uint32{1002},
 			},
 			validate: func(t *testing.T, result saga.Saga) {
-				// 1 create + 1 item + 2 equipment (top, weapon) + 1 skill = 5
-				expectedSteps := 1 + 1 + 2 + 1
+				// 1 create + 1 await_inventory_created + 1 item + 2 equipment (top, weapon) + 1 skill = 6
+				expectedSteps := 1 + 1 + 1 + 2 + 1
 				if len(result.Steps) != expectedSteps {
 					t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 				}
@@ -266,12 +267,13 @@ func TestBuildCharacterCreationSaga_StepOrdering(t *testing.T) {
 	transactionId := uuid.New()
 	result := buildCharacterCreationSaga(transactionId, input, tmpl)
 
-	// Verify step ordering: create_character, then items, then equipment, then skills
+	// Verify step ordering: create_character, await_inventory_created, then items, then equipment, then skills
 	expectedStepOrder := []struct {
 		stepType string
 		action   saga.Action
 	}{
 		{"create_character", saga.CreateCharacter},
+		{"await_inventory_created", saga.AwaitInventoryCreated},
 		{"award_item_0", saga.AwardAsset},
 		{"award_item_1", saga.AwardAsset},
 		{"award_item_2", saga.AwardAsset},
@@ -338,9 +340,9 @@ func TestBuildCharacterCreationSaga_EmptyTemplate(t *testing.T) {
 	transactionId := uuid.New()
 	result := buildCharacterCreationSaga(transactionId, input, tmpl)
 
-	// Should only have character creation step
-	if len(result.Steps) != 1 {
-		t.Errorf("Expected 1 step, got %d", len(result.Steps))
+	// Should have character creation + await_inventory_created steps
+	if len(result.Steps) != 2 {
+		t.Errorf("Expected 2 steps, got %d", len(result.Steps))
 	}
 
 	step := result.Steps[0]
@@ -424,8 +426,8 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		t.Fatal("First step payload is not CharacterCreatePayload")
 	}
 
-	// Verify total step count: 1 create + 3 items + 4 equip + 2 skills = 10
-	expectedSteps := 1 + 3 + 4 + 2
+	// Verify total step count: 1 create + 1 await_inventory_created + 3 items + 4 equip + 2 skills = 11
+	expectedSteps := 1 + 1 + 3 + 4 + 2
 	if len(result.Steps) != expectedSteps {
 		t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 	}
@@ -511,6 +513,14 @@ func TestBuildCharacterCreationSaga_SentinelCharacterId(t *testing.T) {
 	for i := 1; i < len(result.Steps); i++ {
 		step := result.Steps[i]
 		switch step.Action {
+		case saga.AwaitInventoryCreated:
+			if payload, ok := step.Payload.(saga.AwaitInventoryCreatedPayload); ok {
+				if payload.CharacterId != 0 {
+					t.Errorf("Step %d (%s): AwaitInventoryCreated should have characterId=0 sentinel, got %d", i, step.StepId, payload.CharacterId)
+				}
+			} else {
+				t.Errorf("Step %d (%s): Expected AwaitInventoryCreatedPayload", i, step.StepId)
+			}
 		case saga.AwardAsset:
 			if payload, ok := step.Payload.(saga.AwardItemActionPayload); ok {
 				if payload.CharacterId != 0 {
@@ -998,8 +1008,8 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 	})
 
 	t.Run("unified_saga_step_count", func(t *testing.T) {
-		// 1 create + 3 items + 4 equipment + 3 skills = 11
-		expectedSteps := 1 + 3 + 4 + 3
+		// 1 create + 1 await_inventory_created + 3 items + 4 equipment + 3 skills = 12
+		expectedSteps := 1 + 1 + 3 + 4 + 3
 		if len(result.Steps) != expectedSteps {
 			t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 		}
@@ -1011,6 +1021,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			action   saga.Action
 		}{
 			{"create_character", saga.CreateCharacter},
+			{"await_inventory_created", saga.AwaitInventoryCreated},
 			{"award_item_0", saga.AwardAsset},
 			{"award_item_1", saga.AwardAsset},
 			{"award_item_2", saga.AwardAsset},
@@ -1091,6 +1102,12 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 		for i := 1; i < len(result.Steps); i++ {
 			step := result.Steps[i]
 			switch step.Action {
+			case saga.AwaitInventoryCreated:
+				if payload, ok := step.Payload.(saga.AwaitInventoryCreatedPayload); ok {
+					if payload.CharacterId != 0 {
+						t.Errorf("Step %d (%s): Expected sentinel characterId=0, got %d", i, step.StepId, payload.CharacterId)
+					}
+				}
 			case saga.AwardAsset:
 				if payload, ok := step.Payload.(saga.AwardItemActionPayload); ok {
 					if payload.CharacterId != 0 {
@@ -1502,6 +1519,50 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 	}
 }
 
+func TestBuildCharacterCreationSaga_HasAwaitInventoryCreatedStep(t *testing.T) {
+	transactionId := uuid.New()
+	input := RestModel{AccountId: 1, WorldId: 0, Name: "Test", JobIndex: 0, SubJobIndex: 0, Hp: 50, Mp: 5, MapId: 100000000}
+	tmpl := template.RestModel{Items: []uint32{2010000}}
+
+	sg := buildCharacterCreationSaga(transactionId, input, tmpl)
+
+	// Find indices of the two steps that must be ordered.
+	createIdx, awaitIdx, awardIdx := -1, -1, -1
+	for i, st := range sg.Steps {
+		switch st.Action {
+		case saga.CreateCharacter:
+			createIdx = i
+		case saga.AwaitInventoryCreated:
+			awaitIdx = i
+		case saga.AwardAsset:
+			if awardIdx == -1 {
+				awardIdx = i
+			}
+		}
+	}
+	if createIdx == -1 {
+		t.Fatalf("expected CreateCharacter step")
+	}
+	if awaitIdx == -1 {
+		t.Fatalf("expected AwaitInventoryCreated step")
+	}
+	if awardIdx == -1 {
+		t.Fatalf("expected at least one AwardAsset step")
+	}
+	if !(createIdx < awaitIdx && awaitIdx < awardIdx) {
+		t.Fatalf("expected ordering CreateCharacter(%d) < AwaitInventoryCreated(%d) < AwardAsset(%d)", createIdx, awaitIdx, awardIdx)
+	}
+
+	// Verify the await step's payload has the sentinel CharacterId=0.
+	pl, ok := sg.Steps[awaitIdx].Payload.(saga.AwaitInventoryCreatedPayload)
+	if !ok {
+		t.Fatalf("await step payload type: got %T, want saga.AwaitInventoryCreatedPayload", sg.Steps[awaitIdx].Payload)
+	}
+	if pl.CharacterId != 0 {
+		t.Errorf("await step CharacterId: got %d, want 0 (sentinel)", pl.CharacterId)
+	}
+}
+
 // TestConcurrentSagaCreation tests saga creation under concurrent conditions
 func TestConcurrentSagaCreation(t *testing.T) {
 	input := RestModel{
@@ -1533,15 +1594,16 @@ func TestConcurrentSagaCreation(t *testing.T) {
 	const numGoroutines = 100
 	results := make([]saga.Saga, numGoroutines)
 
+	var wg sync.WaitGroup
 	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
 		go func(index int) {
+			defer wg.Done()
 			transactionId := uuid.New()
 			results[index] = buildCharacterCreationSaga(transactionId, input, tmpl)
 		}(i)
 	}
-
-	// Wait a bit for all goroutines to complete
-	time.Sleep(100 * time.Millisecond)
+	wg.Wait()
 
 	for i, result := range results {
 		if result.TransactionId == uuid.Nil {

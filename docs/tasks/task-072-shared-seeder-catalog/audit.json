@@ -1,0 +1,60 @@
+{
+  "audit": "backend-guidelines-reviewer",
+  "reaudit_date": "2026-05-20",
+  "branch": "task-072-shared-seeder-catalog",
+  "head": "410275f94",
+  "scope": "Go-touching changes only (libs/atlas-seeder, tools/{catalog-lint,seed-splitters}, 8 migrated services)",
+  "build": "pass",
+  "tests": "pass",
+  "vet": "pass",
+  "overallStatus": "pass",
+  "phase1": {
+    "modules": [
+      {"name": "libs/atlas-seeder", "build": "pass", "test_race": "pass", "vet": "pass"},
+      {"name": "tools/seed-splitters", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "tools/catalog-lint", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-drop-information", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-gachapons", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-map-actions", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-reactor-actions", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-portal-actions", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-npc-conversations", "build": "pass", "test_race": "pass", "vet": "pass", "note": "firstjob_scripts_test.go fix from 36b44c90c verified"},
+      {"name": "services/atlas-npc-shops", "build": "pass", "test": "pass", "vet": "pass"},
+      {"name": "services/atlas-party-quests", "build": "pass", "test": "pass", "vet": "pass"}
+    ]
+  },
+  "checks": [
+    {"id": "LIB-01", "name": "Handler accepts FieldLogger", "status": "pass", "evidence": "libs/atlas-seeder/handlers.go:24"},
+    {"id": "LIB-02", "name": "Goroutine carries tenant via bgCtx, not r.Context() post-response", "status": "pass", "evidence": "libs/atlas-seeder/handlers.go:34-38"},
+    {"id": "LIB-03", "name": "os.Getenv only at wiring layer", "status": "pass", "evidence": "libs/atlas-seeder/catalog.go:34, libs/atlas-seeder/seed.go:190"},
+    {"id": "LIB-04", "name": "No map mutation race under errgroup", "status": "pass", "evidence": "libs/atlas-seeder/seed.go:36-49 sync.Mutex; race tests green"},
+    {"id": "LIB-05", "name": "No direct entity writes from HTTP handlers", "status": "pass", "evidence": "handlers.go invokes Seed() orchestrator only"},
+    {"id": "LIB-06", "name": "Errors distinguished (500 vs 202)", "status": "pass", "evidence": "handlers.go:63 (500 on ReadStatus err), handlers.go:54 (202 async)"},
+    {"id": "LIB-07", "name": "Compile-time interface assertions", "status": "pass", "evidence": "var _ seeder.Subdomain[J,M] = X{} present in every subdomain file"},
+    {"id": "LIB-08", "name": "seed_state migration registered in every service", "status": "pass", "evidence": "all 8 main.go files include AutoMigrate(&seeder.SeedState{}) in database.SetMigrations"},
+    {"id": "GRP-01", "name": "RegisterRoutes wired with d.Logger(), db, src, Group", "status": "pass", "evidence": "9 groups.go files matching the same shape"},
+    {"id": "GRP-02", "name": "FilesystemCatalogSource consistent across services", "status": "pass", "evidence": "grep returns identical NewFilesystemCatalogSource('SEED_CATALOG_ROOT', './deploy/seed') in 9 files"},
+    {"id": "GRP-03", "name": "Inline Seed POST handlers removed from resource.go", "status": "pass", "evidence": "diff confirms removal across services"},
+    {"id": "GRP-04", "name": "No os.Getenv in service-side subdomain files", "status": "pass", "evidence": "grep across services/*/atlas.com/**/subdomain*.go returns zero matches"},
+    {"id": "GRP-05", "name": "DeleteAllForTenant tenant-scoped", "status": "pass", "evidence": "either via RegisterTenantCallbacks GORM callback or explicit where tenant_id=?"},
+    {"id": "GRP-06", "name": "Dockerfile carries atlas-seeder in 4 placements", "status": "pass", "evidence": "grep -c atlas-seeder Dockerfile returns 4 for all 8 services"},
+    {"id": "GRP-07", "name": "Compile-time var _ seeder.Subdomain assertions", "status": "pass", "evidence": "verified across all 14 subdomain.go files"},
+    {"id": "GRP-08", "name": "AutoMigrate seed_state in main.go", "status": "pass", "evidence": "8 main.go diffs confirm"},
+    {"id": "TOOL-01", "name": "catalog-lint stand-alone CLI", "status": "pass", "evidence": "tools/catalog-lint/main.go:13-23"},
+    {"id": "TOOL-02", "name": "Splitters preserve numeric IDs (json.Number)", "status": "pass", "evidence": "tools/seed-splitters/wrap-jsonapi/main.go:54 dec.UseNumber()"},
+    {"id": "TOOL-03", "name": "Splitter determinism tests present", "status": "pass", "evidence": "4 *_test.go files green"},
+    {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "no new domain types/constants; JSON shape uint32 fields are wire format"},
+    {"id": "DOM-22", "name": "Dockerfile 4-placement for atlas-seeder", "status": "pass", "evidence": "verified in services/atlas-drop-information/Dockerfile lines 14, 32, 49, 68 and identical pattern in 7 others"},
+    {"id": "DOM-23", "name": "Kafka topic naming", "status": "n/a", "evidence": "no Kafka topic changes in scope"},
+    {"id": "SEC-*", "name": "Security review", "status": "n/a", "evidence": "no auth/JWT/session changes"}
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "Consider documenting the database.RegisterTenantCallbacks prerequisite in libs/atlas-seeder/README.md.",
+    "libs/atlas-seeder/catalog.go:74 Walk relies on os.ReadDir sort order; optional sort.Strings hardening."
+  ],
+  "priorBlockers": [
+    {"id": "P1", "summary": "firstjob_scripts_test.go float-formatted paths", "status": "resolved", "fixCommit": "36b44c90c"},
+    {"id": "P2", "summary": "services/atlas-reactor-actions/scripts/reactors leftover bundled data", "status": "resolved", "fixCommit": "410275f94"}
+  ]
+}

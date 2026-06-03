@@ -1,0 +1,29 @@
+{
+  "WriterName": "BuddyOperationAccept",
+  "IDAName": "CField::SendAcceptFriendMsg",
+  "Address": "0x52f290",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_accept.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op (=2, ACCEPT) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwFriendID — characterId of the buddy whose request is being accepted",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2
+}

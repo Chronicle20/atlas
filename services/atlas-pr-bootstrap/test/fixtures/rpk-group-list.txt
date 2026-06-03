@@ -1,0 +1,5 @@
+BROKER  GROUP                                            STATE
+1       Account Service                                  Stable
+1       Channel Service - 7e3a-0a1b [a1b2]               Stable
+1       Party Quest Service [a1b2]                       Stable
+1       Party Quest Service [other]                      Stable

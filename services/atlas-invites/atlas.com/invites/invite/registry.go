@@ -16,15 +16,13 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-const tenantTrackerKey = "invite:active-tenants"
-
 type Registry struct {
 	invites         *atlas.TenantRegistry[uint32, Model]
 	idGen           *atlas.IDGenerator
 	targetTypeIndex *atlas.Index       // "{targetId}:{inviteType}" → inviteId strings
 	targetIndex     *atlas.Uint32Index // targetId → inviteIds
 	originatorIndex *atlas.Uint32Index // originatorId → inviteIds
-	client          *goredis.Client
+	tenants         *atlas.Set
 }
 
 var registry *Registry
@@ -38,7 +36,7 @@ func InitRegistry(client *goredis.Client) {
 		targetTypeIndex: atlas.NewIndex(client, "invite", "target-type"),
 		targetIndex:     atlas.NewUint32Index(client, "invite", "target"),
 		originatorIndex: atlas.NewUint32Index(client, "invite", "originator"),
-		client:          client,
+		tenants:         atlas.NewSet(client, "invite:active-tenants"),
 	}
 }
 
@@ -51,12 +49,12 @@ func (r *Registry) trackTenant(ctx context.Context, t tenant.Model) {
 	if err != nil {
 		return
 	}
-	r.client.SAdd(ctx, tenantTrackerKey, string(data))
+	_ = r.tenants.Add(ctx, string(data))
 }
 
 func (r *Registry) GetActiveTenants() []tenant.Model {
 	ctx := context.Background()
-	members, err := r.client.SMembers(ctx, tenantTrackerKey).Result()
+	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil
 	}

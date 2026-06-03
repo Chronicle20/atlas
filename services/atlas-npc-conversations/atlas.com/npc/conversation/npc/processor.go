@@ -5,7 +5,6 @@ import (
 	"atlas-npc-conversations/conversation/recipe"
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -64,9 +63,6 @@ type Processor interface {
 	// DeleteAllForTenant deletes all NPC conversations for the current tenant
 	DeleteAllForTenant() (int64, error)
 
-	// Seed clears existing NPC conversations and loads them from the conversations directory
-	Seed() (SeedResult, error)
-
 	// ReindexAllRecipes clears every recipe row for the active tenant, then
 	// walks every NPC conversation and re-derives recipe rows from each one.
 	// Runs in a single transaction so a mid-rebuild failure rolls back to the
@@ -83,6 +79,16 @@ type ProcessorImpl struct {
 	ctx context.Context
 	t   tenant.Model
 	db  *gorm.DB
+}
+
+// SeedResult holds the outcome of a seed operation.
+type SeedResult struct {
+	DeletedCount         int                    `json:"deletedCount"`
+	CreatedCount         int                    `json:"createdCount"`
+	FailedCount          int                    `json:"failedCount"`
+	SkippedRecipes       int                    `json:"skippedRecipes"`
+	SkippedRecipeDetails []recipe.SkippedRecipe `json:"skippedRecipeDetails,omitempty"`
+	Errors               []string               `json:"errors,omitempty"`
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -227,52 +233,6 @@ func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	}
 	p.l.Debugf("Deleted [%d] NPC conversations for tenant [%s]", count, p.t.Id())
 	return count, nil
-}
-
-// Seed clears existing NPC conversations and loads them from the conversations directory
-func (p *ProcessorImpl) Seed() (SeedResult, error) {
-	p.l.Infof("Seeding NPC conversations for tenant [%s]", p.t.Id())
-
-	result := SeedResult{}
-
-	// Delete all existing conversations for this tenant
-	deletedCount, err := p.DeleteAllForTenant()
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing NPC conversations: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load conversation files from the filesystem
-	models, loadErrors := LoadConversationFiles()
-
-	// Track load errors
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each conversation
-	for _, rm := range models {
-		m, err := Extract(rm)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to extract model: %v", rm.NpcId, err))
-			result.FailedCount++
-			continue
-		}
-
-		if _, err := p.createWithSkipTracking(m, &result); err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to create: %v", rm.NpcId, err))
-			result.FailedCount++
-			continue
-		}
-
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 // Count returns the number of NPC conversations for the current tenant and the max updated_at timestamp.

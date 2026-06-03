@@ -23,6 +23,10 @@ func requestChannel(ch channel.Model) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
 }
 
+func unregisterChannel(ch channel.Model) requests.EmptyBodyRequest {
+	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
+}
+
 func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Model) error {
 	return func(ctx context.Context) func(c Model) error {
 		return func(c Model) error {

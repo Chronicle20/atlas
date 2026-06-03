@@ -270,6 +270,33 @@ func TestGetAllActive(t *testing.T) {
 	assert.Len(t, active, 2)
 }
 
+func TestGetInstancesByRoute_RoundTrip(t *testing.T) {
+	reg := setupInstanceTestRegistry(t)
+	tenantId := uuid.New()
+	route := newTestRoute()
+	now := time.Now()
+
+	// Create an instance and optionally add a character.
+	inst := reg.FindOrCreateInstance(tenantId, route, now)
+	instanceId := inst.InstanceId()
+	reg.AddCharacter(instanceId, CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
+
+	// The region-less tenant route key used during store must match the key used
+	// during read — this is the correctness crux exercised by this test.
+	instances := reg.GetInstancesByRoute(tenantId, route.Id())
+	assert.Len(t, instances, 1, "expected exactly one instance for the route")
+	assert.Equal(t, instanceId, instances[0].InstanceId(), "instance id should match the one stored")
+
+	// A different tenant must not see the instance (tenant scoping).
+	otherInstances := reg.GetInstancesByRoute(uuid.New(), route.Id())
+	assert.Empty(t, otherInstances, "different tenant should see no instances")
+
+	// After release the route member must be removed.
+	reg.ReleaseInstance(instanceId)
+	afterRelease := reg.GetInstancesByRoute(tenantId, route.Id())
+	assert.Empty(t, afterRelease, "released instance should not appear in route members")
+}
+
 func TestConcurrentAccess(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()

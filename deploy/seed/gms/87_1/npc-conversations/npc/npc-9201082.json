@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201082,
+      "startState": "introduction",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Have you ever come to know about the card game based on MapleStory, the MapleStory iTCG?"
+          },
+          "id": "introduction",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9201082",
+    "type": "npc-conversation"
+  }
+}

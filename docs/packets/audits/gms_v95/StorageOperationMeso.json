@@ -1,0 +1,20 @@
+{
+  "WriterName": "StorageOperationMeso",
+  "IDAName": "CTrunkDlg::SendGetMoneyRequest",
+  "Address": "0x7688e0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/storage/serverbound/operation_meso.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "amount (signed; +withdraw / -deposit; mode byte 7 written by dispatcher)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -2,7 +2,6 @@ package script
 
 import (
 	"atlas-map-actions/rest"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -22,8 +21,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			registerInputHandler := rest.RegisterInputHandler[RestModel](l)(db)(si)
 
 			// Register handlers - specific routes before parameterized routes
-			router.HandleFunc("/maps/actions/seed", registerHandler("seed_scripts", SeedScriptsHandler)).Methods(http.MethodPost)
-			router.HandleFunc("/maps/actions/seed/status", registerHandler("get_map_action_scripts_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/maps/actions", registerHandler("get_all_scripts", GetAllScriptsHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/maps/actions", registerInputHandler("create_script", CreateScriptHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/maps/actions/{scriptId}", registerHandler("get_script", GetScriptHandler)).Methods(http.MethodGet)
@@ -178,19 +175,3 @@ func DeleteScriptHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 	})
 }
 
-// SeedScriptsHandler handles POST /maps/actions/seed
-func SeedScriptsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Seed()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Seeding scripts.")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
-	}
-}

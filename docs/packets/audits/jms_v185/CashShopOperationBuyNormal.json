@@ -1,0 +1,20 @@
+{
+  "WriterName": "CashShopOperationBuyNormal",
+  "IDAName": "CCashShop::OnBuyNormal",
+  "Address": "0x47f5ba",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy_normal.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nCommSN (serialNumber). op-byte 0x21 consumed by dispatcher. JMS body = serialNumber only",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

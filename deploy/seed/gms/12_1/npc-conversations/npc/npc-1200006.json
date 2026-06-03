@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1200006,
+      "startState": "start",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The current is serene, wich means we may arive in lith harbor earlier than expected."
+          },
+          "id": "start",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1200006",
+    "type": "npc-conversation"
+  }
+}

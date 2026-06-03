@@ -1,0 +1,20 @@
+{
+  "WriterName": "FieldAffectedAreaRemoved",
+  "IDAName": "CAffectedAreaPool::OnAffectedAreaRemoved",
+  "Address": "0x436eda",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/affected_area_removed.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwId (affected-area object id @line54)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

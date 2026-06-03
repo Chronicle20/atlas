@@ -1,0 +1,29 @@
+{
+  "WriterName": "InventoryCompartmentMerge",
+  "IDAName": "CWvsContext::OnGatherItemResult",
+  "Address": "0x9f1280",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/inventory/clientbound/compartment_merge.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "always 0 (eResult/padding) — CompartmentMerge body",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "inventoryType (nType)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

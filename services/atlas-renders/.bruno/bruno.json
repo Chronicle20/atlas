@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "atlas-renders",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

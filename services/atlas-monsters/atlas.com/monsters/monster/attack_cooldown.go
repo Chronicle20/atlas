@@ -13,7 +13,7 @@ import (
 )
 
 type attackCooldownRegistry struct {
-	client *goredis.Client
+	reg *atlasredis.Registry[string, int64]
 }
 
 var attackCooldownReg *attackCooldownRegistry
@@ -21,7 +21,9 @@ var attackCooldownOnce sync.Once
 
 func InitAttackCooldownRegistry(rc *goredis.Client) {
 	attackCooldownOnce.Do(func() {
-		attackCooldownReg = &attackCooldownRegistry{client: rc}
+		attackCooldownReg = &attackCooldownRegistry{
+			reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s }),
+		}
 	})
 }
 
@@ -29,18 +31,16 @@ func GetAttackCooldownRegistry() *attackCooldownRegistry {
 	return attackCooldownReg
 }
 
-func attackCooldownKey(t tenant.Model, monsterId uint32, attackPos uint8) string {
-	return fmt.Sprintf("%s:monster-attack-cooldown:%s:%s:%s",
-		atlasredis.KeyPrefix(),
+func attackCooldownSuffix(t tenant.Model, monsterId uint32, attackPos uint8) string {
+	return fmt.Sprintf("%s:%s:%s",
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 		strconv.FormatUint(uint64(attackPos), 10),
 	)
 }
 
-func attackCooldownScanPattern(t tenant.Model, monsterId uint32) string {
-	return fmt.Sprintf("%s:monster-attack-cooldown:%s:%s:*",
-		atlasredis.KeyPrefix(),
+func attackCooldownMonsterPrefix(t tenant.Model, monsterId uint32) string {
+	return fmt.Sprintf("%s:%s:",
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 	)
@@ -50,12 +50,11 @@ func (r *attackCooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Mode
 	if r == nil {
 		return false
 	}
-	key := attackCooldownKey(t, monsterId, attackPos)
-	result, err := r.client.Exists(ctx, key).Result()
+	ok, err := r.reg.Exists(ctx, attackCooldownSuffix(t, monsterId, attackPos))
 	if err != nil {
 		return false
 	}
-	return result > 0
+	return ok
 }
 
 // SetCooldown registers a cooldown for the given (monsterId, attackPos) with
@@ -68,28 +67,13 @@ func (r *attackCooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model
 	if duration <= 0 {
 		return
 	}
-	key := attackCooldownKey(t, monsterId, attackPos)
 	expiryMs := time.Now().Add(duration).UnixMilli()
-	r.client.Set(ctx, key, strconv.FormatInt(expiryMs, 10), duration)
+	_ = r.reg.PutWithTTL(ctx, attackCooldownSuffix(t, monsterId, attackPos), expiryMs, duration)
 }
 
 func (r *attackCooldownRegistry) ClearCooldowns(ctx context.Context, t tenant.Model, monsterId uint32) {
 	if r == nil {
 		return
 	}
-	pattern := attackCooldownScanPattern(t, monsterId)
-	var cursor uint64
-	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
-		if err != nil {
-			return
-		}
-		if len(keys) > 0 {
-			r.client.Del(ctx, keys...)
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
-	}
+	_, _ = r.reg.ClearByPrefix(ctx, attackCooldownMonsterPrefix(t, monsterId))
 }

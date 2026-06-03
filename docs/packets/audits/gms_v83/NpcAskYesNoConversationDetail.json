@@ -1,0 +1,20 @@
+{
+  "WriterName": "NpcAskYesNoConversationDetail",
+  "IDAName": "CScriptMan::OnAskYesNo#AskYesNo",
+  "Address": "0x74692c",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message text",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

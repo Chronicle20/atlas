@@ -1,0 +1,20 @@
+{
+  "WriterName": "InteractionOperationMerchantAddToBlackList",
+  "IDAName": "CEntrustedShopDlg::AddBlackList",
+  "Address": "0x51ed50",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_merchant_add_to_black_list.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "name (sName; op 0x30)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

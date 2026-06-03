@@ -1306,6 +1306,34 @@
           "comment": "y int16"
         }
       ]
+    },
+    "CLogin::OnCheckPinCodeResult#RegisterPin": {
+      "address": "0x5db000",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "pinInput flag (1=pin provided, 0=cancelled)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "pin string (only when pinInput=1)"
+        }
+      ]
+    },
+    "CLogin::SendSetGenderPacket": {
+      "address": "0x5d4650",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "set flag (literal 1u when setting gender)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nGender byte (only when set=1)"
+        }
+      ]
     }
   }
 }

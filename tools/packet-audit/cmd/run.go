@@ -242,6 +242,12 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ActionScriptStart", dir: csvpkg.DirServerbound}}
 	case "CQuest::StartQuest#ActionScriptEnd":
 		return []candidate{{name: "ActionScriptEnd", dir: csvpkg.DirServerbound}}
+
+	// --- account bucket (task-069, sub-phase 2h) ---
+	case "CLogin::OnCheckPinCodeResult#RegisterPin":
+		return []candidate{{name: "RegisterPin", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendSetGenderPacket":
+		return []candidate{{name: "SetGender", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

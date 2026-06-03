@@ -113,3 +113,29 @@ Refresh procedure:
 The synthetic-FName scheme (e.g., `CLogin::OnCheckPasswordResult#AuthLoginFailed`)
 lets one IDA function model multiple sub-branches when atlas has separate
 writers for different result codes.
+
+## Tool domain — utility-only (task-069)
+
+`libs/atlas-packet/tool/` contains only `uint128.go` — a 128-bit unsigned
+integer utility type (ShiftLeft/ShiftRight/And/Or/Xor/Add/Mult/IsZero) consumed
+by socket/channel handshake encoders for hash fields. It is NOT a packet domain:
+zero `Operation()`/`Encode()`/`Decode()` methods, zero audit rows. Confirmed at
+audit time via `find libs/atlas-packet/tool -name '*.go' ! -name '*_test.go'`
+(single file) and method enumeration. Listed in TOTAL.md §2 under "no packets;
+utility-only".
+
+## locateAtlasFile struct-name collisions (task-069)
+
+The audit's `locateAtlasFile` (tools/packet-audit/cmd/run.go) resolves an atlas
+struct by the FIRST `type <Name> struct` match in alphabetical `WalkDir` order
+within the matching direction folder. When two domains define the same struct
+name in the same direction, the wrong file is audited:
+
+| Struct | Audited (wrong) | Intended | Effect |
+|---|---|---|---|
+| `ChannelChange` (clientbound) | `buddy/clientbound/channel_change.go` | `channel/clientbound/change.go` | spurious ❌ on the ChannelChange row; the channel packet is verified correct manually + by wire-shape test (see ChannelChange.md Manual analysis) |
+
+Not fixed here (tool change out of scope per design §1's spirit). Future misc
+buckets must check for same-name collisions and verify the audited file path in
+SUMMARY points at the intended domain; if not, verify the packet manually and
+annotate the report.

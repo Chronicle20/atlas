@@ -1,0 +1,20 @@
+{
+  "WriterName": "OpenShop",
+  "IDAName": "CWvsContext::OnEntrustedShopCheckResult#OpenShop",
+  "Address": "0x9ffcb0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (case 7 = OPEN_SHOP; client calls SendOpenShopRequest — no further reads)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

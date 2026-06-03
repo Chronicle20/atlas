@@ -216,6 +216,22 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::SendGivePopularityRequest":
 		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
+
+	// --- merchant bucket (task-069, sub-phase 2f) ---
+	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":
+		return []candidate{{name: "OpenShop", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ErrorSimple":
+		return []candidate{{name: "ErrorSimple", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ShopSearch":
+		return []candidate{{name: "ShopSearch", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ShopRename":
+		return []candidate{{name: "ShopRename", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp":
+		return []candidate{{name: "RemoteShopWarp", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage":
+		return []candidate{{name: "ConfirmManage", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice":
+		return []candidate{{name: "FreeFormNotice", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

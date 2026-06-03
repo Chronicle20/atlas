@@ -139,3 +139,47 @@ Not fixed here (tool change out of scope per design §1's spirit). Future misc
 buckets must check for same-name collisions and verify the audited file path in
 SUMMARY points at the intended domain; if not, verify the packet manually and
 annotate the report.
+
+## Bare handlers — misc domain (task-069)
+
+| Handler constant | Location | Reason deferred |
+|---|---|---|
+| `HiredMerchantOperationHandle` | `libs/atlas-packet/merchant/serverbound/operation.go` | Bare constant only — no atlas-packet decoder struct. The serverbound parse is handled in `services/atlas-channel` socket handler. Out of scope for the libs/atlas-packet audit. |
+
+## Missing / unverified modes — merchant (task-069, sub-phase 2f)
+
+| Mode | Constant | Reason deferred |
+|---|---|---|
+| 8 (0x08) | `HiredMerchantOperationModeErrorUnknown` | In IDA switch (`OnEntrustedShopCheckResult`): `Decode4(shopId)+Decode1(channelId)` — channel-name notice. No atlas body emits it; missing implementation, not a struct wire bug. |
+| 1 (0x01) | `HiredMerchantOperationModeErrorUnableToOpenTheStore` | Absent from the v95 `OnEntrustedShopCheckResult` switch. Possibly hire-merchant (task-067), KMS-only, or client-side-only. Cross-reference task-067 before implementing. |
+| 11 (0x0B) | *(no atlas constant)* | Present in IDA switch (string-pool 3508 notice, no extra decode) but no atlas constant/struct. Add when the mode is exercised. |
+
+## Still pending — quest (task-069, sub-phase 2g)
+
+These three serverbound quest packets have a confirmed v95 wire mismatch but the fix
+requires updating BOTH the atlas-packet struct AND the `services/atlas-channel`
+`quest_action.go` handler together — broader than the libs-only audit. Recommend a
+dedicated follow-up task.
+
+- **`ActionStart` / `ActionComplete`** (`CQuest::StartQuest` @0x6b40a0, actions 1/2):
+  v95 writes `Encode4(nItemPos)` (delivery-item slot, 0 for normal quests) BETWEEN `npcId`
+  and the conditional `x,y` coords; atlas omits it. Also: atlas's `autoStart` gate on `x,y`
+  corresponds to IDA's `!CQuestMan::IsAutoAlertQuest(questId)` — equivalent but verify naming.
+- **`ActionRestoreLostItem`** (`CQuest::OnCompleteQuestFailed` @0x6b1fc0, action 0):
+  IDA sends a count-prefixed variable-length array of lost-item ids
+  (`Encode1(0)+Encode2(questId)+Encode4(count)+EncodeBuffer(4*count)`); atlas models a single
+  `unk1+itemId`. Needs struct redesign (slice + count) + handler update. Rarely exercised.
+
+## Phase 3 cross-version verification TODOs (task-069)
+
+Gates applied during the v95 (Phase 2) pass that were conservatively scoped to v95+ and
+MUST be re-checked against v83 / v87 / JMS185 IDA in Phase 3 (widen or narrow as evidence
+dictates):
+
+- **`stat/clientbound/changed.go`** — second trailing flag byte (battle-recovery-info) gated
+  to `GMS && MajorVersion>=95`. Confirm whether v83/v87/JMS clients also read two trailing
+  flags. (HP/MaxHP/MP/MaxMP int32 widening is already version-evidenced via
+  `model/character_statistics.go` and need not be re-derived.)
+- **`ui/clientbound/lock.go`** — the int32 `tAfterLeaveDirectionMode` field is gated
+  `GMS && MajorVersion>=90` (pre-existing). v83/non-GMS clients may send only the 1-byte flag;
+  confirm whether those versions also read the int32, else the gate is correct as-is.

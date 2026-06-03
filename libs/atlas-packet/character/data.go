@@ -144,8 +144,12 @@ func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteShort(0)
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Monster book: present for GMS (28,87] and JMS; absent in v28 and GMS v95+.
+		if (t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() <= 87) || t.Region() == "JMS" {
 			m.encodeMonsterBook(w)
+		}
+		// New-year cards / area popup / trailing short — gate unchanged (GMS > 28 || JMS).
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			if t.Region() == "GMS" {
 				m.encodeNewYear(w)
 				m.encodeArea(w)
@@ -199,8 +203,12 @@ func (m *CharacterData) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 			_ = r.ReadUint16()
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Monster book: present for GMS (28,87] and JMS; absent in v28 and GMS v95+.
+		if (t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() <= 87) || t.Region() == "JMS" {
 			m.decodeMonsterBook(r)
+		}
+		// New-year cards / area popup / trailing short — gate unchanged (GMS > 28 || JMS).
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			if t.Region() == "GMS" {
 				m.decodeNewYear(r)
 				m.decodeArea(r)

@@ -167,3 +167,49 @@ func TestEncodeMonsterBook_Populated(t *testing.T) {
 		t.Errorf("populated book bytes = % x, want % x", got, want)
 	}
 }
+
+func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := CharacterData{
+				Stats: CharacterStats{Id: 3000, Name: "Booker", Level: 30, JobId: 100, MapId: 100000000},
+				Inventory: InventoryData{
+					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+					EtcCapacity: 24, CashCapacity: 24, Timestamp: 94354848000000000,
+				},
+				MonsterBook: MonsterBookData{
+					CoverCardId: 2380001,
+					Cards: []MonsterBookCard{
+						{CardId: 2380005, Level: 2},
+						{CardId: 2382000, Level: 5},
+					},
+				},
+			}
+			output := CharacterData{}
+			// RoundTrip fails if any byte is left unconsumed — the gate-alignment guard.
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+
+			bookPresent := (v.Region == "GMS" && v.MajorVersion > 28 && v.MajorVersion <= 87) || v.Region == "JMS"
+			if bookPresent {
+				if output.MonsterBook.CoverCardId != input.MonsterBook.CoverCardId {
+					t.Errorf("cover: got %d, want %d", output.MonsterBook.CoverCardId, input.MonsterBook.CoverCardId)
+				}
+				if len(output.MonsterBook.Cards) != len(input.MonsterBook.Cards) {
+					t.Fatalf("card count: got %d, want %d", len(output.MonsterBook.Cards), len(input.MonsterBook.Cards))
+				}
+				for i := range output.MonsterBook.Cards {
+					if output.MonsterBook.Cards[i] != input.MonsterBook.Cards[i] {
+						t.Errorf("card[%d]: got %+v, want %+v", i, output.MonsterBook.Cards[i], input.MonsterBook.Cards[i])
+					}
+				}
+			} else {
+				// v95: monster book absent — encoder wrote nothing, decoder read nothing.
+				if output.MonsterBook.CoverCardId != 0 || len(output.MonsterBook.Cards) != 0 {
+					t.Errorf("expected empty monster book for %s, got cover=%d cards=%d",
+						v.Name, output.MonsterBook.CoverCardId, len(output.MonsterBook.Cards))
+				}
+			}
+		})
+	}
+}

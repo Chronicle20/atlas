@@ -337,6 +337,23 @@
         {"op": "Encode1", "comment": "render flag (literal 1u in MakeVACDlg; ResetVAC sends 0; opcode 0x0F)"}
       ]
     },
+    "CClientSocket::OnMigrateCommand": {
+      "address": "0x4add50",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "success flag (if 0 → client disconnects)"},
+        {"op": "Decode4", "comment": "IP address as raw uint32 (stored directly into sin_addr.s_addr — network byte order preserved)"},
+        {"op": "Decode2", "comment": "port (host byte order; htons applied when building sockaddr)"}
+      ]
+    },
+    "CField::SendTransferChannelRequest": {
+      "address": "0x52efa0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "nTargetChannel (target channel ID, 0-based byte)"},
+        {"op": "Encode4", "comment": "get_update_time() (client tick / update time, uint32)"}
+      ]
+    },
     "CWvsContext::OnStatChanged": {
       "address": "0x9fd5d0",
       "direction": "clientbound",

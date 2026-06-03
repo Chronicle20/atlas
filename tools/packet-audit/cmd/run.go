@@ -196,6 +196,10 @@ func candidatesFromFName(fname string) []candidate {
 	// --- misc domain (task-069) ---
 	case "CWvsContext::OnStatChanged":
 		return []candidate{{name: "Changed", dir: csvpkg.DirClientbound}}
+	case "CClientSocket::OnMigrateCommand":
+		return []candidate{{name: "ChannelChange", dir: csvpkg.DirClientbound}}
+	case "CField::SendTransferChannelRequest":
+		return []candidate{{name: "ChannelChangeRequest", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

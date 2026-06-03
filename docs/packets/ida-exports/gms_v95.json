@@ -336,6 +336,38 @@
       "calls": [
         {"op": "Encode1", "comment": "render flag (literal 1u in MakeVACDlg; ResetVAC sends 0; opcode 0x0F)"}
       ]
+    },
+    "CWvsContext::OnStatChanged": {
+      "address": "0x9fd5d0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "bExclRequestSent"},
+        {"op": "Decode4", "comment": "dwStatMask (GW_CharacterStat::DecodeChangeStat @0x4fa000)"},
+        {"op": "Decode1", "comment": "nSkin", "guard": "mask 0x1"},
+        {"op": "Decode4", "comment": "nFace", "guard": "mask 0x2"},
+        {"op": "Decode4", "comment": "nHair", "guard": "mask 0x4"},
+        {"op": "Decode8", "comment": "petLockerSN[0] (DecodeBuffer 8)", "guard": "mask 0x8"},
+        {"op": "Decode8", "comment": "petLockerSN[1] (DecodeBuffer 8)", "guard": "mask 0x80000"},
+        {"op": "Decode8", "comment": "petLockerSN[2] (DecodeBuffer 8)", "guard": "mask 0x100000"},
+        {"op": "Decode1", "comment": "nLevel", "guard": "mask 0x10"},
+        {"op": "Decode2", "comment": "nJob", "guard": "mask 0x20"},
+        {"op": "Decode2", "comment": "nSTR", "guard": "mask 0x40"},
+        {"op": "Decode2", "comment": "nDEX", "guard": "mask 0x80"},
+        {"op": "Decode2", "comment": "nINT", "guard": "mask 0x100"},
+        {"op": "Decode2", "comment": "nLUK", "guard": "mask 0x200"},
+        {"op": "Decode4", "comment": "nHP (v95 widened from int16)", "guard": "mask 0x400"},
+        {"op": "Decode4", "comment": "nMHP (v95 widened from int16)", "guard": "mask 0x800"},
+        {"op": "Decode4", "comment": "nMP (v95 widened from int16)", "guard": "mask 0x1000"},
+        {"op": "Decode4", "comment": "nMMP (v95 widened from int16)", "guard": "mask 0x2000"},
+        {"op": "Decode2", "comment": "nAP", "guard": "mask 0x4000"},
+        {"op": "Decode2", "comment": "nSP (non-extendSP job branch)", "guard": "mask 0x8000"},
+        {"op": "Decode4", "comment": "nEXP", "guard": "mask 0x10000"},
+        {"op": "Decode2", "comment": "nPOP (fame)", "guard": "mask 0x20000"},
+        {"op": "Decode4", "comment": "nMoney (meso)", "guard": "mask 0x40000"},
+        {"op": "Decode4", "comment": "nTempEXP (gachaponExperience)", "guard": "mask 0x200000"},
+        {"op": "Decode1", "comment": "bSecondaryStatChangedPoint flag (OnStatChanged@0x9fd6c4; conditional Decode1 payload omitted)"},
+        {"op": "Decode1", "comment": "battle-recovery-info flag (OnStatChanged@0x9fd6f0; conditional Decode4+Decode4 payload omitted)"}
+      ]
     }
   }
 }

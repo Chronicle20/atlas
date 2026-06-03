@@ -192,6 +192,10 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthPermanentBan", dir: csvpkg.DirClientbound}}
 	case "CLogin::SendViewAllCharPacket":
 		return []candidate{{name: "AllCharacterListRequest", dir: csvpkg.DirServerbound}}
+
+	// --- misc domain (task-069) ---
+	case "CWvsContext::OnStatChanged":
+		return []candidate{{name: "Changed", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

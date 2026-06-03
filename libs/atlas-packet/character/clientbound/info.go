@@ -31,13 +31,15 @@ type CharacterInfo struct {
 	pets            []InfoPet
 	wishList        []uint32
 	medalId         uint32
+	monsterBookCover uint32
 }
 
 func NewCharacterInfo(characterId uint32, level byte, jobId uint16, fame int16, guildName string,
-	pets []InfoPet, wishList []uint32, medalId uint32) CharacterInfo {
+	pets []InfoPet, wishList []uint32, medalId uint32, monsterBookCover uint32) CharacterInfo {
 	return CharacterInfo{
 		characterId: characterId, level: level, jobId: jobId, fame: fame,
 		guildName: guildName, pets: pets, wishList: wishList, medalId: medalId,
+		monsterBookCover: monsterBookCover,
 	}
 }
 
@@ -95,7 +97,7 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteInt(0) // normal card
 			w.WriteInt(0) // special card
 			w.WriteInt(0) // total cards
-			w.WriteInt(0) // cover
+			w.WriteInt(m.monsterBookCover) // cover
 		}
 
 		w.WriteInt(m.medalId)
@@ -115,6 +117,7 @@ func (m CharacterInfo) GuildName() string    { return m.guildName }
 func (m CharacterInfo) Pets() []InfoPet      { return m.pets }
 func (m CharacterInfo) WishList() []uint32   { return m.wishList }
 func (m CharacterInfo) MedalId() uint32      { return m.medalId }
+func (m CharacterInfo) MonsterBookCover() uint32 { return m.monsterBookCover }
 
 func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -160,7 +163,7 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 			_ = r.ReadUint32() // normal card
 			_ = r.ReadUint32() // special card
 			_ = r.ReadUint32() // total cards
-			_ = r.ReadUint32() // cover
+			m.monsterBookCover = r.ReadUint32() // cover
 		}
 
 		m.medalId = r.ReadUint32()

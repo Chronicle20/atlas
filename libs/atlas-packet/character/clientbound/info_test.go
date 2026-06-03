@@ -11,7 +11,7 @@ func TestCharacterInfoEncode(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},
 	}
-	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007)
+	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, 0)
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 				{Slot: 1, TemplateId: 5000001, Name: "MiniCat", Level: 10, Closeness: 100, Fullness: 50},
 			}
 			wishList := []uint32{1002000, 1002001, 1002002}
-			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000)
+			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000, 0)
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
@@ -73,11 +73,21 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 	}
 }
 
+func TestCharacterInfo_MonsterBookCover(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, 2380001) // new trailing cover arg
+	out := CharacterInfo{}
+	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	if out.MonsterBookCover() != 2380001 {
+		t.Errorf("cover = %d, want 2380001", out.MonsterBookCover())
+	}
+}
+
 func TestCharacterInfoEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0)
+			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0, 0)
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if len(output.Pets()) != 0 {

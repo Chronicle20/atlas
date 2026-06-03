@@ -52,7 +52,7 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) pa
 
 			return charpkt.NewCharacterInfo(
 				c.Id(), c.Level(), uint16(c.JobId()), c.Fame(), guildName,
-				pets, wishListSNs, medalId,
+				pets, wishListSNs, medalId, uint32(c.CoverCardId()),
 			).Encode(l, ctx)(options)
 		}
 	}

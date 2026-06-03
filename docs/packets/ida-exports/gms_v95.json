@@ -407,6 +407,40 @@
         {"op": "Decode1", "comment": "bSet (direction/lock mode flag)"},
         {"op": "Decode4", "comment": "tAfterLeaveDirectionMode (timer value; used when bSet==0 and value>0)"}
       ]
+    },
+    "CWvsContext::OnGivePopularityResult#GiveResponse": {
+      "address": "0x9fea60",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "mode (switch dispatch; case 0 = GIVE)"},
+        {"op": "DecodeStr", "comment": "toName (recipient of the fame)"},
+        {"op": "Decode1", "comment": "bInc (1=fame, 0=defame)"},
+        {"op": "Decode4", "comment": "nPOP (new total fame as int32)"}
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#ReceiveResponse": {
+      "address": "0x9fea60",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "mode (switch dispatch; case 5 = RECEIVE)"},
+        {"op": "DecodeStr", "comment": "fromName (character who gave fame)"},
+        {"op": "Decode1", "comment": "bInc (1=fame, 0=defame)"}
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#ErrorResponse": {
+      "address": "0x9fea60",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "mode (switch dispatch; cases 1-4 = error codes — no additional fields)"}
+      ]
+    },
+    "CWvsContext::SendGivePopularityRequest": {
+      "address": "0x9f67e0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "dwCharacterId (target character ID as uint32)"},
+        {"op": "Encode1", "comment": "bInc (1=fame, 0=defame)"}
+      ]
     }
   }
 }

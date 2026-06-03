@@ -206,6 +206,16 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Disable", dir: csvpkg.DirClientbound}}
 	case "CUserLocal::OnSetDirectionMode":
 		return []candidate{{name: "Lock", dir: csvpkg.DirClientbound}}
+
+	// --- fame bucket (task-069, sub-phase 2e) ---
+	case "CWvsContext::OnGivePopularityResult#GiveResponse":
+		return []candidate{{name: "GiveResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGivePopularityResult#ReceiveResponse":
+		return []candidate{{name: "ReceiveResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGivePopularityResult#ErrorResponse":
+		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::SendGivePopularityRequest":
+		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

@@ -200,6 +200,12 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ChannelChange", dir: csvpkg.DirClientbound}}
 	case "CField::SendTransferChannelRequest":
 		return []candidate{{name: "ChannelChangeRequest", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::OnOpenUI":
+		return []candidate{{name: "Open", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnSetStandAloneMode":
+		return []candidate{{name: "Disable", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnSetDirectionMode":
+		return []candidate{{name: "Lock", dir: csvpkg.DirClientbound}}
 	}
 	return nil
 }

@@ -385,6 +385,28 @@
         {"op": "Decode1", "comment": "bSecondaryStatChangedPoint flag (OnStatChanged@0x9fd6c4; conditional Decode1 payload omitted)"},
         {"op": "Decode1", "comment": "battle-recovery-info flag (OnStatChanged@0x9fd6f0; conditional Decode4+Decode4 payload omitted)"}
       ]
+    },
+    "CUserLocal::OnOpenUI": {
+      "address": "0x9055f0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "nUIID (window mode byte; dispatched to CWvsContext::UI_Open)"}
+      ]
+    },
+    "CUserLocal::OnSetStandAloneMode": {
+      "address": "0x905550",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "bStandAlone (enable flag; stored to CWvsContext+0xE15)"}
+      ]
+    },
+    "CUserLocal::OnSetDirectionMode": {
+      "address": "0x9054f0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "bSet (direction/lock mode flag)"},
+        {"op": "Decode4", "comment": "tAfterLeaveDirectionMode (timer value; used when bSet==0 and value>0)"}
+      ]
     }
   }
 }

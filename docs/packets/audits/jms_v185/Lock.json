@@ -1,0 +1,20 @@
+{
+  "WriterName": "Lock",
+  "IDAName": "CUserLocal::OnSetDirectionMode",
+  "Address": "0xa2cd83",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/ui/clientbound/lock.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bSet (direction/lock flag)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

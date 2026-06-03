@@ -1,0 +1,513 @@
+{
+  "binary": "MapleStory_dump_SCY.exe",
+  "md5": "af6652ff9b7c549341f35e3569d7564a",
+  "generated_at": "2026-06-03T00:00:00Z",
+  "functions": {
+    "CWvsContext::OnStatChanged": {
+      "address": "0xb06632",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bExclRequestSent"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwStatMask (GW_CharacterStat::DecodeChangeStat @0x50f16a)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSkin",
+          "guard": "mask 0x1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nFace",
+          "guard": "mask 0x2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nHair",
+          "guard": "mask 0x4"
+        },
+        {
+          "op": "Decode8",
+          "comment": "petLockerSN[0] (DecodeBuffer 8)",
+          "guard": "mask 0x8"
+        },
+        {
+          "op": "Decode8",
+          "comment": "petLockerSN[1] (DecodeBuffer 8)",
+          "guard": "mask 0x80000"
+        },
+        {
+          "op": "Decode8",
+          "comment": "petLockerSN[2] (DecodeBuffer 8)",
+          "guard": "mask 0x100000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nLevel",
+          "guard": "mask 0x10"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nJob",
+          "guard": "mask 0x20"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nSTR",
+          "guard": "mask 0x40"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nDEX",
+          "guard": "mask 0x80"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nINT",
+          "guard": "mask 0x100"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nLUK",
+          "guard": "mask 0x200"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nHP (JMS v185 int16 — NOT widened to int32 unlike GMS v95)",
+          "guard": "mask 0x400"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMHP (JMS v185 int16)",
+          "guard": "mask 0x800"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMP (JMS v185 int16)",
+          "guard": "mask 0x1000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nMMP (JMS v185 int16)",
+          "guard": "mask 0x2000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nAP",
+          "guard": "mask 0x4000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nSP (non-extendSP job branch) or sub_50E8B0 (ExtendSP)",
+          "guard": "mask 0x8000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nEXP",
+          "guard": "mask 0x10000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOP (fame)",
+          "guard": "mask 0x20000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMoney (meso)",
+          "guard": "mask 0x40000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTempEXP (gachaponExperience)",
+          "guard": "mask 0x200000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bSecondaryStatChangedPoint flag (OnStatChanged@0xb066c9; conditional on mask 0x180008)"
+        }
+      ]
+    },
+    "CClientSocket::OnMigrateCommand": {
+      "address": "0x4b1924",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "success flag (if 0 → CDisconnectException thrown)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "IP address as raw uint32 (stored into pAddr.sin_addr.S_un.S_addr)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "port (host byte order; sub_4AFC56 builds sockaddr)"
+        }
+      ]
+    },
+    "CUserLocal::OnOpenUI": {
+      "address": "0xa2cf38",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nUIID (dispatched to CWvsContext::UI_Open)"
+        }
+      ]
+    },
+    "CUserLocal::OnSetStandAloneMode": {
+      "address": "0xa2cdcb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bStandAlone (stored to CWvsContext szReserved+1060)"
+        }
+      ]
+    },
+    "CUserLocal::OnSetDirectionMode": {
+      "address": "0xa2cd83",
+      "direction": "clientbound",
+      "note": "JMS v185 uses sub_A2CD83 at case 0xE7 of CUserLocal::OnPacket instead of a named OnSetDirectionMode. Reads ONLY Decode1(bSet) — no tAfterLeaveDirectionMode int32 field. Same wire shape as GMS v83; gate GMS && MajorVersion>=90 is CORRECT for JMS.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bSet (direction/lock flag)"
+        }
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#GiveResponse": {
+      "address": "0xb094aa",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 0 = GIVE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "toName (recipient)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bInc (1=fame, 0=defame)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nPOP (new total fame — CUIUserInfo::NotifyGivePopResult uses Decode4)"
+        }
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#ReceiveResponse": {
+      "address": "0xb094aa",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 5 = RECEIVE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "fromName (character who gave fame)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bInc (1=fame, 0=defame)"
+        }
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#ErrorResponse": {
+      "address": "0xb094aa",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (cases 1-4 = error codes — no additional fields)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#OpenShop": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 7 = OPEN_SHOP; calls SendOpenShopRequest — no further reads)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ErrorSimple": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (cases 9/10/11/15 — string pool notice, no further reads; JMS adds case 0xB/0xF vs GMS 9/10/15)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ShopSearch": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 0xD = SHOP_SEARCH)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSearchedShop (stored into CUIMiniMap m_rcInvalidated.right)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ShopRename": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 0xE = SHOP_RENAME)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success flag (if 0 shows fail msg; if 1 shows success)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 0x10 = REMOTE_SHOP_WARP)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "shopId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId (0xFE/0xFD/0xFF = error)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (case 0x11 = CONFIRM_MANAGE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "shopId / dwCharacterID"
+        },
+        {
+          "op": "Decode2",
+          "comment": "position / slot index"
+        },
+        {
+          "op": "Decode8",
+          "comment": "liCashItemSN (DecodeBuffer 8)"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice": {
+      "address": "0xb0ee59",
+      "direction": "clientbound",
+      "note": "Mode 0x12 (FreeFormNotice) is ABSENT from JMS v185 switch — falls to default/return. JMS does not implement this mode. Atlas FreeFormNotice encoder writes mode 0x12 which JMS client ignores.",
+      "calls": []
+    },
+    "CWvsContext::OnScriptProgressMessage": {
+      "address": "0xaf7f26",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "message (quest script progress string)"
+        }
+      ]
+    },
+    "CClientSocket::OnConnect#Hello": {
+      "address": "0x4b0066",
+      "direction": "clientbound",
+      "note": "JMS v185 parses Hello via raw socket recv loop + CIOBufferManipulator::DecodeStr, not CInPacket. Wire format: 2B length + 2B majorVersion(uint16) + DecodeStr(minorVersion) + 4B recvIv + 4B sendIv + 1B locale. Locale must be 3 for JMS (checked at 0x4b02c6). Same overall wire layout as GMS.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "packet length prefix"
+        },
+        {
+          "op": "Decode2",
+          "comment": "majorVersion uint16 (must be 185)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "minorVersion string"
+        },
+        {
+          "op": "Decode4",
+          "comment": "recvIv (m_uSeqSnd) 4 bytes"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sendIv (m_uSeqRcv) 4 bytes"
+        },
+        {
+          "op": "Decode1",
+          "comment": "locale byte (must be 3 for JMS)"
+        }
+      ]
+    },
+    "CClientSocket::OnAliveReq#PingReceive": {
+      "address": "0x4b18e3",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CField::SendTransferChannelRequest": {
+      "address": "0x56d886",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "nTargetChannel (opcode 0x1E)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "get_update_time() (client tick)"
+        }
+      ]
+    },
+    "CWvsContext::SendGivePopularityRequest": {
+      "address": "0xb0b21e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterId (opcode 0x5A; taken from CUser object at offset +4992)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nType (bInc, 1=fame, 0=defame)"
+        }
+      ]
+    },
+    "CWvsContext::ResignQuest#Action": {
+      "address": "0xb0e6e9",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "action type byte (literal 3u for resign; opcode 0x66)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "questId uint16"
+        }
+      ]
+    },
+    "CQuest::StartQuest#ActionScriptStart": {
+      "address": "0x77d065",
+      "direction": "serverbound",
+      "note": "JMS v185 CQuest::StartQuest action=4 (m_nState==0, IsStartScriptLinkedQuest). Sub-struct after Action header (action byte + questId): npcId+x+y. No extra nItemPos field in JMS for this action. Same as GMS v95.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "npcId uint32"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x int16 (bLoopback, conditional on !IsAutoAlertQuest)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y int16 (v59[0], conditional on !IsAutoAlertQuest)"
+        }
+      ]
+    },
+    "CQuest::StartQuest#ActionScriptEnd": {
+      "address": "0x77d065",
+      "direction": "serverbound",
+      "note": "JMS v185 CQuest::StartQuest action=5 (m_nState==1, IsCompleteScriptLinkedQuest). Sub-struct after Action header (action byte + questId): npcId+x+y. Same as GMS v95.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "npcId uint32"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x int16 (bLoopback, conditional on !IsAutoAlertQuest)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y int16 (conditional on !IsAutoAlertQuest)"
+        }
+      ]
+    },
+    "CLogin::OnCheckPinCodeResult#RegisterPin": {
+      "address": "",
+      "direction": "serverbound",
+      "note": "CLogin::OnCheckPinCodeResult absent from JMS v185 IDB. JMS usesPin=false per template_jms_185_1.json; no pin flow exists. No JMS audit entry generated.",
+      "calls": []
+    },
+    "CLogin::SendSetGenderPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "note": "CLogin::SendSetGenderPacket absent from JMS v185 IDB. JMS login flow differs from GMS; gender-setting packet not found in this binary.",
+      "calls": []
+    },
+    "CClientSocket::OnConnect#ChannelConnect": {
+      "address": "0x4b0066",
+      "direction": "serverbound",
+      "note": "JMS v185 CClientSocket::OnConnect non-login branch (0x4b051f): sends Encode4(charId)+EncodeBuffer(machineId,16)+Encode2(dummy1)+Encode1(0)+EncodeBuffer(unknown2,8). The gm/dummy1 field is Encode2 (uint16) in JMS vs Encode1 (byte) in GMS. GATE WIDENED: ChannelConnect.Encode/Decode now uses ReadUint16/WriteShort for Region==JMS.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "characterId uint32"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "machineId 16 bytes (CSystemInfo::GetMachineId)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "gm/dummy1 uint16 (CConfig::dummy1) — JMS sends 2 bytes; GMS sends 1 byte"
+        },
+        {
+          "op": "Encode1",
+          "comment": "unknown1 (literal 0)"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "unknown2 8 bytes"
+        }
+      ]
+    },
+    "CClientSocket::OnAliveReq#PongSend": {
+      "address": "0x4b18e3",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CClientSocket::OnConnect#StartError": {
+      "address": "0x4b0066",
+      "direction": "serverbound",
+      "note": "JMS v185 login branch (0x4b03d1): COutPacket(v47, 15) + Encode2(v22, len) + EncodeBuffer(Src, len). Wire layout matches GMS v95 StartError: Encode2(length) + EncodeBuffer(bytes, length).",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "length uint16 (byte count of exception log data)"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "bytes variable-length exception log data"
+        }
+      ]
+    }
+  }
+}

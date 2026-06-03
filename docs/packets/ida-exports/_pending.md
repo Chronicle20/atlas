@@ -193,7 +193,33 @@ dictates):
   The `SetGender` atlas struct has no v83 JSON entry; no v83 report is generated for it.
   If v83 gender-setting is ever needed, locate the sending function in a dedicated v83 audit.
 
-### Still pending — v87 / JMS185 verification
+### Resolved in Phase 3 (JMS v185 pass — 2026-06-03)
 
-These gates have been confirmed for v83 but NOT yet verified for v87 or JMS 1.85. If either of
-those versions is audited in a future phase, re-check both gates above.
+- **`stat/clientbound/changed.go`** — CONFIRMED ✅. JMS v185 `GW_CharacterStat::DecodeChangeStat`
+  @ 0x50f16a reads HP/MaxHP/MP/MaxMP as `Decode2` (int16), same as GMS v83. JMS `OnStatChanged`
+  @ 0xb06632 reads ONE conditional trailing `Decode1` (only when mask `0x180008`). Both gates
+  (`v95Plus` for HP width AND for second trailing byte) are correct as-is for JMS.
+- **`ui/clientbound/lock.go`** — CONFIRMED ✅. JMS v185 direction-mode handler `sub_A2CD83`
+  (case 0xE7 of `CUserLocal::OnPacket`) reads ONLY `Decode1(bSet)` — no `tAfterLeaveDirectionMode`
+  int32. Gate `GMS && MajorVersion>=90` is correct as-is; JMS (Region != "GMS") correctly
+  receives 1 byte only.
+
+### New gate widened in Phase 3 (JMS v185 pass — 2026-06-03)
+
+- **`socket/serverbound/channel_connect.go`** — WIDENED. JMS v185 `CClientSocket::OnConnect`
+  non-login branch @ 0x4b051f sends `Encode2(dummy1)` (uint16) for the `gm` field where GMS
+  sends `Encode1` (byte). Fixed: `ChannelConnect.Encode/Decode` gates on `Region=="JMS"` to
+  use `WriteShort/ReadUint16`. Wire shape test added in `TestChannelConnectWireShape`.
+
+### Functions absent from JMS v185 (not in gms_jms_185.json)
+
+- **`CLogin::OnCheckPinCodeResult#RegisterPin`** — no such function in JMS v185. JMS has
+  `usesPin: false` in template; no PIN flow. SetGender similarly absent.
+- **`CLogin::SendSetGenderPacket`** — absent from JMS v185 IDB.
+- **`CUserLocal::OnSetDirectionMode`** (named) — JMS uses unnamed `sub_A2CD83` at case 0xE7
+  of `CUserLocal::OnPacket`. Wire behavior confirmed: 1 byte only.
+
+### Still pending — v87 verification
+
+These gates have been confirmed for v83 and JMS v185 but NOT yet verified for v87. If v87
+is audited in a future phase, re-check both gates above (stat Changed HP width, ui Lock int32).

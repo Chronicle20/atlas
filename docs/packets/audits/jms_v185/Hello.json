@@ -1,0 +1,65 @@
+{
+  "WriterName": "Hello",
+  "IDAName": "CClientSocket::OnConnect#Hello",
+  "Address": "0x4b0066",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/socket/clientbound/hello.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "packet length prefix",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "majorVersion uint16 (must be 185)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "minorVersion string",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "recvIv (m_uSeqSnd) 4 bytes",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "sendIv (m_uSeqRcv) 4 bytes",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "locale byte (must be 3 for JMS)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 2
+}

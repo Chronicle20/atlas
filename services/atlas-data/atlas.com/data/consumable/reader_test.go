@@ -853,6 +853,57 @@ func Identity[M any](m M) M {
 	return m
 }
 
+func TestReaderConsumeOnPickup(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	const xmlData = `
+<imgdir name="0238.img">
+  <imgdir name="02380000">
+    <imgdir name="info">
+      <int name="price" value="1"/>
+      <int name="monsterBook" value="1"/>
+      <int name="mob" value="100100"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="consumeOnPickup" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="02000000">
+    <imgdir name="info">
+      <int name="price" value="25"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A monster card authors spec/consumeOnPickup=1; it must be parsed.
+	card, ok := rmm[strconv.Itoa(2380000)]
+	if !ok {
+		t.Fatalf("rmm[2380000] does not exist.")
+	}
+	if !card.ConsumeOnPickup {
+		t.Errorf("card.ConsumeOnPickup = false, want true (spec/consumeOnPickup=1)")
+	}
+
+	// A plain potion with no consumeOnPickup attribute must remain false.
+	potion, ok := rmm[strconv.Itoa(2000000)]
+	if !ok {
+		t.Fatalf("rmm[2000000] does not exist.")
+	}
+	if potion.ConsumeOnPickup {
+		t.Errorf("potion.ConsumeOnPickup = true, want false (no spec/consumeOnPickup)")
+	}
+}
+
 func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 

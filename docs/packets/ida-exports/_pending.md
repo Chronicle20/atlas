@@ -176,10 +176,24 @@ Gates applied during the v95 (Phase 2) pass that were conservatively scoped to v
 MUST be re-checked against v83 / v87 / JMS185 IDA in Phase 3 (widen or narrow as evidence
 dictates):
 
-- **`stat/clientbound/changed.go`** — second trailing flag byte (battle-recovery-info) gated
-  to `GMS && MajorVersion>=95`. Confirm whether v83/v87/JMS clients also read two trailing
-  flags. (HP/MaxHP/MP/MaxMP int32 widening is already version-evidenced via
-  `model/character_statistics.go` and need not be re-derived.)
-- **`ui/clientbound/lock.go`** — the int32 `tAfterLeaveDirectionMode` field is gated
-  `GMS && MajorVersion>=90` (pre-existing). v83/non-GMS clients may send only the 1-byte flag;
-  confirm whether those versions also read the int32, else the gate is correct as-is.
+### Resolved in Phase 3 (GMS v83 pass — 2026-06-03)
+
+- **`stat/clientbound/changed.go`** — CONFIRMED ✅. v83 `GW_CharacterStat::DecodeChangeStat`
+  @ 0x4e2fba reads HP/MaxHP/MP/MaxMP as `Decode2` (int16). v83 `CWvsContext::OnStatChanged`
+  @ 0xa1fb52 reads ONE trailing byte only (no battle-recovery-info second byte). Both gates
+  (`v95Plus` for HP width AND for second trailing byte) are correct as-is.
+- **`ui/clientbound/lock.go`** — CONFIRMED ✅. v83 `CUserLocal::SetDirectionMode` @ 0x95ff5a
+  reads ONLY `Decode1(bSet)` — no `tAfterLeaveDirectionMode` int32. Gate `GMS && MajorVersion>=90`
+  is correct as-is; v83 (major version 83 < 90) correctly receives 1 byte only.
+
+### Functions absent from GMS v83 (not in gms_v83.json)
+
+- **`CLogin::SendSetGenderPacket`** — no such function in v83 `CLogin` class. Gender-selection
+  flow differs in v83; the packet may not exist or is embedded in a different handler.
+  The `SetGender` atlas struct has no v83 JSON entry; no v83 report is generated for it.
+  If v83 gender-setting is ever needed, locate the sending function in a dedicated v83 audit.
+
+### Still pending — v87 / JMS185 verification
+
+These gates have been confirmed for v83 but NOT yet verified for v87 or JMS 1.85. If either of
+those versions is audited in a future phase, re-check both gates above.

@@ -31,11 +31,24 @@ func (c Collection) TotalUniqueCards() uint16 { return c.totalUniqueCards }
 func (c Collection) CoverCardId() item.Id     { return c.coverCardId }
 func (c Collection) ExpBonusPercent() uint16  { return c.expBonusPercent }
 
+// Card is the immutable domain representation of a single owned monster-book card.
+type Card struct {
+	cardId    item.Id
+	level     uint8
+	isSpecial bool
+}
+
+func (c Card) CardId() item.Id { return c.cardId }
+func (c Card) Level() uint8    { return c.level }
+func (c Card) IsSpecial() bool { return c.isSpecial }
+
 // Processor exposes monster book emissions and reads from atlas-channel.
 type Processor interface {
 	RequestSetCover(characterId character.Id, coverCardId item.Id) error
 	ByCharacterIdProvider(characterId character.Id) model.Provider[Collection]
 	GetByCharacterId(characterId character.Id) (Collection, error)
+	GetCardsByCharacterId(characterId character.Id) ([]Card, error)
+	CardsByCharacterIdProvider(characterId character.Id) model.Provider[[]Card]
 }
 
 // ProcessorImpl emits SET_COVER commands to the monster book service and
@@ -66,4 +79,15 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId character.Id) model.Pr
 // given character.
 func (p *ProcessorImpl) GetByCharacterId(characterId character.Id) (Collection, error) {
 	return p.ByCharacterIdProvider(characterId)()
+}
+
+// CardsByCharacterIdProvider returns a provider that fetches the character's
+// owned monster-book cards from atlas-monster-book.
+func (p *ProcessorImpl) CardsByCharacterIdProvider(characterId character.Id) model.Provider[[]Card] {
+	return requests.SliceProvider[CardRestModel, Card](p.l, p.ctx)(requestCardsByCharacterId(characterId), ExtractCard, model.Filters[Card]())
+}
+
+// GetCardsByCharacterId fetches and returns the owned card list for the character.
+func (p *ProcessorImpl) GetCardsByCharacterId(characterId character.Id) ([]Card, error) {
+	return p.CardsByCharacterIdProvider(characterId)()
 }

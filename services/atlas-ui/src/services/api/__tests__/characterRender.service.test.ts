@@ -20,6 +20,7 @@ interface FixtureRow {
   frame: number;
   resize: number;
   items: number[];
+  gender: number;
   canonical: string;
   expectedHash: string;
 }
@@ -30,7 +31,7 @@ describe('characterRender canonical+hash parity', () => {
       const canonical = canonicalLoadoutString(
         row.tenant, row.region, row.majorVersion, row.minorVersion,
         row.skin, row.hair, row.face,
-        row.stance as Stance, row.frame, row.resize, row.items,
+        row.stance as Stance, row.frame, row.resize, row.items, row.gender,
       );
       expect(canonical).toBe(row.canonical);
       expect(loadoutHash(canonical)).toBe(row.expectedHash);

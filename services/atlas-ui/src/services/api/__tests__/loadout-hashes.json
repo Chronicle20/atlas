@@ -12,8 +12,9 @@
       "frame": 0,
       "resize": 2,
       "items": [],
-      "canonical": "tenant-a|GMS|83.1|0|30030|20000|stand1|0|2|",
-      "expectedHash": "0503c76f4205dce4"
+      "gender": 0,
+      "canonical": "tenant-a|GMS|83.1|0|30030|20000|stand1|0|2||0",
+      "expectedHash": "644f42ef195b3bef"
     },
     {
       "tenant": "tenant-a",
@@ -26,9 +27,12 @@
       "stance": "stand1",
       "frame": 0,
       "resize": 2,
-      "items": [1002357],
-      "canonical": "tenant-a|GMS|83.1|0|30030|20000|stand1|0|2|1002357",
-      "expectedHash": "42c608653cc7a4d2"
+      "items": [
+        1002357
+      ],
+      "gender": 0,
+      "canonical": "tenant-a|GMS|83.1|0|30030|20000|stand1|0|2|1002357|0",
+      "expectedHash": "436d7010b54d8190"
     },
     {
       "tenant": "tenant-a",
@@ -41,9 +45,14 @@
       "stance": "stand2",
       "frame": 0,
       "resize": 2,
-      "items": [1002357, 1402024, 1442024],
-      "canonical": "tenant-a|GMS|83.1|2|30030|20000|stand2|0|2|1002357,1402024,1442024",
-      "expectedHash": "4ffbcbaec239c72b"
+      "items": [
+        1002357,
+        1402024,
+        1442024
+      ],
+      "gender": 0,
+      "canonical": "tenant-a|GMS|83.1|2|30030|20000|stand2|0|2|1002357,1402024,1442024|0",
+      "expectedHash": "e4f1f40cc1bf7eea"
     },
     {
       "tenant": "tenant-b",
@@ -56,9 +65,12 @@
       "stance": "walk1",
       "frame": 1,
       "resize": 4,
-      "items": [1002357],
-      "canonical": "tenant-b|GMS|83.1|0|30030|20000|walk1|1|4|1002357",
-      "expectedHash": "e0c323d727ef77e0"
+      "items": [
+        1002357
+      ],
+      "gender": 0,
+      "canonical": "tenant-b|GMS|83.1|0|30030|20000|walk1|1|4|1002357|0",
+      "expectedHash": "eff62bd21040885d"
     },
     {
       "tenant": "tenant-a",
@@ -72,8 +84,25 @@
       "frame": 0,
       "resize": 1,
       "items": [],
-      "canonical": "tenant-a|JMS|83.1|0|30030|20000|stand1|0|1|",
-      "expectedHash": "d23822151b39667b"
+      "gender": 0,
+      "canonical": "tenant-a|JMS|83.1|0|30030|20000|stand1|0|1||0",
+      "expectedHash": "7058e93f20ee1faf"
+    },
+    {
+      "tenant": "tenant-a",
+      "region": "GMS",
+      "majorVersion": 83,
+      "minorVersion": 1,
+      "skin": 0,
+      "hair": 30030,
+      "face": 20000,
+      "stance": "stand1",
+      "frame": 0,
+      "resize": 2,
+      "items": [],
+      "gender": 1,
+      "canonical": "tenant-a|GMS|83.1|0|30030|20000|stand1|0|2||1",
+      "expectedHash": "d76b2294164ec686"
     }
   ]
 }

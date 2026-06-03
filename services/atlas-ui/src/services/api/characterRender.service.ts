@@ -9,6 +9,7 @@ export interface CharacterLoadout {
   hair: number;
   face: number;
   equipment: Record<string, number>;
+  gender?: number;
 }
 
 export interface RenderOptions {
@@ -36,6 +37,17 @@ export function filterEquipment(eq: Record<string, number>): Record<string, numb
   return out;
 }
 
+/**
+ * Mirror of the Go service's ResolveGender. An explicit 0/1 wins; otherwise
+ * infer from the face id via the v83 convention (face/1000)%10 === 1 ⇒ female.
+ * A non-positive / unknown face resolves to male (0).
+ */
+export function resolveGender(gender: number | undefined, face: number): 0 | 1 {
+  if (gender === 0 || gender === 1) return gender;
+  if (face > 0 && Math.floor(face / 1000) % 10 === 1) return 1;
+  return 0;
+}
+
 export function canonicalLoadoutString(
   tenant: string,
   region: string,
@@ -48,6 +60,7 @@ export function canonicalLoadoutString(
   frame: number,
   resize: number,
   items: number[],
+  gender: number,
 ): string {
   const sorted = [...items].sort((a, b) => a - b);
   return [
@@ -55,6 +68,7 @@ export function canonicalLoadoutString(
     skin, hair, face,
     stance, frame, resize,
     sorted.join(','),
+    gender,
   ].join('|');
 }
 
@@ -77,10 +91,11 @@ export function generateCharacterUrl(
   };
   const filtered = filterEquipment(loadout.equipment);
   const items = Object.values(filtered).sort((a, b) => a - b);
+  const gender = resolveGender(loadout.gender, loadout.face);
   const canonical = canonicalLoadoutString(
     tenant, region, major, minor,
     loadout.skin, loadout.hair, loadout.face,
-    opts.stance, opts.frame, opts.resize, items,
+    opts.stance, opts.frame, opts.resize, items, gender,
   );
   const hash = loadoutHash(canonical);
   const params = new URLSearchParams({
@@ -91,6 +106,7 @@ export function generateCharacterUrl(
     frame: String(opts.frame),
     resize: String(opts.resize),
     items: items.join(','),
+    gender: String(gender),
   });
   return `/api/assets/${tenant}/${region}/${major}.${minor}/character/${hash}.png?${params.toString()}`;
 }
@@ -108,5 +124,6 @@ export function characterToLoadout(character: Character, inventory: Asset[]): Ch
     hair: character.attributes.hair,
     face: character.attributes.face,
     equipment,
+    gender: character.attributes.gender,
   };
 }

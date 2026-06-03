@@ -145,6 +145,11 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				m.Spec[SpecTypeInc] = s.GetIntegerWithDefault(string(SpecTypeInc), 0)
 				m.Spec[SpecTypeOnlyPickup] = s.GetIntegerWithDefault(string(SpecTypeOnlyPickup), 0)
 
+				// consumeOnPickup is authored under spec (monster-book cards,
+				// Monster Carnival items, etc.); surface it on the dedicated
+				// field so the inventory consume-on-pickup gate can act on it.
+				m.ConsumeOnPickup = s.GetBool("consumeOnPickup", false)
+
 				ms, err := s.ChildByName("morphRandom")
 				if err == nil && ms != nil {
 					for _, mo := range ms.ChildNodes {

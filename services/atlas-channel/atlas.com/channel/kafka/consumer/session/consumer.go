@@ -163,7 +163,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					}
 
 					cp := character.NewProcessor(l, ctx)
-					c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.SkillModelDecorator, cp.QuestModelDecorator)(params.CharacterId)
+					c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.SkillModelDecorator, cp.QuestModelDecorator, cp.MonsterBookDecorator)(params.CharacterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate character [%d] attempting to login.", params.CharacterId)
 						return sp.Destroy(s)

@@ -19,6 +19,7 @@ type RenderQuery struct {
 	Frame  int
 	Resize int
 	Items  []int
+	Gender int // 0, 1, or GenderUnspecified(-1) when absent
 }
 
 // ParseRenderQuery extracts and validates the documented query params. It
@@ -60,9 +61,18 @@ func ParseRenderQuery(q url.Values) (RenderQuery, error) {
 	if err != nil {
 		return RenderQuery{}, err
 	}
+	gender := GenderUnspecified
+	if v := q.Get("gender"); v != "" {
+		g, err := strconv.Atoi(v)
+		if err != nil || (g != GenderMale && g != GenderFemale) {
+			return RenderQuery{}, fmt.Errorf("invalid gender %q", v)
+		}
+		gender = g
+	}
 	return RenderQuery{
 		Skin: skin, Hair: hair, Face: face,
 		Stance: stance, Frame: frame, Resize: resize, Items: items,
+		Gender: gender,
 	}, nil
 }
 

@@ -271,3 +271,50 @@ func TestIsTwoHandedItem(t *testing.T) {
 		}
 	}
 }
+
+func TestParseRenderQueryGender(t *testing.T) {
+	base := func() url.Values {
+		q := url.Values{}
+		q.Set("skin", "0")
+		q.Set("hair", "30000")
+		q.Set("face", "20000")
+		return q
+	}
+
+	t.Run("absent-is-unspecified", func(t *testing.T) {
+		rq, err := ParseRenderQuery(base())
+		if err != nil {
+			t.Fatalf("ParseRenderQuery: %v", err)
+		}
+		if rq.Gender != GenderUnspecified {
+			t.Errorf("absent gender = %d; want %d", rq.Gender, GenderUnspecified)
+		}
+	})
+
+	for _, tc := range []struct {
+		in   string
+		want int
+	}{{"0", GenderMale}, {"1", GenderFemale}} {
+		t.Run("valid-"+tc.in, func(t *testing.T) {
+			q := base()
+			q.Set("gender", tc.in)
+			rq, err := ParseRenderQuery(q)
+			if err != nil {
+				t.Fatalf("ParseRenderQuery: %v", err)
+			}
+			if rq.Gender != tc.want {
+				t.Errorf("gender %q = %d; want %d", tc.in, rq.Gender, tc.want)
+			}
+		})
+	}
+
+	for _, bad := range []string{"2", "-1", "x", "1.0"} {
+		t.Run("invalid-"+bad, func(t *testing.T) {
+			q := base()
+			q.Set("gender", bad)
+			if _, err := ParseRenderQuery(q); err == nil {
+				t.Fatalf("expected error for gender=%q", bad)
+			}
+		})
+	}
+}

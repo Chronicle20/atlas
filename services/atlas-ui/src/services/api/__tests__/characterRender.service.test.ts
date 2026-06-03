@@ -5,6 +5,7 @@ import {
   loadoutHash,
   generateCharacterUrl,
   filterEquipment,
+  resolveGender,
   type Stance,
 } from '../characterRender.service';
 
@@ -83,5 +84,56 @@ describe('generateCharacterUrl', () => {
       { skin: 0, hair: 30030, face: 20000, equipment: { '-11': 1002357, '-5': 1402024, '-1': 1442024 } },
       {});
     expect(a).toBe(b);
+  });
+});
+
+describe('resolveGender', () => {
+  it('explicit 0/1 wins over face inference', () => {
+    expect(resolveGender(0, 21000)).toBe(0);
+    expect(resolveGender(1, 20000)).toBe(1);
+  });
+  it('infers female from 21xxx face', () => {
+    expect(resolveGender(undefined, 21000)).toBe(1);
+  });
+  it('infers male from 20xxx face', () => {
+    expect(resolveGender(undefined, 20000)).toBe(0);
+  });
+  it('non-positive / unknown face → male', () => {
+    expect(resolveGender(undefined, 0)).toBe(0);
+    expect(resolveGender(undefined, -5)).toBe(0);
+    expect(resolveGender(undefined, 30030)).toBe(0);
+  });
+});
+
+describe('canonicalLoadoutString gender', () => {
+  it('appends resolved gender as the final field', () => {
+    const c = canonicalLoadoutString('T', 'GMS', 83, 1, 0, 30030, 20000, 'stand1', 0, 2, [], 1);
+    expect(c).toBe('T|GMS|83.1|0|30030|20000|stand1|0|2||1');
+  });
+});
+
+describe('generateCharacterUrl gender', () => {
+  it('emits a gender query param and a hash matching the canonical string', () => {
+    const url = generateCharacterUrl(
+      'tenant-a', 'GMS', 83, 1,
+      { skin: 0, hair: 30030, face: 20000, equipment: {}, gender: 1 },
+      { stance: 'stand1', frame: 0, resize: 2 },
+    );
+    expect(url).toContain('gender=1');
+    const expected = loadoutHash(
+      canonicalLoadoutString('tenant-a', 'GMS', 83, 1, 0, 30030, 20000, 'stand1', 0, 2, [], 1),
+    );
+    expect(url).toContain(`/${expected}.png?`);
+  });
+
+  it('male-face vs female-face empty loadout produce different hashes (no collision)', () => {
+    const male = generateCharacterUrl('t', 'GMS', 83, 1,
+      { skin: 0, hair: 30030, face: 20000, equipment: {} }, {});
+    const female = generateCharacterUrl('t', 'GMS', 83, 1,
+      { skin: 0, hair: 30030, face: 21000, equipment: {} }, {});
+    const hashOf = (u: string) => u.match(/\/([a-f0-9]{16})\.png\?/)?.[1];
+    expect(hashOf(male)).toBeDefined();
+    expect(hashOf(female)).toBeDefined();
+    expect(hashOf(male)).not.toBe(hashOf(female));
   });
 });

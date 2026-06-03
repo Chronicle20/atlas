@@ -1,0 +1,29 @@
+{
+  "WriterName": "RegisterPin",
+  "IDAName": "CLogin::OnCheckPinCodeResult#RegisterPin",
+  "Address": "0x6342b0",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/account/serverbound/register_pin.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "pinInput flag (1=pin provided, 0=cancelled)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "pin string (only when pinInput=1)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -113,10 +113,46 @@ go run ./tools/packet-audit \
   --template         services/atlas-configurations/seed-data/templates/template_gms_95_1.json \
   --atlas-packet     libs/atlas-packet \
   --ida-source       docs/packets/ida-exports/gms_v95.json \
-  --output           docs/packets/audits/gms_v95
+  --output           docs/packets/audits
 ```
 
 Always run from the worktree root with relative paths — gitleaks check at Phase 4 grep's `/home/`.
+
+> **EXECUTION CORRECTION (task-069, Phase 0 finding).** The plan text and the
+> original version of this section passed `--output docs/packets/audits/gms_v95`
+> (and `.../gms_v83`, etc. in Phase 3). That is WRONG: the tool itself appends
+> `<region>_v<major>` to `--output` at `tools/packet-audit/cmd/run.go:42`
+> (`filepath.Join(opts.Output, fmt.Sprintf("%s_v%d", lower(region), major))`).
+> Passing the version subdir produces a NESTED `docs/packets/audits/gms_v95/gms_v95/`
+> directory. **The correct value is always `--output docs/packets/audits`** — the
+> parent — for EVERY version (v95, v83, v87, JMS185). The tool writes into
+> `docs/packets/audits/{gms_v95,gms_v83,gms_v87,jms_v185}/` automatically.
+> Treat every `--output docs/packets/audits/<version>` in plan.md as
+> `--output docs/packets/audits`.
+
+> **EXECUTION CORRECTION (task-069, Phase 0 finding) — regression gate is SEMANTIC,
+> not byte-identical.** The plan's Phase 0 / Phase 1 regression gate asks for a
+> byte-identical `diff` of SUMMARY.md against a snapshot. That is unachievable for
+> two reasons: (1) SUMMARY row order is non-deterministic — it is built by ranging
+> over Go maps (`tools/packet-audit/cmd/run.go:235` and `:243`), so order varies
+> run-to-run; (2) the login-domain reports inherited at branch-fork used a stale
+> `../../libs/atlas-packet/...` path prefix, whereas the current tool (and sibling
+> audit tasks 028/065–068, which write `libs/atlas-packet/...`) emit a bare path.
+> Running the audit with the corrected command normalizes the 28 login reports into
+> the sibling convention (committed once in Phase 0). **The regression gate is
+> therefore: the SORTED set of `packet → verdict` pairs must be unchanged** (no
+> login verdict may flip; the baseline is 27 ✅ / 1 ❌, `CharacterList` being the
+> sole ❌). Use this order-and-format-independent comparison wherever the plan says
+> "diff against /tmp/summary-pre-task069.md":
+>
+> ```
+> extract() { grep -oE '\[[A-Za-z]+\]\([A-Za-z]+\.md\) \| (✅|❌|⚠️)' "$1" | sed -E 's/\]\([^)]*\)//' | sort; }
+> diff <(extract /tmp/summary-pre-task069.md) <(extract docs/packets/audits/gms_v95/SUMMARY.md)
+> ```
+>
+> Empty diff = gate passes. The snapshot `/tmp/summary-pre-task069.md` should be
+> taken from the Phase-0 *normalized* SUMMARY (post-reformat) so later phases
+> compare like-for-like.
 
 ## Test patterns
 

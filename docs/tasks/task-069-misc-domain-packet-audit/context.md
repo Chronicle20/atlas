@@ -154,6 +154,26 @@ Always run from the worktree root with relative paths — gitleaks check at Phas
 > taken from the Phase-0 *normalized* SUMMARY (post-reformat) so later phases
 > compare like-for-like.
 
+> **EXECUTION CORRECTION (task-069, Phase 1 SKIPPED).** Phase 1 (plan Tasks 2–4)
+> assumed `fame/response_body.go`, `ui/ui_open_body.go`, and
+> `merchant/operation_body.go` defined registry-resolvable struct *bodies*
+> (`ResponseBody` / `UiOpenBody` / `OperationBody`) that the analyzer would need to
+> descend into. They do NOT. Each `*_body.go` file contains **dispatcher helper
+> functions** (`ReceiveFameResponseBody`, `UiOpenBody`, `HiredMerchantOperation*Body`,
+> …) that resolve an operation mode via `atlas_packet.WithResolvedCode(...)` and then
+> construct the real encoder structs in the `clientbound/` packages
+> (`clientbound.NewReceiveFameResponse`, `clientbound.NewUiOpen`,
+> `clientbound.NewOpenShop`, …). Verified: `NewTypeRegistry` resolves none of the
+> assumed names (`HasType("ResponseBody"|"UiOpenBody"|"OperationBody"|…) == false`),
+> and the `clientbound` structs encode primitive fields directly (`WriteByte`,
+> `WriteAsciiString`, `WriteInt8`, …) with no sub-struct delegation. Writing the
+> plan's `t.Skip` token fixtures would add zero coverage, so **Phase 1 is skipped
+> outright.** Registry needs are handled REACTIVELY in Phase 2: only if the audit
+> analyzer surfaces a genuine "unresolved type" for a misc encoder do we add a
+> registry fixture then (the plan's own §"Phase 2 medium/low-confidence" fallback).
+> The real wire encoders these helpers construct are audited directly in Phase 2 —
+> ui = Task 8, fame = Task 9, merchant = Task 10.
+
 ## Test patterns
 
 The misc-domain encoders pair `Encode()` with `Decode()` on the same type. Round-trip tests use `libs/atlas-packet/test/{context.go,roundtrip.go}`:

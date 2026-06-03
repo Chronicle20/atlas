@@ -42,6 +42,11 @@ const (
 	ClassificationBullet                   = Classification(233)
 	ClassificationConsumableMonsterCard    = Classification(238)
 
+	// MonsterBookCardBase is the item-id base for monster-book cards. A card's
+	// wire index in the CharacterData monster-book block is (cardId - this base);
+	// the client adds it back to reconstruct the full item id (design §2.1).
+	MonsterBookCardBase = Id(2380000)
+
 	// Setup compartment classifications (compartment 3).
 	ClassificationChair               = Classification(301)
 	ClassificationSetupHiredMerchant  = Classification(303)

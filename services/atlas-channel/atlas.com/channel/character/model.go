@@ -349,7 +349,7 @@ func (m Model) SetParty(p party.Model) Model {
 
 // CoverCardId returns the monster book cover card id selected by the
 // character. Zero on an undecorated model; populated by
-// Processor.MonsterBookCoverDecorator when the upstream REST call
+// Processor.MonsterBookDecorator when the upstream REST call
 // succeeds.
 func (m Model) CoverCardId() item.Id {
 	return m.coverCardId

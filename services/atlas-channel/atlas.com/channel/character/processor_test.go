@@ -3,11 +3,18 @@ package character_test
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/mock"
+	"atlas-channel/monsterbook"
 	"atlas-channel/test"
+	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -242,4 +249,52 @@ func TestProcessorImpl_PartyDecorator_NotInParty(t *testing.T) {
 func TestProcessorImpl_PartyDecorator_InterfaceContract(t *testing.T) {
 	// Compile-time assertion that PartyDecorator is on the interface.
 	var _ func(character.Model) character.Model = (mock.NewMockProcessor()).PartyDecorator
+}
+
+func TestMonsterBookDecorator_FailOpen(t *testing.T) {
+	// Upstream down → decorator returns the model unchanged (cover 0, no cards).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	defer monsterbook.SetBaseURLForTest(srv.URL)()
+
+	tm, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), tm)
+	p := character.NewProcessor(logrus.New(), ctx)
+
+	m := character.NewModelBuilder().SetId(42).MustBuild()
+	got := p.MonsterBookDecorator(m)
+	if got.CoverCardId() != 0 {
+		t.Errorf("cover should be 0 on fail-open, got %d", got.CoverCardId())
+	}
+	if len(got.MonsterBookCards()) != 0 {
+		t.Errorf("cards should be empty on fail-open, got %d", len(got.MonsterBookCards()))
+	}
+}
+
+func TestMonsterBookDecorator_Populates(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		if strings.HasSuffix(r.URL.Path, "/monster-book/cards") {
+			_, _ = w.Write([]byte(`{"data":[{"type":"monster-book-card","id":"2380005","attributes":{"level":2,"isSpecial":false}}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"data":{"type":"monster-book","id":"42","attributes":{"coverCardId":2380001}}}`))
+	}))
+	defer srv.Close()
+	defer monsterbook.SetBaseURLForTest(srv.URL)()
+
+	tm, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), tm)
+	p := character.NewProcessor(logrus.New(), ctx)
+
+	m := character.NewModelBuilder().SetId(42).MustBuild()
+	got := p.MonsterBookDecorator(m)
+	if got.CoverCardId() != item.Id(2380001) {
+		t.Errorf("cover = %d, want 2380001", got.CoverCardId())
+	}
+	if len(got.MonsterBookCards()) != 1 || got.MonsterBookCards()[0].CardId() != item.Id(2380005) {
+		t.Errorf("cards not populated: %+v", got.MonsterBookCards())
+	}
 }

@@ -31,7 +31,7 @@ type Processor interface {
 	SkillModelDecorator(m Model) Model
 	QuestModelDecorator(m Model) Model
 	PartyDecorator(m Model) Model
-	MonsterBookCoverDecorator(m Model) Model
+	MonsterBookDecorator(m Model) Model
 	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model]
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model]
 	ByNameProvider(name string) model.Provider[[]Model]
@@ -170,16 +170,24 @@ func (p *ProcessorImpl) PartyDecorator(m Model) Model {
 	return m.SetParty(pm)
 }
 
-// MonsterBookCoverDecorator fetches the character's monster book
-// collection and attaches the cover card id to the model. Failures
-// (REST 404, network errors, etc.) surface as the undecorated model so
-// the rest of the character info response continues to render.
-func (p *ProcessorImpl) MonsterBookCoverDecorator(m Model) Model {
-	col, err := monsterbook.NewProcessor(p.l, p.ctx).GetByCharacterId(character.Id(m.Id()))
+// MonsterBookDecorator fetches the character's monster-book collection (cover)
+// and owned-card list from atlas-monster-book and attaches both to the model.
+// Failures (REST 404, network errors) fail open: the model is returned with
+// whatever was fetched so far (possibly nothing), so login still succeeds.
+func (p *ProcessorImpl) MonsterBookDecorator(m Model) Model {
+	mb := monsterbook.NewProcessor(p.l, p.ctx)
+	col, err := mb.GetByCharacterId(character.Id(m.Id()))
 	if err != nil {
+		p.l.WithError(err).Debugf("Unable to fetch monster-book collection for character [%d]; rendering empty book.", m.Id())
 		return m
 	}
-	return m.SetCoverCardId(col.CoverCardId())
+	m = m.SetCoverCardId(col.CoverCardId())
+	cards, err := mb.GetCardsByCharacterId(character.Id(m.Id()))
+	if err != nil {
+		p.l.WithError(err).Debugf("Unable to fetch monster-book cards for character [%d]; rendering cover only.", m.Id())
+		return m
+	}
+	return m.SetMonsterBookCards(cards)
 }
 
 func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model] {

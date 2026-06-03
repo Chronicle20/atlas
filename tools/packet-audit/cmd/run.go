@@ -248,6 +248,18 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "RegisterPin", dir: csvpkg.DirServerbound}}
 	case "CLogin::SendSetGenderPacket":
 		return []candidate{{name: "SetGender", dir: csvpkg.DirServerbound}}
+
+	// --- socket bucket (task-069, sub-phase 2i) ---
+	case "CClientSocket::OnConnect#Hello":
+		return []candidate{{name: "Hello", dir: csvpkg.DirClientbound}}
+	case "CClientSocket::OnAliveReq#PingReceive":
+		return []candidate{{name: "Ping", dir: csvpkg.DirClientbound}}
+	case "CClientSocket::OnConnect#ChannelConnect":
+		return []candidate{{name: "ChannelConnect", dir: csvpkg.DirServerbound}}
+	case "CClientSocket::OnAliveReq#PongSend":
+		return []candidate{{name: "Pong", dir: csvpkg.DirServerbound}}
+	case "CClientSocket::OnConnect#StartError":
+		return []candidate{{name: "StartError", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

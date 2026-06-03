@@ -1334,6 +1334,86 @@
           "comment": "nGender byte (only when set=1)"
         }
       ]
+    },
+    "CClientSocket::OnConnect#Hello": {
+      "address": "0x4aef10",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "packet length (0x0E = 14)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "majorVersion uint16"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "minorVersion string"
+        },
+        {
+          "op": "Decode4",
+          "comment": "recvIv (→ client m_uSeqSnd) 4 bytes"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sendIv (→ client m_uSeqRcv) 4 bytes"
+        },
+        {
+          "op": "Decode1",
+          "comment": "locale byte (nVersionHeader; must be 8)"
+        }
+      ]
+    },
+    "CClientSocket::OnAliveReq#PingReceive": {
+      "address": "0x4afc90",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CClientSocket::OnConnect#ChannelConnect": {
+      "address": "0x4aef10",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId uint32"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "machineId 16 bytes"
+        },
+        {
+          "op": "Decode1",
+          "comment": "gm byte (1 if GM, 0 otherwise)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "unknown1 byte (literal 0)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "unknown2 8 bytes raw buffer"
+        }
+      ]
+    },
+    "CClientSocket::OnAliveReq#PongSend": {
+      "address": "0x4afc90",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CClientSocket::OnConnect#StartError": {
+      "address": "0x4aef10",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "length uint16 (byte count of exception log data)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "bytes variable-length exception log data"
+        }
+      ]
     }
   }
 }

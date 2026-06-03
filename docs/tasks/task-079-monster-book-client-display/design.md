@@ -112,14 +112,22 @@ full id, but this is the one cover detail to confirm live + by the CharacterInfo
 `libs/atlas-constants/item` for an existing monster-card base/classification; if none exists,
 add `MonsterBookCardBase item.Id = 2380000` there (preferred) or in `libs/atlas-packet/character`.
 
-### 2.5 JMS (v185) — deferred to execution, method proven
-The same approach applies, but JMS decode **order/gating differs** (PRD §9 Q2; the repo notes
-flag JMS `SomethingMonsterBook` / a divergent decode sequence). The v83 reverse-engineering
-method (load IDB → decompile `CharacterData::Decode` → locate the flag-gated card block →
-read `sub_*` card decoder) is proven and reusable. **Execution task:** reload the JMS v185 IDB
-(`MapleStory_dump_SCY.exe`) and confirm the JMS card-block format + position before encoding a
-JMS branch; gate any JMS-specific divergence behind `t.Region() == "JMS"`. Do not assume JMS ==
-v83 on the wire.
+### 2.5 JMS (v185) — VERIFIED identical to v83 (no separate branch)
+Reverse-engineered against the JMS v185 client (`MapleStory_dump_SCY.exe`, md5 `af6652ff…`).
+JMS `CharacterData::Decode` (`0x5137af`) uses the **same flag bits in the same order**: cover
+`Decode4` under `0x20000` (stored at `m_mEquippedSetItem._m_uTableSize`, the same field
+`SetMonsterBookCover` `0xa2c930` writes), then the card list under `0x10000` via `sub_51121F`,
+with the same `+2380000` base (decode line `*v150._m_pStr + 2380000`). `sub_51121F` is
+byte-for-byte structurally identical to v83's `sub_4E4DEA`: **mode 0** = `byte(0) + short count
++ [short(cardId-2380000) + byte(level)]`; mode 1 = the same bitmap+nibble form. (The only delta
+is the mode-1 nibble high/low order — irrelevant, the server emits mode 0.)
+
+**Conclusion:** for the **CharacterData login packet**, a *single encoder serves GMS v83/v87 and
+JMS* — no `t.Region() == "JMS"` branch is needed in `encodeMonsterBook`. The "JMS decode order
+differs" note in the repo (`gms_jms_185.json`) refers to **`CharacterInfo`** (info.go: JMS reads
+the monster book before `MedalAchievementInfo` and uses `Decode4+Decode4` for medals) — the
+secondary surface (§4.1 item 6), **not** CharacterData. A JMS byte-level test is still added as a
+regression guard, asserting the same shape as v83.
 
 ### 2.6 v87 — confirm, expect identical
 v87 shares the v83 client lineage; the repo already corrected the v87 *CharacterInfo* gate to
@@ -279,7 +287,7 @@ tests are the primary safety net.
 | Risk | Severity | Mitigation |
 |---|---|---|
 | Wrong card/level width or base desyncs login | High | v83 format IDA-verified (§2); byte-level tests per version; empty-book test proves additive-only change |
-| JMS decode order differs, breaks JMS login | Med | Deferred, gated; reload JMS IDB + confirm before encoding JMS branch (§2.5); JMS byte test |
+| JMS decode order differs, breaks JMS login | Low | **Verified identical to v83** (§2.5) — single encoder, no JMS branch; JMS byte test as regression guard |
 | v95 gate regression | High | Correct only the monster-book call sites to `<= 87` (§3); v95 absent-block byte test |
 | Over-broad predicate replacement in `data.go` | Med | Only monster-book encode/decode call sites change; other `>28` guards untouched (§3) |
 | Cover full-id vs offset | Low | Confirm live + CharacterInfo audit (§2.3.1); easy one-line flip |
@@ -305,7 +313,7 @@ any atlas-monster-book persistence or derived-stat changes.
 - [ ] Replace `MonsterBookCoverDecorator` with unified `MonsterBookDecorator` (fail-open).
 - [ ] `BuildCharacterData`: populate `MonsterBook` from the model.
 - [ ] Add `MonsterBookDecorator` to the login `GetById` chain (`consumer.go:166`).
-- [ ] **Reload JMS v185 IDB; confirm + encode JMS branch** (§2.5).
+- [x] **JMS v185 verified identical to v83** (§2.5) — single encoder, no JMS branch. JMS byte test only.
 - [ ] **Confirm v87 IDB; byte test** (§2.6).
 - [ ] Verify `CharacterInfo` cover (secondary; §4.1 item 6).
 - [ ] Byte-level tests for v83/v87/v95/JMS (§7); fail-open + build tests.

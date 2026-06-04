@@ -43,30 +43,63 @@ func (m ShopOperationBuyCouple) Encode(l logrus.FieldLogger, ctx context.Context
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			w.WriteAsciiString(m.spw)
+		if t.Region() == "JMS" {
+			m.encodeJMS(w)
 		} else {
-			w.WriteInt(m.birthday)
+			m.encodeGMS(t, w)
 		}
-		w.WriteInt(m.option)
-		w.WriteInt(m.serialNumber)
-		w.WriteAsciiString(m.name)
-		w.WriteAsciiString(m.message)
 		return w.Bytes()
 	}
+}
+
+func (m ShopOperationBuyCouple) encodeGMS(t tenant.Model, w *response.Writer) {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		w.WriteAsciiString(m.spw)
+	} else {
+		w.WriteInt(m.birthday)
+	}
+	w.WriteInt(m.option)
+	w.WriteInt(m.serialNumber)
+	w.WriteAsciiString(m.name)
+	w.WriteAsciiString(m.message)
+}
+
+// encodeJMS - JMS185 CCashShop::OnBuyCouple@0x48085a (sub-op 0x1E consumed by
+// routing): EncodeStr(SPW), Encode4(nCommSN), EncodeStr(sGiveTo recipient),
+// EncodeStr(sText message). No birthday, no option int.
+func (m ShopOperationBuyCouple) encodeJMS(w *response.Writer) {
+	w.WriteAsciiString(m.spw)
+	w.WriteInt(m.serialNumber)
+	w.WriteAsciiString(m.name)
+	w.WriteAsciiString(m.message)
 }
 
 func (m *ShopOperationBuyCouple) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			m.spw = r.ReadAsciiString()
+		if t.Region() == "JMS" {
+			m.decodeJMS(r)
 		} else {
-			m.birthday = r.ReadUint32()
+			m.decodeGMS(t, r)
 		}
-		m.option = r.ReadUint32()
-		m.serialNumber = r.ReadUint32()
-		m.name = r.ReadAsciiString()
-		m.message = r.ReadAsciiString()
 	}
+}
+
+func (m *ShopOperationBuyCouple) decodeGMS(t tenant.Model, r *request.Reader) {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		m.spw = r.ReadAsciiString()
+	} else {
+		m.birthday = r.ReadUint32()
+	}
+	m.option = r.ReadUint32()
+	m.serialNumber = r.ReadUint32()
+	m.name = r.ReadAsciiString()
+	m.message = r.ReadAsciiString()
+}
+
+func (m *ShopOperationBuyCouple) decodeJMS(r *request.Reader) {
+	m.spw = r.ReadAsciiString()
+	m.serialNumber = r.ReadUint32()
+	m.name = r.ReadAsciiString()
+	m.message = r.ReadAsciiString()
 }

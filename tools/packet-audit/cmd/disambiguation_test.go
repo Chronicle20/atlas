@@ -133,3 +133,45 @@ func TestLocateAtlasFileEmptyPkgKeepsLegacyBehavior(t *testing.T) {
 		t.Errorf("CharacterSpawn resolved to %q, want path under /character/clientbound/", got)
 	}
 }
+
+// TestCandidatesQualifyCollidingNames pins the (pkg, name) routing for every
+// IDA FName whose Atlas struct name collides across sub-domains. The struct
+// names Spawn/Destroy/Movement live in monster/drop/reactor/pet; ChannelChange
+// lives in both buddy and channel. Without a pkg hint, locateAtlasFile would
+// pick the first alphabetical match — a misroute. The FNames below are the REAL
+// ones present in all four docs/packets/ida-exports/*.json exports.
+func TestCandidatesQualifyCollidingNames(t *testing.T) {
+	cases := []struct {
+		fname    string
+		wantPkg  string
+		wantName string
+	}{
+		// Spawn collision (monster/drop/reactor clientbound; pet's clientbound
+		// is Activated, pet Spawn is serverbound — covered below).
+		{"CMobPool::OnMobEnterField", "monster", "Spawn"},
+		{"CDropPool::OnDropEnterField", "drop", "Spawn"},
+		{"CReactorPool::OnReactorEnterField", "reactor", "Spawn"},
+		// Destroy collision (monster/drop/reactor clientbound; no pet Destroy).
+		{"CMobPool::OnMobLeaveField", "monster", "Destroy"},
+		{"CDropPool::OnDropLeaveField", "drop", "Destroy"},
+		{"CReactorPool::OnReactorLeaveField", "reactor", "Destroy"},
+		// Movement collision (monster + pet clientbound; drop/reactor don't move).
+		{"CMob::OnMove", "monster", "Movement"},
+		{"CPet::OnMove", "pet", "Movement"},
+		// ChannelChange collision (buddy vs channel, both clientbound).
+		{"CWvsContext::OnFriendResult#ChannelChange", "buddy", "ChannelChange"},
+		{"CClientSocket::OnMigrateCommand", "channel", "ChannelChange"},
+	}
+	for _, c := range cases {
+		t.Run(c.fname, func(t *testing.T) {
+			cands := candidatesFromFName(c.fname)
+			if len(cands) == 0 {
+				t.Fatalf("%s: no candidates", c.fname)
+			}
+			if cands[0].pkg != c.wantPkg || cands[0].name != c.wantName {
+				t.Errorf("%s: got pkg=%q name=%q, want pkg=%q name=%q",
+					c.fname, cands[0].pkg, cands[0].name, c.wantPkg, c.wantName)
+			}
+		})
+	}
+}

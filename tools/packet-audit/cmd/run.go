@@ -368,7 +368,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::OnStatChanged":
 		return []candidate{{name: "Changed", dir: csvpkg.DirClientbound}}
 	case "CClientSocket::OnMigrateCommand":
-		return []candidate{{name: "ChannelChange", dir: csvpkg.DirClientbound}}
+		// ChannelChange collides with buddy/clientbound/channel_change.go
+		// (CWvsContext::OnFriendResult#ChannelChange). pkg="channel" routes the
+		// migrate-command channel change to channel/clientbound/change.go.
+		return []candidate{{name: "ChannelChange", pkg: "channel", dir: csvpkg.DirClientbound}}
 	case "CField::SendTransferChannelRequest":
 		return []candidate{{name: "ChannelChangeRequest", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::OnOpenUI":

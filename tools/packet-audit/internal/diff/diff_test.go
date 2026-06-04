@@ -62,6 +62,44 @@ func TestRegistryDescendsDecomposableType(t *testing.T) {
 	}
 }
 
+// TestRegistryFlagsOpaqueFieldAndDefers pins the Opaque path (Pass-3's negative
+// branch): a method-less struct (Opaq) carrying an unmappable field (float64)
+// must NOT be synthesized — it stays Calls==nil, is flagged Opaque, and a recurse
+// into it surfaces as the STABLE "opaque type:" deferred row rather than being
+// silently inlined or passed through as a generic unresolved recurse.
+func TestRegistryFlagsOpaqueFieldAndDefers(t *testing.T) {
+	reg := buildFixtureRegistry(t, "testdata/substruct_no_encode.go.txt")
+
+	// (a) The float64-bearing struct is the register boundary, not synthesized.
+	if !reg.IsOpaque("Opaq") {
+		t.Fatal("expected Opaq to be flagged Opaque (float64 field is unmappable)")
+	}
+	if _, ok := reg.Calls("Opaq"); ok {
+		t.Fatal("Opaq must NOT have synthesized Calls — it should be left opaque")
+	}
+
+	// (b) Diffing a recurse into Opaq yields a VerdictDeferred row whose note
+	// names the opaque type.
+	calls, ok := reg.Calls("OuterOpaque")
+	if !ok {
+		t.Fatal("OuterOpaque not registered (expected Encode-derived calls)")
+	}
+	flat := FlattenWithRegistry(calls, atlaspacket.GuardContext{Region: "GMS", MajorVersion: 95}, reg)
+	rows := Diff(flat, idasrc.Fields{Calls: []idasrc.FieldCall{
+		{Op: idasrc.Decode1},
+		{Op: idasrc.DecodeBuf},
+	}})
+	var found bool
+	for _, r := range rows {
+		if r.Verdict == VerdictDeferred && strings.Contains(r.Note, "opaque type:") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a VerdictDeferred row noting \"opaque type:\"; got rows=%+v", rows)
+	}
+}
+
 func TestDiffAlignedExact(t *testing.T) {
 	atlas := []atlaspacket.Call{
 		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},

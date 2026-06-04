@@ -278,7 +278,7 @@ func (r *TypeRegistry) fieldCall(t ast.Expr, contextPkg string) ([]Call, bool) {
 		// A named, in-package struct type — decompose only if already registered
 		// with a concrete (non-nil) Call list. A KindRecurse keeps the diff engine
 		// inlining via the registry, preserving cycle/guard handling.
-		if e := r.resolveResolvedEntry(v.Name, contextPkg); e != nil {
+		if r.resolveResolvedEntry(v.Name, contextPkg) != nil {
 			return []Call{{Kind: KindRecurse, RecurseType: r.Qualify(v.Name, contextPkg)}}, true
 		}
 		return nil, false
@@ -286,7 +286,7 @@ func (r *TypeRegistry) fieldCall(t ast.Expr, contextPkg string) ([]Call, bool) {
 		// pkg.Type — e.g. another package's named type. Decompose only if its bare
 		// name resolves to a registered, resolved entry.
 		name := v.Sel.Name
-		if e := r.resolveResolvedEntry(name, contextPkg); e != nil {
+		if r.resolveResolvedEntry(name, contextPkg) != nil {
 			return []Call{{Kind: KindRecurse, RecurseType: r.Qualify(name, contextPkg)}}, true
 		}
 		return nil, false
@@ -317,8 +317,14 @@ func (r *TypeRegistry) resolveResolvedEntry(name, contextPkg string) *TypeEntry 
 
 // goPrimitive maps a Go builtin numeric/bool/string type name to its wire
 // Primitive. Only fixed-width builtins atlas writes 1:1 are mapped; anything
-// else (time.Time, custom aliases, etc.) returns false so the field is treated
-// as unmappable.
+// else returns false so the field is treated as unmappable. Two exclusions are
+// load-bearing and deliberate, not oversights:
+//   - int / uint are excluded because their wire width is platform-ambiguous
+//     (32- vs 64-bit), so the field type alone cannot pin a byte count.
+//   - float32 / float64 are excluded because the Atlas response.Writer never
+//     writes raw floats — float-valued fields are converted to fixed-width ints
+//     before encoding — so a float field must force Opaque rather than let the
+//     analyzer guess a width.
 func goPrimitive(name string) (Primitive, bool) {
 	switch name {
 	case "bool", "byte", "int8", "uint8":
@@ -360,7 +366,8 @@ func (r *TypeRegistry) IsOpaque(typeName string) bool {
 		return e.Opaque
 	}
 	if quals, ok := r.byShort[typeName]; ok && len(quals) == 1 {
-		return r.types[quals[0]].Opaque
+		e := r.types[quals[0]]
+		return e.Opaque
 	}
 	return false
 }

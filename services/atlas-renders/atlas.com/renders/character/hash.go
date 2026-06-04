@@ -26,6 +26,7 @@ func CanonicalLoadoutString(
 	stance string,
 	frame, resize int,
 	items []int,
+	gender int,
 ) string {
 	sorted := append([]int(nil), items...)
 	sort.Ints(sorted)
@@ -34,10 +35,11 @@ func CanonicalLoadoutString(
 		parts[i] = strconv.Itoa(id)
 	}
 	return fmt.Sprintf(
-		"%s|%s|%d.%d|%d|%d|%d|%s|%d|%d|%s",
+		"%s|%s|%d.%d|%d|%d|%d|%s|%d|%d|%s|%d",
 		tenant, region, majorVersion, minorVersion,
 		skin, hair, face, stance, frame, resize,
 		strings.Join(parts, ","),
+		gender,
 	)
 }
 

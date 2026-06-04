@@ -127,6 +127,31 @@ const (
 	bodyPartClass = "Body"
 )
 
+// topSlot / bottomSlot are the synthetic equipment-slot integers for the coat
+// (Top/Overall) and pants (Bottom) halves, matching slotForItemID's numbering.
+const (
+	topSlot    = -5
+	bottomSlot = -6
+)
+
+// applyDefaultClothing fills empty clothing slots with the gender's beginner
+// coat/pants so a character is never rendered bare (PRD FR-2). An equipped
+// Overall in the top slot covers both halves and suppresses both defaults. The
+// two slots are otherwise independent. Defaults are injected as ordinary slot
+// entries, so they flow through the existing compositing path unchanged.
+func applyDefaultClothing(equipment map[int]int, gender int) {
+	if id, ok := equipment[topSlot]; ok &&
+		item.GetClassification(item.Id(uint32(id))) == item.ClassificationOverall {
+		return
+	}
+	if _, ok := equipment[topSlot]; !ok {
+		equipment[topSlot] = defaultCoat(gender)
+	}
+	if _, ok := equipment[bottomSlot]; !ok {
+		equipment[bottomSlot] = defaultPants(gender)
+	}
+}
+
 // FilterEquipment returns a copy of `in` with mount/pet/cash slots removed.
 // Donor: characterimage/filter.go:15-27.
 func FilterEquipment(in map[int]int) map[int]int {
@@ -262,6 +287,7 @@ func Composite(ctx context.Context, l logrus.FieldLogger, s *storage.Storage, t 
 	tenantID := t.Id().String()
 
 	equipment := FilterEquipment(ItemsToSlotMap(q.Items))
+	applyDefaultClothing(equipment, ResolveGender(q.Gender, q.Face))
 
 	// 1. Two-handed stance override. We must resolve this BEFORE building any
 	//    placements so the body skin pulls the right stance frames.

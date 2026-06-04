@@ -22,8 +22,8 @@ func TestLoadoutHashDeterministic(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			h1 := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30000, 20000, "stand1", 0, 2, tc.a))
-			h2 := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30000, 20000, "stand1", 0, 2, tc.b))
+			h1 := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30000, 20000, "stand1", 0, 2, tc.a, GenderMale))
+			h2 := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30000, 20000, "stand1", 0, 2, tc.b, GenderMale))
 			if h1 != h2 {
 				t.Fatalf("hashes differ: %s vs %s", h1, h2)
 			}
@@ -32,7 +32,7 @@ func TestLoadoutHashDeterministic(t *testing.T) {
 }
 
 func TestLoadoutHashLength(t *testing.T) {
-	h := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30000, 20000, "stand1", 0, 2, nil))
+	h := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30000, 20000, "stand1", 0, 2, nil, GenderMale))
 	if len(h) != 16 {
 		t.Fatalf("hash length = %d; want 16", len(h))
 	}
@@ -269,5 +269,94 @@ func TestIsTwoHandedItem(t *testing.T) {
 		if isTwoHandedItem(id) {
 			t.Errorf("expected %d not two-handed", id)
 		}
+	}
+}
+
+func TestParseRenderQueryGender(t *testing.T) {
+	base := func() url.Values {
+		q := url.Values{}
+		q.Set("skin", "0")
+		q.Set("hair", "30000")
+		q.Set("face", "20000")
+		return q
+	}
+
+	t.Run("absent-is-unspecified", func(t *testing.T) {
+		rq, err := ParseRenderQuery(base())
+		if err != nil {
+			t.Fatalf("ParseRenderQuery: %v", err)
+		}
+		if rq.Gender != GenderUnspecified {
+			t.Errorf("absent gender = %d; want %d", rq.Gender, GenderUnspecified)
+		}
+	})
+
+	for _, tc := range []struct {
+		in   string
+		want int
+	}{{"0", GenderMale}, {"1", GenderFemale}} {
+		t.Run("valid-"+tc.in, func(t *testing.T) {
+			q := base()
+			q.Set("gender", tc.in)
+			rq, err := ParseRenderQuery(q)
+			if err != nil {
+				t.Fatalf("ParseRenderQuery: %v", err)
+			}
+			if rq.Gender != tc.want {
+				t.Errorf("gender %q = %d; want %d", tc.in, rq.Gender, tc.want)
+			}
+		})
+	}
+
+	for _, bad := range []string{"2", "-1", "x", "1.0"} {
+		t.Run("invalid-"+bad, func(t *testing.T) {
+			q := base()
+			q.Set("gender", bad)
+			if _, err := ParseRenderQuery(q); err == nil {
+				t.Fatalf("expected error for gender=%q", bad)
+			}
+		})
+	}
+}
+
+func TestCanonicalLoadoutStringGender(t *testing.T) {
+	// Trailing gender field is present and last.
+	got := CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 2, nil, GenderFemale)
+	want := "T|GMS|83.1|0|30030|20000|stand1|0|2||1"
+	if got != want {
+		t.Fatalf("canonical = %q; want %q", got, want)
+	}
+}
+
+func TestCanonicalLoadoutGenderNoCollision(t *testing.T) {
+	// Same empty loadout, different resolved gender → different hash.
+	male := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 2, nil, GenderMale))
+	female := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 2, nil, GenderFemale))
+	if male == female {
+		t.Fatalf("male and female empty-loadout hashes collide: %s", male)
+	}
+}
+
+func TestHandlerCanonicalMirrorsUIGender(t *testing.T) {
+	// Faithfully reproduces the handler's recomputation: a UI-style query that
+	// carries the resolved gender must hash identically to what the UI produced
+	// with that same resolved gender. (A full Handler() HTTP test would require
+	// a MinIO storage + tenant-context harness this package does not have; the
+	// handler's only gender-specific logic is ResolveGender + CanonicalLoadoutString,
+	// exercised here directly.)
+	q := url.Values{}
+	q.Set("skin", "0")
+	q.Set("hair", "30030")
+	q.Set("face", "20000")
+	q.Set("gender", "1")
+	rq, err := ParseRenderQuery(q)
+	if err != nil {
+		t.Fatalf("ParseRenderQuery: %v", err)
+	}
+	g := ResolveGender(rq.Gender, rq.Face)
+	service := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, rq.Skin, rq.Hair, rq.Face, rq.Stance, rq.Frame, rq.Resize, rq.Items, g))
+	ui := LoadoutHash(CanonicalLoadoutString("T", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 2, nil, GenderFemale))
+	if service != ui {
+		t.Fatalf("service hash %s != UI hash %s", service, ui)
 	}
 }

@@ -9,6 +9,7 @@ import {
   filterEquipment,
   canonicalLoadoutString,
   loadoutHash,
+  resolveGender,
   type RenderOptions,
   type Stance,
 } from '@/services/api/characterRender.service';
@@ -63,7 +64,7 @@ const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'on
  * The hash is derived from the canonical loadout string so different loadouts
  * cache separately while the key remains short and stable.
  */
-function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<CharacterRenderOptions>): string[] {
+export function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<CharacterRenderOptions>): string[] {
   const stance = (options?.stance ?? 'stand1') as RenderOptions['stance'];
   const frame = options?.frame ?? 0;
   const resize = options?.resize ?? 2;
@@ -73,6 +74,7 @@ function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<
     )
   );
   const items = Object.values(filtered) as number[];
+  const gender = resolveGender(character.gender, character.face);
   const canonical = canonicalLoadoutString(
     character.tenant,
     character.region,
@@ -85,6 +87,7 @@ function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<
     frame,
     resize,
     items,
+    gender,
   );
   return ['character-image', loadoutHash(canonical)];
 }
@@ -149,6 +152,7 @@ export function useCharacterImage(
           equipment: Object.fromEntries(
             Object.entries(character.equipment).map(([k, v]) => [k, v as number])
           ),
+          gender: character.gender,
         },
         compactRenderOptions({
           stance: renderOptions?.stance,
@@ -238,6 +242,7 @@ export function useCharacterImage(
               equipment: Object.fromEntries(
                 Object.entries(character.equipment).map(([k, v]) => [k, v as number])
               ),
+              gender: character.gender,
             },
             compactRenderOptions({
               stance: merged.stance,
@@ -320,6 +325,7 @@ export function useCharacterImagePreloader() {
               equipment: Object.fromEntries(
                 Object.entries(character.equipment).map(([k, v]) => [k, v as number])
               ),
+              gender: character.gender,
             },
             compactRenderOptions({
               stance: options?.stance,
@@ -416,6 +422,7 @@ export function useCharacterImageCache() {
               equipment: Object.fromEntries(
                 Object.entries(character.equipment).map(([k, v]) => [k, v as number])
               ),
+              gender: character.gender,
             },
             compactRenderOptions({
               stance: options?.stance,

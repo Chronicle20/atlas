@@ -78,9 +78,10 @@ func Handler(l logrus.FieldLogger, s *storage.Storage) http.HandlerFunc {
 			return
 		}
 
+		g := ResolveGender(q.Gender, q.Face)
 		canonical := CanonicalLoadoutString(
 			urlTenant, urlRegion, t.MajorVersion(), t.MinorVersion(),
-			q.Skin, q.Hair, q.Face, q.Stance, q.Frame, q.Resize, q.Items,
+			q.Skin, q.Hair, q.Face, q.Stance, q.Frame, q.Resize, q.Items, g,
 		)
 		if expected := LoadoutHash(canonical); expected != urlHash {
 			WriteError(w, http.StatusBadRequest, ErrorBody{

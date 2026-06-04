@@ -74,10 +74,37 @@ func TestDiffCompositeRunEqualsWiderRead(t *testing.T) {
 	}
 	ida := idasrc.Fields{Calls: []idasrc.FieldCall{{Op: idasrc.Decode4}}}
 	rows := Diff(atlas, ida)
+	if len(rows) != 1 {
+		t.Fatalf("composite 2+2 should coalesce into a single row vs Decode4, got %d rows: %+v", len(rows), rows)
+	}
+	if rows[0].Verdict != VerdictMatch {
+		t.Fatalf("composite 2+2 should match Decode4, got verdict %v: %+v", rows[0].Verdict, rows)
+	}
+}
+
+func TestDiffCompositeRunOvershootDoesNotCoalesce(t *testing.T) {
+	// Atlas writes int16 + int32 (sum 6) against IDA Decode4 + Decode4. The first
+	// Atlas run would have to sum to 4 to coalesce, but Encode2 alone is 2 and the
+	// next call Encode4 overshoots to 6 — never landing exactly on the IDA width.
+	// The conservative pre-pass must NOT merge this region, so the genuine width
+	// mismatch (Encode2 vs Decode4) still surfaces as a blocker.
+	atlas := []atlaspacket.Call{
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode2},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode4},
+	}
+	ida := idasrc.Fields{Calls: []idasrc.FieldCall{
+		{Op: idasrc.Decode4},
+		{Op: idasrc.Decode4},
+	}}
+	rows := Diff(atlas, ida)
+	hasBlocker := false
 	for _, r := range rows {
 		if r.Verdict == VerdictBlocker {
-			t.Fatalf("composite 2+2 should equal Decode4, got blocker: %+v", rows)
+			hasBlocker = true
 		}
+	}
+	if !hasBlocker {
+		t.Fatalf("overshooting run (Encode2+Encode4 vs Decode4) must not coalesce; expected a blocker, got %+v", rows)
 	}
 }
 

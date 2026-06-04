@@ -523,6 +523,31 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "PERSONAL_STORE_BUY": 20,
+            "PERSONAL_STORE_SET_BLACK_LIST": 27
+          }
+        }
+      },
+      {
+        "opCode": "0xF5",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopOperationHandle",
+        "options": {
+          "operations": {
+            "BUY": 3,
+            "GIFT": 46,
+            "REBATE_LOCKER_ITEM": 27,
+            "BUY_COUPLE": 30,
+            "BUY_FRIENDSHIP": 36
+          }
+        }
       }
     ],
     "writers": [{

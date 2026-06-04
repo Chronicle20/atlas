@@ -41,30 +41,58 @@ func (m ShopOperationBuy) Encode(l logrus.FieldLogger, ctx context.Context) func
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteBool(m.isPoints)
-		w.WriteInt(m.currency)
-		w.WriteInt(m.serialNumber)
-		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
-			w.WriteByte(m.oneADay)
-			w.WriteInt(m.eventSN)
+		if t.Region() == "JMS" {
+			m.encodeJMS(w)
 		} else {
-			w.WriteInt(m.zero)
+			m.encodeGMS(t, w)
 		}
 		return w.Bytes()
 	}
 }
 
+func (m ShopOperationBuy) encodeGMS(t tenant.Model, w *response.Writer) {
+	w.WriteBool(m.isPoints)
+	w.WriteInt(m.currency)
+	w.WriteInt(m.serialNumber)
+	if t.Region() == "GMS" && t.MajorVersion() >= 87 {
+		w.WriteByte(m.oneADay)
+		w.WriteInt(m.eventSN)
+	} else {
+		w.WriteInt(m.zero)
+	}
+}
+
+// encodeJMS - JMS185 CCashShop::OnBuy@0x47eaa7: Encode1(usePoints),
+// Encode4(nCommSN). No currency, no trailing v83/v87 fields.
+func (m ShopOperationBuy) encodeJMS(w *response.Writer) {
+	w.WriteBool(m.isPoints)
+	w.WriteInt(m.serialNumber)
+}
+
 func (m *ShopOperationBuy) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.isPoints = r.ReadBool()
-		m.currency = r.ReadUint32()
-		m.serialNumber = r.ReadUint32()
-		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
-			m.oneADay = r.ReadByte()
-			m.eventSN = r.ReadUint32()
+		if t.Region() == "JMS" {
+			m.decodeJMS(r)
 		} else {
-			m.zero = r.ReadUint32()
+			m.decodeGMS(t, r)
 		}
 	}
+}
+
+func (m *ShopOperationBuy) decodeGMS(t tenant.Model, r *request.Reader) {
+	m.isPoints = r.ReadBool()
+	m.currency = r.ReadUint32()
+	m.serialNumber = r.ReadUint32()
+	if t.Region() == "GMS" && t.MajorVersion() >= 87 {
+		m.oneADay = r.ReadByte()
+		m.eventSN = r.ReadUint32()
+	} else {
+		m.zero = r.ReadUint32()
+	}
+}
+
+func (m *ShopOperationBuy) decodeJMS(r *request.Reader) {
+	m.isPoints = r.ReadBool()
+	m.serialNumber = r.ReadUint32()
 }

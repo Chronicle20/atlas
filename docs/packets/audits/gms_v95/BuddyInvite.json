@@ -3,7 +3,7 @@
   "IDAName": "CWvsContext::OnFriendResult#Invite",
   "Address": "0xa12630",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/invite.go",
   "Rows": [
     {
@@ -35,30 +35,30 @@
     },
     {
       "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "v25 — extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)",
-      "Verdict": 3,
-      "Note": "sub-struct: b — see _substruct/"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "v26 — extra 4-byte field decoded before GW_Friend::Insert (purpose unknown; possibly job/level)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 5,
       "IDAComment": "GW_Friend entry (39 bytes via CFriend::Insert → GW_Friend::Decode → DecodeBuffer(this,0x27)): dwFriendID(4)+sFriendName(13)+nFlag(1)+nChannelID(4)+sFriendGroup(17)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 3,
+      "Note": "sub-struct: b — see _substruct/"
     },
     {
       "Index": 6,
@@ -66,8 +66,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "inShop — after GW_Friend::Insert, CFriend::Insert reads Decode1 for m_aInShop[new_entry]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
   "Verdict": 3

@@ -3,7 +3,7 @@
   "IDAName": "CWvsContext::OnFriendResult#Invite",
   "Address": "0xad7ae5",
   "Variant": "GMS/v87",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/invite.go",
   "Rows": [
     {
@@ -35,30 +35,30 @@
     },
     {
       "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "buddy list count",
-      "Verdict": 3,
-      "Note": "sub-struct: b — see _substruct/"
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "buddy[i].characterId (loop)",
       "Verdict": 2,
       "Note": "width mismatch"
     },
     {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "buddy[i].characterId (loop)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
       "Index": 5,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "buddy[i].channelId",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 3,
+      "Note": "sub-struct: b — see _substruct/"
     },
     {
       "Index": 6,
@@ -67,7 +67,7 @@
       "IDAOp": 2,
       "IDAComment": "buddy[i].mapId",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     }
   ],
   "Verdict": 3

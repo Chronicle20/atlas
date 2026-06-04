@@ -63,7 +63,7 @@
 | [BuddyCapacityUpdate](BuddyCapacityUpdate.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/capacity_update.go` |
 | [BuddyChannelChange](BuddyChannelChange.md) | ✅ | `../../libs/atlas-packet/buddy/clientbound/channel_change.go` |
 | [BuddyError](BuddyError.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/error.go` |
-| [BuddyInvite](BuddyInvite.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/invite.go` |
+| [BuddyInvite](BuddyInvite.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/invite.go` |
 | [ErrorResponse](ErrorResponse.md) | ✅ | `../../libs/atlas-packet/fame/clientbound/response.go` |
 | [GiveResponse](GiveResponse.md) | ✅ | `../../libs/atlas-packet/fame/clientbound/response.go` |
 | [ReceiveResponse](ReceiveResponse.md) | ✅ | `../../libs/atlas-packet/fame/clientbound/response.go` |

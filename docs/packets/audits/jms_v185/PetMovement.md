@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | int32 | int32 `characterId — read by dispatcher` | ✅ |  |
 | 1 | byte | byte `slot — read by dispatcher` | ✅ |  |
-| 2 | int32 | bytes `Movement body` | ❌ | width mismatch |
+| 2 | int32 | bytes `Movement body` | ✅ |  |
 | 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

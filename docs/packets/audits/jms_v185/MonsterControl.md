@@ -14,7 +14,7 @@
 | 1 | int32 | int32 `dwMobID` | ✅ |  |
 | 2 | byte | byte `aggro byte — atlas hardcodes 5` | ✅ |  |
 | 3 | int32 | int32 `dwTemplateID via sub_6F75D6 — atlas monsterId` | ✅ |  |
-| 4 | int32 | bytes `MonsterModel body` | ❌ | width mismatch |
+| 4 | int32 | bytes `MonsterModel body` | ✅ |  |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

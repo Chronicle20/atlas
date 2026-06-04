@@ -13,12 +13,3 @@
 | 0 | byte | byte `mode (case 0xE = SHOP_RENAME)` | ✅ |  |
 | 1 | byte | byte `success flag (if 0 return early; if 1 show chat-log success message)` | ✅ |  |
 
-
-## Manual analysis
-
-**v83 IDA:** `CWvsContext::OnEntrustedShopCheckResult` @ 0xa27d75, case 14 — Decode1(success flag). Matches v95 exactly.
-
-**Gate:** None needed — version-agnostic. Gate confirmed correct (✅).
-
-
-Ack: misc-audit Phase 3 v83 on 2026-06-03

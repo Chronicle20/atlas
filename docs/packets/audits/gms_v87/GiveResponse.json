@@ -4,7 +4,7 @@
   "Address": "0xab9c24",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/fame/clientbound/response.go",
+  "AtlasFile": "../../libs/atlas-packet/fame/clientbound/response.go",
   "Rows": [
     {
       "Index": 0,
@@ -35,22 +35,13 @@
     },
     {
       "Index": 3,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nPOP (new total fame as int32)",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

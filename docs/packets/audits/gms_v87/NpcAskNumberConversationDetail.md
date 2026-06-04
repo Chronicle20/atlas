@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `min (v27)` | ✅ |  |
 | 3 | int32 | int32 `max (v7)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

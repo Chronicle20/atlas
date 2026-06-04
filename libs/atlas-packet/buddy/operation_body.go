@@ -29,9 +29,9 @@ const (
 	BuddyOperationErrorUnknownError4     = "UNKNOWN_ERROR_4"
 )
 
-func BuddyInviteBody(actorId uint32, originatorId uint32, originatorName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+func BuddyInviteBody(actorId uint32, originatorId uint32, originatorName string, jobId uint32, level uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", BuddyOperationInvite, func(mode byte) packet.Encoder {
-		return clientbound.NewBuddyInvite(mode, actorId, originatorId, originatorName)
+		return clientbound.NewBuddyInvite(mode, actorId, originatorId, originatorName, jobId, level)
 	})
 }
 

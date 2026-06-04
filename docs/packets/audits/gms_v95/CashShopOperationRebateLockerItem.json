@@ -3,8 +3,8 @@
   "IDAName": "CCashShop::OnRebateLockerItem",
   "Address": "0x485840",
   "Variant": "GMS/v95",
-  "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
+  "BranchDepth": 3,
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
   "Rows": [
     {
       "Index": 0,
@@ -21,9 +21,9 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "v5 8 bytes locker SN (atlas reads uint64 unk)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

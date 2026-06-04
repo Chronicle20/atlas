@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "fieldKey (get_field()->m_bFieldKey @line75)",
+      "IDAComment": "fieldKey (get_field()-\u003em_bFieldKey @line75)",
       "Verdict": 0,
       "Note": ""
     },

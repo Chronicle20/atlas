@@ -11,8 +11,8 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | int32 | int32 `dwMobId — read by CMobPool::OnMobPacket before dispatch` | ✅ |  |
-| 1 | int32 | bytes `uFlagSet: 16-byte UINT128 stat mask` | ❌ | width mismatch |
-| 2 | int32 | bytes `per-stat body via CMob::ProcessStatSet` | ❌ | width mismatch |
+| 1 | int32 | bytes `uFlagSet: 16-byte UINT128 stat mask` | ✅ |  |
+| 2 | int32 | bytes `per-stat body via CMob::ProcessStatSet` | ✅ |  |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

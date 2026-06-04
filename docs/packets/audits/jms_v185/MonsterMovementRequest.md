@@ -25,7 +25,7 @@
 | 12 | int32 | int32 `v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX` | ✅ |  |
 | 13 | int32 | int32 `v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY` | ✅ |  |
 | 14 | int32 | int32 `sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC` | ✅ |  |
-| 15 | int16 | bytes `CMovePath::Flush body (Movement elements, variable length)` | ❌ | width mismatch |
+| 15 | int16 | bytes `CMovePath::Flush body (Movement elements, variable length)` | ✅ |  |
 | 16 | int16 | byte `bChasing (sub_68664B of m_bChasing)` | ❌ | width mismatch |
 | 17 | byte | byte `hasTarget (LODWORD(v14[1].m_ap._ZtlSecureTear_vx[1]) != 0)` | ✅ |  |
 | 18 | byte | byte `bChasing2 (m_pLadderOrRope flag)` | 🔍 | sub-struct: MovementCodec — see _substruct/ |

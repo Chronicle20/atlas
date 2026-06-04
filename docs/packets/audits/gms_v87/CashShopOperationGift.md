@@ -3,7 +3,7 @@
 - **IDA:** 0x47a168
 - **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go`
 - **Variant:** GMS/v87
-- **Branch depth:** 2
+- **Branch depth:** 3
 - **Verdict:** ✅
 
 ## Wire-level diff

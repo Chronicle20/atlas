@@ -4,7 +4,7 @@
   "Address": "0x6a2340",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/chat.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/chat.go",
   "Rows": [
     {
       "Index": 0,
@@ -12,8 +12,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER) from this-\u003em_liPetLockerSN",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,

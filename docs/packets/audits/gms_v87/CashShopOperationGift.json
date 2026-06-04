@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::SendGiftsPacket",
   "Address": "0x47a168",
   "Variant": "GMS/v87",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
   "Rows": [
     {

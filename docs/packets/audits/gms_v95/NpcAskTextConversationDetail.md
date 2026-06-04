@@ -1,7 +1,7 @@
 # NpcAskTextConversationDetail (← `CScriptMan::OnAskText#AskText`)
 
 - **IDA:** 0x6dc790
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `nLenMin (min length)` | ✅ |  |
 | 3 | int16 | int16 `nLenMax (max length)` | ✅ |  |
 
-
-Ack: world-audit sub-phase 2f on 2026-05-28

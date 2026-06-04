@@ -21,8 +21,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "GUILDDATA::Decode (full guild data)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,

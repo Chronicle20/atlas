@@ -4,7 +4,7 @@
   "Address": "0x76a990",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/storage/clientbound/update_assets.go",
+  "AtlasFile": "../../libs/atlas-packet/storage/clientbound/update_assets.go",
   "Rows": [
     {
       "Index": 0,
@@ -49,7 +49,7 @@
       "IDAOp": 0,
       "IDAComment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
       "Verdict": 3,
-      "Note": "sub-struct: model.Asset — see _substruct/"
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
     }
   ],
   "Verdict": 3

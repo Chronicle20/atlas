@@ -13,5 +13,3 @@
 | 0 | byte | byte `mode (= 2/3/4/6; string-payload effect)` | ✅ |  |
 | 1 | string | string `name / path / bgm UOL string` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

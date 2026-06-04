@@ -3,8 +3,8 @@
   "IDAName": "CField::OnBlowWeather",
   "Address": "0x5468f0",
   "Variant": "GMS/v95",
-  "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/effect_weather.go",
+  "BranchDepth": 2,
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/effect_weather.go",
   "Rows": [
     {
       "Index": 0,

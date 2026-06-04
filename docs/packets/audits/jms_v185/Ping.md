@@ -1,7 +1,7 @@
 # Ping (← `CClientSocket::OnAliveReq#PingReceive`)
 
 - **IDA:** 0x4b18e3
-- **Atlas file:** `libs/atlas-packet/socket/clientbound/ping.go`
+- **Atlas file:** `../../libs/atlas-packet/socket/clientbound/ping.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

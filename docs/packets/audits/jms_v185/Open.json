@@ -4,7 +4,7 @@
   "Address": "0xa2cf38",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/ui/clientbound/open.go",
+  "AtlasFile": "../../libs/atlas-packet/ui/clientbound/open.go",
   "Rows": [
     {
       "Index": 0,

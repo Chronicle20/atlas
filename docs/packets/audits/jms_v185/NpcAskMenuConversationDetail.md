@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | string | string `message / menu (@0x7b7cae)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

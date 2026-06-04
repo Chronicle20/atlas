@@ -21,21 +21,19 @@
 | 8 | byte | byte `v9 (pet count; if >0: SetMultiPetInfo reads pets)` | ✅ |  |
 | 9 | int32 | byte `taming mob active flag` | ❌ | width mismatch |
 | 10 | string | byte `wish list count` | ❌ | width mismatch |
-| 11 | byte | int32 `monster book: CMonsterBook data 1 (via sub_6C10A8) — present in v87; absent in v95 (GMS>=87 guard)` | ❌ | width mismatch |
+| 11 | int32 | int32 `monster book: CMonsterBook data 1 (via sub_6C10A8) — present in v87; absent in v95 (GMS>=87 guard)` | ✅ |  |
 | 12 | int16 | int32 `monster book: data 2` | ❌ | width mismatch |
-| 13 | byte | int32 `monster book: data 3` | ❌ | width mismatch |
-| 14 | int16 | int32 `monster book: data 4` | ❌ | width mismatch |
-| 15 | int32 | int32 `monster book: data 5 (currentMobTemplate)` | ✅ |  |
+| 13 | int32 | int32 `monster book: data 3` | ✅ |  |
+| 14 | byte | int32 `monster book: data 4` | ❌ | width mismatch |
+| 15 | byte | int32 `monster book: data 5 (currentMobTemplate)` | ❌ | width mismatch |
 | 16 | byte | int32 `MedalAchievementInfo: nEquipedMedalID (via sub_97D620)` | ❌ | width mismatch |
-| 17 | byte | int16 `MedalAchievementInfo: ausMedalQuestID count` | ❌ | width mismatch |
-| 18 | byte | int32 `chair list count (ZArray with 4*count bytes)` | ❌ | width mismatch |
+| 17 | int32 | int16 `MedalAchievementInfo: ausMedalQuestID count` | ❌ | width mismatch |
+| 18 | int32 | int32 `chair list count (ZArray with 4*count bytes)` | ✅ |  |
 | 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 21 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 24 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 24 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 25 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 26 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 27 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

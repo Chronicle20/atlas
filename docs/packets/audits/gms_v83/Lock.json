@@ -4,7 +4,7 @@
   "Address": "0x95ff5a",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/ui/clientbound/lock.go",
+  "AtlasFile": "../../libs/atlas-packet/ui/clientbound/lock.go",
   "Rows": [
     {
       "Index": 0,

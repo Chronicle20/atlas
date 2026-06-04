@@ -21,5 +21,3 @@
 | 8 | int16 | int16 `rx1 (this+40)` | ✅ |  |
 | 9 | byte | byte `enabled (this+77; atlas trailing flag)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

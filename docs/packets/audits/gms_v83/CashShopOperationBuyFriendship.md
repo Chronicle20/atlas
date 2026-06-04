@@ -3,7 +3,7 @@
 - **IDA:** 0x470a5a
 - **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go`
 - **Variant:** GMS/v83
-- **Branch depth:** 2
+- **Branch depth:** 3
 - **Verdict:** ✅
 
 ## Wire-level diff

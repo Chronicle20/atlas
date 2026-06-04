@@ -1,0 +1,475 @@
+<!-- Pre-Phase-A four-version false-positive/deferral baseline captured by Task A0 (task-080). -->
+<!-- Later Phase-A tasks diff against this set. Entries: <path>:| symbol | ... -->
+
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [AddCharacterEntry](AddCharacterEntry.md) | ❌ | `../../libs/atlas-packet/character/clientbound/add_entry.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [Attack](Attack.md) | ❌ | `../../libs/atlas-packet/character/clientbound/attack.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuddyError](BuddyError.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/error.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuddyInvite](BuddyInvite.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/invite.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuddyListUpdate](BuddyListUpdate.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/list_update.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuddyUpdate](BuddyUpdate.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/update.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuffCancel](BuffCancel.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_cancel.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuffCancelForeign](BuffCancelForeign.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_cancel.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuffGive](BuffGive.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_give.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [BuffGiveForeign](BuffGiveForeign.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_give.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CashCashShopInventory](CashCashShopInventory.md) | ❌ | `../../libs/atlas-packet/cash/clientbound/shop_inventory.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CashShopOperationRebateLockerItem](CashShopOperationRebateLockerItem.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [Changed](Changed.md) | ❌ | `../../libs/atlas-packet/stat/clientbound/changed.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [ChannelChange](ChannelChange.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/channel_change.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [ChannelConnect](ChannelConnect.md) | ❌ | `../../libs/atlas-packet/socket/serverbound/channel_connect.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterAppearanceUpdate](CharacterAppearanceUpdate.md) | ❌ | `../../libs/atlas-packet/character/clientbound/appearance_update.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterDamage](CharacterDamage.md) | ❌ | `../../libs/atlas-packet/character/clientbound/damage.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterInfo](CharacterInfo.md) | ❌ | `../../libs/atlas-packet/character/clientbound/info.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterKeyMap](CharacterKeyMap.md) | ❌ | `../../libs/atlas-packet/character/clientbound/keymap.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterList](CharacterList.md) | ❌ | `../../libs/atlas-packet/character/clientbound/list.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterMovement](CharacterMovement.md) | ❌ | `../../libs/atlas-packet/character/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterSitResult](CharacterSitResult.md) | ❌ | `../../libs/atlas-packet/character/clientbound/sit_result.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterSkillChange](CharacterSkillChange.md) | ❌ | `../../libs/atlas-packet/character/clientbound/skill_change.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterSpawn](CharacterSpawn.md) | ❌ | `../../libs/atlas-packet/character/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [CharacterViewAllCharacters](CharacterViewAllCharacters.md) | ❌ | `../../libs/atlas-packet/character/clientbound/view_all.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [DropDestroy](DropDestroy.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/destroy.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [DropSpawn](DropSpawn.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [EffectQuest](EffectQuest.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect_quest.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [EffectSimple](EffectSimple.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [EffectSkillUse](EffectSkillUse.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect_skill_use.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [FieldAffectedAreaCreated](FieldAffectedAreaCreated.md) | ❌ | `../../libs/atlas-packet/field/clientbound/affected_area_created.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [FieldClock](FieldClock.md) | ❌ | `../../libs/atlas-packet/field/clientbound/clock.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [FieldSetField](FieldSetField.md) | ❌ | `../../libs/atlas-packet/field/clientbound/set_field.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GiveResponse](GiveResponse.md) | ❌ | `../../libs/atlas-packet/fame/clientbound/response.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildAgreementResponse](GuildAgreementResponse.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_agreement_response.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSCreateOrEditThread](GuildBBSCreateOrEditThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSDeleteReply](GuildBBSDeleteReply.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_delete_reply.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSDeleteThread](GuildBBSDeleteThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_delete_thread.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSDisplayThread](GuildBBSDisplayThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_display_thread.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSListThreads](GuildBBSListThreads.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_list_threads.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSReplyThread](GuildBBSReplyThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_reply_thread.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSThread](GuildBBSThread.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildBBSThreadList](GuildBBSThreadList.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildInfo](GuildInfo.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/info.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildInvite](GuildInvite.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildMemberJoined](GuildMemberJoined.md) | 🔍 | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [GuildTitleChange](GuildTitleChange.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [Hello](Hello.md) | ❌ | `../../libs/atlas-packet/socket/clientbound/hello.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [InteractionOperationChat](InteractionOperationChat.md) | ❌ | `../../libs/atlas-packet/interaction/serverbound/operation_chat.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [InventoryAdd](InventoryAdd.md) | 🔍 | `../../libs/atlas-packet/inventory/clientbound/change.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [InventoryChangeBatch](InventoryChangeBatch.md) | ❌ | `../../libs/atlas-packet/inventory/clientbound/change_batch.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [InventoryRemove](InventoryRemove.md) | ❌ | `../../libs/atlas-packet/inventory/clientbound/change.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [KeyMapChange](KeyMapChange.md) | ❌ | `../../libs/atlas-packet/character/serverbound/key_map_change.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerAdd](MessengerAdd.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/add.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerChat](MessengerChat.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/chat.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerInviteDeclined](MessengerInviteDeclined.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/invite_declined.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerInviteSent](MessengerInviteSent.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/invite_sent.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerJoin](MessengerJoin.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/join.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerOperationAnswerInvite](MessengerOperationAnswerInvite.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_answer_invite.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerOperationChat](MessengerOperationChat.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_chat.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerOperationInvite](MessengerOperationInvite.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_invite.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerRemove](MessengerRemove.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/remove.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerRequestInvite](MessengerRequestInvite.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/request_invite.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MessengerUpdate](MessengerUpdate.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/update.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MonsterControl](MonsterControl.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/control.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MonsterMovement](MonsterMovement.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MonsterMovementRequest](MonsterMovementRequest.md) | ❌ | `../../libs/atlas-packet/monster/serverbound/movement.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MonsterSpawn](MonsterSpawn.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MonsterStatReset](MonsterStatReset.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [MonsterStatSet](MonsterStatSet.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [Move](Move.md) | ❌ | `../../libs/atlas-packet/character/serverbound/move.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NoteDisplay](NoteDisplay.md) | ❌ | `../../libs/atlas-packet/note/clientbound/display.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NoteSendSuccess](NoteSendSuccess.md) | ❌ | `../../libs/atlas-packet/note/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NpcAction](NpcAction.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/action.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NpcAskPetAllConversationDetail](NpcAskPetAllConversationDetail.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/conversation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NpcAskPetConversationDetail](NpcAskPetConversationDetail.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/conversation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NpcContinueConversationSelection](NpcContinueConversationSelection.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/continue_conversation_selection.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NpcNpcConversation](NpcNpcConversation.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/conversation.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [NpcShopList](NpcShopList.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/shop_list.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PartyDisband](PartyDisband.md) | ❌ | `../../libs/atlas-packet/party/clientbound/disband.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PartyError](PartyError.md) | ❌ | `../../libs/atlas-packet/party/clientbound/error.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PartyInvite](PartyInvite.md) | ❌ | `../../libs/atlas-packet/party/clientbound/invite.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PartyJoin](PartyJoin.md) | ❌ | `../../libs/atlas-packet/party/clientbound/join.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PartyLeft](PartyLeft.md) | ❌ | `../../libs/atlas-packet/party/clientbound/left.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PartyUpdate](PartyUpdate.md) | ❌ | `../../libs/atlas-packet/party/clientbound/update.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetActivated](PetActivated.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/activated.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetChatRequest](PetChatRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/chat.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetCommand](PetCommand.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/command.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetCommandResponse](PetCommandResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/command.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetDropPickUp](PetDropPickUp.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetExcludeItem](PetExcludeItem.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/exclude_item.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetExcludeResponse](PetExcludeResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/exclude.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetItemUse](PetItemUse.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/item_use.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetMovement](PetMovement.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [PetMovementRequest](PetMovementRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/movement.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [StatusMessageDropPickUpInventoryFull](StatusMessageDropPickUpInventoryFull.md) | ❌ | `../../libs/atlas-packet/character/clientbound/status_message.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [StorageShow](StorageShow.md) | ❌ | `../../libs/atlas-packet/storage/clientbound/show.go` |
+/tmp/audit-baseline/gms_v83/gms_v83/SUMMARY.md:| [StorageUpdateAssets](StorageUpdateAssets.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/update_assets.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [AddCharacterEntry](AddCharacterEntry.md) | ❌ | `../../libs/atlas-packet/character/clientbound/add_entry.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [Attack](Attack.md) | ❌ | `../../libs/atlas-packet/character/clientbound/attack.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuddyError](BuddyError.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/error.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuddyInvite](BuddyInvite.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/invite.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuddyListUpdate](BuddyListUpdate.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/list_update.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuddyUpdate](BuddyUpdate.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/update.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuffCancel](BuffCancel.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_cancel.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuffCancelForeign](BuffCancelForeign.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_cancel.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuffGive](BuffGive.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_give.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [BuffGiveForeign](BuffGiveForeign.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_give.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CashCashShopInventory](CashCashShopInventory.md) | ❌ | `../../libs/atlas-packet/cash/clientbound/shop_inventory.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CashShopOperationRebateLockerItem](CashShopOperationRebateLockerItem.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [Changed](Changed.md) | ❌ | `../../libs/atlas-packet/stat/clientbound/changed.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [ChannelChange](ChannelChange.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/channel_change.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [ChannelConnect](ChannelConnect.md) | ❌ | `../../libs/atlas-packet/socket/serverbound/channel_connect.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterAppearanceUpdate](CharacterAppearanceUpdate.md) | ❌ | `../../libs/atlas-packet/character/clientbound/appearance_update.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterDamage](CharacterDamage.md) | ❌ | `../../libs/atlas-packet/character/clientbound/damage.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterInfo](CharacterInfo.md) | ❌ | `../../libs/atlas-packet/character/clientbound/info.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterKeyMap](CharacterKeyMap.md) | ❌ | `../../libs/atlas-packet/character/clientbound/keymap.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterList](CharacterList.md) | ❌ | `../../libs/atlas-packet/character/clientbound/list.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterMovement](CharacterMovement.md) | ❌ | `../../libs/atlas-packet/character/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterSelectRegisterPic](CharacterSelectRegisterPic.md) | ❌ | `../../libs/atlas-packet/login/serverbound/character_select_register_pic.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterSelectWithPic](CharacterSelectWithPic.md) | ❌ | `../../libs/atlas-packet/login/serverbound/character_select_with_pic.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterSitResult](CharacterSitResult.md) | ❌ | `../../libs/atlas-packet/character/clientbound/sit_result.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterSkillChange](CharacterSkillChange.md) | ❌ | `../../libs/atlas-packet/character/clientbound/skill_change.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterSpawn](CharacterSpawn.md) | ❌ | `../../libs/atlas-packet/character/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [CharacterViewAllCharacters](CharacterViewAllCharacters.md) | ❌ | `../../libs/atlas-packet/character/clientbound/view_all.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [ChatGeneral](ChatGeneral.md) | ❌ | `../../libs/atlas-packet/chat/serverbound/general.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [DropDestroy](DropDestroy.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/destroy.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [DropSpawn](DropSpawn.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [EffectQuest](EffectQuest.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect_quest.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [EffectSimple](EffectSimple.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [EffectSkillUse](EffectSkillUse.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect_skill_use.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [FieldAffectedAreaCreated](FieldAffectedAreaCreated.md) | ❌ | `../../libs/atlas-packet/field/clientbound/affected_area_created.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [FieldClock](FieldClock.md) | ❌ | `../../libs/atlas-packet/field/clientbound/clock.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [FieldSetField](FieldSetField.md) | ❌ | `../../libs/atlas-packet/field/clientbound/set_field.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GiveResponse](GiveResponse.md) | ❌ | `../../libs/atlas-packet/fame/clientbound/response.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildAgreementResponse](GuildAgreementResponse.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_agreement_response.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildBBSCreateOrEditThread](GuildBBSCreateOrEditThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildBBSListThreads](GuildBBSListThreads.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_list_threads.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildBBSThread](GuildBBSThread.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildBBSThreadList](GuildBBSThreadList.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildCapacityChange](GuildCapacityChange.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildInfo](GuildInfo.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/info.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildMemberExpel](GuildMemberExpel.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildMemberJoined](GuildMemberJoined.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildMemberLeft](GuildMemberLeft.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildMemberStatusUpdate](GuildMemberStatusUpdate.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [GuildTitleChange](GuildTitleChange.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [Hello](Hello.md) | ❌ | `../../libs/atlas-packet/socket/clientbound/hello.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [KeyMapChange](KeyMapChange.md) | ❌ | `../../libs/atlas-packet/character/serverbound/key_map_change.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerAdd](MessengerAdd.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/add.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerChat](MessengerChat.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/chat.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerInviteDeclined](MessengerInviteDeclined.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/invite_declined.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerInviteSent](MessengerInviteSent.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/invite_sent.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerJoin](MessengerJoin.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/join.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerOperationChat](MessengerOperationChat.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_chat.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerOperation](MessengerOperation.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerRequestInvite](MessengerRequestInvite.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/request_invite.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MessengerUpdate](MessengerUpdate.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/update.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MonsterControl](MonsterControl.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/control.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MonsterMovement](MonsterMovement.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MonsterMovementRequest](MonsterMovementRequest.md) | 🔍 | `../../libs/atlas-packet/monster/serverbound/movement.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MonsterSpawn](MonsterSpawn.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MonsterStatReset](MonsterStatReset.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [MonsterStatSet](MonsterStatSet.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [Move](Move.md) | ❌ | `../../libs/atlas-packet/character/serverbound/move.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [NoteDisplay](NoteDisplay.md) | ❌ | `../../libs/atlas-packet/note/clientbound/display.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [NpcAction](NpcAction.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/action.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [NpcContinueConversationSelection](NpcContinueConversationSelection.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/continue_conversation_selection.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [NpcShopList](NpcShopList.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/shop_list.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyCreated](PartyCreated.md) | ❌ | `../../libs/atlas-packet/party/clientbound/created.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyDisband](PartyDisband.md) | ❌ | `../../libs/atlas-packet/party/clientbound/disband.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyError](PartyError.md) | ❌ | `../../libs/atlas-packet/party/clientbound/error.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyInviteReject](PartyInviteReject.md) | ❌ | `../../libs/atlas-packet/party/serverbound/invite_reject.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyJoin](PartyJoin.md) | ❌ | `../../libs/atlas-packet/party/clientbound/join.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyLeft](PartyLeft.md) | ❌ | `../../libs/atlas-packet/party/clientbound/left.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PartyUpdate](PartyUpdate.md) | ❌ | `../../libs/atlas-packet/party/clientbound/update.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetChatRequest](PetChatRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/chat.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetCommand](PetCommand.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/command.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetCommandResponse](PetCommandResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/command.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetDropPickUp](PetDropPickUp.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetExcludeItem](PetExcludeItem.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/exclude_item.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetExcludeResponse](PetExcludeResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/exclude.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetItemUse](PetItemUse.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/item_use.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetMovement](PetMovement.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [PetMovementRequest](PetMovementRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/movement.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [Request](Request.md) | ❌ | `../../libs/atlas-packet/login/serverbound/request.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [StatusMessageDropPickUpInventoryFull](StatusMessageDropPickUpInventoryFull.md) | ❌ | `../../libs/atlas-packet/character/clientbound/status_message.go` |
+/tmp/audit-baseline/gms_v87/gms_v87/SUMMARY.md:| [StorageShow](StorageShow.md) | ❌ | `../../libs/atlas-packet/storage/clientbound/show.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [AddCharacterEntry](AddCharacterEntry.md) | ❌ | `../../libs/atlas-packet/character/clientbound/add_entry.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [Attack](Attack.md) | ❌ | `../../libs/atlas-packet/character/clientbound/attack.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyError](BuddyError.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/error.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyInvite](BuddyInvite.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/invite.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyListUpdate](BuddyListUpdate.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/list_update.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyOperationAccept](BuddyOperationAccept.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_accept.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyOperationAdd](BuddyOperationAdd.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_add.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyOperationDelete](BuddyOperationDelete.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_delete.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuddyUpdate](BuddyUpdate.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/update.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuffCancel](BuffCancel.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_cancel.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuffCancelForeign](BuffCancelForeign.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_cancel.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuffGive](BuffGive.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_give.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [BuffGiveForeign](BuffGiveForeign.md) | ❌ | `../../libs/atlas-packet/character/clientbound/buff_give.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashShopOperationIncreaseInventory](CashShopOperationIncreaseInventory.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_increase_inventory.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashShopOperationIncreaseStorage](CashShopOperationIncreaseStorage.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_increase_storage.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashShopOperationMoveFromCashInventory](CashShopOperationMoveFromCashInventory.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_move_from_cash_inventory.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashShopOperationMoveToCashInventory](CashShopOperationMoveToCashInventory.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_move_to_cash_inventory.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashShopOperationRebateLockerItem](CashShopOperationRebateLockerItem.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashShopOperationSetWishlist](CashShopOperationSetWishlist.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_set_wishlist.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CashWishList](CashWishList.md) | ❌ | `../../libs/atlas-packet/cash/clientbound/shop_operation_result.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [Changed](Changed.md) | ❌ | `../../libs/atlas-packet/stat/clientbound/changed.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [ChannelChange](ChannelChange.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/channel_change.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [ChannelConnect](ChannelConnect.md) | ❌ | `../../libs/atlas-packet/socket/serverbound/channel_connect.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterAppearanceUpdate](CharacterAppearanceUpdate.md) | ❌ | `../../libs/atlas-packet/character/clientbound/appearance_update.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterDamage](CharacterDamage.md) | ❌ | `../../libs/atlas-packet/character/clientbound/damage.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterInfo](CharacterInfo.md) | ❌ | `../../libs/atlas-packet/character/clientbound/info.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterKeyMap](CharacterKeyMap.md) | ❌ | `../../libs/atlas-packet/character/clientbound/keymap.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterList](CharacterList.md) | ❌ | `../../libs/atlas-packet/character/clientbound/list.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterMovement](CharacterMovement.md) | ❌ | `../../libs/atlas-packet/character/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterSitResult](CharacterSitResult.md) | ❌ | `../../libs/atlas-packet/character/clientbound/sit_result.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterSkillChange](CharacterSkillChange.md) | ❌ | `../../libs/atlas-packet/character/clientbound/skill_change.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterSpawn](CharacterSpawn.md) | ❌ | `../../libs/atlas-packet/character/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [CharacterViewAllCharacters](CharacterViewAllCharacters.md) | ❌ | `../../libs/atlas-packet/character/clientbound/view_all.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [ChatGeneralChat](ChatGeneralChat.md) | ❌ | `../../libs/atlas-packet/chat/clientbound/general.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [DropDestroy](DropDestroy.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/destroy.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [DropSpawn](DropSpawn.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [EffectQuest](EffectQuest.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect_quest.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [EffectSimple](EffectSimple.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [EffectSkillUse](EffectSkillUse.md) | ❌ | `../../libs/atlas-packet/character/clientbound/effect_skill_use.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [FieldAffectedAreaCreated](FieldAffectedAreaCreated.md) | ❌ | `../../libs/atlas-packet/field/clientbound/affected_area_created.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [FieldClock](FieldClock.md) | ❌ | `../../libs/atlas-packet/field/clientbound/clock.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [FieldSetField](FieldSetField.md) | ❌ | `../../libs/atlas-packet/field/clientbound/set_field.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GiveResponse](GiveResponse.md) | ❌ | `../../libs/atlas-packet/fame/clientbound/response.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSCreateOrEditThread](GuildBBSCreateOrEditThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSDeleteReply](GuildBBSDeleteReply.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_delete_reply.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSDeleteThread](GuildBBSDeleteThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_delete_thread.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSDisplayThread](GuildBBSDisplayThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_display_thread.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSListThreads](GuildBBSListThreads.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_list_threads.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSReplyThread](GuildBBSReplyThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_reply_thread.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSThread](GuildBBSThread.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildBBSThreadList](GuildBBSThreadList.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildInfo](GuildInfo.md) | 🔍 | `../../libs/atlas-packet/guild/clientbound/info.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildMemberJoined](GuildMemberJoined.md) | 🔍 | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildSetTitleNames](GuildSetTitleNames.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_set_title_names.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [GuildTitleChange](GuildTitleChange.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [Hello](Hello.md) | ❌ | `../../libs/atlas-packet/socket/clientbound/hello.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [InteractionInteractionEnter](InteractionInteractionEnter.md) | ❌ | `../../libs/atlas-packet/interaction/clientbound/interaction.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [InteractionInteractionEnterResultSuccess](InteractionInteractionEnterResultSuccess.md) | ❌ | `../../libs/atlas-packet/interaction/clientbound/interaction.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [InteractionInteractionUpdateMerchant](InteractionInteractionUpdateMerchant.md) | ❌ | `../../libs/atlas-packet/interaction/clientbound/interaction.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [InteractionOperationMemoryGameMoveStone](InteractionOperationMemoryGameMoveStone.md) | ❌ | `../../libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [InventoryAdd](InventoryAdd.md) | 🔍 | `../../libs/atlas-packet/inventory/clientbound/change.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [InventoryChangeBatch](InventoryChangeBatch.md) | ❌ | `../../libs/atlas-packet/inventory/clientbound/change_batch.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [KeyMapChange](KeyMapChange.md) | ❌ | `../../libs/atlas-packet/character/serverbound/key_map_change.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MessengerAdd](MessengerAdd.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/add.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MessengerUpdate](MessengerUpdate.md) | ❌ | `../../libs/atlas-packet/messenger/clientbound/update.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MonsterControl](MonsterControl.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/control.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MonsterMovement](MonsterMovement.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MonsterMovementRequest](MonsterMovementRequest.md) | 🔍 | `../../libs/atlas-packet/monster/serverbound/movement.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MonsterSpawn](MonsterSpawn.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/spawn.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MonsterStatReset](MonsterStatReset.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [MonsterStatSet](MonsterStatSet.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [Move](Move.md) | ❌ | `../../libs/atlas-packet/character/serverbound/move.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [NoteDisplay](NoteDisplay.md) | ❌ | `../../libs/atlas-packet/note/clientbound/display.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [NpcAction](NpcAction.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/action.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [NpcActionRequest](NpcActionRequest.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/action.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [NpcContinueConversationSelection](NpcContinueConversationSelection.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/continue_conversation_selection.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [NpcShopList](NpcShopList.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/shop_list.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyChangeLeader](PartyChangeLeader.md) | ❌ | `../../libs/atlas-packet/party/clientbound/change_leader.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyCreated](PartyCreated.md) | ❌ | `../../libs/atlas-packet/party/clientbound/created.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyDisband](PartyDisband.md) | ❌ | `../../libs/atlas-packet/party/clientbound/disband.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyError](PartyError.md) | ❌ | `../../libs/atlas-packet/party/clientbound/error.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyInvite](PartyInvite.md) | ❌ | `../../libs/atlas-packet/party/clientbound/invite.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyJoin](PartyJoin.md) | ❌ | `../../libs/atlas-packet/party/clientbound/join.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyLeft](PartyLeft.md) | ❌ | `../../libs/atlas-packet/party/clientbound/left.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyMemberHP](PartyMemberHP.md) | ❌ | `../../libs/atlas-packet/party/clientbound/member_hp.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyOperationChangeLeader](PartyOperationChangeLeader.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_change_leader.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyOperationExpel](PartyOperationExpel.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_expel.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyOperationInvite](PartyOperationInvite.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_invite.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PartyUpdate](PartyUpdate.md) | ❌ | `../../libs/atlas-packet/party/clientbound/update.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetActivated](PetActivated.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/activated.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetChatRequest](PetChatRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/chat.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetCommand](PetCommand.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/command.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetCommandResponse](PetCommandResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/command.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetDropPickUp](PetDropPickUp.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetExcludeItem](PetExcludeItem.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/exclude_item.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetExcludeResponse](PetExcludeResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/exclude.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetItemUse](PetItemUse.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/item_use.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetMovement](PetMovement.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/movement.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [PetMovementRequest](PetMovementRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/movement.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [StatusMessageDropPickUpInventoryFull](StatusMessageDropPickUpInventoryFull.md) | ❌ | `../../libs/atlas-packet/character/clientbound/status_message.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [StorageShow](StorageShow.md) | ❌ | `../../libs/atlas-packet/storage/clientbound/show.go` |
+/tmp/audit-baseline/gms_v95/gms_v95/SUMMARY.md:| [StorageUpdateAssets](StorageUpdateAssets.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/update_assets.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [AuthSuccess](AuthSuccess.md) | ❌ | `../../libs/atlas-packet/login/clientbound/auth_success.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [BuddyCapacityUpdate](BuddyCapacityUpdate.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/capacity_update.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [BuddyError](BuddyError.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/error.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [BuddyInvite](BuddyInvite.md) | 🔍 | `../../libs/atlas-packet/buddy/clientbound/invite.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [BuddyOperationAccept](BuddyOperationAccept.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_accept.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [BuddyOperationAdd](BuddyOperationAdd.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_add.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [BuddyOperationDelete](BuddyOperationDelete.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_delete.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CashShopOperationBuy](CashShopOperationBuy.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CashShopOperationBuyCouple](CashShopOperationBuyCouple.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CashShopOperationBuyFriendship](CashShopOperationBuyFriendship.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CashShopOperationGift](CashShopOperationGift.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CashShopOperationRebateLockerItem](CashShopOperationRebateLockerItem.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [Changed](Changed.md) | ❌ | `../../libs/atlas-packet/stat/clientbound/changed.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [ChannelChange](ChannelChange.md) | ❌ | `../../libs/atlas-packet/buddy/clientbound/channel_change.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [ChannelConnect](ChannelConnect.md) | ❌ | `../../libs/atlas-packet/socket/serverbound/channel_connect.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CharacterAppearanceUpdate](CharacterAppearanceUpdate.md) | ❌ | `../../libs/atlas-packet/character/clientbound/appearance_update.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CharacterKeyMap](CharacterKeyMap.md) | ❌ | `../../libs/atlas-packet/character/clientbound/keymap.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CharacterSitResult](CharacterSitResult.md) | ❌ | `../../libs/atlas-packet/character/clientbound/sit_result.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [CharacterSkillChange](CharacterSkillChange.md) | ❌ | `../../libs/atlas-packet/character/clientbound/skill_change.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [DropDestroy](DropDestroy.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/destroy.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [DropSpawn](DropSpawn.md) | ❌ | `../../libs/atlas-packet/drop/clientbound/spawn.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [FieldAffectedAreaCreated](FieldAffectedAreaCreated.md) | ❌ | `../../libs/atlas-packet/field/clientbound/affected_area_created.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [FieldChange](FieldChange.md) | ❌ | `../../libs/atlas-packet/field/serverbound/change.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [FieldClock](FieldClock.md) | ❌ | `../../libs/atlas-packet/field/clientbound/clock.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [FieldEffectWeather](FieldEffectWeather.md) | ❌ | `../../libs/atlas-packet/field/clientbound/effect_weather.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [FieldSetField](FieldSetField.md) | ❌ | `../../libs/atlas-packet/field/clientbound/set_field.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [FreeFormNotice](FreeFormNotice.md) | ❌ | `../../libs/atlas-packet/merchant/clientbound/operation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GiveResponse](GiveResponse.md) | ❌ | `../../libs/atlas-packet/fame/clientbound/response.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildAgreementResponse](GuildAgreementResponse.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_agreement_response.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSCreateOrEditThread](GuildBBSCreateOrEditThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_create_or_edit_thread.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSDeleteReply](GuildBBSDeleteReply.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_delete_reply.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSDeleteThread](GuildBBSDeleteThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_delete_thread.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSDisplayThread](GuildBBSDisplayThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_display_thread.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSListThreads](GuildBBSListThreads.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_list_threads.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSReplyThread](GuildBBSReplyThread.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/bbs_reply_thread.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSThread](GuildBBSThread.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildBBSThreadList](GuildBBSThreadList.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildDisband](GuildDisband.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildInviteReject](GuildInviteReject.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/invite_reject.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildInviteRequest](GuildInviteRequest.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_invite.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildJoin](GuildJoin.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_join.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildKick](GuildKick.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_kick.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildMemberStatusUpdate](GuildMemberStatusUpdate.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildRequestCreate](GuildRequestCreate.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_request_create.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildSetEmblem](GuildSetEmblem.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_set_emblem.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildSetMemberTitle](GuildSetMemberTitle.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_set_member_title.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildSetNotice](GuildSetNotice.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_set_notice.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildSetTitleNames](GuildSetTitleNames.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_set_title_names.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildTitleChange](GuildTitleChange.md) | ❌ | `../../libs/atlas-packet/guild/clientbound/operation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [GuildWithdraw](GuildWithdraw.md) | ❌ | `../../libs/atlas-packet/guild/serverbound/operation_withdraw.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [Hello](Hello.md) | ❌ | `../../libs/atlas-packet/socket/clientbound/hello.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [KeyMapChange](KeyMapChange.md) | ❌ | `../../libs/atlas-packet/character/serverbound/key_map_change.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MessengerOperationAnswerInvite](MessengerOperationAnswerInvite.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_answer_invite.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MessengerOperationChat](MessengerOperationChat.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_chat.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MessengerOperationDeclineInvite](MessengerOperationDeclineInvite.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_decline_invite.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MessengerOperationInvite](MessengerOperationInvite.md) | ❌ | `../../libs/atlas-packet/messenger/serverbound/operation_invite.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MonsterControl](MonsterControl.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/control.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MonsterMovement](MonsterMovement.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/movement.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MonsterMovementRequest](MonsterMovementRequest.md) | 🔍 | `../../libs/atlas-packet/monster/serverbound/movement.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MonsterSpawn](MonsterSpawn.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/spawn.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MonsterStatReset](MonsterStatReset.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [MonsterStatSet](MonsterStatSet.md) | ❌ | `../../libs/atlas-packet/monster/clientbound/stat.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [Move](Move.md) | ❌ | `../../libs/atlas-packet/character/serverbound/move.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcAction](NpcAction.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/action.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcActionRequest](NpcActionRequest.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/action.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcAskPetAllConversationDetail](NpcAskPetAllConversationDetail.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/conversation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcAskPetConversationDetail](NpcAskPetConversationDetail.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/conversation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcContinueConversationSelection](NpcContinueConversationSelection.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/continue_conversation_selection.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcContinueConversationText](NpcContinueConversationText.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/continue_conversation_text.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcNpcConversation](NpcNpcConversation.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/conversation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcShopBuy](NpcShopBuy.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/shop_buy.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcShopList](NpcShopList.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/shop_list.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcShopOperationGenericError](NpcShopOperationGenericError.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/shop_operation.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcShopRecharge](NpcShopRecharge.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/shop_recharge.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcShopSell](NpcShopSell.md) | ❌ | `../../libs/atlas-packet/npc/serverbound/shop_sell.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcSpawn](NpcSpawn.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/spawn.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [NpcSpawnRequestController](NpcSpawnRequestController.md) | ❌ | `../../libs/atlas-packet/npc/clientbound/spawn_request_controller.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyDisband](PartyDisband.md) | ❌ | `../../libs/atlas-packet/party/clientbound/disband.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyError](PartyError.md) | ❌ | `../../libs/atlas-packet/party/clientbound/error.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyInviteReject](PartyInviteReject.md) | ❌ | `../../libs/atlas-packet/party/serverbound/invite_reject.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyOperationChangeLeader](PartyOperationChangeLeader.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_change_leader.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyOperationExpel](PartyOperationExpel.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_expel.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyOperationInvite](PartyOperationInvite.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_invite.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PartyOperationJoin](PartyOperationJoin.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_join.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetActivated](PetActivated.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/activated.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetChatRequest](PetChatRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/chat.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetCommand](PetCommand.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/command.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetCommandResponse](PetCommandResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/command.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetDropPickUp](PetDropPickUp.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetExcludeItem](PetExcludeItem.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/exclude_item.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetExcludeResponse](PetExcludeResponse.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/exclude.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetItemUse](PetItemUse.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/item_use.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetMovement](PetMovement.md) | ❌ | `../../libs/atlas-packet/pet/clientbound/movement.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [PetMovementRequest](PetMovementRequest.md) | ❌ | `../../libs/atlas-packet/pet/serverbound/movement.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [RegisterPin](RegisterPin.md) | ❌ | `../../libs/atlas-packet/account/serverbound/register_pin.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [ServerListEntry](ServerListEntry.md) | ❌ | `../../libs/atlas-packet/login/clientbound/server_list_entry.go` |
+/tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [SetGender](SetGender.md) | ❌ | `../../libs/atlas-packet/account/serverbound/set_gender.go` |
+
+---
+
+## Post-Phase-A (after A1–A4)
+
+Final Phase-A audit run reflecting commits A1 (width equivalence), A2 (name
+qualification), A3 (sub-struct descent + opaque flag), and A4 (early-return
+verification — this commit). Four-version audit re-run into
+`/tmp/audit-A4/<ver>` with the corrected invocation (`-template` +
+`-ida-source`, double-nested output). JMS `DecodeSub` warnings are harmless.
+
+### Per-version ❌ / 🔍 counts: original baseline → post-Phase-A
+
+| Version | Original ❌ | Post-A ❌ | Original 🔍 | Post-A 🔍 |
+|---|---|---|---|---|
+| gms_v83  | 94 | 79 | 4 | 4 |
+| gms_v87  | 88 | 76 | 2 | 2 |
+| gms_v95  | 94 | 76 | 8 | 8 |
+| jms_v185 | 95 | 83 | 2 | 2 |
+
+Net ❌ reduction across A1–A4: v83 −15, v87 −12, v95 −18, jms −12. 🔍 counts
+unchanged. (These totals are the cumulative effect of A1–A4; A4 itself made no
+analyzer change — see below.)
+
+### A4 task scope: early-return modeling — VERIFIED, NO ANALYZER CHANGE
+
+Early-return modeling (`blockTerminatesWithReturn` + suffix-taint +
+`cc.suffixGuards`, analyzer.go ~lines 339–412) was confirmed working. Every
+named early-return packet was inspected against its `/tmp/audit-A4` detail page
+and its `libs/atlas-packet` source. No named ❌ traces to over-counted
+early-returned (conditional) bytes. No fixture reproduced an early-return
+over-count, so `analyzer.go` was NOT modified. Per-packet classification:
+
+| Named packet | v83 | v87 | v95 | jms | Classification |
+|---|---|---|---|---|---|
+| login `CharacterList` | ❌ | ❌ | ❌ | n/a* | real wire bug → Phase B/D |
+| character `CharacterSitResult` | ❌ | ❌ | ❌ | ❌ | divergent-width mutex (not early-return) → Phase B/D |
+| drop `DropSpawn` | ✅ | ✅ | ✅ | ✅ | already-covered ✅ (early-return + wire-mutex working) |
+| reactor `ReactorSpawn` | ✅ | ✅ | ✅ | ✅ | already-covered ✅ |
+| reactor `ReactorHitRequest` | ✅ | ✅ | ✅ | ✅ | already-covered ✅ (has `if/else` + early return) |
+| monster `MonsterSpawn` | ❌ | ❌ | ❌ | ❌ | opaque-type residue → §4.8 registry |
+| cash `IncreaseInventory` | — | — | ❌ | — | divergent-width mutex (not early-return) → Phase B/D |
+| cash `IncreaseStorage` | — | — | ❌ | — | optional field absent in reference variant (not early-return) → Phase B/D |
+
+\* `CharacterList` is not in the JMS clientbound CSV variant set, so it has no
+JMS row. The cash `Increase*` packets only surface a ❌ in v95 (the only variant
+whose IDA reference exercises `OnBuySlotInc` / storage path).
+
+### Why none are A4 gaps
+
+- **`CharacterList`** — the `if Region=="GMS" && MajorVersion()<=28 { return }`
+  early-return correctly leaves the v83/v87/v95 suffix UNCONDITIONAL (suffix
+  guard `!(<=28)` is statically true for these majors). The ❌s are at the
+  avatar-look sub-struct (`anPetID[2]`, `hasRank`, `jobRankMove` width
+  mismatches, rows 41/43/47) plus two missing trailing fields (rows 49/50) —
+  genuine wire-shape divergences, not conditional over-counts.
+- **`CharacterSitResult`** — `if m.sitting { byte; short } else { byte }`. The
+  branches are mutually exclusive but DIFFER in length and share only a
+  common-prefix byte; neither branch returns. `isIfWireMutex` (requires equal
+  Kind+Op at every position) correctly declines to collapse, so the else-branch
+  `WriteByte(0)` surfaces as an "extra" position. This is a common-prefix /
+  divergent-length-mutex modeling limitation, NOT an early-return over-count.
+- **`MonsterSpawn`** — the IDA reference collapses the entire mob body
+  (`CMob::SetTemporaryStat` + `CMob::Init`) into a single opaque `bytes` token
+  (row 3); atlas writes the body as ~25 individual fields (rows 4–28). Opaque
+  reference vs expanded atlas → opaque-type residue, handled by the §4.8 opaque
+  registry, not early-return.
+- **cash `IncreaseInventory`** — `if m.item { WriteInt } else { WriteByte }`:
+  divergent-width mutex, same class as `CharacterSitResult`. No return.
+- **cash `IncreaseStorage`** — `if m.item { WriteInt }` (no else, no return).
+  The analyzer correctly emits the int32 as a guarded (conditional) call; the
+  ❌ is that the v95 reference variant simply doesn't read the field on the
+  storage path (a wire-presence question), not an early-return over-count.
+
+### Verification
+
+- `go test ./internal/atlaspacket/` — PASS (existing `TestEarlyReturnThenTaintsSuffix`,
+  `TestEarlyReturnElseTaintsSuffix`, `TestEarlyReturnNegativeLeavesSuffixUnconditional`
+  all green).
+- `go vet ./...` — clean.
+
+This section is the working note for Phase E to curate. Remaining ❌/🔍 are not
+early-return gaps; the divergent-width-mutex cases (`CharacterSitResult`, cash
+`Increase*`) are candidate Phase B/D items, and `MonsterSpawn` is opaque-type
+residue for the §4.8 registry.

@@ -18,5 +18,3 @@
 | 5 | int32 | int32 `max -- guarded (@0xb0e3cd)` | ✅ |  |
 | 6 | int32 | int32 `remaining time (1000x sec) -- guarded (@0xb0e3e1)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

@@ -13,5 +13,3 @@
 | 0 | byte | byte `msgType = 0 (Say) -- atlas ContinueConversation message type` | ✅ |  |
 | 1 | byte | byte `action (-1 prev / 0 end / 1 next; atlas ContinueConversation action)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

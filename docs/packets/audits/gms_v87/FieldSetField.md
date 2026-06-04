@@ -1,7 +1,7 @@
 # FieldSetField (← `CStage::OnSetField`)
 
 - **IDA:** 0x7c429c
-- **Atlas file:** `libs/atlas-packet/field/clientbound/set_field.go`
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/set_field.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** ❌
@@ -18,52 +18,86 @@
 | 5 | int32 | int32 `damage seed 1 (CalcDamage::SetSeed @0x7c43c2; bCharacterData branch)` | ✅ |  |
 | 6 | int64 | int32 `damage seed 2 (@0x7c43cc)` | ❌ | width mismatch |
 | 7 | byte | int32 `damage seed 3 (@0x7c43e1)` | ❌ | width mismatch |
-| 8 | byte | bytes `CharacterData::Decode (@0x7c440a) — ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)` | ❌ | width mismatch |
-| 9 | byte | int32 `m_bPredictQuit (OnSetLogoutGiftConfig @0x7c4412) — atlas logout-gift int #1, gated (GMS>83 \|\| JMS)` | ❌ | width mismatch |
-| 10 | int32 | int32 `logout gift commodity SN #1` | ✅ |  |
-| 11 | int16 | int32 `logout gift commodity SN #2` | ❌ | width mismatch |
-| 12 | int32 | int32 `logout gift commodity SN #3` | ✅ |  |
-| 13 | int32 | int64 `timestamp (DecodeBuffer p,8u @0x7c4558 — FILETIME); atlas WriteInt64` | ❌ | width mismatch |
-| 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 8 | int32 | bytes `CharacterData::Decode (@0x7c440a) — ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)` | ✅ |  |
+| 9 | bytes | int32 `m_bPredictQuit (OnSetLogoutGiftConfig @0x7c4412) — atlas logout-gift int #1, gated (GMS>83 \|\| JMS)` | ✅ |  |
+| 10 | byte | int32 `logout gift commodity SN #1` | ❌ | width mismatch |
+| 11 | byte | int32 `logout gift commodity SN #2` | ❌ | width mismatch |
+| 12 | byte | int32 `logout gift commodity SN #3` | ❌ | width mismatch |
+| 13 | int64 | int64 `timestamp (DecodeBuffer p,8u @0x7c4558 — FILETIME); atlas WriteInt64` | ✅ |  |
+| 14 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 15 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 16 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 17 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 18 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 19 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 20 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 21 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 22 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 23 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 24 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 25 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 26 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 27 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 28 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 29 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 30 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 31 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 32 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 33 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 34 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 35 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 36 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 37 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 38 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 39 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 40 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 41 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 42 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 43 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 44 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 45 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 46 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 47 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 48 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 49 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 50 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 51 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 52 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 53 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 54 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 55 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 56 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 57 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 58 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 59 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 60 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 61 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 62 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 63 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 64 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 65 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 66 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 67 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 68 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 69 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 70 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 71 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 72 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 73 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 74 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 75 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 76 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 77 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 78 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 79 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 80 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 81 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 82 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 83 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 84 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 85 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 86 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 87 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 88 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 89 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 
-
-## Audit notes
-
-🔍 **envelope-only:** CharacterData inner shape audited under character domain
-(task-028). The IDA model represents `CharacterData::Decode` (line 159) as a
-single `DecodeBuf` boundary; the table validates only the envelope bytes around
-it.
-
-⚠️ **Analyzer limitation:** the wire-diff cascade (rows 6+) is an alignment
-artifact, not independent bugs. The atlas seed loop (`for i:=0;i<3 { WriteInt }`)
-collapses to one representative op and the `WriteByteArray(characterData.Encode)`
-cross-package recurse is dropped, so positional alignment past the seed loop is
-unreliable. Read the manual verdict below.
-
-### Manual envelope verdict (GMS v87, `CStage::OnSetField` @0x7c429c)
-
-| Field | IDA (v87) | Atlas | Match |
-|---|---|---|---|
-| DecodeOpt | Decode2 (@0x7c42c5) | WriteShort(0) gated (GMS>83 \|\| JMS) | ✅ |
-| channelId | Decode4 (@0x7c42db) | WriteInt | ✅ |
-| **m_dwOldDriverID** | **ABSENT — sNotifierMessage read immediately after channelId** | **WriteInt(0) gated GMS>=95 (omitted for v87)** | ✅ **(v87 confirms v83; field introduced v87→v95)** |
-| sNotifierMessage | Decode1 (@0x7c42fa) | WriteByte(1) | ✅ |
-| bCharacterData | Decode1 (@0x7c4307) | WriteByte(1) | ✅ |
-| nNotifierCheck | Decode2 (@0x7c431e) | WriteShort(0) gated (GMS>28 \|\| JMS) | ✅ |
-| damage seeds | 3× Decode4 (@0x7c43c2-e1) | 3× WriteInt gated (GMS>28 \|\| JMS) | ✅ |
-| CharacterData | CharacterData::Decode (@0x7c440a) | WriteByteArray(characterData.Encode) | 🔍 boundary (task-028) |
-| logout gifts | 4× Decode4 (OnSetLogoutGiftConfig @0x7c4412) | 4× WriteInt(0) gated (GMS>83 \|\| JMS) | ✅ |
-| timestamp | DecodeBuffer(p, 8) (@0x7c4558, FILETIME) | WriteInt64 | ✅ |
-
-**oldDriverID gate CONFIRMED (task-068 Phase 3 v87):** v87 IDA
-(`CStage::OnSetField` @0x7c429c) does NOT read an old-driver-id after channelId —
-`sNotifierMessage` (Decode1 @0x7c42fa) is read immediately, matching v83
-(@0x776020) and unlike v95 (@0x71a0a0, unconditional Decode4). The field was
-introduced between v87 and v95, so the atlas gate `GMS && MajorVersion>=95`
-remains correct (v83/v87 omit, v95 emits). The residual report ❌ is the
-documented seed-loop/CharacterData-boundary analyzer artifact, NOT a wire bug —
-every envelope field matches v87.
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

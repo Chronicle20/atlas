@@ -4,7 +4,7 @@
   "Address": "0xaf7f26",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/quest/clientbound/script_progress.go",
+  "AtlasFile": "../../libs/atlas-packet/quest/clientbound/script_progress.go",
   "Rows": [
     {
       "Index": 0,

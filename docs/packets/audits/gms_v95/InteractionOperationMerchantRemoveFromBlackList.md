@@ -1,7 +1,7 @@
 # InteractionOperationMerchantRemoveFromBlackList (← `CEntrustedShopDlg::DeleteBlackList`)
 
 - **IDA:** 0x51ee20
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_remove_from_black_list.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_merchant_remove_from_black_list.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

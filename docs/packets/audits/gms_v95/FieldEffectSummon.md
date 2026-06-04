@@ -1,7 +1,7 @@
 # FieldEffectSummon (← `CField::OnFieldEffect#Summon`)
 
 - **IDA:** 0x53b790
-- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `x (v4)` | ✅ |  |
 | 3 | int32 | int32 `y (v5)` | ✅ |  |
 
-
-Ack: world-audit Phase 2d on 2026-05-28

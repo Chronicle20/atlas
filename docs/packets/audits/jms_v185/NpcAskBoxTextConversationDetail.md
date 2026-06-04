@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `col (@0x7b79a6)` | ✅ |  |
 | 3 | int16 | int16 `line (@0x7b79b8)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

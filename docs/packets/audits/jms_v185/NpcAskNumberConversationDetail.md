@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `min (@0x7b7b45)` | ✅ |  |
 | 3 | int32 | int32 `max (@0x7b7b57)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

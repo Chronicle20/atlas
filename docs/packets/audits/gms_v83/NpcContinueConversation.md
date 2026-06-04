@@ -13,5 +13,3 @@
 | 0 | byte | byte `msgType (v83 Say=0; dispatcher discriminator)` | ✅ |  |
 | 1 | byte | byte `action / button result` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

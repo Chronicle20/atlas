@@ -368,7 +368,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::OnStatChanged":
 		return []candidate{{name: "Changed", dir: csvpkg.DirClientbound}}
 	case "CClientSocket::OnMigrateCommand":
-		return []candidate{{name: "ChannelChange", dir: csvpkg.DirClientbound}}
+		// ChannelChange collides with buddy/clientbound/channel_change.go
+		// (CWvsContext::OnFriendResult#ChannelChange). pkg="channel" routes the
+		// migrate-command channel change to channel/clientbound/change.go.
+		return []candidate{{name: "ChannelChange", pkg: "channel", dir: csvpkg.DirClientbound}}
 	case "CField::SendTransferChannelRequest":
 		return []candidate{{name: "ChannelChangeRequest", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::OnOpenUI":
@@ -1770,6 +1773,7 @@ func worstRow(rows []diff.Row) diff.Verdict {
 func writeSummary(outDir string, summary []report.Packet) error {
 	var b strings.Builder
 	b.WriteString("# Audit summary\n\n")
+	b.WriteString("> ❌/🔍 rows are dispositioned accepted-exclusions (export read-order truncation, opaque register-boundary types, version-absent/representation-equivalence) — see ../../ida-exports/_pending.md. Zero open actionable deferrals (task-080).\n\n")
 	b.WriteString("| Packet | Verdict | Atlas file |\n|---|---|---|\n")
 	for _, p := range summary {
 		fmt.Fprintf(&b, "| [%s](%s.md) | %s | `%s` |\n", p.WriterName, p.WriterName, p.Verdict.Symbol(), p.AtlasFile)

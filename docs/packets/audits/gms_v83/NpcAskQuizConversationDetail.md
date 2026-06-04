@@ -18,5 +18,3 @@
 | 5 | int32 | int32 `max (v19)` | ✅ |  |
 | 6 | int32 | int32 `timeRemaining (sec, *1000)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

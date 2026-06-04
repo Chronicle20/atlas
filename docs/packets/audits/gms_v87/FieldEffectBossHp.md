@@ -1,7 +1,7 @@
 # FieldEffectBossHp (← `CField::OnFieldEffect#BossHp`)
 
 - **IDA:** 0x55aac5
-- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -17,5 +17,3 @@
 | 4 | byte | byte `tagColor (v14, @0x55aae5)` | ✅ |  |
 | 5 | byte | byte `tagBackgroundColor (v15, @0x55aae7)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

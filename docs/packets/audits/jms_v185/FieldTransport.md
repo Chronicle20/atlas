@@ -13,5 +13,3 @@
 | 0 | byte | byte `nState (transport/ship state 0-6)` | ✅ |  |
 | 1 | byte | byte `overrideAppear flag (v4; checked v4==1 in AppearShip case)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

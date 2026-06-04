@@ -21,5 +21,3 @@
 | 8 | byte | byte `m_bChaseEnable (v23)` | ✅ |  |
 | 9 | int64 | int64 `timestamp (DecodeBuffer p,8u FILETIME)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

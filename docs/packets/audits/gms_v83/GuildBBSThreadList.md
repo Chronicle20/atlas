@@ -1,4 +1,4 @@
-# GuildBBSThreadList (← `CWvsContext::OnGuildBBSPacket`)
+# GuildBBSThreadList (← `CUIGuildBBS::OnGuildBBSPacket#BBSThreadList`)
 
 - **IDA:** 0xa1233f
 - **Atlas file:** `../../libs/atlas-packet/guild/clientbound/bbs.go`

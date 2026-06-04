@@ -4,7 +4,7 @@
   "Address": "0x482b50",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_move_to_cash_inventory.go",
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_move_to_cash_inventory.go",
   "Rows": [
     {
       "Index": 0,
@@ -12,8 +12,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "liSN 8 bytes (serialNumber uint64)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -25,5 +25,5 @@
       "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

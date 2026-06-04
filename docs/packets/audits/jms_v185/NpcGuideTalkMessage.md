@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `width (@0xa2d39f)` | ✅ |  |
 | 3 | int32 | int32 `duration (@0xa2d3a1)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

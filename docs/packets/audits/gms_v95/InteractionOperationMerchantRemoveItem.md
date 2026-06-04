@@ -1,7 +1,7 @@
 # InteractionOperationMerchantRemoveItem (← `CPersonalShopDlg::MoveItemToInventory#Merchant`)
 
 - **IDA:** 0x6987a0
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_remove_item.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_merchant_remove_item.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -4,7 +4,7 @@
   "Address": "0x494ed1",
   "Variant": "GMS/v83",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/socket/serverbound/channel_connect.go",
+  "AtlasFile": "../../libs/atlas-packet/socket/serverbound/channel_connect.go",
   "Rows": [
     {
       "Index": 0,
@@ -48,9 +48,9 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "unknown2 8 bytes raw buffer",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

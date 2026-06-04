@@ -3,8 +3,8 @@
   "IDAName": "CCashShop::OnBuyFriendship",
   "Address": "0x491b30",
   "Variant": "GMS/v95",
-  "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go",
+  "BranchDepth": 3,
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go",
   "Rows": [
     {
       "Index": 0,

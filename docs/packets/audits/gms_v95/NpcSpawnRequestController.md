@@ -1,7 +1,7 @@
 # NpcSpawnRequestController (← `CNpcPool::OnNpcChangeController`)
 
 - **IDA:** 0x679730
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/spawn_request_controller.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/spawn_request_controller.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -21,5 +21,3 @@
 | 8 | int16 | int16 `rx1` | ✅ |  |
 | 9 | byte | byte `enabled (m_bEnabled; atlas miniMap bool)` | ✅ |  |
 
-
-Ack: world-audit Phase 2e on 2026-05-28

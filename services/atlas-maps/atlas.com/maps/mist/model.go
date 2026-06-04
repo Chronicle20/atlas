@@ -14,12 +14,13 @@ import (
 // disease (status effect) that is applied to characters whose position falls
 // within its axis-aligned bounding box on each tick.
 type Mist struct {
-	id              uuid.UUID
-	f               field.Model
+	id               uuid.UUID
+	f                field.Model
 	ownerType        string
 	ownerId          uint32
 	sourceSkillId    uint32
 	sourceSkillLevel uint32
+	mistType         int32
 	originX          int16
 	originY          int16
 	ltX              int16
@@ -79,6 +80,11 @@ func (m Mist) SourceSkillId() uint32 {
 // SourceSkillLevel returns the level of the skill that produced this mist.
 func (m Mist) SourceSkillLevel() uint32 {
 	return m.sourceSkillLevel
+}
+
+// Type returns the mist/affected-area type discriminator. Defaults to 0.
+func (m Mist) Type() int32 {
+	return m.mistType
 }
 
 // OriginX returns the x coordinate of the mist's origin (anchor).
@@ -189,6 +195,7 @@ type Builder struct {
 	ownerId          uint32
 	sourceSkillId    uint32
 	sourceSkillLevel uint32
+	mistType         int32
 	originX          int16
 	originY          int16
 	ltX              int16
@@ -231,6 +238,12 @@ func (b *Builder) SetOwner(ownerType string, ownerId uint32) *Builder {
 func (b *Builder) SetSource(skillId, skillLevel uint32) *Builder {
 	b.sourceSkillId = skillId
 	b.sourceSkillLevel = skillLevel
+	return b
+}
+
+// SetType sets the mist/affected-area type discriminator. Defaults to 0 if unset.
+func (b *Builder) SetType(t int32) *Builder {
+	b.mistType = t
 	return b
 }
 
@@ -280,6 +293,7 @@ func (b *Builder) Build() Mist {
 		ownerId:          b.ownerId,
 		sourceSkillId:    b.sourceSkillId,
 		sourceSkillLevel: b.sourceSkillLevel,
+		mistType:         b.mistType,
 		originX:          b.originX,
 		originY:          b.originY,
 		ltX:              b.ltX,

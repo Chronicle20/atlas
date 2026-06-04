@@ -24,10 +24,21 @@ func TestUiLock(t *testing.T) {
 //	Decode1 (enable flag) + Decode4 (tAfterLeaveDirectionMode) = 5 bytes for GMS v90+.
 //
 // The second field was introduced for GMS v90+; older/non-GMS versions omit it.
+//
+// v87 evidence (GMSv87_4GB.exe, md5 2e692f3a…): CUserLocal::SetDirectionMode
+// @ 0x9e312a reads ONLY ONE byte (Decode1 enable flag); the int32
+// tAfterLeaveDirectionMode is absent — v87 mirrors v83. The >=90 gate therefore
+// emits 1 byte for v87 → CONFIRMED CORRECT (task-080 B4.1).
 func TestUiLockWireShape(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	const tAfter = int32(5000)
 	in := NewUiLock(true, tAfter)
+
+	// Explicit v87 assertion: gate (>=90) is below the v87 boundary → 1-byte
+	// (enable-only) narrow form, matching CUserLocal::SetDirectionMode @ 0x9e312a.
+	if v87 := in.Encode(l, pt.CreateContext("GMS", 87, 1))(nil); len(v87) != 1 || v87[0] != 0x01 {
+		t.Errorf("v87 ui-Lock packet = % x (%d bytes), want [01] (1 byte, enable-only)", v87, len(v87))
+	}
 
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::SendGiftsPacket",
   "Address": "0x47bced",
   "Variant": "JMS/v185",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
   "Rows": [
     {
@@ -14,34 +14,7 @@
       "IDAComment": "commSN (serialNumber). op-byte 0x2E (NOT GMS 0x04). JMS gift = serialNumber ONLY — no SPW/birthday, no recipient name, no message, no oneADay. NX-system divergence",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 1,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

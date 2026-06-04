@@ -14,5 +14,3 @@
 | 1 | byte | byte `bHeavyNShortTremble (v18 @line73)` | ✅ |  |
 | 2 | int32 | int32 `delay (v19 @line74)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

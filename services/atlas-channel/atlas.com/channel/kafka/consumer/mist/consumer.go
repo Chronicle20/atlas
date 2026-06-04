@@ -86,11 +86,15 @@ func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist
 		body := fieldpkt.NewAffectedAreaCreated(
 			e.MistId,
 			e.Body.OwnerId,
+			e.Body.Type,
+			int32(e.Body.SourceSkillId),
+			byte(e.Body.SourceSkillLevel),
+			0, // phase (server default; B1.1b)
 			e.Body.OriginX, e.Body.OriginY,
 			e.Body.LtX, e.Body.LtY,
 			e.Body.RbX, e.Body.RbY,
-			e.Body.Duration,
-			0,
+			0,                      // tStart (server leaves 0)
+			int32(e.Body.Duration), // tEnd <- duration (ms)
 		)
 		affectedAreaCreatedBroadcaster(l, ctx, wp, f, body)
 	}

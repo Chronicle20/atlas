@@ -1,10 +1,10 @@
 # Request (← `CLogin::SendCheckPasswordPacket`)
 
 - **IDA:** 0x5db9d0
-- **Atlas file:** `libs/atlas-packet/login/serverbound/request.go`
+- **Atlas file:** `../../libs/atlas-packet/login/serverbound/request.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 2
-- **Verdict:** ✅
+- **Branch depth:** 1
+- **Verdict:** ❌
 
 ## Wire-level diff
 
@@ -17,4 +17,5 @@
 | 4 | byte | byte `gameStartMode` | ✅ |  |
 | 5 | byte | byte `unknown1` | ✅ |  |
 | 6 | byte | byte `unknown2 (v95 extra byte)` | ✅ |  |
+| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

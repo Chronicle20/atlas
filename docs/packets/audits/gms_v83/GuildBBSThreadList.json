@@ -1,6 +1,6 @@
 {
   "WriterName": "GuildBBSThreadList",
-  "IDAName": "CWvsContext::OnGuildBBSPacket",
+  "IDAName": "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList",
   "Address": "0xa1233f",
   "Variant": "GMS/v83",
   "BranchDepth": 2,

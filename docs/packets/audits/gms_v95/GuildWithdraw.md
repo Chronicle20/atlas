@@ -1,7 +1,7 @@
 # GuildWithdraw (← `CField::SendWithdrawGuildMsg`)
 
 - **IDA:** 0x0
-- **Atlas file:** `libs/atlas-packet/guild/serverbound/operation_withdraw.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_withdraw.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

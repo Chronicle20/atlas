@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `nStrMin (@0x7b77fd)` | ✅ |  |
 | 3 | int16 | int16 `nStrMax (@0x7b780f)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

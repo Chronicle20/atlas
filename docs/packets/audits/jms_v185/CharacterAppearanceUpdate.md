@@ -11,16 +11,16 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | int32 | byte `v3 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem` | ❌ | width mismatch |
-| 1 | byte | bytes `AvatarLook::Decode (if bit0)` | ❌ | width mismatch |
+| 1 | byte | bytes `AvatarLook::Decode (if bit0)` | ✅ |  |
 | 2 | byte | byte `nSpeed (if bit1)` | ✅ |  |
 | 3 | byte | byte `nCarryItemEffect (if bit2)` | ✅ |  |
 | 4 | int32 | byte `bCouple count / flag` | ❌ | width mismatch |
 | 5 | byte | int32 `couple count (if bCouple > 0)` | ❌ | width mismatch |
-| 6 | int32 | bytes `couple item SN (16 bytes per entry)` | ❌ | width mismatch |
+| 6 | int32 | bytes `couple item SN (16 bytes per entry)` | ✅ |  |
 | 7 | byte | int32 `pair characterId (per entry)` | ❌ | width mismatch |
 | 8 | int32 | byte `bFriendship count / flag` | ❌ | width mismatch |
 | 9 | byte | int32 `friendship count (if > 0)` | ❌ | width mismatch |
-| 10 | byte | bytes `friendship item SN (16 bytes per entry)` | ❌ | width mismatch |
+| 10 | byte | bytes `friendship item SN (16 bytes per entry)` | ✅ |  |
 | 11 | int32 | int32 `friendship pair characterId (per entry)` | ✅ |  |
 | 12 | byte | byte `bMarriage flag` | ✅ |  |
 | 13 | int32 | int32 `dwMarriageCharacterID (if bMarriage)` | ✅ |  |

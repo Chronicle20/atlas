@@ -1,7 +1,7 @@
 # ChalkboardUse (← `CUser::OnADBoard`)
 
 - **IDA:** 0x8ed310
-- **Atlas file:** `libs/atlas-packet/character/clientbound/chalkboard.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/chalkboard.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ✅

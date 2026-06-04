@@ -4,7 +4,7 @@
   "Address": "0x4fb760",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/guild/clientbound/info.go",
+  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/info.go",
   "Rows": [
     {
       "Index": 0,
@@ -102,8 +102,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "count × charId (4 bytes each, packed via DecodeBuffer)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
@@ -111,8 +111,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "count × GUILDMEMBER (37 bytes each, packed via DecodeBuffer)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,

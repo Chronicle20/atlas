@@ -4,7 +4,7 @@
   "Address": "",
   "Variant": "JMS/v185",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/account/serverbound/set_gender.go",
+  "AtlasFile": "../../libs/atlas-packet/account/serverbound/set_gender.go",
   "Rows": [
     {
       "Index": 0,

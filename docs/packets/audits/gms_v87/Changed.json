@@ -4,7 +4,7 @@
   "Address": "0xab6e77",
   "Variant": "GMS/v87",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/stat/clientbound/changed.go",
+  "AtlasFile": "../../libs/atlas-packet/stat/clientbound/changed.go",
   "Rows": [
     {
       "Index": 0,
@@ -44,12 +44,12 @@
     },
     {
       "Index": 4,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nHair",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
@@ -62,7 +62,7 @@
     },
     {
       "Index": 6,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 3,
       "IDAComment": "petLockerSN[1] (DecodeBuffer 8)",
@@ -71,21 +71,21 @@
     },
     {
       "Index": 7,
-      "AtlasOp": 2,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 3,
       "IDAComment": "petLockerSN[2] (DecodeBuffer 8)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
-      "AtlasOp": 3,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "nLevel",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,
@@ -103,7 +103,7 @@
       "IDAOp": 1,
       "IDAComment": "nSTR",
       "Verdict": 2,
-      "Note": "width mismatch"
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 11,

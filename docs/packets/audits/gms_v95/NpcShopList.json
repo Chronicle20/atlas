@@ -4,7 +4,7 @@
   "Address": "0x6eab00",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_list.go",
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/shop_list.go",
   "Rows": [
     {
       "Index": 0,

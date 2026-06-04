@@ -1,7 +1,7 @@
 # MonsterControl (← `CMobPool::OnMobChangeController`)
 
 - **IDA:** 0x658d10
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/control.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/control.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌
@@ -14,7 +14,7 @@
 | 1 | int32 | int32 `dwMobID (uniqueId / v7)` | ✅ |  |
 | 2 | byte | byte `aggro byte — atlas hardcodes 5, v95 reads as aggro flag` | ✅ |  |
 | 3 | int32 | int32 `dwTemplateID via SetLocalMob — atlas monsterId` | ✅ |  |
-| 4 | int32 | bytes `MonsterModel body via SetLocalMob's CMob::Init delegate` | ❌ | width mismatch |
+| 4 | int32 | bytes `MonsterModel body via SetLocalMob's CMob::Init delegate` | ✅ |  |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

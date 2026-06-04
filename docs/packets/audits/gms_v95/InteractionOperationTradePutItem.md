@@ -1,7 +1,7 @@
 # InteractionOperationTradePutItem (← `CTradingRoomDlg::PutItem`)
 
 - **IDA:** 0x7641d0
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

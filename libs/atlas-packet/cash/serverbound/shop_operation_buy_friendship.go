@@ -25,11 +25,11 @@ type ShopOperationBuyFriendship struct {
 }
 
 func (m ShopOperationBuyFriendship) Birthday() uint32     { return m.birthday }
-func (m ShopOperationBuyFriendship) SPW() string           { return m.spw }
+func (m ShopOperationBuyFriendship) SPW() string          { return m.spw }
 func (m ShopOperationBuyFriendship) Option() uint32       { return m.option }
-func (m ShopOperationBuyFriendship) SerialNumber() uint32  { return m.serialNumber }
-func (m ShopOperationBuyFriendship) Name() string          { return m.name }
-func (m ShopOperationBuyFriendship) Message() string       { return m.message }
+func (m ShopOperationBuyFriendship) SerialNumber() uint32 { return m.serialNumber }
+func (m ShopOperationBuyFriendship) Name() string         { return m.name }
+func (m ShopOperationBuyFriendship) Message() string      { return m.message }
 
 func (m ShopOperationBuyFriendship) Operation() string {
 	return CashShopOperationBuyFriendshipHandle
@@ -43,30 +43,63 @@ func (m ShopOperationBuyFriendship) Encode(l logrus.FieldLogger, ctx context.Con
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			w.WriteAsciiString(m.spw)
+		if t.Region() == "JMS" {
+			m.encodeJMS(w)
 		} else {
-			w.WriteInt(m.birthday)
+			m.encodeGMS(t, w)
 		}
-		w.WriteInt(m.option)
-		w.WriteInt(m.serialNumber)
-		w.WriteAsciiString(m.name)
-		w.WriteAsciiString(m.message)
 		return w.Bytes()
 	}
+}
+
+func (m ShopOperationBuyFriendship) encodeGMS(t tenant.Model, w *response.Writer) {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		w.WriteAsciiString(m.spw)
+	} else {
+		w.WriteInt(m.birthday)
+	}
+	w.WriteInt(m.option)
+	w.WriteInt(m.serialNumber)
+	w.WriteAsciiString(m.name)
+	w.WriteAsciiString(m.message)
+}
+
+// encodeJMS - JMS185 CCashShop::OnBuyFriendship@0x481184 (sub-op 0x24 consumed by
+// routing): EncodeStr(SPW), Encode4(nCommSN), EncodeStr(recipient name),
+// EncodeStr(message). No birthday, no option int.
+func (m ShopOperationBuyFriendship) encodeJMS(w *response.Writer) {
+	w.WriteAsciiString(m.spw)
+	w.WriteInt(m.serialNumber)
+	w.WriteAsciiString(m.name)
+	w.WriteAsciiString(m.message)
 }
 
 func (m *ShopOperationBuyFriendship) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			m.spw = r.ReadAsciiString()
+		if t.Region() == "JMS" {
+			m.decodeJMS(r)
 		} else {
-			m.birthday = r.ReadUint32()
+			m.decodeGMS(t, r)
 		}
-		m.option = r.ReadUint32()
-		m.serialNumber = r.ReadUint32()
-		m.name = r.ReadAsciiString()
-		m.message = r.ReadAsciiString()
 	}
+}
+
+func (m *ShopOperationBuyFriendship) decodeGMS(t tenant.Model, r *request.Reader) {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		m.spw = r.ReadAsciiString()
+	} else {
+		m.birthday = r.ReadUint32()
+	}
+	m.option = r.ReadUint32()
+	m.serialNumber = r.ReadUint32()
+	m.name = r.ReadAsciiString()
+	m.message = r.ReadAsciiString()
+}
+
+func (m *ShopOperationBuyFriendship) decodeJMS(r *request.Reader) {
+	m.spw = r.ReadAsciiString()
+	m.serialNumber = r.ReadUint32()
+	m.name = r.ReadAsciiString()
+	m.message = r.ReadAsciiString()
 }

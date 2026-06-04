@@ -1,7 +1,7 @@
 # ActionScriptStart (← `CQuest::StartQuest#ActionScriptStart`)
 
 - **IDA:** 0x75bf04
-- **Atlas file:** `libs/atlas-packet/quest/serverbound/action_script_start.go`
+- **Atlas file:** `../../libs/atlas-packet/quest/serverbound/action_script_start.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -14,9 +14,3 @@
 | 1 | int16 | int16 `x int16 (Encode2 v58)` | ✅ |  |
 | 2 | int16 | int16 `y int16 (Encode2 v59)` | ✅ |  |
 
-
-## Manual analysis
-
-v87 vs v95/v83: gate confirmed ✅. `CQuest::StartQuest` @ 0x75bf04 (Encode1 action 4): Encode2(questId) + Encode4(npcId) + Encode2(x) + Encode2(y). Atlas matches.
-
-Ack: misc-audit Phase 3 v87 on 2026-06-03

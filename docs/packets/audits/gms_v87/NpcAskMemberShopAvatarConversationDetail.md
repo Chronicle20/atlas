@@ -14,5 +14,3 @@
 | 1 | byte | byte `avatar count (v5)` | ✅ |  |
 | 2 | int32 | int32 `avatar look id -- loop body (count iterations; analyzer flattens)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

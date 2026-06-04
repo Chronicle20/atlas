@@ -3,7 +3,7 @@
 - **IDA:** 0xa3f2e8
 - **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/invite.go`
 - **Variant:** GMS/v83
-- **Branch depth:** 0
+- **Branch depth:** 1
 - **Verdict:** 🔍
 
 ## Wire-level diff
@@ -13,8 +13,8 @@
 | 0 | byte | byte `mode byte (9)` | ✅ |  |
 | 1 | int32 | int32 `characterId (v23)` | ✅ |  |
 | 2 | string | string `inviterName` | ✅ |  |
-| 3 | byte | byte `buddy list count (sub_A40028)` | 🔍 | sub-struct: b — see _substruct/ |
-| 4 | byte | int32 `buddy[i].characterId (loop)` | ❌ | width mismatch |
-| 5 | byte | byte `buddy[i].channelId` | ❌ | atlas: short — missing trailing field |
-| 6 | byte | int32 `buddy[i].mapId` | ❌ | atlas: short — missing trailing field |
+| 3 | int32 | byte `buddy list count (sub_A40028)` | ❌ | width mismatch |
+| 4 | int32 | int32 `buddy[i].characterId (loop)` | ✅ |  |
+| 5 | byte | byte `buddy[i].channelId` | 🔍 | sub-struct: b — see _substruct/ |
+| 6 | byte | int32 `buddy[i].mapId` | ❌ | width mismatch |
 

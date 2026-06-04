@@ -53,30 +53,30 @@
     },
     {
       "Index": 5,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "packed: bit15=bLeft, low15=nAction (attackAction)",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 6,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "nActionSpeed (unconditional in v83 — no nAction \u003c= 0x110 guard)",
       "Verdict": 0,
       "Note": ""
     },
     {
-      "Index": 7,
+      "Index": 6,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nMastery (unconditional in v83)",
+      "IDAComment": "nActionSpeed (unconditional in v83 — no nAction \u003c= 0x110 guard)",
       "Verdict": 2,
       "Note": "width mismatch"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nMastery (unconditional in v83)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
@@ -89,12 +89,12 @@
     },
     {
       "Index": 9,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "monsterId per damage target (loop nDamagePerMob times)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,
@@ -107,12 +107,12 @@
     },
     {
       "Index": 11,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "damage count (only if meso explosion skill 4211006, per target)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
@@ -125,7 +125,7 @@
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "ptBallStart.x (only if nType==212 ranged / opcode 0xBB)",
@@ -134,12 +134,12 @@
     },
     {
       "Index": 14,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "ptBallStart.y (only if nType==212 ranged / opcode 0xBB)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 15,
@@ -152,15 +152,6 @@
     },
     {
       "Index": 16,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 17,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,

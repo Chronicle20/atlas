@@ -1,7 +1,7 @@
 # InteractionOperationTransaction (← `CCashTradingRoomDlg::Trade`)
 
 - **IDA:** 0x49e180
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_transaction.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_transaction.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

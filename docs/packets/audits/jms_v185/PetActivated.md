@@ -14,7 +14,7 @@
 | 1 | byte | byte `slot` | ✅ |  |
 | 2 | byte | byte `active flag` | ✅ |  |
 | 3 | byte | byte `show — gated active != 0` | ✅ |  |
-| 4 | int32 | bytes `CPet::Init body — gated active != 0` | ❌ | width mismatch |
+| 4 | int32 | bytes `CPet::Init body — gated active != 0` | ✅ |  |
 | 5 | string | byte `despawnMode — gated active == 0` | ❌ | width mismatch |
 | 6 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |

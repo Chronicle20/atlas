@@ -18,7 +18,7 @@
 | 5 | int32 | int32 `crc (field CRC — get_field()+2084)` | ✅ |  |
 | 6 | int32 | int32 `dwKey (random seed for CRC32)` | ✅ |  |
 | 7 | int32 | int32 `crc32 (CRC32 of bDetect using dwKey)` | ✅ |  |
-| 8 | int16 | bytes `movement: CMovePath::Flush — tool cannot linearize loop` | ❌ | width mismatch |
+| 8 | int16 | bytes `movement: CMovePath::Flush — tool cannot linearize loop` | ✅ |  |
 | 9 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

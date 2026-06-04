@@ -14,12 +14,3 @@
 | 1 | int16 | int16 `x int16 (ptUserPos @0x7170b9)` | ✅ |  |
 | 2 | int16 | int16 `y int16 @0x7170c4` | ✅ |  |
 
-
-## Manual analysis
-
-**v83 IDA:** `CQuest::StartQuest` @ 0x716fe1, action=4 branch — Encode1(4)+Encode2(questId)+Encode4(npcId)+Encode2(x)+Encode2(y). The IDA entry records only the sub-struct fields (npcId, x, y) after the Action header, matching v95.
-
-**Gate:** None needed — version-agnostic. Gate confirmed correct (✅).
-
-
-Ack: misc-audit Phase 3 v83 on 2026-06-03

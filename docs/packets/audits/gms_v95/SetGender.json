@@ -4,7 +4,7 @@
   "Address": "0x5d4650",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/account/serverbound/set_gender.go",
+  "AtlasFile": "../../libs/atlas-packet/account/serverbound/set_gender.go",
   "Rows": [
     {
       "Index": 0,

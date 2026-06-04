@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnRebateLockerItem",
   "Address": "0x0",
   "Variant": "GMS/v87",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
   "Rows": [
     {
@@ -21,9 +21,9 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "8-byte locker serial (inferred identical to v83/v95)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

@@ -12,12 +12,3 @@
 |---|---|---|---|---|
 | 0 | string | string `message (quest script progress string)` | ✅ |  |
 
-
-## Manual analysis
-
-**v83 IDA:** `CWvsContext::OnScriptProgressMessage` @ 0xa13f20 — DecodeStr(message) only. Matches v95 exactly.
-
-**Gate:** None needed — version-agnostic. Gate confirmed correct (✅).
-
-
-Ack: misc-audit Phase 3 v83 on 2026-06-03

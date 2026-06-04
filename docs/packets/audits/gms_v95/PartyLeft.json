@@ -4,7 +4,7 @@
   "Address": "0xa11085",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/party/clientbound/left.go",
+  "AtlasFile": "../../libs/atlas-packet/party/clientbound/left.go",
   "Rows": [
     {
       "Index": 0,

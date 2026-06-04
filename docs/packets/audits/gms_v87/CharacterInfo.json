@@ -107,12 +107,12 @@
     },
     {
       "Index": 11,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "monster book: CMonsterBook data 1 (via sub_6C10A8) — present in v87; absent in v95 (GMS\u003e=87 guard)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
@@ -125,16 +125,16 @@
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "monster book: data 3",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 14,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "monster book: data 4",
@@ -143,12 +143,12 @@
     },
     {
       "Index": 15,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "monster book: data 5 (currentMobTemplate)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 16,
@@ -161,7 +161,7 @@
     },
     {
       "Index": 17,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "MedalAchievementInfo: ausMedalQuestID count",
@@ -170,12 +170,12 @@
     },
     {
       "Index": 18,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "chair list count (ZArray with 4*count bytes)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 19,
@@ -224,24 +224,6 @@
     },
     {
       "Index": 24,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 25,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 26,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -250,7 +232,7 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 27,
+      "Index": 25,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,

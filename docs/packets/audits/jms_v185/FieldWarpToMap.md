@@ -23,5 +23,3 @@
 | 10 | int16 | int16 `nHP (@0x7eec9d Decode2 — 2 bytes; JMS did NOT widen with GMS v95) — atlas WriteShort gated (else branch)` | ✅ |  |
 | 11 | int64 | int64 `timestamp (DecodeBuffer p,8; FILETIME) — atlas WriteInt64` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

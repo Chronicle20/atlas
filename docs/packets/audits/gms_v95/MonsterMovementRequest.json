@@ -4,7 +4,7 @@
   "Address": "0x651100",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/monster/serverbound/movement.go",
+  "AtlasFile": "../../libs/atlas-packet/monster/serverbound/movement.go",
   "Rows": [
     {
       "Index": 0,
@@ -147,8 +147,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CMovePath::Flush body (Movement elements)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 16,

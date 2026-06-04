@@ -1,7 +1,7 @@
 # FieldChange (← `CField::SendTransferFieldRequest`)
 
 - **IDA:** 0x5345c0
-- **Atlas file:** `libs/atlas-packet/field/serverbound/change.go`
+- **Atlas file:** `../../libs/atlas-packet/field/serverbound/change.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅
@@ -21,5 +21,3 @@
 | 8 | int32 | int32 `targetX (nTargetPosition_X)` | ✅ |  |
 | 9 | int32 | int32 `targetY (nTargetPosition_Y)` | ✅ |  |
 
-
-Ack: world-audit Phase 2b on 2026-05-28

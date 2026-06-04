@@ -14,5 +14,3 @@
 | 1 | byte | byte `style count (v5)` | ✅ |  |
 | 2 | int32 | int32 `style id -- loop body (count iterations; analyzer flattens)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

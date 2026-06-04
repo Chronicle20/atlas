@@ -4,7 +4,7 @@
   "Address": "0xa08a70",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/inventory/clientbound/change.go",
+  "AtlasFile": "../../libs/atlas-packet/inventory/clientbound/change.go",
   "Rows": [
     {
       "Index": 0,
@@ -58,7 +58,7 @@
       "IDAOp": 5,
       "IDAComment": "asset GW_ItemSlotBase::Decode (case 0 line 158) — sub-struct, tool-opaque",
       "Verdict": 3,
-      "Note": "sub-struct: model.Asset — see _substruct/"
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
     }
   ],
   "Verdict": 3

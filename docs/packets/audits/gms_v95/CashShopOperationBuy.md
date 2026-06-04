@@ -1,9 +1,9 @@
 # CashShopOperationBuy (← `CCashShop::OnBuy`)
 
 - **IDA:** 0x48e530
-- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_buy.go`
+- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 2
+- **Branch depth:** 3
 - **Verdict:** ✅
 
 ## Wire-level diff

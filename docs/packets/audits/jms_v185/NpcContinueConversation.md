@@ -13,5 +13,3 @@
 | 0 | byte | byte `msgType = 0 (SAY @0x7b7425)` | ✅ |  |
 | 1 | byte | byte `action (@0x7b7447)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

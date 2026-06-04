@@ -17,5 +17,3 @@
 | 4 | int32 | int32 `remain -- guarded` | ✅ |  |
 | 5 | int32 | int32 `remaining time (sec) -- guarded` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

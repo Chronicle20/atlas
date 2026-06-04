@@ -4,7 +4,7 @@
   "Address": "0x51cc30",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/clientbound/interaction.go",
   "Rows": [
     {
       "Index": 0,
@@ -39,8 +39,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "items (count x: perBundle short, quantity short, price int, GW_ItemSlotBase substruct)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,

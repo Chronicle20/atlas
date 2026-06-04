@@ -4,7 +4,7 @@
   "Address": "0x94d4c0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/despawn.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/despawn.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x639500",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/clientbound/interaction.go",
   "Rows": [
     {
       "Index": 0,
@@ -21,8 +21,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "room (roomType + maxUsers + myPosition + per-slot avatar loop; interaction.Room substruct)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,

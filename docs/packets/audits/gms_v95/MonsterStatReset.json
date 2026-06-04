@@ -4,7 +4,7 @@
   "Address": "0x652780",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/monster/clientbound/stat.go",
+  "AtlasFile": "../../libs/atlas-packet/monster/clientbound/stat.go",
   "Rows": [
     {
       "Index": 0,
@@ -21,8 +21,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "uFlagReset: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
@@ -30,8 +30,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "per-stat reset body via CMob::ProcessStatReset (variable-length, mask-dispatched)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,

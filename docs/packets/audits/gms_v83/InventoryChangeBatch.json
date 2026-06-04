@@ -30,8 +30,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "per-entry action switch (0/1/2/3) repeated count times",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -43,5 +43,5 @@
       "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

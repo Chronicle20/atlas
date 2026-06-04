@@ -1,7 +1,7 @@
 # GuildForeignEmblemChanged (← `CUserRemote::OnGuildMarkChanged`)
 
 - **IDA:** 0x0
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/emblem_changed_foreign.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/emblem_changed_foreign.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

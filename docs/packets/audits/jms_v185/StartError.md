@@ -1,7 +1,7 @@
 # StartError (← `CClientSocket::OnConnect#StartError`)
 
 - **IDA:** 0x4b0066
-- **Atlas file:** `libs/atlas-packet/socket/serverbound/start_error.go`
+- **Atlas file:** `../../libs/atlas-packet/socket/serverbound/start_error.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

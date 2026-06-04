@@ -4,7 +4,7 @@
   "Address": "0x9e3172",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/ui/clientbound/disable.go",
+  "AtlasFile": "../../libs/atlas-packet/ui/clientbound/disable.go",
   "Rows": [
     {
       "Index": 0,

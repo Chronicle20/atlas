@@ -14,5 +14,3 @@
 | 1 | int16 | int16 `x (cursor/char x)` | ✅ |  |
 | 2 | int16 | int16 `y (cursor/char y)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

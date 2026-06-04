@@ -21,13 +21,3 @@
 | 8 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 
-
-## Manual verdict (JMS v185, `CNpcPool::OnNpcChangeController` @0x720782)
-
-Rows 2-9 (❌ "atlas: extra") are an analyzer-flattening artifact, NOT a wire bug. JMS185
-reads `Decode1(localFlag)` + `Decode4(npcId)` (rows 0-1 ✅); when `localFlag != 0` the
-new-entry path in `CNpcPool::SetLocalNpc` reads `templateId` + the `CNpc::Init` position
-fields (a sub-call the analyzer cannot follow). Atlas `spawn_request_controller.go` emits
-the same fields gated on the local flag — same shape as GMS v95. Carry-forward manual-verify.
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

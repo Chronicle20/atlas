@@ -1,7 +1,7 @@
 # NpcGuideTalkMessage (← `CUserLocal::OnTutorMsg#Message`)
 
 - **IDA:** 0x916f60
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/guide_talk.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/guide_talk.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `width` | ✅ |  |
 | 3 | int32 | int32 `duration` | ✅ |  |
 
-
-Ack: world-audit Phase 2e on 2026-05-28

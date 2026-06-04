@@ -1,7 +1,7 @@
 # MonsterStatReset (← `CMob::OnStatReset`)
 
 - **IDA:** 0x652780
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/stat.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/stat.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌
@@ -11,8 +11,8 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | int32 | int32 `dwMobId — read by CMobPool::OnMobPacket before dispatch` | ✅ |  |
-| 1 | int32 | bytes `uFlagReset: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask` | ❌ | width mismatch |
-| 2 | int32 | bytes `per-stat reset body via CMob::ProcessStatReset (variable-length, mask-dispatched)` | ❌ | width mismatch |
+| 1 | int32 | bytes `uFlagReset: 16-byte UINT128 stat mask (DecodeBuffer 0x10) — atlas: MonsterTemporaryStat.Encode mask` | ✅ |  |
+| 2 | int32 | bytes `per-stat reset body via CMob::ProcessStatReset (variable-length, mask-dispatched)` | ✅ |  |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

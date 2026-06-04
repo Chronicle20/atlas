@@ -4,7 +4,7 @@
   "Address": "0xa2cd83",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/ui/clientbound/lock.go",
+  "AtlasFile": "../../libs/atlas-packet/ui/clientbound/lock.go",
   "Rows": [
     {
       "Index": 0,

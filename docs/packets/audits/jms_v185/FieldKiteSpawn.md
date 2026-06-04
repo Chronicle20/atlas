@@ -17,5 +17,3 @@
 | 4 | int16 | int16 `x (@line92)` | ✅ |  |
 | 5 | int16 | int16 `y / kiteType (@line94)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

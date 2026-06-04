@@ -4,7 +4,7 @@
   "Address": "0xa05750",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/info.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/info.go",
   "Rows": [
     {
       "Index": 0,
@@ -107,12 +107,12 @@
     },
     {
       "Index": 11,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "MedalAchievementInfo: nEquipedMedalID",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
@@ -125,16 +125,16 @@
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "chair list count (ZArray\u003clong\u003e::_Alloc + DecodeBuffer with 4 * count bytes)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 14,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -143,7 +143,7 @@
     },
     {
       "Index": 15,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -161,7 +161,7 @@
     },
     {
       "Index": 17,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -170,7 +170,7 @@
     },
     {
       "Index": 18,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -179,24 +179,6 @@
     },
     {
       "Index": 19,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 20,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 21,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -205,7 +187,7 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 22,
+      "Index": 20,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,

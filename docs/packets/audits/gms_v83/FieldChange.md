@@ -21,5 +21,3 @@
 | 8 | int32 | int32 `targetX (a4; only when chase!=0)` | ✅ |  |
 | 9 | int32 | int32 `targetY (a5; only when chase!=0)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

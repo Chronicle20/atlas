@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnBuy",
   "Address": "0x47eaa7",
   "Variant": "JMS/v185",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go",
   "Rows": [
     {
@@ -23,25 +23,7 @@
       "IDAComment": "nCommSN (serialNumber). JMS NX-system: NO dwOption/currency int, NO trailing zero/oneADay/eventSN — diverges from all atlas branches",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

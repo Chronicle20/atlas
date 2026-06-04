@@ -4,7 +4,7 @@
   "Address": "0x6a1510",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/clientbound/exclude.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/exclude.go",
   "Rows": [
     {
       "Index": 0,
@@ -30,8 +30,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -52,5 +52,5 @@
       "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

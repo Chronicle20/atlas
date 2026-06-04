@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | int32 | int32 `dwId (mist/affected-area object id, v39)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

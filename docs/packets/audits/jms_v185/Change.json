@@ -4,7 +4,7 @@
   "Address": "0xb0b21e",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/fame/serverbound/change.go",
+  "AtlasFile": "../../libs/atlas-packet/fame/serverbound/change.go",
   "Rows": [
     {
       "Index": 0,

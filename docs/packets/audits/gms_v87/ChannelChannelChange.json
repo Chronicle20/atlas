@@ -1,0 +1,38 @@
+{
+  "WriterName": "ChannelChannelChange",
+  "IDAName": "CClientSocket::OnMigrateCommand",
+  "Address": "0x4a874b",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/channel/clientbound/change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "success flag (if 0 → client disconnects)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "IP address as raw uint32 (stored directly into sin_addr.s_addr — network byte order preserved)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "port (host byte order; htons applied when building sockaddr)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

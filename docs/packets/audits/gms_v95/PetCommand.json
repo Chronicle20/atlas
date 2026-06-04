@@ -4,7 +4,7 @@
   "Address": "0x6a3cc0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/command.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/command.go",
   "Rows": [
     {
       "Index": 0,
@@ -12,8 +12,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,

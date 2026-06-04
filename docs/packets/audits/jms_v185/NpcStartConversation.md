@@ -14,5 +14,3 @@
 | 1 | int16 | int16 `x (GetPos.x @0xa2cd30)` | ✅ |  |
 | 2 | int16 | int16 `y (GetPos.y @0xa2cd48)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

@@ -13,5 +13,3 @@
 | 0 | byte | byte `animationType (@line48)` | ✅ |  |
 | 1 | int32 | int32 `id (message-box object id @line50)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

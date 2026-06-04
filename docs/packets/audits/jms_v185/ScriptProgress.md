@@ -1,7 +1,7 @@
 # ScriptProgress (← `CWvsContext::OnScriptProgressMessage`)
 
 - **IDA:** 0xaf7f26
-- **Atlas file:** `libs/atlas-packet/quest/clientbound/script_progress.go`
+- **Atlas file:** `../../libs/atlas-packet/quest/clientbound/script_progress.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

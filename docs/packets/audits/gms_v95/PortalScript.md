@@ -1,7 +1,7 @@
 # PortalScript (← `CUserLocal::CheckPortal_Collision`)
 
 - **IDA:** 0x919a10
-- **Atlas file:** `libs/atlas-packet/portal/serverbound/script.go`
+- **Atlas file:** `../../libs/atlas-packet/portal/serverbound/script.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `x (GetPos().x)` | ✅ |  |
 | 3 | int16 | int16 `y (GetPos().y)` | ✅ |  |
 
-
-Ack: world-audit Phase 2a on 2026-05-28

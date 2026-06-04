@@ -3,17 +3,17 @@
   "IDAName": "CCashShop::OnBuyFriendship",
   "Address": "0x481184",
   "Variant": "JMS/v185",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "s (SPW). op-byte 0x24 (NOT GMS 0x25)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -26,12 +26,12 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 2,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "v36 (recipient name)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -41,16 +41,7 @@
       "IDAComment": "v33 (message)",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 4,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

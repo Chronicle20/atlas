@@ -4,7 +4,7 @@
   "Address": "0x953e40",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/buff_cancel.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/buff_cancel.go",
   "Rows": [
     {
       "Index": 0,
@@ -21,9 +21,9 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "uFlagTemp: 16-byte UINT128 stat mask (DecodeBuffer 0x10)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

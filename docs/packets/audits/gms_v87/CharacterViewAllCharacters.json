@@ -417,8 +417,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap — final per-entry field; NO m_bLoginOpt at end of case 0 in v87 (added \u003ev87 in v95; gate MajorVersion()\u003e87 in atlas)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 46,

@@ -1,7 +1,7 @@
 # GuildMemberJoined (← `CWvsContext::OnGuildResult#MemberJoined`)
 
 - **IDA:** 0xa0dbc0
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** 🔍

@@ -80,6 +80,17 @@ func TestStatChangedMultipleRoundTrip(t *testing.T) {
 //
 //	v95: 1 + 4 + 4 + 2 = 11 bytes
 //	v83: 1 + 4 + 2 + 1 =  8 bytes
+//	v87: 1 + 4 + 2 + 1 =  8 bytes (mirrors v83 — task-080 B4.1)
+//
+// v87 evidence (GMSv87_4GB.exe, md5 2e692f3a…):
+//   - GW_CharacterStat::DecodeChangeStat @ 0x502252 reads HP/MaxHP/MP/MaxMP
+//     (masks 0x400/0x800/0x1000/0x2000) via CInPacket::Decode2 → NARROW int16,
+//     same as v83; v95 widened to Decode4. The v95Plus gate writes int16 for
+//     v87 → CORRECT.
+//   - CWvsContext::OnStatChanged @ 0xab6e77 reads ONE trailing Decode1 byte
+//     (bSecondaryStatChangedPoint, gated on mask & 0x180008) and NO second
+//     battle-recovery-info byte; the v95Plus second trailing byte is correctly
+//     omitted for v87. v87 mirrors v83 exactly for this packet.
 func TestStatChangedV95WireWidths(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	opts := testStatOptions()
@@ -87,6 +98,9 @@ func TestStatChangedV95WireWidths(t *testing.T) {
 
 	if v95 := in.Encode(l, pt.CreateContext("GMS", 95, 1))(opts); len(v95) != 11 {
 		t.Errorf("v95 single-HP packet = %d bytes, want 11 (4-byte HP + 2 trailing): % x", len(v95), v95)
+	}
+	if v87 := in.Encode(l, pt.CreateContext("GMS", 87, 1))(opts); len(v87) != 8 {
+		t.Errorf("v87 single-HP packet = %d bytes, want 8 (2-byte HP + 1 trailing): % x", len(v87), v87)
 	}
 	if v83 := in.Encode(l, pt.CreateContext("GMS", 83, 1))(opts); len(v83) != 8 {
 		t.Errorf("v83 single-HP packet = %d bytes, want 8 (2-byte HP + 1 trailing): % x", len(v83), v83)

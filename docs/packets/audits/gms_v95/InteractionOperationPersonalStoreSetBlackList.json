@@ -4,7 +4,7 @@
   "Address": "0x69b0d0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list.go",
   "Rows": [
     {
       "Index": 0,

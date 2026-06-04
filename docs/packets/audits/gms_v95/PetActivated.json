@@ -4,7 +4,7 @@
   "Address": "0x9547d0",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/pet/clientbound/activated.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/clientbound/activated.go",
   "Rows": [
     {
       "Index": 0,
@@ -48,8 +48,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CPet::Init body (active path only): templateId + name + petLockerSN + x + y + stance + foothold + nameTag + chatBalloon",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,

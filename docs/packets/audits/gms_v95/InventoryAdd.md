@@ -1,7 +1,7 @@
 # InventoryAdd (← `CWvsContext::OnInventoryOperation#Add`)
 
 - **IDA:** 0xa08a70
-- **Atlas file:** `libs/atlas-packet/inventory/clientbound/change.go`
+- **Atlas file:** `../../libs/atlas-packet/inventory/clientbound/change.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** 🔍
@@ -15,5 +15,5 @@
 | 2 | byte | byte `mode 0 = Add (line 150)` | ✅ |  |
 | 3 | byte | byte `inventoryType (line 151)` | ✅ |  |
 | 4 | int16 | int16 `slot (line 152)` | ✅ |  |
-| 5 | byte | bytes `asset GW_ItemSlotBase::Decode (case 0 line 158) — sub-struct, tool-opaque` | 🔍 | sub-struct: model.Asset — see _substruct/ |
+| 5 | byte | bytes `asset GW_ItemSlotBase::Decode (case 0 line 158) — sub-struct, tool-opaque` | 🔍 | opaque type: model.Asset — register boundary (see opaque registry) |
 

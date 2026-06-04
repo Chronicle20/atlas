@@ -14,5 +14,3 @@
 | 1 | byte | byte `hasReason flag` | ✅ |  |
 | 2 | string | string `reason (only when hasReason != 0)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

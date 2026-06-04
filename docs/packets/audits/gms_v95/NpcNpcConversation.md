@@ -1,7 +1,7 @@
 # NpcNpcConversation (← `CScriptMan::OnScriptMessage`)
 
 - **IDA:** 0x6de0f0
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ✅
@@ -17,5 +17,3 @@
 | 4 | int32 | int32 `secondaryNpcTemplateId (read at start of per-type body when bParam&4; e.g. OnSay@0x6dc14b) -- guarded` | ✅ |  |
 | 5 | bytes | bytes `per-type conversation detail body (opaque to wrapper; audited in NpcSay*/NpcAsk* reports) via WriteByteArray` | ✅ |  |
 
-
-Ack: world-audit sub-phase 2f on 2026-05-28

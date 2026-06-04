@@ -58,7 +58,7 @@
       "IDAOp": 5,
       "IDAComment": "asset GW_ItemSlotBase::Decode (case 0) — sub-struct, tool-opaque",
       "Verdict": 3,
-      "Note": "sub-struct: model.Asset — see _substruct/"
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
     },
     {
       "Index": 6,

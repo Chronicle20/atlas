@@ -14,5 +14,5 @@
 | 1 | byte | byte `slotCount (SetGetItems *(this+62))` | ✅ |  |
 | 2 | int64 | int64 `tab-flag bitmask (8 bytes via DecodeBuffer; v21)` | ✅ |  |
 | 3 | byte | int32 `meso (*(this+63); ONLY if flag&2 — runtime callers never set bit 2)` | ❌ | width mismatch |
-| 4 | byte | byte `PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode` | 🔍 | sub-struct: model.Asset — see _substruct/ |
+| 4 | byte | byte `PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode` | 🔍 | opaque type: model.Asset — register boundary (see opaque registry) |
 

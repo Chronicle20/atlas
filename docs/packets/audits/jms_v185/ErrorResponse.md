@@ -1,7 +1,7 @@
 # ErrorResponse (← `CWvsContext::OnGivePopularityResult#ErrorResponse`)
 
 - **IDA:** 0xb094aa
-- **Atlas file:** `libs/atlas-packet/fame/clientbound/response.go`
+- **Atlas file:** `../../libs/atlas-packet/fame/clientbound/response.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

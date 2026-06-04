@@ -13,7 +13,7 @@
 | 0 | int32 | int32 `dwMobId` | ✅ |  |
 | 1 | byte | byte `nCalcDamageIndex (controlled — atlas writes for JMS too)` | ✅ |  |
 | 2 | int32 | int32 `dwTemplateID` | ✅ |  |
-| 3 | int32 | bytes `MonsterModel body` | ❌ | width mismatch |
+| 3 | int32 | bytes `MonsterModel body` | ✅ |  |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"testing"
 
@@ -18,11 +19,18 @@ func TestShopOperationBuyRoundTrip(t *testing.T) {
 			if output.IsPoints() != input.IsPoints() {
 				t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
 			}
-			if output.Currency() != input.Currency() {
-				t.Errorf("currency: got %v, want %v", output.Currency(), input.Currency())
-			}
 			if output.SerialNumber() != input.SerialNumber() {
 				t.Errorf("serialNumber: got %v, want %v", output.SerialNumber(), input.SerialNumber())
+			}
+			if v.Region == "JMS" {
+				// JMS body carries only isPoints + serialNumber; no currency/tail.
+				if output.Currency() != 0 {
+					t.Errorf("currency: got %v, want 0", output.Currency())
+				}
+				return
+			}
+			if output.Currency() != input.Currency() {
+				t.Errorf("currency: got %v, want %v", output.Currency(), input.Currency())
 			}
 			if v.Region == "GMS" && v.MajorVersion >= 87 {
 				if output.OneADay() != input.OneADay() {
@@ -63,5 +71,53 @@ func TestShopOperationBuyBytes(t *testing.T) {
 	got95 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 95, 1))(nil))
 	if got95 != "01"+"01000000"+"02000000"+"01"+"04000000" {
 		t.Errorf("v95 bytes: got %s", got95)
+	}
+}
+
+// TestShopOperationBuyJMS pins the JMS185 buy body. IDA JMS185
+// CCashShop::OnBuy@0x47eaa7 normal-buy SendPacket: Encode1(3) mode (routed as
+// op byte, not body), Encode1(usePoints), Encode4(nCommSN). The body after the
+// mode byte is exactly isPoints(1) + serialNumber(4) = 5 bytes; no currency, no
+// trailing v83/v87 fields.
+func TestShopOperationBuyJMS(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	in := ShopOperationBuy{isPoints: true, serialNumber: 0xAABBCCDD}
+	b := in.Encode(l, pt.CreateContext("JMS", 185, 1))(nil)
+	// JMS body: isPoints(1) + serialNumber(4) = 5 bytes. No currency, no trailing.
+	if len(b) != 5 {
+		t.Fatalf("JMS buy = %d bytes, want 5: % x", len(b), b)
+	}
+	if b[0] != 0x01 {
+		t.Errorf("JMS isPoints byte = 0x%02x, want 0x01", b[0])
+	}
+	if got := binary.LittleEndian.Uint32(b[1:5]); got != 0xAABBCCDD {
+		t.Errorf("JMS serial = 0x%08x, want 0xAABBCCDD", got)
+	}
+}
+
+// TestShopOperationBuyJMSRoundTrip confirms decodeJMS reads back what encodeJMS
+// wrote (isPoints + serialNumber), leaving currency/zero/oneADay/eventSN at zero.
+func TestShopOperationBuyJMSRoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := ShopOperationBuy{isPoints: true, serialNumber: 0xAABBCCDD}
+	output := ShopOperationBuy{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.IsPoints() != input.IsPoints() {
+		t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
+	}
+	if output.SerialNumber() != input.SerialNumber() {
+		t.Errorf("serialNumber: got %v, want %v", output.SerialNumber(), input.SerialNumber())
+	}
+	if output.Currency() != 0 {
+		t.Errorf("currency: got %v, want 0", output.Currency())
+	}
+	if output.Zero() != 0 {
+		t.Errorf("zero: got %v, want 0", output.Zero())
+	}
+	if output.OneADay() != 0 {
+		t.Errorf("oneADay: got %v, want 0", output.OneADay())
+	}
+	if output.EventSN() != 0 {
+		t.Errorf("eventSN: got %v, want 0", output.EventSN())
 	}
 }

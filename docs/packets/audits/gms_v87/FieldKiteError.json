@@ -4,7 +4,7 @@
   "Address": "0x694e1d",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/kite_error.go",
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/kite_error.go",
   "Rows": null,
   "Verdict": 0
 }

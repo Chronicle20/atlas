@@ -4,7 +4,7 @@
   "Address": "0x90f6d0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/chair_fixed.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/chair_fixed.go",
   "Rows": [
     {
       "Index": 0,

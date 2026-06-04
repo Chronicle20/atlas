@@ -1,7 +1,7 @@
 # PetActivated (← `CUserRemote::OnPetActivated`)
 
 - **IDA:** 0x9547d0
-- **Atlas file:** `libs/atlas-packet/pet/clientbound/activated.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/activated.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌
@@ -14,7 +14,7 @@
 | 1 | byte | byte `slot (v3, 0..2)` | ✅ |  |
 | 2 | byte | byte `active flag` | ✅ |  |
 | 3 | byte | byte `show (active path only) — gated active != 0` | ✅ |  |
-| 4 | int32 | bytes `CPet::Init body (active path only): templateId + name + petLockerSN + x + y + stance + foothold + nameTag + chatBalloon` | ❌ | width mismatch |
+| 4 | int32 | bytes `CPet::Init body (active path only): templateId + name + petLockerSN + x + y + stance + foothold + nameTag + chatBalloon` | ✅ |  |
 | 5 | string | byte `despawnMode (inactive path only)` | ❌ | width mismatch |
 | 6 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |

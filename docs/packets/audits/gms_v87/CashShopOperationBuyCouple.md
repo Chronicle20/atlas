@@ -3,7 +3,7 @@
 - **IDA:** 0x47a820
 - **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go`
 - **Variant:** GMS/v87
-- **Branch depth:** 2
+- **Branch depth:** 3
 - **Verdict:** ✅
 
 ## Wire-level diff

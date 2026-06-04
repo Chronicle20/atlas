@@ -1,0 +1,33 @@
+package fixture
+
+import "context"
+
+// RegionDispatch models the B1.5/B5.1 region-dispatch idiom (design §3.2):
+// Encode dispatches to same-receiver encodeJMS/encodeGMS helper methods that
+// take the passed *response.Writer and write via it. The analyzer must descend
+// into the helpers and inline their writes under the dispatch guard, rather
+// than treating the unresolved m.encodeGMS(w) call as a no-op (which collapses
+// every field to byte → false ❌).
+type RegionDispatch struct{}
+
+func (m RegionDispatch) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	t := mustTenant(ctx)
+	return func(opts map[string]interface{}) []byte {
+		if t.Region() == "JMS" {
+			m.encodeJMS(w)
+		} else {
+			m.encodeGMS(w)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m RegionDispatch) encodeGMS(w *Writer) {
+	w.WriteInt(0)
+	w.WriteInt(1)
+}
+
+func (m RegionDispatch) encodeJMS(w *Writer) {
+	w.WriteInt(2)
+}

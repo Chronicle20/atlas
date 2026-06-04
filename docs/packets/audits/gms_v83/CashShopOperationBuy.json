@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnBuy",
   "Address": "0x46dadd",
   "Variant": "GMS/v83",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go",
   "Rows": [
     {

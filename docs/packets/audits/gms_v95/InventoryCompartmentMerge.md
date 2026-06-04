@@ -1,7 +1,7 @@
 # InventoryCompartmentMerge (← `CWvsContext::OnGatherItemResult`)
 
 - **IDA:** 0x9f1280
-- **Atlas file:** `libs/atlas-packet/inventory/clientbound/compartment_merge.go`
+- **Atlas file:** `../../libs/atlas-packet/inventory/clientbound/compartment_merge.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

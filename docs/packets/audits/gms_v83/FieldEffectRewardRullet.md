@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `nRewardPartIdx (v25)` | ✅ |  |
 | 3 | int32 | int32 `nRewardLevIdx (v26)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

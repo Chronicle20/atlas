@@ -14,5 +14,3 @@
 | 1 | byte | byte `bHeavyNShortTremble (v22; bool)` | ✅ |  |
 | 2 | int32 | int32 `delay (v23)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

@@ -1,16 +1,16 @@
 # PetDropPickUp (← `CPet::SendDropPickUpRequest`)
 
 - **IDA:** 0x6a0820
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/drop_pick_up.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 3
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int64 | bytes `m_liPetLockerSN (8 bytes — _LARGE_INTEGER)` | ❌ | width mismatch |
+| 0 | int64 | bytes `m_liPetLockerSN (8 bytes — _LARGE_INTEGER)` | ✅ |  |
 | 1 | byte | byte `bFieldKey (or 0 if no field)` | ✅ |  |
 | 2 | int32 | int32 `get_update_time() (tick)` | ✅ |  |
 | 3 | int16 | int16 `pt.x` | ✅ |  |

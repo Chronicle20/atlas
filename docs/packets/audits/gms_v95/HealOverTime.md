@@ -1,7 +1,7 @@
 # HealOverTime (← `CWvsContext::SendStatChangeRequest`)
 
 - **IDA:** 0x9f2a00
-- **Atlas file:** `libs/atlas-packet/character/serverbound/heal_over_time.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/heal_over_time.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

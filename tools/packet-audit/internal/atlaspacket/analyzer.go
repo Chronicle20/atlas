@@ -39,11 +39,18 @@ const (
 // or a recurse/repeat marker for sub-struct and loop encoding.
 type Call struct {
 	Kind        Kind
-	Op          Primitive  // valid for KindWrite
-	RecurseType string     // valid for KindRecurse — Go receiver/field name (best-effort)
-	Body        []Call     // valid for KindRepeat
+	Op          Primitive // valid for KindWrite
+	RecurseType string    // valid for KindRecurse — Go receiver/field name (best-effort)
+	Body        []Call    // valid for KindRepeat
 	Line        int
 	Guard       *GuardExpr // nil for unconditional; populated in Task 8
+	// Opaque marks a KindRecurse whose target type is a registered but
+	// non-decomposable boundary (task-080 §4.7 Pass-3): it has no encode method
+	// and its struct layout could not be synthesized. The flatten step sets this
+	// so the diff engine emits a STABLE deferred row keyed on "opaque" — the
+	// curation target for the docs opaque-type registry — rather than a generic
+	// unresolved-recurse row.
+	Opaque bool
 }
 
 // AnalyzeFile parses a single .go (or .go.txt) file and extracts the ordered
@@ -95,7 +102,7 @@ func AnalyzeFileWithRegistry(path, typeName, methodName string, reg *TypeRegistr
 		inner = body
 	}
 	enclosing := qualifiedEnclosingFromPath(path, typeName, reg)
-	return collectCallsWithCtx(inner, fset, reg, enclosing), nil
+	return collectCallsWithCtxFile(inner, fset, reg, enclosing, f, typeName), nil
 }
 
 // qualifiedEnclosingFromPath derives the qualified registry key for a struct
@@ -163,6 +170,19 @@ type callCtx struct {
 	suffixGuards      []*GuardExpr // implicit guards from preceding if-returns at this scope
 	unreachableSuffix bool         // true when both branches of a preceding if returned
 	fset              *token.FileSet
+	// file is the parsed AST of the source file whose method body is being
+	// walked, used to locate same-receiver encode/decode helper methods (the
+	// region-dispatch idiom, task-080 §4.7). Nil disables helper descent.
+	file *ast.File
+	// recvType is the receiver type name of the method currently being walked
+	// (e.g. "ShopOperationBuy"). Same-receiver helper descent only inlines
+	// methods whose receiver type matches this.
+	recvType string
+	// helperVisited guards against mutual recursion / cycles while inlining
+	// same-receiver helper methods. Keyed on the helper method name. Shared by
+	// reference down the descent so a helper that calls back into an
+	// already-inlined helper is not re-entered.
+	helperVisited map[string]bool
 }
 
 // resolveRecurse attempts to resolve a variable-name hint to an actual Go type
@@ -202,6 +222,15 @@ func resolveRecurse(hint string, cc *callCtx) string {
 // when the caller has it; unqualified short names still work for backward
 // compatibility but lose same-package preference during sub-struct resolution.
 func collectCallsWithCtx(b *ast.BlockStmt, fset *token.FileSet, reg *TypeRegistry, enclosing string) []Call {
+	return collectCallsWithCtxFile(b, fset, reg, enclosing, nil, "")
+}
+
+// collectCallsWithCtxFile is like collectCallsWithCtx but additionally receives
+// the parsed source file and the receiver type of the method being walked, so
+// the walker can descend into same-receiver encode/decode helper methods (the
+// region-dispatch idiom, task-080 §4.7). Pass file=nil / recvType="" to disable
+// helper descent (the legacy behavior).
+func collectCallsWithCtxFile(b *ast.BlockStmt, fset *token.FileSet, reg *TypeRegistry, enclosing string, file *ast.File, recvType string) []Call {
 	var out []Call
 	var stack []*GuardExpr
 	pkg := ""
@@ -216,14 +245,17 @@ func collectCallsWithCtx(b *ast.BlockStmt, fset *token.FileSet, reg *TypeRegistr
 		}
 	}
 	cc := &callCtx{
-		reg:       reg,
-		enclosing: enclosing,
-		pkg:       pkg,
-		rangeVars: map[string]string{},
-		fieldVars: map[string]string{},
-		out:       &out,
-		stack:     &stack,
-		fset:      fset,
+		reg:           reg,
+		enclosing:     enclosing,
+		pkg:           pkg,
+		rangeVars:     map[string]string{},
+		fieldVars:     map[string]string{},
+		out:           &out,
+		stack:         &stack,
+		fset:          fset,
+		file:          file,
+		recvType:      recvType,
+		helperVisited: map[string]bool{},
 	}
 	cc.walk(b)
 	return out
@@ -269,15 +301,15 @@ func (cc *callCtx) conjoin() *GuardExpr {
 //
 // Examples that ARE mutex (collapsed to a single position):
 //
-//   if isMeso { w.WriteInt(meso)   } else { w.WriteInt(itemId)  }
-//   if owned  { w.WriteByte(1)     } else { w.WriteByte(5)      }
-//   if isSkill { w.WriteInt(1)     } else { w.WriteInt(0)       }
+//	if isMeso { w.WriteInt(meso)   } else { w.WriteInt(itemId)  }
+//	if owned  { w.WriteByte(1)     } else { w.WriteByte(5)      }
+//	if isSkill { w.WriteInt(1)     } else { w.WriteInt(0)       }
 //
 // Examples that are NOT mutex (still emit per-branch with guards):
 //
-//   if extended { w.WriteInt(x); w.WriteByte(y) } else { w.WriteInt(x) }   // different lengths
-//   if narrow   { w.WriteByte(x) } else { w.WriteInt(x) }                  // different widths
-//   if x.Encode { w.WriteByte(x) }                                         // no else
+//	if extended { w.WriteInt(x); w.WriteByte(y) } else { w.WriteInt(x) }   // different lengths
+//	if narrow   { w.WriteByte(x) } else { w.WriteInt(x) }                  // different widths
+//	if x.Encode { w.WriteByte(x) }                                         // no else
 func (cc *callCtx) isIfWireMutex(n *ast.IfStmt) bool {
 	if n.Else == nil {
 		return false
@@ -316,14 +348,17 @@ func (cc *callCtx) scratchWalk(b ast.Node) []Call {
 	var out []Call
 	var stack []*GuardExpr
 	scratch := &callCtx{
-		reg:       cc.reg,
-		enclosing: cc.enclosing,
-		pkg:       cc.pkg,
-		rangeVars: cc.rangeVars,
-		fieldVars: cc.fieldVars,
-		out:       &out,
-		stack:     &stack,
-		fset:      cc.fset,
+		reg:           cc.reg,
+		enclosing:     cc.enclosing,
+		pkg:           cc.pkg,
+		rangeVars:     cc.rangeVars,
+		fieldVars:     cc.fieldVars,
+		out:           &out,
+		stack:         &stack,
+		fset:          cc.fset,
+		file:          cc.file,
+		recvType:      cc.recvType,
+		helperVisited: cc.helperVisited,
 	}
 	scratch.walk(b)
 	return out
@@ -485,6 +520,16 @@ func (cc *callCtx) walk(node ast.Node) {
 			if inner, ok := n.Fun.(*ast.CallExpr); ok {
 				cc.walk(inner)
 			}
+			return
+		}
+		// Same-receiver encode/decode HELPER descent (region-dispatch idiom,
+		// task-080 §4.7): a call like `m.encodeGMS(t, w)` / `m.decodeJMS(r)` to
+		// another method on the SAME receiver type that takes the writer/reader
+		// and writes/reads via it. The B1.5/B5.1 region-dispatch idiom uses this
+		// to avoid a third nested guard. Inline the helper's body here under the
+		// current guard so its writes are attributed to the dispatch branch
+		// rather than collapsing every field to byte (false ❌).
+		if cc.tryInlineHelper(n, sel) {
 			return
 		}
 		// Recurse marker: x.Encode(l, ctx) or x.Decode(l, ctx)
@@ -654,6 +699,115 @@ func (cc *callCtx) walk(node ast.Node) {
 	}
 }
 
+// tryInlineHelper recognizes a same-receiver encode/decode helper call (the
+// region-dispatch idiom) and, when matched, walks the helper's body into the
+// current ctx so its primitive writes/reads inherit the active guard stack.
+// Returns true when the call was recognized AND inlined (the caller should stop
+// processing the CallExpr). Returns false for any non-helper call so the
+// existing recurse/primitive handling proceeds unchanged.
+//
+// Recognition is deliberately conservative — a call qualifies only when ALL of:
+//   - helper descent is enabled (cc.file != nil, cc.recvType != "");
+//   - the selector receiver is a bare identifier (e.g. `m`), not a field/chain;
+//   - a method by that name exists in the same file on the SAME receiver type;
+//   - that method declares a *response.Writer / *request.Reader parameter; and
+//   - one of the call's arguments is the writer/reader variable passed through.
+//
+// A per-descent visited-set keyed on the helper name guards against mutual
+// recursion / cycles (a helper that calls back into an already-inlined helper).
+func (cc *callCtx) tryInlineHelper(n *ast.CallExpr, sel *ast.SelectorExpr) bool {
+	if cc.file == nil || cc.recvType == "" {
+		return false
+	}
+	// Receiver must be a bare identifier (the method receiver var), e.g. `m`.
+	if _, ok := sel.X.(*ast.Ident); !ok {
+		return false
+	}
+	name := sel.Sel.Name
+	// Never treat the writer/reader primitive methods or known recurse markers
+	// as helpers — those are handled by the existing arms.
+	if name == "Encode" || name == "Decode" || name == "EncodeForeign" || name == "Write" {
+		return false
+	}
+	// At least one argument must be the writer/reader variable, confirming this
+	// call threads the wire buffer into the helper.
+	if !callPassesWriterReader(n.Args) {
+		return false
+	}
+	body := cc.findSameReceiverMethod(name)
+	if body == nil {
+		return false
+	}
+	if cc.helperVisited[name] {
+		// Cycle / already inlined on this descent path — stop.
+		return true
+	}
+	cc.helperVisited[name] = true
+	cc.walk(body)
+	delete(cc.helperVisited, name)
+	return true
+}
+
+// findSameReceiverMethod returns the body block of a method named `name` whose
+// receiver type is cc.recvType (pointer or value) and which declares a
+// *response.Writer or *request.Reader parameter. Returns nil when no such
+// helper exists in the file — so an arbitrary same-name method that does not
+// take the wire buffer is NOT inlined.
+func (cc *callCtx) findSameReceiverMethod(name string) *ast.BlockStmt {
+	for _, decl := range cc.file.Decls {
+		fd, ok := decl.(*ast.FuncDecl)
+		if !ok || fd.Name.Name != name || fd.Recv == nil || len(fd.Recv.List) != 1 {
+			continue
+		}
+		if receiverIdent(fd.Recv.List[0].Type) != cc.recvType {
+			continue
+		}
+		if !funcHasWriterReaderParam(fd.Type) {
+			continue
+		}
+		return fd.Body
+	}
+	return nil
+}
+
+// callPassesWriterReader reports whether any argument expression is a bare
+// identifier named like the conventional writer/reader variable (`w` or `r`).
+func callPassesWriterReader(args []ast.Expr) bool {
+	for _, a := range args {
+		if id, ok := a.(*ast.Ident); ok && (id.Name == "w" || id.Name == "r") {
+			return true
+		}
+	}
+	return false
+}
+
+// funcHasWriterReaderParam reports whether a function signature declares a
+// parameter of type *response.Writer or *request.Reader (matched by the bare
+// type name Writer/Reader, so both the real qualified type and the test-fixture
+// shim *Writer are recognized).
+func funcHasWriterReaderParam(ft *ast.FuncType) bool {
+	if ft == nil || ft.Params == nil {
+		return false
+	}
+	for _, p := range ft.Params.List {
+		star, ok := p.Type.(*ast.StarExpr)
+		if !ok {
+			continue
+		}
+		switch x := star.X.(type) {
+		case *ast.Ident:
+			if x.Name == "Writer" || x.Name == "Reader" {
+				return true
+			}
+		case *ast.SelectorExpr:
+			if x.Sel.Name == "Writer" || x.Sel.Name == "Reader" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // collectSub collects body calls for a loop body, inheriting the registry
 // context and current range-var bindings from the parent callCtx.
 func (cc *callCtx) collectSub(b *ast.BlockStmt) []Call {
@@ -665,13 +819,17 @@ func (cc *callCtx) collectSub(b *ast.BlockStmt) []Call {
 		childRangeVars[k] = v
 	}
 	child := &callCtx{
-		reg:       cc.reg,
-		enclosing: cc.enclosing,
-		rangeVars: childRangeVars,
-		fieldVars: map[string]string{},
-		out:       &out,
-		stack:     &stack,
-		fset:      cc.fset,
+		reg:           cc.reg,
+		enclosing:     cc.enclosing,
+		pkg:           cc.pkg,
+		rangeVars:     childRangeVars,
+		fieldVars:     map[string]string{},
+		out:           &out,
+		stack:         &stack,
+		fset:          cc.fset,
+		file:          cc.file,
+		recvType:      cc.recvType,
+		helperVisited: cc.helperVisited,
 	}
 	child.walk(b)
 	return out
@@ -724,8 +882,9 @@ func receiverTypeHint(x ast.Expr) string {
 
 // freeFnPrimitive returns a Primitive for known free-function helpers that
 // atlas uses outside the w.Write*/r.Read* method convention.
-//   WritePaddedString(w, str, n) writes a fixed-length buffer.
-//   ReadPaddedString(r, n) reads a fixed-length buffer.
+//
+//	WritePaddedString(w, str, n) writes a fixed-length buffer.
+//	ReadPaddedString(r, n) reads a fixed-length buffer.
 func freeFnPrimitive(name string) (Primitive, bool) {
 	switch name {
 	case "WritePaddedString", "ReadPaddedString":

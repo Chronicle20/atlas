@@ -4,7 +4,7 @@
   "Address": "0x577c21",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/transport.go",
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/transport.go",
   "Rows": [
     {
       "Index": 0,

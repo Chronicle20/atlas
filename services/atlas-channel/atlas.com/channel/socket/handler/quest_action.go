@@ -83,10 +83,12 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 		case QuestActionRestoreLostItem:
 			sp := &quest3.ActionRestoreLostItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] restoring lost item [%d] for quest [%d]. unk1 [%d]. rem [%d]", s.CharacterId(), sp.ItemId(), questId, sp.Unk1(), r.Available())
-			err := quest.NewProcessor(l, ctx).RestoreItem(s.Field(), s.CharacterId(), questId, sp.ItemId())
-			if err != nil {
-				l.WithError(err).Errorf("Failed to restore item [%d] for quest [%d] for character [%d].", sp.ItemId(), questId, s.CharacterId())
+			l.Debugf("Character [%d] restoring lost items %v for quest [%d]. rem [%d]", s.CharacterId(), sp.ItemIds(), questId, r.Available())
+			for _, itemId := range sp.ItemIds() {
+				err := quest.NewProcessor(l, ctx).RestoreItem(s.Field(), s.CharacterId(), questId, itemId)
+				if err != nil {
+					l.WithError(err).Errorf("Failed to restore item [%d] for quest [%d] for character [%d].", itemId, questId, s.CharacterId())
+				}
 			}
 			return
 		}

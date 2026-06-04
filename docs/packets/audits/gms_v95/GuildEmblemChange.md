@@ -1,7 +1,7 @@
 # GuildEmblemChange (← `CWvsContext::OnGuildResult#EmblemChange`)
 
 - **IDA:** 0xa0e394
-- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

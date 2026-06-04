@@ -18,14 +18,3 @@
 | 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 
-
-## Manual verdict (JMS v185, `CNpc::OnMove` @0x7194d1)
-
-Rows 3-6 (❌ "atlas: extra") are an analyzer-flattening artifact, NOT a wire bug. Atlas
-`action.go` writes the trailing rx/movement fields only inside conditional branches; the
-analyzer collects those tails unconditionally. At runtime atlas emits `objectId(int) +
-action(byte) + chatIdx(byte)` then the move-path body, which is exactly what JMS185
-`CNpc::OnMove` reads (rows 0-2 ✅) — `Decode1(nAction)` + `Decode1(nChatIdx)` after the
-dispatcher-prefix `Decode4(npcId)` from `CNpcPool::OnNpcPacket`, then `CMovePath::OnMovePacket`.
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

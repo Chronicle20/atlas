@@ -180,22 +180,26 @@ config/constant fix was required.**
 
 ---
 
-## 9. Surfaced as a follow-up task (NOT accepted here)
+## 9. BuddyInvite — RESOLVED in task-080 (the one surfaced real bug, now fixed)
 
-One genuinely-unresolved divergence was found that task-080 did **not** fix and
-that the registry will **not** bless as accepted. It is recorded here only as a
-pointer to the follow-up; it is not an action for this registry.
+The one genuinely-unresolved divergence E2 surfaced was **fixed in-task** after
+all four IDBs were decompiled (the earlier `🔍`/follow-up framing is superseded).
 
-- **`BuddyInvite` extra `v25`/`v26` fields** (`buddy/clientbound/invite.go`,
-  `CWvsContext::OnFriendResult#Invite`, GMS v95 `@0xa12630`; `🔍` all four
-  versions). The client reads **two extra `Decode4`** (`v25`, `v26`) between
-  `originatorName` and the `GW_Friend` (39-byte) insert + the trailing `inShop`
-  byte — 8+ bytes Atlas does not write. This was a real-wire-bug *candidate* in the
-  task-066 ledger ("deferred pending live client test"); task-080 did not own the
-  buddy domain and did not fix it. **-> register as a dedicated follow-up task**
-  (add `unknown1`/`unknown2` uint32 fields after `originatorName`; confirm
-  semantics + the missing GW_Friend trailing field + `inShop` byte against a live
-  v95 client round-trip; add a byte test). Do not bury it as accepted.
+- **`BuddyInvite` inviter `jobId`/`level`** (`buddy/clientbound/invite.go`) — **RESOLVED**
+  (`b39329ecb`). The client reads two extra `Decode4` (`jobId`, `level`) between
+  `originatorName` and the `GW_Friend`(39)+`inShop` tail, present for **GMS≥87 and all
+  JMS, absent on GMS v83**. All four `OnFriendResult` case-9 read-orders were
+  decompiled (v83 `@0xa3f2e8`, v87 `@0xad7ae5`, v95 `@0xa12630`, JMS185 `@0xb2a873`);
+  Atlas now writes `jobId`/`level` gated `Region!="GMS" || Major>=87`, with the
+  inviter's real job/level wired from the invite consumer, per-version byte tests, and
+  the 39-byte friend buffer + inShop unchanged.
+  - **Note:** three of the four IDA-export JSON read-orders for this packet are
+    **mistraced** (v83/v87 export it as a `count + buddy[i]` loop; JMS truncates after
+    `level`). So the regenerated SUMMARY may still show `❌`/`🔍` for BuddyInvite in
+    those versions — that is an **export mistrace/truncation accepted-exclusion**, NOT
+    an Atlas defect (Atlas's wire is IDA-correct per all four decompiles; v95's
+    correctly-traced export flips its jobId/level rows to ✅). See
+    `docs/tasks/task-080-packet-audit-closeout/spike-buddy-invite.md`.
 
 ---
 
@@ -205,9 +209,9 @@ pointer to the follow-up; it is not an action for this registry.
 only inside the registry's own prose: the `🔍` glyphs are part of category
 descriptions / the section-9 follow-up pointer, "pending" is the path/title, and
 "action" appears in this sentence and the category table. **No open actionable
-item remains** — every audit `❌`/`🔍` is either fixed-and-cited (section 2) or
-classified into an accepted-exclusion category (sections 3–8), with the single
-genuine exception explicitly handed off as a follow-up task (section 9).
+item remains** — every audit `❌`/`🔍` is either fixed-and-cited (sections 2 & 9) or
+classified into an accepted-exclusion category (sections 3–8). The one genuine wire
+bug surfaced (BuddyInvite, section 9) was **fixed in-task**, so nothing is handed off.
 
 ## 11. Workflow reference (refresh / regen procedure)
 

@@ -9,7 +9,7 @@ Detailed reports:
 ## Plan adherence — FULL functional adherence
 All 38 tasks (36 planned + emergent A5 + the two surfaced follow-ups) accounted for across 49 commits, each backed by landed code with byte-level tests or an IDA-grounded verdict/no-op spike. Four affected modules build + test green; region-dispatched bodies stay within the 2-guard nesting cap; closed-item regression guard holds (storage Show, MonsterControl, SETFIELD/WarpToMap untouched).
 
-Disproved-premise outcomes (correct, evidence-backed): B1.3 nItemPos (no-op, would corrupt every quest packet), B1.2 gate (corrected `>83`→`GMS && >=95`), B1.5/B5.1 chat/cash gate boundaries. B3.1–B3.6 all verdict-only (wire shapes already correct). Two real bugs surfaced, not buried: JMS isPoints→currency (fixed on-branch) and BuddyInvite missing fields (registered as a separate follow-up, `docs/packets/ida-exports/_pending.md` §9).
+Disproved-premise outcomes (correct, evidence-backed): B1.3 nItemPos (no-op, would corrupt every quest packet), B1.2 gate (corrected `>83`→`GMS && >=95`), B1.5/B5.1 chat/cash gate boundaries. B3.1–B3.6 all verdict-only (wire shapes already correct). Two real bugs surfaced, both fixed on-branch (not buried): JMS isPoints→currency, and BuddyInvite missing inviter jobId/level (fixed in `b39329ecb` after decompiling all four `OnFriendResult` case-9 read-orders).
 
 ## Backend guidelines — all objective gates pass
 Build/vet/test clean across the four touched modules. Encode/Decode region-version **symmetry verified** (the load-bearing check) for every dispatching codec. Region-dispatch idiom ≤2 guards. mist domain immutable-model + Builder + pure/side-effecting split correct. Handler→processor layering clean (B2.2 TODO stub replaced). DOM-21 satisfied (atlas-constants reuse).
@@ -26,6 +26,6 @@ Build/vet/test clean across the four touched modules. Encode/Decode region-versi
 ## Verify gates (F1) — all task-080 gates PASS
 `go test -race` + `go vet` + `go build` clean (4 modules); nesting cap clean; **`docker buildx bake atlas-maps` + `atlas-channel` both built**; template JSON valid; regression guard clean.
 
-## Open follow-ups (tracked as separate tasks, NOT _pending deferrals)
+## Surfaced bugs — both resolved on this branch (zero open follow-ups)
 1. JMS cash currency: **resolved** this branch (commit `b70b07079`).
-2. **BuddyInvite missing client fields** — real buddy-domain wire bug (missing 2×Decode4 + GW_Friend trailing + inShop byte, 🔍 all 4 versions). Out of task-080's scope; registered as a follow-up.
+2. **BuddyInvite missing inviter jobId/level**: **resolved** this branch (commit `b39329ecb`). After the F2 review flagged this as the one un-blessed deferral, all four `OnFriendResult` case-9 read-orders were decompiled (v83/v87/v95/JMS185); jobId+level are now written gated `Region!="GMS" || Major>=87`, with the inviter's real job/level wired + per-version byte tests. (Three of the four export JSONs are mistraced for this packet, so its SUMMARY rows may stay ❌/🔍 as an export-mistrace accepted-exclusion — Atlas's wire is IDA-correct; see `spike-buddy-invite.md`.) Nothing is left as an open actionable deferral.

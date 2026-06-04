@@ -37,8 +37,8 @@ Counts below are read from the post-task-080 (enhanced-analyzer) SUMMARYs at
 `docs/packets/audits/<version>/SUMMARY.md`. Every residual `❌`/`🔍` is classified
 into an accepted-exclusion category in the curated registry
 `docs/packets/ida-exports/_pending.md` — **none is an open actionable deferral**
-(the one tracked real wire bug, BuddyInvite, is a separate follow-up task, not a
-`_pending` entry — see §3/§5).
+(the one surfaced real wire bug, BuddyInvite, was **fixed in-task** — `b39329ecb`,
+after decompiling all four `OnFriendResult` read-orders — see §3/§5 and `_pending.md` §9).
 
 | Version | Rows | ✅ | ❌ | 🔍 |
 |---|---|---|---|---|
@@ -115,13 +115,17 @@ there into a blessed permanent-exclusion category (TRUNCATION / OPAQUE / REPRESE
 VERSION-ABSENT, plus OP/MODE-PREFIX and LOOP/EXCLUSIVE-BRANCH dispatcher artifacts) with
 IDA evidence.
 
-**One tracked follow-up (NOT a `_pending` deferral).** A single genuine buddy-domain wire
-bug was surfaced rather than blessed: **`BuddyInvite`** (`buddy/clientbound/invite.go`,
-`CWvsContext::OnFriendResult#Invite`, GMS v95 `@0xa12630`; `🔍` all four versions) — the
-client reads two extra `Decode4` (`v25`/`v26`) between `originatorName` and the `GW_Friend`
-insert plus a trailing `inShop` byte that Atlas does not write. task-080 did not own the
-buddy domain and did not fix it; it is registered as a **dedicated follow-up task** (see
-`_pending.md` §9), not parked here as accepted.
+**One surfaced wire bug — fixed in-task.** A single genuine buddy-domain wire bug was
+surfaced and then **fixed**: **`BuddyInvite`** (`buddy/clientbound/invite.go`,
+`CWvsContext::OnFriendResult#Invite`) — the client reads two extra `Decode4`
+(inviter `jobId`/`level`) between `originatorName` and the `GW_Friend`(39)+`inShop` tail,
+present for GMS≥87 and all JMS, absent on GMS v83. After the F2 review flagged it, all four
+read-orders were decompiled (v83 `@0xa3f2e8`, v87 `@0xad7ae5`, v95 `@0xa12630`,
+JMS185 `@0xb2a873`) and Atlas now writes them gated `Region!="GMS" || Major>=87` with the
+inviter's real job/level + per-version byte tests (`b39329ecb`). NOTE: three of the four
+export JSONs are mistraced for this packet, so its SUMMARY rows may stay `❌`/`🔍` as an
+export-mistrace accepted-exclusion — Atlas's wire is IDA-correct (see `_pending.md` §9 and
+`spike-buddy-invite.md`).
 
 ## 4. Audit-tool limitations (why some ❌ are not bugs)
 
@@ -168,10 +172,10 @@ as of task-080 (this branch). Concretely:
    regenerated SUMMARYs (§2a roll-up: 309 ❌ / 16 🔍 across 1059 rows) is classified into a
    blessed permanent-exclusion category in **`docs/packets/ida-exports/_pending.md`**, the
    disposition of record. That registry holds zero actionable items.
-3. **Follow-up.** Exactly one genuine wire bug — **BuddyInvite** — was surfaced as a
-   dedicated follow-up task rather than blessed (§3, `_pending.md` §9). It is the only
-   tracked piece of remaining wire work, and it is registered as a separate task, not a
-   `_pending` deferral.
+3. **Surfaced bug — fixed.** Exactly one genuine wire bug — **BuddyInvite** (missing
+   inviter jobId/level) — was surfaced and **fixed in-task** (`b39329ecb`) after
+   decompiling all four `OnFriendResult` read-orders (§3, `_pending.md` §9). No open
+   wire work remains.
 
 The reusable playbook for the next version pass (where IDBs go, the corrected
 `packet-audit` invocation, the gate / region-dispatch conventions, and how to tell expected

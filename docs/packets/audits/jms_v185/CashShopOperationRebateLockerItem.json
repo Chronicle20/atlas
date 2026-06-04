@@ -3,27 +3,27 @@
   "IDAName": "CCashShop::OnRebateLockerItem",
   "Address": "0x47c059",
   "Variant": "JMS/v185",
-  "BranchDepth": 0,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "spw (secondary password). op-byte 0x1B (NOT GMS 0x1C). JMS has SPW string (atlas else-branch has int birthday)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "8-byte locker SN (Src). matches atlas unk long",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

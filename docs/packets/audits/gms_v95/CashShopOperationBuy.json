@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnBuy",
   "Address": "0x48e530",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go",
   "Rows": [
     {
@@ -12,26 +12,26 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "isMaplePoint bool (dwOption==2)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "dwOption (currency)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nCommSN (serialNumber)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -39,18 +39,18 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_bRequestBuyOneADay (NOT in atlas - atlas reads int zero spanning this+eventSN)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nEventSN (NOT correctly modeled by atlas)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

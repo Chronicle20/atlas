@@ -145,9 +145,9 @@
 | [DistributeAp](DistributeAp.md) | ✅ | `../../libs/atlas-packet/character/serverbound/distribute_ap.go` |
 | [FieldAffectedAreaCreated](FieldAffectedAreaCreated.md) | ❌ | `../../libs/atlas-packet/field/clientbound/affected_area_created.go` |
 | [FieldAffectedAreaRemoved](FieldAffectedAreaRemoved.md) | ✅ | `../../libs/atlas-packet/field/clientbound/affected_area_removed.go` |
-| [CashShopOperationBuy](CashShopOperationBuy.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go` |
-| [CashShopOperationBuyCouple](CashShopOperationBuyCouple.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go` |
-| [CashShopOperationBuyFriendship](CashShopOperationBuyFriendship.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go` |
+| [CashShopOperationBuy](CashShopOperationBuy.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go` |
+| [CashShopOperationBuyCouple](CashShopOperationBuyCouple.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_couple.go` |
+| [CashShopOperationBuyFriendship](CashShopOperationBuyFriendship.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship.go` |
 | [CashShopOperationBuyNormal](CashShopOperationBuyNormal.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_normal.go` |
 | [CashShopOperationBuyPackage](CashShopOperationBuyPackage.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_package.go` |
 | [CashShopOperationIncreaseInventory](CashShopOperationIncreaseInventory.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_increase_inventory.go` |
@@ -158,12 +158,12 @@
 | [CashShopOperationMoveFromCashInventory](CashShopOperationMoveFromCashInventory.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_move_from_cash_inventory.go` |
 | [CashShopOperationMoveToCashInventory](CashShopOperationMoveToCashInventory.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_move_to_cash_inventory.go` |
 | [CashQueryResult](CashQueryResult.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/query_result.go` |
-| [CashShopOperationRebateLockerItem](CashShopOperationRebateLockerItem.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go` |
+| [CashShopOperationRebateLockerItem](CashShopOperationRebateLockerItem.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go` |
 | [CashShopOperationSetWishlist](CashShopOperationSetWishlist.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_set_wishlist.go` |
 | [CashShopOperationGetPurchaseRecord](CashShopOperationGetPurchaseRecord.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_get_purchase_record.go` |
 | [CashShopOperationBuyNameChange](CashShopOperationBuyNameChange.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_name_change.go` |
 | [CashShopOperationBuyWorldTransfer](CashShopOperationBuyWorldTransfer.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_world_transfer.go` |
-| [CashShopOperationGift](CashShopOperationGift.md) | ❌ | `../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go` |
+| [CashShopOperationGift](CashShopOperationGift.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go` |
 | [CashCheckWallet](CashCheckWallet.md) | ✅ | `../../libs/atlas-packet/cash/serverbound/check_wallet.go` |
 | [InteractionOperationTransaction](InteractionOperationTransaction.md) | ✅ | `../../libs/atlas-packet/interaction/serverbound/operation_transaction.go` |
 | [ChannelChannelChange](ChannelChannelChange.md) | ✅ | `../../libs/atlas-packet/channel/clientbound/change.go` |
@@ -175,7 +175,7 @@
 | [InteractionOperationFieldAddToBlackList](InteractionOperationFieldAddToBlackList.md) | ✅ | `../../libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go` |
 | [InteractionOperationFieldRemoveFromBlackList](InteractionOperationFieldRemoveFromBlackList.md) | ✅ | `../../libs/atlas-packet/interaction/serverbound/operation_field_remove_from_black_list.go` |
 | [GuildRequestCreate](GuildRequestCreate.md) | ✅ | `../../libs/atlas-packet/guild/serverbound/operation_request_create.go` |
-| [FieldEffectWeather](FieldEffectWeather.md) | ❌ | `../../libs/atlas-packet/field/clientbound/effect_weather.go` |
+| [FieldEffectWeather](FieldEffectWeather.md) | ✅ | `../../libs/atlas-packet/field/clientbound/effect_weather.go` |
 | [FieldClock](FieldClock.md) | ❌ | `../../libs/atlas-packet/field/clientbound/clock.go` |
 | [BuddyOperationAccept](BuddyOperationAccept.md) | ❌ | `../../libs/atlas-packet/buddy/serverbound/operation_accept.go` |
 | [PartyOperationChangeLeader](PartyOperationChangeLeader.md) | ❌ | `../../libs/atlas-packet/party/serverbound/operation_change_leader.go` |

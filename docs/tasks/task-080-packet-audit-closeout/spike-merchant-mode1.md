@@ -47,9 +47,19 @@ There is **no current server path** that resolves a *remote, already-existing* s
 and discovers it lives on a different channel — which is exactly the condition mode 8
 reports. Producing that signal today would require inventing a trigger that the codebase
 does not have. Per the task's "do not invent a fake trigger" instruction, the mode-8
-emitter is left **defined and available** (like other defined clientbound emitters that
-are not yet wired) to be hooked up when a remote-shop-lookup server path exists. Decision:
-**emitter available, wiring deferred** — `atlas-channel` was not modified.
+emitter is left **defined and available** to be hooked up when a remote-shop-lookup server
+path exists. Decision: **emitter available, wiring deferred** — `atlas-channel` was not modified.
+
+**Future-wiring caveats (recorded so the integration isn't surprising):**
+- `EntrustedShopUnknownChannel` is currently the **only** unwired emitter in
+  `merchant/clientbound/operation.go` — every sibling (OpenShop, ErrorSimple, ShopSearch,
+  ShopRename, RemoteShopWarp, ConfirmManage, FreeFormNotice) is wired via a `*Body()` wrapper
+  in `merchant/operation_body.go`. When mode 8 is wired it should get a matching `*Body()` wrapper.
+- The emitter **hardcodes `mode = 8`**, whereas siblings resolve their mode from per-tenant
+  config via `WithResolvedCode("operations", <KEY>, ...)`. The hardcode is correct while
+  unwired (and the byte test pins `b[0]==8`), but a future `*Body()` wrapper must reconcile
+  with the config-resolution path. Note `operation_body.go` already annotates the
+  `ERROR_UNKNOWN` string code as `// 8`; confirm there is no code-8 contention before wiring.
 
 ## Mode 11 — constant only (no emitter)
 

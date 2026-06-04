@@ -388,3 +388,88 @@
 /tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [RegisterPin](RegisterPin.md) | ❌ | `../../libs/atlas-packet/account/serverbound/register_pin.go` |
 /tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [ServerListEntry](ServerListEntry.md) | ❌ | `../../libs/atlas-packet/login/clientbound/server_list_entry.go` |
 /tmp/audit-baseline/jms_v185/jms_v185/SUMMARY.md:| [SetGender](SetGender.md) | ❌ | `../../libs/atlas-packet/account/serverbound/set_gender.go` |
+
+---
+
+## Post-Phase-A (after A1–A4)
+
+Final Phase-A audit run reflecting commits A1 (width equivalence), A2 (name
+qualification), A3 (sub-struct descent + opaque flag), and A4 (early-return
+verification — this commit). Four-version audit re-run into
+`/tmp/audit-A4/<ver>` with the corrected invocation (`-template` +
+`-ida-source`, double-nested output). JMS `DecodeSub` warnings are harmless.
+
+### Per-version ❌ / 🔍 counts: original baseline → post-Phase-A
+
+| Version | Original ❌ | Post-A ❌ | Original 🔍 | Post-A 🔍 |
+|---|---|---|---|---|
+| gms_v83  | 94 | 79 | 4 | 4 |
+| gms_v87  | 88 | 76 | 2 | 2 |
+| gms_v95  | 94 | 76 | 8 | 8 |
+| jms_v185 | 95 | 83 | 2 | 2 |
+
+Net ❌ reduction across A1–A4: v83 −15, v87 −12, v95 −18, jms −12. 🔍 counts
+unchanged. (These totals are the cumulative effect of A1–A4; A4 itself made no
+analyzer change — see below.)
+
+### A4 task scope: early-return modeling — VERIFIED, NO ANALYZER CHANGE
+
+Early-return modeling (`blockTerminatesWithReturn` + suffix-taint +
+`cc.suffixGuards`, analyzer.go ~lines 339–412) was confirmed working. Every
+named early-return packet was inspected against its `/tmp/audit-A4` detail page
+and its `libs/atlas-packet` source. No named ❌ traces to over-counted
+early-returned (conditional) bytes. No fixture reproduced an early-return
+over-count, so `analyzer.go` was NOT modified. Per-packet classification:
+
+| Named packet | v83 | v87 | v95 | jms | Classification |
+|---|---|---|---|---|---|
+| login `CharacterList` | ❌ | ❌ | ❌ | n/a* | real wire bug → Phase B/D |
+| character `CharacterSitResult` | ❌ | ❌ | ❌ | ❌ | divergent-width mutex (not early-return) → Phase B/D |
+| drop `DropSpawn` | ✅ | ✅ | ✅ | ✅ | already-covered ✅ (early-return + wire-mutex working) |
+| reactor `ReactorSpawn` | ✅ | ✅ | ✅ | ✅ | already-covered ✅ |
+| reactor `ReactorHitRequest` | ✅ | ✅ | ✅ | ✅ | already-covered ✅ (has `if/else` + early return) |
+| monster `MonsterSpawn` | ❌ | ❌ | ❌ | ❌ | opaque-type residue → §4.8 registry |
+| cash `IncreaseInventory` | — | — | ❌ | — | divergent-width mutex (not early-return) → Phase B/D |
+| cash `IncreaseStorage` | — | — | ❌ | — | optional field absent in reference variant (not early-return) → Phase B/D |
+
+\* `CharacterList` is not in the JMS clientbound CSV variant set, so it has no
+JMS row. The cash `Increase*` packets only surface a ❌ in v95 (the only variant
+whose IDA reference exercises `OnBuySlotInc` / storage path).
+
+### Why none are A4 gaps
+
+- **`CharacterList`** — the `if Region=="GMS" && MajorVersion()<=28 { return }`
+  early-return correctly leaves the v83/v87/v95 suffix UNCONDITIONAL (suffix
+  guard `!(<=28)` is statically true for these majors). The ❌s are at the
+  avatar-look sub-struct (`anPetID[2]`, `hasRank`, `jobRankMove` width
+  mismatches, rows 41/43/47) plus two missing trailing fields (rows 49/50) —
+  genuine wire-shape divergences, not conditional over-counts.
+- **`CharacterSitResult`** — `if m.sitting { byte; short } else { byte }`. The
+  branches are mutually exclusive but DIFFER in length and share only a
+  common-prefix byte; neither branch returns. `isIfWireMutex` (requires equal
+  Kind+Op at every position) correctly declines to collapse, so the else-branch
+  `WriteByte(0)` surfaces as an "extra" position. This is a common-prefix /
+  divergent-length-mutex modeling limitation, NOT an early-return over-count.
+- **`MonsterSpawn`** — the IDA reference collapses the entire mob body
+  (`CMob::SetTemporaryStat` + `CMob::Init`) into a single opaque `bytes` token
+  (row 3); atlas writes the body as ~25 individual fields (rows 4–28). Opaque
+  reference vs expanded atlas → opaque-type residue, handled by the §4.8 opaque
+  registry, not early-return.
+- **cash `IncreaseInventory`** — `if m.item { WriteInt } else { WriteByte }`:
+  divergent-width mutex, same class as `CharacterSitResult`. No return.
+- **cash `IncreaseStorage`** — `if m.item { WriteInt }` (no else, no return).
+  The analyzer correctly emits the int32 as a guarded (conditional) call; the
+  ❌ is that the v95 reference variant simply doesn't read the field on the
+  storage path (a wire-presence question), not an early-return over-count.
+
+### Verification
+
+- `go test ./internal/atlaspacket/` — PASS (existing `TestEarlyReturnThenTaintsSuffix`,
+  `TestEarlyReturnElseTaintsSuffix`, `TestEarlyReturnNegativeLeavesSuffixUnconditional`
+  all green).
+- `go vet ./...` — clean.
+
+This section is the working note for Phase E to curate. Remaining ❌/🔍 are not
+early-return gaps; the divergent-width-mutex cases (`CharacterSitResult`, cash
+`Increase*`) are candidate Phase B/D items, and `MonsterSpawn` is opaque-type
+residue for the §4.8 registry.

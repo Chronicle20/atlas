@@ -44,6 +44,13 @@ type Call struct {
 	Body        []Call     // valid for KindRepeat
 	Line        int
 	Guard       *GuardExpr // nil for unconditional; populated in Task 8
+	// Opaque marks a KindRecurse whose target type is a registered but
+	// non-decomposable boundary (task-080 §4.7 Pass-3): it has no encode method
+	// and its struct layout could not be synthesized. The flatten step sets this
+	// so the diff engine emits a STABLE deferred row keyed on "opaque" — the
+	// curation target for the docs opaque-type registry — rather than a generic
+	// unresolved-recurse row.
+	Opaque bool
 }
 
 // AnalyzeFile parses a single .go (or .go.txt) file and extracts the ordered

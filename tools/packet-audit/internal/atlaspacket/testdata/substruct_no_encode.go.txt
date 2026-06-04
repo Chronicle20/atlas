@@ -1,0 +1,31 @@
+package fixture
+
+import "context"
+
+// Inner has NO Encode/Write method of its own. Its fields are written inline by
+// a parent encoder (mirroring model.Asset / GW_ItemSlotBase). Pass-3 synthesis
+// must walk these flat int32 fields and emit two Encode4 writes so the recurse
+// from Outer.Encode flattens into the primitive sequence rather than surfacing
+// as an unresolved deferred row.
+type Inner struct {
+	a int32
+	b int32
+}
+
+// Outer writes a leading byte, then descends into the self-describing Inner
+// sub-struct via field m.inner, then a trailing byte. The recurse marker for
+// m.inner has no encode method to resolve against — Pass-3 supplies the
+// synthesized field-decomposition Calls instead.
+type Outer struct {
+	inner Inner
+}
+
+func (m Outer) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(0)
+		m.inner.Encode(l, ctx)(opts)
+		w.WriteByte(1)
+		return w.Bytes()
+	}
+}

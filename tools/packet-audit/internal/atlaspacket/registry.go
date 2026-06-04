@@ -34,6 +34,13 @@ type TypeEntry struct {
 	// Pre-analyzed calls for whichever method this type exposes for wire encoding.
 	// Encode preferred over Write when both exist (atlas convention).
 	Calls []Call
+	// Opaque is set by Pass-3 when a type has NO encode method AND its struct
+	// layout could not be decomposed into known primitives / registered types
+	// (e.g. a field of an unmappable type like time.Time, an interface, or an
+	// unregistered named type). Such a type is the register boundary: it is the
+	// curation target for the docs opaque-type registry, and the diff engine
+	// emits a STABLE deferred row for it rather than silently passing it through.
+	Opaque bool
 }
 
 // NewTypeRegistry walks atlasPacketRoot, discovers struct types with Encode/Write
@@ -177,7 +184,155 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 			}
 		}
 	}
+
+	// Pass 3: fallback descent for self-describing sub-structs (task-080 §4.7).
+	//
+	// A struct that has NO encode method (Calls still nil after Pass-2) but whose
+	// parent encoder writes its fields inline — e.g. model.Asset / GW_ItemSlotBase
+	// style flat layouts, npc ShopCommodity — leaves a KindRecurse marker the diff
+	// engine cannot inline, surfacing as a 🔍 deferred false-positive.
+	//
+	// When EVERY field of such a type decomposes into a known wire primitive or an
+	// already-registered (and itself-resolved) type, synthesize Calls by walking
+	// the fields in declaration order. This is deliberately conservative: if ANY
+	// field is unmappable (time.Time, interface, map, embedded, channel, or a
+	// named type that is not registered with non-nil Calls), the WHOLE type is
+	// left Calls==nil and flagged Opaque — the explicit register boundary — rather
+	// than guessing a partial/wrong layout that could mask a real mismatch.
+	//
+	// Synthesis runs to a fixed point so a decomposable type that depends on
+	// another decomposable type (both method-less) can resolve once its dependency
+	// has been synthesized. Types still unresolved after the fixed point are
+	// flagged Opaque.
+	for {
+		progressed := false
+		for _, e := range reg.types {
+			if e.Calls != nil || e.Opaque || e.StructDecl == nil {
+				continue
+			}
+			calls, ok := reg.synthesizeFieldCalls(e)
+			if ok {
+				e.Calls = calls
+				progressed = true
+			}
+		}
+		if !progressed {
+			break
+		}
+	}
+	// Any remaining method-less, unsynthesized struct is the opaque boundary.
+	for _, e := range reg.types {
+		if e.Calls == nil && e.StructDecl != nil {
+			e.Opaque = true
+		}
+	}
+
 	return reg, nil
+}
+
+// synthesizeFieldCalls attempts to derive a wire-shape Call list for a struct
+// that has no encode method, by decomposing its fields in declaration order.
+// Returns (calls, true) only when EVERY field resolves to a known primitive or
+// an already-resolved registered type; otherwise (nil, false) — the caller
+// leaves the entry unresolved (eventually flagged Opaque). Embedded fields,
+// blank-named fields, and any field whose type is neither a mappable Go builtin
+// nor a registered type with non-nil Calls cause an immediate bail-out.
+func (r *TypeRegistry) synthesizeFieldCalls(e *TypeEntry) ([]Call, bool) {
+	if e.StructDecl.Fields == nil {
+		return nil, false
+	}
+	var out []Call
+	for _, field := range e.StructDecl.Fields.List {
+		// Embedded field (no names) — cannot reason about its inline layout safely.
+		if len(field.Names) == 0 {
+			return nil, false
+		}
+		for range field.Names {
+			c, ok := r.fieldCall(field.Type, e.PkgPath)
+			if !ok {
+				return nil, false
+			}
+			out = append(out, c...)
+		}
+	}
+	if len(out) == 0 {
+		// A zero-field (or all-skipped) struct yields no wire shape; treat as
+		// opaque rather than synthesizing an empty (and meaningless) inline.
+		return nil, false
+	}
+	return out, true
+}
+
+// fieldCall maps a single struct-field type expression to the Call(s) that its
+// inline encoding would emit. Returns (calls, true) for a known Go primitive or
+// an already-resolved registered named type; (nil, false) for anything the
+// analyzer cannot decompose safely. Slices/arrays/pointers are NOT descended:
+// their wire shape depends on a length-prefix + loop the field type alone does
+// not capture, so they are treated as unmappable (→ Opaque) rather than guessed.
+func (r *TypeRegistry) fieldCall(t ast.Expr, contextPkg string) ([]Call, bool) {
+	switch v := t.(type) {
+	case *ast.Ident:
+		if p, ok := goPrimitive(v.Name); ok {
+			return []Call{{Kind: KindWrite, Op: p}}, true
+		}
+		// A named, in-package struct type — decompose only if already registered
+		// with a concrete (non-nil) Call list. A KindRecurse keeps the diff engine
+		// inlining via the registry, preserving cycle/guard handling.
+		if e := r.resolveResolvedEntry(v.Name, contextPkg); e != nil {
+			return []Call{{Kind: KindRecurse, RecurseType: r.Qualify(v.Name, contextPkg)}}, true
+		}
+		return nil, false
+	case *ast.SelectorExpr:
+		// pkg.Type — e.g. another package's named type. Decompose only if its bare
+		// name resolves to a registered, resolved entry.
+		name := v.Sel.Name
+		if e := r.resolveResolvedEntry(name, contextPkg); e != nil {
+			return []Call{{Kind: KindRecurse, RecurseType: r.Qualify(name, contextPkg)}}, true
+		}
+		return nil, false
+	}
+	// StarExpr (pointer), ArrayType (slice/array), MapType, InterfaceType,
+	// ChanType, FuncType, StructType (anonymous) — all unmappable from the field
+	// type alone. Bail out so the enclosing type is flagged Opaque.
+	return nil, false
+}
+
+// resolveResolvedEntry returns a registered TypeEntry for name that already has
+// a concrete (non-nil) Call list, preferring a same-package match. Returns nil
+// when no such resolved entry exists (unknown, ambiguous, opaque, or not yet
+// synthesized). Used by Pass-3 so synthesis only descends into types that are
+// themselves already decomposed.
+func (r *TypeRegistry) resolveResolvedEntry(name, contextPkg string) *TypeEntry {
+	qual := r.Qualify(name, contextPkg)
+	if e, ok := r.types[qual]; ok && e.Calls != nil {
+		return e
+	}
+	if quals, ok := r.byShort[name]; ok && len(quals) == 1 {
+		if e := r.types[quals[0]]; e != nil && e.Calls != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+// goPrimitive maps a Go builtin numeric/bool/string type name to its wire
+// Primitive. Only fixed-width builtins atlas writes 1:1 are mapped; anything
+// else (time.Time, custom aliases, etc.) returns false so the field is treated
+// as unmappable.
+func goPrimitive(name string) (Primitive, bool) {
+	switch name {
+	case "bool", "byte", "int8", "uint8":
+		return Encode1, true
+	case "int16", "uint16":
+		return Encode2, true
+	case "int32", "uint32", "rune":
+		return Encode4, true
+	case "int64", "uint64":
+		return Encode8, true
+	case "string":
+		return EncodeStr, true
+	}
+	return 0, false
 }
 
 // Calls returns the pre-analyzed Call list for the named type, if registered.
@@ -194,6 +349,20 @@ func (r *TypeRegistry) Calls(typeName string) ([]Call, bool) {
 		return e.Calls, e.Calls != nil
 	}
 	return nil, false
+}
+
+// IsOpaque reports whether the named type is a registered Pass-3 opaque
+// boundary: it has no encode method and its layout could not be synthesized.
+// Accepts a qualified key or an unambiguously-short name. Returns false for
+// unknown or ambiguous names.
+func (r *TypeRegistry) IsOpaque(typeName string) bool {
+	if e, ok := r.types[typeName]; ok {
+		return e.Opaque
+	}
+	if quals, ok := r.byShort[typeName]; ok && len(quals) == 1 {
+		return r.types[quals[0]].Opaque
+	}
+	return false
 }
 
 // FieldType returns the type name of the named field on a struct type, with

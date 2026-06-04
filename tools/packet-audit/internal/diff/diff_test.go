@@ -1,11 +1,66 @@
 package diff
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/idasrc"
 )
+
+// buildFixtureRegistry materializes one atlaspacket testdata fixture (.go.txt)
+// into a temp package directory as a real .go file and runs NewTypeRegistry over
+// it. This exercises the production registry path (Pass 1/2/3) without coupling
+// to libs/atlas-packet, so a fixture can model a struct shape in isolation.
+func buildFixtureRegistry(t *testing.T, fixture string) *atlaspacket.TypeRegistry {
+	t.Helper()
+	_, thisFile, _, _ := runtime.Caller(0)
+	src := filepath.Join(filepath.Dir(thisFile), "..", "atlaspacket", fixture)
+	data, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatalf("read fixture %s: %v", fixture, err)
+	}
+	dir := t.TempDir()
+	base := strings.TrimSuffix(filepath.Base(fixture), ".txt") // foo.go.txt -> foo.go
+	dst := filepath.Join(dir, base)
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		t.Fatalf("write fixture copy: %v", err)
+	}
+	reg, err := atlaspacket.NewTypeRegistry(dir)
+	if err != nil {
+		t.Fatalf("NewTypeRegistry: %v", err)
+	}
+	return reg
+}
+
+func countOp(calls []atlaspacket.Call, op atlaspacket.Primitive) int {
+	n := 0
+	for _, c := range calls {
+		if c.Kind == atlaspacket.KindWrite && c.Op == op {
+			n++
+		}
+	}
+	return n
+}
+
+// TestRegistryDescendsDecomposableType pins Pass-3: a sub-struct field whose
+// type has NO encode method but decomposes into flat known primitives (two
+// int32) must be INLINED when its parent's recurse marker is flattened —
+// surfacing 2 Encode4 writes rather than leaving an unresolved deferred recurse.
+func TestRegistryDescendsDecomposableType(t *testing.T) {
+	reg := buildFixtureRegistry(t, "testdata/substruct_no_encode.go.txt")
+	calls, ok := reg.Calls("Outer")
+	if !ok {
+		t.Fatal("Outer not registered (expected Encode-derived calls)")
+	}
+	flat := FlattenWithRegistry(calls, atlaspacket.GuardContext{Region: "GMS", MajorVersion: 95}, reg)
+	if got := countOp(flat, atlaspacket.Encode4); got != 2 {
+		t.Fatalf("expected 2 inlined Encode4 from sub-struct, got %d (flat=%+v)", got, flat)
+	}
+}
 
 func TestDiffAlignedExact(t *testing.T) {
 	atlas := []atlaspacket.Call{

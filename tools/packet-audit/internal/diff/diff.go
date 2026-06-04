@@ -61,6 +61,12 @@ func Diff(atlas []atlaspacket.Call, ida idasrc.Fields) []Row {
 		case i >= len(ida.Calls):
 			r.Verdict = VerdictBlocker
 			r.Note = "atlas: extra — client never reads this field"
+		case atlas[i].Kind == atlaspacket.KindRecurse && atlas[i].Opaque:
+			// Pass-3 opaque boundary: registered type with no encode method whose
+			// layout could not be synthesized. STABLE deferred row keyed on
+			// "opaque type" so the docs opaque-type registry can curate it.
+			r.Verdict = VerdictDeferred
+			r.Note = "opaque type: " + atlas[i].RecurseType + " — register boundary (see opaque registry)"
 		case atlas[i].Kind == atlaspacket.KindRecurse:
 			r.Verdict = VerdictDeferred
 			r.Note = "sub-struct: " + atlas[i].RecurseType + " — see _substruct/"
@@ -276,6 +282,14 @@ func flattenWithRegistryGuarded(calls []atlaspacket.Call, ctx atlaspacket.GuardC
 				out = append(out, flattenWithRegistryGuarded(sub, ctx, reg, visited)...)
 				delete(visited, c.RecurseType)
 				continue
+			}
+			// Unresolved recurse target. If the registry knows it as a Pass-3
+			// opaque boundary (no encode method, layout not decomposable), tag the
+			// passed-through call so the diff engine emits a STABLE "opaque" row
+			// the docs opaque-type registry can key on, rather than a generic
+			// unresolved-recurse row.
+			if reg.IsOpaque(c.RecurseType) {
+				c.Opaque = true
 			}
 		}
 		out = append(out, c)

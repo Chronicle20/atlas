@@ -78,15 +78,18 @@ func TestMistCreated_BroadcastsAffectedAreaCreated(t *testing.T) {
 		MistId:    mistId,
 		Type:      mist2.EventTypeCreated,
 		Body: mist2.CreatedBody{
-			OwnerType: "MONSTER",
-			OwnerId:   424242,
-			OriginX:   100,
-			OriginY:   200,
-			LtX:       -50,
-			LtY:       -60,
-			RbX:       50,
-			RbY:       60,
-			Duration:  8000,
+			OwnerType:        "MONSTER",
+			OwnerId:          424242,
+			SourceSkillId:    2121006,
+			SourceSkillLevel: 20,
+			Type:             1,
+			OriginX:          100,
+			OriginY:          200,
+			LtX:              -50,
+			LtY:              -60,
+			RbX:              50,
+			RbY:              60,
+			Duration:         8000,
 		},
 	})
 
@@ -105,8 +108,17 @@ func TestMistCreated_BroadcastsAffectedAreaCreated(t *testing.T) {
 	if lastCreated.LtX() != -50 || lastCreated.LtY() != -60 || lastCreated.RbX() != 50 || lastCreated.RbY() != 60 {
 		t.Fatalf("AffectedAreaCreated bounds wrong: lt (%d,%d) rb (%d,%d)", lastCreated.LtX(), lastCreated.LtY(), lastCreated.RbX(), lastCreated.RbY())
 	}
-	if lastCreated.Duration() != 8000 {
-		t.Fatalf("AffectedAreaCreated.Duration: want 8000, got %d", lastCreated.Duration())
+	if lastCreated.TEnd() != 8000 {
+		t.Fatalf("AffectedAreaCreated.TEnd: want 8000 (duration ms), got %d", lastCreated.TEnd())
+	}
+	if lastCreated.SkillId() != 2121006 {
+		t.Fatalf("AffectedAreaCreated.SkillId: want 2121006, got %d", lastCreated.SkillId())
+	}
+	if lastCreated.SkillLevel() != 20 {
+		t.Fatalf("AffectedAreaCreated.SkillLevel: want 20, got %d", lastCreated.SkillLevel())
+	}
+	if lastCreated.NType() != 1 {
+		t.Fatalf("AffectedAreaCreated.NType: want 1, got %d", lastCreated.NType())
 	}
 }
 

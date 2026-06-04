@@ -28,15 +28,18 @@ type Event[E any] struct {
 
 // CreatedBody mirrors atlas-maps' MIST_CREATED payload.
 type CreatedBody struct {
-	OwnerType string `json:"ownerType"`
-	OwnerId   uint32 `json:"ownerId"`
-	OriginX   int16  `json:"originX"`
-	OriginY   int16  `json:"originY"`
-	LtX       int16  `json:"ltX"`
-	LtY       int16  `json:"ltY"`
-	RbX       int16  `json:"rbX"`
-	RbY       int16  `json:"rbY"`
-	Duration  int64  `json:"duration"`
+	OwnerType        string `json:"ownerType"`
+	OwnerId          uint32 `json:"ownerId"`
+	SourceSkillId    uint32 `json:"sourceSkillId"`
+	SourceSkillLevel uint32 `json:"sourceSkillLevel"`
+	Type             int32  `json:"type"`
+	OriginX          int16  `json:"originX"`
+	OriginY          int16  `json:"originY"`
+	LtX              int16  `json:"ltX"`
+	LtY              int16  `json:"ltY"`
+	RbX              int16  `json:"rbX"`
+	RbY              int16  `json:"rbY"`
+	Duration         int64  `json:"duration"`
 }
 
 // DestroyedBody mirrors atlas-maps' MIST_DESTROYED payload.

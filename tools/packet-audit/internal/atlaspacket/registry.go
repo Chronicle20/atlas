@@ -139,7 +139,7 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 				if body == nil {
 					body = fd.Body
 				}
-				entry.Calls = collectCallsWithCtx(body, fc.fset, reg, qual)
+				entry.Calls = collectCallsWithCtxFile(body, fc.fset, reg, qual, fc.file, recvType)
 			case "EncodeEntry":
 				// EncodeEntry returns a closure (same shape as Encode) but the method
 				// name differs because the type is a list-entry sub-struct (e.g.
@@ -150,14 +150,14 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 					if body == nil {
 						body = fd.Body
 					}
-					entry.Calls = collectCallsWithCtx(body, fc.fset, reg, qual)
+					entry.Calls = collectCallsWithCtxFile(body, fc.fset, reg, qual, fc.file, recvType)
 				}
 			case "EncodeBytes":
 				// EncodeBytes returns a flat []byte (no closure). Used for sub-structs
 				// embedded inside a top-level Encode via WriteByteArray (e.g.
 				// cash/clientbound/shop_inventory.go's CashInventoryItem).
 				if entry.Calls == nil {
-					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, qual)
+					entry.Calls = collectCallsWithCtxFile(fd.Body, fc.fset, reg, qual, fc.file, recvType)
 				}
 			case "EncodeForeign":
 				// Register under the "<Type>::EncodeForeign" key so callers can pick it
@@ -172,14 +172,14 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 					File:       entry.File,
 					PkgPath:    fc.pkgPath,
 					StructDecl: entry.StructDecl,
-					Calls:      collectCallsWithCtx(body, fc.fset, reg, altQual),
+					Calls:      collectCallsWithCtxFile(body, fc.fset, reg, altQual, fc.file, recvType),
 				}
 				reg.byShort[altShort] = append(reg.byShort[altShort], altQual)
 			case "Write":
 				// Write methods have a flat body (no closure return) and accept *response.Writer.
 				// Only register if no Encode method was already found.
 				if entry.Calls == nil {
-					entry.Calls = collectCallsWithCtx(fd.Body, fc.fset, reg, qual)
+					entry.Calls = collectCallsWithCtxFile(fd.Body, fc.fset, reg, qual, fc.file, recvType)
 				}
 			}
 		}

@@ -74,6 +74,42 @@ func guardText(g *GuardExpr) string {
 	return g.String()
 }
 
+// TestRegionDispatchHelperDescent verifies task-080 §4.7: when Encode dispatches
+// to same-receiver encodeJMS/encodeGMS helper methods that take the passed
+// *response.Writer and write via it, the analyzer descends into the helpers and
+// inlines their writes under the dispatch guard — rather than treating the
+// unresolved m.encodeGMS(w) call as a no-op (which collapses every field to byte
+// → false ❌). The fixture's encodeGMS writes 2×WriteInt and encodeJMS 1×WriteInt.
+func TestRegionDispatchHelperDescent(t *testing.T) {
+	calls, err := AnalyzeFile("testdata/region_dispatch.go.txt", "RegionDispatch", "Encode")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Expected: encodeJMS body (1×Encode4) under guard t.Region() == "JMS",
+	// then encodeGMS body (2×Encode4) under guard !(t.Region() == "JMS").
+	if len(calls) != 3 {
+		t.Fatalf("calls: got %d, want 3 (1 JMS + 2 GMS inlined) — %+v", len(calls), calls)
+	}
+	for i, c := range calls {
+		if c.Kind != KindWrite || c.Op != Encode4 {
+			t.Errorf("calls[%d]: kind=%v op=%v; want KindWrite Encode4", i, c.Kind, c.Op)
+		}
+		if c.Guard == nil {
+			t.Errorf("calls[%d].Guard = nil; inlined helper calls must inherit the dispatch guard", i)
+		}
+	}
+	// calls[0]: JMS helper under the if-branch guard.
+	if calls[0].Guard != nil && calls[0].Guard.String() != `t.Region() == "JMS"` {
+		t.Errorf("calls[0].Guard = %q; want t.Region() == \"JMS\"", calls[0].Guard.String())
+	}
+	// calls[1] & calls[2]: GMS helper under the negated else-branch guard.
+	for _, i := range []int{1, 2} {
+		if calls[i].Guard != nil && calls[i].Guard.String() != `!(t.Region() == "JMS")` {
+			t.Errorf("calls[%d].Guard = %q; want !(t.Region() == \"JMS\")", i, calls[i].Guard.String())
+		}
+	}
+}
+
 // TestWireMutexCollapsesIfElse verifies task-065 item 5: when an if/else
 // writes the same wire shape in both branches, the analyzer collapses it into
 // a SINGLE position rather than emitting two consecutive calls that misalign

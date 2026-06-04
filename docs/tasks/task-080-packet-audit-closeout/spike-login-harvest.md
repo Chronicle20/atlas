@@ -57,5 +57,29 @@ JMS185 + GMS v87 done; GMS v95 + v83 pending. The final B6.1 verdict goes in `sp
 - ServerStatus = `CLogin::OnCheckUserLimitResult` @0x5d2250: `Decode1(worldId),Decode1(status)` → two bytes.
 - PicResult = `CLogin::OnCheckSPWResult` @0x5d23f0: `Decode1(result)` (single byte; success path returns via OnSelectCharacterResult, not here). Related: OnEnableSPWResult @0x5d2290, OnUpdatePinCodeResult @0x5d2420.
 
-### Still pending for v83
-- v83: the 5 addressed FNames + LoginAuth presence (expect absent/middleware) + SendCheckPasswordPacket/SendSelectCharPacket v83 layouts (PartnerCode present? PIC ops?) + the B3.6 NOTE REFRESH=7-vs-wire-8 question (decompile the memo/OnMemoResult handler).
+## B6.1 — login backlog (GMS v83 banked)
+
+### Addressed FNames (all resolve in v83; VAC exists)
+- `CLogin::OnViewAllCharResult` @0x5facca (clientbound): `Decode1(subOp)`→switch. case1 header: `Decode4(countSvrs),Decode4(countChars)`. case0 per-svr: `Decode1(worldId),Decode1(charCount)`, loop {GW_CharacterStat::Decode, AvatarLook::Decode, `Decode1(hasRank)`→`DecodeBuffer(rank,16)`}. cases2/3/6/7=error+optional DecodeStr. cases4/5=finalize.
+- `CLogin::SendSelectCharPacketByVAC` @0x5f76ae (serverbound): opt≤3 op 0x0E `Encode4(charId),Encode4(worldId),EncodeStr(mac),EncodeStr(mac2)`; opt0 op 0x1F `Encode1(1),Encode4(charId),Encode4(worldId),EncodeStr(spw),EncodeStr(mac),EncodeStr(mac2)`; opt2/3 op 0x20 `EncodeStr(spw),Encode4(charId),Encode4(worldId),EncodeStr(mac),EncodeStr(mac2)`.
+- `CLogin::OnSelectCharacterByVACResult` @0x5fb245 (clientbound): `Decode1(result),Decode1(subResult)`; success: `Decode4(charId),Decode2(port),Decode4(ip),Decode1(flags),Decode4(?)`.
+- `CLogin::OnDenyLicense`: no standalone fn — folded into `CLicenseDlg::OnButtonClicked` @0x621b0d.
+- `CLicenseDlg::OnButtonClicked` @0x621b0d (serverbound): accept op 0x0B zero-length body; deny path same dialog.
+
+### LoginAuth (v83): **ABSENT** (no function; predates Nexon passport).
+**→ FINAL LoginAuth VERDICT (all 4 baselines):** absent in v83, absent in v87, NMCO-middleware-only (not a game packet) in v95. PENDING JMS185 confirm, but as a GAME-SERVER WIRE packet it exists in NONE. If JMS185 also lacks it as a game packet → **REMOVE the Atlas LoginAuth writer + template entry** (record "removed, not in any baseline"). If JMS185 has it as a game packet → gate `Region()=="JMS"`.
+
+### v83 layouts (vs v87/v95)
+- `CLogin::SendCheckPasswordPacket` @0x5f6952 (op 1): `EncodeStr(pw),EncodeStr(id),EncodeBuffer(MachineId,16),Encode4(GameRoomClient),Encode1(GameStartMode),Encode1(0),Encode1(0),Encode4(PartnerCode)`. **PartnerCode PRESENT in v83** → PartnerCode is **UNIVERSAL** (v83+v87+v95 all have it; NOT a v87 quirk as the plan implied). (v83 order: pw THEN id; v95 had pw THEN passport — v83 has no passport since no LoginAuth.)
+- `CLogin::SendSelectCharPacket` @0x5f726d PIC: opt2/3 enter op **0x13** `Encode4(charId),EncodeStr(mac),EncodeStr(mac2)`; opt0 no-SPW op **0x1D** `Encode1(1),Encode4(charId),EncodeStr(mac),EncodeStr(mac2),EncodeStr(spw)`; opt1 register op **0x1E** `EncodeStr(spw),Encode4(charId),EncodeStr(mac),EncodeStr(mac2)`. **v83 PIC ops = v87 (0x13/0x1D/0x1E); v95 shifted register/verify to 0x1C/0x1D.** PIC/SPW exists in v83 (not later-only).
+
+### Status packets (v83)
+- ServerStatus = `CLogin::OnCheckUserLimitResult` @0x5f92ae: `Decode1(worldId),Decode1(status)`. Serverbound `SendCheckUserLimitPacket` @0x5f8078 = op 0x06 `Encode2(channel)`.
+- PicResult/SPW: `OnEnableSPWResult` @0x5fb950 (`Decode1(regOrChange),Decode1(result)`), `OnCheckSPWResult` @0x5fba49 (`Decode1(result)`, failure-only). Present in v83.
+
+## B3.6 follow-up — NOTE/memo REFRESH (v83): RESOLVED
+- Serverbound memo packet = op **0x83**, leading `Encode1(subOp)`. v83 client emits exactly: **sub-op 1 = SEND** (`CMemoListDlg::SetRet` @0x64aa57; delete folded in via per-entry flag byte, flag 3=send), **sub-op 2 = LOAD/REFRESH** (`CWvsContext::OnMemoNotify_Receive` @0xa251ef; body `Encode1(2)` only).
+- **VERDICT: serverbound REFRESH/request-list = sub-op 2.** The Atlas template "REFRESH=7" and the export annotation "8" both conflate the *clientbound* `OnMemoResult` discriminator (3=Load/4=Send-result/5=Notify, computed as `Decode1-3`). The serverbound op space the client emits is {1=send/delete, 2=load}. ACTION: reconcile Atlas note serverbound op map against {1,2}; verify whether the per-struct ✅ note handler already uses the right serverbound values before changing anything (the "7" may be an unused/clientbound-confused entry).
+
+## Still pending: JMS185 login backlog
+- JMS185 was harvested early for cash/chat/merchant/affected-area but NOT the login FNames. Need a JMS185 pass for: the 5 addressed FNames' JMS read-orders, **LoginAuth presence in JMS (decides remove-vs-gate)**, SendCheckPasswordPacket/SendSelectCharPacket JMS layouts, ServerStatus/PicResult JMS. Then B6.1 can finalize across all 4 versions.

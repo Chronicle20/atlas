@@ -15,7 +15,7 @@ func TestShopOperationRebateLockerItemRoundTrip(t *testing.T) {
 			input := ShopOperationRebateLockerItem{birthday: 19900101, spw: "secret", unk: 123456789}
 			output := ShopOperationRebateLockerItem{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if v.Region == "GMS" && v.MajorVersion >= 95 {
+			if v.Region == "JMS" || (v.Region == "GMS" && v.MajorVersion >= 95) {
 				if output.SPW() != input.SPW() {
 					t.Errorf("spw: got %v, want %v", output.SPW(), input.SPW())
 				}
@@ -26,6 +26,30 @@ func TestShopOperationRebateLockerItemRoundTrip(t *testing.T) {
 				t.Errorf("unk: got %v, want %v", output.Unk(), input.Unk())
 			}
 		})
+	}
+}
+
+// TestShopOperationRebateLockerItemJMSBody pins the JMS body shape.
+// JMS185 CCashShop::OnRebateLockerItem@0x47c059 (sub-op 0x1B consumed by
+// routing): EncodeStr(SPW) then EncodeBuffer(8-byte locker SN). Empty SPW is a
+// 2-byte zero-length prefix; the 8-byte buffer is WriteLong (uint64 LE).
+func TestShopOperationRebateLockerItemJMSBody(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	// spw empty -> 2-byte length prefix (0x0000); unk -> 8-byte LE identity.
+	input := ShopOperationRebateLockerItem{birthday: 0xDEADBEEF, spw: "", unk: 0x0807060504030201}
+
+	b := input.Encode(l, pt.CreateContext("JMS", 185, 1))(nil)
+
+	// empty SPW (2) + 8-byte buffer = 10 bytes
+	if len(b) != 10 {
+		t.Fatalf("JMS length: got %d, want 10", len(b))
+	}
+	if hex.EncodeToString(b[:2]) != "0000" {
+		t.Errorf("JMS SPW prefix: got %s, want 0000", hex.EncodeToString(b[:2]))
+	}
+	// 8-byte identity, little-endian (WriteLong)
+	if hex.EncodeToString(b[2:]) != "0102030405060708" {
+		t.Errorf("JMS identity bytes: got %s, want 0102030405060708", hex.EncodeToString(b[2:]))
 	}
 }
 

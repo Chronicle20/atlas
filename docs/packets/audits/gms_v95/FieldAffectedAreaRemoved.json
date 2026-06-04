@@ -4,7 +4,7 @@
   "Address": "0x4360a0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/affected_area_removed.go",
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/affected_area_removed.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x77d065",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/quest/serverbound/action_script_start.go",
+  "AtlasFile": "../../libs/atlas-packet/quest/serverbound/action_script_start.go",
   "Rows": [
     {
       "Index": 0,

@@ -14,5 +14,3 @@
 | 1 | byte | byte `bPrev / previous (@0x7b7356)` | ✅ |  |
 | 2 | byte | byte `bNext / next (@0x7b7368)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

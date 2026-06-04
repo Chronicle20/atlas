@@ -17,5 +17,3 @@
 | 4 | byte | byte `tagColor (v14 @line113)` | ✅ |  |
 | 5 | byte | byte `tagBackgroundColor (v15 @line114)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

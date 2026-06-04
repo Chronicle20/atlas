@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `x (current user X @line81)` | ✅ |  |
 | 3 | int16 | int16 `y (current user Y @line83)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

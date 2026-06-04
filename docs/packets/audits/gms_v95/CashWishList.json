@@ -4,7 +4,7 @@
   "Address": "0x494d60",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result.go",
+  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/shop_operation_result.go",
   "Rows": [
     {
       "Index": 0,
@@ -21,9 +21,9 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "40 bytes = 10 x int32 wishlist SNs",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

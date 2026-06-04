@@ -4,7 +4,7 @@
   "Address": "0x5db000",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/account/serverbound/register_pin.go",
+  "AtlasFile": "../../libs/atlas-packet/account/serverbound/register_pin.go",
   "Rows": [
     {
       "Index": 0,

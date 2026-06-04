@@ -4,7 +4,7 @@
   "Address": "0x4afc90",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/socket/serverbound/pong.go",
+  "AtlasFile": "../../libs/atlas-packet/socket/serverbound/pong.go",
   "Rows": null,
   "Verdict": 0
 }

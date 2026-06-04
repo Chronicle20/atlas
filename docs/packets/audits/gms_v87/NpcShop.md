@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | byte | byte `op (shop request discriminator: 0=BUY,1=SELL,2=RECHARGE; runtime-config values)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

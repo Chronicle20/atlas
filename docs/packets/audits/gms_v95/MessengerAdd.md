@@ -1,7 +1,7 @@
 # MessengerAdd (← `CUIMessenger::OnPacket#Add`)
 
 - **IDA:** 0x7f5e40
-- **Atlas file:** `libs/atlas-packet/messenger/clientbound/add.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/add.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌
@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode (=0, ADD) — dispatcher switch byte consumed by CUIMessenger::OnPacket` | ✅ |  |
 | 1 | byte | byte `position — slot index in messenger room (0–2)` | ✅ |  |
-| 2 | byte | bytes `AvatarLook::AvatarLook(&v7, iPacket) — avatar appearance` | ❌ | width mismatch |
+| 2 | byte | bytes `AvatarLook::AvatarLook(&v7, iPacket) — avatar appearance` | ✅ |  |
 | 3 | byte | string `sID — character name` | ❌ | width mismatch |
 | 4 | int32 | byte `channelId — channel the character is on` | ❌ | width mismatch |
 | 5 | byte | byte `padding (extra flag, always discarded)` | ✅ |  |

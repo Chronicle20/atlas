@@ -14,5 +14,3 @@
 | 1 | int32 | int32 `menuType (v13; compared in selection loop @0x7e2ac2)` | ✅ |  |
 | 2 | string | string `button info / message text (@0x7e2ac9)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

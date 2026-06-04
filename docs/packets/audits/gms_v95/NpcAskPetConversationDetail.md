@@ -1,7 +1,7 @@
 # NpcAskPetConversationDetail (← `CScriptMan::OnAskPet#AskPet`)
 
 - **IDA:** 0x6dd6e0
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -15,5 +15,3 @@
 | 2 | int64 | int64 `cashItemSN (8-byte SN; client DecodeBuffer(8), atlas WriteLong) -- loop body` | ✅ |  |
 | 3 | byte | byte `unused trailing byte -- loop body` | ✅ |  |
 
-
-Ack: world-audit sub-phase 2f on 2026-05-28

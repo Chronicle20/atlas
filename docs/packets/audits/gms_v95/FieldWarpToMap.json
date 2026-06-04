@@ -4,7 +4,7 @@
   "Address": "0x71a0a0",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/warp_to_map.go",
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/warp_to_map.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0xa12630",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/buddy/clientbound/error.go",
+  "AtlasFile": "../../libs/atlas-packet/buddy/clientbound/error.go",
   "Rows": [
     {
       "Index": 0,

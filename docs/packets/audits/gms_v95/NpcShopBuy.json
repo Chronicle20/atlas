@@ -3,8 +3,8 @@
   "IDAName": "CShopDlg::SendBuyRequest",
   "Address": "0x6e9bb0",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/npc/serverbound/shop_buy.go",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/npc/serverbound/shop_buy.go",
   "Rows": [
     {
       "Index": 0,

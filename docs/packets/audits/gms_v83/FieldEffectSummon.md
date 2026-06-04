@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `x (v42)` | ✅ |  |
 | 3 | int32 | int32 `y (v5)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

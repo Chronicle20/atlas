@@ -1,7 +1,7 @@
 # Action (← `CWvsContext::ResignQuest#Action`)
 
 - **IDA:** 0xb0e6e9
-- **Atlas file:** `libs/atlas-packet/quest/serverbound/action.go`
+- **Atlas file:** `../../libs/atlas-packet/quest/serverbound/action.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

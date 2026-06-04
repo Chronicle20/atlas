@@ -1,7 +1,7 @@
 # NpcAskNumberConversationDetail (← `CScriptMan::OnAskNumber#AskNumber`)
 
 - **IDA:** 0x6dcc00
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `nMin` | ✅ |  |
 | 3 | int32 | int32 `nMax` | ✅ |  |
 
-
-Ack: world-audit sub-phase 2f on 2026-05-28

@@ -3,26 +3,26 @@
   "IDAName": "CCashShop::SendGiftsPacket",
   "Address": "0x487b60",
   "Variant": "GMS/v95",
-  "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "m_sg.nCommSN (serialNumber)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 2,
@@ -30,27 +30,27 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_bRequestBuyOneADay (NOT in atlas - missing byte between serialNumber and name)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 3,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "recipient name (sDone)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 4,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "m_sg.sText (message)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 0
+  "Verdict": 2
 }

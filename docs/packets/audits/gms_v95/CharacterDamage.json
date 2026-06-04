@@ -4,7 +4,7 @@
   "Address": "0x954c50",
   "Variant": "GMS/v95",
   "BranchDepth": 3,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/damage.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/damage.go",
   "Rows": [
     {
       "Index": 0,

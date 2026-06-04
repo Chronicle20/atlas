@@ -4,7 +4,7 @@
   "Address": "0x539710",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go",
   "Rows": [
     {
       "Index": 0,

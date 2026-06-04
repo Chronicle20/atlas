@@ -11,8 +11,8 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | int32 | int32 `dwMobId — read by dispatcher` | ✅ |  |
-| 1 | int32 | bytes `uFlagReset: 16-byte UINT128 stat mask` | ❌ | width mismatch |
-| 2 | int32 | bytes `per-stat reset body via CMob::ProcessStatReset` | ❌ | width mismatch |
+| 1 | int32 | bytes `uFlagReset: 16-byte UINT128 stat mask` | ✅ |  |
+| 2 | int32 | bytes `per-stat reset body via CMob::ProcessStatReset` | ✅ |  |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

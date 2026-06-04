@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | string | string `entered text (atlas ContinueConversationText trailing string; only when accepted)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

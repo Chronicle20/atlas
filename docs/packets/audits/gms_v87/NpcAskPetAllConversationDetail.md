@@ -16,5 +16,3 @@
 | 3 | int64 | int64 `cashItemSN (8-byte SN; client DecodeBuffer(8), atlas WriteLong) -- loop body` | ✅ |  |
 | 4 | byte | byte `unused trailing byte -- loop body` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

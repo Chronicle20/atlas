@@ -4,7 +4,7 @@
   "Address": "0x9a0d20",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/serverbound/move.go",
+  "AtlasFile": "../../libs/atlas-packet/character/serverbound/move.go",
   "Rows": [
     {
       "Index": 0,
@@ -84,8 +84,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,

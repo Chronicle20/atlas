@@ -4,7 +4,7 @@
   "Address": "0x5de435",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/view_all.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/view_all.go",
   "Rows": [
     {
       "Index": 0,
@@ -417,8 +417,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 46,

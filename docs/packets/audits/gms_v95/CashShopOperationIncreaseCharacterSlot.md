@@ -1,7 +1,7 @@
 # CashShopOperationIncreaseCharacterSlot (← `CCashShop::OnIncCharacterSlotCount`)
 
 - **IDA:** 0x48dec0
-- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_increase_character_slot.go`
+- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_increase_character_slot.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -14,12 +14,3 @@
 | 1 | int16 | int16 `x int16 @0x717524` | ✅ |  |
 | 2 | int16 | int16 `y int16 @0x71752f` | ✅ |  |
 
-
-## Manual analysis
-
-**v83 IDA:** `CQuest::StartQuest` @ 0x716fe1, action=5 branch — Encode1(5)+Encode2(questId)+Encode4(npcId)+Encode2(x)+Encode2(y). Sub-struct fields (npcId, x, y) match v95.
-
-**Gate:** None needed — version-agnostic. Gate confirmed correct (✅).
-
-
-Ack: misc-audit Phase 3 v83 on 2026-06-03

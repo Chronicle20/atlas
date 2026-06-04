@@ -21,17 +21,3 @@
 | 8 | int64 | int16 `[item] maxPerSlot (@0x7c661e)` | ❌ | width mismatch |
 | 9 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 
-
-## Manual verdict (JMS v185, `CShopDlg::SetShopDlg` @0x7c6536)
-
-Rows 8-9 (❌) are a loop-flattening + ammo-branch-selection artifact, NOT a wire bug. The
-per-commodity loop body matches field-for-field (rows 0-7 ✅): `Decode4 itemId + Decode4
-price + Decode4 tokenPrice + Decode4 itemPeriod + Decode4 levelLimited + (ammo ?
-DecodeBuffer(8) : Decode2 quantity) + Decode2 maxPerSlot`. The analyzer flattens the loop to
-a single iteration and picks atlas's `WriteLong` ammo branch (int64) against the IDA's
-non-ammo `Decode2 maxPerSlot`, producing the row-8 width mismatch and a row-9 trailing
-"extra". JMS185 has NO discountRate byte and NO tokenItemId int (the GMS>=87/>=95 fields);
-atlas gates both on `Region==GMS`, so for JMS it emits exactly the 5-int layout JMS185 reads.
-Carry-forward manual-verify (matches GMS v95 loop-bound handling).
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

@@ -1,7 +1,7 @@
 # CashShopOperationSetWishlist (← `CCashShop::OnSetWish`)
 
 - **IDA:** 0x4837d0
-- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_set_wishlist.go`
+- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_set_wishlist.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

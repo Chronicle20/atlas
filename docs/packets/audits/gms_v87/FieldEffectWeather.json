@@ -3,8 +3,8 @@
   "IDAName": "CField::OnBlowWeather",
   "Address": "0x55c953",
   "Variant": "GMS/v87",
-  "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/effect_weather.go",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/effect_weather.go",
   "Rows": [
     {
       "Index": 0,
@@ -12,27 +12,27 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_nBlowType (v3 @0x55c967; atlas !active; 0=start admin-weather w/ message, 1=item/end)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "itemId (v5, @0x55c97f)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 2,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "message (only when itemId!=0 \u0026\u0026 m_nBlowType==0; start path, @0x55c99a)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 0
+  "Verdict": 2
 }

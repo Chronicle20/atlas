@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | int16 | int16 `slot / nPos (v7)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

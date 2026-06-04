@@ -11,7 +11,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "DecodeOpt — atlas WriteShort(0) gated (GMS>83 || JMS)",
+      "IDAComment": "DecodeOpt — atlas WriteShort(0) gated (GMS\u003e83 || JMS)",
       "Verdict": 0,
       "Note": ""
     },
@@ -74,7 +74,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "revive flag (@line170; else branch) — atlas WriteByte(0) gated (GMS>28 || JMS)",
+      "IDAComment": "revive flag (@line170; else branch) — atlas WriteByte(0) gated (GMS\u003e28 || JMS)",
       "Verdict": 0,
       "Note": ""
     },

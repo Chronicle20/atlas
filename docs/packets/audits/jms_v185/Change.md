@@ -1,7 +1,7 @@
 # Change (← `CWvsContext::SendGivePopularityRequest`)
 
 - **IDA:** 0xb0b21e
-- **Atlas file:** `libs/atlas-packet/fame/serverbound/change.go`
+- **Atlas file:** `../../libs/atlas-packet/fame/serverbound/change.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

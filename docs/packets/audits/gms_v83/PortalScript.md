@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `x (GetPos().x)` | ✅ |  |
 | 3 | int16 | int16 `y (GetPos().y)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

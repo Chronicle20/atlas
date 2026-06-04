@@ -3,8 +3,8 @@
 - **IDA:** 0x5f6952
 - **Atlas file:** `../../libs/atlas-packet/login/serverbound/request.go`
 - **Variant:** GMS/v83
-- **Branch depth:** 2
-- **Verdict:** ✅
+- **Branch depth:** 1
+- **Verdict:** ❌
 
 ## Wire-level diff
 
@@ -16,4 +16,6 @@
 | 3 | int32 | int32 `gameRoomClient` | ✅ |  |
 | 4 | byte | byte `gameStartMode` | ✅ |  |
 | 5 | byte | byte `unknown1` | ✅ |  |
+| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

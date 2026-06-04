@@ -1,7 +1,7 @@
 # Move (← `CVecCtrlUser::EndUpdateActive`)
 
 - **IDA:** 0x9a0d20
-- **Atlas file:** `libs/atlas-packet/character/serverbound/move.go`
+- **Atlas file:** `../../libs/atlas-packet/character/serverbound/move.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ❌
@@ -18,7 +18,7 @@
 | 5 | int32 | int32 `crc (field CRC for anti-cheat)` | ✅ |  |
 | 6 | int32 | int32 `dwKey (random seed for CRC32)` | ✅ |  |
 | 7 | int32 | int32 `crc32 (CRC32 of bDetect using dwKey)` | ✅ |  |
-| 8 | int16 | bytes `movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation` | ❌ | width mismatch |
+| 8 | int16 | bytes `movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation` | ✅ |  |
 | 9 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

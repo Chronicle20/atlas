@@ -17,5 +17,3 @@
 | 4 | int16 | int16 `ptMessageBox.x (spawn x, +28)` | ✅ |  |
 | 5 | int16 | int16 `nType/y (spawn y or kite type, +32)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

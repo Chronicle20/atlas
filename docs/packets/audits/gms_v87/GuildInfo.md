@@ -11,7 +11,7 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | byte | byte `mode byte (32)` | ✅ |  |
-| 1 | byte | bytes `GUILDDATA::Decode (full guild data)` | ❌ | width mismatch |
+| 1 | byte | bytes `GUILDDATA::Decode (full guild data)` | ✅ |  |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |

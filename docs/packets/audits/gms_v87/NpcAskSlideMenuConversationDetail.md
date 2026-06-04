@@ -14,5 +14,3 @@
 | 1 | int32 | int32 `menuType` | ✅ |  |
 | 2 | string | string `button info / message text` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

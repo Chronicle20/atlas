@@ -1,7 +1,7 @@
 # InteractionOperationFieldAddToBlackList (← `CField::AddBlackList`)
 
 - **IDA:** 0x539710
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

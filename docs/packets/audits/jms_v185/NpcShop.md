@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | byte | byte `op (0=buy,1=sell,2=recharge)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

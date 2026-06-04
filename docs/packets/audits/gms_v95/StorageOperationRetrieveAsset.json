@@ -4,7 +4,7 @@
   "Address": "0x769e00",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go",
+  "AtlasFile": "../../libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go",
   "Rows": [
     {
       "Index": 0,

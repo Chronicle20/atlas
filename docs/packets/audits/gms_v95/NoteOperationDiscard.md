@@ -1,7 +1,7 @@
 # NoteOperationDiscard (← `CMemoListDlg::SetRet`)
 
 - **IDA:** 0x624280
-- **Atlas file:** `libs/atlas-packet/note/serverbound/operation_discard.go`
+- **Atlas file:** `../../libs/atlas-packet/note/serverbound/operation_discard.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

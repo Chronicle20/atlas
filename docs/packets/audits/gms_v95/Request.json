@@ -3,8 +3,8 @@
   "IDAName": "CLogin::SendCheckPasswordPacket",
   "Address": "0x5db9d0",
   "Variant": "GMS/v95",
-  "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/login/serverbound/request.go",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/login/serverbound/request.go",
   "Rows": [
     {
       "Index": 0,
@@ -68,7 +68,16 @@
       "IDAComment": "unknown2 (v95 extra byte)",
       "Verdict": 0,
       "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 0
+  "Verdict": 2
 }

@@ -11,5 +11,3 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

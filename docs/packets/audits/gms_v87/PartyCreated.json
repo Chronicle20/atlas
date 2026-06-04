@@ -44,21 +44,21 @@
     },
     {
       "Index": 4,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "originatorLevel (v141) — present in v87 (NOT v83)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "autoJoinFlag (*v142)",
       "Verdict": 2,
-      "Note": "width mismatch"
+      "Note": "atlas: short — missing trailing field"
     }
   ],
   "Verdict": 2

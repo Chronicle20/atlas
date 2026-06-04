@@ -1,7 +1,7 @@
 # StorageOperationRetrieveAsset (← `CTrunkDlg::SendGetItemRequest`)
 
 - **IDA:** 0x769e00
-- **Atlas file:** `libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go`
+- **Atlas file:** `../../libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

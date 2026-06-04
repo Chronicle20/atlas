@@ -14,5 +14,3 @@
 | 1 | byte | byte `style count (@0x7b7e52)` | ✅ |  |
 | 2 | int32 | int32 `style id -- loop body (count iterations; analyzer flattens @0x7b7e6e)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `nRewardPartIdx (v21 @line138)` | ✅ |  |
 | 3 | int32 | int32 `nRewardLevIdx (v22 @line139)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

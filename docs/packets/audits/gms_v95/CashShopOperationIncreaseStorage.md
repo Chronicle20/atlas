@@ -1,7 +1,7 @@
 # CashShopOperationIncreaseStorage (← `CCashShop::OnIncTrunkCount`)
 
 - **IDA:** 0x48dc70
-- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_increase_storage.go`
+- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_increase_storage.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌

@@ -1,7 +1,7 @@
 # CharacterKeyMapAutoMp (← `CFuncKeyMappedMan::OnPetConsumeMPItemInit`)
 
 - **IDA:** 0x5688f0
-- **Atlas file:** `libs/atlas-packet/character/clientbound/keymap_auto_mp.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/keymap_auto_mp.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

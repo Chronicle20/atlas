@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/drop/clientbound/spawn.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -22,6 +22,6 @@
 | 9 | int16 | int16 `sourceX — gated nEnterType != 2` | ✅ |  |
 | 10 | int16 | int16 `sourceY — gated nEnterType != 2` | ✅ |  |
 | 11 | int16 | int16 `tDelay — gated nEnterType != 2` | ✅ |  |
-| 12 | int64 | bytes `cashItemSN (8 bytes) — gated !isMoney` | ❌ | width mismatch |
+| 12 | int64 | bytes `cashItemSN (8 bytes) — gated !isMoney` | ✅ |  |
 | 13 | byte | byte `questId / pre-pet flag` | ✅ |  |
 

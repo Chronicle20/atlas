@@ -4,7 +4,7 @@
   "Address": "0x637d70",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/clientbound/interaction.go",
   "Rows": [
     {
       "Index": 0,

@@ -4,7 +4,7 @@
   "Address": "0x99f5a0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/pet/serverbound/movement.go",
+  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/movement.go",
   "Rows": [
     {
       "Index": 0,
@@ -12,8 +12,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER) from owner ZRef",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -21,8 +21,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CMovePath::Flush body (variable-length movement elements)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,

@@ -4,7 +4,7 @@
   "Address": "0x9ddfe0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/inventory/serverbound/item_use.go",
+  "AtlasFile": "../../libs/atlas-packet/inventory/serverbound/item_use.go",
   "Rows": [
     {
       "Index": 0,

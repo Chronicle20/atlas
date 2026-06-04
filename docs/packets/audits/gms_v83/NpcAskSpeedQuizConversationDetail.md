@@ -17,5 +17,3 @@
 | 4 | int32 | int32 `remain (a2a)` | ✅ |  |
 | 5 | int32 | int32 `timeRemaining (*1000)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

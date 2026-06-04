@@ -4,7 +4,7 @@
   "Address": "0x7f5e20",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/messenger/clientbound/remove.go",
+  "AtlasFile": "../../libs/atlas-packet/messenger/clientbound/remove.go",
   "Rows": [
     {
       "Index": 0,

@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | string | string `message (@0x7b7676)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

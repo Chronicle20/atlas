@@ -1,7 +1,7 @@
 # InventoryMove (← `CWvsContext::SendChangeSlotPositionRequest`)
 
 - **IDA:** 0x9d9c10
-- **Atlas file:** `libs/atlas-packet/inventory/serverbound/move.go`
+- **Atlas file:** `../../libs/atlas-packet/inventory/serverbound/move.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

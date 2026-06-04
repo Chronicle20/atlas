@@ -4,7 +4,7 @@
   "Address": "0x6279b0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_memory_game_flip_card.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_memory_game_flip_card.go",
   "Rows": [
     {
       "Index": 0,

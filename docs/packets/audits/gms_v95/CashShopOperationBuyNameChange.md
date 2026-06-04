@@ -1,7 +1,7 @@
 # CashShopOperationBuyNameChange (← `CCashShop::SendBuyNameChangeItemPacket`)
 
 - **IDA:** 0x488250
-- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_buy_name_change.go`
+- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_buy_name_change.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

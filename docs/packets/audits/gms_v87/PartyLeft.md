@@ -14,6 +14,6 @@
 | 1 | int32 | int32 `partyLeaderId` | ✅ |  |
 | 2 | int32 | int32 `expelledCharId` | ✅ |  |
 | 3 | byte | byte `discharge flag` | ✅ |  |
-| 4 | byte | bytes `PARTYDATA (298 bytes in v87)` | ❌ | width mismatch |
+| 4 | byte | bytes `PARTYDATA (298 bytes in v87)` | ✅ |  |
 | 5 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

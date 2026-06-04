@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode byte (7)` | ✅ |  |
 | 1 | byte | byte `slot index` | ✅ |  |
-| 2 | byte | bytes `avatar look (full AvatarLook body)` | ❌ | width mismatch |
+| 2 | byte | bytes `avatar look (full AvatarLook body)` | ✅ |  |
 | 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

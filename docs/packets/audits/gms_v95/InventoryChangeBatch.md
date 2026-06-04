@@ -1,7 +1,7 @@
 # InventoryChangeBatch (← `CWvsContext::OnInventoryOperation#ChangeBatch`)
 
 - **IDA:** 0xa08a70
-- **Atlas file:** `libs/atlas-packet/inventory/clientbound/change_batch.go`
+- **Atlas file:** `../../libs/atlas-packet/inventory/clientbound/change_batch.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ❌

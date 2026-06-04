@@ -1,7 +1,7 @@
 # PartyLeft (← `CWvsContext::OnPartyResult#Left`)
 
 - **IDA:** 0xa11085
-- **Atlas file:** `libs/atlas-packet/party/clientbound/left.go`
+- **Atlas file:** `../../libs/atlas-packet/party/clientbound/left.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

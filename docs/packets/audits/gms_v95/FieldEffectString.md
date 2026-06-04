@@ -1,7 +1,7 @@
 # FieldEffectString (← `CField::OnFieldEffect#String`)
 
 - **IDA:** 0x53b8b3
-- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -13,5 +13,3 @@
 | 0 | byte | byte `mode (= 2/3/4/6; string-payload effect)` | ✅ |  |
 | 1 | string | string `name / path / bgm UOL string` | ✅ |  |
 
-
-Ack: world-audit Phase 2d on 2026-05-28

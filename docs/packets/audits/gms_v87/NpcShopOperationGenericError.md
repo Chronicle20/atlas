@@ -14,5 +14,3 @@
 | 1 | byte | byte `hasMessage flag (case 0x11)` | ✅ |  |
 | 2 | string | string `error message (only when hasMessage set)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

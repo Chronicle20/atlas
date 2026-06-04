@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | int32 | int32 `dwId (affected-area object id @line54)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

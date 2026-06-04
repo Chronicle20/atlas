@@ -4,7 +4,7 @@
   "Address": "0x52f170",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_delete.go",
+  "AtlasFile": "../../libs/atlas-packet/buddy/serverbound/operation_delete.go",
   "Rows": [
     {
       "Index": 0,

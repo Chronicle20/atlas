@@ -1,7 +1,7 @@
 # CharacterViewAllCharacters (← `CLogin::OnViewAllCharResult#CharacterViewAllCharacters`)
 
 - **IDA:** 0x5de435
-- **Atlas file:** `libs/atlas-packet/character/clientbound/view_all.go`
+- **Atlas file:** `../../libs/atlas-packet/character/clientbound/view_all.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ❌
@@ -55,7 +55,7 @@
 | 42 | int32 | int32 `AvatarLook::anPetID[1]` | ✅ |  |
 | 43 | byte | int32 `AvatarLook::anPetID[2]` | ❌ | width mismatch |
 | 44 | byte | byte `rankEnabled / hasRank byte (Decode1(v3) in v95 loop)` | ✅ |  |
-| 45 | int32 | bytes `rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap` | ❌ | width mismatch |
+| 45 | int32 | bytes `rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap` | ✅ |  |
 | 46 | int32 | byte `m_bLoginOpt (PIC handling — GMS v95 guard: >v87)` | ❌ | width mismatch |
 | 47 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 48 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

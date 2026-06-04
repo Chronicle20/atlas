@@ -30,8 +30,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "cashId (8 bytes) -- loop body (@0x7b8046)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -43,5 +43,5 @@
       "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

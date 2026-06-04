@@ -1,7 +1,7 @@
 # StorageOperation (← `CTrunkDlg::OnPacket#Operation`)
 
 - **IDA:** 0x76a990
-- **Atlas file:** `libs/atlas-packet/storage/serverbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/storage/serverbound/operation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

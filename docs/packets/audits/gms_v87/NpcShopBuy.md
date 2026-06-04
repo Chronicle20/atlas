@@ -3,7 +3,7 @@
 - **IDA:** 0x7a1d49
 - **Atlas file:** `../../libs/atlas-packet/npc/serverbound/shop_buy.go`
 - **Variant:** GMS/v87
-- **Branch depth:** 0
+- **Branch depth:** 1
 - **Verdict:** ✅
 
 ## Wire-level diff
@@ -15,5 +15,3 @@
 | 2 | int16 | int16 `quantity (v68)` | ✅ |  |
 | 3 | int32 | int32 `discountPrice / unit price (v48)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

@@ -1,7 +1,7 @@
 # MonsterMovementRequest (← `CMob::GenerateMovePath`)
 
 - **IDA:** 0x651100
-- **Atlas file:** `libs/atlas-packet/monster/serverbound/movement.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/serverbound/movement.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** 🔍
@@ -25,7 +25,7 @@
 | 12 | int32 | int32 `flyCtxTargetX (or 16768460 default)` | ✅ |  |
 | 13 | int32 | int32 `flyCtxTargetY (or 16768460 default)` | ✅ |  |
 | 14 | int32 | int32 `hackedCodeCRC (fall start CRC)` | ✅ |  |
-| 15 | int16 | bytes `CMovePath::Flush body (Movement elements)` | ❌ | width mismatch |
+| 15 | int16 | bytes `CMovePath::Flush body (Movement elements)` | ✅ |  |
 | 16 | int16 | byte `bChasing` | ❌ | width mismatch |
 | 17 | byte | byte `hasTarget` | ✅ |  |
 | 18 | byte | byte `bChasing2 (ladder)` | 🔍 | sub-struct: MovementCodec — see _substruct/ |

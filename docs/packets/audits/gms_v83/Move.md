@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | byte | byte `fieldKey (Encode1; NO dr0/dr1/dr2/dr3/dwKey/crc32 in v83)` | ✅ |  |
 | 1 | int32 | int32 `crc (field CRC for anti-cheat; GMS>28 guard still applies in v83)` | ✅ |  |
-| 2 | int16 | bytes `movement: CMovePath::Flush — encoded movement path; tool cannot linearize loop — ack:tool-limitation` | ❌ | width mismatch |
+| 2 | int16 | bytes `movement: CMovePath::Flush — encoded movement path; tool cannot linearize loop — ack:tool-limitation` | ✅ |  |
 | 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

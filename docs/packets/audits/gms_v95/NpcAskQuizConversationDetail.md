@@ -1,7 +1,7 @@
 # NpcAskQuizConversationDetail (← `CScriptMan::OnAskQuiz#AskQuiz`)
 
 - **IDA:** 0x9ffad0
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 1
 - **Verdict:** ✅
@@ -18,5 +18,3 @@
 | 5 | int32 | int32 `max -- guarded` | ✅ |  |
 | 6 | int32 | int32 `remaining time (sec) -- guarded` | ✅ |  |
 
-
-Ack: world-audit sub-phase 2f on 2026-05-28

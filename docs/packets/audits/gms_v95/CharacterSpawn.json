@@ -4,7 +4,7 @@
   "Address": "0x94db40",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/character/clientbound/spawn.go",
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/spawn.go",
   "Rows": [
     {
       "Index": 0,

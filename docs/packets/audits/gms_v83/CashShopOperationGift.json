@@ -3,45 +3,45 @@
   "IDAName": "CCashShop::SendGiftsPacket",
   "Address": "0x46f940",
   "Variant": "GMS/v83",
-  "BranchDepth": 2,
+  "BranchDepth": 0,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_gift.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "field A (*(this+1304)). NOTE: v83 leading is int; v95 sends EncodeStr sSPW here",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "serialNumber (*(this+1308))",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 2,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "recipient name (v33). NOTE: v83 has NO byte oneADay before name (v95-only)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 3,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "message (*(this+1312))",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 0
+  "Verdict": 2
 }

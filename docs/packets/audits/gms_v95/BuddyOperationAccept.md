@@ -1,7 +1,7 @@
 # BuddyOperationAccept (← `CField::SendAcceptFriendMsg`)
 
 - **IDA:** 0x52f290
-- **Atlas file:** `libs/atlas-packet/buddy/serverbound/operation_accept.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/serverbound/operation_accept.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

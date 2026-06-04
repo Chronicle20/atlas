@@ -14,5 +14,3 @@
 | 1 | int32 | int32 `hintId / balloon type (@0xa2d371)` | ✅ |  |
 | 2 | int32 | int32 `duration (@0xa2d373)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

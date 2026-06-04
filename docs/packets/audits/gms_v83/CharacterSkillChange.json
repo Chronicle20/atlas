@@ -57,8 +57,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "dateExpire: 8-byte FILETIME (per entry)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
@@ -70,5 +70,5 @@
       "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0
 }

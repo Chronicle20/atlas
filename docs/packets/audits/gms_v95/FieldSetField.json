@@ -4,7 +4,7 @@
   "Address": "0x71a0a0",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/field/clientbound/set_field.go",
+  "AtlasFile": "../../libs/atlas-packet/field/clientbound/set_field.go",
   "Rows": [
     {
       "Index": 0,
@@ -93,8 +93,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CharacterData::Decode — ENVELOPE BOUNDARY; inner shape audited under character domain (task-028)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,
@@ -134,12 +134,12 @@
     },
     {
       "Index": 14,
-      "AtlasOp": 2,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 3,
       "IDAComment": "timestamp (DecodeBuffer p,8u — FILETIME); atlas WriteInt64",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 15,
@@ -152,15 +152,6 @@
     },
     {
       "Index": 16,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 17,
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,

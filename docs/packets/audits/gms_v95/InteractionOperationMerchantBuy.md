@@ -1,7 +1,7 @@
 # InteractionOperationMerchantBuy (← `CPersonalShopDlg::BuyItem#Merchant`)
 
 - **IDA:** 0x69a7f0
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_buy.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_merchant_buy.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

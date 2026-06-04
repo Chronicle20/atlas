@@ -1,7 +1,7 @@
 # MonsterSpawn (← `CMobPool::OnMobEnterField`)
 
 - **IDA:** 0x6589e0
-- **Atlas file:** `libs/atlas-packet/monster/clientbound/spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/spawn.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ❌
@@ -13,7 +13,7 @@
 | 0 | int32 | int32 `dwMobId (uniqueId)` | ✅ |  |
 | 1 | byte | byte `nCalcDamageIndex (atlas: controlled — region/version gated >v12 GMS \|\| JMS)` | ✅ |  |
 | 2 | int32 | int32 `dwTemplateID (monsterId)` | ✅ |  |
-| 3 | int32 | bytes `MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init — variable-length sub-struct)` | ❌ | width mismatch |
+| 3 | int32 | bytes `MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init — variable-length sub-struct)` | ✅ |  |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

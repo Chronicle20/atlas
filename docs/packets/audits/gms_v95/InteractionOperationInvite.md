@@ -1,7 +1,7 @@
 # InteractionOperationInvite (← `CField::SendInviteTradingRoomMsg`)
 
 - **IDA:** 0x52e9e0
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_invite.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_invite.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

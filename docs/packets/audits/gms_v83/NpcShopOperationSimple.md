@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode (sub-op discriminator; mode-only arm)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

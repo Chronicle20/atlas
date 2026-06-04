@@ -21,8 +21,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "AvatarLook::Decode (if bit0)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
@@ -66,8 +66,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "couple item SN (16 bytes per entry)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
@@ -102,8 +102,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "friendship item SN (16 bytes per entry)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,

@@ -14,5 +14,3 @@
 | 1 | byte | byte `bPrev / v26 (Previous button)` | ✅ |  |
 | 2 | byte | byte `bNext / v7 (Next button)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

@@ -1,7 +1,7 @@
 # InteractionOperationMerchantPutItem (← `CPersonalShopDlg::PutItem#Merchant`)
 
 - **IDA:** 0x69c880
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_put_item.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_merchant_put_item.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

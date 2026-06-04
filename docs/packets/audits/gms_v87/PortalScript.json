@@ -4,7 +4,7 @@
   "Address": "0x9c8832",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/portal/serverbound/script.go",
+  "AtlasFile": "../../libs/atlas-packet/portal/serverbound/script.go",
   "Rows": [
     {
       "Index": 0,

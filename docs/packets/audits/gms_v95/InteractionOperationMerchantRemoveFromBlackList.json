@@ -4,7 +4,7 @@
   "Address": "0x51ee20",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_merchant_remove_from_black_list.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_merchant_remove_from_black_list.go",
   "Rows": [
     {
       "Index": 0,

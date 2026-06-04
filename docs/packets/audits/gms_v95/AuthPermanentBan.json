@@ -4,7 +4,7 @@
   "Address": "0x5dc600",
   "Variant": "GMS/v95",
   "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/login/clientbound/auth_permanent_ban.go",
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/auth_permanent_ban.go",
   "Rows": [
     {
       "Index": 0,

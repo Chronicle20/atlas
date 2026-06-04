@@ -1,7 +1,7 @@
 # NpcAskMenuConversationDetail (← `CScriptMan::OnAskMenu#AskMenu`)
 
 - **IDA:** 0x6dce00
-- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | string | string `message text (menu markup)` | ✅ |  |
 
-
-Ack: world-audit sub-phase 2f on 2026-05-28

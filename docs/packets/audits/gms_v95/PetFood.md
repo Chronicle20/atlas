@@ -1,7 +1,7 @@
 # PetFood (← `CWvsContext::SendPetFoodItemUseRequest`)
 
 - **IDA:** 0x9d9f20
-- **Atlas file:** `libs/atlas-packet/pet/serverbound/food.go`
+- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/food.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

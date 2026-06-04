@@ -15,5 +15,3 @@
 | 2 | int32 | int32 `x (result @line45)` | ✅ |  |
 | 3 | int32 | int32 `y (v5 @line46)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 field+portal on 2026-05-28

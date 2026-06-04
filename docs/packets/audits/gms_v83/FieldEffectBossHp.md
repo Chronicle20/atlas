@@ -17,5 +17,3 @@
 | 4 | byte | byte `tagColor (v17)` | ✅ |  |
 | 5 | byte | byte `tagBackgroundColor (v18)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

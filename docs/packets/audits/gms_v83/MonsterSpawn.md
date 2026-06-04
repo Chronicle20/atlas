@@ -13,7 +13,7 @@
 | 0 | int32 | int32 `dwMobId (uniqueId)` | ✅ |  |
 | 1 | byte | byte `nCalcDamageIndex (controlled — gated >v12 GMS, on for v83)` | ✅ |  |
 | 2 | int32 | int32 `dwTemplateID (monsterId)` | ✅ |  |
-| 3 | int32 | bytes `MonsterModel body via CMob::SetTemporaryStat + CMob::Init` | ❌ | width mismatch |
+| 3 | int32 | bytes `MonsterModel body via CMob::SetTemporaryStat + CMob::Init` | ✅ |  |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

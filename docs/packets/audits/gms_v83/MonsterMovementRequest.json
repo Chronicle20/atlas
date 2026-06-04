@@ -93,8 +93,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CMovePath::Flush body (Movement elements). v83 lacks the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail that v87+ carry.",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,

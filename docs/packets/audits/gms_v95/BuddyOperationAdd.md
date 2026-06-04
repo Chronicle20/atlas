@@ -1,7 +1,7 @@
 # BuddyOperationAdd (← `CField::SendSetFriendMsg`)
 
 - **IDA:** 0x535240
-- **Atlas file:** `libs/atlas-packet/buddy/serverbound/operation_add.go`
+- **Atlas file:** `../../libs/atlas-packet/buddy/serverbound/operation_add.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌

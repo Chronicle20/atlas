@@ -1,7 +1,7 @@
 # InteractionInteractionInvite (← `CMiniRoomBaseDlg::OnPacketBase#Invite`)
 
 - **IDA:** 0x637a40
-- **Atlas file:** `libs/atlas-packet/interaction/clientbound/interaction.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/clientbound/interaction.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

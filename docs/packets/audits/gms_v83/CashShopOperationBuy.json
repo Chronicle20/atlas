@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnBuy",
   "Address": "0x46dadd",
   "Variant": "GMS/v83",
-  "BranchDepth": 2,
+  "BranchDepth": 0,
   "AtlasFile": "../../libs/atlas-packet/cash/serverbound/shop_operation_buy.go",
   "Rows": [
     {
@@ -12,36 +12,36 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "isMaplePoint bool (a2==2)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "dwOption (a2)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 2,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nCommSN (arg0 serialNumber)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     },
     {
       "Index": 3,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "IsZeroGoods int (zero-goods flag). NOTE: v83 has NO trailing byte oneADay (v95-only)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 0
+  "Verdict": 2
 }

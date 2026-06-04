@@ -1,7 +1,7 @@
 # InteractionOperationTradeConfirm (← `CTradingRoomDlg::Trade`)
 
 - **IDA:** 0x7646b0
-- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go`
+- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅

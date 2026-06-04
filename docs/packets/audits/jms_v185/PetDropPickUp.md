@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int64 | bytes `m_liPetLockerSN (8 bytes)` | ❌ | width mismatch |
+| 0 | int64 | bytes `m_liPetLockerSN (8 bytes)` | ✅ |  |
 | 1 | byte | byte `bFieldKey` | ✅ |  |
 | 2 | int32 | int32 `get_update_time()` | ✅ |  |
 | 3 | int16 | int16 `pt.x` | ✅ |  |

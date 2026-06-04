@@ -4,7 +4,7 @@
   "Address": "0x6dd6e0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/npc/clientbound/conversation.go",
+  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
   "Rows": [
     {
       "Index": 0,

@@ -13,5 +13,3 @@
 | 0 | byte | byte `mode (sub-op discriminator)` | ✅ |  |
 | 1 | int32 | int32 `level/required amount (cases 0xE/0xF)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

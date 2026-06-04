@@ -17,5 +17,3 @@
 | 4 | int32 | int32 `secondaryNpcTemplateId (read at start of per-type body when bParam&4; e.g. v87 OnSay@0x79184a) -- guarded` | ✅ |  |
 | 5 | bytes | bytes `per-type conversation detail body (opaque to wrapper; audited in NpcSay*/NpcAsk* reports) via WriteByteArray` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

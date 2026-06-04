@@ -13,5 +13,3 @@
 | 0 | byte | byte `bAnimation (leave animation type; 0=play despawn animation, v3)` | ✅ |  |
 | 1 | int32 | int32 `dwID (kite object id, v38)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 on 2026-05-28

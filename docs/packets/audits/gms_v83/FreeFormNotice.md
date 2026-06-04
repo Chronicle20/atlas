@@ -14,12 +14,3 @@
 | 1 | byte | byte `flag (if 0 return immediately; atlas always encodes 1 @0xa2821b)` | ✅ |  |
 | 2 | string | string `sMsg — message string (only read when flag != 0 @0xa28223)` | ✅ |  |
 
-
-## Manual analysis
-
-**v83 IDA:** `CWvsContext::OnEntrustedShopCheckResult` @ 0xa27d75, case 18 — Decode1(flag), if non-zero then DecodeStr(sMsg). Matches v95 exactly.
-
-**Gate:** None needed — version-agnostic. Gate confirmed correct (✅).
-
-
-Ack: misc-audit Phase 3 v83 on 2026-06-03

@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | string | string `input text (atlas ContinueConversationText.text; only emitted when action==1)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

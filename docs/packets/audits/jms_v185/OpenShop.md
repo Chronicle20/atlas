@@ -1,7 +1,7 @@
 # OpenShop (← `CWvsContext::OnEntrustedShopCheckResult#OpenShop`)
 
 - **IDA:** 0xb0ee59
-- **Atlas file:** `libs/atlas-packet/merchant/clientbound/operation.go`
+- **Atlas file:** `../../libs/atlas-packet/merchant/clientbound/operation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

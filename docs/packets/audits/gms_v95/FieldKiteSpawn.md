@@ -1,7 +1,7 @@
 # FieldKiteSpawn (← `CMessageBoxPool::OnMessageBoxEnterField`)
 
 - **IDA:** 0x6369c0
-- **Atlas file:** `libs/atlas-packet/field/clientbound/kite_spawn.go`
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/kite_spawn.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -17,5 +17,3 @@
 | 4 | int16 | int16 `ptMessageBox.x (spawn x)` | ✅ |  |
 | 5 | int16 | int16 `nType (kite type)` | ✅ |  |
 
-
-Ack: world-audit Phase 2c on 2026-05-28

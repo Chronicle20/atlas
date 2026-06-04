@@ -12,5 +12,3 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode (transaction result discriminator @0x7cb0e5)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 JMS185 npc domain on 2026-05-28

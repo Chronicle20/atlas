@@ -21,5 +21,3 @@
 | 8 | int16 | int16 `rx1` | ✅ |  |
 | 9 | byte | byte `enabled (m_bEnabled; atlas miniMap bool)` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v83 (12b npc) on 2026-05-28

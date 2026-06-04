@@ -1,7 +1,7 @@
 # FieldWarpToMap (← `CStage::OnSetField#WarpToMap`)
 
 - **IDA:** 0x7c429c
-- **Atlas file:** `libs/atlas-packet/field/clientbound/warp_to_map.go`
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/warp_to_map.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** ✅
@@ -22,5 +22,3 @@
 | 9 | byte | byte `m_bChaseEnable (@0x7c44c2) — atlas WriteBool(false) gated (GMS>28)` | ✅ |  |
 | 10 | int64 | int64 `timestamp (DecodeBuffer p,8u); atlas WriteInt64` | ✅ |  |
 
-
-Ack: world-audit Phase 3 v87 cross-version on 2026-05-28

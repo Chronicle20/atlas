@@ -11,7 +11,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "DecodeOpt (CClientOptMan::DecodeOpt @line119) — atlas WriteShort(0) gated (GMS>83 || JMS)",
+      "IDAComment": "DecodeOpt (CClientOptMan::DecodeOpt @line119) — atlas WriteShort(0) gated (GMS\u003e83 || JMS)",
       "Verdict": 0,
       "Note": ""
     },
@@ -102,15 +102,15 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CharacterData::Decode (@line165) — ENVELOPE BOUNDARY; inner shape under character domain",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "m_bPredictQuit (OnSetLogoutGiftConfig@0xae81c0) — logout gift int #1, gated (GMS>83 || JMS)",
+      "IDAComment": "m_bPredictQuit (OnSetLogoutGiftConfig@0xae81c0) — logout gift int #1, gated (GMS\u003e83 || JMS)",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -143,12 +143,12 @@
     },
     {
       "Index": 15,
-      "AtlasOp": 2,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 3,
       "IDAComment": "timestamp DecodeBuffer(p,8 @line209; FILETIME) — atlas WriteInt64",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 16,
@@ -161,7 +161,7 @@
     },
     {
       "Index": 17,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -170,7 +170,7 @@
     },
     {
       "Index": 18,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -197,24 +197,6 @@
     },
     {
       "Index": 21,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 22,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 23,
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,

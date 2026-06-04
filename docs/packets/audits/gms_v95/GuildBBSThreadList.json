@@ -4,7 +4,7 @@
   "Address": "0x7c46c0",
   "Variant": "GMS/v95",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/guild/clientbound/bbs.go",
+  "AtlasFile": "../../libs/atlas-packet/guild/clientbound/bbs.go",
   "Rows": [
     {
       "Index": 0,
@@ -57,8 +57,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "notice.ftDate (8 bytes, if hasNotice)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
@@ -129,8 +129,8 @@
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "entry.ftDate 8 bytes (loop)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 14,

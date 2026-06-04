@@ -4,7 +4,7 @@
   "Address": "0x7646b0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go",
+  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go",
   "Rows": [
     {
       "Index": 0,

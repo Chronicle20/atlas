@@ -1,7 +1,7 @@
 # MessengerUpdate (← `CUIMessenger::OnPacket#Update`)
 
 - **IDA:** 0x7f2ea0
-- **Atlas file:** `libs/atlas-packet/messenger/clientbound/update.go`
+- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/update.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ❌
@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode (=7, UPDATE) — dispatcher switch byte consumed by CUIMessenger::OnPacket` | ✅ |  |
 | 1 | byte | byte `position — slot index whose avatar changed` | ✅ |  |
-| 2 | byte | bytes `AvatarLook::AvatarLook(&v5, iPacket) — updated avatar appearance` | ❌ | width mismatch |
+| 2 | byte | bytes `AvatarLook::AvatarLook(&v5, iPacket) — updated avatar appearance` | ✅ |  |
 | 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |

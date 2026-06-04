@@ -11,6 +11,13 @@ import (
 
 const HiredMerchantOperationWriter = "HiredMerchantOperation"
 
+// EntrustedShopOperationMode11 is a defined case of CWvsContext::OnEntrustedShopCheckResult
+// (JMS185 @ 0xb0ee59) that carries no body. The client displays a notice string from its
+// StringPool (JMS185 entry 3638; v95 plan context cites 3508). No server path currently
+// raises it, so it is registered as a named constant only — a body-less mode is fully
+// expressed by NewMerchantErrorSimple(EntrustedShopOperationMode11) if one ever needs it.
+const EntrustedShopOperationMode11 byte = 11
+
 // OpenShop - mode only
 type OpenShop struct {
 	mode byte
@@ -148,6 +155,44 @@ func (m RemoteShopWarp) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 }
 
 func (m *RemoteShopWarp) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.shopId = r.ReadUint32()
+		m.channelId = r.ReadByte()
+	}
+}
+
+// EntrustedShopUnknownChannel - mode(8), shopId, channelId.
+// Mode 8 of CWvsContext::OnEntrustedShopCheckResult (JMS185 @ 0xb0ee59): the "unknown
+// channel" notice. The body is Decode4(shopId) + Decode1(channelId); the client uses them
+// to redirect the player toward the channel where the shop actually lives. Identical body
+// layout to RemoteShopWarp but a distinct, fixed mode.
+type EntrustedShopUnknownChannel struct {
+	mode      byte
+	shopId    uint32
+	channelId byte
+}
+
+func NewEntrustedShopUnknownChannel(shopId uint32, channelId byte) EntrustedShopUnknownChannel {
+	return EntrustedShopUnknownChannel{mode: 8, shopId: shopId, channelId: channelId}
+}
+
+func (m EntrustedShopUnknownChannel) Operation() string { return HiredMerchantOperationWriter }
+func (m EntrustedShopUnknownChannel) String() string {
+	return fmt.Sprintf("entrusted shop unknown channel shopId [%d] channelId [%d]", m.shopId, m.channelId)
+}
+
+func (m EntrustedShopUnknownChannel) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt(m.shopId)
+		w.WriteByte(m.channelId)
+		return w.Bytes()
+	}
+}
+
+func (m *EntrustedShopUnknownChannel) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.shopId = r.ReadUint32()

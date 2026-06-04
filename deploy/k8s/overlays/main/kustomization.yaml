@@ -278,7 +278,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: main-57b102f
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
-    newTag: main-e1775f8
+    newTag: main-9ab98ff
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
     newTag: main-67aaa53
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
@@ -292,6 +292,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-57b102f
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-ed16772
+    newTag: main-9ab98ff
 commonLabels:
   atlas.env: main

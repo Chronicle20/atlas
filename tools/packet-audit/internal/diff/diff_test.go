@@ -53,6 +53,34 @@ func TestDiffShortAtlas(t *testing.T) {
 	}
 }
 
+func TestDiffOpaqueBufferWidthEquivalence(t *testing.T) {
+	// Atlas writes an 8-byte fixed primitive (WriteLong); IDA reads an opaque
+	// buffer (DecodeBuffer). The analyzer tracks no byte length on either side,
+	// so it cannot prove a mismatch — these are byte-equal opaque-buffer cases.
+	atlas := []atlaspacket.Call{{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode8}}
+	ida := idasrc.Fields{Calls: []idasrc.FieldCall{{Op: idasrc.DecodeBuf}}}
+	rows := Diff(atlas, ida)
+	if len(rows) != 1 || rows[0].Verdict != VerdictMatch {
+		t.Fatalf("expected match for opaque buf == Encode8; got %+v", rows)
+	}
+}
+
+func TestDiffCompositeRunEqualsWiderRead(t *testing.T) {
+	// Atlas writes int16 + int16 (e.g. WriteInt16 + WriteShort(0)); IDA reads a
+	// single int32. The two adjacent fixed-width writes sum to the wider read.
+	atlas := []atlaspacket.Call{
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode2},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode2},
+	}
+	ida := idasrc.Fields{Calls: []idasrc.FieldCall{{Op: idasrc.Decode4}}}
+	rows := Diff(atlas, ida)
+	for _, r := range rows {
+		if r.Verdict == VerdictBlocker {
+			t.Fatalf("composite 2+2 should equal Decode4, got blocker: %+v", rows)
+		}
+	}
+}
+
 func TestFlattenDropsInactiveGuards(t *testing.T) {
 	g, _ := atlaspacket.ParseGuard(`t.MajorVersion() >= 95`)
 	calls := []atlaspacket.Call{

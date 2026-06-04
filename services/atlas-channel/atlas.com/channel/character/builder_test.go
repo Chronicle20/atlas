@@ -2,9 +2,12 @@ package character_test
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"errors"
 	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -229,5 +232,27 @@ func TestCloneModel_PreservesParty(t *testing.T) {
 	}
 	if cloned.Party().Id() != 99 {
 		t.Errorf("cloned.Party().Id() = %d, want 99", cloned.Party().Id())
+	}
+}
+
+func TestModel_MonsterBookCards(t *testing.T) {
+	col, err := monsterbook.Extract(monsterbook.CollectionRestModel{
+		BookLevel: 5, NormalCount: 10, SpecialCount: 3, TotalUniqueCards: 13, CoverCardId: item.Id(2380001),
+	})
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	m := character.NewModelBuilder().SetId(7).SetMonsterBook(monsterbook.NewModel(col, nil)).MustBuild()
+	if got := m.MonsterBook().Cards(); len(got) != 0 {
+		t.Fatalf("expected empty cards, got %d", len(got))
+	}
+	if m.MonsterBook().CoverCardId() != item.Id(2380001) {
+		t.Errorf("cover not threaded: %d", m.MonsterBook().CoverCardId())
+	}
+	if m.MonsterBook().Level() != 5 || m.MonsterBook().NormalCount() != 10 || m.MonsterBook().SpecialCount() != 3 || m.MonsterBook().TotalUniqueCards() != 13 {
+		t.Errorf("summary not threaded: %d/%d/%d/%d", m.MonsterBook().Level(), m.MonsterBook().NormalCount(), m.MonsterBook().SpecialCount(), m.MonsterBook().TotalUniqueCards())
+	}
+	if m.Id() != 7 {
+		t.Errorf("id not preserved: %d", m.Id())
 	}
 }

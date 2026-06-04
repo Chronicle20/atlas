@@ -11,6 +11,8 @@ const (
 	// Resource is the path template for fetching a character's monster book
 	// collection from atlas-monster-book.
 	Resource = "characters/%d/monster-book"
+	// CardsResource is the path template for a character's owned card list.
+	CardsResource = "characters/%d/monster-book/cards"
 )
 
 var baseURLProvider = func() string {
@@ -23,6 +25,10 @@ func getBaseRequest() string {
 
 func requestByCharacterId(characterId character.Id) requests.Request[CollectionRestModel] {
 	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+}
+
+func requestCardsByCharacterId(characterId character.Id) requests.Request[[]CardRestModel] {
+	return requests.GetRequest[[]CardRestModel](fmt.Sprintf(getBaseRequest()+CardsResource, characterId))
 }
 
 // SetBaseURLForTest swaps the base URL for tests using httptest. Only

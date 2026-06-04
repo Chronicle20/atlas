@@ -62,3 +62,14 @@ func TestIsTwoHanded(t *testing.T) {
 		})
 	}
 }
+
+func TestMonsterBookCardBase(t *testing.T) {
+	if MonsterBookCardBase != Id(2380000) {
+		t.Errorf("MonsterBookCardBase = %d, want 2380000", MonsterBookCardBase)
+	}
+	// Base must be the classification 238 times 10000 so cardId-base yields the
+	// familiar card index the client adds back (design §2.1).
+	if uint32(MonsterBookCardBase) != uint32(ClassificationConsumableMonsterCard)*10000 {
+		t.Errorf("MonsterBookCardBase %d != ClassificationConsumableMonsterCard*10000", MonsterBookCardBase)
+	}
+}

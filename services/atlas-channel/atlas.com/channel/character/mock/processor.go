@@ -72,7 +72,7 @@ func (m *MockProcessor) PartyDecorator(c character.Model) character.Model {
 	return c
 }
 
-func (m *MockProcessor) MonsterBookCoverDecorator(c character.Model) character.Model {
+func (m *MockProcessor) MonsterBookDecorator(c character.Model) character.Model {
 	return c
 }
 

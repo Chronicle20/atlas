@@ -3,6 +3,7 @@ package character
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -14,29 +15,29 @@ import (
 )
 
 type CharacterStats struct {
-	Id        uint32
-	Name      string // max 13 chars, padded with zeros
-	Gender    byte
-	SkinColor byte
-	Face      uint32
-	Hair      uint32
-	PetIds    [3]uint64
-	Level     byte
-	JobId     uint16
-	Str       uint16
-	Dex       uint16
-	Int       uint16
-	Luk       uint16
-	Hp        uint16
-	MaxHp     uint16
-	Mp        uint16
-	MaxMp     uint16
-	Ap        uint16
-	Sp        uint16
-	Exp       uint32
-	Fame      int16
-	GachaExp  uint32
-	MapId     uint32
+	Id         uint32
+	Name       string // max 13 chars, padded with zeros
+	Gender     byte
+	SkinColor  byte
+	Face       uint32
+	Hair       uint32
+	PetIds     [3]uint64
+	Level      byte
+	JobId      uint16
+	Str        uint16
+	Dex        uint16
+	Int        uint16
+	Luk        uint16
+	Hp         uint16
+	MaxHp      uint16
+	Mp         uint16
+	MaxMp      uint16
+	Ap         uint16
+	Sp         uint16
+	Exp        uint32
+	Fame       int16
+	GachaExp   uint32
+	MapId      uint32
 	SpawnPoint byte
 }
 
@@ -57,11 +58,11 @@ type InventoryData struct {
 }
 
 type SkillEntry struct {
-	Id         uint32
-	Level      uint32
-	Expiration int64
+	Id          uint32
+	Level       uint32
+	Expiration  int64
 	MasterLevel uint32
-	FourthJob  bool
+	FourthJob   bool
 }
 
 type CooldownEntry struct {
@@ -79,15 +80,30 @@ type QuestCompleted struct {
 	CompletedAt int64
 }
 
+// MonsterBookCard is a single owned monster-book card and its level, as
+// carried in the CharacterData login packet.
+type MonsterBookCard struct {
+	CardId item.Id
+	Level  byte
+}
+
+// MonsterBookData is the player's monster-book state for the login window:
+// the chosen cover (full item id, 0 if none) and the full owned-card list.
+type MonsterBookData struct {
+	CoverCardId item.Id
+	Cards       []MonsterBookCard
+}
+
 type CharacterData struct {
-	Stats          CharacterStats
-	BuddyCapacity  byte
-	Meso           uint32
-	Inventory      InventoryData
-	Skills         []SkillEntry
-	Cooldowns      []CooldownEntry
-	StartedQuests  []QuestProgress
+	Stats           CharacterStats
+	BuddyCapacity   byte
+	Meso            uint32
+	Inventory       InventoryData
+	Skills          []SkillEntry
+	Cooldowns       []CooldownEntry
+	StartedQuests   []QuestProgress
 	CompletedQuests []QuestCompleted
+	MonsterBook     MonsterBookData
 }
 
 func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -128,8 +144,12 @@ func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteShort(0)
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Monster book: present for GMS (28,87] and JMS; absent in v28 and GMS v95+.
+		if (t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() <= 87) || t.Region() == "JMS" {
 			m.encodeMonsterBook(w)
+		}
+		// New-year cards / area popup / trailing short — gate unchanged (GMS > 28 || JMS).
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			if t.Region() == "GMS" {
 				m.encodeNewYear(w)
 				m.encodeArea(w)
@@ -183,8 +203,12 @@ func (m *CharacterData) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 			_ = r.ReadUint16()
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Monster book: present for GMS (28,87] and JMS; absent in v28 and GMS v95+.
+		if (t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() <= 87) || t.Region() == "JMS" {
 			m.decodeMonsterBook(r)
+		}
+		// New-year cards / area popup / trailing short — gate unchanged (GMS > 28 || JMS).
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			if t.Region() == "GMS" {
 				m.decodeNewYear(r)
 				m.decodeArea(r)
@@ -674,15 +698,27 @@ func (m *CharacterData) decodeTeleports(r *request.Reader, t tenant.Model) {
 }
 
 func (m *CharacterData) encodeMonsterBook(w *response.Writer) {
-	w.WriteInt(0)   // cover id
-	w.WriteByte(0)
-	w.WriteShort(0) // card count
+	w.WriteInt(uint32(m.MonsterBook.CoverCardId)) // cover: full item id (flag 0x20000)
+	w.WriteByte(0)                                // mode 0: simple list (flag 0x10000)
+	w.WriteShort(uint16(len(m.MonsterBook.Cards)))
+	for _, c := range m.MonsterBook.Cards {
+		w.WriteShort(uint16(uint32(c.CardId) - uint32(item.MonsterBookCardBase)))
+		w.WriteByte(c.Level)
+	}
 }
 
+// decodeMonsterBook is the symmetric reader for atlas's own mode-0 output. The
+// server only ever emits mode 0, so only mode 0 is decoded (the client-side
+// mode-1 bitmap form is never produced here).
 func (m *CharacterData) decodeMonsterBook(r *request.Reader) {
-	_ = r.ReadUint32() // cover id
-	_ = r.ReadByte()
-	_ = r.ReadUint16() // card count
+	m.MonsterBook.CoverCardId = item.Id(r.ReadUint32())
+	_ = r.ReadByte() // mode selector (always 0 on the wire we emit)
+	count := r.ReadUint16()
+	m.MonsterBook.Cards = make([]MonsterBookCard, count)
+	for i := uint16(0); i < count; i++ {
+		m.MonsterBook.Cards[i].CardId = item.MonsterBookCardBase + item.Id(r.ReadUint16())
+		m.MonsterBook.Cards[i].Level = r.ReadByte()
+	}
 }
 
 func (m *CharacterData) encodeNewYear(w *response.Writer) {

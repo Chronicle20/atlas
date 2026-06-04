@@ -6,12 +6,11 @@ import (
 	"atlas-channel/guild"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
-
 
 func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -50,11 +49,17 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) pa
 				}
 			}
 
+			mb := c.MonsterBook()
 			return charpkt.NewCharacterInfo(
 				c.Id(), c.Level(), uint16(c.JobId()), c.Fame(), guildName,
-				pets, wishListSNs, medalId,
+				pets, wishListSNs, medalId, charpkt.MonsterBookInfo{
+					Level:        uint32(mb.Level()),
+					NormalCards:  uint32(mb.NormalCount()),
+					SpecialCards: uint32(mb.SpecialCount()),
+					TotalCards:   uint32(mb.TotalUniqueCards()),
+					Cover:        uint32(mb.CoverCardId()),
+				},
 			).Encode(l, ctx)(options)
 		}
 	}
 }
-

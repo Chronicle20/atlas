@@ -11,7 +11,7 @@ func TestCharacterInfoEncode(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},
 	}
-	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007)
+	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{})
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 				{Slot: 1, TemplateId: 5000001, Name: "MiniCat", Level: 10, Closeness: 100, Fullness: 50},
 			}
 			wishList := []uint32{1002000, 1002001, 1002002}
-			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000)
+			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000, MonsterBookInfo{})
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
@@ -73,11 +73,22 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 	}
 }
 
+func TestCharacterInfo_MonsterBookCover(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	want := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want)
+	out := CharacterInfo{}
+	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	if out.MonsterBook() != want {
+		t.Errorf("monster book = %+v, want %+v", out.MonsterBook(), want)
+	}
+}
+
 func TestCharacterInfoEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0)
+			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0, MonsterBookInfo{})
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if len(output.Pets()) != 0 {

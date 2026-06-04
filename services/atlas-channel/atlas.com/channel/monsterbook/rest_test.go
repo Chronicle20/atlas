@@ -187,3 +187,73 @@ func TestGetByCharacterId_NotFound(t *testing.T) {
 		t.Fatalf("expected requests.ErrNotFound, got %T: %v", err, err)
 	}
 }
+
+func TestCardRestModel_Unmarshal(t *testing.T) {
+	body := []byte(`{
+		"data": [
+			{"type":"monster-book-card","id":"2380005","attributes":{"level":2,"isSpecial":false}},
+			{"type":"monster-book-card","id":"2382000","attributes":{"level":5,"isSpecial":true}}
+		]
+	}`)
+	var rms []CardRestModel
+	if err := jsonapi.Unmarshal(body, &rms); err != nil {
+		t.Fatalf("jsonapi.Unmarshal: %v", err)
+	}
+	if len(rms) != 2 {
+		t.Fatalf("len = %d, want 2", len(rms))
+	}
+	if rms[0].CardId != item.Id(2380005) || rms[0].Level != 2 || rms[0].IsSpecial {
+		t.Errorf("card[0] = %+v", rms[0])
+	}
+	if rms[1].CardId != item.Id(2382000) || rms[1].Level != 5 || !rms[1].IsSpecial {
+		t.Errorf("card[1] = %+v", rms[1])
+	}
+}
+
+func TestGetCardsByCharacterId_RoundTrip(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/characters/42/monster-book/cards") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"type":"monster-book-card","id":"2380005","attributes":{"level":2,"isSpecial":false}},
+				{"type":"monster-book-card","id":"2382000","attributes":{"level":5,"isSpecial":true}}
+			]
+		}`))
+	}))
+	defer srv.Close()
+	defer SetBaseURLForTest(srv.URL)()
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	cards, err := NewProcessor(logrus.New(), ctx).GetCardsByCharacterId(character.Id(42))
+	if err != nil {
+		t.Fatalf("GetCardsByCharacterId: %v", err)
+	}
+	if len(cards) != 2 {
+		t.Fatalf("len = %d, want 2", len(cards))
+	}
+	if cards[0].CardId() != item.Id(2380005) || cards[0].Level() != 2 {
+		t.Errorf("card[0] = cardId %d level %d", cards[0].CardId(), cards[0].Level())
+	}
+}
+
+func TestGetCardsByCharacterId_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	defer SetBaseURLForTest(srv.URL)()
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	_, err := NewProcessor(logrus.New(), ctx).GetCardsByCharacterId(character.Id(42))
+	if err == nil {
+		t.Fatal("expected error on 404, got nil")
+	}
+	if !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("expected requests.ErrNotFound, got %T: %v", err, err)
+	}
+}

@@ -1,11 +1,14 @@
 package character
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestCharacterDataMinimalRoundTrip(t *testing.T) {
@@ -118,6 +121,93 @@ func TestCharacterDataWithQuestsRoundTrip(t *testing.T) {
 			if v.MajorVersion > 12 || v.Region == "JMS" {
 				if len(output.CompletedQuests) != len(input.CompletedQuests) {
 					t.Errorf("completed quests: got %v, want %v", len(output.CompletedQuests), len(input.CompletedQuests))
+				}
+			}
+		})
+	}
+}
+
+func TestEncodeMonsterBook_Empty(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	w := response.NewWriter(l)
+	cd := CharacterData{}
+	cd.encodeMonsterBook(w)
+	got := w.Bytes()
+	// cover int(0) | mode byte(0) | count short(0) — byte-identical to the old stub.
+	want := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("empty book bytes = % x, want % x", got, want)
+	}
+}
+
+func TestEncodeMonsterBook_Populated(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	w := response.NewWriter(l)
+	cd := CharacterData{
+		MonsterBook: MonsterBookData{
+			CoverCardId: 2380001,
+			Cards: []MonsterBookCard{
+				{CardId: 2380005, Level: 2},
+				{CardId: 2382000, Level: 5},
+			},
+		},
+	}
+	cd.encodeMonsterBook(w)
+	got := w.Bytes()
+	// cover 2380001 (LE E1 50 24 00) | mode 00 | count 2 (02 00)
+	// | card 5 (05 00) lvl 2 (02) | card 2000 (D0 07) lvl 5 (05)
+	want := []byte{
+		0xE1, 0x50, 0x24, 0x00,
+		0x00,
+		0x02, 0x00,
+		0x05, 0x00, 0x02,
+		0xD0, 0x07, 0x05,
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("populated book bytes = % x, want % x", got, want)
+	}
+}
+
+func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := CharacterData{
+				Stats: CharacterStats{Id: 3000, Name: "Booker", Level: 30, JobId: 100, MapId: 100000000},
+				Inventory: InventoryData{
+					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+					EtcCapacity: 24, CashCapacity: 24, Timestamp: 94354848000000000,
+				},
+				MonsterBook: MonsterBookData{
+					CoverCardId: 2380001,
+					Cards: []MonsterBookCard{
+						{CardId: 2380005, Level: 2},
+						{CardId: 2382000, Level: 5},
+					},
+				},
+			}
+			output := CharacterData{}
+			// RoundTrip fails if any byte is left unconsumed — the gate-alignment guard.
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+
+			bookPresent := (v.Region == "GMS" && v.MajorVersion > 28 && v.MajorVersion <= 87) || v.Region == "JMS"
+			if bookPresent {
+				if output.MonsterBook.CoverCardId != input.MonsterBook.CoverCardId {
+					t.Errorf("cover: got %d, want %d", output.MonsterBook.CoverCardId, input.MonsterBook.CoverCardId)
+				}
+				if len(output.MonsterBook.Cards) != len(input.MonsterBook.Cards) {
+					t.Fatalf("card count: got %d, want %d", len(output.MonsterBook.Cards), len(input.MonsterBook.Cards))
+				}
+				for i := range output.MonsterBook.Cards {
+					if output.MonsterBook.Cards[i] != input.MonsterBook.Cards[i] {
+						t.Errorf("card[%d]: got %+v, want %+v", i, output.MonsterBook.Cards[i], input.MonsterBook.Cards[i])
+					}
+				}
+			} else {
+				// v95: monster book absent — encoder wrote nothing, decoder read nothing.
+				if output.MonsterBook.CoverCardId != 0 || len(output.MonsterBook.Cards) != 0 {
+					t.Errorf("expected empty monster book for %s, got cover=%d cards=%d",
+						v.Name, output.MonsterBook.CoverCardId, len(output.MonsterBook.Cards))
 				}
 			}
 		})

@@ -81,5 +81,30 @@ JMS185 + GMS v87 done; GMS v95 + v83 pending. The final B6.1 verdict goes in `sp
 - Serverbound memo packet = op **0x83**, leading `Encode1(subOp)`. v83 client emits exactly: **sub-op 1 = SEND** (`CMemoListDlg::SetRet` @0x64aa57; delete folded in via per-entry flag byte, flag 3=send), **sub-op 2 = LOAD/REFRESH** (`CWvsContext::OnMemoNotify_Receive` @0xa251ef; body `Encode1(2)` only).
 - **VERDICT: serverbound REFRESH/request-list = sub-op 2.** The Atlas template "REFRESH=7" and the export annotation "8" both conflate the *clientbound* `OnMemoResult` discriminator (3=Load/4=Send-result/5=Notify, computed as `Decode1-3`). The serverbound op space the client emits is {1=send/delete, 2=load}. ACTION: reconcile Atlas note serverbound op map against {1,2}; verify whether the per-struct ✅ note handler already uses the right serverbound values before changing anything (the "7" may be an unused/clientbound-confused entry).
 
-## Still pending: JMS185 login backlog
-- JMS185 was harvested early for cash/chat/merchant/affected-area but NOT the login FNames. Need a JMS185 pass for: the 5 addressed FNames' JMS read-orders, **LoginAuth presence in JMS (decides remove-vs-gate)**, SendCheckPasswordPacket/SendSelectCharPacket JMS layouts, ServerStatus/PicResult JMS. Then B6.1 can finalize across all 4 versions.
+## B6.1 — login backlog (JMS185 banked — ALL 4 VERSIONS NOW COMPLETE)
+
+### LoginAuth (JMS185): clientbound UI-bg-swap handler, NOT an auth packet
+- `CLogin::LoginAuth` @0x670c8e — clientbound handler (CLogin::OnPacket idx 0x18). `DecodeStr`s a UI .img resource path, then `IWzResMan::GetObjectA`/`CStage::FadeIn` — swaps the login-screen background. NO COutPacket, NO opcode emission, NO CNMCO middleware (those names don't resolve in JMS).
+- **FINAL LoginAuth VERDICT (all 4):** v83 absent · v87 absent · v95 NMCO-middleware-only (not a game packet) · JMS185 clientbound UI-bg-swap (not auth). → There is **no game-wire AUTH LoginAuth packet in any baseline.** ACTION for B6.1: read what Atlas's `LoginAuth` writer actually encodes. If it is a serverbound/auth packet → **REMOVE** it + its template entries (no counterpart anywhere). If it turns out Atlas's "LoginAuth" is actually a clientbound login-background writer (server→client resource-path string) → it matches JMS185's idx-0x18 handler and should be kept/documented as such. Decide by reading Atlas code; most likely it's a spurious auth writer → remove.
+
+### Addressed FNames (JMS185)
+- `CLogin::OnViewAllCharResult` @0x6709e4 (clientbound idx 0x14): RESOLVES. `Decode1(mode)`; mode1 `Decode4(countSvrs),Decode4(countChars)`; data `Decode1(unused),Decode1(worldID),Decode1(count)`, per-char {GW_CharacterStat::Decode, AvatarLook::Decode, `Decode1(hasRank)`→`DecodeBuffer(16)`}.
+- `CLogin::SendSelectCharPacketByVAC`: **ABSENT** (no VAC-select serverbound; only ResetVAC @0x6711fa).
+- `CLogin::OnSelectCharacterByVACResult`: **ABSENT**.
+- `CLogin::OnDenyLicense` / `CLicenseDlg::OnButtonClicked`: **ABSENT** (no login license accept/deny in JMS — only world-transfer-license UI, unrelated).
+
+### JMS layouts (diverge from GMS)
+- `CLogin::SendCheckPasswordPacket` @0x66da6a (op 0x01): `EncodeStr(id),EncodeStr(pw),EncodeBuffer(MachineId,16),Encode4(GameRoomClient),Encode1(GameStartMode),Encode1(0)`. **NO PartnerCode, NO passport** (GMS v83/v87/v95 all append Encode4(PartnerCode); JMS does not). The trailing 4-byte field is GameRoomClient, not PartnerCode.
+- `CLogin::SendSelectCharPacket` @0x66ddac: ops by m_bLoginOpt — opt0 op 0x13 `Encode1(hasName),Encode4(charId),[EncodeStr(name)]`; opt1 op 0x14 `EncodeStr(s),Encode4(charId)`; opt2/3 op 0x06 `Encode4(charId)`. **NO PIC system** (no 0x1C/0x1D/0x1E, no SPW string).
+
+### JMS status
+- ServerStatus: no standalone OnCheckUserLimitResult; world/channel status folded into `CLogin::OnSelectWorldResult` @0x66f3d8 (idx 0x03).
+- PicResult/SPW-result clientbound: **ABSENT** (no PIC system). Char-select success via `CLogin::OnSelectCharacterResult` @0x6712b1 (idx 0x04): `Decode1(result),Decode1(result2)`, success migrate `Decode4(ip),Decode2(port),Decode4(charId),Decode1(flags),Decode4`.
+
+## B6.1 cross-version summary (for spike-login.md)
+- **LoginAuth:** remove (no auth counterpart anywhere) — verify Atlas writer intent first.
+- **PartnerCode:** GMS-universal (v83/v87/v95), absent in JMS → if Atlas SendCheckPassword must carry it, gate `Region()=="GMS"`.
+- **VAC select + OnSelectCharacterByVACResult + login license accept/deny:** GMS-only (absent in JMS) → gate/document GMS-only.
+- **PIC select-char ops:** v83/v87 = 0x13/0x1D/0x1E; v95 = 0x13/0x1C/0x1D; JMS = 0x13/0x14/0x06 (no PIC). Per-version template opcode mapping.
+- **PartnerCode/passport:** v95 adds a passport string (the NMCO blob) before MachineId; v83/v87 do not; JMS neither.
+- Bare handlers (AfterLogin/RegisterPin/PIC/SetGender/WorldCharacterListRequest) map to real GMS client fns (see v87 section); PIC family is GMS-only.

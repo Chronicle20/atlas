@@ -22,24 +22,35 @@ type InfoPet struct {
 	Fullness   byte
 }
 
+// MonsterBookInfo is the monster-book summary shown in the CharacterInfo window:
+// book level, normal/special/total collected counts, and the cover card id.
+// Present only for GMS <= 87 and JMS (the same gate as the encode block).
+type MonsterBookInfo struct {
+	Level        uint32
+	NormalCards  uint32
+	SpecialCards uint32
+	TotalCards   uint32
+	Cover        uint32
+}
+
 type CharacterInfo struct {
-	characterId     uint32
-	level           byte
-	jobId           uint16
-	fame            int16
-	guildName       string
-	pets            []InfoPet
-	wishList        []uint32
-	medalId         uint32
-	monsterBookCover uint32
+	characterId uint32
+	level       byte
+	jobId       uint16
+	fame        int16
+	guildName   string
+	pets        []InfoPet
+	wishList    []uint32
+	medalId     uint32
+	monsterBook MonsterBookInfo
 }
 
 func NewCharacterInfo(characterId uint32, level byte, jobId uint16, fame int16, guildName string,
-	pets []InfoPet, wishList []uint32, medalId uint32, monsterBookCover uint32) CharacterInfo {
+	pets []InfoPet, wishList []uint32, medalId uint32, monsterBook MonsterBookInfo) CharacterInfo {
 	return CharacterInfo{
 		characterId: characterId, level: level, jobId: jobId, fame: fame,
 		guildName: guildName, pets: pets, wishList: wishList, medalId: medalId,
-		monsterBookCover: monsterBookCover,
+		monsterBook: monsterBook,
 	}
 }
 
@@ -93,11 +104,11 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		// Monster book block present in v87 and earlier (GMS<=87); absent in v95+.
 		// IDA v87 CWvsContext::OnCharacterInfo@0xabb181: calls sub_6C10A8 (5×Decode4) before MedalInfo.
 		if (t.Region() == "GMS" && t.MajorVersion() <= 87) || t.Region() == "JMS" {
-			w.WriteInt(0) // monster book level
-			w.WriteInt(0) // normal card
-			w.WriteInt(0) // special card
-			w.WriteInt(0) // total cards
-			w.WriteInt(m.monsterBookCover) // cover
+			w.WriteInt(m.monsterBook.Level)        // monster book level
+			w.WriteInt(m.monsterBook.NormalCards)  // normal card
+			w.WriteInt(m.monsterBook.SpecialCards) // special card
+			w.WriteInt(m.monsterBook.TotalCards)   // total cards
+			w.WriteInt(m.monsterBook.Cover)        // cover
 		}
 
 		w.WriteInt(m.medalId)
@@ -109,15 +120,16 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 	}
 }
 
-func (m CharacterInfo) CharacterId() uint32  { return m.characterId }
-func (m CharacterInfo) Level() byte          { return m.level }
-func (m CharacterInfo) JobId() uint16        { return m.jobId }
-func (m CharacterInfo) Fame() int16          { return m.fame }
-func (m CharacterInfo) GuildName() string    { return m.guildName }
-func (m CharacterInfo) Pets() []InfoPet      { return m.pets }
-func (m CharacterInfo) WishList() []uint32   { return m.wishList }
-func (m CharacterInfo) MedalId() uint32      { return m.medalId }
-func (m CharacterInfo) MonsterBookCover() uint32 { return m.monsterBookCover }
+func (m CharacterInfo) CharacterId() uint32          { return m.characterId }
+func (m CharacterInfo) Level() byte                  { return m.level }
+func (m CharacterInfo) JobId() uint16                { return m.jobId }
+func (m CharacterInfo) Fame() int16                  { return m.fame }
+func (m CharacterInfo) GuildName() string            { return m.guildName }
+func (m CharacterInfo) Pets() []InfoPet              { return m.pets }
+func (m CharacterInfo) WishList() []uint32           { return m.wishList }
+func (m CharacterInfo) MedalId() uint32              { return m.medalId }
+func (m CharacterInfo) MonsterBook() MonsterBookInfo { return m.monsterBook }
+func (m CharacterInfo) MonsterBookCover() uint32     { return m.monsterBook.Cover }
 
 func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -126,10 +138,10 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 		m.level = r.ReadByte()
 		m.jobId = r.ReadUint16()
 		m.fame = r.ReadInt16()
-		_ = r.ReadBool()          // marriage ring
+		_ = r.ReadBool() // marriage ring
 		m.guildName = r.ReadAsciiString()
-		_ = r.ReadAsciiString()   // alliance name
-		_ = r.ReadByte()          // medal info
+		_ = r.ReadAsciiString() // alliance name
+		_ = r.ReadByte()        // medal info
 
 		// Pets: bool-terminated loop
 		m.pets = nil
@@ -159,11 +171,11 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 
 		// Monster book block present in v87 and earlier (GMS<=87); absent in v95+.
 		if (t.Region() == "GMS" && t.MajorVersion() <= 87) || t.Region() == "JMS" {
-			_ = r.ReadUint32() // monster book level
-			_ = r.ReadUint32() // normal card
-			_ = r.ReadUint32() // special card
-			_ = r.ReadUint32() // total cards
-			m.monsterBookCover = r.ReadUint32() // cover
+			m.monsterBook.Level = r.ReadUint32()        // monster book level
+			m.monsterBook.NormalCards = r.ReadUint32()  // normal card
+			m.monsterBook.SpecialCards = r.ReadUint32() // special card
+			m.monsterBook.TotalCards = r.ReadUint32()   // total cards
+			m.monsterBook.Cover = r.ReadUint32()        // cover
 		}
 
 		m.medalId = r.ReadUint32()

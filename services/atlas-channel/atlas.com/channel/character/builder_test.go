@@ -249,4 +249,9 @@ func TestModel_MonsterBookCards(t *testing.T) {
 	if m2.Id() != 7 {
 		t.Errorf("id not preserved through clone: %d", m2.Id())
 	}
+
+	ms := character.NewModelBuilder().SetId(7).SetMonsterBookSummary(5, 10, 3, 13).MustBuild()
+	if ms.MonsterBookLevel() != 5 || ms.MonsterBookNormalCount() != 10 || ms.MonsterBookSpecialCount() != 3 || ms.MonsterBookTotalCards() != 13 {
+		t.Errorf("summary not threaded: %d/%d/%d/%d", ms.MonsterBookLevel(), ms.MonsterBookNormalCount(), ms.MonsterBookSpecialCount(), ms.MonsterBookTotalCards())
+	}
 }

@@ -23,45 +23,49 @@ import (
 )
 
 type Model struct {
-	id                 uint32
-	accountId          uint32
-	worldId            world.Id
-	name               string
-	gender             byte
-	skinColor          byte
-	face               uint32
-	hair               uint32
-	level              byte
-	jobId              job.Id
-	strength           uint16
-	dexterity          uint16
-	intelligence       uint16
-	luck               uint16
-	hp                 uint16
-	maxHp              uint16
-	mp                 uint16
-	maxMp              uint16
-	hpMpUsed           int
-	ap                 uint16
-	sp                 string
-	experience         uint32
-	fame               int16
-	gachaponExperience uint32
-	mapId              _map.Id
-	spawnPoint         uint32
-	gm                 int
-	x                  int16
-	y                  int16
-	stance             byte
-	meso               uint32
-	pets               []pet.Model
-	equipment          equipment.Model
-	inventory          inventory.Model
-	skills             []skill.Model
-	quests             []quest.Model
-	party              party.Model
-	coverCardId        item.Id
-	monsterBookCards   []monsterbook.Card
+	id                      uint32
+	accountId               uint32
+	worldId                 world.Id
+	name                    string
+	gender                  byte
+	skinColor               byte
+	face                    uint32
+	hair                    uint32
+	level                   byte
+	jobId                   job.Id
+	strength                uint16
+	dexterity               uint16
+	intelligence            uint16
+	luck                    uint16
+	hp                      uint16
+	maxHp                   uint16
+	mp                      uint16
+	maxMp                   uint16
+	hpMpUsed                int
+	ap                      uint16
+	sp                      string
+	experience              uint32
+	fame                    int16
+	gachaponExperience      uint32
+	mapId                   _map.Id
+	spawnPoint              uint32
+	gm                      int
+	x                       int16
+	y                       int16
+	stance                  byte
+	meso                    uint32
+	pets                    []pet.Model
+	equipment               equipment.Model
+	inventory               inventory.Model
+	skills                  []skill.Model
+	quests                  []quest.Model
+	party                   party.Model
+	coverCardId             item.Id
+	monsterBookCards        []monsterbook.Card
+	monsterBookLevel        uint16
+	monsterBookNormalCount  uint16
+	monsterBookSpecialCount uint16
+	monsterBookTotalCards   uint16
 }
 
 func (m Model) Gm() bool {
@@ -369,4 +373,21 @@ func (m Model) MonsterBookCards() []monsterbook.Card {
 // SetMonsterBookCards returns a clone of the model with the card list set.
 func (m Model) SetMonsterBookCards(v []monsterbook.Card) Model {
 	return CloneModel(m).SetMonsterBookCards(v).MustBuild()
+}
+
+// MonsterBookLevel returns the character's monster-book level (CharacterInfo summary).
+func (m Model) MonsterBookLevel() uint16 { return m.monsterBookLevel }
+
+// MonsterBookNormalCount returns the count of normal cards collected.
+func (m Model) MonsterBookNormalCount() uint16 { return m.monsterBookNormalCount }
+
+// MonsterBookSpecialCount returns the count of special cards collected.
+func (m Model) MonsterBookSpecialCount() uint16 { return m.monsterBookSpecialCount }
+
+// MonsterBookTotalCards returns the total unique cards collected.
+func (m Model) MonsterBookTotalCards() uint16 { return m.monsterBookTotalCards }
+
+// SetMonsterBookSummary returns a clone with the monster-book summary counts set.
+func (m Model) SetMonsterBookSummary(level, normal, special, total uint16) Model {
+	return CloneModel(m).SetMonsterBookSummary(level, normal, special, total).MustBuild()
 }

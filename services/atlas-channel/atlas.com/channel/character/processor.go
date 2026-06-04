@@ -182,6 +182,7 @@ func (p *ProcessorImpl) MonsterBookDecorator(m Model) Model {
 		return m
 	}
 	m = m.SetCoverCardId(col.CoverCardId())
+	m = m.SetMonsterBookSummary(col.BookLevel(), col.NormalCount(), col.SpecialCount(), col.TotalUniqueCards())
 	cards, err := mb.GetCardsByCharacterId(character.Id(m.Id()))
 	if err != nil {
 		p.l.WithError(err).Debugf("Unable to fetch monster-book cards for character [%d]; rendering cover only.", m.Id())

@@ -52,7 +52,13 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) pa
 
 			return charpkt.NewCharacterInfo(
 				c.Id(), c.Level(), uint16(c.JobId()), c.Fame(), guildName,
-				pets, wishListSNs, medalId, uint32(c.CoverCardId()),
+				pets, wishListSNs, medalId, charpkt.MonsterBookInfo{
+					Level:        uint32(c.MonsterBookLevel()),
+					NormalCards:  uint32(c.MonsterBookNormalCount()),
+					SpecialCards: uint32(c.MonsterBookSpecialCount()),
+					TotalCards:   uint32(c.MonsterBookTotalCards()),
+					Cover:        uint32(c.CoverCardId()),
+				},
 			).Encode(l, ctx)(options)
 		}
 	}

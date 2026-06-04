@@ -271,6 +271,9 @@ func TestMonsterBookDecorator_FailOpen(t *testing.T) {
 	if len(got.MonsterBookCards()) != 0 {
 		t.Errorf("cards should be empty on fail-open, got %d", len(got.MonsterBookCards()))
 	}
+	if got.MonsterBookLevel() != 0 || got.MonsterBookTotalCards() != 0 {
+		t.Errorf("summary should be 0 on fail-open, got level=%d total=%d", got.MonsterBookLevel(), got.MonsterBookTotalCards())
+	}
 }
 
 func TestMonsterBookDecorator_Populates(t *testing.T) {
@@ -280,7 +283,7 @@ func TestMonsterBookDecorator_Populates(t *testing.T) {
 			_, _ = w.Write([]byte(`{"data":[{"type":"monster-book-card","id":"2380005","attributes":{"level":2,"isSpecial":false}}]}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"data":{"type":"monster-book","id":"42","attributes":{"coverCardId":2380001}}}`))
+		_, _ = w.Write([]byte(`{"data":{"type":"monster-book","id":"42","attributes":{"bookLevel":5,"normalCount":10,"specialCount":3,"totalUniqueCards":13,"coverCardId":2380001}}}`))
 	}))
 	defer srv.Close()
 	defer monsterbook.SetBaseURLForTest(srv.URL)()
@@ -296,5 +299,10 @@ func TestMonsterBookDecorator_Populates(t *testing.T) {
 	}
 	if len(got.MonsterBookCards()) != 1 || got.MonsterBookCards()[0].CardId() != item.Id(2380005) {
 		t.Errorf("cards not populated: %+v", got.MonsterBookCards())
+	}
+	if got.MonsterBookLevel() != 5 || got.MonsterBookNormalCount() != 10 ||
+		got.MonsterBookSpecialCount() != 3 || got.MonsterBookTotalCards() != 13 {
+		t.Errorf("summary not populated: level=%d normal=%d special=%d total=%d",
+			got.MonsterBookLevel(), got.MonsterBookNormalCount(), got.MonsterBookSpecialCount(), got.MonsterBookTotalCards())
 	}
 }

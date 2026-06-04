@@ -1,5 +1,7 @@
 # Audit summary
 
+> ❌/🔍 rows are dispositioned accepted-exclusions (export read-order truncation, opaque register-boundary types, version-absent/representation-equivalence) — see ../../ida-exports/_pending.md. Zero open actionable deferrals (task-080).
+
 | Packet | Verdict | Atlas file |
 |---|---|---|
 | [CashCashItemMovedToCashInventory](CashCashItemMovedToCashInventory.md) | ✅ | `../../libs/atlas-packet/cash/clientbound/shop_item_moved.go` |

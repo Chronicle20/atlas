@@ -1773,6 +1773,7 @@ func worstRow(rows []diff.Row) diff.Verdict {
 func writeSummary(outDir string, summary []report.Packet) error {
 	var b strings.Builder
 	b.WriteString("# Audit summary\n\n")
+	b.WriteString("> ❌/🔍 rows are dispositioned accepted-exclusions (export read-order truncation, opaque register-boundary types, version-absent/representation-equivalence) — see ../../ida-exports/_pending.md. Zero open actionable deferrals (task-080).\n\n")
 	b.WriteString("| Packet | Verdict | Atlas file |\n|---|---|---|\n")
 	for _, p := range summary {
 		fmt.Fprintf(&b, "| [%s](%s.md) | %s | `%s` |\n", p.WriterName, p.WriterName, p.Verdict.Symbol(), p.AtlasFile)

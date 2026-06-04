@@ -14,8 +14,8 @@ import (
 // disease (status effect) that is applied to characters whose position falls
 // within its axis-aligned bounding box on each tick.
 type Mist struct {
-	id              uuid.UUID
-	f               field.Model
+	id               uuid.UUID
+	f                field.Model
 	ownerType        string
 	ownerId          uint32
 	sourceSkillId    uint32

@@ -25,9 +25,9 @@ func TestAffectedAreaCreatedWireShape(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	id := uuid.New()
 	// origin (100,200), offsets lt(-50,-30) rb(50,30) → abs LT(50,170) RB(150,230)
-	in := NewAffectedAreaCreated(id, /*ownerId*/ 42, /*nType*/ 0, /*skillId*/ 2121006,
-		/*skillLevel*/ 20, /*phase*/ 0, /*originX*/ 100, /*originY*/ 200,
-		/*ltX*/ -50, /*ltY*/ -30, /*rbX*/ 50, /*rbY*/ 30, /*tStart*/ 0, /*tEnd*/ 10000)
+	in := NewAffectedAreaCreated(id /*ownerId*/, 42 /*nType*/, 0 /*skillId*/, 2121006,
+		/*skillLevel*/ 20 /*phase*/, 0 /*originX*/, 100 /*originY*/, 200,
+		/*ltX*/ -50 /*ltY*/, -30 /*rbX*/, 50 /*rbY*/, 30 /*tStart*/, 0 /*tEnd*/, 10000)
 
 	for _, v := range []struct {
 		Name, Region string
@@ -52,9 +52,9 @@ func TestAffectedAreaCreatedWireShape(t *testing.T) {
 func TestAffectedAreaCreatedFields(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	id := uuid.MustParse("00000000-0000-0000-0000-00000000000a")
-	in := NewAffectedAreaCreated(id, /*ownerId*/ 42, /*nType*/ 7, /*skillId*/ 2121006,
-		/*skillLevel*/ 20, /*phase*/ 3, /*originX*/ 100, /*originY*/ 200,
-		/*ltX*/ -50, /*ltY*/ -30, /*rbX*/ 50, /*rbY*/ 30, /*tStart*/ 0, /*tEnd*/ 10000)
+	in := NewAffectedAreaCreated(id /*ownerId*/, 42 /*nType*/, 7 /*skillId*/, 2121006,
+		/*skillLevel*/ 20 /*phase*/, 3 /*originX*/, 100 /*originY*/, 200,
+		/*ltX*/ -50 /*ltY*/, -30 /*rbX*/, 50 /*rbY*/, 30 /*tStart*/, 0 /*tEnd*/, 10000)
 
 	b := in.Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
 	require.Len(t, b, 39)

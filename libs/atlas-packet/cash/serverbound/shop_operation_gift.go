@@ -28,11 +28,11 @@ type ShopOperationGift struct {
 }
 
 func (m ShopOperationGift) Birthday() uint32     { return m.birthday }
-func (m ShopOperationGift) SPW() string           { return m.spw }
-func (m ShopOperationGift) SerialNumber() uint32  { return m.serialNumber }
-func (m ShopOperationGift) OneADay() byte          { return m.oneADay }
-func (m ShopOperationGift) Name() string          { return m.name }
-func (m ShopOperationGift) Message() string       { return m.message }
+func (m ShopOperationGift) SPW() string          { return m.spw }
+func (m ShopOperationGift) SerialNumber() uint32 { return m.serialNumber }
+func (m ShopOperationGift) OneADay() byte        { return m.oneADay }
+func (m ShopOperationGift) Name() string         { return m.name }
+func (m ShopOperationGift) Message() string      { return m.message }
 
 func (m ShopOperationGift) Operation() string {
 	return CashShopOperationGiftHandle

@@ -23,11 +23,11 @@ type ShopOperationBuy struct {
 }
 
 func (m ShopOperationBuy) IsPoints() bool       { return m.isPoints }
-func (m ShopOperationBuy) Currency() uint32      { return m.currency }
-func (m ShopOperationBuy) SerialNumber() uint32  { return m.serialNumber }
-func (m ShopOperationBuy) Zero() uint32          { return m.zero }
-func (m ShopOperationBuy) OneADay() byte          { return m.oneADay }
-func (m ShopOperationBuy) EventSN() uint32        { return m.eventSN }
+func (m ShopOperationBuy) Currency() uint32     { return m.currency }
+func (m ShopOperationBuy) SerialNumber() uint32 { return m.serialNumber }
+func (m ShopOperationBuy) Zero() uint32         { return m.zero }
+func (m ShopOperationBuy) OneADay() byte        { return m.oneADay }
+func (m ShopOperationBuy) EventSN() uint32      { return m.eventSN }
 
 func (m ShopOperationBuy) Operation() string {
 	return CashShopOperationBuyHandle

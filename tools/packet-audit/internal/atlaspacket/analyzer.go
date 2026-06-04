@@ -39,9 +39,9 @@ const (
 // or a recurse/repeat marker for sub-struct and loop encoding.
 type Call struct {
 	Kind        Kind
-	Op          Primitive  // valid for KindWrite
-	RecurseType string     // valid for KindRecurse — Go receiver/field name (best-effort)
-	Body        []Call     // valid for KindRepeat
+	Op          Primitive // valid for KindWrite
+	RecurseType string    // valid for KindRecurse — Go receiver/field name (best-effort)
+	Body        []Call    // valid for KindRepeat
 	Line        int
 	Guard       *GuardExpr // nil for unconditional; populated in Task 8
 	// Opaque marks a KindRecurse whose target type is a registered but
@@ -301,15 +301,15 @@ func (cc *callCtx) conjoin() *GuardExpr {
 //
 // Examples that ARE mutex (collapsed to a single position):
 //
-//   if isMeso { w.WriteInt(meso)   } else { w.WriteInt(itemId)  }
-//   if owned  { w.WriteByte(1)     } else { w.WriteByte(5)      }
-//   if isSkill { w.WriteInt(1)     } else { w.WriteInt(0)       }
+//	if isMeso { w.WriteInt(meso)   } else { w.WriteInt(itemId)  }
+//	if owned  { w.WriteByte(1)     } else { w.WriteByte(5)      }
+//	if isSkill { w.WriteInt(1)     } else { w.WriteInt(0)       }
 //
 // Examples that are NOT mutex (still emit per-branch with guards):
 //
-//   if extended { w.WriteInt(x); w.WriteByte(y) } else { w.WriteInt(x) }   // different lengths
-//   if narrow   { w.WriteByte(x) } else { w.WriteInt(x) }                  // different widths
-//   if x.Encode { w.WriteByte(x) }                                         // no else
+//	if extended { w.WriteInt(x); w.WriteByte(y) } else { w.WriteInt(x) }   // different lengths
+//	if narrow   { w.WriteByte(x) } else { w.WriteInt(x) }                  // different widths
+//	if x.Encode { w.WriteByte(x) }                                         // no else
 func (cc *callCtx) isIfWireMutex(n *ast.IfStmt) bool {
 	if n.Else == nil {
 		return false
@@ -882,8 +882,9 @@ func receiverTypeHint(x ast.Expr) string {
 
 // freeFnPrimitive returns a Primitive for known free-function helpers that
 // atlas uses outside the w.Write*/r.Read* method convention.
-//   WritePaddedString(w, str, n) writes a fixed-length buffer.
-//   ReadPaddedString(r, n) reads a fixed-length buffer.
+//
+//	WritePaddedString(w, str, n) writes a fixed-length buffer.
+//	ReadPaddedString(r, n) reads a fixed-length buffer.
 func freeFnPrimitive(name string) (Primitive, bool) {
 	switch name {
 	case "WritePaddedString", "ReadPaddedString":

@@ -25,11 +25,11 @@ type ShopOperationBuyCouple struct {
 }
 
 func (m ShopOperationBuyCouple) Birthday() uint32     { return m.birthday }
-func (m ShopOperationBuyCouple) SPW() string           { return m.spw }
+func (m ShopOperationBuyCouple) SPW() string          { return m.spw }
 func (m ShopOperationBuyCouple) Option() uint32       { return m.option }
-func (m ShopOperationBuyCouple) SerialNumber() uint32  { return m.serialNumber }
-func (m ShopOperationBuyCouple) Name() string          { return m.name }
-func (m ShopOperationBuyCouple) Message() string       { return m.message }
+func (m ShopOperationBuyCouple) SerialNumber() uint32 { return m.serialNumber }
+func (m ShopOperationBuyCouple) Name() string         { return m.name }
+func (m ShopOperationBuyCouple) Message() string      { return m.message }
 
 func (m ShopOperationBuyCouple) Operation() string {
 	return CashShopOperationBuyCoupleHandle

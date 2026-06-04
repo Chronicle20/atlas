@@ -1,0 +1,29 @@
+{
+  "WriterName": "ShopRename",
+  "IDAName": "CWvsContext::OnEntrustedShopCheckResult#ShopRename",
+  "Address": "0xb0ee59",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (case 0xE = SHOP_RENAME)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "success flag (if 0 shows fail msg; if 1 shows success)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

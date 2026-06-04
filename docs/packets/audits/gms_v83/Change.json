@@ -1,0 +1,29 @@
+{
+  "WriterName": "Change",
+  "IDAName": "CWvsContext::SendGivePopularityRequest",
+  "Address": "0xa23eb5",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/fame/serverbound/change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwCharacterId (target character ID as uint32 @0xa23f7e)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bInc (1=fame, 0=defame @0xa23f89)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

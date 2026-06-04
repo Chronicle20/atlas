@@ -1,0 +1,29 @@
+{
+  "WriterName": "ShopSearch",
+  "IDAName": "CWvsContext::OnEntrustedShopCheckResult#ShopSearch",
+  "Address": "0xb0ee59",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (case 0xD = SHOP_SEARCH)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwSearchedShop (stored into CUIMiniMap m_rcInvalidated.right)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

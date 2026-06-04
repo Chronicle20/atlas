@@ -1,0 +1,56 @@
+{
+  "WriterName": "ChannelConnect",
+  "IDAName": "CClientSocket::OnConnect#ChannelConnect",
+  "Address": "0x4a6e5a",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/socket/serverbound/channel_connect.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterId uint32 (Encode4 m_dwAccountId @0x4a73ec)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "machineId 16 bytes (EncodeBuffer GetMachineId @0x4a7401)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "gm byte (Encode1 based on TSecType GM check @0x4a7418)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "unknown1 byte (literal 0 @0x4a742b)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "unknown2 8 bytes raw buffer (EncodeBuffer szCookie+88 @0x4a7440)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    }
+  ],
+  "Verdict": 2
+}

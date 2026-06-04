@@ -5601,6 +5601,520 @@
      "comment": "slot / nPos (v7)"
     }
    ]
+  },
+  "CWvsContext::OnStatChanged": {
+   "address": "0xa1fb52",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "bExclRequestSent"
+    },
+    {
+     "op": "Decode4",
+     "comment": "dwStatMask (GW_CharacterStat::DecodeChangeStat @0x4e2fba)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nSkin",
+     "guard": "mask 0x1"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nFace",
+     "guard": "mask 0x2"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nHair",
+     "guard": "mask 0x4"
+    },
+    {
+     "op": "Decode8",
+     "comment": "petLockerSN[0] (DecodeBuffer 8)",
+     "guard": "mask 0x8"
+    },
+    {
+     "op": "Decode8",
+     "comment": "petLockerSN[1] (DecodeBuffer 8)",
+     "guard": "mask 0x80000"
+    },
+    {
+     "op": "Decode8",
+     "comment": "petLockerSN[2] (DecodeBuffer 8)",
+     "guard": "mask 0x100000"
+    },
+    {
+     "op": "Decode1",
+     "comment": "nLevel",
+     "guard": "mask 0x10"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nJob",
+     "guard": "mask 0x20"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nSTR",
+     "guard": "mask 0x40"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nDEX",
+     "guard": "mask 0x80"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nINT",
+     "guard": "mask 0x100"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nLUK",
+     "guard": "mask 0x200"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nHP (v83 int16; v95 widened to int32)",
+     "guard": "mask 0x400"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nMHP (v83 int16; v95 widened to int32)",
+     "guard": "mask 0x800"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nMP (v83 int16; v95 widened to int32)",
+     "guard": "mask 0x1000"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nMMP (v83 int16; v95 widened to int32)",
+     "guard": "mask 0x2000"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nAP",
+     "guard": "mask 0x4000"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nSP (non-extendSP job branch)",
+     "guard": "mask 0x8000"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nEXP",
+     "guard": "mask 0x10000"
+    },
+    {
+     "op": "Decode2",
+     "comment": "nPOP (fame)",
+     "guard": "mask 0x20000"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nMoney (meso)",
+     "guard": "mask 0x40000"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nTempEXP (gachaponExperience)",
+     "guard": "mask 0x200000"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bSecondaryStatChangedPoint flag (@0xa1fbe8; mask 0x180008; ONE trailing byte only \u2014 v83 has no battle-recovery-info second byte)"
+    }
+   ]
+  },
+  "CClientSocket::OnMigrateCommand": {
+   "address": "0x496701",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "success flag (if 0 \u2192 client disconnects)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "IP address as raw uint32 (stored directly into sin_addr.s_addr \u2014 network byte order preserved)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "port (host byte order; htons applied when building sockaddr)"
+    }
+   ]
+  },
+  "CUserLocal::OnOpenUI": {
+   "address": "0x9600f0",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "nUIID (window mode byte; dispatched to CWvsContext::UI_Open)"
+    }
+   ]
+  },
+  "CUserLocal::OnSetStandAloneMode": {
+   "address": "0x95ffa2",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "bStandAlone (enable flag; stored to CWvsContext+0x70)"
+    }
+   ]
+  },
+  "CUserLocal::OnSetDirectionMode": {
+   "address": "0x95ff5a",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "bSet (direction/lock mode flag) \u2014 v83 reads ONLY 1 byte; tAfterLeaveDirectionMode int32 absent (confirmed: v83 SetDirectionMode @0x95ff5a)"
+    }
+   ]
+  },
+  "CWvsContext::OnGivePopularityResult#GiveResponse": {
+   "address": "0xa223dc",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (switch dispatch; case 0 = GIVE \u2014 else-branch in v83 subtraction chain)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "fromName / toName (recipient of fame)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bInc (1=fame, 0=defame)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nPOP (new total fame as int32; passed to CUIUserInfo::NotifyGivePopResult @0xa22663)"
+    }
+   ]
+  },
+  "CWvsContext::OnGivePopularityResult#ReceiveResponse": {
+   "address": "0xa223dc",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (switch dispatch; case 5 = RECEIVE \u2014 v8==1 sub-branch)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "fromName (character who gave fame)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "bInc (1=fame, 0=defame)"
+    }
+   ]
+  },
+  "CWvsContext::OnGivePopularityResult#ErrorResponse": {
+   "address": "0xa223dc",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (switch dispatch; cases 1-4 = error codes \u2014 no additional fields)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#OpenShop": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (case 7 = OPEN_SHOP; client calls SendOpenShopRequest \u2014 no further reads)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#ErrorSimple": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (cases 9/10/11/15 \u2014 client shows fixed string-pool notice, no further reads; v83 also has case 11 unlike v95)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#ShopSearch": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (case 0xD = SHOP_SEARCH)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "dwSearchedShop (stored into CUIMiniMap::m_dwSearchedShop @0xa2812d)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#ShopRename": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (case 0xE = SHOP_RENAME)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "success flag (if 0 return early; if 1 show chat-log success message)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (case 0x10 = REMOTE_SHOP_WARP)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "shopId (v58 / dwCharacterID)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channelId (v14 \u2014 0xFE/0xFD/0xFF = error; otherwise shows YesNo warp dialog)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (case 0x11 = CONFIRM_MANAGE)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "shopId / dwCharacterID (v23)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "position / slot index (LOWORD of Decode2 @0xa28009)"
+    },
+    {
+     "op": "Decode8",
+     "comment": "liCashItemSN \u2014 8-byte serial number (DecodeBuffer 8, v57 @0xa28019)"
+    }
+   ]
+  },
+  "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice": {
+   "address": "0xa27d75",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (case 0x12 = FREE_FORM_NOTICE)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag (if 0 return immediately; atlas always encodes 1 @0xa2821b)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "sMsg \u2014 message string (only read when flag != 0 @0xa28223)"
+    }
+   ]
+  },
+  "CWvsContext::OnScriptProgressMessage": {
+   "address": "0xa13f20",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "DecodeStr",
+     "comment": "message (quest script progress string)"
+    }
+   ]
+  },
+  "CClientSocket::OnConnect#Hello": {
+   "address": "0x494ed1",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "packet length (0x0E = 14) \u2014 v83 OnConnect is anti-tamper obfuscated; layout inferred from v95 @0x4aef10 which is stable across versions"
+    },
+    {
+     "op": "Decode2",
+     "comment": "majorVersion uint16"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "minorVersion string"
+    },
+    {
+     "op": "Decode4",
+     "comment": "recvIv (\u2192 client m_uSeqSnd) 4 bytes"
+    },
+    {
+     "op": "Decode4",
+     "comment": "sendIv (\u2192 client m_uSeqRcv) 4 bytes"
+    },
+    {
+     "op": "Decode1",
+     "comment": "locale byte (nVersionHeader; must be 8)"
+    }
+   ]
+  },
+  "CClientSocket::OnAliveReq#PingReceive": {
+   "address": "0x4966c0",
+   "direction": "clientbound",
+   "calls": []
+  },
+  "CField::SendTransferChannelRequest": {
+   "address": "0x5304af",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "nTargetChannel (target channel ID, 0-based byte @0x53055b)"
+    },
+    {
+     "op": "Encode4",
+     "comment": "get_update_time() (client tick / update time, uint32 @0x530569)"
+    }
+   ]
+  },
+  "CWvsContext::SendGivePopularityRequest": {
+   "address": "0xa23eb5",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode4",
+     "comment": "dwCharacterId (target character ID as uint32 @0xa23f7e)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "bInc (1=fame, 0=defame @0xa23f89)"
+    }
+   ]
+  },
+  "CWvsContext::ResignQuest#Action": {
+   "address": "0xa26ea7",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode1",
+     "comment": "action type byte (literal 3u @0xa26f70)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "questId uint16 @0xa26f79"
+    }
+   ]
+  },
+  "CQuest::StartQuest#ActionScriptStart": {
+   "address": "0x716fe1",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "npcId uint32 (*(this+16) @0x7170ae)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "x int16 (ptUserPos @0x7170b9)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "y int16 @0x7170c4"
+    }
+   ]
+  },
+  "CQuest::StartQuest#ActionScriptEnd": {
+   "address": "0x716fe1",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "npcId uint32 (*(this+16) @0x717503)"
+    },
+    {
+     "op": "Decode2",
+     "comment": "x int16 @0x717524"
+    },
+    {
+     "op": "Decode2",
+     "comment": "y int16 @0x71752f"
+    }
+   ]
+  },
+  "CLogin::OnCheckPinCodeResult#RegisterPin": {
+   "address": "0x5fc89d",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "pinInput flag (1=pin provided, 0=cancelled @0x5fc947)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "pin string (only when pinInput=1 @0x5fca86)"
+    }
+   ]
+  },
+  "CClientSocket::OnConnect#ChannelConnect": {
+   "address": "0x494ed1",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode4",
+     "comment": "characterId uint32 \u2014 v83 OnConnect obfuscated; layout inferred from v95 @0x4aef10 (stable across versions)"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "machineId 16 bytes"
+    },
+    {
+     "op": "Decode1",
+     "comment": "gm byte (1 if GM, 0 otherwise)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "unknown1 byte (literal 0)"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "unknown2 8 bytes raw buffer"
+    }
+   ]
+  },
+  "CClientSocket::OnAliveReq#PongSend": {
+   "address": "0x4966c0",
+   "direction": "serverbound",
+   "calls": []
+  },
+  "CClientSocket::OnConnect#StartError": {
+   "address": "0x494ed1",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "length uint16 (byte count of exception log data) \u2014 v83 OnConnect obfuscated; layout inferred from v95"
+    },
+    {
+     "op": "DecodeBuffer",
+     "comment": "bytes variable-length exception log data"
+    }
+   ]
   }
  }
 }

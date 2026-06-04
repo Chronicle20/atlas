@@ -1,0 +1,10 @@
+{
+  "WriterName": "Pong",
+  "IDAName": "CClientSocket::OnAliveReq#PongSend",
+  "Address": "0x4a870a",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/socket/serverbound/pong.go",
+  "Rows": null,
+  "Verdict": 0
+}

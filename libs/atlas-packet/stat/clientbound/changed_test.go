@@ -5,6 +5,7 @@ import (
 
 	constants "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func testStatOptions() map[string]interface{} {
@@ -65,6 +66,30 @@ func TestStatChangedMultipleRoundTrip(t *testing.T) {
 				t.Fatalf("updates count: got %v, want 4", len(output.Updates()))
 			}
 		})
+	}
+}
+
+// TestStatChangedV95WireWidths proves the two v95 wire fixes at the byte level
+// (round-trip tests can't: the pre-fix encoder/decoder were wrong-but-symmetric):
+//   - HP/MaxHP/MP/MaxMP widened from int16 (2 bytes) to int32 (4 bytes) in v95
+//     (GW_CharacterStat::DecodeChangeStat, mask bits 0x400/0x800/0x1000/0x2000).
+//   - a second trailing flag byte (battle-recovery-info, CWvsContext::OnStatChanged)
+//     present in v95.
+//
+// A single-HP packet is bool(1) + mask(4) + HP + trailing:
+//
+//	v95: 1 + 4 + 4 + 2 = 11 bytes
+//	v83: 1 + 4 + 2 + 1 =  8 bytes
+func TestStatChangedV95WireWidths(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	opts := testStatOptions()
+	in := NewStatChanged([]Update{NewUpdate(constants.TypeHp, 1000)}, false)
+
+	if v95 := in.Encode(l, pt.CreateContext("GMS", 95, 1))(opts); len(v95) != 11 {
+		t.Errorf("v95 single-HP packet = %d bytes, want 11 (4-byte HP + 2 trailing): % x", len(v95), v95)
+	}
+	if v83 := in.Encode(l, pt.CreateContext("GMS", 83, 1))(opts); len(v83) != 8 {
+		t.Errorf("v83 single-HP packet = %d bytes, want 8 (2-byte HP + 1 trailing): % x", len(v83), v83)
 	}
 }
 

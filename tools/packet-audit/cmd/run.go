@@ -363,6 +363,74 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthPermanentBan", dir: csvpkg.DirClientbound}}
 	case "CLogin::SendViewAllCharPacket":
 		return []candidate{{name: "AllCharacterListRequest", dir: csvpkg.DirServerbound}}
+
+	// --- misc domain (task-069) ---
+	case "CWvsContext::OnStatChanged":
+		return []candidate{{name: "Changed", dir: csvpkg.DirClientbound}}
+	case "CClientSocket::OnMigrateCommand":
+		return []candidate{{name: "ChannelChange", dir: csvpkg.DirClientbound}}
+	case "CField::SendTransferChannelRequest":
+		return []candidate{{name: "ChannelChangeRequest", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::OnOpenUI":
+		return []candidate{{name: "Open", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnSetStandAloneMode":
+		return []candidate{{name: "Disable", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnSetDirectionMode":
+		return []candidate{{name: "Lock", dir: csvpkg.DirClientbound}}
+
+	// --- fame bucket (task-069, sub-phase 2e) ---
+	case "CWvsContext::OnGivePopularityResult#GiveResponse":
+		return []candidate{{name: "GiveResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGivePopularityResult#ReceiveResponse":
+		return []candidate{{name: "ReceiveResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnGivePopularityResult#ErrorResponse":
+		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::SendGivePopularityRequest":
+		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
+
+	// --- merchant bucket (task-069, sub-phase 2f) ---
+	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":
+		return []candidate{{name: "OpenShop", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ErrorSimple":
+		return []candidate{{name: "ErrorSimple", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ShopSearch":
+		return []candidate{{name: "ShopSearch", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ShopRename":
+		return []candidate{{name: "ShopRename", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp":
+		return []candidate{{name: "RemoteShopWarp", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage":
+		return []candidate{{name: "ConfirmManage", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice":
+		return []candidate{{name: "FreeFormNotice", dir: csvpkg.DirClientbound}}
+
+	// --- quest bucket (task-069, sub-phase 2g) ---
+	case "CWvsContext::OnScriptProgressMessage":
+		return []candidate{{name: "ScriptProgress", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::ResignQuest#Action":
+		return []candidate{{name: "Action", dir: csvpkg.DirServerbound}}
+	case "CQuest::StartQuest#ActionScriptStart":
+		return []candidate{{name: "ActionScriptStart", dir: csvpkg.DirServerbound}}
+	case "CQuest::StartQuest#ActionScriptEnd":
+		return []candidate{{name: "ActionScriptEnd", dir: csvpkg.DirServerbound}}
+
+	// --- account bucket (task-069, sub-phase 2h) ---
+	case "CLogin::OnCheckPinCodeResult#RegisterPin":
+		return []candidate{{name: "RegisterPin", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendSetGenderPacket":
+		return []candidate{{name: "SetGender", dir: csvpkg.DirServerbound}}
+
+	// --- socket bucket (task-069, sub-phase 2i) ---
+	case "CClientSocket::OnConnect#Hello":
+		return []candidate{{name: "Hello", dir: csvpkg.DirClientbound}}
+	case "CClientSocket::OnAliveReq#PingReceive":
+		return []candidate{{name: "Ping", dir: csvpkg.DirClientbound}}
+	case "CClientSocket::OnConnect#ChannelConnect":
+		return []candidate{{name: "ChannelConnect", dir: csvpkg.DirServerbound}}
+	case "CClientSocket::OnAliveReq#PongSend":
+		return []candidate{{name: "Pong", dir: csvpkg.DirServerbound}}
+	case "CClientSocket::OnConnect#StartError":
+		return []candidate{{name: "StartError", dir: csvpkg.DirServerbound}}
 	// --- Character spawn/list bucket ---
 	case "CLogin::OnViewAllCharResult#CharacterViewAllCount":
 		return []candidate{{name: "CharacterViewAllCount", dir: csvpkg.DirClientbound}}

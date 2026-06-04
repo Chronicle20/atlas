@@ -1,0 +1,29 @@
+{
+  "WriterName": "ChannelChangeRequest",
+  "IDAName": "CField::SendTransferChannelRequest",
+  "Address": "0x52efa0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/channel/serverbound/channel_change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nTargetChannel (target channel ID, 0-based byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "get_update_time() (client tick / update time, uint32)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

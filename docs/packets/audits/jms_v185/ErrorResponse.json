@@ -1,0 +1,20 @@
+{
+  "WriterName": "ErrorResponse",
+  "IDAName": "CWvsContext::OnGivePopularityResult#ErrorResponse",
+  "Address": "0xb094aa",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/fame/clientbound/response.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (cases 1-4 = error codes — no additional fields)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -815,6 +815,115 @@ The synthetic-FName scheme (e.g., `CLogin::OnCheckPasswordResult#AuthLoginFailed
 lets one IDA function model multiple sub-branches when atlas has separate
 writers for different result codes.
 
+## Tool domain — utility-only (task-069)
+
+`libs/atlas-packet/tool/` contains only `uint128.go` — a 128-bit unsigned
+integer utility type (ShiftLeft/ShiftRight/And/Or/Xor/Add/Mult/IsZero) consumed
+by socket/channel handshake encoders for hash fields. It is NOT a packet domain:
+zero `Operation()`/`Encode()`/`Decode()` methods, zero audit rows. Confirmed at
+audit time via `find libs/atlas-packet/tool -name '*.go' ! -name '*_test.go'`
+(single file) and method enumeration. Listed in TOTAL.md §2 under "no packets;
+utility-only".
+
+## locateAtlasFile struct-name collisions (task-069)
+
+The audit's `locateAtlasFile` (tools/packet-audit/cmd/run.go) resolves an atlas
+struct by the FIRST `type <Name> struct` match in alphabetical `WalkDir` order
+within the matching direction folder. When two domains define the same struct
+name in the same direction, the wrong file is audited:
+
+| Struct | Audited (wrong) | Intended | Effect |
+|---|---|---|---|
+| `ChannelChange` (clientbound) | `buddy/clientbound/channel_change.go` | `channel/clientbound/change.go` | spurious ❌ on the ChannelChange row; the channel packet is verified correct manually + by wire-shape test (see ChannelChange.md Manual analysis) |
+
+Not fixed here (tool change out of scope per design §1's spirit). Future misc
+buckets must check for same-name collisions and verify the audited file path in
+SUMMARY points at the intended domain; if not, verify the packet manually and
+annotate the report.
+
+## Bare handlers — misc domain (task-069)
+
+| Handler constant | Location | Reason deferred |
+|---|---|---|
+| `HiredMerchantOperationHandle` | `libs/atlas-packet/merchant/serverbound/operation.go` | Bare constant only — no atlas-packet decoder struct. The serverbound parse is handled in `services/atlas-channel` socket handler. Out of scope for the libs/atlas-packet audit. |
+
+## Missing / unverified modes — merchant (task-069, sub-phase 2f)
+
+| Mode | Constant | Reason deferred |
+|---|---|---|
+| 8 (0x08) | `HiredMerchantOperationModeErrorUnknown` | In IDA switch (`OnEntrustedShopCheckResult`): `Decode4(shopId)+Decode1(channelId)` — channel-name notice. No atlas body emits it; missing implementation, not a struct wire bug. |
+| 1 (0x01) | `HiredMerchantOperationModeErrorUnableToOpenTheStore` | Absent from the v95 `OnEntrustedShopCheckResult` switch. Possibly hire-merchant (task-067), KMS-only, or client-side-only. Cross-reference task-067 before implementing. |
+| 11 (0x0B) | *(no atlas constant)* | Present in IDA switch (string-pool 3508 notice, no extra decode) but no atlas constant/struct. Add when the mode is exercised. |
+
+## Still pending — quest (task-069, sub-phase 2g)
+
+These three serverbound quest packets have a confirmed v95 wire mismatch but the fix
+requires updating BOTH the atlas-packet struct AND the `services/atlas-channel`
+`quest_action.go` handler together — broader than the libs-only audit. Recommend a
+dedicated follow-up task.
+
+- **`ActionStart` / `ActionComplete`** (`CQuest::StartQuest` @0x6b40a0, actions 1/2):
+  v95 writes `Encode4(nItemPos)` (delivery-item slot, 0 for normal quests) BETWEEN `npcId`
+  and the conditional `x,y` coords; atlas omits it. Also: atlas's `autoStart` gate on `x,y`
+  corresponds to IDA's `!CQuestMan::IsAutoAlertQuest(questId)` — equivalent but verify naming.
+- **`ActionRestoreLostItem`** (`CQuest::OnCompleteQuestFailed` @0x6b1fc0, action 0):
+  IDA sends a count-prefixed variable-length array of lost-item ids
+  (`Encode1(0)+Encode2(questId)+Encode4(count)+EncodeBuffer(4*count)`); atlas models a single
+  `unk1+itemId`. Needs struct redesign (slice + count) + handler update. Rarely exercised.
+
+## Phase 3 cross-version verification TODOs (task-069)
+
+Gates applied during the v95 (Phase 2) pass that were conservatively scoped to v95+ and
+MUST be re-checked against v83 / v87 / JMS185 IDA in Phase 3 (widen or narrow as evidence
+dictates):
+
+### Resolved in Phase 3 (GMS v83 pass — 2026-06-03)
+
+- **`stat/clientbound/changed.go`** — CONFIRMED ✅. v83 `GW_CharacterStat::DecodeChangeStat`
+  @ 0x4e2fba reads HP/MaxHP/MP/MaxMP as `Decode2` (int16). v83 `CWvsContext::OnStatChanged`
+  @ 0xa1fb52 reads ONE trailing byte only (no battle-recovery-info second byte). Both gates
+  (`v95Plus` for HP width AND for second trailing byte) are correct as-is.
+- **`ui/clientbound/lock.go`** — CONFIRMED ✅. v83 `CUserLocal::SetDirectionMode` @ 0x95ff5a
+  reads ONLY `Decode1(bSet)` — no `tAfterLeaveDirectionMode` int32. Gate `GMS && MajorVersion>=90`
+  is correct as-is; v83 (major version 83 < 90) correctly receives 1 byte only.
+
+### Functions absent from GMS v83 (not in gms_v83.json)
+
+- **`CLogin::SendSetGenderPacket`** — no such function in v83 `CLogin` class. Gender-selection
+  flow differs in v83; the packet may not exist or is embedded in a different handler.
+  The `SetGender` atlas struct has no v83 JSON entry; no v83 report is generated for it.
+  If v83 gender-setting is ever needed, locate the sending function in a dedicated v83 audit.
+
+### Resolved in Phase 3 (JMS v185 pass — 2026-06-03)
+
+- **`stat/clientbound/changed.go`** — CONFIRMED ✅. JMS v185 `GW_CharacterStat::DecodeChangeStat`
+  @ 0x50f16a reads HP/MaxHP/MP/MaxMP as `Decode2` (int16), same as GMS v83. JMS `OnStatChanged`
+  @ 0xb06632 reads ONE conditional trailing `Decode1` (only when mask `0x180008`). Both gates
+  (`v95Plus` for HP width AND for second trailing byte) are correct as-is for JMS.
+- **`ui/clientbound/lock.go`** — CONFIRMED ✅. JMS v185 direction-mode handler `sub_A2CD83`
+  (case 0xE7 of `CUserLocal::OnPacket`) reads ONLY `Decode1(bSet)` — no `tAfterLeaveDirectionMode`
+  int32. Gate `GMS && MajorVersion>=90` is correct as-is; JMS (Region != "GMS") correctly
+  receives 1 byte only.
+
+### New gate widened in Phase 3 (JMS v185 pass — 2026-06-03)
+
+- **`socket/serverbound/channel_connect.go`** — WIDENED. JMS v185 `CClientSocket::OnConnect`
+  non-login branch @ 0x4b051f sends `Encode2(dummy1)` (uint16) for the `gm` field where GMS
+  sends `Encode1` (byte). Fixed: `ChannelConnect.Encode/Decode` gates on `Region=="JMS"` to
+  use `WriteShort/ReadUint16`. Wire shape test added in `TestChannelConnectWireShape`.
+
+### Functions absent from JMS v185 (not in gms_jms_185.json)
+
+- **`CLogin::OnCheckPinCodeResult#RegisterPin`** — no such function in JMS v185. JMS has
+  `usesPin: false` in template; no PIN flow. SetGender similarly absent.
+- **`CLogin::SendSetGenderPacket`** — absent from JMS v185 IDB.
+- **`CUserLocal::OnSetDirectionMode`** (named) — JMS uses unnamed `sub_A2CD83` at case 0xE7
+  of `CUserLocal::OnPacket`. Wire behavior confirmed: 1 byte only.
+
+### Still pending — v87 verification
+
+These gates have been confirmed for v83 and JMS v185 but NOT yet verified for v87. If v87
+is audited in a future phase, re-check both gates above (stat Changed HP width, ui Lock int32).
 ## Cross-version — character domain (v83)
 
 Results of the GMS v83 cross-version pass (Task 15). All 44+ character FNames were

@@ -1,0 +1,10 @@
+{
+  "WriterName": "Ping",
+  "IDAName": "CClientSocket::OnAliveReq#PingReceive",
+  "Address": "0x4b18e3",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/socket/clientbound/ping.go",
+  "Rows": null,
+  "Verdict": 0
+}

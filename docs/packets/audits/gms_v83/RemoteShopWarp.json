@@ -1,0 +1,38 @@
+{
+  "WriterName": "RemoteShopWarp",
+  "IDAName": "CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp",
+  "Address": "0xa27d75",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (case 0x10 = REMOTE_SHOP_WARP)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "shopId (v58 / dwCharacterID)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "channelId (v14 — 0xFE/0xFD/0xFF = error; otherwise shows YesNo warp dialog)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

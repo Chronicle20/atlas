@@ -1,0 +1,20 @@
+{
+  "WriterName": "ScriptProgress",
+  "IDAName": "CWvsContext::OnScriptProgressMessage",
+  "Address": "0xaf7f26",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/quest/clientbound/script_progress.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message (quest script progress string)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

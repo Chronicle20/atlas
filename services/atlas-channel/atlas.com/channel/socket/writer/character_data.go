@@ -15,28 +15,28 @@ import (
 func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.CharacterData {
 	cd := charpkt.CharacterData{
 		Stats: charpkt.CharacterStats{
-			Id:        c.Id(),
-			Name:      c.Name(),
-			Gender:    c.Gender(),
-			SkinColor: c.SkinColor(),
-			Face:      c.Face(),
-			Hair:      c.Hair(),
-			Level:     c.Level(),
-			JobId:     uint16(c.JobId()),
-			Str:       c.Strength(),
-			Dex:       c.Dexterity(),
-			Int:       c.Intelligence(),
-			Luk:       c.Luck(),
-			Hp:        c.Hp(),
-			MaxHp:     c.MaxHp(),
-			Mp:        c.Mp(),
-			MaxMp:     c.MaxMp(),
-			Ap:        c.Ap(),
-			Sp:        c.RemainingSp(),
-			Exp:       c.Experience(),
-			Fame:      c.Fame(),
-			GachaExp:  c.GachaponExperience(),
-			MapId:     uint32(c.MapId()),
+			Id:         c.Id(),
+			Name:       c.Name(),
+			Gender:     c.Gender(),
+			SkinColor:  c.SkinColor(),
+			Face:       c.Face(),
+			Hair:       c.Hair(),
+			Level:      c.Level(),
+			JobId:      uint16(c.JobId()),
+			Str:        c.Strength(),
+			Dex:        c.Dexterity(),
+			Int:        c.Intelligence(),
+			Luk:        c.Luck(),
+			Hp:         c.Hp(),
+			MaxHp:      c.MaxHp(),
+			Mp:         c.Mp(),
+			MaxMp:      c.MaxMp(),
+			Ap:         c.Ap(),
+			Sp:         c.RemainingSp(),
+			Exp:        c.Experience(),
+			Fame:       c.Fame(),
+			GachaExp:   c.GachaponExperience(),
+			MapId:      uint32(c.MapId()),
 			SpawnPoint: c.SpawnPoint(),
 		},
 		BuddyCapacity: bl.Capacity(),
@@ -90,8 +90,9 @@ func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.Character
 	}
 
 	// Monster book: cover + owned cards (empty when the decorator failed open).
-	cd.MonsterBook.CoverCardId = c.CoverCardId()
-	for _, mc := range c.MonsterBookCards() {
+	mb := c.MonsterBook()
+	cd.MonsterBook.CoverCardId = mb.CoverCardId()
+	for _, mc := range mb.Cards() {
 		cd.MonsterBook.Cards = append(cd.MonsterBook.Cards, charpkt.MonsterBookCard{
 			CardId: mc.CardId(),
 			Level:  mc.Level(),

@@ -181,14 +181,12 @@ func (p *ProcessorImpl) MonsterBookDecorator(m Model) Model {
 		p.l.WithError(err).Debugf("Unable to fetch monster-book collection for character [%d]; rendering empty book.", m.Id())
 		return m
 	}
-	m = m.SetCoverCardId(col.CoverCardId())
-	m = m.SetMonsterBookSummary(col.BookLevel(), col.NormalCount(), col.SpecialCount(), col.TotalUniqueCards())
 	cards, err := mb.GetCardsByCharacterId(character.Id(m.Id()))
 	if err != nil {
 		p.l.WithError(err).Debugf("Unable to fetch monster-book cards for character [%d]; rendering cover only.", m.Id())
-		return m
+		return m.SetMonsterBook(monsterbook.NewModel(col, nil))
 	}
-	return m.SetMonsterBookCards(cards)
+	return m.SetMonsterBook(monsterbook.NewModel(col, cards))
 }
 
 func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model] {

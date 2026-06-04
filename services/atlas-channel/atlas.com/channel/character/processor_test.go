@@ -265,14 +265,14 @@ func TestMonsterBookDecorator_FailOpen(t *testing.T) {
 
 	m := character.NewModelBuilder().SetId(42).MustBuild()
 	got := p.MonsterBookDecorator(m)
-	if got.CoverCardId() != 0 {
-		t.Errorf("cover should be 0 on fail-open, got %d", got.CoverCardId())
+	if got.MonsterBook().CoverCardId() != 0 {
+		t.Errorf("cover should be 0 on fail-open, got %d", got.MonsterBook().CoverCardId())
 	}
-	if len(got.MonsterBookCards()) != 0 {
-		t.Errorf("cards should be empty on fail-open, got %d", len(got.MonsterBookCards()))
+	if len(got.MonsterBook().Cards()) != 0 {
+		t.Errorf("cards should be empty on fail-open, got %d", len(got.MonsterBook().Cards()))
 	}
-	if got.MonsterBookLevel() != 0 || got.MonsterBookTotalCards() != 0 {
-		t.Errorf("summary should be 0 on fail-open, got level=%d total=%d", got.MonsterBookLevel(), got.MonsterBookTotalCards())
+	if got.MonsterBook().Level() != 0 || got.MonsterBook().TotalUniqueCards() != 0 {
+		t.Errorf("summary should be 0 on fail-open, got level=%d total=%d", got.MonsterBook().Level(), got.MonsterBook().TotalUniqueCards())
 	}
 }
 
@@ -294,15 +294,15 @@ func TestMonsterBookDecorator_Populates(t *testing.T) {
 
 	m := character.NewModelBuilder().SetId(42).MustBuild()
 	got := p.MonsterBookDecorator(m)
-	if got.CoverCardId() != item.Id(2380001) {
-		t.Errorf("cover = %d, want 2380001", got.CoverCardId())
+	if got.MonsterBook().CoverCardId() != item.Id(2380001) {
+		t.Errorf("cover = %d, want 2380001", got.MonsterBook().CoverCardId())
 	}
-	if len(got.MonsterBookCards()) != 1 || got.MonsterBookCards()[0].CardId() != item.Id(2380005) {
-		t.Errorf("cards not populated: %+v", got.MonsterBookCards())
+	if len(got.MonsterBook().Cards()) != 1 || got.MonsterBook().Cards()[0].CardId() != item.Id(2380005) {
+		t.Errorf("cards not populated: %+v", got.MonsterBook().Cards())
 	}
-	if got.MonsterBookLevel() != 5 || got.MonsterBookNormalCount() != 10 ||
-		got.MonsterBookSpecialCount() != 3 || got.MonsterBookTotalCards() != 13 {
+	if got.MonsterBook().Level() != 5 || got.MonsterBook().NormalCount() != 10 ||
+		got.MonsterBook().SpecialCount() != 3 || got.MonsterBook().TotalUniqueCards() != 13 {
 		t.Errorf("summary not populated: level=%d normal=%d special=%d total=%d",
-			got.MonsterBookLevel(), got.MonsterBookNormalCount(), got.MonsterBookSpecialCount(), got.MonsterBookTotalCards())
+			got.MonsterBook().Level(), got.MonsterBook().NormalCount(), got.MonsterBook().SpecialCount(), got.MonsterBook().TotalUniqueCards())
 	}
 }

@@ -236,22 +236,23 @@ func TestCloneModel_PreservesParty(t *testing.T) {
 }
 
 func TestModel_MonsterBookCards(t *testing.T) {
-	cards := []monsterbook.Card{}
-	m := character.NewModelBuilder().SetId(7).SetMonsterBookCards(cards).MustBuild()
-	if got := m.MonsterBookCards(); len(got) != 0 {
+	col, err := monsterbook.Extract(monsterbook.CollectionRestModel{
+		BookLevel: 5, NormalCount: 10, SpecialCount: 3, TotalUniqueCards: 13, CoverCardId: item.Id(2380001),
+	})
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	m := character.NewModelBuilder().SetId(7).SetMonsterBook(monsterbook.NewModel(col, nil)).MustBuild()
+	if got := m.MonsterBook().Cards(); len(got) != 0 {
 		t.Fatalf("expected empty cards, got %d", len(got))
 	}
-	// Setter on the model returns a clone carrying the new value.
-	m2 := m.SetCoverCardId(item.Id(2380001))
-	if m2.CoverCardId() != item.Id(2380001) {
-		t.Errorf("cover not threaded through clone")
+	if m.MonsterBook().CoverCardId() != item.Id(2380001) {
+		t.Errorf("cover not threaded: %d", m.MonsterBook().CoverCardId())
 	}
-	if m2.Id() != 7 {
-		t.Errorf("id not preserved through clone: %d", m2.Id())
+	if m.MonsterBook().Level() != 5 || m.MonsterBook().NormalCount() != 10 || m.MonsterBook().SpecialCount() != 3 || m.MonsterBook().TotalUniqueCards() != 13 {
+		t.Errorf("summary not threaded: %d/%d/%d/%d", m.MonsterBook().Level(), m.MonsterBook().NormalCount(), m.MonsterBook().SpecialCount(), m.MonsterBook().TotalUniqueCards())
 	}
-
-	ms := character.NewModelBuilder().SetId(7).SetMonsterBookSummary(5, 10, 3, 13).MustBuild()
-	if ms.MonsterBookLevel() != 5 || ms.MonsterBookNormalCount() != 10 || ms.MonsterBookSpecialCount() != 3 || ms.MonsterBookTotalCards() != 13 {
-		t.Errorf("summary not threaded: %d/%d/%d/%d", ms.MonsterBookLevel(), ms.MonsterBookNormalCount(), ms.MonsterBookSpecialCount(), ms.MonsterBookTotalCards())
+	if m.Id() != 7 {
+		t.Errorf("id not preserved: %d", m.Id())
 	}
 }

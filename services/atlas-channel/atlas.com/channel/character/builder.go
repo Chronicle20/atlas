@@ -10,7 +10,6 @@ import (
 	"atlas-channel/quest"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -21,49 +20,44 @@ var (
 )
 
 type modelBuilder struct {
-	id                      uint32
-	accountId               uint32
-	worldId                 world.Id
-	name                    string
-	gender                  byte
-	skinColor               byte
-	face                    uint32
-	hair                    uint32
-	level                   byte
-	jobId                   job.Id
-	strength                uint16
-	dexterity               uint16
-	intelligence            uint16
-	luck                    uint16
-	hp                      uint16
-	maxHp                   uint16
-	mp                      uint16
-	maxMp                   uint16
-	hpMpUsed                int
-	ap                      uint16
-	sp                      string
-	experience              uint32
-	fame                    int16
-	gachaponExperience      uint32
-	mapId                   _map.Id
-	spawnPoint              uint32
-	gm                      int
-	x                       int16
-	y                       int16
-	stance                  byte
-	meso                    uint32
-	pets                    []pet.Model
-	equipment               equipment.Model
-	inventory               inventory.Model
-	skills                  []skill.Model
-	quests                  []quest.Model
-	party                   party.Model
-	coverCardId             item.Id
-	monsterBookCards        []monsterbook.Card
-	monsterBookLevel        uint16
-	monsterBookNormalCount  uint16
-	monsterBookSpecialCount uint16
-	monsterBookTotalCards   uint16
+	id                 uint32
+	accountId          uint32
+	worldId            world.Id
+	name               string
+	gender             byte
+	skinColor          byte
+	face               uint32
+	hair               uint32
+	level              byte
+	jobId              job.Id
+	strength           uint16
+	dexterity          uint16
+	intelligence       uint16
+	luck               uint16
+	hp                 uint16
+	maxHp              uint16
+	mp                 uint16
+	maxMp              uint16
+	hpMpUsed           int
+	ap                 uint16
+	sp                 string
+	experience         uint32
+	fame               int16
+	gachaponExperience uint32
+	mapId              _map.Id
+	spawnPoint         uint32
+	gm                 int
+	x                  int16
+	y                  int16
+	stance             byte
+	meso               uint32
+	pets               []pet.Model
+	equipment          equipment.Model
+	inventory          inventory.Model
+	skills             []skill.Model
+	quests             []quest.Model
+	party              party.Model
+	monsterBook        monsterbook.Model
 }
 
 // NewModelBuilder creates a new builder instance
@@ -74,49 +68,44 @@ func NewModelBuilder() *modelBuilder {
 // CloneModel creates a builder initialized with the Model's values
 func CloneModel(m Model) *modelBuilder {
 	return &modelBuilder{
-		id:                      m.id,
-		accountId:               m.accountId,
-		worldId:                 m.worldId,
-		name:                    m.name,
-		gender:                  m.gender,
-		skinColor:               m.skinColor,
-		face:                    m.face,
-		hair:                    m.hair,
-		level:                   m.level,
-		jobId:                   m.jobId,
-		strength:                m.strength,
-		dexterity:               m.dexterity,
-		intelligence:            m.intelligence,
-		luck:                    m.luck,
-		hp:                      m.hp,
-		maxHp:                   m.maxHp,
-		mp:                      m.mp,
-		maxMp:                   m.maxMp,
-		hpMpUsed:                m.hpMpUsed,
-		ap:                      m.ap,
-		sp:                      m.sp,
-		experience:              m.experience,
-		fame:                    m.fame,
-		gachaponExperience:      m.gachaponExperience,
-		mapId:                   m.mapId,
-		spawnPoint:              m.spawnPoint,
-		gm:                      m.gm,
-		x:                       m.x,
-		y:                       m.y,
-		stance:                  m.stance,
-		meso:                    m.meso,
-		pets:                    m.pets,
-		equipment:               m.equipment,
-		inventory:               m.inventory,
-		skills:                  m.skills,
-		quests:                  m.quests,
-		party:                   m.party,
-		coverCardId:             m.coverCardId,
-		monsterBookCards:        m.monsterBookCards,
-		monsterBookLevel:        m.monsterBookLevel,
-		monsterBookNormalCount:  m.monsterBookNormalCount,
-		monsterBookSpecialCount: m.monsterBookSpecialCount,
-		monsterBookTotalCards:   m.monsterBookTotalCards,
+		id:                 m.id,
+		accountId:          m.accountId,
+		worldId:            m.worldId,
+		name:               m.name,
+		gender:             m.gender,
+		skinColor:          m.skinColor,
+		face:               m.face,
+		hair:               m.hair,
+		level:              m.level,
+		jobId:              m.jobId,
+		strength:           m.strength,
+		dexterity:          m.dexterity,
+		intelligence:       m.intelligence,
+		luck:               m.luck,
+		hp:                 m.hp,
+		maxHp:              m.maxHp,
+		mp:                 m.mp,
+		maxMp:              m.maxMp,
+		hpMpUsed:           m.hpMpUsed,
+		ap:                 m.ap,
+		sp:                 m.sp,
+		experience:         m.experience,
+		fame:               m.fame,
+		gachaponExperience: m.gachaponExperience,
+		mapId:              m.mapId,
+		spawnPoint:         m.spawnPoint,
+		gm:                 m.gm,
+		x:                  m.x,
+		y:                  m.y,
+		stance:             m.stance,
+		meso:               m.meso,
+		pets:               m.pets,
+		equipment:          m.equipment,
+		inventory:          m.inventory,
+		skills:             m.skills,
+		quests:             m.quests,
+		party:              m.party,
+		monsterBook:        m.monsterBook,
 	}
 }
 
@@ -157,16 +146,8 @@ func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder { b.invento
 func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder      { b.skills = v; return b }
 func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder      { b.quests = v; return b }
 func (b *modelBuilder) SetParty(v party.Model) *modelBuilder         { b.party = v; return b }
-func (b *modelBuilder) SetCoverCardId(v item.Id) *modelBuilder       { b.coverCardId = v; return b }
-func (b *modelBuilder) SetMonsterBookCards(v []monsterbook.Card) *modelBuilder {
-	b.monsterBookCards = v
-	return b
-}
-func (b *modelBuilder) SetMonsterBookSummary(level, normal, special, total uint16) *modelBuilder {
-	b.monsterBookLevel = level
-	b.monsterBookNormalCount = normal
-	b.monsterBookSpecialCount = special
-	b.monsterBookTotalCards = total
+func (b *modelBuilder) SetMonsterBook(v monsterbook.Model) *modelBuilder {
+	b.monsterBook = v
 	return b
 }
 
@@ -176,49 +157,44 @@ func (b *modelBuilder) Build() (Model, error) {
 		return Model{}, ErrInvalidId
 	}
 	return Model{
-		id:                      b.id,
-		accountId:               b.accountId,
-		worldId:                 b.worldId,
-		name:                    b.name,
-		gender:                  b.gender,
-		skinColor:               b.skinColor,
-		face:                    b.face,
-		hair:                    b.hair,
-		level:                   b.level,
-		jobId:                   b.jobId,
-		strength:                b.strength,
-		dexterity:               b.dexterity,
-		intelligence:            b.intelligence,
-		luck:                    b.luck,
-		hp:                      b.hp,
-		maxHp:                   b.maxHp,
-		mp:                      b.mp,
-		maxMp:                   b.maxMp,
-		hpMpUsed:                b.hpMpUsed,
-		ap:                      b.ap,
-		sp:                      b.sp,
-		experience:              b.experience,
-		fame:                    b.fame,
-		gachaponExperience:      b.gachaponExperience,
-		mapId:                   b.mapId,
-		spawnPoint:              b.spawnPoint,
-		gm:                      b.gm,
-		x:                       b.x,
-		y:                       b.y,
-		stance:                  b.stance,
-		meso:                    b.meso,
-		pets:                    b.pets,
-		equipment:               b.equipment,
-		inventory:               b.inventory,
-		skills:                  b.skills,
-		quests:                  b.quests,
-		party:                   b.party,
-		coverCardId:             b.coverCardId,
-		monsterBookCards:        b.monsterBookCards,
-		monsterBookLevel:        b.monsterBookLevel,
-		monsterBookNormalCount:  b.monsterBookNormalCount,
-		monsterBookSpecialCount: b.monsterBookSpecialCount,
-		monsterBookTotalCards:   b.monsterBookTotalCards,
+		id:                 b.id,
+		accountId:          b.accountId,
+		worldId:            b.worldId,
+		name:               b.name,
+		gender:             b.gender,
+		skinColor:          b.skinColor,
+		face:               b.face,
+		hair:               b.hair,
+		level:              b.level,
+		jobId:              b.jobId,
+		strength:           b.strength,
+		dexterity:          b.dexterity,
+		intelligence:       b.intelligence,
+		luck:               b.luck,
+		hp:                 b.hp,
+		maxHp:              b.maxHp,
+		mp:                 b.mp,
+		maxMp:              b.maxMp,
+		hpMpUsed:           b.hpMpUsed,
+		ap:                 b.ap,
+		sp:                 b.sp,
+		experience:         b.experience,
+		fame:               b.fame,
+		gachaponExperience: b.gachaponExperience,
+		mapId:              b.mapId,
+		spawnPoint:         b.spawnPoint,
+		gm:                 b.gm,
+		x:                  b.x,
+		y:                  b.y,
+		stance:             b.stance,
+		meso:               b.meso,
+		pets:               b.pets,
+		equipment:          b.equipment,
+		inventory:          b.inventory,
+		skills:             b.skills,
+		quests:             b.quests,
+		party:              b.party,
+		monsterBook:        b.monsterBook,
 	}, nil
 }
 

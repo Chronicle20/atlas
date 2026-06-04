@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -23,49 +22,44 @@ import (
 )
 
 type Model struct {
-	id                      uint32
-	accountId               uint32
-	worldId                 world.Id
-	name                    string
-	gender                  byte
-	skinColor               byte
-	face                    uint32
-	hair                    uint32
-	level                   byte
-	jobId                   job.Id
-	strength                uint16
-	dexterity               uint16
-	intelligence            uint16
-	luck                    uint16
-	hp                      uint16
-	maxHp                   uint16
-	mp                      uint16
-	maxMp                   uint16
-	hpMpUsed                int
-	ap                      uint16
-	sp                      string
-	experience              uint32
-	fame                    int16
-	gachaponExperience      uint32
-	mapId                   _map.Id
-	spawnPoint              uint32
-	gm                      int
-	x                       int16
-	y                       int16
-	stance                  byte
-	meso                    uint32
-	pets                    []pet.Model
-	equipment               equipment.Model
-	inventory               inventory.Model
-	skills                  []skill.Model
-	quests                  []quest.Model
-	party                   party.Model
-	coverCardId             item.Id
-	monsterBookCards        []monsterbook.Card
-	monsterBookLevel        uint16
-	monsterBookNormalCount  uint16
-	monsterBookSpecialCount uint16
-	monsterBookTotalCards   uint16
+	id                 uint32
+	accountId          uint32
+	worldId            world.Id
+	name               string
+	gender             byte
+	skinColor          byte
+	face               uint32
+	hair               uint32
+	level              byte
+	jobId              job.Id
+	strength           uint16
+	dexterity          uint16
+	intelligence       uint16
+	luck               uint16
+	hp                 uint16
+	maxHp              uint16
+	mp                 uint16
+	maxMp              uint16
+	hpMpUsed           int
+	ap                 uint16
+	sp                 string
+	experience         uint32
+	fame               int16
+	gachaponExperience uint32
+	mapId              _map.Id
+	spawnPoint         uint32
+	gm                 int
+	x                  int16
+	y                  int16
+	stance             byte
+	meso               uint32
+	pets               []pet.Model
+	equipment          equipment.Model
+	inventory          inventory.Model
+	skills             []skill.Model
+	quests             []quest.Model
+	party              party.Model
+	monsterBook        monsterbook.Model
 }
 
 func (m Model) Gm() bool {
@@ -351,43 +345,13 @@ func (m Model) SetParty(p party.Model) Model {
 	return CloneModel(m).SetParty(p).MustBuild()
 }
 
-// CoverCardId returns the monster book cover card id selected by the
-// character. Zero on an undecorated model; populated by
-// Processor.MonsterBookDecorator when the upstream REST call
-// succeeds.
-func (m Model) CoverCardId() item.Id {
-	return m.coverCardId
+// MonsterBook returns the character's monster-book view (cover, summary counts,
+// owned cards). Empty on an undecorated model; populated by MonsterBookDecorator.
+func (m Model) MonsterBook() monsterbook.Model {
+	return m.monsterBook
 }
 
-// SetCoverCardId returns a clone of the model with coverCardId set.
-func (m Model) SetCoverCardId(v item.Id) Model {
-	return CloneModel(m).SetCoverCardId(v).MustBuild()
-}
-
-// MonsterBookCards returns the character's owned monster-book cards. Empty on an
-// undecorated model; populated by Processor.MonsterBookDecorator on success.
-func (m Model) MonsterBookCards() []monsterbook.Card {
-	return m.monsterBookCards
-}
-
-// SetMonsterBookCards returns a clone of the model with the card list set.
-func (m Model) SetMonsterBookCards(v []monsterbook.Card) Model {
-	return CloneModel(m).SetMonsterBookCards(v).MustBuild()
-}
-
-// MonsterBookLevel returns the character's monster-book level (CharacterInfo summary).
-func (m Model) MonsterBookLevel() uint16 { return m.monsterBookLevel }
-
-// MonsterBookNormalCount returns the count of normal cards collected.
-func (m Model) MonsterBookNormalCount() uint16 { return m.monsterBookNormalCount }
-
-// MonsterBookSpecialCount returns the count of special cards collected.
-func (m Model) MonsterBookSpecialCount() uint16 { return m.monsterBookSpecialCount }
-
-// MonsterBookTotalCards returns the total unique cards collected.
-func (m Model) MonsterBookTotalCards() uint16 { return m.monsterBookTotalCards }
-
-// SetMonsterBookSummary returns a clone with the monster-book summary counts set.
-func (m Model) SetMonsterBookSummary(level, normal, special, total uint16) Model {
-	return CloneModel(m).SetMonsterBookSummary(level, normal, special, total).MustBuild()
+// SetMonsterBook returns a clone of the model with the monster book set.
+func (m Model) SetMonsterBook(v monsterbook.Model) Model {
+	return CloneModel(m).SetMonsterBook(v).MustBuild()
 }

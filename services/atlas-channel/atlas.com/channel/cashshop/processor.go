@@ -89,9 +89,24 @@ func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId u
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, _ bool, currency uint32, zero uint32) error {
+func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
+}
+
+// resolvePurchaseCurrency maps the buy packet's isPoints flag onto the wallet
+// currency code when no currency was provided on the wire. JMS cash buys carry
+// isPoints but no currency (currency==0), so an isPoints buy must be steered to
+// the MaplePoints balance (code 2) instead of falling through to prepaid. GMS
+// sends an explicit non-zero currency, so this guard never fires for GMS and
+// leaves its behavior unchanged.
+func resolvePurchaseCurrency(isPoints bool, currency uint32) uint32 {
+	const walletCurrencyMaplePoints = uint32(2) // wallet.Model.Purchase: currency==2 -> points
+	if isPoints && currency == 0 {
+		return walletCurrencyMaplePoints
+	}
+	return currency
 }
 
 func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, _ int16) error {

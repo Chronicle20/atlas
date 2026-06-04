@@ -46,34 +46,62 @@ func (m ShopOperationGift) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			w.WriteAsciiString(m.spw)
+		if t.Region() == "JMS" {
+			m.encodeJMS(w)
 		} else {
-			w.WriteInt(m.birthday)
+			m.encodeGMS(t, w)
 		}
-		w.WriteInt(m.serialNumber)
-		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
-			w.WriteByte(m.oneADay)
-		}
-		w.WriteAsciiString(m.name)
-		w.WriteAsciiString(m.message)
 		return w.Bytes()
 	}
+}
+
+func (m ShopOperationGift) encodeGMS(t tenant.Model, w *response.Writer) {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		w.WriteAsciiString(m.spw)
+	} else {
+		w.WriteInt(m.birthday)
+	}
+	w.WriteInt(m.serialNumber)
+	if t.Region() == "GMS" && t.MajorVersion() >= 87 {
+		w.WriteByte(m.oneADay)
+	}
+	w.WriteAsciiString(m.name)
+	w.WriteAsciiString(m.message)
+}
+
+// encodeJMS - JMS185 CCashShop::SendGiftsPacket@0x47bced: Encode1(0x2E) gift
+// sub-op (consumed by op-byte routing, NOT part of this body) then
+// Encode4(commSN). The struct body is serialNumber only — no SPW/birthday, no
+// recipient name, no message, no oneADay (NX-system divergence).
+func (m ShopOperationGift) encodeJMS(w *response.Writer) {
+	w.WriteInt(m.serialNumber)
 }
 
 func (m *ShopOperationGift) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			m.spw = r.ReadAsciiString()
+		if t.Region() == "JMS" {
+			m.decodeJMS(r)
 		} else {
-			m.birthday = r.ReadUint32()
+			m.decodeGMS(t, r)
 		}
-		m.serialNumber = r.ReadUint32()
-		if t.Region() == "GMS" && t.MajorVersion() >= 87 {
-			m.oneADay = r.ReadByte()
-		}
-		m.name = r.ReadAsciiString()
-		m.message = r.ReadAsciiString()
 	}
+}
+
+func (m *ShopOperationGift) decodeGMS(t tenant.Model, r *request.Reader) {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		m.spw = r.ReadAsciiString()
+	} else {
+		m.birthday = r.ReadUint32()
+	}
+	m.serialNumber = r.ReadUint32()
+	if t.Region() == "GMS" && t.MajorVersion() >= 87 {
+		m.oneADay = r.ReadByte()
+	}
+	m.name = r.ReadAsciiString()
+	m.message = r.ReadAsciiString()
+}
+
+func (m *ShopOperationGift) decodeJMS(r *request.Reader) {
+	m.serialNumber = r.ReadUint32()
 }

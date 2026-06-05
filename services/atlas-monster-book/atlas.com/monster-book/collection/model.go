@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/google/uuid"
 )
 
@@ -12,7 +13,7 @@ type Model struct {
 	tenantId         uuid.UUID
 	characterId      character.Id
 	coverCardId      item.Id
-	coverMobId       uint32
+	coverMobId       monster.Id
 	bookLevel        uint16
 	normalCount      uint16
 	specialCount     uint16
@@ -25,7 +26,7 @@ type Model struct {
 func (m Model) TenantId() uuid.UUID          { return m.tenantId }
 func (m Model) CharacterId() character.Id    { return m.characterId }
 func (m Model) CoverCardId() item.Id         { return m.coverCardId }
-func (m Model) CoverMobId() uint32           { return m.coverMobId }
+func (m Model) CoverMobId() monster.Id       { return m.coverMobId }
 func (m Model) BookLevel() uint16            { return m.bookLevel }
 func (m Model) NormalCount() uint16          { return m.normalCount }
 func (m Model) SpecialCount() uint16         { return m.specialCount }
@@ -45,7 +46,7 @@ func (m Model) ToEntity() entity {
 		TenantId:         m.tenantId,
 		CharacterId:      uint32(m.characterId),
 		CoverCardId:      uint32(m.coverCardId),
-		CoverMobId:       m.coverMobId,
+		CoverMobId:       uint32(m.coverMobId),
 		BookLevel:        m.bookLevel,
 		NormalCount:      m.normalCount,
 		SpecialCount:     m.specialCount,

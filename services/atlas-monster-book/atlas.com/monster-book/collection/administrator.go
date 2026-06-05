@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -51,12 +52,13 @@ func upsertStats(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, s st
 
 // setCover updates the cover card guarded by lastCoverEventId.
 // Returns true if the row was modified, false if duplicate eventId.
-func setCover(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, coverCardId item.Id, eventId uuid.UUID) (bool, error) {
+func setCover(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, coverCardId item.Id, coverMobId monster.Id, eventId uuid.UUID) (bool, error) {
 	res := db.Model(&entity{}).
 		Where("tenant_id = ? AND character_id = ?", tenantId, uint32(characterId)).
 		Where("last_cover_event_id IS NULL OR last_cover_event_id <> ?", eventId).
 		Updates(map[string]interface{}{
 			"cover_card_id":       uint32(coverCardId),
+			"cover_mob_id":        uint32(coverMobId),
 			"last_cover_event_id": eventId,
 		})
 	if res.Error != nil {

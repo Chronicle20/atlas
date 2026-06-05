@@ -230,7 +230,7 @@ func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId character
 	}
 
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		changed, err := setCover(p.db.WithContext(p.ctx), p.t.Id(), characterId, cardId, eventId)
+		changed, err := setCover(p.db.WithContext(p.ctx), p.t.Id(), characterId, cardId, 0, eventId)
 		if err != nil {
 			return err
 		}

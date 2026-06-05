@@ -15,6 +15,7 @@ type entity struct {
 	TenantId         uuid.UUID  `gorm:"primaryKey;autoIncrement:false;not null"`
 	CharacterId      uint32     `gorm:"primaryKey;autoIncrement:false;not null"`
 	CoverCardId      uint32     `gorm:"not null;default:0"`
+	CoverMobId       uint32     `gorm:"not null;default:0"`
 	BookLevel        uint16     `gorm:"not null;default:1"`
 	NormalCount      uint16     `gorm:"not null;default:0"`
 	SpecialCount     uint16     `gorm:"not null;default:0"`

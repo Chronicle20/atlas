@@ -13,6 +13,7 @@ type ModelBuilder struct {
 	tenantId         uuid.UUID
 	characterId      character.Id
 	coverCardId      item.Id
+	coverMobId       uint32
 	bookLevel        uint16
 	normalCount      uint16
 	specialCount     uint16
@@ -29,6 +30,7 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 		tenantId:         m.tenantId,
 		characterId:      m.characterId,
 		coverCardId:      m.coverCardId,
+		coverMobId:       m.coverMobId,
 		bookLevel:        m.bookLevel,
 		normalCount:      m.normalCount,
 		specialCount:     m.specialCount,
@@ -42,6 +44,7 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 func (b *ModelBuilder) SetTenantId(v uuid.UUID) *ModelBuilder         { b.tenantId = v; return b }
 func (b *ModelBuilder) SetCharacterId(v character.Id) *ModelBuilder   { b.characterId = v; return b }
 func (b *ModelBuilder) SetCoverCardId(v item.Id) *ModelBuilder        { b.coverCardId = v; return b }
+func (b *ModelBuilder) SetCoverMobId(v uint32) *ModelBuilder          { b.coverMobId = v; return b }
 func (b *ModelBuilder) SetBookLevel(v uint16) *ModelBuilder           { b.bookLevel = v; return b }
 func (b *ModelBuilder) SetNormalCount(v uint16) *ModelBuilder         { b.normalCount = v; return b }
 func (b *ModelBuilder) SetSpecialCount(v uint16) *ModelBuilder        { b.specialCount = v; return b }
@@ -58,6 +61,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		tenantId:         b.tenantId,
 		characterId:      b.characterId,
 		coverCardId:      b.coverCardId,
+		coverMobId:       b.coverMobId,
 		bookLevel:        b.bookLevel,
 		normalCount:      b.normalCount,
 		specialCount:     b.specialCount,
@@ -82,6 +86,7 @@ func Make(e entity) (Model, error) {
 		SetTenantId(e.TenantId).
 		SetCharacterId(character.Id(e.CharacterId)).
 		SetCoverCardId(item.Id(e.CoverCardId)).
+		SetCoverMobId(e.CoverMobId).
 		SetBookLevel(e.BookLevel).
 		SetNormalCount(e.NormalCount).
 		SetSpecialCount(e.SpecialCount).

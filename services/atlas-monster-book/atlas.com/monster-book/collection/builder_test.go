@@ -6,6 +6,31 @@ import (
 	"github.com/google/uuid"
 )
 
+func TestBuilderCoverMobIdRoundTrip(t *testing.T) {
+	m := NewModelBuilder().
+		SetCharacterId(1).
+		SetCoverCardId(2380000).
+		SetCoverMobId(100100).
+		MustBuild()
+
+	if m.CoverMobId() != 100100 {
+		t.Fatalf("Model.CoverMobId() = %d, want 100100", m.CoverMobId())
+	}
+
+	e := m.ToEntity()
+	if e.CoverMobId != 100100 {
+		t.Fatalf("entity.CoverMobId = %d, want 100100", e.CoverMobId)
+	}
+
+	back, err := Make(e)
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	if back.CoverMobId() != 100100 || back.CoverCardId() != 2380000 {
+		t.Fatalf("Make round-trip: mobId=%d cardId=%d", back.CoverMobId(), back.CoverCardId())
+	}
+}
+
 func TestBuilderRequiresIdentity(t *testing.T) {
 	_, err := NewModelBuilder().Build()
 	if err == nil {

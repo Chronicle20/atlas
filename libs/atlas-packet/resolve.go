@@ -58,3 +58,37 @@ func ResolveCode(l logrus.FieldLogger, options map[string]interface{}, property 
 		return 99
 	}
 }
+
+// ResolveName is the inverse of ResolveCode: given a wire byte, it returns the
+// configured key whose value equals that byte. Inbound handlers receive a byte
+// the client echoed back (e.g. lastMessageType) and must map it to a semantic
+// name before classifying it. Values are matched using the same float64/string
+// (base-0) encodings ResolveCode accepts. Returns ("", false) on any miss so
+// callers can apply a safe default rather than crash the client.
+func ResolveName(l logrus.FieldLogger, options map[string]interface{}, property string, code byte) (string, bool) {
+	genericCodes, ok := options[property]
+	if !ok {
+		l.Debugf("Property [%s] missing from options when reverse-resolving code [%d].", property, code)
+		return "", false
+	}
+
+	codes, ok := genericCodes.(map[string]interface{})
+	if !ok {
+		l.Debugf("Property [%s] is not a map when reverse-resolving code [%d].", property, code)
+		return "", false
+	}
+
+	for name, raw := range codes {
+		switch v := raw.(type) {
+		case float64:
+			if byte(v) == code {
+				return name, true
+			}
+		case string:
+			if n, err := strconv.ParseUint(v, 0, 8); err == nil && byte(n) == code {
+				return name, true
+			}
+		}
+	}
+	return "", false
+}

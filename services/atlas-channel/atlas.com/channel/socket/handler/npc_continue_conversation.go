@@ -6,6 +6,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	npcclient "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npc2 "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -19,21 +21,38 @@ const (
 	bodySelection
 )
 
-// bodyKindFor maps the client's lastMessageType to the trailing body the
-// serverbound continue-conversation packet carries (task-080 B2.1).
+// bodyKindByMessageType is the protocol-invariant classification of which
+// trailing body a serverbound continue-conversation packet carries, keyed by
+// the *named* NPC conversation message type. The version-specific byte that
+// names each type is supplied by tenant config ("messageType" table); only the
+// name→body-kind grouping lives here, because it does not vary by version:
 //
-//	3 (OnAskText) / 14 (OnAskBoxText) → text reply
-//	5 (OnAskMenu) / 8 (OnAskAvatar) / 9 → selection
-//	0/1/2/13 (Say/AskYesNo) → no trailing body
-func bodyKindFor(msgType byte) bodyKind {
-	switch msgType {
-	case 3, 14:
-		return bodyText
-	case 5, 8, 9:
-		return bodySelection
-	default:
+//   - ASK_TEXT / ASK_BOX_TEXT             → trailing text reply
+//   - ASK_NUMBER / ASK_MENU / ASK_AVATAR /
+//     ASK_SLIDE_MENU                      → trailing selection (number/index) reply
+//   - SAY / ASK_YES_NO / ASK_YES_NO_QUEST
+//     and anything unmapped               → no trailing body (answer is the action byte)
+var bodyKindByMessageType = map[npcclient.NpcConversationMessageType]bodyKind{
+	npcclient.NpcConversationMessageTypeAskText:      bodyText,
+	npcclient.NpcConversationMessageTypeAskBoxText:   bodyText,
+	npcclient.NpcConversationMessageTypeAskNumber:    bodySelection,
+	npcclient.NpcConversationMessageTypeAskMenu:      bodySelection,
+	npcclient.NpcConversationMessageTypeAskAvatar:    bodySelection,
+	npcclient.NpcConversationMessageTypeAskSlideMenu: bodySelection,
+}
+
+// bodyKindFor resolves the wire lastMessageType byte to its body kind by
+// reversing the tenant "messageType" table (byte→name) and classifying the
+// name via bodyKindByMessageType. The byte numbering is never hardcoded here —
+// it is whatever the tenant config assigns. Unknown or unconfigured bytes
+// default to bodyNone so a misconfiguration cannot mis-parse the packet tail.
+func bodyKindFor(l logrus.FieldLogger, readerOptions map[string]interface{}, msgType byte) bodyKind {
+	name, ok := atlas_packet.ResolveName(l, readerOptions, "messageType", msgType)
+	if !ok {
+		l.Warnf("continue-conversation: lastMessageType [%d] is not present in the messageType config; treating as no trailing body. Verify the NPCContinueConversationHandle handler options carry the messageType table.", msgType)
 		return bodyNone
 	}
+	return bodyKindByMessageType[npcclient.NpcConversationMessageType(name)]
 }
 
 func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -46,7 +65,7 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 		//returnText := ""
 		selection := int32(-1)
 
-		switch bodyKindFor(lastMessageType) {
+		switch bodyKindFor(l, readerOptions, lastMessageType) {
 		case bodyText:
 			if action != 0 {
 				sp := &npc2.ContinueConversationText{}

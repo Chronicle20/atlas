@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 )
 
 type RestModel struct {
@@ -14,6 +15,7 @@ type RestModel struct {
 	SpecialCount     uint16       `json:"specialCount"`
 	TotalUniqueCards uint16       `json:"totalUniqueCards"`
 	CoverCardId      item.Id      `json:"coverCardId"`
+	CoverMonsterId   monster.Id   `json:"coverMonsterId"`
 	ExpBonusPercent  uint16       `json:"expBonusPercent"`
 }
 
@@ -36,6 +38,7 @@ func Transform(m Model) (RestModel, error) {
 		SpecialCount:     m.SpecialCount(),
 		TotalUniqueCards: m.TotalUniqueCards(),
 		CoverCardId:      m.CoverCardId(),
+		CoverMonsterId:   m.CoverMobId(),
 		ExpBonusPercent:  m.ExpBonusPercent(),
 	}, nil
 }

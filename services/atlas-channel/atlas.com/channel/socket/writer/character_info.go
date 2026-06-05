@@ -57,7 +57,7 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) pa
 					NormalCards:  uint32(mb.NormalCount()),
 					SpecialCards: uint32(mb.SpecialCount()),
 					TotalCards:   uint32(mb.TotalUniqueCards()),
-					Cover:        uint32(mb.CoverCardId()),
+					Cover:        uint32(mb.CoverMonsterId()),
 				},
 			).Encode(l, ctx)(options)
 		}

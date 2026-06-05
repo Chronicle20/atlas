@@ -5,12 +5,14 @@ import (
 	"errors"
 
 	"atlas-monster-book/card"
+	"atlas-monster-book/data/consumable"
 	"atlas-monster-book/kafka/message"
 	"atlas-monster-book/kafka/message/monsterbook"
 	"atlas-monster-book/kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -70,6 +72,7 @@ type ProcessorImpl struct {
 	db  *gorm.DB
 	t   tenant.Model
 	cp  card.Processor
+	dp  consumable.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -79,6 +82,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 		cp:  card.NewProcessor(l, ctx, db),
+		dp:  consumable.NewProcessor(l, ctx),
 	}
 }
 
@@ -89,6 +93,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		db:  tx,
 		t:   p.t,
 		cp:  p.cp.WithTransaction(tx),
+		dp:  p.dp,
 	}
 }
 
@@ -211,6 +216,23 @@ func (p *ProcessorImpl) RecomputeAndEmit(mb *message.Buffer) func(characterId ch
 	}
 }
 
+// resolveCoverMobId resolves a cover card item id to its mob id via atlas-data.
+// cardId == 0 returns 0 with no lookup. Any failure (atlas-data error, card not
+// found, monsterBook == false, or monsterId == 0) returns 0 and logs a warning;
+// it never returns an error, so a resolution failure can neither reject the set
+// nor produce a client-crashing value (FR-4, FR-5, NFR fail-safe).
+func (p *ProcessorImpl) resolveCoverMobId(characterId character.Id, cardId item.Id) monster.Id {
+	if cardId == 0 {
+		return 0
+	}
+	m, err := p.dp.GetById(uint32(cardId))
+	if err != nil || !m.MonsterBook() || m.MonsterId() == 0 {
+		p.l.WithError(err).Warnf("Unable to resolve monster-book cover card [%d] to a mob id for character [%d]; storing cover mob id 0.", cardId, characterId)
+		return 0
+	}
+	return monster.Id(m.MonsterId())
+}
+
 func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId character.Id, cardId item.Id) error {
 	// Validate ownership. cardId == 0 is allowed and clears the cover.
 	if cardId != 0 {
@@ -229,8 +251,9 @@ func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId character
 		}
 	}
 
+	coverMobId := p.resolveCoverMobId(characterId, cardId)
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		changed, err := setCover(p.db.WithContext(p.ctx), p.t.Id(), characterId, cardId, 0, eventId)
+		changed, err := setCover(p.db.WithContext(p.ctx), p.t.Id(), characterId, cardId, coverMobId, eventId)
 		if err != nil {
 			return err
 		}

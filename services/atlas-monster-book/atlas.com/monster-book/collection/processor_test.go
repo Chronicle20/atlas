@@ -6,8 +6,11 @@ import (
 	"testing"
 
 	"atlas-monster-book/card"
+	"atlas-monster-book/data/consumable"
 	"atlas-monster-book/kafka/message"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -113,5 +116,59 @@ func TestSetCoverRejectsUnownedCardBeforeProducerCall(t *testing.T) {
 	// Non-card itemId → must error out of validation with the typed sentinel.
 	if err := p.SetCoverAndEmit(uuid.New(), 1, 1234); !errors.Is(err, ErrCardIdOutOfRange) {
 		t.Fatalf("expected ErrCardIdOutOfRange for non-card itemId, got %v", err)
+	}
+}
+
+type fakeConsumable struct {
+	model consumable.Model
+	err   error
+	calls int
+}
+
+func (f *fakeConsumable) GetById(uint32) (consumable.Model, error) {
+	f.calls++
+	return f.model, f.err
+}
+
+func mustConsumable(t *testing.T, mb bool, id uint32) consumable.Model {
+	t.Helper()
+	m, err := consumable.Extract(consumable.RestModel{MonsterBook: mb, MonsterId: id})
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	return m
+}
+
+func TestResolveCoverMobId(t *testing.T) {
+	ctx := tenantCtx(t, uuid.New())
+	tn := tenant.MustFromContext(ctx)
+
+	cases := []struct {
+		name     string
+		cardId   item.Id
+		model    consumable.Model
+		err      error
+		want     monster.Id
+		wantCall bool
+	}{
+		{name: "clear cover skips lookup", cardId: 0, want: 0, wantCall: false},
+		{name: "resolves to mob id", cardId: 2380000, model: mustConsumable(t, true, 100100), want: 100100, wantCall: true},
+		{name: "atlas-data error fails safe", cardId: 2380000, err: errors.New("boom"), want: 0, wantCall: true},
+		{name: "not a monster-book item", cardId: 2380000, model: mustConsumable(t, false, 100100), want: 0, wantCall: true},
+		{name: "zero mob id fails safe", cardId: 2380000, model: mustConsumable(t, true, 0), want: 0, wantCall: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeConsumable{model: tc.model, err: tc.err}
+			p := &ProcessorImpl{l: logrus.New(), ctx: ctx, t: tn, dp: f}
+			got := p.resolveCoverMobId(1, tc.cardId)
+			if got != tc.want {
+				t.Errorf("resolveCoverMobId = %d, want %d", got, tc.want)
+			}
+			if (f.calls > 0) != tc.wantCall {
+				t.Errorf("lookup calls = %d, wantCall = %v", f.calls, tc.wantCall)
+			}
+		})
 	}
 }

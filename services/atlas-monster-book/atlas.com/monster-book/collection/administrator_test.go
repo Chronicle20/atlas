@@ -63,9 +63,6 @@ func TestSetCoverIdempotent(t *testing.T) {
 
 func TestSetCoverPersistsMobId(t *testing.T) {
 	db := newDB(t)
-	if err := Migration(db); err != nil {
-		t.Fatal(err)
-	}
 	tid := uuid.New()
 	cid := character.Id(7)
 

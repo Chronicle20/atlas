@@ -84,3 +84,75 @@ func TestResolveCodeUnsupportedType(t *testing.T) {
 	}
 	assert.Equal(t, byte(99), ResolveCode(l, options, "operations", "LEVEL_UP"))
 }
+
+func TestResolveNameValid(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"messageType": map[string]interface{}{
+			"SAY":      float64(0),
+			"ASK_MENU": float64(4),
+		},
+	}
+	name, ok := ResolveName(l, options, "messageType", 4)
+	assert.True(t, ok)
+	assert.Equal(t, "ASK_MENU", name)
+
+	name, ok = ResolveName(l, options, "messageType", 0)
+	assert.True(t, ok)
+	assert.Equal(t, "SAY", name)
+}
+
+func TestResolveNameHexString(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"messageType": map[string]interface{}{
+			"ASK_MENU": "0x04",
+		},
+	}
+	name, ok := ResolveName(l, options, "messageType", 4)
+	assert.True(t, ok)
+	assert.Equal(t, "ASK_MENU", name)
+}
+
+func TestResolveNameMiss(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"messageType": map[string]interface{}{
+			"ASK_MENU": float64(4),
+		},
+	}
+	_, ok := ResolveName(l, options, "messageType", 7)
+	assert.False(t, ok)
+}
+
+func TestResolveNameMissingProperty(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	_, ok := ResolveName(l, map[string]interface{}{}, "messageType", 0)
+	assert.False(t, ok)
+}
+
+func TestResolveNameWrongType(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"messageType": "not a map",
+	}
+	_, ok := ResolveName(l, options, "messageType", 0)
+	assert.False(t, ok)
+}
+
+func TestResolveCodeResolveNameRoundTrip(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"messageType": map[string]interface{}{
+			"ASK_MENU":       float64(4),
+			"ASK_AVATAR":     float64(7),
+			"ASK_SLIDE_MENU": float64(14),
+		},
+	}
+	for _, key := range []string{"ASK_MENU", "ASK_AVATAR", "ASK_SLIDE_MENU"} {
+		code := ResolveCode(l, options, "messageType", key)
+		name, ok := ResolveName(l, options, "messageType", code)
+		assert.True(t, ok)
+		assert.Equal(t, key, name)
+	}
+}

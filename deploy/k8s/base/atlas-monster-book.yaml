@@ -36,6 +36,8 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
+        - name: DATA_SERVICE_URL
+          value: "http://atlas-ingress.atlas.svc.cluster.local:80/api/"
 ---
 apiVersion: v1
 kind: Service

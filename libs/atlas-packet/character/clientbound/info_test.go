@@ -84,6 +84,20 @@ func TestCharacterInfo_MonsterBookCover(t *testing.T) {
 	}
 }
 
+// TestCharacterInfo_CoverCarriesArbitraryValue locks the contract the channel
+// writer depends on (task-082): the cover field carries whatever uint32 the
+// writer supplies — now a mob id, e.g. 100100 — not a card-id-specific value.
+func TestCharacterInfo_CoverCarriesArbitraryValue(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	want := MonsterBookInfo{Level: 1, NormalCards: 0, SpecialCards: 0, TotalCards: 0, Cover: 100100}
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want)
+	out := CharacterInfo{}
+	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+	if out.MonsterBookCover() != 100100 {
+		t.Errorf("cover = %d, want 100100", out.MonsterBookCover())
+	}
+}
+
 func TestCharacterInfoEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

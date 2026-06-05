@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/google/uuid"
 )
 
@@ -13,6 +14,7 @@ type ModelBuilder struct {
 	tenantId         uuid.UUID
 	characterId      character.Id
 	coverCardId      item.Id
+	coverMobId       monster.Id
 	bookLevel        uint16
 	normalCount      uint16
 	specialCount     uint16
@@ -29,6 +31,7 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 		tenantId:         m.tenantId,
 		characterId:      m.characterId,
 		coverCardId:      m.coverCardId,
+		coverMobId:       m.coverMobId,
 		bookLevel:        m.bookLevel,
 		normalCount:      m.normalCount,
 		specialCount:     m.specialCount,
@@ -39,16 +42,20 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) SetTenantId(v uuid.UUID) *ModelBuilder         { b.tenantId = v; return b }
-func (b *ModelBuilder) SetCharacterId(v character.Id) *ModelBuilder   { b.characterId = v; return b }
-func (b *ModelBuilder) SetCoverCardId(v item.Id) *ModelBuilder        { b.coverCardId = v; return b }
-func (b *ModelBuilder) SetBookLevel(v uint16) *ModelBuilder           { b.bookLevel = v; return b }
-func (b *ModelBuilder) SetNormalCount(v uint16) *ModelBuilder         { b.normalCount = v; return b }
-func (b *ModelBuilder) SetSpecialCount(v uint16) *ModelBuilder        { b.specialCount = v; return b }
-func (b *ModelBuilder) SetExpBonusPercent(v uint16) *ModelBuilder     { b.expBonusPercent = v; return b }
-func (b *ModelBuilder) SetLastCoverEventId(v *uuid.UUID) *ModelBuilder { b.lastCoverEventId = v; return b }
-func (b *ModelBuilder) SetCreatedAt(v time.Time) *ModelBuilder        { b.createdAt = v; return b }
-func (b *ModelBuilder) SetUpdatedAt(v time.Time) *ModelBuilder        { b.updatedAt = v; return b }
+func (b *ModelBuilder) SetTenantId(v uuid.UUID) *ModelBuilder       { b.tenantId = v; return b }
+func (b *ModelBuilder) SetCharacterId(v character.Id) *ModelBuilder { b.characterId = v; return b }
+func (b *ModelBuilder) SetCoverCardId(v item.Id) *ModelBuilder      { b.coverCardId = v; return b }
+func (b *ModelBuilder) SetCoverMobId(v monster.Id) *ModelBuilder    { b.coverMobId = v; return b }
+func (b *ModelBuilder) SetBookLevel(v uint16) *ModelBuilder         { b.bookLevel = v; return b }
+func (b *ModelBuilder) SetNormalCount(v uint16) *ModelBuilder       { b.normalCount = v; return b }
+func (b *ModelBuilder) SetSpecialCount(v uint16) *ModelBuilder      { b.specialCount = v; return b }
+func (b *ModelBuilder) SetExpBonusPercent(v uint16) *ModelBuilder   { b.expBonusPercent = v; return b }
+func (b *ModelBuilder) SetLastCoverEventId(v *uuid.UUID) *ModelBuilder {
+	b.lastCoverEventId = v
+	return b
+}
+func (b *ModelBuilder) SetCreatedAt(v time.Time) *ModelBuilder { b.createdAt = v; return b }
+func (b *ModelBuilder) SetUpdatedAt(v time.Time) *ModelBuilder { b.updatedAt = v; return b }
 
 func (b *ModelBuilder) Build() (Model, error) {
 	if b.characterId == 0 {
@@ -58,6 +65,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		tenantId:         b.tenantId,
 		characterId:      b.characterId,
 		coverCardId:      b.coverCardId,
+		coverMobId:       b.coverMobId,
 		bookLevel:        b.bookLevel,
 		normalCount:      b.normalCount,
 		specialCount:     b.specialCount,
@@ -82,6 +90,7 @@ func Make(e entity) (Model, error) {
 		SetTenantId(e.TenantId).
 		SetCharacterId(character.Id(e.CharacterId)).
 		SetCoverCardId(item.Id(e.CoverCardId)).
+		SetCoverMobId(monster.Id(e.CoverMobId)).
 		SetBookLevel(e.BookLevel).
 		SetNormalCount(e.NormalCount).
 		SetSpecialCount(e.SpecialCount).

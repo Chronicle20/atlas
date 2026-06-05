@@ -1,0 +1,66 @@
+{
+  "service": "atlas-monster-book + atlas-channel (task-082)",
+  "path": "services/atlas-monster-book/atlas.com/monster-book, services/atlas-channel/atlas.com/channel",
+  "date": "2026-06-05",
+  "build": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "collection",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "collection/builder.go (NewModelBuilder, Build() validates characterId at :60)"},
+        {"id": "DOM-02", "name": "ToEntity()", "status": "pass", "evidence": "collection/model.go:45 (maps CoverMobId :49)"},
+        {"id": "DOM-03", "name": "Make(Entity)", "status": "pass", "evidence": "collection/builder.go:88 (sets CoverMobId :93)"},
+        {"id": "DOM-04", "name": "Transform", "status": "pass", "evidence": "collection/rest.go:33 (maps CoverMonsterId :41)"},
+        {"id": "DOM-05", "name": "TransformSlice", "status": "na", "evidence": "single-resource per-character domain; no list endpoint; not introduced by change"},
+        {"id": "DOM-06", "name": "Processor FieldLogger", "status": "pass", "evidence": "collection/processor.go:78; consumable/processor.go:19"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "character/resource.go + kafka consumer use injected logger; no StandardLogger in changed code"},
+        {"id": "DOM-08", "name": "POST/PATCH typed input", "status": "pass", "evidence": "cover-set via Kafka command (consumer.go:85) + typed handler character/resource.go:76"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "rest.go:33 returns (RestModel,error); no discards introduced"},
+        {"id": "DOM-10", "name": "Test DB tenant callbacks", "status": "warn", "evidence": "collection/administrator_test.go:13 newDB lacks RegisterTenantCallbacks; pre-existing, tests pass tenantId explicitly; not a regression"},
+        {"id": "DOM-11", "name": "Providers lazy", "status": "pass", "evidence": "collection/provider.go:13 database.Query[entity]"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "no os.Getenv in collection/ or changed handlers"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "card->mob resolution in processor.go:226 resolveCoverMobId, not handler"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "flow: handler/consumer -> SetCoverAndEmit -> administrator"},
+        {"id": "DOM-15", "name": "No direct entity writes in handlers", "status": "pass", "evidence": "writes via setCover (administrator.go:55); no db.Create/Save in handlers"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "pass", "evidence": "administrator.go:61 persists cover_mob_id"},
+        {"id": "DOM-17", "name": "Domain error to HTTP status", "status": "pass", "evidence": "typed sentinels processor.go:26-63; resolution failure never errors (fail-safe)"},
+        {"id": "DOM-18", "name": "JSON:API iface on RestModel", "status": "pass", "evidence": "collection/rest.go:22-31"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "pass", "evidence": "PatchInput flat (rest.go:46)"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "processor_test.go:142 TestResolveCoverMobId cases[]struct + t.Run"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants", "status": "pass", "evidence": "cover mob id typed monster.Id (libs/atlas-constants/monster/constants.go:3 = uint32); used in model/builder/rest/administrator"},
+        {"id": "DOM-22", "name": "Dockerfile lib coverage", "status": "pass", "evidence": "atlas-constants/kafka/rest/tracing in shared root Dockerfile mod block (32/34/42/50), source block (61/63/71/79), go.work (4/6/14/22)"},
+        {"id": "DOM-23", "name": "Kafka topic naming", "status": "na", "evidence": "no new topic constants introduced"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "collection/testmain_test.go + kafka/consumer/monsterbook/testmain_test.go call producertest.InstallNoop(); no ResetInstance cleanup"}
+      ]
+    },
+    {
+      "name": "data/consumable",
+      "type": "external-client",
+      "checks": [
+        {"id": "EXT-01", "name": "JSON:API ref interface", "status": "pass", "evidence": "rest.go:34-37 stubs; test rest_test.go:29 unmarshals relationships block"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "pass", "evidence": "rest_test.go:60 TestGetById_RoundTrip httptest.NewServer + relationships fixture"},
+        {"id": "EXT-03", "name": "404 distinguished", "status": "pass", "evidence": "rest_test.go:88 asserts errors.Is(err, requests.ErrNotFound); get.go:78 maps only 404"},
+        {"id": "EXT-04", "name": "URL via RootUrl", "status": "pass", "evidence": "requests.go:17 requests.RootUrl(\"DATA\"); SetBaseURLForTest is documented test seam"},
+        {"id": "EXT-tenant", "name": "Tenant/version propagation", "status": "pass", "evidence": "GetRequest auto-applies TenantHeaderDecorator(ctx) (decorated.go:12); processor passes p.ctx"}
+      ]
+    },
+    {
+      "name": "atlas-channel/monsterbook + socket/writer",
+      "type": "client-and-writer",
+      "checks": [
+        {"id": "EXT-01", "name": "ref stubs on client RestModel", "status": "pass", "evidence": "monsterbook/rest.go:60/65/96/97"},
+        {"id": "WRITER-FIX", "name": "Cover writes mob id", "status": "pass", "evidence": "socket/writer/character_info.go:60 uint32(mb.CoverMonsterId())"},
+        {"id": "WRITER-TEST", "name": "Wire-level test", "status": "pass", "evidence": "character_info_test.go:15 asserts MonsterBookCover()==100100 via packet round-trip"}
+      ]
+    }
+  ],
+  "security": "na",
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-10: collection/administrator_test.go:13 newDB does not register database.RegisterTenantCallbacks (pre-existing; tests pass tenantId explicitly; not a regression)"
+  ]
+}

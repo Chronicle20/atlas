@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -21,15 +22,17 @@ type Collection struct {
 	specialCount     uint16
 	totalUniqueCards uint16
 	coverCardId      item.Id
+	coverMonsterId   monster.Id
 	expBonusPercent  uint16
 }
 
-func (c Collection) BookLevel() uint16        { return c.bookLevel }
-func (c Collection) NormalCount() uint16      { return c.normalCount }
-func (c Collection) SpecialCount() uint16     { return c.specialCount }
-func (c Collection) TotalUniqueCards() uint16 { return c.totalUniqueCards }
-func (c Collection) CoverCardId() item.Id     { return c.coverCardId }
-func (c Collection) ExpBonusPercent() uint16  { return c.expBonusPercent }
+func (c Collection) BookLevel() uint16          { return c.bookLevel }
+func (c Collection) NormalCount() uint16        { return c.normalCount }
+func (c Collection) SpecialCount() uint16       { return c.specialCount }
+func (c Collection) TotalUniqueCards() uint16   { return c.totalUniqueCards }
+func (c Collection) CoverCardId() item.Id       { return c.coverCardId }
+func (c Collection) CoverMonsterId() monster.Id { return c.coverMonsterId }
+func (c Collection) ExpBonusPercent() uint16    { return c.expBonusPercent }
 
 // Card is the immutable domain representation of a single owned monster-book card.
 type Card struct {

@@ -257,3 +257,38 @@ func TestGetCardsByCharacterId_NotFound(t *testing.T) {
 		t.Fatalf("expected requests.ErrNotFound, got %T: %v", err, err)
 	}
 }
+
+func TestExtractIncludesCoverMonsterId(t *testing.T) {
+	body := []byte(`{
+		"data": {
+			"type": "monster-book",
+			"id": "42",
+			"attributes": {
+				"bookLevel": 3,
+				"normalCount": 5,
+				"specialCount": 2,
+				"totalUniqueCards": 7,
+				"coverCardId": 2380000,
+				"coverMonsterId": 100100,
+				"expBonusPercent": 3
+			}
+		}
+	}`)
+	var rm CollectionRestModel
+	if err := jsonapi.Unmarshal(body, &rm); err != nil {
+		t.Fatalf("jsonapi.Unmarshal: %v", err)
+	}
+	if rm.CoverMonsterId != 100100 {
+		t.Fatalf("CoverMonsterId = %d, want 100100", rm.CoverMonsterId)
+	}
+	c, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if c.CoverMonsterId() != 100100 {
+		t.Fatalf("Collection.CoverMonsterId() = %d, want 100100", c.CoverMonsterId())
+	}
+	if c.CoverCardId() != item.Id(2380000) {
+		t.Fatalf("Collection.CoverCardId() = %d, want 2380000 (must remain card id)", c.CoverCardId())
+	}
+}

@@ -11,19 +11,31 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
-	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
-	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 )
+
+// isConsumedOnPickupCard reports whether a picked-up item is a monster-book
+// card. Such items are consumed on pickup by atlas-inventory (and registered to
+// the book by atlas-monster-book), so they never enter inventory. They must not
+// show the generic "you gained an item" pickup status message, and they need an
+// action-unlock afterwards so the client does not soft-lock waiting on the
+// acknowledgement a normal inventory insert would have produced.
+func isConsumedOnPickupCard(itemId uint32) bool {
+	return item.GetClassification(item.Id(itemId)) == item.ClassificationConsumableMonsterCard
+}
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -150,6 +162,19 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 
 		go func() {
 			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, func(s session.Model) error {
+				// A monster-book card is consumed on pickup and registered to the
+				// book; it never enters inventory. Skip the generic pickup status
+				// message (the monster-book card-get effect is the player's
+				// feedback) and re-enable client actions so the pickup does not
+				// soft-lock the client.
+				if isConsumedOnPickupCard(e.Body.ItemId) {
+					if err := session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s); err != nil {
+						l.WithError(err).Errorf("Unable to re-enable actions for character [%d] after picking up monster-book card drop [%d].", s.CharacterId(), e.DropId)
+						return err
+					}
+					return nil
+				}
+
 				var bp packet.Encode
 				if e.Body.Meso > 0 {
 					bp = charpkt.CharacterStatusMessageOperationDropPickUpMesoBody(false, e.Body.Meso, 0)

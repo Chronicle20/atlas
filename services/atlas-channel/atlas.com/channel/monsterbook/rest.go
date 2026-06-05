@@ -4,19 +4,21 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // CollectionRestModel is the JSON:API representation of a character's
 // monster book collection returned by atlas-monster-book.
 type CollectionRestModel struct {
-	Id               uint32  `json:"-"`
-	BookLevel        uint16  `json:"bookLevel"`
-	NormalCount      uint16  `json:"normalCount"`
-	SpecialCount     uint16  `json:"specialCount"`
-	TotalUniqueCards uint16  `json:"totalUniqueCards"`
-	CoverCardId      item.Id `json:"coverCardId"`
-	ExpBonusPercent  uint16  `json:"expBonusPercent"`
+	Id               uint32     `json:"-"`
+	BookLevel        uint16     `json:"bookLevel"`
+	NormalCount      uint16     `json:"normalCount"`
+	SpecialCount     uint16     `json:"specialCount"`
+	TotalUniqueCards uint16     `json:"totalUniqueCards"`
+	CoverCardId      item.Id    `json:"coverCardId"`
+	CoverMonsterId   monster.Id `json:"coverMonsterId"`
+	ExpBonusPercent  uint16     `json:"expBonusPercent"`
 }
 
 func (r CollectionRestModel) GetName() string {
@@ -107,6 +109,7 @@ func Extract(rm CollectionRestModel) (Collection, error) {
 		specialCount:     rm.SpecialCount,
 		totalUniqueCards: rm.TotalUniqueCards,
 		coverCardId:      rm.CoverCardId,
+		coverMonsterId:   rm.CoverMonsterId,
 		expBonusPercent:  rm.ExpBonusPercent,
 	}, nil
 }

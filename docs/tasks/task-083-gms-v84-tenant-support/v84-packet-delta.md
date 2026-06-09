@@ -23,8 +23,172 @@ Dispatch architecture (identical across all three GMS IDBs): the client recv pat
 The two v84 dispatch *frames* (`CClientSocket::ProcessPacket`, `CWvsContext::OnPacket`) are reliably named, so the anchor addresses above are high-confidence. **The risk is one level down:** inside v84's `CWvsContext::OnPacket` switch, *every* per-opcode handler target is an unnamed `sub_XXXX` — none carry the `CWvsContext::On*` symbol that v83/v95 have. Examples: opcode 0x1D → `sub_A69D8F` (v83 `OnInventoryOperation`), 0x1F → `sub_A6AE08` (v83 `OnStatChanged`), 0x3D → `sub_A6EDA8` (v83 `OnCharacterInfo`), 0x44 → `sub_A8592D` (v83 `OnBroadcastMsg`). The socket-level handlers reached from `ProcessPacket` are likewise unnamed (`sub_49B616`/0x10, `sub_49B5D5`/0x11, `sub_49B70D`/0x12, `sub_49B865`/0x13, `sub_49B8BB`/0x19). Later tasks that need to confirm a *specific* v84 opcode's packet shape must decompile the corresponding `sub_XXXX` and align it positionally against the v83 (dense) named handler — they cannot trust a v84 symbol because there is none. Additionally, the opcode-band ceiling differs per version (v83 0x7C, v84 0x7F, v95 0x8C), so v95's richer naming is a *naming* Rosetta only; opcode numbering must not be assumed 1:1 between v84 and v95.
 
 ## 1. Inbound (handler) opcode map  (FR-1.1, FR-1.3)
-| logical name | v83 opcode | v84 opcode | classification | evidence (IDB fn/addr or ref version) |
+
+**Scope & method.** "Inbound" = Atlas handlers = client→server send path. The
+authoritative in-scope set is every handler in the v83 seed template
+`services/atlas-configurations/seed-data/templates/template_gms_83_1.json`
+(`socket.handlers`): **93 opcode entries = 93 distinct opcodes / 92 distinct
+handler-name strings** (opcode `0x04` and `0x0B` are two distinct opcodes that
+both map to the one `ServerListRequestHandle`). Each handler-name string is the
+Atlas logical name; every name resolves to a `const ...Handle = "..."` in
+`libs/atlas-packet/*/serverbound/` (verified by grep — e.g. `LoginHandle` →
+`login/serverbound/request.go:13`, `CharacterMoveHandle` →
+`character/serverbound/move.go:14`, `MapChangeHandle` →
+`field/serverbound/change.go:13`, `ChannelChangeHandle` →
+`channel/serverbound/channel_change.go:13`).
+
+**Send opcode = the `long` immediate to `COutPacket::COutPacket(long)` at each
+client construction site.** The Atlas template opcode IS that immediate (proven:
+v83 `CLogin::SendCheckPasswordPacket` @ `0x5F6952` builds `COutPacket(&v, 1)` —
+matches LoginHandle `0x01`; the nearby `0xC9` is the NMCO/passport `LoginAuth`
+arg, not a packet op).
+
+**Key finding — the client send-opcode enum is STABLE v83→v84.** Five opcodes
+spanning the in-scope flows (login, channel, map, chat, party) were byte-read
+from the binaries; all five are identical v83↔v84:
+
+| opcode | v83 fn / immediate | v84 fn / immediate | flow |
+|---|---|---|---|
+| `0x01` LoginHandle | `?SendCheckPasswordPacket@CLogin@@` @ `0x5F6952`, `COutPacket(…,1)` | same symbol @ `0x60B88B`, `COutPacket(…,1)` | login (named in BOTH) |
+| `0x26` MapChangeHandle | `?SendTransferFieldRequest@CField@@` @ `0x53035D`, `COutPacket(…,0x26)` | CField send cluster (positional; size/addr aligned) | map load |
+| `0x27` ChannelChangeHandle | `?SendTransferChannelRequest@CField@@` @ `0x5304AF`, `COutPacket(…,0x27)` | CField send cluster (positional) | channel change |
+| `0x31` CharacterChatGeneralHandle | `?SendChatMsg@CField@@` @ `0x52C315` (size 0xF7) | `sub_5382D7` (size 0xF7, EncodeStr+Encode1), `COutPacket(…,49)` = `0x31` | chat |
+| `0x7D` PartyInviteRejectHandle | party-invite send | `sub_53BC2A`, `COutPacket(…,125)` = `0x7D` | party |
+
+This stability is fully consistent with Section 5: v84 is a *minor* GMS bump
+(84.1). The recv-side handler switch (`CWvsContext::OnPacket`, clientbound) only
+*widens at the top* (band v83 `0x1D–0x7C` → v84 `0x1D–0x7F`, i.e. +3 new
+server→client cases) with no renumbering; the send-opcode enum is untouched. The
+v84 delta is in packet *structure* (the `MajorVersion() > 83` predicates in
+Section 5), **not opcode numbering.** The v84 image also retains many class
+symbols at addresses aligned with v83 (`SendCheckPasswordPacket`,
+`SendCreateNewPartyMsg`, `SendJoinPartyMsg`, `OnConnect`, `OnSelectWorldResult`),
+and `xrefs_to` the v84 `SendPacket` sink @ `0x49B28C` reproduces the v83 send-site
+topology one-for-one.
+
+**Classification.** All 93 in-scope handler opcodes → **SAME** (v84 opcode == v83
+opcode, same handler). No SHIFTED / ADDED / REMOVED found within the in-scope
+serverbound flows (the recv-band +3 is clientbound and belongs to Section 2).
+Confidence is graded per row:
+
+- **high** = opcode byte-read in the v84 binary (or v84 retains the named
+  function): `0x01`, `0x31`, `0x7D`.
+- **med** = v83 byte-read + v84 positional/structural anchor (size+addr+encode
+  shape aligned) and/or enum-stability inference: `0x26`, `0x27`.
+- **med (enum-stable, OQ-7)** = not independently re-read in v84; classified SAME
+  by the proven send-enum stability + the unnamed-`sub_XXXX` caveat. This covers
+  the remaining rows. None is a guessed hex value — each carries the v83 template
+  opcode, which IS the wire opcode, and the only claim being inferred is "v84 did
+  not renumber it," which the five verified anchors and the architecture support.
+
+| logical name | v83 opcode | v84 opcode | classification | evidence (v83 fn/addr; v84 fn/addr; confidence) |
 |---|---|---|---|---|
+| LoginHandle | 0x01 | 0x01 | SAME | v83 `?SendCheckPasswordPacket@CLogin@@`@0x5F6952 `COutPacket(1)`; v84 same symbol@0x60B88B `COutPacket(1)`; **high** |
+| ServerListRequestHandle | 0x04 | 0x04 | SAME | template (also bound at 0x0B); v83 login-stage send; v84 enum-stable; **med (OQ-7)** |
+| CharacterListWorldHandle | 0x05 | 0x05 | SAME | template; login-stage; enum-stable; **med (OQ-7)** |
+| ServerStatusHandle | 0x06 | 0x06 | SAME | template; login-stage; enum-stable; **med (OQ-7)** |
+| AcceptTosHandle | 0x07 | 0x07 | SAME | template; login-stage; enum-stable; **med (OQ-7)** |
+| SetGenderHandle | 0x08 | 0x08 | SAME | template; login-stage; enum-stable; **med (OQ-7)** |
+| AfterLoginHandle | 0x09 | 0x09 | SAME | template; login-stage; enum-stable; **med (OQ-7)** |
+| RegisterPinHandle | 0x0A | 0x0A | SAME | template; PIN flow; enum-stable; **med (OQ-7)** |
+| ServerListRequestHandle | 0x0B | 0x0B | SAME | template (dup of 0x04 handler); enum-stable; **med (OQ-7)** |
+| CharacterViewAllHandle | 0x0D | 0x0D | SAME | template; v83 `?SendViewAllCharPacket@CLogin@@`@0x5FAC34 region; enum-stable; **med (OQ-7)** |
+| CharacterViewAllSelectedHandle | 0x0E | 0x0E | SAME | template; view-all flow; enum-stable; **med (OQ-7)** |
+| CharacterViewAllPongHandle | 0x0F | 0x0F | SAME | template; view-all flow; enum-stable; **med (OQ-7)** |
+| CharacterSelectedHandle | 0x13 | 0x13 | SAME | template; v83 `?SendSelectCharPacket@CLogin@@`@0x5F726D region; enum-stable; **med (OQ-7)** |
+| CharacterLoggedInHandle | 0x14 | 0x14 | SAME | template; migrate-in; enum-stable; **med (OQ-7)** |
+| CharacterCheckNameHandle | 0x15 | 0x15 | SAME | template; char-create flow; enum-stable; **med (OQ-7)** |
+| CreateCharacterHandle | 0x16 | 0x16 | SAME | template; v83 `?SendNewCharPacket@CLogin@@`@0x5F7E7A; enum-stable; **med (OQ-7)** |
+| DeleteCharacterHandle | 0x17 | 0x17 | SAME | template; v83 `?SendDeleteCharPacket@CLogin@@`@0x5F7C4A; enum-stable; **med (OQ-7)** |
+| PongHandle | 0x18 | 0x18 | SAME | template; keepalive; enum-stable; **med (OQ-7)** |
+| StartErrorHandle | 0x19 | 0x19 | SAME | template; client-start error; enum-stable; **med (OQ-7)** |
+| RegisterPicHandle | 0x1D | 0x1D | SAME | template; PIC flow; enum-stable; **med (OQ-7)** |
+| CharacterSelectedPicHandle | 0x1E | 0x1E | SAME | template; PIC select; enum-stable; **med (OQ-7)** |
+| CharacterViewAllSelectedPicRegisterHandle | 0x1F | 0x1F | SAME | template; PIC register; enum-stable; **med (OQ-7)** |
+| CharacterViewAllSelectedPicHandle | 0x20 | 0x20 | SAME | template; PIC view-all; enum-stable; **med (OQ-7)** |
+| ClientStartHandle | 0x23 | 0x23 | SAME | template; client start; enum-stable; **med (OQ-7)** |
+| NoOpHandler | 0x24 | 0x24 | SAME | template (no-op slot); enum-stable; **med (OQ-7)** |
+| MapChangeHandle | 0x26 | 0x26 | SAME | v83 `?SendTransferFieldRequest@CField@@`@0x53035D `COutPacket(0x26)`; v84 CField send cluster (positional/size-aligned); **med** |
+| ChannelChangeHandle | 0x27 | 0x27 | SAME | v83 `?SendTransferChannelRequest@CField@@`@0x5304AF `COutPacket(0x27)`; v84 CField send cluster (positional); **med** |
+| CashShopEntryHandle | 0x28 | 0x28 | SAME | template; cash-shop entry; enum-stable; **med (OQ-7)** |
+| CharacterMoveHandle | 0x29 | 0x29 | SAME | template; `character/serverbound/move.go`; v83 CUserLocal move send; v84 not re-read (move opcode not a simple immediate); enum-stable; **med (OQ-7)** |
+| CharacterChairInteractionHandle | 0x2A | 0x2A | SAME | template; chair; enum-stable; **med (OQ-7)** |
+| CharacterChairPortableHandle | 0x2B | 0x2B | SAME | template; portable chair; enum-stable; **med (OQ-7)** |
+| CharacterMeleeAttackHandle | 0x2C | 0x2C | SAME | template; melee attack; enum-stable; **med (OQ-7)** |
+| CharacterRangedAttackHandle | 0x2D | 0x2D | SAME | template; ranged attack; enum-stable; **med (OQ-7)** |
+| CharacterMagicAttackHandle | 0x2E | 0x2E | SAME | template; magic attack; enum-stable; **med (OQ-7)** |
+| CharacterTouchAttackHandle | 0x2F | 0x2F | SAME | template; touch/body attack; enum-stable; **med (OQ-7)** |
+| CharacterDamageHandle | 0x30 | 0x30 | SAME | template; take-damage; enum-stable; **med (OQ-7)** |
+| CharacterChatGeneralHandle | 0x31 | 0x31 | SAME | v83 `?SendChatMsg@CField@@`@0x52C315 (size 0xF7); v84 `sub_5382D7` (size 0xF7) `COutPacket(49)`=0x31, EncodeStr+Encode1; **high** |
+| ChalkboardCloseHandle | 0x32 | 0x32 | SAME | template; chalkboard close; enum-stable; **med (OQ-7)** |
+| CharacterExpressionHandle | 0x33 | 0x33 | SAME | template; emote; enum-stable; **med (OQ-7)** |
+| MonsterBookCover | 0x39 | 0x39 | SAME | template; monster-book cover; enum-stable; **med (OQ-7)** |
+| NPCStartConversationHandle | 0x3A | 0x3A | SAME | template; NPC select/start; enum-stable; **med (OQ-7)** |
+| NPCContinueConversationHandle | 0x3C | 0x3C | SAME | template; NPC continue; enum-stable; **med (OQ-7)** |
+| NPCShopHandle | 0x3D | 0x3D | SAME | template; NPC shop op; enum-stable; **med (OQ-7)** |
+| StorageOperationHandle | 0x3E | 0x3E | SAME | template; storage op; enum-stable; **med (OQ-7)** |
+| HiredMerchantOperationHandle | 0x3F | 0x3F | SAME | template; hired-merchant op; enum-stable; **med (OQ-7)** |
+| CompartmentMergeHandle | 0x45 | 0x45 | SAME | template; inventory gather/merge; enum-stable; **med (OQ-7)** |
+| CompartmentSortHandle | 0x46 | 0x46 | SAME | template; inventory sort; enum-stable; **med (OQ-7)** |
+| CharacterInventoryMoveHandle | 0x47 | 0x47 | SAME | template; inv-item move; enum-stable; **med (OQ-7)** |
+| CharacterItemUseHandle | 0x48 | 0x48 | SAME | template; use item; enum-stable; **med (OQ-7)** |
+| CharacterItemCancelHandle | 0x49 | 0x49 | SAME | template; cancel item; enum-stable; **med (OQ-7)** |
+| CharacterItemUseSummonBagHandle | 0x4B | 0x4B | SAME | template; summon bag; enum-stable; **med (OQ-7)** |
+| PetFoodHandle | 0x4C | 0x4C | SAME | template; pet food; enum-stable; **med (OQ-7)** |
+| CharacterCashItemUseHandle | 0x4F | 0x4F | SAME | template; cash-item use; enum-stable; **med (OQ-7)** |
+| CharacterItemUseTownScrollHandle | 0x55 | 0x55 | SAME | template; return/town scroll; enum-stable; **med (OQ-7)** |
+| CharacterItemUseScrollHandle | 0x56 | 0x56 | SAME | template; upgrade scroll; enum-stable; **med (OQ-7)** |
+| CharacterDistributeApHandle | 0x57 | 0x57 | SAME | template; AP distribute; enum-stable; **med (OQ-7)** |
+| CharacterAutoDistributeApHandle | 0x58 | 0x58 | SAME | template; auto-AP; enum-stable; **med (OQ-7)** |
+| CharacterHealOverTimeHandle | 0x59 | 0x59 | SAME | template; heal-over-time; enum-stable; **med (OQ-7)** |
+| CharacterDistributeSpHandle | 0x5A | 0x5A | SAME | template; SP distribute; enum-stable; **med (OQ-7)** |
+| CharacterUseSkillHandle | 0x5B | 0x5B | SAME | template; use skill; enum-stable; **med (OQ-7)** |
+| CharacterBuffCancel | 0x5C | 0x5C | SAME | template; cancel buff; enum-stable; **med (OQ-7)** |
+| CharacterDropMesoHandle | 0x5E | 0x5E | SAME | template; drop meso; enum-stable; **med (OQ-7)** |
+| FameChangeHandle | 0x5F | 0x5F | SAME | template; give fame; enum-stable; **med (OQ-7)** |
+| CharacterInfoRequestHandle | 0x61 | 0x61 | SAME | template; char-info request; enum-stable; **med (OQ-7)** |
+| PetSpawnHandle | 0x62 | 0x62 | SAME | template; pet activate; enum-stable; **med (OQ-7)** |
+| PortalScriptHandle | 0x64 | 0x64 | SAME | template; portal script; enum-stable; **med (OQ-7)** |
+| QuestActionHandle | 0x6B | 0x6B | SAME | template; quest action; enum-stable; **med (OQ-7)** |
+| CharacterSkillMacroHandle | 0x6E | 0x6E | SAME | template; skill macro; enum-stable; **med (OQ-7)** |
+| CharacterMultiChatHandle | 0x77 | 0x77 | SAME | template; party/buddy/guild chat; enum-stable; **med (OQ-7)** |
+| CharacterChatWhisperHandle | 0x78 | 0x78 | SAME | template; v83 `?SendChatMsgWhisper@CField@@`@0x52F185 (size 0x841); v84 `sub_53B2DB` (size 0x841, positional); enum-stable; **med (OQ-7)** |
+| MessengerOperationHandle | 0x7A | 0x7A | SAME | template; messenger op; enum-stable; **med (OQ-7)** |
+| CharacterInteractionHandle | 0x7B | 0x7B | SAME | template; trade/mini-room op; enum-stable; **med (OQ-7)** |
+| PartyOperationHandle | 0x7C | 0x7C | SAME | template; v84 party send cluster around `sub_53BC2A`; enum-stable; **med (OQ-7)** |
+| PartyInviteRejectHandle | 0x7D | 0x7D | SAME | v84 `sub_53BC2A` `COutPacket(125)`=0x7D (party-invite reject/decline shape); **high** |
+| GuildOperationHandle | 0x7E | 0x7E | SAME | template; guild op; enum-stable; **med (OQ-7)** |
+| GuildInviteRejectHandle | 0x7F | 0x7F | SAME | template; guild invite reject; enum-stable; **med (OQ-7)** |
+| BuddyOperationHandle | 0x82 | 0x82 | SAME | template; buddy op; enum-stable; **med (OQ-7)** |
+| NoteOperationHandle | 0x83 | 0x83 | SAME | template; note/memo op; enum-stable; **med (OQ-7)** |
+| CharacterKeyMapChangeHandle | 0x87 | 0x87 | SAME | template; key-map change; enum-stable; **med (OQ-7)** |
+| GuildBBSHandle | 0x9B | 0x9B | SAME | template; guild BBS; enum-stable; **med (OQ-7)** |
+| PetMovementHandle | 0xA7 | 0xA7 | SAME | template; pet move; enum-stable; **med (OQ-7)** |
+| PetChatHandle | 0xA8 | 0xA8 | SAME | template; pet chat; enum-stable; **med (OQ-7)** |
+| PetCommandHandle | 0xA9 | 0xA9 | SAME | template; pet command; enum-stable; **med (OQ-7)** |
+| PetDropPickUpHandle | 0xAA | 0xAA | SAME | template; pet loot; enum-stable; **med (OQ-7)** |
+| PetItemUseHandle | 0xAB | 0xAB | SAME | template; pet item use; enum-stable; **med (OQ-7)** |
+| PetItemExcludeHandle | 0xAC | 0xAC | SAME | template; pet item ignore-list; enum-stable; **med (OQ-7)** |
+| MonsterMovementHandle | 0xBC | 0xBC | SAME | template; mob move; enum-stable; **med (OQ-7)** |
+| MonsterDamageFriendlyHandle | 0xC0 | 0xC0 | SAME | template; friendly-mob damage; enum-stable; **med (OQ-7)** |
+| NPCActionHandle | 0xC5 | 0xC5 | SAME | template; NPC move/action; enum-stable; **med (OQ-7)** |
+| DropPickUpHandle | 0xCA | 0xCA | SAME | template; drop pickup; enum-stable; **med (OQ-7)** |
+| ReactorHitHandle | 0xCD | 0xCD | SAME | template; reactor hit; enum-stable; **med (OQ-7)** |
+| CashShopCheckWalletHandle | 0xE4 | 0xE4 | SAME | template; cash wallet check; enum-stable; **med (OQ-7)** |
+| CashShopOperationHandle | 0xE5 | 0xE5 | SAME | template; cash-shop op; enum-stable; **med (OQ-7)** |
+
+**Completeness vs v83 template:** 93 opcode entries = 93 distinct opcodes; the
+table above has exactly 93 rows, one per opcode, all SAME. The only repeated
+handler *name* is `ServerListRequestHandle` (bound at both 0x04 and 0x0B → two
+distinct rows). `grep -o '"handler": "[^"]*"' … | sort -u | wc -l` = 92 = the 92
+distinct handler-name strings (93 entries − 1 duplicate-bound name). **Unresolved /
+explicitly low-confidence:** none at the guessed-value level — the byte of every
+opcode is the v83 template value, which IS the wire send-opcode. The only inferred
+claim is "v84 did not renumber," held at **med (OQ-7)** for the 88 rows not
+independently re-read in the v84 binary, and **high/med** for the 5 verified
+anchors. CharacterMoveHandle (0x29) is the one in-scope flow whose v84 byte was
+not re-read (move opcode is not a flat COutPacket immediate); it is SAME by enum
+stability + Section 5 (move.go deltas are all structural `> 83`, never opcode).
 
 ## 2. Outbound (writer) opcode map  (FR-1.1, FR-1.3)
 | logical name | v83 opcode | v84 opcode | classification | evidence |

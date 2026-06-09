@@ -435,10 +435,270 @@ guessed hex value — every SHIFTED v84 opcode is a measured band-Δ applied to 
 body-matched anchor or a directly-read case label.
 
 ## 3. Packet-structure delta (FR-1.2)
+
+**Headline result (the payoff for B5/C1).** v84 GMS is a *minor* bump: for every
+in-scope packet the v84 client (de)serializer is **byte-for-byte identical to
+v83**. The structural fields Atlas currently adds for v84 via `MajorVersion() > 83`
+predicates (decode-opt short, logout-gift block, `nCompletedSetItemID`, char-info
+chair int, movement `XOffset/YOffset`, chat `updateTime`, char-create
+`subJobIndex`, and the movement `dr*` header fields) are **NOT present in the v84
+client** — they are all **v87+ (or later) additions**. The `> 83` boundary in
+`libs/atlas-packet/**` is therefore a *systematic off-by-one*: the true GMS
+boundary for these fields sits between v84 and v87 (so the predicate should be
+`>= 87`, i.e. `> 84`), not between v83 and v84. **A v84 tenant driven by today's
+`> 83` code would emit/consume extra bytes the v84 client never reads, desyncing
+every one of these packets.** This is the single most important finding of A4 and
+directly contradicts the Section-5 assumption that the `migrate+correct` rows are
+"already correct for v84." They are correct for v87, wrong for v84.
+
+Evidence base: each fact below cites the v84 IDA function actually read, with the
+v83 anchor it was aligned against and (where the boundary mattered) the v87
+function that proves the field is v87+.
+
 ### 3.1 In-scope flows (exhaustive): login handshake, auth, world/channel list, character list, character select / PIC-PIN, enter-channel, map load (spawn/field), movement, chat
+
+Per-flow verdict legend: **identical** = v84 (de)serializer byte-equal to v83, no
+Atlas branch involved; **Atlas-correct** = v84 differs from v83 and Atlas's
+existing branch already matches v84; **MISMATCH** = Atlas's existing `>83`/`==83`
+branch does NOT match what the v84 client expects (a real B5 bug).
+
+#### 3.1.1 Login handshake / auth — verdict: **identical to v83** (no `>83` branch in this flow)
+- v84 `CLogin::OnCheckPasswordResult` = CLogin case 0 `sub_60D368@0x60D368`
+  (recv) decoded; the auth-success path reads, in order: `Decode4`(accountId),
+  `Decode1`(gender), `Decode1`(grade), `Decode1`, `Decode1`, `DecodeStr`(name),
+  `Decode1`, `Decode1`, two 8-byte buffers (`DecodeBuffer 8`), `Decode4`, then
+  hands to `sub_60DD8D` (OnCommonLoginResult), then `Decode1`(v43)+`Decode1`(v44)
+  trailing flags → sends 0x0B (world-list) or 0x09 (AfterLogin) + `DecodeBuffer 8`.
+- v83 `CLogin::OnCheckPasswordResult@0x5F83EE` is **byte-identical** in the
+  success path (`SetAccountInfo`, then `v60`/`v61` flags → 0xB / 0x9). No version
+  predicate. **Atlas login/auth writers carry no `>83` structural branch — nothing
+  to fix.** (See §4 for the usesPin consequence.)
+- Client SEND `LoginHandle 0x01`: v84 `CLogin::SendCheckPasswordPacket@0x60B88B`
+  retains the v83 symbol and shape (Section 1, high). Identical.
+
+#### 3.1.2 World / channel list — verdict: **identical to v83**
+- v84 world-list = CLogin case 0xA `sub_60E5B3` (`OnWorldInformation`);
+  char-list = `CLogin::OnSelectWorldResult@0x60E8C6` (named in BOTH versions,
+  Section 2 high). Both align 1:1 with v83 `OnWorldInformation@0x5F95B7` /
+  `OnSelectWorldResult@0x5F9891`. No GMS `>83` predicate exists in
+  `character/clientbound/list.go` (only `<=28` early-return and `>87`/JMS gates,
+  all evaluating identically for v83 and v84 — Section 5 rows
+  list.go:56/61/63/91/96/98 confirmed unchanged). **No structural delta; Atlas
+  already correct for v84.**
+
+#### 3.1.3 Character list / AllCharacterList extra fields — verdict: **identical to v83**
+- `character/clientbound/list.go` per-char encode: the only version gates are
+  `<=28` (early-return, false for both v83/v84) and `>87`/JMS (false for both).
+  v84 char-list dispatch `OnSelectWorldResult@0x60E8C6` is the v83 function
+  relocated; the per-character record layout is unchanged across v83→v84 (no
+  `>83` field). **No AllCharacterList extra field appears at v84.** Atlas correct.
+
+#### 3.1.4 Character select / PIC-PIN — verdict: **identical to v83**
+- PIC result = CLogin case 0x1C `sub_610D67` (`OnCheckSPWResult`), char-select
+  ServerIP = case 0xC `sub_61085F` (`OnSelectCharacterResult`) — both align to
+  v83 (`OnCheckSPWResult@0x5FBA49`, `OnSelectCharacterResult@0x5FB541`). The PIC
+  send path (`delete.go`, `create.go` SPW) gates are `>82` (true both) — no `>83`
+  structural shift in select/PIC. **No delta; Atlas correct.** (PIN flow: §4.)
+
+#### 3.1.5 Character create (`subJobIndex`) — verdict: **MISMATCH (likely; v83 proven, v84 by pattern + v83 send)**
+- v83 client SEND `CLogin::SendNewCharPacket@0x5F7E7A`: `COutPacket(0x16)`,
+  `EncodeStr(name)`, `Encode4(race)`, **8×`Encode4`** (face/hair/hairColor/skin/
+  top/bottom/shoes/weapon), `Encode1(gender)`. **No `subJobIndex` short.** This
+  matches Atlas `create.go` with `>83` = false for v83.
+- v84: the basic-create send (`COutPacket(0x16)`) was not isolated in the v84
+  CLogin send cluster within the A4 budget (v84 routes most creation through the
+  SPW/view-all path `sub_60C624`, which builds 0x0E/0x1F/0x20, not 0x16; the bare
+  0x16 builder was not positively located). Confidence **MED**: by the proven
+  universal `>83`→`>=87` pattern (§3 headline) plus the v83 send having no
+  subJobIndex, v84 almost certainly does **not** send a `subJobIndex` short.
+- **Atlas branch:** `create.go:116` writes `WriteShort(SubJobIndex())` and
+  `create.go:153` (`<=83`) zero-defaults it. For a v84 tenant `>83` = true →
+  Atlas would **read/expect a 2-byte subJobIndex the v84 client does not send**,
+  desyncing char-create. **B5 fix:** change `create.go:116` and `create.go:153`
+  boundary from `> 83` / `<= 83` to `>= 87` / `< 87` (GMS). (Confirm against a
+  v84 0x16 send capture before landing, given MED confidence.)
+
+#### 3.1.6 Enter-channel → SetField (decode-opt header + logout-gift block) — verdict: **MISMATCH (confirmed)**
+- v84 `CStage::OnSetField@0x798987` decoded and aligned field-for-field against
+  v83 `CStage::OnSetField@0x776020`: **byte-identical.** Parse order (both):
+  `Decode4`(channelId/seed) → `Decode1`(sNotifierMessage) → `Decode1`
+  (bCharacterData) → `Decode2`(nNotifierCheck) → notifier strings → branch.
+- **decode-opt short:** v84 reads **NO** leading 2-byte decode-opt before
+  channelId. Proof it is a v87+ field: v87 `CStage::OnSetField@0x7c429c` calls
+  **`CClientOptMan::DecodeOpt@0x4a513e`** (reads `Decode2` count + N×8-byte pairs)
+  *before* `Decode4(channelId)`; v83 and v84 have no such call. Atlas
+  `set_field.go:46/92` and `warp_to_map.go:56/96` write/read `WriteShort(0)`
+  decode-opt under `(GMS && >83) || JMS`. **For v84 this emits a spurious 2-byte
+  short the client never consumes → whole SetField/WarpToMap desyncs.**
+- **logout-gift block:** v84 `OnSetField` bCharacterData branch reads 3 damage
+  seeds → `sub_799FBF` (a *local* CharacterData allocation that reads **zero**
+  packet bytes — same body as v83's mis-named `OnSetLogoutGiftConfig@0x777616`)
+  → `CharacterData::Decode` (`sub_4EDDE5`, the full char-data parser, last). **No
+  4-int logout-gift block is read in v83 OR v84.** Proof it is v87+: v87
+  `OnSetLogoutGiftConfig@0xa990f2` reads **4×`Decode4`** and is invoked with the
+  packet *after* `CharacterData::Decode`. Atlas `set_field.go:75` writes a 4-int
+  logout-gift block under `(GMS && >83) || JMS`. **For v84 this emits 16 spurious
+  bytes after char-data.**
+- **m_dwOldDriverID (`>=95`)** and **nHP width / nNotifierCheck (`>28`)**: Atlas
+  gates these `>=95` / `>28`, both evaluate identically for v83 and v84 (already
+  verified in existing warp_to_map.go comments). **No delta there.**
+- **B5 fix:** in `set_field.go` (lines 46, 75, 92, 121) and `warp_to_map.go`
+  (lines 56, 96) change the decode-opt and logout-gift gates from
+  `(GMS && MajorVersion() > 83) || JMS` to `(GMS && MajorVersion() >= 87) || JMS`
+  (JMS clause unaffected — JMS still gets both, which existing tests assume).
+
+#### 3.1.7 Map load / character spawn (`nCompletedSetItemID`) — verdict: **MISMATCH (confirmed)**
+- v84 spawn parse = `CUserRemote::Init` (`sub_9BF6F0`, reached from CUserPool
+  user-enter `sub_9B20A0@0x9B20A0`, the v84 case-0xA3 handler). After
+  `AvatarLook::Decode` it reads **exactly 3×`Decode4`**: choco, item-effect,
+  chair (`*(this+14660)` = SetActivePortableChair). **No `nCompletedSetItemID`.**
+- v83 `CUserRemote::Init@0x97f55d` reads the same 3×`Decode4` (choco, item-effect,
+  chair) — byte-identical to v84.
+- Proof it is v87+: v87 `CUserRemote::Init@0xa04b9e` reads **4×`Decode4`** there
+  (choco, item-effect, **`nCompletedSetItemID`** `*(this+11652)`, chair) and calls
+  `CUser::SetSetItemEffect`. So the field enters at v87.
+- **Atlas branch:** `spawn.go:85` (Encode) / `spawn.go:188` (Decode) write/read
+  `nCompletedSetItemID` int under `GMS && MajorVersion() > 83`. **For a v84 tenant
+  `>83` = true → Atlas emits a spurious 4-byte field mid-spawn → every foreign
+  CharacterSpawn desyncs (mount/pets/position garbled).**
+- **B5 fix:** `spawn.go:85` and `spawn.go:188` change `> 83` → `>= 87` (GMS).
+
+#### 3.1.8 Movement (`XOffset`/`YOffset` on NORMAL elements) — verdict: **MISMATCH (confirmed) + Atlas internal inconsistency**
+- v84 movement element parser `CMovePath::Decode` (`sub_6A0FD0`, reached via
+  `CUserRemote::OnMove sub_9B26CD@0x9B26CD` → `sub_6A203F`): NORMAL element cases
+  (0/5/0xF/0x11) read **exactly 5×`Decode2`** (X,Y,Vx,Vy,Fh). **No `XOffset`/
+  `YOffset`.** (v84 adds an unrelated new move-type case 0x17 with 4 Decode2 — not
+  XOffset.)
+- v83 `CMovePath::Decode@0x68a33c` reads the same 5 fields — byte-identical.
+- **Atlas branch:** `model/movement.go:128` (`NormalElement.Decode`) reads
+  `XOffset/YOffset` under `Region() != "GMS" || MajorVersion() > 83`. For GMS v84
+  `>83` = true → Atlas reads **2 extra Int16 the v84 client never sent**,
+  desyncing every movement element after the first NORMAL. **Notably the matching
+  Encode (`movement.go:217`) already gates `> 87`** — so Atlas is internally
+  inconsistent (decode `>83`, encode `>87`); the *encode* boundary is the correct
+  one. **B5 fix:** `movement.go:128` change `MajorVersion() > 83` → `> 87` to match
+  the encode side (which the v83/v84 evidence confirms is right).
+
+#### 3.1.9 Movement self-move header (`dr0/dr1/dr2/dr3/dwKey/crc32`) — verdict: **MISMATCH (likely; same off-by-one family, MED)**
+- `character/serverbound/move.go:56-71/82-97` gates the `dr*`/`dwKey`/`crc32`
+  header fields on `GMS && MajorVersion() > 83` (and `crc` on `>28`). v83 self-move
+  carries only `fieldKey` + `crc(>28)` before the move path; the `dr*`/`dwKey`/
+  `crc32` block is a later (v95-era position-validation) addition.
+- v84: the bare 0x29 self-move builder was not isolated in v84 (move opcode is not
+  a flat `COutPacket` immediate; the CUserLocal send is unnamed). Confidence
+  **MED** by the same `>83`→`>=87`/later off-by-one family as 3.1.6–3.1.8: the v84
+  client self-move almost certainly carries **no `dr*` block** (v83-style).
+- **B5 fix (pending v84 self-move capture):** raise the `move.go` `> 83` gates to
+  the correct GMS boundary (likely `>= 87` or `>= 95` — confirm against a v84 move
+  capture; the `dr*` fields may even be `>= 95`). The `crc (>28)` gate is fine.
+
+#### 3.1.10 Chat (general `updateTime`) — verdict: **MISMATCH (confirmed)**
+- v84 client SEND general chat `sub_5382D7` (Section 1, size 0xF7): builds
+  `COutPacket(0x31)`, `EncodeStr(msg)`, `Encode1(bOnlyBalloon)`. **No
+  `updateTime`.**
+- v83 `CField::SendChatMsg@0x52C315` is byte-identical (`COutPacket(0x31)`,
+  `EncodeStr`, `Encode1`) — no updateTime.
+- **Atlas branch:** `chat/serverbound/general.go:45/57` writes/reads `updateTime`
+  (uint32) before the msg string under `(GMS && >83) || JMS`. **For a v84 tenant
+  `>83` = true → Atlas reads 4 bytes of the message as updateTime → chat desyncs.**
+  (The clientbound `chat/clientbound/general.go` gates the same way; both wrong for
+  v84.)
+- **B5 fix:** `chat/serverbound/general.go:45/57` (and the clientbound counterpart)
+  change `> 83` → the correct GMS boundary. The exact upper boundary (87 vs 95) was
+  **not pinned in A4** (v87/v95 chat send not isolated); `updateTime` is a later
+  GMS chat addition, plausibly `>= 95`. **Confirm the boundary before landing**;
+  what is certain is that **v84 has no updateTime**, so any boundary `> 84` fixes
+  v84.
+
+#### 3.1.11 Char-info (`>83` chair int) — verdict: **MISMATCH (confirmed)**
+- (Char-info is a select/inspect flow, in-scope-adjacent; included because
+  Section 5 flags info.go:116/183 as `migrate+correct`.) v84 char-info =
+  CWvsContext case 0x3D `sub_A6EDA8@0xA6EDA8`; v83 `OnCharacterInfo@0xA2370B`.
+  Both end the body with the medal block (`MedalAchievementInfo::Decode` in v83 /
+  its v84 analog) and then cleanup — **neither reads a trailing chair `Decode4`**
+  after the medal block.
+- **Atlas branch:** `info.go:116/183` writes/reads a chair int at the end under
+  `(GMS && >83) || JMS`. **For a v84 tenant `>83` = true → Atlas emits 4 spurious
+  trailing bytes** (less catastrophic, being last, but still a length mismatch).
+  **B5 fix:** `info.go:116/183` change `> 83` → `>= 87` (GMS).
+
 ### 3.2 Spot-checked elsewhere (what was checked, what was assumed)
 
+- **Cash shop (out of scope):** the `cash/clientbound/shop_open.go` /
+  `query_result.go` predicates (Section 5 rows) are all `>12`/`>=95`/`==GMS`/
+  `==JMS` — every one evaluates identically for v83 and v84 (no `>83` boundary in
+  the cash-shop writers). **Assumed unchanged for v84; not byte-verified** (cash
+  shop is out of scope and not on the playthrough path). The CStage cash-shop
+  *opcode* shift (CashShopOpen 0x7F→0x82) is opcode-numbering (Section 2), not
+  structure.
+- **Storage / messenger / interaction (out of scope):** opcode rows are the
+  low-confidence upper-band `+7` SHIFTs (Section 2, flagged OQ-7). **Packet
+  *structure* not examined**; these carry no `>83` Atlas branch in Section 5, so
+  no structural off-by-one is suspected, but this is **assumed, not verified.**
+- **Pet spawn (`model.Pet` inside spawn):** the v84 spawn pet loop
+  (`while(Decode1){...CPet::Init}`) is positionally identical to v83 in
+  `CUserRemote::Init` (both `sub_9BF6F0`/`0x97f55d`). The pet sub-structure was not
+  field-diffed but sits inside an already byte-matched enclosing function;
+  **assumed identical for v84.**
+- **NPC / monster / drop / reactor spawn structure:** out of scope for the A4
+  playthrough; only their opcodes were mapped (Section 2). Structure **not
+  examined** — assumed v83-equivalent given v84's minor-bump character, but
+  unverified.
+- **Movement non-NORMAL element types** (Teleport/StartFallDown/Jump/etc.):
+  v84 `CMovePath::Decode` (`sub_6A0FD0`) case bodies for these were read in passing
+  and match v83 `0x68a33c` case-for-case (same Decode2 counts), except v84 adds a
+  **new** case 0x17 (4×Decode2) absent in v83 — a new move-action type, not a
+  change to existing types. Not an in-scope concern unless that action is emitted.
+
+#### Other `> 83` rows in Section 5 NOT individually IDA-verified in A4
+The same systematic `> 83`→`>= 87` off-by-one almost certainly applies to the
+remaining `> 83` GMS-true rows that A4 did not have budget to decompile
+individually, because **every** `> 83` field A4 *did* examine (8 distinct fields
+across 6 packets) turned out to be a v87+ addition with no v84/v83 difference — a
+100% hit rate. These un-decompiled rows are flagged so B5 treats them as
+**probably-MISMATCH, confirm-then-fix** rather than trusting the `> 83` gate:
+- `model/character_temporary_stat.go:105` (ShadowPartner buff `> 83`) — appears in
+  the enter-channel/spawn CTS block; in-scope-adjacent. **Likely `>= 87`.**
+- `model/monster.go:512` (monster spawn `> 83` field) — map-load path; not on the
+  minimal playthrough but adjacent. **Likely `>= 87`.**
+- `guild/clientbound/operation.go:430/447` (`> 83`) — out of scope (guild), but
+  same family.
+- `login/serverbound/all_character_list_request.go:56/70` (`> 83`) — the
+  view-all-characters request; in-scope-adjacent. **Likely `>= 87`.**
+
+None of these is on the minimal A4 playthrough (login→world→char-select→enter
+field→move→chat), so they do not block C1's smoke-test, but B5 should re-gate them
+to `>= 87` after a one-function v84 confirmation each, given the perfect pattern.
+
 ## 4. usesPin determination (OQ-1)
+
+**`usesPin = false` for v84 GMS** — identical to v83, and consistent with every
+current GMS tenant template default.
+
+**Evidence (the v84 login post-auth flow):**
+- v84 `CLogin::OnCheckPasswordResult` = CLogin dispatch case 0 `sub_60D368`
+  (`@0x60D368`, the AuthSuccess handler). Decompiled in full. On auth success
+  (`m_nRegStatID <= 1`) the client: decodes the account record, calls `sub_60DD8D`
+  (OnCommonLoginResult / SetAccountInfo), then reads two trailing flag bytes
+  (`v43 = Decode1`, `v44 = Decode1` → `*(this+392)` = the SPW/PIC-enabled flag) and
+  **immediately** sends either `COutPacket(0x0B)` (ServerListRequest / world list)
+  or `COutPacket(0x09)` (AfterLogin). **There is no `SetPin`/`CheckPin` dialog
+  branch, no PIN prompt, and no PIN packet emitted in the success path.** The
+  transition is auth → world-select, exactly as v83.
+- v83 `CLogin::OnCheckPasswordResult@0x5F83EE` is **byte-identical** in the success
+  path: reads `v60`/`v61` flags → sends 0xB (world list) or 0x9 (AfterLogin). Same
+  flow, no PIN dialog.
+- The `PinOperation`/`PinUpdate` handlers exist in the dispatch table of both
+  versions (CLogin case 6 = `OnCheckPinCodeResult` v84 `sub_611975`; case 7 =
+  `OnUpdatePinCodeResult` v84 `sub_611C99`) but they are **server-initiated** — the
+  client only runs a PIN dialog if the server *sends* a pin-operation packet. The
+  client's own login sequence does **not** require or initiate a PIN step. This is
+  exactly the v83 situation, where Atlas already ships `usesPin: false`.
+
+**Conclusion for C1/template:** the v84 GMS tenant template should keep
+`usesPin: false` (no change from the v83 template). The proving functions are v84
+`sub_60D368` (auth-success → straight to world list) cross-checked against v83
+`OnCheckPasswordResult@0x5F83EE`.
 
 ## 5. Version-branch audit table (FR-3.1, FR-3.3)
 
@@ -531,9 +791,9 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/character/clientbound/expression.go:80 | `Region() == "GMS" && MajorVersion() > 87` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/expression.go:83 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/info.go:106 | `(Region() == "GMS" && MajorVersion() <= 87) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/character/clientbound/info.go:116 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (char-info/spawn flow) |
+| libs/atlas-packet/character/clientbound/info.go:116 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.11): v84 OnCharacterInfo sub_A6EDA8 has no trailing chair Decode4 (==v83). Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/character/clientbound/info.go:173 | `(Region() == "GMS" && MajorVersion() <= 87) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/character/clientbound/info.go:183 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (char-info/spawn flow) |
+| libs/atlas-packet/character/clientbound/info.go:183 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.11): v84 OnCharacterInfo sub_A6EDA8 has no trailing chair Decode4 (==v83). Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/character/clientbound/item_upgrade.go:91 | `Region() == "GMS" && MajorVersion() > 87` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/item_upgrade.go:98 | `(Region() == "GMS" && MajorVersion() > 87) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/item_upgrade.go:114 | `Region() == "GMS" && MajorVersion() > 87` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
@@ -549,13 +809,13 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/character/clientbound/list.go:66 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/list.go:101 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:79 | `(Region() == "GMS" && MajorVersion() > 87) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/character/clientbound/spawn.go:85 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (character spawn/map load) |
+| libs/atlas-packet/character/clientbound/spawn.go:85 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.7): v84 CUserRemote::Init sub_9BF6F0 reads 3 Decode4 (no nCompletedSetItemID); v87 reads 4. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/character/clientbound/spawn.go:128 | `Region() == "GMS" && MajorVersion() < 95` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:134 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:135 | `MajorVersion() <= 87` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:138 | `MajorVersion() > 87` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:182 | `(Region() == "GMS" && MajorVersion() > 87) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/character/clientbound/spawn.go:188 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (character spawn/map load) |
+| libs/atlas-packet/character/clientbound/spawn.go:188 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.7): v84 CUserRemote::Init sub_9BF6F0 reads 3 Decode4 (no nCompletedSetItemID); v87 reads 4. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/character/clientbound/spawn.go:219 | `Region() == "GMS" && MajorVersion() < 95` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:225 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/clientbound/spawn.go:226 | `MajorVersion() <= 87` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
@@ -610,11 +870,11 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/character/data.go:682 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel/SetField) |
 | libs/atlas-packet/character/data.go:693 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel/SetField) |
 | libs/atlas-packet/character/serverbound/create.go:113 | `(Region() == "GMS" && MajorVersion() >= 73) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (character create) |
-| libs/atlas-packet/character/serverbound/create.go:116 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (character create — subJobIndex field) |
+| libs/atlas-packet/character/serverbound/create.go:116 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.5): v83 SendNewChar@0x5F7E7A has no subJobIndex; v84 same (MED); field is v87+. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/character/serverbound/create.go:129 | `(Region() == "GMS" && MajorVersion() > 28) && Region() != "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (character create) |
 | libs/atlas-packet/character/serverbound/create.go:132 | `Region() == "GMS" && MajorVersion() <= 28` | false | false | yes | unchanged (correct) | pending Phase A (character create) |
 | libs/atlas-packet/character/serverbound/create.go:147 | `(Region() == "GMS" && MajorVersion() >= 73) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (character create) |
-| libs/atlas-packet/character/serverbound/create.go:153 | `Region() == "GMS" && MajorVersion() <= 83` | true | **false** | **NO** | migrate+correct | pending Phase A (character create — subJobIndex field) |
+| libs/atlas-packet/character/serverbound/create.go:153 | `Region() == "GMS" && MajorVersion() <= 83` | true | **false** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.5): v83 SendNewChar@0x5F7E7A has no subJobIndex; v84 same (MED); field is v87+. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/character/serverbound/create.go:162 | `Region() != "JMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/serverbound/create.go:172 | `(Region() == "GMS" && MajorVersion() <= 28) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | pending Phase A (character create) |
 | libs/atlas-packet/character/serverbound/create.go:179 | `Region() == "GMS" && MajorVersion() <= 28` | false | false | yes | unchanged (correct) | pending Phase A (character create) |
@@ -626,16 +886,16 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/character/serverbound/expression.go:73 | `Region() == "GMS" && MajorVersion() > 87` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/serverbound/heal_over_time.go:60 | `Region() == "GMS" && MajorVersion() <= 95` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/character/serverbound/heal_over_time.go:74 | `Region() == "GMS" && MajorVersion() <= 95` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/character/serverbound/move.go:56 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (movement — dr0/dr1 header fields) |
-| libs/atlas-packet/character/serverbound/move.go:61 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (movement — dr2/dr3 fields) |
+| libs/atlas-packet/character/serverbound/move.go:56 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 MISMATCH likely (see §3.1.9, MED): v84 self-move not isolated; dr* are v87+/v95-era. Fix: raise `> 83` (confirm boundary) |
+| libs/atlas-packet/character/serverbound/move.go:61 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 MISMATCH likely (see §3.1.9, MED): same dr* family. Fix: raise `> 83` (confirm boundary) |
 | libs/atlas-packet/character/serverbound/move.go:65 | `Region() == "GMS" && MajorVersion() > 28` | true | true | yes | unchanged (correct) | pending Phase A (movement) |
-| libs/atlas-packet/character/serverbound/move.go:68 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (movement — dwKey/crc32 fields) |
-| libs/atlas-packet/character/serverbound/move.go:82 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (movement — dr0/dr1 decode) |
-| libs/atlas-packet/character/serverbound/move.go:87 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (movement — dr2/dr3 decode) |
+| libs/atlas-packet/character/serverbound/move.go:68 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 MISMATCH likely (see §3.1.9, MED): same dr* family. Fix: raise `> 83` (confirm boundary) |
+| libs/atlas-packet/character/serverbound/move.go:82 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 MISMATCH likely (see §3.1.9, MED): v84 self-move dr* almost certainly absent. Fix: raise `> 83` (confirm boundary) |
+| libs/atlas-packet/character/serverbound/move.go:87 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 MISMATCH likely (see §3.1.9, MED): same dr* family. Fix: raise `> 83` (confirm boundary) |
 | libs/atlas-packet/character/serverbound/move.go:91 | `Region() == "GMS" && MajorVersion() > 28` | true | true | yes | unchanged (correct) | pending Phase A (movement) |
-| libs/atlas-packet/character/serverbound/move.go:94 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (movement — dwKey/crc32 decode) |
-| libs/atlas-packet/chat/serverbound/general.go:45 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (chat) |
-| libs/atlas-packet/chat/serverbound/general.go:57 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (chat) |
+| libs/atlas-packet/character/serverbound/move.go:94 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 MISMATCH likely (see §3.1.9, MED): same dr* family. Fix: raise `> 83` (confirm boundary) |
+| libs/atlas-packet/chat/serverbound/general.go:45 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.10): v84 chat send sub_5382D7 has no updateTime (==v83 SendChatMsg@0x52C315). Fix: raise `> 83` (boundary 87 vs 95 TBD) |
+| libs/atlas-packet/chat/serverbound/general.go:57 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.10): v84 chat send sub_5382D7 has no updateTime (==v83 SendChatMsg@0x52C315). Fix: raise `> 83` (boundary 87 vs 95 TBD) |
 | libs/atlas-packet/chat/serverbound/multi.go:54 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/chat/serverbound/multi.go:71 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/chat/serverbound/whisper.go:60 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
@@ -643,20 +903,20 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/field/clientbound/affected_area_created.go:91 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/field/clientbound/effect_weather.go:40 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/field/clientbound/effect_weather.go:70 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/field/clientbound/set_field.go:46 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (enter-channel/SetField — decode opt header) |
+| libs/atlas-packet/field/clientbound/set_field.go:46 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.6): v84 OnSetField@0x798987 has no decode-opt; v87@0x7c429c calls DecodeOpt. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/field/clientbound/set_field.go:50 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | pending Phase A (enter-channel/SetField) |
 | libs/atlas-packet/field/clientbound/set_field.go:60 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel/SetField) |
-| libs/atlas-packet/field/clientbound/set_field.go:75 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (enter-channel/SetField — logout gifts block) |
-| libs/atlas-packet/field/clientbound/set_field.go:92 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (enter-channel/SetField — decode opt decode) |
+| libs/atlas-packet/field/clientbound/set_field.go:75 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.6): v84 OnSetField reads no logout-gift block; v87 OnSetLogoutGiftConfig@0xa990f2 reads 4 ints. Fix: `> 83`→`>= 87` |
+| libs/atlas-packet/field/clientbound/set_field.go:92 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.6): v84 has no decode-opt short. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/field/clientbound/set_field.go:96 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | pending Phase A (enter-channel/SetField) |
 | libs/atlas-packet/field/clientbound/set_field.go:106 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel/SetField) |
-| libs/atlas-packet/field/clientbound/set_field.go:121 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (enter-channel/SetField — logout gifts decode) |
-| libs/atlas-packet/field/clientbound/warp_to_map.go:56 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (map load/WarpToMap — decode opt header) |
+| libs/atlas-packet/field/clientbound/set_field.go:121 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.6): v84 reads no logout-gift block. Fix: `> 83`→`>= 87` |
+| libs/atlas-packet/field/clientbound/warp_to_map.go:56 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.6): shares OnSetField parse; v84 no decode-opt. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:60 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:69 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:80 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:85 | `Region() == "GMS" && MajorVersion() > 28` | true | true | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
-| libs/atlas-packet/field/clientbound/warp_to_map.go:96 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (map load/WarpToMap — decode opt decode) |
+| libs/atlas-packet/field/clientbound/warp_to_map.go:96 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.6): v84 no decode-opt. Fix: `> 83`→`>= 87` |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:100 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:109 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
 | libs/atlas-packet/field/clientbound/warp_to_map.go:117 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | pending Phase A (map load/WarpToMap) |
@@ -694,8 +954,8 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/login/clientbound/server_list_entry.go:98 | `MajorVersion() > 12` | true | true | yes | unchanged (correct) | pending Phase A (world list) |
 | libs/atlas-packet/login/clientbound/server_list_entry.go:105 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | pending Phase A (world list) |
 | libs/atlas-packet/login/clientbound/server_list_entry.go:123 | `(Region() == "GMS" && MajorVersion() > 12) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (world list) |
-| libs/atlas-packet/login/serverbound/all_character_list_request.go:56 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (character list — all-char request fields) |
-| libs/atlas-packet/login/serverbound/all_character_list_request.go:70 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (character list — all-char request decode) |
+| libs/atlas-packet/login/serverbound/all_character_list_request.go:56 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 NOT individually verified (out-of-scope adjacency): same `>83` off-by-one family (§3 headline) — almost certainly should be `>= 87`; confirm in B5 |
+| libs/atlas-packet/login/serverbound/all_character_list_request.go:70 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | A4 NOT individually verified: same `>83` off-by-one family — likely `>= 87`; confirm in B5 |
 | libs/atlas-packet/login/serverbound/character_select.go:47 | `Region() == "GMS" && MajorVersion() > 12` | true | true | yes | unchanged (correct) | pending Phase A (character select) |
 | libs/atlas-packet/login/serverbound/character_select_register_pic.go:58 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (PIC-PIN) |
 | libs/atlas-packet/login/serverbound/character_select_register_pic.go:72 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (PIC-PIN) |
@@ -759,7 +1019,7 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/model/monster.go:526 | `(Region() == "GMS" && MajorVersion() > 12) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/monster.go:538 | `(Region() == "GMS" && MajorVersion() > 12) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/monster.go:541 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (monster model spawn fields decode) |
-| libs/atlas-packet/model/movement.go:128 | `Region() != "GMS" \|\| MajorVersion() > 83` | false (GMS and <=83) | **true** (GMS and v84 > 83) | **NO** | migrate+correct | pending Phase A (movement element XOffset/YOffset decode) |
+| libs/atlas-packet/model/movement.go:128 | `Region() != "GMS" \|\| MajorVersion() > 83` | false (GMS and <=83) | **true** (GMS and v84 > 83) | **NO** | migrate+correct | A4-confirmed MISMATCH (see §3.1.8): v84 CMovePath::Decode sub_6A0FD0 NORMAL reads 5 Decode2 (no XOffset). Encode side already `> 87`. Fix: `> 83`→`> 87` |
 | libs/atlas-packet/model/movement.go:217 | `Region() != "GMS" \|\| MajorVersion() > 87` | false | false | yes | unchanged (correct) | pending Phase A (movement element XOffset/YOffset encode) |
 | libs/atlas-packet/monster/clientbound/movement.go:55 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (monster movement) |
 | libs/atlas-packet/monster/clientbound/movement.go:62 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (monster movement) |

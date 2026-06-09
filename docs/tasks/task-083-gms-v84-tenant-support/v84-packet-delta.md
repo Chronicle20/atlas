@@ -247,8 +247,6 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/guild/clientbound/operation.go:447 | `(Region() == "GMS" && MajorVersion() > 83) \|\| Region() == "JMS"` | false | **true** | **NO** | migrate+correct | pending Phase A (guild operation) |
 | libs/atlas-packet/interaction/serverbound/operation_chat.go:32 | `(Region() == "GMS" && MajorVersion() >= 87) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/login/clientbound/auth_login_failed.go:34 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (auth) |
-| libs/atlas-packet/login/clientbound/auth_login_failed.go:43 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (auth) |
-| libs/atlas-packet/login/clientbound/auth_permanent_ban.go:35 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (auth) |
 | libs/atlas-packet/login/clientbound/auth_permanent_ban.go:42 | `Region() != "GMS"` | false | false | yes | unchanged (correct) | pending Phase A (auth) |
 | libs/atlas-packet/login/clientbound/auth_permanent_ban.go:56 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (auth) |
 | libs/atlas-packet/login/clientbound/auth_permanent_ban.go:60 | `Region() != "GMS"` | false | false | yes | unchanged (correct) | pending Phase A (auth) |
@@ -279,21 +277,16 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/login/serverbound/all_character_list_request.go:56 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (character list — all-char request fields) |
 | libs/atlas-packet/login/serverbound/all_character_list_request.go:70 | `Region() == "GMS" && MajorVersion() > 83` | false | **true** | **NO** | migrate+correct | pending Phase A (character list — all-char request decode) |
 | libs/atlas-packet/login/serverbound/character_select.go:47 | `Region() == "GMS" && MajorVersion() > 12` | true | true | yes | unchanged (correct) | pending Phase A (character select) |
-| libs/atlas-packet/login/serverbound/character_select.go:58 | `Region() == "GMS" && MajorVersion() > 12` | true | true | yes | unchanged (correct) | pending Phase A (character select) |
 | libs/atlas-packet/login/serverbound/character_select_register_pic.go:58 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (PIC-PIN) |
 | libs/atlas-packet/login/serverbound/character_select_register_pic.go:72 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (PIC-PIN) |
 | libs/atlas-packet/login/serverbound/character_select_with_pic.go:53 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (character select with PIC) |
-| libs/atlas-packet/login/serverbound/character_select_with_pic.go:64 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (character select with PIC) |
 | libs/atlas-packet/login/serverbound/request.go:78 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (login handshake/auth request) |
 | libs/atlas-packet/login/serverbound/request.go:95 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (login handshake/auth request) |
 | libs/atlas-packet/login/serverbound/server_status_request.go:36 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (world list) |
-| libs/atlas-packet/login/serverbound/server_status_request.go:47 | `Region() == "GMS"` | true | true | yes | unchanged (correct) | pending Phase A (world list) |
 | libs/atlas-packet/login/serverbound/world_character_list_request.go:53 | `Region() == "GMS" && MajorVersion() > 28` | true | true | yes | unchanged (correct) | pending Phase A (world/channel list) |
 | libs/atlas-packet/login/serverbound/world_character_list_request.go:58 | `Region() == "GMS" && MajorVersion() > 12` | true | true | yes | unchanged (correct) | pending Phase A (world/channel list) |
-| libs/atlas-packet/login/serverbound/world_character_list_request.go:62 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | pending Phase A (world/channel list) |
 | libs/atlas-packet/login/serverbound/world_character_list_request.go:70 | `Region() == "GMS" && MajorVersion() > 28` | true | true | yes | unchanged (correct) | pending Phase A (world/channel list) |
 | libs/atlas-packet/login/serverbound/world_character_list_request.go:76 | `Region() == "GMS" && MajorVersion() > 12` | true | true | yes | unchanged (correct) | pending Phase A (world/channel list) |
-| libs/atlas-packet/login/serverbound/world_character_list_request.go:79 | `Region() == "JMS"` | false | false | yes | unchanged (correct) | pending Phase A (world/channel list) |
 | libs/atlas-packet/model/asset.go:195 | `(Region() == "GMS" && MajorVersion() > 12) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel inventory) |
 | libs/atlas-packet/model/asset.go:208 | `(Region() == "GMS" && MajorVersion() > 12) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel inventory) |
 | libs/atlas-packet/model/asset.go:213 | `(Region() == "GMS" && MajorVersion() > 28) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | pending Phase A (enter-channel inventory) |
@@ -338,10 +331,6 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/model/character_temporary_stat.go:169 | `(Region() == "GMS" && MajorVersion() >= 87) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/character_temporary_stat.go:178 | `(Region() == "GMS" && MajorVersion() >= 95) \|\| Region() == "JMS"` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/damage_info.go:47 | `Region() == "GMS" && MajorVersion() >= 83` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/model/damage_info.go:103 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/model/damage_info.go:136 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/model/damage_taken_info.go:59 | `Region() == "GMS" && MajorVersion() <= 28` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
-| libs/atlas-packet/model/damage_taken_info.go:86 | `Region() == "GMS" && MajorVersion() <= 28` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/damage_taken_info.go:103 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/damage_taken_info.go:136 | `Region() == "GMS" && MajorVersion() >= 95` | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 | libs/atlas-packet/model/monster.go:497 | `(Region() == "GMS" && MajorVersion() > 12) \|\| Region() == "JMS"` | true | true | yes | unchanged (correct) | no packet/behavior difference observed |

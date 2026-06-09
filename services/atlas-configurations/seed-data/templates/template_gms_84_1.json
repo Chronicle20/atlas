@@ -1,0 +1,3835 @@
+{
+  "region": "GMS",
+  "majorVersion": 84,
+  "minorVersion": 1,
+  "usesPin": false,
+  "socket": {
+    "handlers": [
+      {
+        "opCode": "0x01",
+        "validator": "NoOpValidator",
+        "handler": "LoginHandle"
+      },
+      {
+        "opCode": "0x04",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x05",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterListWorldHandle"
+      },
+      {
+        "opCode": "0x06",
+        "validator": "LoggedInValidator",
+        "handler": "ServerStatusHandle"
+      },
+      {
+        "opCode": "0x07",
+        "validator": "LoggedInValidator",
+        "handler": "AcceptTosHandle"
+      },
+      {
+        "opCode": "0x08",
+        "validator": "LoggedInValidator",
+        "handler": "SetGenderHandle"
+      },
+      {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "AfterLoginHandle"
+      },
+      {
+        "opCode": "0x0A",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPinHandle"
+      },
+      {
+        "opCode": "0x0B",
+        "validator": "LoggedInValidator",
+        "handler": "ServerListRequestHandle"
+      },
+      {
+        "opCode": "0x0D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllHandle"
+      },
+      {
+        "opCode": "0x0E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedHandle"
+      },
+      {
+        "opCode": "0x0F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllPongHandle"
+      },
+      {
+        "opCode": "0x13",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedHandle"
+      },
+      {
+        "opCode": "0x14",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCheckNameHandle"
+      },
+      {
+        "opCode": "0x16",
+        "validator": "LoggedInValidator",
+        "handler": "CreateCharacterHandle"
+      },
+      {
+        "opCode": "0x17",
+        "validator": "LoggedInValidator",
+        "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
+      },
+      {
+        "opCode": "0x19",
+        "validator": "NoOpValidator",
+        "handler": "StartErrorHandle"
+      },
+      {
+        "opCode": "0x1D",
+        "validator": "LoggedInValidator",
+        "handler": "RegisterPicHandle"
+      },
+      {
+        "opCode": "0x1E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSelectedPicHandle"
+      },
+      {
+        "opCode": "0x1F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedPicRegisterHandle"
+      },
+      {
+        "opCode": "0x20",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterViewAllSelectedPicHandle"
+      },
+      {
+        "opCode": "0x23",
+        "validator": "NoOpValidator",
+        "handler": "ClientStartHandle"
+      },
+      {
+        "opCode": "0x24",
+        "validator": "LoggedInValidator",
+        "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x26",
+        "validator": "LoggedInValidator",
+        "handler": "MapChangeHandle"
+      },
+      {
+        "opCode": "0x27",
+        "validator": "LoggedInValidator",
+        "handler": "ChannelChangeHandle"
+      },
+      {
+        "opCode": "0x28",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle"
+      },
+      {
+        "opCode": "0x29",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMoveHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x2A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x2B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x2C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMeleeAttackHandle"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterRangedAttackHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMagicAttackHandle"
+      },
+      {
+        "opCode": "0x2F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterTouchAttackHandle"
+      },
+      {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle"
+      },
+      {
+        "opCode": "0x31",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatGeneralHandle"
+      },
+      {
+        "opCode": "0x32",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
+        "opCode": "0x33",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterExpressionHandle"
+      },
+      {
+        "opCode": "0x39",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
+        "opCode": "0x3A",
+        "validator": "LoggedInValidator",
+        "handler": "NPCStartConversationHandle"
+      },
+      {
+        "opCode": "0x3C",
+        "validator": "LoggedInValidator",
+        "handler": "NPCContinueConversationHandle",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "ASK_YES_NO": 1,
+            "ASK_TEXT": 2,
+            "ASK_NUMBER": 3,
+            "ASK_MENU": 4,
+            "ASK_QUIZ": 5,
+            "ASK_SPEED_QUIZ": 6,
+            "ASK_AVATAR": 7,
+            "ASK_MEMBER_SHOP_AVATAR": 8,
+            "ASK_PET": 9,
+            "ASK_PET_ALL": 10,
+            "ASK_YES_NO_QUEST": 12,
+            "ASK_BOX_TEXT": 13,
+            "ASK_SLIDE_MENU": 14
+          }
+        }
+      },
+      {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "NPCShopHandle",
+        "options": {
+          "operations": {
+            "BUY": 0,
+            "SELL": 1,
+            "RECHARGE": 2,
+            "LEAVE": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x3E",
+        "validator": "LoggedInValidator",
+        "handler": "StorageOperationHandle",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSET": 4,
+            "STORE_ASSET": 5,
+            "ARRANGE_ASSET": 6,
+            "MESO": 7,
+            "CLOSE": 8
+          }
+        }
+      },
+      {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle"
+      },
+      {
+        "opCode": "0x45",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentSortHandle"
+      },
+      {
+        "opCode": "0x47",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x49",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x4B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle"
+      },
+      {
+        "opCode": "0x4C",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x4F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle"
+      },
+      {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseTownScrollHandle"
+      },
+      {
+        "opCode": "0x56",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle"
+      },
+      {
+        "opCode": "0x57",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeApHandle"
+      },
+      {
+        "opCode": "0x58",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterAutoDistributeApHandle"
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
+        "opCode": "0x5A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x5B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle"
+      },
+      {
+        "opCode": "0x5C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x5E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x5F",
+        "validator": "LoggedInValidator",
+        "handler": "FameChangeHandle"
+      },
+      {
+        "opCode": "0x61",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x62",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle"
+      },
+      {
+        "opCode": "0x64",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0x6B",
+        "validator": "LoggedInValidator",
+        "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0x6E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillMacroHandle"
+      },
+      {
+        "opCode": "0x77",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMultiChatHandle"
+      },
+      {
+        "opCode": "0x78",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatWhisperHandle"
+      },
+      {
+        "opCode": "0x7A",
+        "validator": "LoggedInValidator",
+        "handler": "MessengerOperationHandle",
+        "options": {
+          "operations": {
+            "ANSWER_INVITE": 0,
+            "CLOSE": 2,
+            "INVITE": 3,
+            "DECLINE_INVITE": 5,
+            "CHAT": 6
+          }
+        }
+      },
+      {
+        "opCode": "0x7B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "CREATE": 0,
+            "INVITE": 2,
+            "INVITE_DECLINE": 3,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
+            "OPEN": 11,
+            "CASH_TRADE_OPEN": 14,
+            "TRADE_PUT_ITEM": 15,
+            "TRADE_ADD_MESO": 16,
+            "TRADE_CONFIRM": 17,
+            "TRANSACTION": 20,
+            "PERSONAL_STORE_PUT_ITEM": 22,
+            "PERSONAL_STORE_BUY": 23,
+            "PERSONAL_STORE_REMOVE_ITEM": 27,
+            "PERSONAL_STORE_ADD_TO_BLACKLIST": 28,
+            "PERSONAL_STORE_SET_VISITOR": 29,
+            "PERSONAL_STORE_SET_BLACK_LIST": 30,
+            "FIELD_ADD_TO_BLACK_LIST": 31,
+            "FIELD_REMOVE_FROM_BLACK_LIST": 32,
+            "MERCHANT_PUT_ITEM": 33,
+            "MERCHANT_BUY": 34,
+            "MERCHANT_REMOVE_ITEM": 38,
+            "MERCHANT_MERCHANT_OFF": 39,
+            "MERCHANT_ORGANIZE": 40,
+            "MERCHANT_EXIT": 41,
+            "MERCHANT_WITHDRAW_MESO": 43,
+            "MERCHANT_NAME_CHANGE": 45,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47,
+            "MERCHANT_ADD_TO_BLACK_LIST": 48,
+            "MERCHANT_REMOVE_FROM_BLACK_LIST": 49,
+            "MEMORY_GAME_ASK_TIE": 50,
+            "MEMORY_GAME_TIE_ANSWER": 51,
+            "MEMORY_GAME_FORFEIT": 52,
+            "MEMORY_GAME_ASK_RETREAT": 54,
+            "MEMORY_GAME_RETREAT_ANSWER": 55,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 56,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 57,
+            "MEMORY_GAME_READY": 58,
+            "MEMORY_GAME_UNREADY": 59,
+            "MEMORY_GAME_EXPEL": 60,
+            "MEMORY_GAME_START": 61,
+            "MEMORY_GAME_SKIP": 63,
+            "MEMORY_GAME_MOVE_STONE": 64,
+            "MEMORY_GAME_FIP_CARD": 68
+          }
+        }
+      },
+      {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "PartyOperationHandle",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "LEAVE": 2,
+            "JOIN": 3,
+            "INVITE": 4,
+            "EXPEL": 5,
+            "CHANGE_LEADER": 6
+          }
+        }
+      },
+      {
+        "opCode": "0x7D",
+        "validator": "LoggedInValidator",
+        "handler": "PartyInviteRejectHandle"
+      },
+      {
+        "opCode": "0x7E",
+        "validator": "LoggedInValidator",
+        "handler": "GuildOperationHandle",
+        "options": {
+          "operations": {
+            "REQUEST_CREATE": 2,
+            "INVITE": 5,
+            "JOIN": 6,
+            "WITHDRAW": 7,
+            "KICK": 8,
+            "SET_TITLE_NAMES": 13,
+            "SET_MEMBER_TITLE": 14,
+            "SET_EMBLEM": 15,
+            "SET_NOTICE": 16,
+            "AGREEMENT_RESPONSE": 30
+          }
+        }
+      },
+      {
+        "opCode": "0x7F",
+        "validator": "LoggedInValidator",
+        "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x82",
+        "validator": "LoggedInValidator",
+        "handler": "BuddyOperationHandle",
+        "options": {
+          "operations": {
+            "RELOAD": 0,
+            "ADD": 1,
+            "ACCEPT": 2,
+            "DELETE": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x83",
+        "validator": "LoggedInValidator",
+        "handler": "NoteOperationHandle",
+        "options": {
+          "operations": {
+            "SEND": 0,
+            "DISCARD": 1,
+            "REQUEST": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x87",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle"
+      },
+      {
+        "opCode": "0x9B",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBBSHandle",
+        "options": {
+          "operations": {
+            "CREATE_OR_EDIT_THREAD": 0,
+            "DELETE_THREAD": 1,
+            "LIST_THREADS": 2,
+            "DISPLAY_THREAD": 3,
+            "REPLY_THREAD": 4,
+            "DELETE_REPLY": 5
+          }
+        }
+      },
+      {
+        "opCode": "0xA7",
+        "validator": "LoggedInValidator",
+        "handler": "PetMovementHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xA8",
+        "validator": "LoggedInValidator",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xA9",
+        "validator": "LoggedInValidator",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xAA",
+        "validator": "LoggedInValidator",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xAB",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xAC",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemExcludeHandle"
+      },
+      {
+        "opCode": "0xBC",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterMovementHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xC0",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xC5",
+        "validator": "LoggedInValidator",
+        "handler": "NPCActionHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xCA",
+        "validator": "LoggedInValidator",
+        "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
+        "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xE4",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckWalletHandle"
+      },
+      {
+        "opCode": "0xE5",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopOperationHandle",
+        "options": {
+          "operations": {
+            "BUY": 3,
+            "GIFT": 4,
+            "SET_WISHLIST": 5,
+            "INCREASE_INVENTORY": 6,
+            "INCREASE_STORAGE": 7,
+            "INCREASE_CHARACTER_SLOT": 8,
+            "ENABLE_EQUIP_SLOT": 9,
+            "MOVE_FROM_CASH_INVENTORY": 13,
+            "MOVE_TO_CASH_INVENTORY": 14,
+            "BUY_NORMAL": 20,
+            "REBATE_LOCKER_ITEM": 26,
+            "BUY_COUPLE": 29,
+            "BUY_PACKAGE": 30,
+            "BUY_OTHER_PACKAGE": 31,
+            "APPLY_WISHLIST": 33,
+            "BUY_FRIENDSHIP": 35,
+            "GET_PURCHASE_RECORD": 40,
+            "BUY_NAME_CHANGE": 46,
+            "BUY_WORLD_TRANSFER": 49
+          }
+        }
+      }
+    ],
+    "writers": [
+      {
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthLoginFailed",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x03",
+        "writer": "ServerStatus"
+      },
+      {
+        "opCode": "0x04",
+        "writer": "SetAccountResult"
+      },
+      {
+        "opCode": "0x06",
+        "writer": "PinOperation",
+        "options": {
+          "modes": {
+            "OK": 0,
+            "REGISTER": 1,
+            "INVALID": 2,
+            "CONNECTION_FAILED": 3,
+            "ENTER_PIN": 4,
+            "ALREADY_LOGGED_IN": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x07",
+        "writer": "PinUpdate",
+        "options": {
+          "modes": {
+            "OK": 0,
+            "ERROR": 1
+          }
+        }
+      },
+      {
+        "opCode": "0x08",
+        "writer": "CharacterViewAll",
+        "options": {
+          "codes": {
+            "NORMAL": 0,
+            "CHARACTER_COUNT": 1,
+            "ERROR_VIEW_ALL": 2,
+            "SEARCH_FAILED": 3,
+            "SEARCH_FAILED_2": 4,
+            "ERROR_VIEW_ALL_2": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x0A",
+        "writer": "ServerListEntry"
+      },
+      {
+        "opCode": "0x0A",
+        "writer": "ServerListEnd"
+      },
+      {
+        "opCode": "0x0B",
+        "writer": "CharacterList"
+      },
+      {
+        "opCode": "0x0C",
+        "writer": "ServerIP",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ID_DELETED_OR_BLOCKED": 2,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED_ID": 5,
+            "SERVER_UNDER_INSPECTION": 7,
+            "TOO_MANY_CONNECTION_REQUESTS": 10,
+            "ADULT_CHANNEL": 11,
+            "TO_TITLE": 12,
+            "MASTER_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "STILL_PROCESSING": 15,
+            "ACCOUNT_VERIFICATION": 16,
+            "MAPLE_EUROPE_REDIRECT": 25
+          },
+          "modes": {
+            "OK": 0,
+            "INCORRECT_LOGIN_ID": 1,
+            "INCORRECT_FORM_OF_ID": 2,
+            "SEVEN_DAY_UNVERIFIED": 3,
+            "USED_UP_GAME_TIME": 19,
+            "THIRTY_DAY_UNVERIFIED": 25,
+            "PC_ROOM_PREMIUM": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x0D",
+        "writer": "CharacterNameResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "ALREADY_REGISTERED": 1,
+            "NOT_ALLOWED": 2,
+            "SYSTEM_ERROR": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x0E",
+        "writer": "AddCharacterEntry",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "TOO_MANY_CONNECTIONS": 10,
+            "ACCOUNT_REQUESTED_TRANSFER": 26,
+            "CANNOT_USE_NAME": 30,
+            "UNKNOWN_ERROR": 99
+          }
+        }
+      },
+      {
+        "opCode": "0x0F",
+        "writer": "DeleteCharacterResponse",
+        "options": {
+          "codes": {
+            "OK": 0,
+            "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+            "UNKNOWN_ERROR": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "NEXON_ID_DIFFERENT_THEN_REGISTERED": 26,
+            "CANNOT_DELETE_AS_GUILD_MASTER": 22,
+            "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+            "CANNOT_DELETE_WHEN_ENGAGED": 24,
+            "CANNOT_DELETE_WITH_FAMILY": 29
+          }
+        }
+      },
+      {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x11",
+        "writer": "Ping"
+      },
+      {
+        "opCode": "0x1A",
+        "writer": "SelectWorld"
+      },
+      {
+        "opCode": "0x1B",
+        "writer": "ServerListRecommendations"
+      },
+      {
+        "opCode": "0x1C",
+        "writer": "PicResult"
+      },
+      {
+        "opCode": "0x1D",
+        "writer": "CharacterInventoryChange"
+      },
+      {
+        "opCode": "0x1F",
+        "writer": "StatChanged",
+        "options": {
+          "statistics": [
+            "SKIN",
+            "FACE",
+            "HAIR",
+            "PET_SN_1",
+            "LEVEL",
+            "JOB",
+            "STRENGTH",
+            "DEXTERITY",
+            "INTELLIGENCE",
+            "LUCK",
+            "HP",
+            "MAX_HP",
+            "MP",
+            "MAX_MP",
+            "AVAILABLE_AP",
+            "AVAILABLE_SP",
+            "EXPERIENCE",
+            "FAME",
+            "MESO",
+            "PET_SN_2",
+            "PET_SN_3",
+            "GACHAPON_EXPERIENCE"
+          ]
+        }
+      },
+      {
+        "opCode": "0x20",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x21",
+        "writer": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x24",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0x26",
+        "writer": "FameResponse",
+        "options": {
+          "operations": {
+            "GIVE": "0x00",
+            "INVALID_NAME": "0x01",
+            "NOT_MINIMUM_LEVEL": "0x02",
+            "NOT_TODAY": "0x03",
+            "NOT_THIS_MONTH": "0x04",
+            "RECEIVE": "0x05",
+            "UNEXPECTED": "0x06"
+          }
+        }
+      },
+      {
+        "opCode": "0x27",
+        "writer": "CharacterStatusMessage",
+        "options": {
+          "operations": {
+            "DROP_PICK_UP": "0x00",
+            "QUEST_RECORD": "0x01",
+            "CASH_ITEM_EXPIRE": "0x02",
+            "INCREASE_EXPERIENCE": "0x03",
+            "INCREASE_FAME": "0x04",
+            "INCREASE_MESO": "0x05",
+            "INCREASE_GUILD_POINT": "0x06",
+            "GIVE_BUFF": "0x07",
+            "GENERAL_ITEM_EXPIRE": "0x08",
+            "SYSTEM_MESSAGE": "0x09",
+            "QUEST_RECORD_EX": "0x0A",
+            "ITEM_PROTECT_EXPIRE": "0x0B",
+            "ITEM_EXPIRE_REPLACE": "0x0C",
+            "SKILL_EXPIRE": "0x0D"
+          }
+        }
+      },
+      {
+        "opCode": "0x29",
+        "writer": "NoteOperation",
+        "options": {
+          "operations": {
+            "SHOW": 3,
+            "SEND_SUCCESS": 4,
+            "SEND_ERROR": 5,
+            "REFRESH": 7
+          },
+          "errors": {
+            "RECEIVER_ONLINE": 0,
+            "RECEIVER_UNKNOWN": 1,
+            "RECEIVER_INBOX_FULL": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x32",
+        "writer": "HiredMerchantOperation",
+        "options": {
+          "operations": {
+            "OPEN_SHOP": 7,
+            "ERROR_UNKNOWN": 8,
+            "ERROR_RETRIEVE_FROM_FREDRICK": 9,
+            "ERROR_ANOTHER_CHARACTER_IS_USING_THE_ITEM": 10,
+            "ERROR_UNABLE_TO_OPEN_THE_STORE": 11,
+            "SHOP_SEARCH": 13,
+            "SHOP_RENAME": 14,
+            "ERROR_RETRIEVE_FROM_FREDRICK_2": 15,
+            "REMOTE_SHOP_WARP": 16,
+            "CONFIRM_MANAGE": 17,
+            "FREE_FORM_NOTICE": 18
+          }
+        }
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x35",
+        "writer": "CompartmentSort"
+      },
+      {
+        "opCode": "0x3B",
+        "writer": "GuildBBS"
+      },
+      {
+        "opCode": "0x3D",
+        "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "PartyOperation",
+        "options": {
+          "operations": {
+            "INVITE": "0x04",
+            "UPDATE": "0x07",
+            "CREATED": "0x08",
+            "ALREADY_HAVE_JOINED_A_PARTY_1": "0x09",
+            "A_BEGINNER_CANT_CREATE_A_PARTY": "0x0A",
+            "LEAVE": "0x0C",
+            "DISBAND": "0x0C",
+            "EXPEL": "0x0C",
+            "YOU_HAVE_YET_TO_JOIN_A_PARTY": "0x0D",
+            "JOIN": "0x0F",
+            "ALREADY_HAVE_JOINED_A_PARTY_2": "0x10",
+            "THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY": "0x11",
+            "UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL": "0x13",
+            "IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS": "0x15",
+            "IS_TAKING_CARE_OF_ANOTHER_INVITATION": "0x16",
+            "HAVE_DENIED_REQUEST_TO_THE_PARTY": "0x17",
+            "CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP": "0x19",
+            "CHANGE_LEADER": "0x1B",
+            "THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY": "0x1C",
+            "UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE": "0x1D",
+            "YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL": "0x1E",
+            "AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY": "0x20",
+            "UNABLE_TO_FIND_THE_CHARACTER": "0x21"
+          }
+        }
+      },
+      {
+        "opCode": "0x40",
+        "writer": "BuddyOperation",
+        "options": {
+          "operations": {
+            "UPDATE": "0x07",
+            "BUDDY_UPDATE": "0x08",
+            "INVITE": "0x09",
+            "UNKNOWN_1": "0xA",
+            "BUDDY_LIST_FULL": "0x0B",
+            "OTHER_BUDDY_LIST_FULL": "0x0C",
+            "ALREADY_BUDDY": "0x0D",
+            "CANNOT_BUDDY_GM": "0x0E",
+            "CHARACTER_NOT_FOUND": "0x0F",
+            "UNKNOWN_ERROR": "0x10",
+            "UNKNOWN_ERROR_2": "0x11",
+            "UNKNOWN_2": "0x12",
+            "UNKNOWN_ERROR_3": "0x13",
+            "BUDDY_CHANNEL_CHANGE": "0x14",
+            "CAPACITY_CHANGE": "0x15",
+            "UNKNOWN_ERROR_4": "0x16"
+          }
+        }
+      },
+      {
+        "opCode": "0x41",
+        "writer": "GuildOperation",
+        "options": {
+          "operations": {
+            "REQUEST_NAME": "0x01",
+            "REQUEST_AGREEMENT": "0x03",
+            "INVITE": "0x05",
+            "REQUEST_EMBLEM": "0x11",
+            "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES": "0x1C",
+            "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD": "0x24",
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN": "0x26",
+            "JOIN_SUCCESS": "0x27",
+            "ALREADY_JOINED_THE_GUILD": "0x28",
+            "THE_GUILD_YOU_ARE_TRYING_TO_JOIN_HAS_ALREADY_REACHED_THE_MAX_NUMBER_OF_USERS": "0x29",
+            "THE_CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL": "0x2A",
+            "MEMBER_QUIT_SUCCESS": "0x2C",
+            "MEMBER_QUIT_ERROR_NOT_IN_GUILD": "0x2D",
+            "MEMBER_EXPELLED_SUCCESS": "0x2F",
+            "MEMBER_EXPELLED_ERROR_NOT_IN_GUILD": "0x30",
+            "DISBAND_SUCCESS": "0x32",
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_DISBANDING_THE_GUILD_PLEASE_TRY_AGAIN": "0x34",
+            "IS_CURRENTLY_NOT_ACCEPTING_GUILD_INVITE_MESSAGE": "0x35",
+            "IS_TAKING_CARE_OF_ANOTHER_INVITATION": "0x36",
+            "HAS_DENIED_YOUR_GUILD_INVITATION": "0x37",
+            "ADMIN_CANNOT_MAKE_A_GUILD": "0x38",
+            "CONGRATULATION_THE_NUMBER_OF_GUILD_MEMBERS_HAS_NOW_INCREASED_TO": "0x3A",
+            "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_INCREASING_THE_GUILD_PLEASE_TRY_AGAIN": "0x3B",
+            "MEMBER_UPDATE": "0x3C",
+            "MEMBER_ONLINE": "0x3D",
+            "TITLE_UPDATE": "0x3E",
+            "MEMBER_TITLE_CHANGE": "0x40",
+            "EMBLEM_CHANGE": "0x42",
+            "NOTICE_CHANGE": "0x44",
+            "SHOW_TITLES": "0x49",
+            "THERE_ARE_LESS_THAN_6_MEMBERS_REMAINING_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": "0x4A",
+            "THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD": "0x4B",
+            "QUEST_WAITING_NOTICE": "0x4C",
+            "BOARD_AUTH_KEY_UPDATE": "0x4D",
+            "SET_SKILL_RESPONSE": "0x4E"
+          }
+        }
+      },
+      {
+        "opCode": "0x46",
+        "writer": "WorldMessage",
+        "options": {
+          "operations": {
+            "NOTICE": 0,
+            "POP_UP": 1,
+            "MEGAPHONE": 2,
+            "SUPER_MEGAPHONE": 3,
+            "TOP_SCROLL": 4,
+            "PINK_TEXT": 5,
+            "BLUE_TEXT": 6,
+            "NPC": 7,
+            "ITEM_MEGAPHONE": 8,
+            "YELLOW_MEGAPHONE": 9,
+            "MULTI_MEGAPHONE": 10,
+            "WEATHER": 11,
+            "GACHAPON": 12,
+            "UNKNOWN_3": 13,
+            "UNKNOWN_4": 14,
+            "CLIPBOARD_NOTICE_1": 15,
+            "CLIPBOARD_NOTICE_2": 16,
+            "UNKNOWN_7": 17,
+            "UNKNOWN_8": 18
+          }
+        }
+      },
+      {
+        "opCode": "0x4E",
+        "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x53",
+        "writer": "MonsterBookSetCard"
+      },
+      {
+        "opCode": "0x54",
+        "writer": "MonsterBookSetCover"
+      },
+      {
+        "opCode": "0x7A",
+        "writer": "ScriptProgress"
+      },
+      {
+        "opCode": "0x7C",
+        "writer": "CharacterSkillMacro"
+      },
+      {
+        "opCode": "0x80",
+        "writer": "SetField"
+      },
+      {
+        "opCode": "0x82",
+        "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0x89",
+        "writer": "CharacterMultiChat"
+      },
+      {
+        "opCode": "0x8A",
+        "writer": "CharacterChatWhisper"
+      },
+      {
+        "opCode": "0x8D",
+        "writer": "FieldEffect",
+        "options": {
+          "operations": {
+            "SUMMON": 0,
+            "TREMBLE": 1,
+            "OBJECT": 2,
+            "SCREEN": 3,
+            "SOUND": 4,
+            "BOSS_HP": 5,
+            "BACKGROUND_MUSIC": 6,
+            "REWARD_RULLET": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x91",
+        "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0x96",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0x98",
+        "writer": "FieldTransportState"
+      },
+      {
+        "opCode": "0xA3",
+        "writer": "CharacterSpawn"
+      },
+      {
+        "opCode": "0xA4",
+        "writer": "CharacterDespawn"
+      },
+      {
+        "opCode": "0xA5",
+        "writer": "CharacterChatGeneral"
+      },
+      {
+        "opCode": "0xA7",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xAA",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0xAB",
+        "writer": "PetActivated",
+        "options": {
+          "operations": {
+            "NORMAL": 0,
+            "HUNGER": 1,
+            "EXPIRED": 2,
+            "UNKNOWN_1": 3,
+            "UNKNOWN_2": 4
+          }
+        }
+      },
+      {
+        "opCode": "0xAD",
+        "writer": "PetMovement",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xAE",
+        "writer": "PetChat"
+      },
+      {
+        "opCode": "0xB0",
+        "writer": "PetExcludeResponse"
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "PetCommandResponse"
+      },
+      {
+        "opCode": "0xBD",
+        "writer": "CharacterMovement",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xBE",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xBF",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xC0",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xC1",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xC4",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xC5",
+        "writer": "CharacterExpression"
+      },
+      {
+        "opCode": "0xC8",
+        "writer": "CharacterShowChair"
+      },
+      {
+        "opCode": "0xC9",
+        "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "CharacterEffectForeign",
+        "options": {
+          "operations": {
+            "LEVEL_UP": 0,
+            "SKILL_USE": 1,
+            "SKILL_AFFECTED": 2,
+            "QUEST": 3,
+            "PET": 4,
+            "SKILL_SPECIAL": 5,
+            "PROTECT_ON_DIE_ITEM_USE": 6,
+            "PLAY_PORTAL_SOUND_EFFECT": 7,
+            "JOB_CHANGED": 8,
+            "QUEST_COMPLETE": 9,
+            "INC_DEC_HP_EFFECT": 10,
+            "BUFF_ITEM_EFFECT": 11,
+            "SHOW_INTRO": 12,
+            "MONSTER_BOOK_CARD_GET": 13,
+            "LOTTERY_USE": 14,
+            "ITEM_LEVEL_UP": 15,
+            "ITEM_MAKER": 16,
+            "ITEM_EXPERIENCE_CONSUMED": 17,
+            "RESERVED_EFFECT": 18,
+            "CONSUME_EFFECT": 20,
+            "UPGRADE_TOMB_ITEM_USE": 21,
+            "BATTLEFIELD_ITEM_USE": 22,
+            "SHOW_INFO": 23,
+            "INCUBATOR_USE": 24,
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": 25,
+            "SOUL_STONE_USE": 26
+          }
+        }
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xCC",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "PartyMemberHP"
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "GuildNameChanged"
+      },
+      {
+        "opCode": "0xCF",
+        "writer": "GuildEmblemChanged"
+      },
+      {
+        "opCode": "0xD1",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xD2",
+        "writer": "CharacterEffect",
+        "options": {
+          "operations": {
+            "LEVEL_UP": 0,
+            "SKILL_USE": 1,
+            "SKILL_AFFECTED": 2,
+            "QUEST": 3,
+            "PET": 4,
+            "SKILL_SPECIAL": 5,
+            "PROTECT_ON_DIE_ITEM_USE": 6,
+            "PLAY_PORTAL_SOUND_EFFECT": 7,
+            "JOB_CHANGED": 8,
+            "QUEST_COMPLETE": 9,
+            "INC_DEC_HP_EFFECT": 10,
+            "BUFF_ITEM_EFFECT": 11,
+            "SHOW_INTRO": 12,
+            "MONSTER_BOOK_CARD_GET": 13,
+            "LOTTERY_USE": 14,
+            "ITEM_LEVEL_UP": 15,
+            "ITEM_MAKER": 16,
+            "ITEM_EXPERIENCE_CONSUMED": 17,
+            "RESERVED_EFFECT": 18,
+            "CONSUME_EFFECT": 20,
+            "UPGRADE_TOMB_ITEM_USE": 21,
+            "BATTLEFIELD_ITEM_USE": 22,
+            "SHOW_INFO": 23,
+            "INCUBATOR_USE": 24,
+            "PLAY_SOUND_WITH_MUTE_BACKGROUND_MUSIC": 25,
+            "SOUL_STONE_USE": 26
+          }
+        }
+      },
+      {
+        "opCode": "0xDA",
+        "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0xE0",
+        "writer": "UiOpen",
+        "options": {
+          "operations": {
+            "ITEM": 0,
+            "EQUIPMENT": 1,
+            "STATISTICS": 2,
+            "SKILLS": 3,
+            "KEYBOARD": 5,
+            "QUEST": 6,
+            "MONSTER_BOOK": 9,
+            "CHARACTER_INFORMATION": 10,
+            "GUILD_BBS": 11,
+            "MONSTER_CARNIVAL": 18,
+            "ENERGY_BAR": 20,
+            "PARTY_SEARCH": 22,
+            "ITEM_MAKER": 23,
+            "RANKING": 26,
+            "FAMILY": 27,
+            "FAMILY_PEDIGREE": 28,
+            "OPERATOR_BOARD": 29,
+            "OPERATOR_BOARD_STATE": 30,
+            "MEDAL_MEDAL_QUEST": 31,
+            "WEB_EVENT": 32,
+            "SKILLS_EX": 33
+          }
+        }
+      },
+      {
+        "opCode": "0xE1",
+        "writer": "UiLock"
+      },
+      {
+        "opCode": "0xE2",
+        "writer": "UiDisable"
+      },
+      {
+        "opCode": "0xE4",
+        "writer": "GuideTalk"
+      },
+      {
+        "opCode": "0xEE",
+        "writer": "CharacterSkillCooldown"
+      },
+      {
+        "opCode": "0xF2",
+        "writer": "SpawnMonster"
+      },
+      {
+        "opCode": "0xF3",
+        "writer": "DestroyMonster"
+      },
+      {
+        "opCode": "0xF4",
+        "writer": "ControlMonster"
+      },
+      {
+        "opCode": "0xF5",
+        "writer": "MoveMonster",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xF6",
+        "writer": "MoveMonsterAck"
+      },
+      {
+        "opCode": "0xF8",
+        "writer": "MonsterStatSet"
+      },
+      {
+        "opCode": "0xF9",
+        "writer": "MonsterStatReset"
+      },
+      {
+        "opCode": "0xFC",
+        "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x100",
+        "writer": "MonsterHealth"
+      },
+      {
+        "opCode": "0x108",
+        "writer": "SpawnNPC"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "SpawnNPCRequestController"
+      },
+      {
+        "opCode": "0x10B",
+        "writer": "NPCAction",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x113",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x114",
+        "writer": "DropDestroy"
+      },
+      {
+        "opCode": "0x11C",
+        "writer": "ReactorHit"
+      },
+      {
+        "opCode": "0x11E",
+        "writer": "ReactorSpawn"
+      },
+      {
+        "opCode": "0x11F",
+        "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x137",
+        "writer": "NPCConversation",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "ASK_YES_NO": 1,
+            "ASK_TEXT": 2,
+            "ASK_NUMBER": 3,
+            "ASK_MENU": 4,
+            "ASK_QUIZ": 5,
+            "ASK_SPEED_QUIZ": 6,
+            "ASK_AVATAR": 7,
+            "ASK_MEMBER_SHOP_AVATAR": 8,
+            "ASK_PET": 9,
+            "ASK_PET_ALL": 10,
+            "ASK_YES_NO_QUEST": 12,
+            "ASK_BOX_TEXT": 13,
+            "ASK_SLIDE_MENU": 14
+          }
+        }
+      },
+      {
+        "opCode": "0x138",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x139",
+        "writer": "NPCShopOperation",
+        "options": {
+          "operations": {
+            "OK": 0,
+            "OUT_OF_STOCK": 1,
+            "NOT_ENOUGH_MONEY": 2,
+            "INVENTORY_FULL": 3,
+            "OUT_OF_STOCK_2": 5,
+            "OUT_OF_STOCK_3": 9,
+            "NOT_ENOUGH_MONEY_2": 10,
+            "NEED_MORE_ITEMS": 13,
+            "OVER_LEVEL_REQUIREMENT": 14,
+            "UNDER_LEVEL_REQUIREMENT": 15,
+            "TRADE_LIMIT": 16,
+            "GENERIC_ERROR": 17,
+            "GENERIC_ERROR_WITH_REASON": 17
+          }
+        }
+      },
+      {
+        "opCode": "0x13C",
+        "writer": "StorageOperation",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSETS": 9,
+            "INVENTORY_FULL": 10,
+            "NOT_ENOUGH_MESOS": 11,
+            "ONE_OF_A_KIND": 12,
+            "STORE_ASSETS": 13,
+            "NOT_ENOUGH_MESOS_2": 16,
+            "UNKNOWN": 17,
+            "UPDATE_MESO": 19,
+            "SHOW": 22,
+            "UNKNOWN_2": 23,
+            "ERROR_MESSAGE": 24
+          }
+        }
+      },
+      {
+        "opCode": "0x140",
+        "writer": "MessengerOperation",
+        "options": {
+          "operations": {
+            "ADD": 0,
+            "JOIN": 1,
+            "REMOVE": 2,
+            "REQUEST_INVITE": 3,
+            "INVITE_SENT": 4,
+            "INVITE_DECLINED": 5,
+            "CHAT": 6,
+            "UPDATE": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x141",
+        "writer": "CharacterInteraction",
+        "options": {
+          "operations": {
+            "INVITE": 2,
+            "INVITE_RESULT": 3,
+            "ENTER": 4,
+            "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
+            "LEAVE": 10,
+            "UPDATE_MERCHANT": 25
+          },
+          "enterError": {
+            "ROOM_CLOSED": 1,
+            "FULL": 2,
+            "OTHER_REQUESTS": 3,
+            "NOT_WHEN_DEAD": 4,
+            "NOT_IN_EVENT": 5,
+            "UNABLE": 6,
+            "TRADE_NOT_ALLOWED": 7,
+            "NOT_SAME_MAP": 9,
+            "CANNOT_OPEN_STORE_NEAR_PORTAL": 10,
+            "CANNOT_START_GAME_HERE": 11,
+            "CANNOT_OPEN_STORE_IN_CHANNEL": 12,
+            "CANNOT_OPEN_MINI_ROOM_HERE": 13,
+            "CANNOT_START_GAME_HERE_2": 14,
+            "MUST_BE_IN_FREE_MARKET": 15,
+            "MUST_BE_IN_ROOM_722": 16,
+            "CANNOT_ENTER_STORE": 17,
+            "UNDERGOING_MAINTENANCE": 18,
+            "CANNOT_ENTER_TOURNAMENT_ROOM": 19,
+            "TRADE_NOT_ALLOWED_2": 20,
+            "NOT_ENOUGH_MESOS": 21,
+            "INCORRECT_PASSWORD": 22,
+            "ITEM_EXPIRED": 24
+          }
+        }
+      },
+      {
+        "opCode": "0x14B",
+        "writer": "CashShopCashQueryResult"
+      },
+      {
+        "opCode": "0x14C",
+        "writer": "CashShopOperation",
+        "options": {
+          "operations": {
+            "LOAD_INVENTORY_SUCCESS": 75,
+            "LOAD_INVENTORY_FAILURE": 76,
+            "LOAD_WISHLIST": 79,
+            "UPDATE_WISHLIST": 85,
+            "PURCHASE_SUCCESS": 87,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 96,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 97,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 104,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 106
+          }
+        }
+      },
+      {
+        "opCode": "0x158",
+        "writer": "CharacterKeyMap"
+      },
+      {
+        "opCode": "0x159",
+        "writer": "CharacterKeyMapAutoHp"
+      },
+      {
+        "opCode": "0x15A",
+        "writer": "CharacterKeyMapAutoMp"
+      }
+    ]
+  },
+  "characters": {
+    "templates": [
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ],
+        "skills": []
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ],
+        "skills": []
+      }
+    ],
+    "presets": [
+      {
+        "id": "1645f671-a3bd-4ef6-a2a5-a8714e661f74",
+        "attributes": {
+          "name": "Hero — 4th job",
+          "description": "Full 4th-job Hero — branch skills maxed; iconic Stonetooth Sword + Reverse Taragon set.",
+          "tags": ["4th-job", "warrior", "explorer"],
+          "jobId": 112,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminHero",
+          "equipment": [
+            { "templateId": 1402037, "useAverageStats": true },
+            { "templateId": 1052160, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 1000000, "level": 16 },
+            { "skillId": 1000001, "level": 10 },
+            { "skillId": 1000002, "level": 8 },
+            { "skillId": 1001003, "level": 20 },
+            { "skillId": 1001004, "level": 20 },
+            { "skillId": 1001005, "level": 20 },
+            { "skillId": 1100000, "level": 20 },
+            { "skillId": 1100001, "level": 20 },
+            { "skillId": 1100002, "level": 30 },
+            { "skillId": 1100003, "level": 30 },
+            { "skillId": 1101004, "level": 20 },
+            { "skillId": 1101005, "level": 20 },
+            { "skillId": 1101006, "level": 20 },
+            { "skillId": 1101007, "level": 30 },
+            { "skillId": 1110000, "level": 20 },
+            { "skillId": 1110001, "level": 20 },
+            { "skillId": 1111002, "level": 30 },
+            { "skillId": 1111003, "level": 30 },
+            { "skillId": 1111004, "level": 30 },
+            { "skillId": 1111005, "level": 30 },
+            { "skillId": 1111006, "level": 30 },
+            { "skillId": 1111007, "level": 20 },
+            { "skillId": 1111008, "level": 30 },
+            { "skillId": 1120003, "level": 30 },
+            { "skillId": 1120004, "level": 30 },
+            { "skillId": 1120005, "level": 30 },
+            { "skillId": 1121000, "level": 30 },
+            { "skillId": 1121001, "level": 30 },
+            { "skillId": 1121002, "level": 30 },
+            { "skillId": 1121006, "level": 30 },
+            { "skillId": 1121008, "level": 30 },
+            { "skillId": 1121010, "level": 30 },
+            { "skillId": 1121011, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "97784164-9ff9-4f0c-aef9-5a975c47d2ad",
+        "attributes": {
+          "name": "Paladin — 4th job",
+          "description": "Full 4th-job Paladin — branch skills maxed; iconic Crushed Skull + Maple Warrior Shield + Reverse Taragon set.",
+          "tags": ["4th-job", "warrior", "explorer"],
+          "jobId": 122,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminPaladin",
+          "equipment": [
+            { "templateId": 1322062, "useAverageStats": true },
+            { "templateId": 1092046, "useAverageStats": true },
+            { "templateId": 1052160, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 1000000, "level": 16 },
+            { "skillId": 1000001, "level": 10 },
+            { "skillId": 1000002, "level": 8 },
+            { "skillId": 1001003, "level": 20 },
+            { "skillId": 1001004, "level": 20 },
+            { "skillId": 1001005, "level": 20 },
+            { "skillId": 1200000, "level": 20 },
+            { "skillId": 1200001, "level": 20 },
+            { "skillId": 1200002, "level": 30 },
+            { "skillId": 1200003, "level": 30 },
+            { "skillId": 1201004, "level": 20 },
+            { "skillId": 1201005, "level": 20 },
+            { "skillId": 1201006, "level": 20 },
+            { "skillId": 1201007, "level": 30 },
+            { "skillId": 1210000, "level": 20 },
+            { "skillId": 1210001, "level": 20 },
+            { "skillId": 1211002, "level": 30 },
+            { "skillId": 1211003, "level": 30 },
+            { "skillId": 1211004, "level": 30 },
+            { "skillId": 1211005, "level": 30 },
+            { "skillId": 1211006, "level": 30 },
+            { "skillId": 1211007, "level": 30 },
+            { "skillId": 1211008, "level": 30 },
+            { "skillId": 1211009, "level": 20 },
+            { "skillId": 1220005, "level": 30 },
+            { "skillId": 1220006, "level": 30 },
+            { "skillId": 1220010, "level": 10 },
+            { "skillId": 1221000, "level": 30 },
+            { "skillId": 1221001, "level": 30 },
+            { "skillId": 1221002, "level": 30 },
+            { "skillId": 1221003, "level": 20 },
+            { "skillId": 1221004, "level": 20 },
+            { "skillId": 1221007, "level": 30 },
+            { "skillId": 1221009, "level": 30 },
+            { "skillId": 1221011, "level": 30 },
+            { "skillId": 1221012, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "5d3b41d2-4301-46f6-8b17-0d660dcf4961",
+        "attributes": {
+          "name": "Dark Knight — 4th job",
+          "description": "Full 4th-job Dark Knight — branch skills maxed; iconic Sky Ski + Reverse Taragon set.",
+          "tags": ["4th-job", "warrior", "explorer"],
+          "jobId": 132,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminDarkKnight",
+          "equipment": [
+            { "templateId": 1432018, "useAverageStats": true },
+            { "templateId": 1052160, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 1000000, "level": 16 },
+            { "skillId": 1000001, "level": 10 },
+            { "skillId": 1000002, "level": 8 },
+            { "skillId": 1001003, "level": 20 },
+            { "skillId": 1001004, "level": 20 },
+            { "skillId": 1001005, "level": 20 },
+            { "skillId": 1300000, "level": 20 },
+            { "skillId": 1300001, "level": 20 },
+            { "skillId": 1300002, "level": 30 },
+            { "skillId": 1300003, "level": 30 },
+            { "skillId": 1301004, "level": 20 },
+            { "skillId": 1301005, "level": 20 },
+            { "skillId": 1301006, "level": 20 },
+            { "skillId": 1301007, "level": 30 },
+            { "skillId": 1310000, "level": 20 },
+            { "skillId": 1311001, "level": 30 },
+            { "skillId": 1311002, "level": 30 },
+            { "skillId": 1311003, "level": 30 },
+            { "skillId": 1311004, "level": 30 },
+            { "skillId": 1311005, "level": 30 },
+            { "skillId": 1311006, "level": 30 },
+            { "skillId": 1311007, "level": 20 },
+            { "skillId": 1311008, "level": 20 },
+            { "skillId": 1320005, "level": 30 },
+            { "skillId": 1320006, "level": 30 },
+            { "skillId": 1320008, "level": 25 },
+            { "skillId": 1320009, "level": 25 },
+            { "skillId": 1321000, "level": 30 },
+            { "skillId": 1321001, "level": 30 },
+            { "skillId": 1321002, "level": 30 },
+            { "skillId": 1321003, "level": 30 },
+            { "skillId": 1321007, "level": 10 },
+            { "skillId": 1321010, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "6f177876-36c1-4206-8935-455aa2f95d94",
+        "attributes": {
+          "name": "F/P ArchMage — 4th job",
+          "description": "Full 4th-job Fire/Poison ArchMage — branch skills maxed; Elemental Staff 5 (Fire) + Maple Magician Shield + Reverse Myst Blue set.",
+          "tags": ["4th-job", "magician", "explorer"],
+          "jobId": 212,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminFPMage",
+          "equipment": [
+            { "templateId": 1382049, "useAverageStats": true },
+            { "templateId": 1092045, "useAverageStats": true },
+            { "templateId": 1052161, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 2000000, "level": 16 },
+            { "skillId": 2000001, "level": 10 },
+            { "skillId": 2001002, "level": 20 },
+            { "skillId": 2001003, "level": 20 },
+            { "skillId": 2001004, "level": 20 },
+            { "skillId": 2001005, "level": 20 },
+            { "skillId": 2100000, "level": 20 },
+            { "skillId": 2101001, "level": 20 },
+            { "skillId": 2101002, "level": 20 },
+            { "skillId": 2101003, "level": 20 },
+            { "skillId": 2101004, "level": 30 },
+            { "skillId": 2101005, "level": 30 },
+            { "skillId": 2110000, "level": 20 },
+            { "skillId": 2110001, "level": 30 },
+            { "skillId": 2111002, "level": 30 },
+            { "skillId": 2111003, "level": 30 },
+            { "skillId": 2111004, "level": 20 },
+            { "skillId": 2111005, "level": 20 },
+            { "skillId": 2111006, "level": 30 },
+            { "skillId": 2121000, "level": 30 },
+            { "skillId": 2121001, "level": 30 },
+            { "skillId": 2121002, "level": 30 },
+            { "skillId": 2121003, "level": 30 },
+            { "skillId": 2121004, "level": 30 },
+            { "skillId": 2121005, "level": 30 },
+            { "skillId": 2121006, "level": 30 },
+            { "skillId": 2121007, "level": 30 },
+            { "skillId": 2121008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "6b11335d-536d-4184-bf69-8edee94a1f96",
+        "attributes": {
+          "name": "I/L ArchMage — 4th job",
+          "description": "Full 4th-job Ice/Lightning ArchMage — branch skills maxed; Elemental Staff 8 (Lightning) + Maple Magician Shield + Reverse Myst Blue set.",
+          "tags": ["4th-job", "magician", "explorer"],
+          "jobId": 222,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminILMage",
+          "equipment": [
+            { "templateId": 1382052, "useAverageStats": true },
+            { "templateId": 1092045, "useAverageStats": true },
+            { "templateId": 1052161, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 2000000, "level": 16 },
+            { "skillId": 2000001, "level": 10 },
+            { "skillId": 2001002, "level": 20 },
+            { "skillId": 2001003, "level": 20 },
+            { "skillId": 2001004, "level": 20 },
+            { "skillId": 2001005, "level": 20 },
+            { "skillId": 2200000, "level": 20 },
+            { "skillId": 2201001, "level": 20 },
+            { "skillId": 2201002, "level": 20 },
+            { "skillId": 2201003, "level": 20 },
+            { "skillId": 2201004, "level": 30 },
+            { "skillId": 2201005, "level": 30 },
+            { "skillId": 2210000, "level": 20 },
+            { "skillId": 2210001, "level": 30 },
+            { "skillId": 2211002, "level": 30 },
+            { "skillId": 2211003, "level": 30 },
+            { "skillId": 2211004, "level": 20 },
+            { "skillId": 2211005, "level": 20 },
+            { "skillId": 2211006, "level": 30 },
+            { "skillId": 2221000, "level": 30 },
+            { "skillId": 2221001, "level": 30 },
+            { "skillId": 2221002, "level": 30 },
+            { "skillId": 2221003, "level": 30 },
+            { "skillId": 2221004, "level": 30 },
+            { "skillId": 2221005, "level": 30 },
+            { "skillId": 2221006, "level": 30 },
+            { "skillId": 2221007, "level": 30 },
+            { "skillId": 2221008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "928639cb-ba87-4e6b-b33b-e54520fbd910",
+        "attributes": {
+          "name": "Bishop — 4th job",
+          "description": "Full 4th-job Bishop — branch skills maxed; Elemental Wand 5 + Maple Magician Shield + Reverse Myst Blue set.",
+          "tags": ["4th-job", "magician", "explorer"],
+          "jobId": 232,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminBishop",
+          "equipment": [
+            { "templateId": 1372039, "useAverageStats": true },
+            { "templateId": 1092045, "useAverageStats": true },
+            { "templateId": 1052161, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 2000000, "level": 16 },
+            { "skillId": 2000001, "level": 10 },
+            { "skillId": 2001002, "level": 20 },
+            { "skillId": 2001003, "level": 20 },
+            { "skillId": 2001004, "level": 20 },
+            { "skillId": 2001005, "level": 20 },
+            { "skillId": 2300000, "level": 20 },
+            { "skillId": 2301001, "level": 20 },
+            { "skillId": 2301002, "level": 30 },
+            { "skillId": 2301003, "level": 20 },
+            { "skillId": 2301004, "level": 20 },
+            { "skillId": 2301005, "level": 30 },
+            { "skillId": 2310000, "level": 20 },
+            { "skillId": 2311001, "level": 20 },
+            { "skillId": 2311002, "level": 20 },
+            { "skillId": 2311003, "level": 30 },
+            { "skillId": 2311004, "level": 30 },
+            { "skillId": 2311005, "level": 30 },
+            { "skillId": 2311006, "level": 30 },
+            { "skillId": 2321000, "level": 30 },
+            { "skillId": 2321001, "level": 30 },
+            { "skillId": 2321002, "level": 30 },
+            { "skillId": 2321003, "level": 30 },
+            { "skillId": 2321004, "level": 30 },
+            { "skillId": 2321005, "level": 30 },
+            { "skillId": 2321006, "level": 10 },
+            { "skillId": 2321007, "level": 30 },
+            { "skillId": 2321008, "level": 30 },
+            { "skillId": 2321009, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "3ab10755-5187-4493-9217-ebddc705067b",
+        "attributes": {
+          "name": "Bowmaster — 4th job",
+          "description": "Full 4th-job Bowmaster — branch skills maxed; Reverse Engaw + Reverse Evernew set + Diamond Arrows.",
+          "tags": ["4th-job", "bowman", "explorer"],
+          "jobId": 312,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminBowmaster",
+          "equipment": [
+            { "templateId": 1452059, "useAverageStats": true },
+            { "templateId": 1052162, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2060004, "quantity": 200 }
+          ],
+          "skills": [
+            { "skillId": 3000000, "level": 16 },
+            { "skillId": 3000001, "level": 20 },
+            { "skillId": 3000002, "level": 8 },
+            { "skillId": 3001003, "level": 20 },
+            { "skillId": 3001004, "level": 20 },
+            { "skillId": 3001005, "level": 20 },
+            { "skillId": 3100000, "level": 20 },
+            { "skillId": 3100001, "level": 30 },
+            { "skillId": 3101002, "level": 20 },
+            { "skillId": 3101003, "level": 20 },
+            { "skillId": 3101004, "level": 20 },
+            { "skillId": 3101005, "level": 30 },
+            { "skillId": 3110000, "level": 20 },
+            { "skillId": 3110001, "level": 20 },
+            { "skillId": 3111002, "level": 20 },
+            { "skillId": 3111003, "level": 30 },
+            { "skillId": 3111004, "level": 30 },
+            { "skillId": 3111005, "level": 30 },
+            { "skillId": 3111006, "level": 30 },
+            { "skillId": 3120005, "level": 30 },
+            { "skillId": 3121000, "level": 30 },
+            { "skillId": 3121002, "level": 30 },
+            { "skillId": 3121003, "level": 30 },
+            { "skillId": 3121004, "level": 30 },
+            { "skillId": 3121006, "level": 30 },
+            { "skillId": 3121007, "level": 30 },
+            { "skillId": 3121008, "level": 30 },
+            { "skillId": 3121009, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "aa6cbb45-1ef9-4bb0-9368-21297edad68c",
+        "attributes": {
+          "name": "Marksman — 4th job",
+          "description": "Full 4th-job Marksman — branch skills maxed; Reverse Black Beauty + Reverse Evernew set + Diamond Bolts.",
+          "tags": ["4th-job", "bowman", "explorer"],
+          "jobId": 322,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminMarksman",
+          "equipment": [
+            { "templateId": 1462051, "useAverageStats": true },
+            { "templateId": 1052162, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2061004, "quantity": 200 }
+          ],
+          "skills": [
+            { "skillId": 3000000, "level": 16 },
+            { "skillId": 3000001, "level": 20 },
+            { "skillId": 3000002, "level": 8 },
+            { "skillId": 3001003, "level": 20 },
+            { "skillId": 3001004, "level": 20 },
+            { "skillId": 3001005, "level": 20 },
+            { "skillId": 3200000, "level": 20 },
+            { "skillId": 3200001, "level": 30 },
+            { "skillId": 3201002, "level": 20 },
+            { "skillId": 3201003, "level": 20 },
+            { "skillId": 3201004, "level": 20 },
+            { "skillId": 3201005, "level": 30 },
+            { "skillId": 3210000, "level": 20 },
+            { "skillId": 3210001, "level": 20 },
+            { "skillId": 3211002, "level": 20 },
+            { "skillId": 3211003, "level": 30 },
+            { "skillId": 3211004, "level": 30 },
+            { "skillId": 3211005, "level": 30 },
+            { "skillId": 3211006, "level": 30 },
+            { "skillId": 3220004, "level": 30 },
+            { "skillId": 3221000, "level": 30 },
+            { "skillId": 3221001, "level": 30 },
+            { "skillId": 3221002, "level": 30 },
+            { "skillId": 3221003, "level": 30 },
+            { "skillId": 3221005, "level": 30 },
+            { "skillId": 3221006, "level": 30 },
+            { "skillId": 3221007, "level": 30 },
+            { "skillId": 3221008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "ba0b2a82-1854-4ee0-8740-6cbfa86a65c0",
+        "attributes": {
+          "name": "Night Lord — 4th job",
+          "description": "Full 4th-job Night Lord — branch skills maxed; iconic Maple Kandayo + Reverse Prinsid set + Crystal Ilbi Throwing-Stars.",
+          "tags": ["4th-job", "thief", "explorer"],
+          "jobId": 412,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminNightLord",
+          "equipment": [
+            { "templateId": 1472032, "useAverageStats": true },
+            { "templateId": 1052163, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2070016, "quantity": 200 }
+          ],
+          "skills": [
+            { "skillId": 4000000, "level": 20 },
+            { "skillId": 4000001, "level": 8 },
+            { "skillId": 4001002, "level": 20 },
+            { "skillId": 4001003, "level": 20 },
+            { "skillId": 4001334, "level": 20 },
+            { "skillId": 4001344, "level": 20 },
+            { "skillId": 4100000, "level": 20 },
+            { "skillId": 4100001, "level": 30 },
+            { "skillId": 4100002, "level": 20 },
+            { "skillId": 4101003, "level": 20 },
+            { "skillId": 4101004, "level": 20 },
+            { "skillId": 4101005, "level": 30 },
+            { "skillId": 4110000, "level": 20 },
+            { "skillId": 4111001, "level": 20 },
+            { "skillId": 4111002, "level": 30 },
+            { "skillId": 4111003, "level": 20 },
+            { "skillId": 4111004, "level": 30 },
+            { "skillId": 4111005, "level": 30 },
+            { "skillId": 4111006, "level": 20 },
+            { "skillId": 4120002, "level": 30 },
+            { "skillId": 4120005, "level": 30 },
+            { "skillId": 4121000, "level": 30 },
+            { "skillId": 4121003, "level": 30 },
+            { "skillId": 4121004, "level": 30 },
+            { "skillId": 4121006, "level": 30 },
+            { "skillId": 4121007, "level": 30 },
+            { "skillId": 4121008, "level": 30 },
+            { "skillId": 4121009, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "8e0d8b65-dff0-4696-a06d-b16317f6ced7",
+        "attributes": {
+          "name": "Shadower — 4th job",
+          "description": "Full 4th-job Shadower — branch skills maxed; iconic Maple Asura Dagger + Maple Thief Shield + Reverse Prinsid set.",
+          "tags": ["4th-job", "thief", "explorer"],
+          "jobId": 422,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminShadower",
+          "equipment": [
+            { "templateId": 1332056, "useAverageStats": true },
+            { "templateId": 1092047, "useAverageStats": true },
+            { "templateId": 1052163, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 4000000, "level": 20 },
+            { "skillId": 4000001, "level": 8 },
+            { "skillId": 4001002, "level": 20 },
+            { "skillId": 4001003, "level": 20 },
+            { "skillId": 4001334, "level": 20 },
+            { "skillId": 4001344, "level": 20 },
+            { "skillId": 4200000, "level": 20 },
+            { "skillId": 4200001, "level": 20 },
+            { "skillId": 4201002, "level": 20 },
+            { "skillId": 4201003, "level": 20 },
+            { "skillId": 4201004, "level": 30 },
+            { "skillId": 4201005, "level": 30 },
+            { "skillId": 4210000, "level": 20 },
+            { "skillId": 4211001, "level": 30 },
+            { "skillId": 4211002, "level": 30 },
+            { "skillId": 4211003, "level": 20 },
+            { "skillId": 4211004, "level": 30 },
+            { "skillId": 4211005, "level": 20 },
+            { "skillId": 4211006, "level": 30 },
+            { "skillId": 4220002, "level": 30 },
+            { "skillId": 4220005, "level": 30 },
+            { "skillId": 4221000, "level": 30 },
+            { "skillId": 4221001, "level": 30 },
+            { "skillId": 4221003, "level": 30 },
+            { "skillId": 4221004, "level": 30 },
+            { "skillId": 4221006, "level": 30 },
+            { "skillId": 4221007, "level": 30 },
+            { "skillId": 4221008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "525dc913-5988-4599-b12a-a14eb68253e0",
+        "attributes": {
+          "name": "Buccaneer — 4th job",
+          "description": "Full 4th-job Buccaneer — branch skills maxed; iconic Maple Golden Claw (knuckle) + Reverse Burgunt set.",
+          "tags": ["4th-job", "pirate", "explorer"],
+          "jobId": 512,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminBuccaneer",
+          "equipment": [
+            { "templateId": 1482022, "useAverageStats": true },
+            { "templateId": 1052164, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 5000000, "level": 20 },
+            { "skillId": 5001001, "level": 20 },
+            { "skillId": 5001002, "level": 20 },
+            { "skillId": 5001003, "level": 20 },
+            { "skillId": 5001005, "level": 10 },
+            { "skillId": 5100000, "level": 10 },
+            { "skillId": 5100001, "level": 20 },
+            { "skillId": 5101002, "level": 20 },
+            { "skillId": 5101003, "level": 20 },
+            { "skillId": 5101004, "level": 20 },
+            { "skillId": 5101005, "level": 10 },
+            { "skillId": 5101006, "level": 20 },
+            { "skillId": 5101007, "level": 10 },
+            { "skillId": 5110000, "level": 20 },
+            { "skillId": 5110001, "level": 40 },
+            { "skillId": 5111002, "level": 30 },
+            { "skillId": 5111004, "level": 20 },
+            { "skillId": 5111005, "level": 20 },
+            { "skillId": 5111006, "level": 30 },
+            { "skillId": 5121000, "level": 30 },
+            { "skillId": 5121001, "level": 30 },
+            { "skillId": 5121002, "level": 30 },
+            { "skillId": 5121003, "level": 20 },
+            { "skillId": 5121004, "level": 30 },
+            { "skillId": 5121005, "level": 30 },
+            { "skillId": 5121007, "level": 30 },
+            { "skillId": 5121008, "level": 5 },
+            { "skillId": 5121009, "level": 20 },
+            { "skillId": 5121010, "level": 30 }
+          ]
+        }
+      },
+      {
+        "id": "1c51eefc-47be-4352-bd75-5cde0200b141",
+        "attributes": {
+          "name": "Corsair — 4th job",
+          "description": "Full 4th-job Corsair — branch skills maxed; iconic Maple Storm Pistol + Reverse Burgunt set + Eternal Bullets.",
+          "tags": ["4th-job", "pirate", "explorer"],
+          "jobId": 522,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminCorsair",
+          "equipment": [
+            { "templateId": 1492021, "useAverageStats": true },
+            { "templateId": 1052164, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2330005, "quantity": 200 }
+          ],
+          "skills": [
+            { "skillId": 5000000, "level": 20 },
+            { "skillId": 5001001, "level": 20 },
+            { "skillId": 5001002, "level": 20 },
+            { "skillId": 5001003, "level": 20 },
+            { "skillId": 5001005, "level": 10 },
+            { "skillId": 5200000, "level": 20 },
+            { "skillId": 5201001, "level": 20 },
+            { "skillId": 5201002, "level": 20 },
+            { "skillId": 5201003, "level": 20 },
+            { "skillId": 5201004, "level": 20 },
+            { "skillId": 5201005, "level": 10 },
+            { "skillId": 5201006, "level": 20 },
+            { "skillId": 5210000, "level": 20 },
+            { "skillId": 5211001, "level": 30 },
+            { "skillId": 5211002, "level": 30 },
+            { "skillId": 5211004, "level": 30 },
+            { "skillId": 5211005, "level": 30 },
+            { "skillId": 5211006, "level": 30 },
+            { "skillId": 5220001, "level": 30 },
+            { "skillId": 5220002, "level": 20 },
+            { "skillId": 5220011, "level": 20 },
+            { "skillId": 5221000, "level": 30 },
+            { "skillId": 5221003, "level": 30 },
+            { "skillId": 5221004, "level": 30 },
+            { "skillId": 5221006, "level": 10 },
+            { "skillId": 5221007, "level": 30 },
+            { "skillId": 5221008, "level": 30 },
+            { "skillId": 5221009, "level": 20 },
+            { "skillId": 5221010, "level": 5 }
+          ]
+        }
+      }
+
+    ]
+  },
+  "npcs": [
+    {
+      "npcId": 1002000,
+      "impl": "Phil"
+    },
+    {
+      "npcId": 1002007,
+      "impl": "RegularCabLithHarbor"
+    },
+    {
+      "npcId": 1012000,
+      "impl": "RegularCabHenesys"
+    },
+    {
+      "npcId": 1022001,
+      "impl": "RegularCabPerion"
+    },
+    {
+      "npcId": 1032000,
+      "impl": "RegularCabEllinia"
+    },
+    {
+      "npcId": 1052016,
+      "impl": "RegularCabKerningCity"
+    },
+    {
+      "npcId": 1092014,
+      "impl": "NautilusMidSizedTaxi"
+    },
+    {
+      "npcId": 2010007,
+      "impl": "Heracle"
+    },
+    {
+      "npcId": 2010008,
+      "impl": "Lea"
+    }
+  ],
+  "worlds": [
+    {
+      "name": "Scania",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Scania!",
+      "eventMessage": "Scania!",
+      "whyAmIRecommended": "Most Populated!",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Bera",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Bera!",
+      "eventMessage": "Bera!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Broa",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Broa!",
+      "eventMessage": "Broa!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Windia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Windia!",
+      "eventMessage": "Windia!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Khaini",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Khaini!",
+      "eventMessage": "Khaini!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Bellocan",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Bellocan!",
+      "eventMessage": "Bellocan!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Mardia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Mardia!",
+      "eventMessage": "Mardia!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Kradia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kradia!",
+      "eventMessage": "Kradia!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Yellonde",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Yellonde!",
+      "eventMessage": "Yellonde!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Demethos",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Demethos!",
+      "eventMessage": "Demethos!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Galicia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Galicia!",
+      "eventMessage": "Galicia!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "El Nido",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to El Nido!",
+      "eventMessage": "El Nido!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Zenith",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Zenith!",
+      "eventMessage": "Zenith!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Arcenia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Arcenia!",
+      "eventMessage": "Arcenia!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Kastia",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kastia!",
+      "eventMessage": "Kastia!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Judis",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Judis!",
+      "eventMessage": "Judis!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Plana",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Plana!",
+      "eventMessage": "Plana!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Kalluna",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Kalluna!",
+      "eventMessage": "Kalluna!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Stius",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Stius!",
+      "eventMessage": "Stius!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Croa",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Croa!",
+      "eventMessage": "Croa!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    },
+    {
+      "name": "Medere",
+      "flag": "Nothing",
+      "serverMessage": "Welcome to Medere!",
+      "eventMessage": "Medere!",
+      "whyAmIRecommended": "",
+      "expRate": 1.0,
+      "mesoRate": 1.0,
+      "itemDropRate": 1.0,
+      "questExpRate": 1.0
+    }
+  ],
+  "cashShop": {
+    "commodities": {
+      "hourlyExpirations": [
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
+      ]
+    }
+  }
+}

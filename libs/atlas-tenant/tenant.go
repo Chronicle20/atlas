@@ -83,3 +83,23 @@ func (m *Model) String() string {
 	return fmt.Sprintf("Id [%s] Region [%s] Version [%d.%d]",
 		m.Id().String(), m.Region(), m.MajorVersion(), m.MinorVersion())
 }
+
+// IsRegion reports whether the tenant belongs to the given region.
+func (m *Model) IsRegion(region string) bool {
+	return m.region == region
+}
+
+// MajorAtLeast reports whether the tenant's major version is >= v.
+func (m *Model) MajorAtLeast(v uint16) bool {
+	return m.majorVersion >= v
+}
+
+// MajorAtMost reports whether the tenant's major version is <= v.
+func (m *Model) MajorAtMost(v uint16) bool {
+	return m.majorVersion <= v
+}
+
+// MajorInRange reports whether the tenant's major version is in [lo, hi] (inclusive both ends).
+func (m *Model) MajorInRange(lo, hi uint16) bool {
+	return m.majorVersion >= lo && m.majorVersion <= hi
+}

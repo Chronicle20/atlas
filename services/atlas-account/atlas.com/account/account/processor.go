@@ -119,6 +119,13 @@ var allTenants model.Provider[[]tenant.Model] = func() ([]tenant.Model, error) {
 	return GetRegistry().Tenants(context.Background()), nil
 }
 
+// usesChooseGender reports whether default gender is UI-choose (10) rather than Male.
+// GMS v87+ only: v84's >83 was a systematic off-by-one (v84 == v83 behavior).
+// Evidence: v84-packet-delta.md §3-5.
+func usesChooseGender(t tenant.Model) bool {
+	return t.IsRegion("GMS") && t.MajorAtLeast(87)
+}
+
 func decorateState(t tenant.Model) model.Transformer[Model, Model] {
 	return func(m Model) (Model, error) {
 		ctx := tenant.WithContext(context.Background(), t)
@@ -162,7 +169,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string) func(passwo
 			}
 
 			gender := byte(0)
-			if p.t.Region() == "GMS" && p.t.MajorVersion() > 83 {
+			if usesChooseGender(p.t) {
 				gender = byte(10)
 			}
 			p.l.Debugf("Defaulting gender to [%d]. 0 = Male, 1 = Female, 10 = UI Choose. This is determined by Region and Version capabilities.", gender)

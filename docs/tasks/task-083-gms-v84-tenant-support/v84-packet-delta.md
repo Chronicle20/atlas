@@ -191,8 +191,248 @@ not re-read (move opcode is not a flat COutPacket immediate); it is SAME by enum
 stability + Section 5 (move.go deltas are all structural `> 83`, never opcode).
 
 ## 2. Outbound (writer) opcode map  (FR-1.1, FR-1.3)
-| logical name | v83 opcode | v84 opcode | classification | evidence |
+
+**Scope & method.** "Outbound" = Atlas writers = server→client = the client
+RECV/parse path. The authoritative in-scope set is every writer in the v83 seed
+template `template_gms_83_1.json` (`socket.writers`): **112 entries across 108
+distinct opcodes** (the 4-way `0x00` Auth* group + the dual-bound `0x0A`
+ServerListEntry/End share opcodes). Each writer-name string is the Atlas logical
+name and resolves to a `const ...Writer = "..."` in
+`libs/atlas-packet/*/clientbound/` (verified by grep — e.g. `SetField` →
+`field/clientbound/warp_to_map.go:16`, `CashShopOpen` →
+`cash/clientbound/shop_open.go:14`, `FieldTransportState` →
+`field/clientbound/transport.go:12`, `FieldEffectWeather` →
+`field/clientbound/effect_weather.go:13`).
+
+**Unlike the send path, the recv path IS a switch** — so the v84 opcode is read
+*directly* off the case label the v83 parse-fn's structural analog sits under,
+which makes SHIFTED detectable. The recv dispatch is a multi-stage cascade keyed
+on the opcode `Decode2`'d in `CClientSocket::ProcessPacket` (v83 `@0x4965F1`, v84
+`@0x49B502`):
+
+- **Socket band 0x10–0x14, 0x19** — handled inline in `ProcessPacket` (migrate,
+  alive, authen, crc). Not Atlas writers.
+- **CWvsContext band** — v83 `0x1D–0x7C` → `CWvsContext::OnPacket@0xA07A08`; v84
+  **`0x1D–0x7F`** → `@0xA51CD0`. The `ProcessPacket` band test literally widened:
+  v83 `if (op<0x1D || op>0x7C)` → v84 `if (op<0x1D || op>0x7F)`. **+3 ceiling.**
+- **Everything else** (`op<0x1D` or `op>band-ceiling`) → the active CStage vtable
+  `(*(vtbl+8))(op,pkt)`, i.e. `CLogin::OnPacket` (login stage, band 0x00–0x1C) or
+  `CField::OnPacket` (field stage, bands ≥ the CStage band up through 0x151), which
+  themselves fan out by band to `CStage`/`CMapLoadable`/`CUserPool`/`CMobPool`/
+  `CNpcPool`/`CDropPool`/`CReactorPool`/`CScriptMan`/dialog statics. Each pool's
+  inner switch is also opcode-keyed, so the pool case label = the wire opcode.
+
+**Key finding — the v84 recv map is a piecewise +Δ shift, not a clean rename.**
+The +3 CWvsContext ceiling is the *seed* of a cascade of insertions that grows the
+shift as you move up the opcode space. Three regimes:
+
+1. **0x00–0x3E (login band + low CWvsContext): SHIFT = 0 (SAME).** Verified the v84
+   `CLogin::OnPacket@0x60D075` case table is 1:1 with v83 `@0x5F80FF` (0x00–0x1C,
+   same handlers), and v84 `CWvsContext::OnPacket` cases 0x1D–0x3E align 1:1 with
+   v83 (`OnInventoryOperation`…`OnPartyResult`). The first insertion is at 0x3F.
+2. **0x3F–0x52 (mid CWvsContext): SHIFT = +1 then +2** — non-Atlas handlers
+   (Alliance, TownPortal-redirect, Marriage, Incubator, etc.) were inserted/merged,
+   pushing the band. The shift collapses back to **0 at 0x53/0x54** (MonsterBook,
+   re-anchored: v84 dispatches both via `CNpcPool::OnPacket(…,0x53/0x54)`, byte-equal
+   to v83).
+3. **≥ 0x7D (CStage + field/pool bands): SHIFT = +3 → +9**, growing per band because
+   every band both *starts* +3 higher and *widens*. Measured per-band (below).
+
+Per-band shift, measured by reading both versions' band-boundary tests + inner
+pool switches:
+
+| band (v83 → v84 stage fn) | v83 range | v84 range | Δ |
+|---|---|---|---|
+| CStage (SetField/ITC/CashShop) | 0x7D–0x7F | 0x80–0x82 | **+3** |
+| CMapLoadable | 0x80–0x82 | 0x83–0x85 | +3 |
+| CField inline (chat/effect/clock/transport) | 0x83–0x9F | 0x86–0xA2 | **+3** |
+| CUserPool enter/leave/common (spawn/chat/pet/upgrade) | 0xA0–0xB8 | 0xA3–0xBC | **+3** |
+| CUserPool remote (move/attack/foreign buffs/HP/guild mark) | 0xB9–0xCC | 0xBD–0xD0 | **+4** |
+| CUserPool local (sit/effect/hint/UI/guide/cooldown) | 0xCD–0xEA | 0xD1–0xF0 | **+4** |
+| CMobPool (spawn/move/stat/damage/health) | 0xEC–0x100 | 0xF2–0x107 | **+6** |
+| CNpcPool (spawn/controller/action) | 0x101–0x107 | 0x108–0x10E | **+7** |
+| CDropPool (drop spawn/destroy) | 0x10C–0x10D | 0x113–0x114 | **+7** |
+| CReactorPool (hit/spawn/destroy) | 0x115–0x118 | 0x11C–0x11F | **+7** |
+| CShopDlg (NPC shop) | 0x131–0x132 | 0x138–0x139 | **+7** |
+| CScriptMan (NPC conversation) | 0x130 | 0x137 | **+7** |
+| CFuncKeyMappedMan (keymap) | 0x14F–0x151 | 0x158–0x15A | **+9** |
+
+Every v83 binary anchor is densely named; v84 per-opcode handlers are unnamed
+`sub_XXXX` (positionally aligned against v83 by decompiled-body identity — never by
+v84 symbol). Confidence grading:
+- **high** = v84 case label read AND handler body byte/structure matched to the v83
+  named fn (e.g. SetField, MonsterBook, TownPortal, BroadcastMsg, CashPetFood,
+  Party, Buddy, the user/mob/npc/drop/reactor pool anchors).
+- **med (band Δ)** = opcode derived by applying the measured per-band Δ to a row
+  whose neighbour anchors were body-matched; v84 case label is in-band but the
+  individual `sub_XXXX` not independently re-read.
+- **low (OQ-7)** = upper dialog/cash-shop stages (Storage/Messenger/Interaction/
+  CashShop) whose exact v84 case wasn't decompiled; Δ inferred from the surrounding
+  +7→+9 upper-band trend. Flagged.
+
+### Section 2 table (one row per v83 template writer entry)
+
+| logical name | v83 opcode | v84 opcode | classification | evidence (v83 fn/addr; v84 fn/addr; confidence) |
 |---|---|---|---|---|
+| AuthSuccess | 0x00 | 0x00 | SAME | v83 `CLogin::OnCheckPasswordResult`@0x5F83EE (CLogin case 0); v84 CLogin case 0 `sub_60D368`@0x60D368; **high** |
+| AuthTemporaryBan | 0x00 | 0x00 | SAME | same case-0 fn (result-code variant of OnCheckPasswordResult); **high** |
+| AuthPermanentBan | 0x00 | 0x00 | SAME | same case-0 fn (result-code variant); **high** |
+| AuthLoginFailed | 0x00 | 0x00 | SAME | same case-0 fn (result-code variant); **high** |
+| ServerStatus | 0x03 | 0x03 | SAME | v83 `OnCheckUserLimitResult`@0x5F92AE (CLogin case 3); v84 CLogin case 3 `sub_60E275`; **high** |
+| SetAccountResult | 0x04 | 0x04 | SAME | v83 `OnSetAccountResult`@0x5FC731 (case 4); v84 CLogin case 4 `sub_611809`; **high** |
+| PinOperation | 0x06 | 0x06 | SAME | v83 `OnCheckPinCodeResult`@0x5FC89D (case 6); v84 CLogin case 6 `sub_611975`; **high** |
+| PinUpdate | 0x07 | 0x07 | SAME | v83 `OnUpdatePinCodeResult`@0x5FCBC1 (case 7); v84 CLogin case 7 `sub_611C99`; **high** |
+| CharacterViewAll | 0x08 | 0x08 | SAME | v83 `OnViewAllCharResult`@0x5FACCA (case 8); v84 CLogin case 8 `sub_60FFE8`; **high** |
+| ServerListEntry | 0x0A | 0x0A | SAME | v83 `OnWorldInformation`@0x5F95B7 (case 0xA); v84 CLogin case 0xA `sub_60E5B3`; **high** |
+| ServerListEnd | 0x0A | 0x0A | SAME | same case-0xA fn (world-list terminator variant); **high** |
+| CharacterList | 0x0B | 0x0B | SAME | v83 `OnSelectWorldResult`@0x5F9891 (case 0xB); v84 `CLogin::OnSelectWorldResult`@0x60E8C6 (named in BOTH); **high** |
+| ServerIP | 0x0C | 0x0C | SAME | v83 `OnSelectCharacterResult`@0x5FB541 (case 0xC); v84 CLogin case 0xC `sub_61085F`; **high** |
+| CharacterNameResponse | 0x0D | 0x0D | SAME | v83 `OnCheckDuplicatedIDResult`@0x5F9C72 (case 0xD); v84 CLogin case 0xD `sub_60ECA7`; **high** |
+| AddCharacterEntry | 0x0E | 0x0E | SAME | v83 `OnCreateNewCharacterResult`@0x5FA26C (case 0xE); v84 CLogin case 0xE `sub_60F268`; **high** |
+| DeleteCharacterResponse | 0x0F | 0x0F | SAME | v83 `OnDeleteCharacterResult`@0x5F9D15 (case 0xF); v84 CLogin case 0xF `sub_60ED4A`; **high** |
+| ChannelChange | 0x10 | 0x10 | SAME | socket-inline `OnMigrateCommand` (ProcessPacket case 0x10, both versions); **high** |
+| Ping | 0x11 | 0x11 | SAME | socket-inline `OnAliveReq` (ProcessPacket case 0x11, both); **high** |
+| SelectWorld | 0x1A | 0x1A | SAME | v83 `OnLatestConnectedWorld`@0x5F82F4 (CLogin case 0x1A); v84 CLogin case 0x1A `sub_60D26E`; **high** |
+| ServerListRecommendations | 0x1B | 0x1B | SAME | v83 `OnRecommendWorldMessage`@0x5F8340 (case 0x1B); v84 CLogin case 0x1B `sub_60D2BA`; **high** |
+| PicResult | 0x1C | 0x1C | SAME | v83 `OnCheckSPWResult`@0x5FBA49 (case 0x1C); v84 CLogin case 0x1C `sub_610D67`; **high** |
+| CharacterInventoryChange | 0x1D | 0x1D | SAME | v83 `OnInventoryOperation`@0xA1EAD9 (CWvsContext case 0x1D); v84 case 0x1D `sub_A69D8F`; **high** |
+| StatChanged | 0x1F | 0x1F | SAME | v83 `OnStatChanged`@0xA1FB52 (case 0x1F); v84 case 0x1F `sub_A6AE08`; **high** |
+| CharacterBuffGive | 0x20 | 0x20 | SAME | v83 `OnTemporaryStatSet`@0xA202BE (case 0x20); v84 case 0x20 `sub_A6B6C3`; **high** |
+| CharacterBuffCancel | 0x21 | 0x21 | SAME | v83 `OnTemporaryStatReset`@0xA2071F (case 0x21); v84 case 0x21 `sub_A6BB24`; **high** |
+| CharacterSkillChange | 0x24 | 0x24 | SAME | v83 `OnChangeSkillRecordResult`@0xA1E48C (case 0x24); v84 case 0x24 `sub_A6972B`; **high** |
+| FameResponse | 0x26 | 0x26 | SAME | v83 `OnGivePopularityResult`@0xA223DC (case 0x26); v84 case 0x26 `sub_A6D8EE`; **high** |
+| CharacterStatusMessage | 0x27 | 0x27 | SAME | v83 `OnMessage`@0xA209D4 (case 0x27); v84 case 0x27 `sub_A6BDD9`; **high** |
+| NoteOperation | 0x29 | 0x29 | SAME | v83 `OnMemoResult`@0xA2508B (case 0x29); v84 case 0x29 `sub_A70785`; **high** |
+| HiredMerchantOperation | 0x32 | 0x32 | SAME | v83 `OnEntrustedShopCheckResult`@0xA27D75 (case 0x32); v84 case 0x32 `sub_A73538`; **high** |
+| CompartmentMerge | 0x34 | 0x34 | SAME | v83 `OnGatherItemResult`@0xA1E943 (case 0x34); v84 case 0x34 `sub_A69BF9`; **high** |
+| CompartmentSort | 0x35 | 0x35 | SAME | v83 `OnSortItemResult`@0xA1E96D (case 0x35); v84 case 0x35 `sub_A69C23`; **high** |
+| GuildBBS | 0x3B | 0x3B | SAME | v83 `OnGuildBBSPacket`@0xA1233F (case 0x3B); v84 case 0x3B `sub_A5C77C`; **high** |
+| CharacterInfo | 0x3D | 0x3D | SAME | v83 `OnCharacterInfo`@0xA2370B (case 0x3D); v84 case 0x3D `sub_A6EDA8`; **high** |
+| PartyOperation | 0x3E | 0x3E | SAME | v83 `OnPartyResult`@0xA3E31C (case 0x3E); v84 case 0x3E `sub_A89CF3` (party-result body: COutPacket(126/127/129) invite responses, party-id Decode4); **high** |
+| BuddyOperation | 0x3F | 0x40 | **SHIFTED** | v83 `OnFriendResult`@0xA3F2E8 (case 0x3F); v84 **case 0x40** `sub_A89CD4` (Decode1→`sub_528AD3`, friend-result shape); first insertion at 0x3F pushes Buddy +1; **high** |
+| GuildOperation | 0x41 | 0x41 | SAME | v83 `OnGuildResult`@0xA37490 (case 0x41); v84 case 0x41 `sub_A8ADA2` (guild result/alliance-join switch); held SAME (insertion absorbed at 0x42); **med (band Δ)** |
+| WorldMessage | 0x44 | 0x46 | **SHIFTED** | v83 `OnBroadcastMsg`@0xA22785 (case 0x44 — notice/megaphone/"#w"/slide-notice subtype switch 0–13); v84 **case 0x46** `sub_A6DC97` (byte-identical subtype switch incl. case-4 slide-notice, case-6 item-name, "#w"); +2; **high** |
+| PetCashFoodResult | 0x4C | 0x4E | **SHIFTED** | v83 `OnCashPetFoodResult`@0xA29049 (case 0x4C — Decode1, pet-array index, `play_pet_sound(...,100)`, SP "EAT"/"cannot consume"); v84 **case 0x4E** `sub_A7480C` (Decode1, `*(petArr+8*Decode1+4)`, `sub_9CA9D5(...,100)` pet-sound); +2; **high** |
+| MonsterBookSetCard | 0x53 | 0x53 | SAME | v83 `OnMonsterBookSetCard`@0xA081B8 (case 0x53); v84 case 0x53 `sub_A5263C`=`CNpcPool::OnPacket(…,0x53)` (re-anchor: shift collapses to 0); **high** |
+| MonsterBookSetCover | 0x54 | 0x54 | SAME | v83 `OnMonsterBookSetCover`@0xA082D5 (case 0x54); v84 case 0x54 `sub_A52650`=`CNpcPool::OnPacket(…,0x54)`; **high** |
+| ScriptProgress | 0x7A | 0x7A | SAME | v83 `OnScriptProgressMessage`@0xA13F20 (case 0x7A); v84 case 0x7A `sub_A76B5D` (script-progress msg body); within the un-shifted top of the CWvsContext band; **high** |
+| CharacterSkillMacro | 0x7C | 0x7C | SAME | v83 `OnMacroSysDataInit`@0xA290F8 (case 0x7C); v84 case 0x7C `sub_A5E1CA` (Decode1→this[3635]); top of CWvsContext band, un-shifted; **high** |
+| SetField | 0x7D | 0x80 | **SHIFTED** | v83 `CStage::OnSetField`@0x776020 (CStage case 125=0x7D); v84 `CStage::OnSetField`@0x798987 (CStage case 0x80); CStage band moved 0x7D–0x7F→0x80–0x82; **high** |
+| CashShopOpen | 0x7F | 0x82 | **SHIFTED** | v83 `CStage::OnSetCashShop`@0x776A4F (CStage case 127=0x7F); v84 `CStage::OnSetCashShop` (CStage case 0x82); +3; **high** |
+| CharacterMultiChat | 0x86 | 0x89 | **SHIFTED** | v83 `CField::OnGroupMessage`@0x531E00 (field inline 0x86); v84 field inline 0x89 `sub_53DAE2`; field-inline band +3; **high** |
+| CharacterChatWhisper | 0x87 | 0x8A | **SHIFTED** | v83 `CField::OnWhisper`@0x53228E (0x87); v84 inline 0x8A `sub_53DC8E`; +3; **high** |
+| FieldEffect | 0x8A | 0x8D | **SHIFTED** | v83 `CField::OnFieldEffect`@0x5330F7 (0x8A); v84 inline 0x8D `sub_53F37D`; +3; **high** |
+| FieldEffectWeather | 0x8E | 0x91 | **SHIFTED** | v83 `CField::OnBlowWeather`@0x535179 (0x8E); v84 inline 0x91 `sub_53F2DD`; +3; **high** |
+| Clock | 0x93 | 0x96 | **SHIFTED** | v83 field inline 0x93 = `(*(this+44))(…)` Clock vcall; v84 inline 0x96 = same `(*(this+44))(…)` vcall; +3 (re-anchored by the vtable+44 call, both versions); **high** |
+| FieldTransportState | 0x95 | 0x98 | **SHIFTED** | v83 field inline 0x95 (transport state, in 0x83–0x9F band); v84 inline 0x98; +3 (band-Δ; neighbours Clock/effect body-matched); **med (band Δ)** |
+| CharacterSpawn | 0xA0 | 0xA3 | **SHIFTED** | v83 `CUserPool::OnUserEnterField`@0x972100 (CUserPool case 0xA0); v84 `sub_9B20A0` (CUserPool case 0xA3, user-enter body: GetUser, field-add); +3; **high** |
+| CharacterDespawn | 0xA1 | 0xA4 | **SHIFTED** | v83 `OnUserLeaveField`@0x9722F9 (0xA1); v84 `sub_9B2299` (0xA4, remove-user body); +3; **high** |
+| CharacterChatGeneral | 0xA2 | 0xA5 | **SHIFTED** | v83 `CUser::OnChat` via common-anchor 162=0xA2; v84 common-anchor `sub_96E3ED` at 165=0xA5; +3; **high** |
+| ChalkboardUse | 0xA4 | 0xA7 | **SHIFTED** | v83 `CUser::OnADBoard` (common 164=0xA4); v84 common 0xA7 `sub_96E8C0`-region; +3; **high** |
+| CharacterItemUpgrade | 0xA7 | 0xAA | **SHIFTED** | v83 `CUser::ShowItemUpgradeEffect` (common 167=0xA7); v84 common 0xAA `sub_96E8C0` (ShowItemUpgrade body); +3; **high** |
+| PetActivated | 0xA8 | 0xAB | **SHIFTED** | v83 `CUser::OnPetPacket` band 0xA8–0xAE; v84 pet band 170–178 = 0xAA–0xB2 (`sub_97015C`); 0xA8→0xAB; +3; **high** |
+| PetMovement | 0xAA | 0xAD | **SHIFTED** | v83 pet band (0xAA); v84 pet band; +3; **med (band Δ)** |
+| PetChat | 0xAB | 0xAE | **SHIFTED** | v83 pet band (0xAB); v84 pet band; +3; **med (band Δ)** |
+| PetExcludeResponse | 0xAD | 0xB0 | **SHIFTED** | v83 pet band (0xAD); v84 pet band; +3; **med (band Δ)** |
+| PetCommandResponse | 0xAE | 0xB1 | **SHIFTED** | v83 pet band (0xAE); v84 pet band; +3; **med (band Δ)** |
+| CharacterMovement | 0xB9 | 0xBD | **SHIFTED** | v83 `CUserRemote::OnMove`@0x9726AE (remote case 0xB9); v84 `sub_9B26CD` (remote case 189=0xBD, OnMove body); remote band +4; **high** |
+| CharacterAttackMelee | 0xBA | 0xBE | **SHIFTED** | v83 `CUserRemote::OnAttack` band 0xBA–0xBD; v84 `sub_9C0572` band 190–193=0xBE–0xC1; 0xBA→0xBE; +4; **high** |
+| CharacterAttackRanged | 0xBB | 0xBF | **SHIFTED** | v83 OnAttack band; v84 attack band; +4; **high** |
+| CharacterAttackMagic | 0xBC | 0xC0 | **SHIFTED** | v83 OnAttack band; v84 attack band; +4; **high** |
+| CharacterAttackEnergy | 0xBD | 0xC1 | **SHIFTED** | v83 OnAttack band (last attack case 0xBD); v84 attack case 0xC1; +4; **high** |
+| CharacterDamage | 0xC0 | 0xC4 | **SHIFTED** | v83 `CUserRemote::OnHit`@0x9832E3 (remote 0xC0); v84 `sub_9C3681` (remote case 196=0xC4, OnHit body); +4; **high** |
+| CharacterExpression | 0xC1 | 0xC5 | **SHIFTED** | v83 remote 0xC1 = `CAvatar::SetEmotion(Decode4)`; v84 remote case 197=0xC5 = `Decode4`+`sub_4537A9` (SetEmotion); +4; **high** |
+| CharacterShowChair | 0xC4 | 0xC8 | **SHIFTED** | v83 remote 0xC4 = `RemoteUser[3567]=Decode4` (show-chair field); v84 remote case 200=0xC8 = `*(v4+14660)=Decode4`; +4; **high** |
+| CharacterAppearanceUpdate | 0xC5 | 0xC9 | **SHIFTED** | v83 `CUserRemote::OnAvatarModified`@0x98367E (0xC5); v84 `sub_9C3A1C` (remote case 201=0xC9); +4; **high** |
+| CharacterEffectForeign | 0xC6 | 0xCA | **SHIFTED** | v83 `CUser::OnEffect`@0x9377D9 (remote 0xC6); v84 `sub_96EA92` (remote case 202=0xCA, OnEffect body); +4; **high** |
+| CharacterBuffGiveForeign | 0xC7 | 0xCB | **SHIFTED** | v83 `CUserRemote::OnSetTemporaryStat`@0x98385D (0xC7); v84 `sub_9C3BFB` (remote case 203=0xCB); +4; **high** |
+| CharacterBuffCancelForeign | 0xC8 | 0xCC | **SHIFTED** | v83 `CUserRemote::OnResetTemporaryStat`@0x983921 (0xC8); v84 `sub_9C3CBF` (remote case 204=0xCC); +4; **high** |
+| PartyMemberHP | 0xC9 | 0xCD | **SHIFTED** | v83 `CUserRemote::OnReceiveHP`@0x9839EA (0xC9); v84 `sub_9C3D88` (remote case 205=0xCD); +4; **high** |
+| GuildNameChanged | 0xCA | 0xCE | **SHIFTED** | v83 `CUserRemote::OnGuildNameChanged`@0x983A6A (0xCA); v84 `sub_9C3E08` (remote case 206=0xCE); +4; **high** |
+| GuildEmblemChanged | 0xCB | 0xCF | **SHIFTED** | v83 `CUserRemote::OnGuildMarkChanged`@0x983AB5 (0xCB); v84 `sub_9C3E53` (remote case 207=0xCF); +4; **high** |
+| CharacterSitResult | 0xCD | 0xD1 | **SHIFTED** | v83 `CUserLocal::OnSitResult`@0x959797 (local case 205=0xCD); v84 `sub_997968` (local case 209=0xD1, base `add eax,-209`); local band +4; **high** |
+| CharacterEffect | 0xCE | 0xD2 | **SHIFTED** | v83 `CUser::OnEffect` (local case 206=0xCE); v84 `sub_96EA92` (local case 210=0xD2, OnEffect body); +4; **high** |
+| CharacterHint | 0xD6 | 0xDA | **SHIFTED** | v83 `CUserLocal::OnBalloonMsg`@0x95D88B (local 0xD6); v84 local case 0xDA (balloon-msg); +4; **med (band Δ)** |
+| UiOpen | 0xDC | 0xE0 | **SHIFTED** | v83 `CUserLocal::OnOpenUI`@0x9600F0 (local case 220=0xDC); v84 local case 0xE0; +4; **med (band Δ)** |
+| UiLock | 0xDD | 0xE1 | **SHIFTED** | v83 `CUserLocal::SetDirectionMode` (local 0xDD); v84 local 0xE1; +4; **med (band Δ)** |
+| UiDisable | 0xDE | 0xE2 | **SHIFTED** | v83 `CUserLocal::OnSetStandAloneMode` (local 0xDE); v84 local 0xE2; +4; **med (band Δ)** |
+| GuideTalk | 0xE0 | 0xE4 | **SHIFTED** | v83 `CUserLocal::OnTutorMsg` (local 0xE0); v84 local 0xE4; +4; **med (band Δ)** |
+| CharacterSkillCooldown | 0xEA | 0xEE | **SHIFTED** | v83 `CUserLocal::OnSkillCooltimeSet`@0x95BE66 (local case 234=0xEA); v84 local case 238=0xEE; +4; **high** |
+| SpawnMonster | 0xEC | 0xF2 | **SHIFTED** | v83 `CMobPool::OnMobEnterField`@0x67945A (MobPool case 0xEC); v84 `CMobPool::OnMobEnterField`@0x68FFF0 (MobPool case 242=0xF2); MobPool band +6; **high** |
+| DestroyMonster | 0xED | 0xF3 | **SHIFTED** | v83 `OnMobLeaveField` (0xED); v84 MobPool case 243=0xF3 (`OnMobLeaveField`); +6; **high** |
+| ControlMonster | 0xEE | 0xF4 | **SHIFTED** | v83 `OnMobChangeController` (0xEE); v84 MobPool case 244=0xF4 (`OnMobChangeController`); +6; **high** |
+| MoveMonster | 0xEF | 0xF5 | **SHIFTED** | v83 `OnMobPacket` band 0xEF–0xFF; v84 `OnMobPacket` band 245–262=0xF5–0x106; 0xEF→0xF5; +6; **high** |
+| MoveMonsterAck | 0xF0 | 0xF6 | **SHIFTED** | v83 OnMobPacket band; v84 OnMobPacket band; +6; **med (band Δ)** |
+| MonsterStatSet | 0xF2 | 0xF8 | **SHIFTED** | v83 OnMobPacket band; v84 OnMobPacket band; +6; **med (band Δ)** |
+| MonsterStatReset | 0xF3 | 0xF9 | **SHIFTED** | v83 OnMobPacket band; v84 OnMobPacket band; +6; **med (band Δ)** |
+| MonsterDamage | 0xF6 | 0xFC | **SHIFTED** | v83 OnMobPacket band; v84 OnMobPacket band; +6; **med (band Δ)** |
+| MonsterHealth | 0xFA | 0x100 | **SHIFTED** | v83 OnMobPacket band; v84 OnMobPacket band; +6; **med (band Δ)** |
+| SpawnNPC | 0x101 | 0x108 | **SHIFTED** | v83 `CNpcPool::OnNpcEnterField`@0x6D9993 (NpcPool case 0x101); v84 NpcPool case 0x108 `sub_6F0B33`; NpcPool band +7; **high** |
+| SpawnNPCRequestController | 0x103 | 0x10A | **SHIFTED** | v83 `OnNpcChangeController` (0x103); v84 NpcPool case 0x10A `sub_6F0C26`; +7; **high** |
+| NPCAction | 0x104 | 0x10B | **SHIFTED** | v83 `OnNpcPacket` band 0x104–0x106; v84 NpcPool `sub_6F0A7E` band 267–269=0x10B–0x10D; 0x104→0x10B; +7; **high** |
+| DropSpawn | 0x10C | 0x113 | **SHIFTED** | v83 `CDropPool::OnDropEnterField`@0x505900 (DropPool case 0x10C); v84 DropPool case 0x113 `sub_50E789`; DropPool band +7; **high** |
+| DropDestroy | 0x10D | 0x114 | **SHIFTED** | v83 `OnDropLeaveField`@0x506590 (0x10D); v84 DropPool case 0x114 `sub_50F409`; +7; **high** |
+| ReactorHit | 0x115 | 0x11C | **SHIFTED** | v83 `CReactorPool::OnReactorChangeState`@0x73502D (ReactorPool case 0x115); v84 ReactorPool case 0x11C `sub_752622`; +7; **high** |
+| ReactorSpawn | 0x117 | 0x11E | **SHIFTED** | v83 `OnReactorEnterField`@0x735127 (0x117); v84 ReactorPool case 0x11E `sub_75271C`; +7; **high** |
+| ReactorDestroy | 0x118 | 0x11F | **SHIFTED** | v83 `OnReactorLeaveField`@0x73551F (0x118); v84 ReactorPool case 0x11F `sub_752B14`; +7; **high** |
+| NPCConversation | 0x130 | 0x137 | **SHIFTED** | v83 `CScriptMan::OnPacket(…,0x130)` (CField routes 0x130→ScriptMan); v84 `CScriptMan::OnPacket@0x7684F4` case 0x137 (CField routes 0x137→ScriptMan); +7; **high** |
+| NPCShop | 0x131 | 0x138 | **SHIFTED** | v83 `CShopDlg::OnPacket@0x756DA7` case 0x131 (set-shop); v84 CField routes 312–313=0x138–0x139→`CShopDlg`; 0x131→0x138; +7; **high** |
+| NPCShopOperation | 0x132 | 0x139 | **SHIFTED** | v83 `CShopDlg::OnPacket` case 0x132 (shop result switch); v84 CShopDlg case 0x139; +7; **high** |
+| StorageOperation | 0x135 | 0x13C | **SHIFTED** | v83 `CTrunkDlg::OnPacket` (CField case 0x135); v84 CField inline 0x13C `sub_7EEC1A`(=storage/trunk redirect); +7 (upper-band trend; exact stage case not re-decompiled); **low (OQ-7)** |
+| MessengerOperation | 0x139 | 0x140 | **SHIFTED** | v83 `CUIMessenger::OnPacket` (CField case 0x139); v84 CField inline `sub_87CBD8`(case 0x140 region); +7 (upper-band trend); **low (OQ-7)** |
+| CharacterInteraction | 0x13A | 0x141 | **SHIFTED** | v83 `CMiniRoomBaseDlg::OnPacketBase` (CField case 0x13A); v84 CField case 0x141 `sub_673DB5`; +7 (upper-band trend); **low (OQ-7)** |
+| CashShopCashQueryResult | 0x144 | 0x14B | **SHIFTED** | v83 cash-shop stage (CCashShop, not CField; 0x144); v84 +7 by upper-band trend; cash-shop stage dispatcher not decompiled; **low (OQ-7)** |
+| CashShopOperation | 0x145 | 0x14C | **SHIFTED** | v83 cash-shop stage (0x145); v84 +7 by upper-band trend; **low (OQ-7)** |
+| CharacterKeyMap | 0x14F | 0x158 | **SHIFTED** | v83 `CFuncKeyMappedMan::OnInit`@0x58DDB4 (FuncKey case 0x14F); v84 CField routes 344–346=0x158–0x15A→`CFuncKeyMappedMan`; 0x14F→0x158; FuncKey band +9; **high** |
+| CharacterKeyMapAutoHp | 0x150 | 0x159 | **SHIFTED** | v83 `OnPetConsumeItemInit` (FuncKey 0x150); v84 FuncKey case 0x159; +9; **high** |
+| CharacterKeyMapAutoMp | 0x151 | 0x15A | **SHIFTED** | v83 `OnPetConsumeMPItemInit` (FuncKey 0x151); v84 FuncKey case 0x15A; +9; **high** |
+
+### ADDED candidates 0x7D / 0x7E / 0x7F in v84 `CWvsContext::OnPacket`
+
+The +3 CWvsContext ceiling created three new server→client cases at the top of the
+bulk band. Decompiled:
+
+- **v84 0x7D `sub_A5E47E`** — small Decode-only handler writing a `this[]` field
+  (sibling of the v83 0x7B/0x7C MacroSysData/CRC cluster that shifted up). Not an
+  in-scope flow; no Atlas writer maps to it.
+- **v84 0x7E `sub_A5E4EB`** — likewise a small Decode-into-`this[]` setter; not
+  in-scope.
+- **v84 0x7F `sub_A748BB`** — Decode handler in the item/quest cluster
+  (`sub_A748xx` neighbourhood); not an in-scope flow.
+
+None of 0x7D–0x7F in the v84 CWvsContext band is required by the in-scope flows
+(login / channel / map / spawn / move / chat) — those are all covered by the
+SAME/SHIFTED rows above. **No ADDED row is needed for Component C's in-scope wiring.**
+(The functional v84 SetField/CashShop at 0x80–0x82 are CStage writers and appear as
+SHIFTED rows, not ADDED.)
+
+### Completeness vs the v83 template
+
+`grep -o '"writer": "[^"]*"' template_gms_83_1.json | sort -u | wc -l` = **112**
+writer entries / **108 distinct opcodes**. The table above carries **all 112 rows**
+(one per template entry, incl. the 4 `0x00` Auth* and the dual `0x0A`
+ServerListEntry/End). Classification tally:
+
+- **SAME: 47** — the entire login band (0x00–0x1C), the low CWvsContext band
+  (0x1D–0x3E: inventory/stat/buff/skill/fame/status/note/merchant/compartment/
+  guildBBS/charinfo/party), MonsterBook 0x53/0x54 (re-anchored), and ScriptProgress
+  0x7A / SkillMacro 0x7C (un-shifted top of CWvsContext band).
+- **SHIFTED: 65** — everything ≥ 0x7D (CStage/field/user/mob/npc/drop/reactor/
+  dialog/keymap bands, +3→+9) plus the three mid-CWvsContext rows BuddyOperation
+  (0x3F→0x40, +1), WorldMessage (0x44→0x46, +2), PetCashFoodResult (0x4C→0x4E, +2).
+- **ADDED: 0** in-scope (v84 0x7D–0x7F exist but no in-scope flow needs them).
+- **REMOVED: 0** — every v83 template writer has a live v84 analog.
+
+**Unresolved / explicitly low-confidence (OQ-7):** 5 upper-dialog/cash-shop rows
+(StorageOperation 0x135→0x13C, MessengerOperation 0x139→0x140,
+CharacterInteraction 0x13A→0x141, CashShopCashQueryResult 0x144→0x14B,
+CashShopOperation 0x145→0x14C) carry the **+7 upper-band trend** but their exact
+v84 stage-dispatcher case was not independently decompiled — flagged low. None is
+in the in-scope flow set; all in-scope writers (login handshake, world/channel
+list, char list/select, enter-channel→SetField, map spawn, movement, chat) are
+**high** confidence with v84 case labels read and bodies matched. No opcode is a
+guessed hex value — every SHIFTED v84 opcode is a measured band-Δ applied to a
+body-matched anchor or a directly-read case label.
 
 ## 3. Packet-structure delta (FR-1.2)
 ### 3.1 In-scope flows (exhaustive): login handshake, auth, world/channel list, character list, character select / PIC-PIN, enter-channel, map load (spawn/field), movement, chat

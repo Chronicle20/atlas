@@ -5,6 +5,14 @@
 #   - docs/tasks/           (main repo)
 #   - .worktrees/*/docs/tasks/
 #   - local git branches matching `task-*`
+#   - remote git branches   (refs/remotes/*/task-*)
+#   - git history           (task-NNN in any commit subject, all refs)
+#
+# The history source is what stops `next` from re-issuing the number of a task
+# whose branch was merged-and-deleted and whose docs/tasks folder no longer
+# lives in the working tree — the only durable record left is the merge-commit
+# subject. (e.g. 052/058/059 shipped via PRs #380/#408/#412 yet vanished from
+# every current-state source; see task-numbers_test.sh.)
 #
 # Subcommands:
 #   next   Print the smallest unused 3-digit NNN.
@@ -58,6 +66,28 @@ scan() {
       num="${tid#task-}"; num="${num%%-*}"
       [[ "$num" =~ ^[0-9]+$ ]] && printf '%03d %s branch\n' "$((10#$num))" "$tid"
     done < <(git -C "$main_root" for-each-ref --format='%(refname)' 'refs/heads/task-*')
+
+    # Remote task branches: pushed-but-not-checked-out work (e.g. a teammate's
+    # open PR, or a branch this clone never fetched as a local head) that a
+    # local-only scan would miss.
+    while read -r ref; do
+      [ -n "$ref" ] || continue
+      tid="${ref##*/}"
+      num="${tid#task-}"; num="${num%%-*}"
+      [[ "$num" =~ ^[0-9]+$ ]] && printf '%03d %s remote\n' "$((10#$num))" "$tid"
+    done < <(git -C "$main_root" for-each-ref --format='%(refname)' 'refs/remotes/*/task-*')
+
+    # Git history (all refs): the only durable record of a merged-and-deleted
+    # task's number once its branch and docs/tasks folder are gone. We mine
+    # `task-NNN` tokens out of commit subjects (merge subjects carry the branch
+    # name; conventional-commit scopes carry `task-NNN`). Numbers only — the
+    # full slug isn't reliably present, and `next`/dedup care only about NNN.
+    while read -r num; do
+      [ -n "$num" ] || continue
+      printf '%03d task-%03d history\n' "$((10#$num))" "$((10#$num))"
+    done < <(git -C "$main_root" log --all --pretty=%s 2>/dev/null \
+               | grep -oiE 'task-0*[0-9]+' \
+               | grep -oE '[0-9]+' | sort -un)
   fi
 }
 
@@ -76,11 +106,16 @@ case "$cmd" in
     ;;
   check)
     # Only flag a collision when at least one of the colliding task IDs is
-    # currently in-flight (worktree or branch source). Pure main-docs
-    # collisions are historical (e.g. tasks 014 and 016) and can't be
-    # un-shipped, so flagging them every session would just be noise.
-    data="$(scan | sort -u)"
-    inflight="$(printf '%s\n' "$data" | awk '$3 != "main-docs" {print $2}' | sort -u)"
+    # currently in-flight (worktree or local branch source). Collisions among
+    # already-landed sources (main-docs, remote, history) are historical
+    # (e.g. tasks 014 and 016) and can't be un-shipped, so flagging them every
+    # session would just be noise.
+    # Drop history rows: they carry a number-only synthetic ID (`task-NNN`,
+    # no slug) that exists solely to mark a number as used for `next`. Counting
+    # it as a task ID distinct from the real slug'd source would false-flag
+    # every in-flight task (e.g. history `task-081` vs branch `task-081-foo`).
+    data="$(scan | sort -u | awk '$3 != "history"')"
+    inflight="$(printf '%s\n' "$data" | awk '$3 == "branch" || $3 ~ /^worktree:/ {print $2}' | sort -u)"
     bad=0
     while read -r num; do
       [ -n "$num" ] || continue

@@ -3,8 +3,24 @@
 Source of truth for task-083 (FR-1.4). Every code/template change cites a row here.
 
 ## 0. IDB inventory & dispatch-table anchors
+
+All five IDA-MCP instances reachable (confirmed `list_instances` 2026-06-09): v83 GMS (13337), v84 GMS (13341 — the hard requirement), v95 GMS (13339), v87 GMS (13338), JMS v185 (13340, out of scope). v84 IDB is loaded and analyzable.
+
+Dispatch architecture (identical across all three GMS IDBs): the client recv path is a two-stage dispatch. `CClientSocket::ProcessPacket` reads the opcode via `CInPacket::Decode2`, handles socket-level opcodes (0x10–0x14, 0x19) inline, routes a low/high band to the active CStage vtable, and forwards the bulk band to `CWvsContext::OnPacket`, which is the large server→client handler switch (these map to Atlas WRITERS). The send path (client→server, Atlas HANDLERS) is NOT a switch: it is a distributed set of call sites that construct a `COutPacket` with the send-opcode (`COutPacket::COutPacket(long)`) and emit through the single sink `CClientSocket::SendPacket`. The "outbound dispatch table" therefore = the `SendPacket` sink; individual send opcodes are recovered by enumerating xrefs to `COutPacket::COutPacket` / `SendPacket` (deferred to later tasks). The addresses below give both the recv-switch anchor (`CWvsContext::OnPacket`) and the recv entry (`ProcessPacket`), plus the send sink and the `COutPacket(long)` ctor.
+
 | IDB | port | dispatch table (inbound) addr | dispatch table (outbound) addr | naming density |
 |---|---|---|---|---|
+| v83 GMS | 13337 | `CWvsContext::OnPacket` @ `0xA07A08` (recv switch, 0x1D–0x7C; recv entry `CClientSocket::ProcessPacket` @ `0x4965F1`) | send sink `CClientSocket::SendPacket` @ `0x49637B` (per-site opcode via `COutPacket::COutPacket(long)` @ `0x6EC9CE`) | dense |
+| v84 GMS | 13341 | `CWvsContext::OnPacket` @ `0xA51CD0` (recv switch, 0x1D–0x7F; recv entry `CClientSocket::ProcessPacket` @ `0x49B502`) | send sink `CClientSocket::SendPacket` @ `0x49B28C` (per-site opcode via `COutPacket::COutPacket(long)` @ `0x703CFA`) | partial |
+| v95 GMS | 13339 | `CWvsContext::OnPacket` @ `0x9E5830` (recv switch, 0x1D–0x8C; recv entry `CClientSocket::ProcessPacket` @ `0x4B00F0`) | send sink `CClientSocket::SendPacket` @ `0x4AF9F0` (per-site opcode via `COutPacket::COutPacket(long)` @ `0x68D090`) | dense |
+
+### Confirmation method
+- **v83 (anchor):** `ProcessPacket` decompiled — confirmed `Decode2`→`switch`, default band forwards to `CWvsContext::OnPacket`. `OnPacket` decompiled — 80+ `case` switch, every target a named `CWvsContext::On*` handler. Send sink/ctor resolved by mangled symbol and verified against multiple `SendPacket` call-site comments.
+- **v84 (mandatory):** structurally identical to v83. `ProcessPacket` @ `0x49B502` retains its mangled symbol; decompile confirms the same `Decode2`→`switch`→`CWvsContext::OnPacket` shape, with the forward band widened to **0x1D–0x7F** (v83 was 0x1D–0x7C). `CWvsContext::OnPacket` @ `0xA51CD0` decompiled — 90+ `case` switch spanning 0x1D–0x7F. Send sink and `COutPacket(long)` ctor resolved by mangled symbol and cross-checked against `SendPacket` call-site comments.
+- **v95 (tie-breaker):** all four anchors resolved by mangled symbol; `OnPacket` @ `0x9E5830` decompiled — 140-case switch (0x1D–0x8C), all targets named `CWvsContext::On*`.
+
+### OQ-7 evidence — low-confidence v84 anchors (unnamed `sub_XXXX`)
+The two v84 dispatch *frames* (`CClientSocket::ProcessPacket`, `CWvsContext::OnPacket`) are reliably named, so the anchor addresses above are high-confidence. **The risk is one level down:** inside v84's `CWvsContext::OnPacket` switch, *every* per-opcode handler target is an unnamed `sub_XXXX` — none carry the `CWvsContext::On*` symbol that v83/v95 have. Examples: opcode 0x1D → `sub_A69D8F` (v83 `OnInventoryOperation`), 0x1F → `sub_A6AE08` (v83 `OnStatChanged`), 0x3D → `sub_A6EDA8` (v83 `OnCharacterInfo`), 0x44 → `sub_A8592D` (v83 `OnBroadcastMsg`). The socket-level handlers reached from `ProcessPacket` are likewise unnamed (`sub_49B616`/0x10, `sub_49B5D5`/0x11, `sub_49B70D`/0x12, `sub_49B865`/0x13, `sub_49B8BB`/0x19). Later tasks that need to confirm a *specific* v84 opcode's packet shape must decompile the corresponding `sub_XXXX` and align it positionally against the v83 (dense) named handler — they cannot trust a v84 symbol because there is none. Additionally, the opcode-band ceiling differs per version (v83 0x7C, v84 0x7F, v95 0x8C), so v95's richer naming is a *naming* Rosetta only; opcode numbering must not be assumed 1:1 between v84 and v95.
 
 ## 1. Inbound (handler) opcode map  (FR-1.1, FR-1.3)
 | logical name | v83 opcode | v84 opcode | classification | evidence (IDB fn/addr or ref version) |

@@ -1146,3 +1146,290 @@ In-scope flows: login handshake, auth, world/channel list, character list, chara
 | libs/atlas-packet/model/character_statistics.go:229 | `Region() == "JMS"` (JMS extra stats in Decode) | false | false | yes | unchanged (correct) | no packet/behavior difference observed |
 
 ## 6. Provisioning runbook (FR-5.1) + restart sequence (OQ-6)
+
+End-to-end, ordered, repeatable steps to bring up a **GMS v84.1** tenant
+alongside the existing v83.1 tenant. A fresh operator can follow this top to
+bottom. Every step is a concrete command / API call / kubectl-or-MCP action.
+
+**Environment-specific placeholders** (substitute per cluster — these are NOT
+literals):
+- `<NS>` — the Kubernetes namespace the Atlas services run in (e.g. `atlas`,
+  `atlas-main`, or a PR overlay namespace). Find it with
+  `kubectl get pods -A | grep atlas-channel`.
+- `<TENANTS_URL>` — base URL of `atlas-tenants` (in-cluster:
+  `http://atlas-tenants.<NS>.svc.cluster.local` or via the ingress base URL).
+- `<DATA_URL>` — base URL of `atlas-data` (in-cluster:
+  `http://atlas-data.<NS>.svc.cluster.local`).
+- `<WZ_BUCKET>` — MinIO bucket holding WZ archives. Default is **`atlas-wz`**
+  (`MINIO_BUCKET_WZ`, default in
+  `services/atlas-data/atlas.com/data/storage/minio/config.go:21`). Confirm with
+  the live env of the atlas-data pod if overridden.
+- `<TENANT_ID>` — the v84 tenant UUID returned by Step 3 (not known until then).
+
+All in-cluster `curl`s assume a throwaway pod in `<NS>` (see
+`reference_atlas_data_wz_inspection`):
+`kubectl -n <NS> run curl --rm -it --image=curlimages/curl --restart=Never -- sh`.
+
+---
+
+### Step 0 — Preconditions (verify before starting)
+
+- Build/branch containing **`template_gms_84_1.json`** (Component C) is merged
+  and the image is what the cluster will deploy in Step 1.
+- The v83.1 tenant is healthy (this runbook adds v84 *alongside*; it must not
+  regress v83).
+- You can reach `atlas-tenants` and `atlas-data` (above) and have `kubectl`
+  context for `<NS>`.
+
+---
+
+### Step 1 — Deploy the build + seed the v84 template (FR-2.3, idempotent)
+
+Deploy/roll the build that ships `template_gms_84_1.json` in
+`services/atlas-configurations/seed-data/templates/`.
+
+```bash
+kubectl -n <NS> rollout restart deployment/atlas-configurations
+kubectl -n <NS> rollout status  deployment/atlas-configurations
+```
+
+On boot the **seeder** runs automatically
+(`services/atlas-configurations/atlas.com/configurations/seeder/seeder.go`):
+- It is gated by env `SEED_ENABLED` (default **true**; only `SEED_ENABLED=false`
+  disables it — `DefaultConfig()` lines 31-34) and reads templates from
+  `SEED_DATA_PATH` (default **`/seed-data`**, line 26-29).
+- `seedTemplates()` discovers **every `*.json`** under
+  `<SEED_DATA_PATH>/templates/` (`discoverFiles`, lines 142-166).
+- For each file it extracts `(region, majorVersion, minorVersion)` and
+  **skips any that already exists** (`importTemplate` → `templateExists` →
+  `GetByRegionAndVersion`, lines 201-228). The existing `(GMS,83,1)` row is
+  therefore **never mutated** and `(GMS,84,1)` is inserted exactly once. Re-runs
+  are idempotent (a second boot logs `skipped` for v84).
+
+**Verify** in the atlas-configurations logs:
+
+```bash
+kubectl -n <NS> logs deployment/atlas-configurations | grep -i 'Template imported\|Template seeding complete'
+```
+
+Expect a line `"Template imported successfully"` with
+`region=GMS majorVersion=84 minorVersion=1` (first deploy) and the summary
+`Template seeding complete imported=… skipped=…`. On a redeploy the v84 line
+moves from `imported` to a `skipped` debug log — that is correct, not an error.
+
+---
+
+### Step 2 — Ingest v84 WZ data + clear stale spawn cache (Component D)
+
+WZ archives are keyed **per version** at
+`<scope>/regions/GMS/versions/84.1/<archive>` (the resolution format in
+`services/atlas-data/atlas.com/data/data/runwz.go:19,40` and
+`.../workers/runtime.go:128`). v84 data lives at a *different* key than v83, so
+ingesting it cannot disturb v83 data.
+
+> **D1 / D2 cross-reference.** If Section 6 of this doc already carries the
+> detailed D1 (upload) / D2 (verify + cache-clear) sub-steps, follow those for
+> the byte-level archive list and verification set; the steps below are the
+> operational spine and the integration point — do not duplicate the archive
+> enumeration here.
+
+**2a. Upload the v84 WZ archives** to the WZ bucket under the version-keyed
+prefix. The canonical WZ scope is **`shared`** (version-keyed data is shared
+across all tenants of that version; `ScopeKey` sentinel handling in
+`.../workers/runtime.go:38-45`), so upload to:
+
+```
+<WZ_BUCKET>/shared/regions/GMS/versions/84.1/<archive>
+```
+
+e.g. `…/versions/84.1/Map.wz`, `…/Mob.wz`, `…/Npc.wz`, `…/Item.wz`,
+`…/Character.wz`, etc. Use the MinIO client / console for `<WZ_BUCKET>`.
+
+**2b. Trigger the ingest Job** via the atlas-data REST `JobCreator` path
+(`POST /data/process`, route registered in
+`services/atlas-data/atlas.com/data/runtime/rest/resource.go:25`; handler
+`processCreate` lines 31-74). atlas-data renders a k8s Job from the
+**`atlas-data-ingest-job-template`** ConfigMap (key `job.yaml`) — constants in
+`.../runtime/rest/jobs.go:27,31` — injecting env `MODE=ingest`, `SCOPE`,
+`REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, `TENANT_ID` (`renderJob`,
+`jobs.go:236-243`).
+
+The handler reads region/version from the **tenant context headers**
+(`tenant.MustFromContext`, resource.go:38). The atlas tenant headers are
+`TENANT_ID` / `REGION` / `MAJOR_VERSION` / `MINOR_VERSION`
+(`libs/atlas-tenant/processor.go:12-15`). To pin the ingest to `(GMS,84,1)` use
+`?scope=shared` (requires operator header `X-Atlas-Operator: 1`, resource.go:43-47):
+
+```bash
+curl -sS -X POST "<DATA_URL>/data/process?scope=shared" \
+  -H "X-Atlas-Operator: 1" \
+  -H "TENANT_ID: <TENANT_ID>" \
+  -H "REGION: GMS" \
+  -H "MAJOR_VERSION: 84" \
+  -H "MINOR_VERSION: 1"
+```
+
+(`TENANT_ID` may be the v84 tenant from Step 3 or any valid tenant; with
+`scope=shared` the data lands under the shared, version-keyed prefix regardless
+of which tenant id is on the header.) Response is `202 Accepted` with
+`{"jobName": "...", "scope": "shared", "version": "84.1"}` (resource.go:66-71).
+
+> **VERIFY AT DEPLOY:** `scope=shared` is the version-keyed path that matches the
+> `shared/regions/GMS/versions/84.1/…` upload prefix in 2a. If your cluster
+> instead ingests WZ under a per-tenant scope (`scope=tenant`, default), upload
+> to `tenants/<TENANT_ID>/regions/GMS/versions/84.1/<archive>` in 2a to match.
+> Confirm which scope your overlay's WZ layout uses before uploading.
+
+**2c. Verify Job completion:**
+
+```bash
+curl -sS "<DATA_URL>/data/process" -H "TENANT_ID: <TENANT_ID>" -H "REGION: GMS" \
+  -H "MAJOR_VERSION: 84" -H "MINOR_VERSION: 1"   # processStatus: jobs[].succeeded/active/failed
+# or, directly:
+kubectl -n <NS> get jobs -l atlas-data-ingest=true -L version,scope,region
+kubectl -n <NS> logs job/<jobName>
+```
+
+Wait until the Job shows `succeeded=1` (label `version=84.1`). Do not proceed on
+`failed>0`.
+
+**2d. Clear the stale spawn cache** (`reference_atlas_maps_spawn_cache`). atlas-maps
+caches spawn points in Redis on first init and never refreshes; without this,
+83-era cached spawns mask the freshly-ingested v84 data:
+
+```bash
+# In the atlas Redis (use the project's redis access path / libs/atlas-redis key prefix):
+#   DEL atlas:maps:spawn:*      (use the env-correct key prefix, e.g. "<env>:atlas:…" on PR overlays)
+# Then DELETE the affected map's monsters in atlas-monsters so they respawn from v84 data.
+```
+
+---
+
+### Step 3 — Create the v84 tenant (no schema change)
+
+The tenant row already supports v84 by data — **no migration / schema change is
+needed** (`tenant.RestModel` is just `region/majorVersion/minorVersion`,
+`services/atlas-tenants/atlas.com/tenants/tenant/rest.go:4-10`; the entity stores
+these as-is). Create it via **`POST /tenants`** (route
+`services/atlas-tenants/atlas.com/tenants/tenant/resource.go:155`; handler
+`CreateTenantHandler` lines 58-90, which calls `processor.CreateAndEmit(name,
+region, major, minor)`).
+
+The body is a **JSON:API** document; resource type is **`tenants`**
+(`RestModel.GetName()`, rest.go:24-26). Attributes: `name`, `region`,
+`majorVersion`, `minorVersion`.
+
+```bash
+curl -sS -X POST "<TENANTS_URL>/tenants" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "data": {
+          "type": "tenants",
+          "attributes": {
+            "name": "GMS v84.1",
+            "region": "GMS",
+            "majorVersion": 84,
+            "minorVersion": 1
+          }
+        }
+      }'
+```
+
+Response is `201 Created`; capture the returned `data.id` — that is
+**`<TENANT_ID>`** used elsewhere in this runbook. Creating the tenant emits a
+tenant config-status event (`CreateAndEmit`), which is what the login/channel
+projections consume in Step 4.
+
+> The v84 socket handler/writer bindings come from the **template seeded in
+> Step 1**, not from this call — atlas-configurations joins the new tenant to the
+> `(GMS,84,1)` template and publishes the tenant's socket config on the
+> configuration-tenant-status topic.
+
+---
+
+### Step 4 — Restart sequence so v84 socket bindings load (OQ-6)
+
+**Mechanics (repo-verified).** Both `atlas-login` and `atlas-channel` build their
+per-tenant socket listeners from a **configuration projection**:
+- A `Subscriber` consumes the service-status and tenant-status config topics
+  (`EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS` /
+  `EVENT_TOPIC_CONFIGURATION_TENANT_STATUS`) into an in-memory `State`
+  (`configuration/projection/subscriber.go`).
+- An `ApplyLoop` (250 ms tick) diffs successive snapshots and emits `OpAdd` /
+  `OpDrain` per `(tenant, world, channel)` key
+  (`projection/loop.go`, `projection/apply.go:ComputeOps`).
+- On `OpAdd` the `buildListener` `AddBody` reads **`tenantCfg.Socket.Handlers`**
+  and **`tenantCfg.Socket.Writers`** live from the projection state and opens the
+  socket (`channel/main.go:360-534`, esp. 391 + 533-534; `login/main.go:254-304`,
+  esp. 281-282). So a **fresh tenant's** handler/writer bindings are loaded
+  *when its OpAdd fires* — they are NOT baked in at pod boot.
+
+**The known trap (`bug_new_opcodes_not_in_live_tenant_config`) is about MUTATING
+an existing tenant**, not adding a new one: `ListenerConfig`
+(`apply.go:27-33`) carries only IP/Port/Region/Major/Minor — **not** the
+handler/writer lists. So editing an *existing* tenant's socket bindings produces
+no diff → no OpAdd → no reload (the existing-tenant trap). A brand-new v84 tenant
+has no prior listener, so it produces a genuine `OpAdd` and loads its bindings.
+
+**However**, the new tenant only gets an `OpAdd` once **both** config projections
+agree (`flatten` skips a tenant present in the service config but missing from the
+tenant config, and vice-versa — `apply.go:90-124`) **and** the service config
+assigns the v84 tenant worlds/channels/ports. Whether that assignment and the
+end-offset catch-up land cleanly on already-running pods is environment-timing
+dependent.
+
+**Safe, deterministic sequence — do this:**
+
+1. Create the tenant (Step 3) and confirm its config-status event published
+   (atlas-configurations emitted it; the tenant must also be assigned
+   worlds/channels/ports in the service config so a listener key exists).
+2. **Restart `atlas-login` and `atlas-channel`** so each re-runs projection
+   catch-up from the earliest offset (the Subscriber starts at
+   `kafka.FirstOffset`, subscriber.go:74,82) with the v84 tenant already present,
+   guaranteeing a clean `OpAdd`:
+
+   ```bash
+   kubectl -n <NS> rollout restart deployment/atlas-login
+   kubectl -n <NS> rollout restart deployment/atlas-channel
+   kubectl -n <NS> rollout status  deployment/atlas-login
+   kubectl -n <NS> rollout status  deployment/atlas-channel
+   ```
+
+3. **Verify** the listeners came up for the v84 tenant:
+
+   ```bash
+   kubectl -n <NS> logs deployment/atlas-login   | grep -i 'projection.caughtup\|projection.applied\|<TENANT_ID>'
+   kubectl -n <NS> logs deployment/atlas-channel | grep -i 'projection.caughtup\|projection.applied\|<TENANT_ID>'
+   ```
+
+   Expect `projection.caughtup` then `projection.applied … op=add` for the v84
+   tenant key. (MCP equivalent: `mcp__kubernetes__pods_log` on the login/channel
+   pods, or `mcp__grafana__query_loki_logs` filtering `projection.applied`.)
+
+> **VERIFY AT DEPLOY (restart necessity):** the projection is *designed* to add a
+> new tenant live (no restart) once both config topics carry it. In practice the
+> restart above is the guaranteed-correct path because it forces a clean catch-up
+> with the tenant already present and side-steps any timing gap between the two
+> config-status streams. If the live add is observed (`op=add` for the v84 key
+> appears in the logs without a restart), the restart is redundant — but keep it
+> as the documented default until live behavior is confirmed in your cluster.
+> Other services do **not** need restarts: only login/channel terminate the
+> client socket and are driven by the socket template.
+
+---
+
+### Step 5 — Connect a v84 client
+
+1. Point a **GMS v84.1** client at the login server address/port that the v84
+   tenant's service config assigned (the `IPAddress`/`Port` in the listener
+   `OpAdd` from Step 4; cross-check the login logs).
+2. Proceed through login → world/channel select → character create/select →
+   in-game. Watch for the canonical failure signature **`unhandled message op
+   0xXX` at info** in the login/channel logs (`reference_observability`) — any
+   such opcode is a first suspect against the Section 1/2 maps and the OQ-7
+   low-confidence rows.
+
+This is the entry point to the **E2 live playthrough** (forward reference): the
+basic-playthrough acceptance checklist (login, movement, chat, map change,
+channel change, party, basic combat) is exercised there; the v83 regression pass
+runs in parallel against the untouched v83 tenant.

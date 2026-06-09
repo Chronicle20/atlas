@@ -53,7 +53,8 @@ func (m AllCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Contex
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		// TODO verify this conditional is actually necessary
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// v87+ extra view-all-list block; v84..86 == v83 (off-by-one fix). delta §3.2
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			w.WriteByte(m.GameStartMode())
 			w.WriteAsciiString(m.NexonPassport())
 			w.WriteByteArray(m.MachineId())
@@ -67,7 +68,8 @@ func (m AllCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Contex
 func (m *AllCharacterListRequest) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// v87+ extra view-all-list block; v84..86 == v83 (off-by-one fix). delta §3.2
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			// TODO verify this conditional is actually necessary
 			m.gameStartMode = r.ReadByte()
 			m.nexonPassport = r.ReadAsciiString()

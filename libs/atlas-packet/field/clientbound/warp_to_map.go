@@ -53,7 +53,8 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ decode-opt header; v84..86 == v83 (off-by-one fix). delta §3.1.6
 			w.WriteShort(0) // decode opt
 		}
 		w.WriteInt(uint32(m.channelId))
@@ -93,7 +94,8 @@ func (m WarpToMap) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 func (m *WarpToMap) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ decode-opt header; v84..86 == v83 (off-by-one fix). delta §3.1.6
 			_ = r.ReadUint16() // decode opt
 		}
 		m.channelId = channel.Id(r.ReadUint32())

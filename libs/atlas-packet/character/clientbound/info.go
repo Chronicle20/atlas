@@ -113,7 +113,8 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 
 		w.WriteInt(m.medalId)
 		w.WriteShort(0) // medal quests
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ trailing chair int; v84..86 == v83 (off-by-one fix). delta §3.1.11
 			w.WriteInt(0) // chair
 		}
 		return w.Bytes()
@@ -180,7 +181,8 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 
 		m.medalId = r.ReadUint32()
 		_ = r.ReadUint16() // medal quests
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ trailing chair int; v84..86 == v83 (off-by-one fix). delta §3.1.11
 			_ = r.ReadUint32() // chair
 		}
 	}

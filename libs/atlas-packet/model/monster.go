@@ -509,7 +509,8 @@ func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 			w.WriteInt8(m.team)
 			w.WriteInt(m.effectItemId)
-			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+			if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+				// v87+ monster phase field; v84..86 == v83 (off-by-one fix). delta §3.2
 				w.WriteInt(m.phase)
 			}
 		} else {
@@ -538,7 +539,8 @@ func (m *MonsterModel) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 			m.team = r.ReadInt8()
 			m.effectItemId = r.ReadUint32()
-			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+			if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+				// v87+ monster phase field; v84..86 == v83 (off-by-one fix). delta §3.2
 				m.phase = r.ReadUint32()
 			}
 		} else {

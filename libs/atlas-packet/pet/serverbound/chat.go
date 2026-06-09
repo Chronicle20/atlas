@@ -53,7 +53,8 @@ func (m ChatRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteLong(m.petId)
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+			// v87+ pet-chat updateTime; v84..86 == v83 (off-by-one fix). delta §3.2
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteByte(m.nType)
@@ -67,7 +68,8 @@ func (m *ChatRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.petId = r.ReadUint64()
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+			// v87+ pet-chat updateTime; v84..86 == v83 (off-by-one fix). delta §3.2
 			m.updateTime = r.ReadUint32()
 		}
 		m.nType = r.ReadByte()

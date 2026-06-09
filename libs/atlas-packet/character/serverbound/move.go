@@ -53,19 +53,22 @@ func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// dr0/dr1/dr2/dr3/dwKey/crc32 are a later GMS self-move header; v84..86 == v83
+		// (off-by-one fix). delta §3.1.9. Boundary is MED-confidence (v87 vs v95 not
+		// pinned in A4); >=87 excludes v84 and preserves both v83 and v95 as today.
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			w.WriteInt(m.dr0)
 			w.WriteInt(m.dr1)
 		}
 		w.WriteByte(m.fieldKey)
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			w.WriteInt(m.dr2)
 			w.WriteInt(m.dr3)
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			w.WriteInt(m.crc)
 		}
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			w.WriteInt(m.dwKey)
 			w.WriteInt(m.crc32)
 		}
@@ -79,19 +82,21 @@ func (m *Move) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request
 	return func(r *request.Reader, options map[string]interface{}) {
 		// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: no dr0/dr1/dr2/dr3/dwKey/crc32.
 		// JMS movement is equivalent to GMS v83 layout (fieldKey only before CMovePath).
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// dr* self-move header; v84..86 == v83 (off-by-one fix). delta §3.1.9.
+		// >=87 excludes v84 and preserves v83 and v95 (MED: 87-vs-95 unpinned in A4).
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			m.dr0 = r.ReadUint32()
 			m.dr1 = r.ReadUint32()
 		}
 		m.fieldKey = r.ReadByte()
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			m.dr2 = r.ReadUint32()
 			m.dr3 = r.ReadUint32()
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			m.crc = r.ReadUint32()
 		}
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			m.dwKey = r.ReadUint32()
 			m.crc32 = r.ReadUint32()
 		}

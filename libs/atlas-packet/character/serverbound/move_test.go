@@ -27,7 +27,8 @@ func TestCharacterMove(t *testing.T) {
 			}
 			// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: no dr0/dr1/dr2/dr3/dwKey/crc32.
 			// JMS movement is GMS v83-equivalent (fieldKey only before CMovePath).
-			if v.Region == "GMS" && v.MajorVersion > 83 {
+			// dr* fields are v87+ (delta §3.1.9); v84..86 are v83-equivalent.
+			if v.Region == "GMS" && v.MajorVersion >= 87 {
 				if p.Dr0() != 100 {
 					t.Errorf("expected dr0 100, got %d", p.Dr0())
 				}

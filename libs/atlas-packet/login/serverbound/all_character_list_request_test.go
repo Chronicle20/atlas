@@ -19,8 +19,8 @@ func TestAllCharacterListRequestRoundTrip(t *testing.T) {
 			}
 			output := AllCharacterListRequest{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			// Only encoded for GMS > 83
-			if v.Region == "GMS" && v.MajorVersion > 83 {
+			// Only encoded for GMS >= 87 (v84..86 == v83, off-by-one fix, delta §3.2)
+			if v.Region == "GMS" && v.MajorVersion >= 87 {
 				if output.GameStartMode() != input.GameStartMode() {
 					t.Errorf("gameStartMode: got %v, want %v", output.GameStartMode(), input.GameStartMode())
 				}

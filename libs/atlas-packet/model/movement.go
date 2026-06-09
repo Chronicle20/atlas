@@ -125,7 +125,10 @@ func (m *NormalElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
-		if t.Region() != "GMS" || t.MajorVersion() > 83 {
+		// XOffset/YOffset are v88+ on NORMAL elements (delta §3.1.8). This decode
+		// MUST match the encode boundary (>87 == MajorAtLeast(88)) exactly, or Atlas
+		// corrupts its own movement packets. v84..87 read 5 Int16 like v83.
+		if !t.IsRegion("GMS") || t.MajorAtLeast(88) {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
@@ -214,7 +217,9 @@ func (m *NormalElement) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			w.WriteInt16(m.FhFallStart)
 		}
-		if t.Region() != "GMS" || t.MajorVersion() > 87 {
+		// XOffset/YOffset are v88+ on NORMAL elements (delta §3.1.8). Paired with the
+		// Decode boundary (MajorAtLeast(88)); the two MUST stay textually identical.
+		if !t.IsRegion("GMS") || t.MajorAtLeast(88) {
 			w.WriteInt16(m.XOffset)
 			w.WriteInt16(m.YOffset)
 		}

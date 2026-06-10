@@ -22,6 +22,11 @@ set -euo pipefail
 # try-all semantics). bootstrap.sh wants strict-fail; restore -e here.
 set -e
 
+# shellcheck source=version-ports.sh
+. "$(dirname "$0")/version-ports.sh"
+# shellcheck source=service-config.sh
+. "$(dirname "$0")/service-config.sh"
+
 require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 WZ_CANONICAL="${WZ_CANONICAL:-/opt/wz/atlas.zip}"
 BOOTSTRAP_MODE="${BOOTSTRAP_MODE:-auto}"
@@ -269,77 +274,88 @@ log info "LB IP for channel service: $LB_IP"
 # /api/configurations/services/{serviceId}. See upsert_service_config below.
 ATLAS_STEP=service-config
 
+# Read the live services config, upsert this PR's canonical tenant entry
+# (keyed by id), and write back the merged result. Preserves every other
+# tenants[] entry so co-resident versions are never drained (task-084 FR-2).
+# The tenant entry is built fresh from version-derived ports (build_login_entry
+# / build_channel_entry), so we no longer string-substitute the canonical
+# payload's tenants[].
+#   $1 = canonical template path
+#   $2 = shape: login | channel | none (tenant-agnostic, e.g. drops)
 upsert_service_config() {
-    local payload_path="$1"
-    local rewrite_ip="$2"   # "yes" to substitute tenants[].ipAddress with LB_IP
-    local svc_id
+    local payload_path="$1" shape="$2" svc_id entry
     svc_id=$(jq -r '.data.id' "$payload_path")
     if [ -z "$svc_id" ] || [ "$svc_id" = "null" ]; then
         log error "missing data.id in $payload_path"
         return 1
     fi
 
-    # Rewrite tenants[].id to per-PR TENANT_ID.
-    # For channel-service, also rewrite tenants[].ipAddress to LB_IP.
-    #
-    # Tenant-agnostic configs (drops-service) have no .data.attributes.tenants
-    # — guarded with `has("tenants")` instead of `(.tenants? // [])` because
-    # the latter is not a valid path expression on the LHS of `|=` and jq
-    # errors out with "Invalid path expression with result []".
-    local rewritten
-    if [ "$rewrite_ip" = "yes" ]; then
-        rewritten=$(jq --arg tid "$TENANT_ID" --arg ip "$LB_IP" \
-            'if .data.attributes | has("tenants") then .data.attributes.tenants |= map(.id = $tid | (if has("ipAddress") then .ipAddress = $ip else . end)) else . end' \
-            "$payload_path")
-    else
-        rewritten=$(jq --arg tid "$TENANT_ID" \
-            'if .data.attributes | has("tenants") then .data.attributes.tenants |= map(.id = $tid) else . end' \
-            "$payload_path")
-    fi
+    case "$shape" in
+        login)   entry=$(build_login_entry) ;;
+        channel) entry=$(build_channel_entry "$payload_path") ;;
+        none)    entry="" ;;
+        *)       log error "upsert_service_config: unknown shape '$shape'"; return 1 ;;
+    esac
 
     local existing
     existing=$(curl -fsS -H 'Accept: application/vnd.api+json' \
         "$ATLAS_UI_BASE/api/configurations/services/$svc_id" 2>/dev/null || true)
 
     if echo "$existing" | jq -e '.data.id' >/dev/null 2>&1; then
-        # Skip the PATCH if existing.attributes already match what we'd send.
-        # Necessary because atlas-configurations' PATCH handler panics with
-        # "reflect: reflect.Value.Set using unaddressable value" on
-        # tenant-agnostic configs (drops-service). Tracking as a separate
-        # bug — for now skip the no-op PATCH; first-time POST below
-        # populates the config and re-runs see no diff.
-        local existing_attrs rewritten_attrs
-        existing_attrs=$(echo "$existing" | jq -cS '.data.attributes')
-        rewritten_attrs=$(echo "$rewritten" | jq -cS '.data.attributes')
-        if [ "$existing_attrs" = "$rewritten_attrs" ]; then
+        # Merge this PR's tenant entry into the LIVE attributes (id-keyed),
+        # preserving every foreign tenants[] entry. Tenant-agnostic configs
+        # (shape=none) pass the live attributes through unchanged.
+        local live_attrs new_attrs
+        live_attrs=$(echo "$existing" | jq -c '.data.attributes')
+        if [ -n "$entry" ]; then
+            new_attrs=$(printf '%s' "$live_attrs" | merge_tenant_entry "$entry")
+        else
+            new_attrs="$live_attrs"
+        fi
+
+        # Skip the PATCH if the merged attributes already match what's live.
+        # Idempotency, and it dodges atlas-configurations' PATCH handler panic
+        # ("reflect: reflect.Value.Set using unaddressable value") on
+        # tenant-agnostic configs (drops-service) — a no-op PATCH there would
+        # crash the handler.
+        if [ "$(printf '%s' "$live_attrs" | jq -cS .)" = "$(printf '%s' "$new_attrs" | jq -cS .)" ]; then
             log info "service config $svc_id matches; skipping PATCH"
         else
-            log info "service config $svc_id exists; PATCH"
+            log info "service config $svc_id exists; PATCH (merged)"
+            local body
+            body=$(echo "$existing" | jq -c --argjson a "$new_attrs" '.data.attributes = $a')
             curl -fsS -X PATCH \
                 -H 'Accept: application/vnd.api+json' \
                 -H 'Content-Type: application/vnd.api+json' \
-                -d "$rewritten" \
+                -d "$body" \
                 "$ATLAS_UI_BASE/api/configurations/services/$svc_id" >/dev/null
         fi
     else
+        # First write: seed tenants[] with just this PR's entry (or post the
+        # canonical payload verbatim for tenant-agnostic configs).
         log info "service config $svc_id absent; POST"
+        local body
+        if [ -n "$entry" ]; then
+            body=$(jq -c --argjson entry "$entry" '.data.attributes.tenants = [$entry]' "$payload_path")
+        else
+            body=$(cat "$payload_path")
+        fi
         curl -fsS -X POST \
             -H 'Accept: application/vnd.api+json' \
             -H 'Content-Type: application/vnd.api+json' \
-            -d "$rewritten" \
+            -d "$body" \
             "$ATLAS_UI_BASE/api/configurations/services" >/dev/null
     fi
 }
 
-# login-service: rewrite tenants[].id only (no ipAddress)
-upsert_service_config /atlas/canonical/services/login-service.json no
+# login-service: version-derived login port, id-keyed merge.
+upsert_service_config /atlas/canonical/services/login-service.json login
 
-# channel-service: rewrite tenants[].id AND tenants[].ipAddress = LB_IP
-upsert_service_config /atlas/canonical/services/channel-service.json yes
+# channel-service: version-derived channel port + LB_IP, id-keyed merge.
+upsert_service_config /atlas/canonical/services/channel-service.json channel
 
-# drops-service: tenant-agnostic (no tenants array). The jq map is a no-op
-# in that case because (.tenants? // []) yields an empty array.
-upsert_service_config /atlas/canonical/services/drops-service.json no
+# drops-service: tenant-agnostic (no tenants array) — pass through unchanged.
+upsert_service_config /atlas/canonical/services/drops-service.json none
 
 # Rolling restart for services that still read SERVICE_ID synchronously at
 # startup. atlas-login and atlas-channel were removed by task-032 — they

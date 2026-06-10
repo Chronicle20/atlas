@@ -1,0 +1,34 @@
+{
+  "service": "task-083-gms-v84-tenant-support",
+  "path": "diff 6a8b383d9..fb6d44f0f",
+  "date": "2026-06-09",
+  "build": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "modules": [
+    { "name": "libs/atlas-tenant", "build": "pass", "test": "pass", "vet": "pass" },
+    { "name": "libs/atlas-packet", "build": "pass", "test": "pass", "vet": "pass" },
+    { "name": "services/atlas-character/atlas.com/character", "build": "pass", "test": "pass", "vet": "pass" },
+    { "name": "services/atlas-account/atlas.com/account", "build": "pass", "test": "pass", "vet": "pass" },
+    { "name": "services/atlas-configurations/atlas.com/configurations", "build": "pass", "test": "pass", "vet": "n/a" }
+  ],
+  "focusAreas": [
+    { "id": "F1-DOM21-shared-types", "status": "pass", "evidence": "libs/atlas-tenant/tenant.go:88-105; no version predicate in libs/atlas-constants; all production call sites migrated (grep for hand-rolled >83/==83/<=83 returns zero)" },
+    { "id": "F2-immutability-receivers", "status": "pass", "evidence": "pointer receivers consistent with existing getters; addressable call sites; clean build/vet" },
+    { "id": "F3-behavior-preservation", "status": "pass", "evidence": ">83->MajorAtLeast(87) and <=83->!MajorAtLeast(87) algebraically identical for v{83,87,95}, flip only v84-86; version_bounds_test.go asserts real bytes/lengths" },
+    { "id": "F4-encode-decode-pairing-movement", "status": "pass", "evidence": "model/movement.go Decode and Encode both !IsRegion(GMS)||MajorAtLeast(88); was mismatched (decode >83 / encode >87) before; round-trip test model/version_bounds_test.go:41-52" },
+    { "id": "F5-test-quality", "status": "pass", "evidence": "tenant_test.go:37-40, processor_bounds_test.go (both), test/context.go:27 use tenant.Create; no *_testhelpers.go; table-driven" }
+  ],
+  "checks": [
+    { "id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "tenant_test.go, processor_bounds_test.go, seeder_test.go" },
+    { "id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "atlas-tenant/tenant.go:88-105; constants has none; call sites migrated" },
+    { "id": "DOM-24", "name": "Kafka producer stubbed in emitting tests", "status": "n/a", "evidence": "no in-scope test exercises an emit path" },
+    { "id": "SEC-04", "name": "No hardcoded secrets", "status": "pass", "evidence": "only predicate helpers + version literals changed" }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "Minor: appliesAutoAP comment says '(..94 era)' vs plan '(28..94 era)' — cosmetic",
+    "Minor: auto-AP widening changes GMS v87 false->true (documented intent, plan B3); interior 28..82/85..93 of MajorAtMost(94) range untested (boundary cases 83/94/95 covered)"
+  ]
+}

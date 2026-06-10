@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Atlas declared version set",
+  "description": "Versions a cluster exposes on the login/channel LoadBalancers. Consumed by tools/gen-lb-ports.sh.",
+  "type": "object",
+  "required": ["versions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "description": { "type": "string" },
+    "versions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["region", "majorVersion", "minorVersion"],
+        "additionalProperties": false,
+        "properties": {
+          "region": { "type": "string", "minLength": 1 },
+          "majorVersion": { "type": "integer", "minimum": 1 },
+          "minorVersion": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

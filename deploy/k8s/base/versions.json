@@ -1,0 +1,13 @@
+{
+  "$schema": "./versions.schema.json",
+  "description": "Game versions this environment exposes on the login/channel LoadBalancers. Edit this list + run tools/gen-lb-ports.sh to (re)generate the port blocks in atlas-login.yaml/atlas-channel.yaml.",
+  "versions": [
+    { "region": "gms", "majorVersion": 12,  "minorVersion": 1 },
+    { "region": "gms", "majorVersion": 83,  "minorVersion": 1 },
+    { "region": "gms", "majorVersion": 84,  "minorVersion": 1 },
+    { "region": "gms", "majorVersion": 87,  "minorVersion": 1 },
+    { "region": "gms", "majorVersion": 92,  "minorVersion": 1 },
+    { "region": "gms", "majorVersion": 95,  "minorVersion": 1 },
+    { "region": "jms", "majorVersion": 185, "minorVersion": 1 }
+  ]
+}

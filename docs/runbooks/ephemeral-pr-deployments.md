@@ -582,7 +582,7 @@ of merges matters: cluster-infra changes land BEFORE the consuming
 atlas PR, otherwise the next PostDelete Job wedges with
 `CreateContainerConfigError: configmap "atlas-pr-cleanup-env" not found`.
 
-## Adding (or removing) a game version
+## §9.14 Adding (or removing) a game version
 
 A version's login/channel ports are derived from its `majorVersion`
 (`loginPort = major × 100`, `channelPort = loginPort + 1`) by one shared

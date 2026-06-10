@@ -18,6 +18,11 @@ async function decodeErrorMessage(response: Response, fallback: string): Promise
   return fallback;
 }
 
+// atlas-data registers these endpoints with RegisterInputHandler, which decodes
+// the body via api2go's JSON:API unmarshaller. Bodies MUST be wrapped in a
+// { data: { type, attributes } } envelope whose `type` matches the Go model's
+// GetName() ("baselineRestores" / "baselinePublishes"); a bare attributes object
+// is rejected with 400 "Source JSON is empty and has no attributes payload object".
 export class BaselineService {
   async restore(tenant: Tenant, body: BaselineRestoreInput): Promise<void> {
     const headers = tenantHeaders(tenant);
@@ -25,7 +30,12 @@ export class BaselineService {
     const r = await fetch('/api/data/baseline/restore', {
       method: 'POST',
       headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        data: {
+          type: 'baselineRestores',
+          attributes: body,
+        },
+      }),
     });
     if (!r.ok) {
       const message = await decodeErrorMessage(r, `restore failed: ${r.status}`);
@@ -45,7 +55,12 @@ export class BaselineService {
     const r = await fetch('/api/data/baseline/publish', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ region, majorVersion, minorVersion }),
+      body: JSON.stringify({
+        data: {
+          type: 'baselinePublishes',
+          attributes: { region, majorVersion, minorVersion },
+        },
+      }),
     });
     if (!r.ok) {
       const message = await decodeErrorMessage(r, `publish failed: ${r.status}`);

@@ -47,10 +47,15 @@ describe('baselineService', () => {
       expect(headers.get('X-Atlas-Operator')).toBeNull();
       expect(init.body).toBe(
         JSON.stringify({
-          region: 'GMS',
-          majorVersion: 83,
-          minorVersion: 1,
-          tenantId: mockTenant.id,
+          data: {
+            type: 'baselineRestores',
+            attributes: {
+              region: 'GMS',
+              majorVersion: 83,
+              minorVersion: 1,
+              tenantId: mockTenant.id,
+            },
+          },
         }),
       );
     });
@@ -102,7 +107,14 @@ describe('baselineService', () => {
       const headers = init.headers as Headers;
       expect(headers.get('X-Atlas-Operator')).toBe('1');
       expect(headers.get('TENANT_ID')).toBe(mockTenant.id);
-      expect(init.body).toBe(JSON.stringify({ region: 'GMS', majorVersion: 83, minorVersion: 1 }));
+      expect(init.body).toBe(
+        JSON.stringify({
+          data: {
+            type: 'baselinePublishes',
+            attributes: { region: 'GMS', majorVersion: 83, minorVersion: 1 },
+          },
+        }),
+      );
     });
 
     it('throws response.error body on failure', async () => {

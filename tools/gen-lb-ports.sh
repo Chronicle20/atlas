@@ -78,18 +78,22 @@ replace_block() {
 regen_file() {
     local file="$1" svc="$2" cp sp tmp
     cp="$(mktemp)"; sp="$(mktemp)"; tmp="$(mktemp)"
+    # Clean up the temp files on any exit path (incl. a mid-function failure
+    # under `set -e`), not only the happy path.
+    trap 'rm -f "$cp" "$sp" "$tmp"' RETURN
     render_container_ports "$svc" > "$cp"
     render_service_ports   "$svc" > "$sp"
     replace_block "$file" container-ports "$cp" > "$tmp"
     replace_block "$tmp"  service-ports   "$sp"
-    rm -f "$cp" "$sp" "$tmp"
 }
 
 process() {
     local file="$1" svc="$2" gen
     [ -f "$file" ] || { echo "gen-lb-ports: missing $file" >&2; exit 1; }
     grep -q "BEGIN generated:container-ports" "$file" || { echo "gen-lb-ports: $file missing container-ports marker" >&2; exit 1; }
+    grep -q "END generated:container-ports"   "$file" || { echo "gen-lb-ports: $file missing container-ports END marker" >&2; exit 1; }
     grep -q "BEGIN generated:service-ports"   "$file" || { echo "gen-lb-ports: $file missing service-ports marker" >&2; exit 1; }
+    grep -q "END generated:service-ports"     "$file" || { echo "gen-lb-ports: $file missing service-ports END marker" >&2; exit 1; }
     gen="$(regen_file "$file" "$svc")"
     if [ "$CHECK" = 1 ]; then
         if ! diff -u "$file" <(printf '%s\n' "$gen"); then

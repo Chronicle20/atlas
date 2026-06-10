@@ -123,6 +123,35 @@ set -e
 assert_eq "missing markers exit 1" "1" "$rc"
 assert_contains "missing markers message" "marker" "$out"
 
+# --- Test 5b: BEGIN marker present but its END marker missing is rejected ---
+# Silent data-loss path: replace_block sets skip=1 at BEGIN and only clears it
+# at END; a missing END drops every line to EOF. Must be caught explicitly.
+cat > "$tmp/deploy/k8s/base/versions.json" <<'JSON'
+{ "versions": [ { "region": "gms", "majorVersion": 83, "minorVersion": 1 } ] }
+JSON
+# login YAML with the container-ports END marker deleted (service-ports intact).
+cat > "$tmp/deploy/k8s/base/atlas-login.yaml" <<'YAML'
+        ports:
+        # BEGIN generated:container-ports (tools/gen-lb-ports.sh)
+        - containerPort: 9999
+        - containerPort: 8080
+---
+  ports:
+  # BEGIN generated:service-ports (tools/gen-lb-ports.sh)
+  - port: 9999
+    targetPort: 9999
+    protocol: TCP
+    name: atlas-login-stale
+  # END generated:service-ports
+  loadBalancerIP: 1.2.3.4
+YAML
+write_channel_yaml
+set +e
+out="$( cd "$tmp" && ./tools/gen-lb-ports.sh 2>&1 )"; rc=$?
+set -e
+assert_eq "missing END marker exit 1" "1" "$rc"
+assert_contains "missing END marker message" "marker" "$out"
+
 # --- Test 6: adding a version produces the expected new entry ---
 write_login_yaml; write_channel_yaml
 cat > "$tmp/deploy/k8s/base/versions.json" <<'JSON'

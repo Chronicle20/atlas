@@ -215,6 +215,9 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 			w.WriteByte(m.level)
 			w.WriteInt(m.experience)
 			w.WriteInt(m.hammersApplied)
+			if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+				w.WriteInt(0) // GW_ItemSlotEquip::RawDecode +224: extra equip int present GMS v84+ (absent v83; v84 client RawDecode is IDA-verified). delta §3.1
+			}
 
 			if t.Region() == "JMS" {
 				w.WriteByte(0)
@@ -423,6 +426,9 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 				m.level = r.ReadByte()
 				m.experience = r.ReadUint32()
 				m.hammersApplied = r.ReadUint32()
+				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+					_ = r.ReadUint32() // GW_ItemSlotEquip::RawDecode +224: extra equip int, GMS v84+ (mirror of Encode)
+				}
 
 				if t.Region() == "JMS" {
 					_ = r.ReadByte()

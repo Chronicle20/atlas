@@ -60,3 +60,29 @@ func TestAuthSuccessRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestAuthSuccessClientKeyBoundary pins the 8-byte client key
+// (CWvsContext::m_aClientKey[8]). The GMS client reads it unconditionally on
+// OnCheckPasswordResult's success path, gated >83 in the client binary —
+// present in v84/v87/v95, absent in v83. atlas previously gated the write
+// >=87, so a v84/85/86 client underran the packet -> CInPacket throws
+// ZException(38) -> silent disconnect before the world list renders. The key
+// must therefore be present for GMS v84+. v83 stays keyless; v87/v95 unchanged.
+// (Found via the live v84 client; the server self-round-trip could not catch it
+// because Decode mirrored the same wrong gate.)
+func TestAuthSuccessClientKeyBoundary(t *testing.T) {
+	enc := func(major uint16) []byte {
+		ctx := pt.CreateContext("GMS", major, 1)
+		in := AuthSuccess{accountId: 1001, name: "TestUser", gender: 1, usesPin: true, pic: "123456"}
+		l, _ := testlog.NewNullLogger()
+		return in.Encode(l, ctx)(nil)
+	}
+	v83 := enc(83)
+	// v84..86 (the previously-broken gap) and v87 all carry the 8-byte key, so
+	// each is exactly 8 bytes longer than the keyless v83 encoding.
+	for _, major := range []uint16{84, 85, 86, 87} {
+		if got := enc(major); len(got) != len(v83)+8 {
+			t.Errorf("AuthSuccess GMS v%d encoded len %d; want v83 len %d + 8 (m_aClientKey[8])", major, len(got), len(v83))
+		}
+	}
+}

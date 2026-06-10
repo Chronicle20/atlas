@@ -19,7 +19,10 @@ spec:
         ports:
         - containerPort: 1201
         - containerPort: 8301
+        - containerPort: 8401
         - containerPort: 8701
+        - containerPort: 9201
+        - containerPort: 9501
         - containerPort: 18501
         - containerPort: 8080
         envFrom:
@@ -54,10 +57,22 @@ spec:
     targetPort: 8301
     protocol: TCP
     name: atlas-channel-gms-83
+  - port: 8401
+    targetPort: 8401
+    protocol: TCP
+    name: atlas-channel-gms-84
   - port: 8701
     targetPort: 8701
     protocol: TCP
     name: atlas-channel-gms-87
+  - port: 9201
+    targetPort: 9201
+    protocol: TCP
+    name: atlas-channel-gms-92
+  - port: 9501
+    targetPort: 9501
+    protocol: TCP
+    name: atlas-channel-gms-95
   - port: 18501
     targetPort: 18501
     protocol: TCP

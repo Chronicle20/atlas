@@ -1347,6 +1347,34 @@ projections consume in Step 4.
 
 ---
 
+### Step 3.5 — Expose the v84 socket port on the load balancer (LB)
+
+A new version needs its TCP port registered in **two places that MUST agree**:
+
+1. **LB exposure** — `deploy/k8s/base/atlas-login.yaml` and `atlas-channel.yaml`
+   (Deployment `containerPort` + the `LoadBalancer` `Service.ports`). One port per
+   version by the convention `<major>×100` for login and `+1` for channel:
+   gms-83 → 8300/8301, gms-87 → 8700/8701, **gms-84 → 8400/8401**. This PR adds the
+   gms-84 entries (and backfills the missing gms-92/gms-95 *channel* ports
+   9201/9501 — login already had 9200/9500, so those clients could log in but never
+   reach a channel). Without the `Service.ports` entry an external client cannot
+   reach the new socket even though the pod binds it.
+2. **Bind side** — the login/channel `services` configuration in atlas-tenants
+   (`Tenants:[{id, port}]` for login; nested `worlds[].channels[].port` for
+   channel) must assign the v84 tenant the **same** port the LB exposes (login
+   8400, channel 8401). This is what makes the service actually listen (`cfg.Port`
+   → `socket.CreateSocketService(...)`, `login/main.go:304`). The projection
+   `OpAdd` in Step 4 only fires once this assignment exists.
+
+> **Ephemeral (single-version) note:** `atlas-pr-bootstrap` is single-tenant — it
+> creates one canonical tenant from `REGION/MAJOR_VERSION/MINOR_VERSION` and reuses
+> the port in `canonical/services/{login,channel}-service.json` (8300/8301)
+> regardless of version (the bootstrap rewrites `tenants[].id` to the env tenant
+> but keeps the JSON port). So a single-version v84 ephemeral binds 8300/8301 and
+> reaches via the existing LB ports — no manifest change needed there. The
+> 8400/8401 ports matter for the **multi-version** persistent cluster where v84
+> coexists with v83/87/92/95 on distinct ports.
+
 ### Step 4 — Restart sequence so v84 socket bindings load (OQ-6)
 
 **Mechanics (repo-verified).** Both `atlas-login` and `atlas-channel` build their

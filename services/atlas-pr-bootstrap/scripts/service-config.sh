@@ -12,6 +12,7 @@ if [ -f "$_sc_dir/version-ports.sh" ]; then
 else
     . /atlas/version-ports.sh
 fi
+unset _sc_dir
 
 # Echo the login tenant entry {id, port} with the version-derived login port.
 build_login_entry() {
@@ -36,6 +37,7 @@ build_channel_entry() {
 # Upsert $1 (an entry JSON) into the tenants[] of the attributes JSON read on
 # stdin, keyed by .id, preserving order and foreign entries. Tenant-agnostic
 # attributes (no "tenants" key) pass through unchanged. Echoes merged attributes.
+# The entry MUST have an .id (callers build it with one); an id-less entry is not supported.
 merge_tenant_entry() {
     local entry="$1"
     jq -c --argjson entry "$entry" '

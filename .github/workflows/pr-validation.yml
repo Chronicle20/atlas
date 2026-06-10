@@ -98,6 +98,24 @@ jobs:
         run: ./tools/redis-key-guard.sh
 
   # ============================================
+  # LB Port Drift Guard
+  # Regenerates the per-version login/channel LB
+  # socket port manifests from versions.json and
+  # fails if the checked-in manifests have drifted
+  # (task-084). Pure shell + jq, no Go setup.
+  # ============================================
+  gen-lb-ports:
+    name: LB Port Drift Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: LB port manifests match versions.json
+        run: ./tools/gen-lb-ports.sh --check
+
+  # ============================================
   # Test Go Libraries
   # ============================================
   test-go-libraries:
@@ -459,7 +477,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, gen-lb-ports]
     if: always()
     runs-on: ubuntu-latest
 
@@ -476,6 +494,7 @@ jobs:
           DOCKER_RESULT="${{ needs.build-docker.result }}"
           OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
           GUARD_RESULT="${{ needs.redis-key-guard.result }}"
+          LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
@@ -485,11 +504,12 @@ jobs:
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis Key Guard | $GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

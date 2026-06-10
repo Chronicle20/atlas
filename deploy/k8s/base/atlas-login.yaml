@@ -17,12 +17,14 @@ spec:
       - name: atlas-login
         image: ghcr.io/chronicle20/atlas-login/atlas-login:latest
         ports:
+        # BEGIN generated:container-ports (tools/gen-lb-ports.sh — edit deploy/k8s/base/versions.json)
         - containerPort: 1200
         - containerPort: 8300
         - containerPort: 8700
         - containerPort: 9200
         - containerPort: 9500
         - containerPort: 18500
+        # END generated:container-ports
         - containerPort: 8080
         envFrom:
         - configMapRef:
@@ -48,6 +50,7 @@ spec:
   selector:
     app: atlas-login
   ports:
+  # BEGIN generated:service-ports (tools/gen-lb-ports.sh — edit deploy/k8s/base/versions.json)
   - port: 1200 
     targetPort: 1200
     protocol: TCP
@@ -72,4 +75,5 @@ spec:
     targetPort: 18500
     protocol: TCP
     name: atlas-login-jms-185
+  # END generated:service-ports
   loadBalancerIP: 192.168.23.231

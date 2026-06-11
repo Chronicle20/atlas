@@ -486,12 +486,12 @@
         "handler": "CharacterMultiChatHandle"
       },
       {
-        "opCode": "0x78",
+        "opCode": "0x7A",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatWhisperHandle"
       },
       {
-        "opCode": "0x7A",
+        "opCode": "0x7C",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle",
         "options": {
@@ -505,7 +505,7 @@
         }
       },
       {
-        "opCode": "0x7B",
+        "opCode": "0x7D",
         "validator": "LoggedInValidator",
         "handler": "CharacterInteractionHandle",
         "options": {
@@ -560,7 +560,7 @@
         }
       },
       {
-        "opCode": "0x7C",
+        "opCode": "0x7E",
         "validator": "LoggedInValidator",
         "handler": "PartyOperationHandle",
         "options": {
@@ -575,12 +575,12 @@
         }
       },
       {
-        "opCode": "0x7D",
+        "opCode": "0x7F",
         "validator": "LoggedInValidator",
         "handler": "PartyInviteRejectHandle"
       },
       {
-        "opCode": "0x7E",
+        "opCode": "0x82",
         "validator": "LoggedInValidator",
         "handler": "GuildOperationHandle",
         "options": {
@@ -599,12 +599,12 @@
         }
       },
       {
-        "opCode": "0x7F",
+        "opCode": "0x83",
         "validator": "LoggedInValidator",
         "handler": "GuildInviteRejectHandle"
       },
       {
-        "opCode": "0x82",
+        "opCode": "0x86",
         "validator": "LoggedInValidator",
         "handler": "BuddyOperationHandle",
         "options": {
@@ -617,7 +617,7 @@
         }
       },
       {
-        "opCode": "0x83",
+        "opCode": "0x87",
         "validator": "LoggedInValidator",
         "handler": "NoteOperationHandle",
         "options": {
@@ -629,7 +629,7 @@
         }
       },
       {
-        "opCode": "0x87",
+        "opCode": "0x8B",
         "validator": "LoggedInValidator",
         "handler": "CharacterKeyMapChangeHandle"
       },

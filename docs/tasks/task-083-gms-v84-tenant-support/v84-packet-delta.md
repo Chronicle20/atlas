@@ -394,8 +394,8 @@ v84 symbol). Confidence grading:
 | StorageOperation | 0x135 | 0x13C | **SHIFTED** | v83 `CTrunkDlg::OnPacket` (CField case 0x135); v84 CField inline 0x13C `sub_7EEC1A`(=storage/trunk redirect); +7 (upper-band trend; exact stage case not re-decompiled); **low (OQ-7)** |
 | MessengerOperation | 0x139 | 0x140 | **SHIFTED** | v83 `CUIMessenger::OnPacket` (CField case 0x139); v84 CField inline `sub_87CBD8`(case 0x140 region); +7 (upper-band trend); **low (OQ-7)** |
 | CharacterInteraction | 0x13A | 0x141 | **SHIFTED** | v83 `CMiniRoomBaseDlg::OnPacketBase` (CField case 0x13A); v84 CField case 0x141 `sub_673DB5`; +7 (upper-band trend); **low (OQ-7)** |
-| CashShopCashQueryResult | 0x144 | 0x14B | **SHIFTED** | v83 cash-shop stage (CCashShop, not CField; 0x144); v84 +7 by upper-band trend; cash-shop stage dispatcher not decompiled; **low (OQ-7)** |
-| CashShopOperation | 0x145 | 0x14C | **SHIFTED** | v83 cash-shop stage (0x145); v84 +7 by upper-band trend; **low (OQ-7)** |
+| CashShopCashQueryResult | 0x144 | 0x14B | **SHIFTED (+7)** | VERIFIED: v83 `CCashShop::OnPacket`@0x478e2b case 0x144=`OnQueryCashResult`; v84 `CCashShop::OnPacket`@0x47BF59 (switch base 0x14A) case 0x14B=`OnQueryCashResult` (decodes 3 ints = wallet Credit/Points/Prepaid). **high (decompiled)** |
+| CashShopOperation | 0x145 | 0x14C | **SHIFTED (+7)** | VERIFIED: v83 `CCashShop::OnPacket` case 0x145=`OnCashItemResult`; v84 `CCashShop::OnPacket`@0x47BF59 case 0x14C=`OnCashItemResult`. The whole CCashShop recv band shifted uniformly +7 (0x143→0x14A … 0x14D→0x154). **high (decompiled)** |
 | CharacterKeyMap | 0x14F | 0x158 | **SHIFTED** | v83 `CFuncKeyMappedMan::OnInit`@0x58DDB4 (FuncKey case 0x14F); v84 CField routes 344–346=0x158–0x15A→`CFuncKeyMappedMan`; 0x14F→0x158; FuncKey band +9; **high** |
 | CharacterKeyMapAutoHp | 0x150 | 0x159 | **SHIFTED** | v83 `OnPetConsumeItemInit` (FuncKey 0x150); v84 FuncKey case 0x159; +9; **high** |
 | CharacterKeyMapAutoMp | 0x151 | 0x15A | **SHIFTED** | v83 `OnPetConsumeMPItemInit` (FuncKey 0x151); v84 FuncKey case 0x15A; +9; **high** |
@@ -436,11 +436,18 @@ ServerListEntry/End). Classification tally:
 - **ADDED: 0** in-scope (v84 0x7D–0x7F exist but no in-scope flow needs them).
 - **REMOVED: 0** — every v83 template writer has a live v84 analog.
 
-**Unresolved / explicitly low-confidence (OQ-7):** 5 upper-dialog/cash-shop rows
+**Cash-shop writers — VERIFIED (post-audit):** CashShopCashQueryResult 0x14B and
+CashShopOperation 0x14C are decompile-confirmed against v84 `CCashShop::OnPacket`
+@0x47BF59 (switch base 0x14A; whole CCashShop recv band shifted uniformly +7 from
+v83 0x143). CashShopOpen 0x82 confirmed via `CStage::OnPacket`@0x79894b case 0x82.
+
+**Still explicitly low-confidence (OQ-7):** 3 upper-dialog rows
 (StorageOperation 0x135→0x13C, MessengerOperation 0x139→0x140,
-CharacterInteraction 0x13A→0x141, CashShopCashQueryResult 0x144→0x14B,
-CashShopOperation 0x145→0x14C) carry the **+7 upper-band trend** but their exact
-v84 stage-dispatcher case was not independently decompiled — flagged low. None is
+CharacterInteraction 0x13A→0x141) carry the **+7 upper-band trend** but their exact
+v84 dialog-dispatcher case was not independently decompiled (these dialogs —
+CTrunkDlg/CMessenger/CMiniRoomBaseDlg — route per-class, not via a single switch
+in the 0x13x band, so the fast OnPacket method did not locate them). Flagged low;
+verify if storage/messenger/trade responses misbehave in playtest. None is
 in the in-scope flow set; all in-scope writers (login handshake, world/channel
 list, char list/select, enter-channel→SetField, map spawn, movement, chat) are
 **high** confidence with v84 case labels read and bodies matched. No opcode is a

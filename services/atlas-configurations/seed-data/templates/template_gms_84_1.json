@@ -1440,7 +1440,7 @@
         }
       },
       {
-        "opCode": "0x40",
+        "opCode": "0x41",
         "writer": "BuddyOperation",
         "options": {
           "operations": {
@@ -1464,7 +1464,7 @@
         }
       },
       {
-        "opCode": "0x41",
+        "opCode": "0x43",
         "writer": "GuildOperation",
         "options": {
           "operations": {
@@ -1538,19 +1538,19 @@
         "writer": "PetCashFoodResult"
       },
       {
-        "opCode": "0x53",
+        "opCode": "0x55",
         "writer": "MonsterBookSetCard"
       },
       {
-        "opCode": "0x54",
+        "opCode": "0x56",
         "writer": "MonsterBookSetCover"
       },
       {
-        "opCode": "0x7A",
+        "opCode": "0x7D",
         "writer": "ScriptProgress"
       },
       {
-        "opCode": "0x7C",
+        "opCode": "0x7F",
         "writer": "CharacterSkillMacro"
       },
       {

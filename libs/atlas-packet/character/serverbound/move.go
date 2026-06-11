@@ -53,22 +53,27 @@ func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		// dr0/dr1/dr2/dr3/dwKey/crc32 are a later GMS self-move header; v84..86 == v83
-		// (off-by-one fix). delta §3.1.9. Boundary is MED-confidence (v87 vs v95 not
-		// pinned in A4); >=87 excludes v84 and preserves both v83 and v95 as today.
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		// dr0/dr1/dr2/dr3/dwKey/crc32 are the GMS self-move anti-cheat header.
+		// CONFIRMED v84+ against the v84 client: both self-move senders
+		// CVecCtrlUser::EndUpdateActive (sub_A1334E) and the keyboard/teleport
+		// sender (sub_9843EA) write Encode4(dr0) Encode4(dr1) Encode1(fieldKey)
+		// Encode4(dr2) Encode4(dr3) Encode4(crc) Encode4(dwKey) Encode4(crc32)
+		// before CMovePath::Flush. v83 (CVecCtrlUser::EndUpdateActive @0x9cb992)
+		// writes only fieldKey+crc. So the boundary is v84, not v87 — the prior
+		// >=87 gate skipped 24 header bytes on v84 and desynced every move packet.
+		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 			w.WriteInt(m.dr0)
 			w.WriteInt(m.dr1)
 		}
 		w.WriteByte(m.fieldKey)
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 			w.WriteInt(m.dr2)
 			w.WriteInt(m.dr3)
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			w.WriteInt(m.crc)
 		}
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 			w.WriteInt(m.dwKey)
 			w.WriteInt(m.crc32)
 		}
@@ -80,23 +85,23 @@ func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 func (m *Move) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: no dr0/dr1/dr2/dr3/dwKey/crc32.
-		// JMS movement is equivalent to GMS v83 layout (fieldKey only before CMovePath).
-		// dr* self-move header; v84..86 == v83 (off-by-one fix). delta §3.1.9.
-		// >=87 excludes v84 and preserves v83 and v95 (MED: 87-vs-95 unpinned in A4).
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		// Mirror of Encode: dr0/dr1/dr2/dr3/dwKey/crc32 are CONFIRMED v84+ against the
+		// v84 client self-move senders (sub_A1334E, sub_9843EA). v83 sends only
+		// fieldKey+crc. JMS (CVecCtrlUser::EndUpdateActive@0xaaa076) has no dr fields,
+		// so it stays on the v83 layout. Must stay textually identical to Encode.
+		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 			m.dr0 = r.ReadUint32()
 			m.dr1 = r.ReadUint32()
 		}
 		m.fieldKey = r.ReadByte()
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 			m.dr2 = r.ReadUint32()
 			m.dr3 = r.ReadUint32()
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			m.crc = r.ReadUint32()
 		}
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 			m.dwKey = r.ReadUint32()
 			m.crc32 = r.ReadUint32()
 		}

@@ -242,6 +242,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -741,6 +745,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -867,6 +875,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -973,6 +985,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -1710,6 +1726,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -1822,6 +1842,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -2107,6 +2131,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }
@@ -2235,6 +2263,10 @@
             {
               "Name": "UNKNOWN",
               "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
             }
           ]
         }

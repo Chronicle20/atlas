@@ -25,10 +25,10 @@ func TestCharacterMove(t *testing.T) {
 			if p.FieldKey() != 42 {
 				t.Errorf("expected fieldKey 42, got %d", p.FieldKey())
 			}
-			// IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: no dr0/dr1/dr2/dr3/dwKey/crc32.
-			// JMS movement is GMS v83-equivalent (fieldKey only before CMovePath).
-			// dr* fields are v87+ (delta §3.1.9); v84..86 are v83-equivalent.
-			if v.Region == "GMS" && v.MajorVersion >= 87 {
+			// dr0/dr1/dr2/dr3/dwKey/crc32 are CONFIRMED v84+ against the v84 client
+			// self-move senders (sub_A1334E / sub_9843EA write the full dr-block;
+			// v83 writes only fieldKey+crc). JMS has no dr fields (v83-equivalent).
+			if v.Region == "GMS" && v.MajorVersion >= 84 {
 				if p.Dr0() != 100 {
 					t.Errorf("expected dr0 100, got %d", p.Dr0())
 				}

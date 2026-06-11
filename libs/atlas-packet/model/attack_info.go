@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -69,11 +70,126 @@ type AttackInfo struct {
 	bulletY              uint16
 }
 
+// Encode is the symmetric mirror of Decode: it serializes the client->server
+// attack request. Every version gate here MUST match Decode field-for-field
+// (the dr-block is GMS v84+, the magic 2dr block / skillLevel / anotherCrc /
+// per-type ints are GMS v95+). The AttackInfo round-trip test relies on this
+// symmetry — any drift surfaces as unconsumed bytes for the affected version.
+func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		w.WriteByte(m.fieldKey)
+		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+)
+			w.WriteInt(m.dr0)
+			w.WriteInt(m.dr1)
+		}
+		w.WriteByte((m.hits & 0xF) | byte((m.damage&0xF)<<4))
+		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+)
+			w.WriteInt(m.dr2)
+			w.WriteInt(m.dr3)
+		}
+		w.WriteInt(m.skillId)
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteByte(m.skillLevel) // nCombatOrders
+		}
+		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // randomDr/crc32 complete the primary dr-block (v84+)
+			w.WriteInt(m.randomDr)
+			w.WriteInt(m.crc32)
+		}
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			if m.attackType == AttackTypeMagic {
+				// Secondary dr-block for magic attacks (v95+; absent in v84 magic).
+				w.WriteInt(0) //2dr0
+				w.WriteInt(0) //2dr1
+				w.WriteInt(0) //2dr2
+				w.WriteInt(0) //2dr3
+				w.WriteInt(0) //2rnd
+				w.WriteInt(0) //2crc
+			}
+		}
+		w.WriteInt(m.skillDataCrc)
+		w.WriteInt(m.skillDataCrc2)
+		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
+			w.WriteInt(m.keyDown)
+		} else if skill.NeedsCharging(skill.Id(m.skillId)) {
+			w.WriteInt(m.keyDown)
+		}
+		w.WriteByte(m.mask1)
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			if m.attackType == AttackTypeRanged {
+				w.WriteBool(m.javlin)
+			}
+		}
+		w.WriteShort(m.mask2)
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteInt(m.anotherCrc)
+		}
+		w.WriteByte(m.attackActionType)
+		w.WriteByte(m.attackSpeed)
+		w.WriteInt(m.attackTime)
+
+		if m.attackType == AttackTypeMelee {
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				w.WriteInt(0) // battle mage related
+			}
+		} else if m.attackType == AttackTypeRanged {
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				w.WriteInt(0)
+			}
+			w.WriteShort(m.properBulletPosition)
+			w.WriteShort(m.cashBulletPosition)
+			w.WriteByte(m.nShootRange)
+			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
+				w.WriteInt(m.bulletItemId)
+			}
+		} else if m.attackType == AttackTypeMagic {
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				w.WriteInt(0)
+			}
+		}
+
+		for i := range m.damageInfo {
+			di := m.damageInfo[i]
+			w.WriteByteArray(di.Encode(l, ctx)(options))
+		}
+
+		w.WriteShort(m.characterX)
+		w.WriteShort(m.characterY)
+		if m.attackType == AttackTypeRanged {
+			w.WriteShort(m.bulletX)
+			w.WriteShort(m.bulletY)
+		}
+
+		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBombId {
+			w.WriteShort(m.grenadeX)
+			w.WriteShort(m.grenadeY)
+		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
+			w.WriteInt(m.reserveSpark)
+		}
+		if m.attackType == AttackTypeMagic {
+			w.WriteBool(m.dragon)
+			if m.dragon {
+				w.WriteShort(m.dragonX)
+				w.WriteShort(m.dragonY)
+			}
+		}
+		return w.Bytes()
+	}
+}
+
 func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.fieldKey = r.ReadByte()
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		// Primary damage-randomizer (dr/crc anti-hack) block. Present GMS v84+,
+		// NOT v95+ (off-by-one). CONFIRMED via the client attack senders: v83
+		// melee (sub @0x66… in v83) writes no dr-block, while the v84, v87, and
+		// v95 melee senders all insert dr0/dr1 here (after fieldKey), dr2/dr3
+		// after the numAttacked mask, and randomDr/crc32 after skillId — exactly
+		// +6 uint32 vs v83. The v84 magic sender is +6 only (no secondary
+		// dr-block), so the magic 2dr block below stays v95+.
+		if t.Region() == "GMS" && t.MajorVersion() >= 84 {
 			m.dr0 = r.ReadUint32()
 			m.dr1 = r.ReadUint32()
 		}
@@ -81,7 +197,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		m.hits = numAttackedAndDamageMask & 0xF
 		m.damage = uint32((numAttackedAndDamageMask >> 4) & 0xF)
 
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+, see above)
 			m.dr2 = r.ReadUint32()
 			m.dr3 = r.ReadUint32()
 		}
@@ -91,12 +207,16 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			m.skillLevel = r.ReadByte() // nCombatOrders
 		}
 
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // randomDr/crc32 complete the primary dr-block (v84+, see above)
 			m.randomDr = r.ReadUint32()
 			m.crc32 = r.ReadUint32()
+		}
 
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeMagic {
-				// TODO
+				// Secondary dr-block for magic attacks. v95+ only: the v84 magic
+				// sender (30 Encode tokens) is shorter than v84 melee and carries
+				// no second dr-block, so this must NOT read for v84..94.
 				_ = r.ReadUint32() //2dr0
 				_ = r.ReadUint32() //2dr1
 				_ = r.ReadUint32() //2dr2

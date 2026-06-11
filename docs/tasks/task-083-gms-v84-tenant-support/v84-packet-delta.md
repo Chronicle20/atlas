@@ -174,8 +174,21 @@ Confidence is graded per row:
 | NPCActionHandle | 0xC5 | 0xC5 | SAME | template; NPC move/action; enum-stable; **med (OQ-7)** |
 | DropPickUpHandle | 0xCA | 0xCA | SAME | template; drop pickup; enum-stable; **med (OQ-7)** |
 | ReactorHitHandle | 0xCD | 0xCD | SAME | template; reactor hit; enum-stable; **med (OQ-7)** |
-| CashShopCheckWalletHandle | 0xE4 | 0xE4 | SAME | template; cash wallet check; enum-stable; **med (OQ-7)** |
-| CashShopOperationHandle | 0xE5 | 0xE5 | SAME | template; cash-shop op; enum-stable; **med (OQ-7)** |
+| CashShopCheckWalletHandle | 0xE4 | **0xEA** | **SHIFTED (+6)** | CORRECTED post-audit: v83 `CCashShop::TrySendQueryCashRequest` `COutPacket(0xE4)` body-less; v84 `CCashShop__TrySendQueryCashRequest_send_0xEA` `COutPacket(0xEA)` body-less (this[6] guard). v83-value 0xE4 in v84 = `CWvsContext::SendPartyWanted`. **high (decompiled)** |
+| CashShopOperationHandle | 0xE5 | **0xEB** | **SHIFTED (+6)** | CORRECTED post-audit: v83 `CCashShop::OnBuy` `COutPacket(0xE5)`+`Encode1(3=BUY)`+`bbiii`; v84 `CCashShop__OnBuy_send_0xEB_op3` `COutPacket(0xEB)`+`Encode1(3)`+identical `bbiii`. 0xEB carries the full op-type set {3,4,5,6,7,8,9,13,14,26,29,30,31,33,35,40,46,49}. v83-value 0xE5 in v84 = `CWvsContext::SendCancelPartyWanted` (body-less → atlas read op=0 → "Unhandled Cash Shop Operation [0]"). **high (decompiled)** |
+
+> **AUDIT-TABLE CAVEAT (post-corrective-audit):** rows above reading `SAME … med (OQ-7)`
+> are the *original A2 harvest*, which assumed CP-enum stability WITHOUT decompiling each
+> sender — that assumption was wrong for the cash-shop pair (and others). The authoritative
+> inbound opcodes live in `template_gms_84_1.json`, not this table. Decompile-confirmed
+> corrections since A2: pet band (0xA7→0xAC…0xAC→0xB1), MonsterMovement 0xBC→0xC1,
+> MonsterDamageFriendly 0xC0→0xC5, NPCAction 0xC5→0xCB, DropPickUp 0xCA→0xD0,
+> ReactorHit 0xCD→0xD3, MultiChat 0x77→0x79, social band (Whisper 0x78→0x7A,
+> Messenger 0x7A→0x7C, Interaction 0x7B→0x7D, Party 0x7C→0x7E, PartyReject 0x7D→0x7F,
+> Guild 0x7E→0x82, GuildReject 0x7F→0x83, Buddy 0x82→0x86, Note 0x83→0x87,
+> KeyMap 0x87→0x8B), and the cash-shop pair (0xE4→0xEA, 0xE5→0xEB). A re-sweep of every
+> registered gameplay opcode (0x26–0xEB) against the v84 client send-opcode map found no
+> further gross mismatch.
 
 **Completeness vs v83 template:** 93 opcode entries = 93 distinct opcodes; the
 table above has exactly 93 rows, one per opcode, all SAME. The only repeated

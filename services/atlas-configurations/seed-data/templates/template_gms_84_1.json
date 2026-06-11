@@ -1004,12 +1004,12 @@
         "handler": "ReactorHitHandle"
       },
       {
-        "opCode": "0xE4",
+        "opCode": "0xEA",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckWalletHandle"
       },
       {
-        "opCode": "0xE5",
+        "opCode": "0xEB",
         "validator": "LoggedInValidator",
         "handler": "CashShopOperationHandle",
         "options": {

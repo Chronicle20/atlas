@@ -67,7 +67,7 @@ func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		w.WriteInt8(m.nActionAndDir)
 		w.WriteInt(m.skillData)
 
-		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
+		if (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.Region() == "JMS" { // multiTarget/randTime are v84+ (CONFIRMED: v83 CMob::GenerateMovePath @0x66b6fc has neither; v84 sub_6818C3 inserts both between skillData and moveFlags)
 			w.WriteByteArray(m.multiTargetForBall.Encode(l, ctx)(options))
 			w.WriteByteArray(m.randTimeForAreaAttack.Encode(l, ctx)(options))
 		}
@@ -102,7 +102,7 @@ func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func
 		m.nActionAndDir = r.ReadInt8()
 		m.skillData = r.ReadUint32()
 
-		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
+		if (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.Region() == "JMS" { // multiTarget/randTime are v84+ (mirror of Encode; v83 CMob::GenerateMovePath has neither, v84 sub_6818C3 has both)
 			m.multiTargetForBall.Decode(l, ctx)(r, options)
 			m.randTimeForAreaAttack.Decode(l, ctx)(r, options)
 		}

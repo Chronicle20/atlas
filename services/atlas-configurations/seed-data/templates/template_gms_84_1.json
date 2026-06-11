@@ -779,7 +779,7 @@
         "handler": "PetItemExcludeHandle"
       },
       {
-        "opCode": "0xBC",
+        "opCode": "0xC1",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
         "options": {

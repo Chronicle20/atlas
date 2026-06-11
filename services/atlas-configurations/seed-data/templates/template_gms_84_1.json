@@ -481,7 +481,7 @@
         "handler": "CharacterSkillMacroHandle"
       },
       {
-        "opCode": "0x77",
+        "opCode": "0x79",
         "validator": "LoggedInValidator",
         "handler": "CharacterMultiChatHandle"
       },
@@ -884,7 +884,7 @@
         }
       },
       {
-        "opCode": "0xC0",
+        "opCode": "0xC5",
         "validator": "LoggedInValidator",
         "handler": "MonsterDamageFriendlyHandle"
       },

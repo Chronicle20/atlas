@@ -649,7 +649,7 @@
         }
       },
       {
-        "opCode": "0xA7",
+        "opCode": "0xAC",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
         "options": {
@@ -754,27 +754,27 @@
         }
       },
       {
-        "opCode": "0xA8",
+        "opCode": "0xAD",
         "validator": "LoggedInValidator",
         "handler": "PetChatHandle"
       },
       {
-        "opCode": "0xA9",
+        "opCode": "0xAE",
         "validator": "LoggedInValidator",
         "handler": "PetCommandHandle"
       },
       {
-        "opCode": "0xAA",
+        "opCode": "0xAF",
         "validator": "LoggedInValidator",
         "handler": "PetDropPickUpHandle"
       },
       {
-        "opCode": "0xAB",
+        "opCode": "0xB0",
         "validator": "LoggedInValidator",
         "handler": "PetItemUseHandle"
       },
       {
-        "opCode": "0xAC",
+        "opCode": "0xB1",
         "validator": "LoggedInValidator",
         "handler": "PetItemExcludeHandle"
       },
@@ -889,7 +889,7 @@
         "handler": "MonsterDamageFriendlyHandle"
       },
       {
-        "opCode": "0xC5",
+        "opCode": "0xCB",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
         "options": {
@@ -994,12 +994,12 @@
         }
       },
       {
-        "opCode": "0xCA",
+        "opCode": "0xD0",
         "validator": "LoggedInValidator",
         "handler": "DropPickUpHandle"
       },
       {
-        "opCode": "0xCD",
+        "opCode": "0xD3",
         "validator": "LoggedInValidator",
         "handler": "ReactorHitHandle"
       },

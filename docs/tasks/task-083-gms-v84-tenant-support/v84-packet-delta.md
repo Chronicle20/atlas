@@ -441,14 +441,17 @@ CashShopOperation 0x14C are decompile-confirmed against v84 `CCashShop::OnPacket
 @0x47BF59 (switch base 0x14A; whole CCashShop recv band shifted uniformly +7 from
 v83 0x143). CashShopOpen 0x82 confirmed via `CStage::OnPacket`@0x79894b case 0x82.
 
-**Still explicitly low-confidence (OQ-7):** 3 upper-dialog rows
-(StorageOperation 0x135→0x13C, MessengerOperation 0x139→0x140,
-CharacterInteraction 0x13A→0x141) carry the **+7 upper-band trend** but their exact
-v84 dialog-dispatcher case was not independently decompiled (these dialogs —
-CTrunkDlg/CMessenger/CMiniRoomBaseDlg — route per-class, not via a single switch
-in the 0x13x band, so the fast OnPacket method did not locate them). Flagged low;
-verify if storage/messenger/trade responses misbehave in playtest. None is
-in the in-scope flow set; all in-scope writers (login handshake, world/channel
+**Upper-dialog writers — VERIFIED (post-audit):** all 3 decompile-confirmed via
+`CField::OnPacket` (v83 @0x531325 → v84 @0x53d5a7), whose dialog band shifted
+uniformly **+7** (OnHontaleTimer 0x12E→0x135, ZakumTimer, Trunk, RPSGame,
+Messenger, MiniRoom, Parcel all +7):
+- StorageOperation 0x135→**0x13C** (v84 case 0x13C → `CTrunkDlg::OnPacket` @0x7EEC1A)
+- MessengerOperation 0x139→**0x140** (v84 case 0x140 → `CUIMessenger::OnPacket` @0x87CBD8)
+- CharacterInteraction 0x13A→**0x141** (v84 case 0x141 → `CMiniRoomBaseDlg::OnPacketBase`
+  @0x673DB5; `Decode1(op)` + miniroom factory/vtable routing, matching v83 OnPacketBase)
+
+All three already held the correct values in the template (verification only, no
+change). All in-scope writers (login handshake, world/channel
 list, char list/select, enter-channel→SetField, map spawn, movement, chat) are
 **high** confidence with v84 case labels read and bodies matched. No opcode is a
 guessed hex value — every SHIFTED v84 opcode is a measured band-Δ applied to a

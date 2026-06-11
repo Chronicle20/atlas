@@ -180,7 +180,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-main
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
-    newTag: main-47979e6
+    newTag: main-df4f5ff
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
     newTag: main-47979e6
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban

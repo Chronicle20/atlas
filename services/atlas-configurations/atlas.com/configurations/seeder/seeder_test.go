@@ -242,3 +242,99 @@ func TestDiscoverFilesOnlyJson(t *testing.T) {
 		}
 	}
 }
+
+// FR-2.3: template_gms_84_1.json must decode to (GMS, 84, 1) via the seeder's
+// extractMetadata path, and must be treated as distinct from (GMS, 83, 1).
+func TestExtractMetadataGmsV84(t *testing.T) {
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+
+	s := &Seeder{
+		l:   l,
+		ctx: context.Background(),
+	}
+
+	// path is relative to the package directory (where go test runs)
+	const templatePath = "../../../seed-data/templates/template_gms_84_1.json"
+
+	meta, err := s.extractMetadata(templatePath)
+	if err != nil {
+		t.Fatalf("extractMetadata(%q) unexpected error: %v", templatePath, err)
+	}
+
+	if meta.Region != "GMS" {
+		t.Errorf("Region: want GMS, got %q", meta.Region)
+	}
+	if meta.MajorVersion != 84 {
+		t.Errorf("MajorVersion: want 84, got %d", meta.MajorVersion)
+	}
+	if meta.MinorVersion != 1 {
+		t.Errorf("MinorVersion: want 1, got %d", meta.MinorVersion)
+	}
+}
+
+// FR-2.3: (GMS,84,1) and (GMS,83,1) must produce distinct identity tuples so
+// the seeder's existence check never treats one as a duplicate of the other.
+func TestGmsV84DistinctFromV83(t *testing.T) {
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+
+	s := &Seeder{
+		l:   l,
+		ctx: context.Background(),
+	}
+
+	meta84, err := s.extractMetadata("../../../seed-data/templates/template_gms_84_1.json")
+	if err != nil {
+		t.Fatalf("extractMetadata(gms_84_1) unexpected error: %v", err)
+	}
+
+	meta83, err := s.extractMetadata("../../../seed-data/templates/template_gms_83_1.json")
+	if err != nil {
+		t.Fatalf("extractMetadata(gms_83_1) unexpected error: %v", err)
+	}
+
+	// The seeder's templateExists key is (region, majorVersion, minorVersion).
+	// Assert that the two templates differ on at least one component of that key.
+	same := meta84.Region == meta83.Region &&
+		meta84.MajorVersion == meta83.MajorVersion &&
+		meta84.MinorVersion == meta83.MinorVersion
+	if same {
+		t.Errorf("(GMS,84,1) and (GMS,83,1) have identical identity tuples — seeder would skip one")
+	}
+}
+
+// FR-2.3: the seed-data templates directory must contain both gms_83_1 and
+// gms_84_1 files, discoverable as separate entries.
+func TestSeedDataDiscoversBothV83AndV84(t *testing.T) {
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+
+	s := &Seeder{
+		l:   l,
+		ctx: context.Background(),
+	}
+
+	files, err := s.discoverFiles("../../../seed-data/templates")
+	if err != nil {
+		t.Fatalf("discoverFiles unexpected error: %v", err)
+	}
+
+	has83, has84 := false, false
+	for _, f := range files {
+		base := filepath.Base(f)
+		if base == "template_gms_83_1.json" {
+			has83 = true
+		}
+		if base == "template_gms_84_1.json" {
+			has84 = true
+		}
+	}
+
+	if !has83 {
+		t.Error("seed-data/templates: template_gms_83_1.json not discovered")
+	}
+	if !has84 {
+		t.Error("seed-data/templates: template_gms_84_1.json not discovered")
+	}
+}

@@ -19,6 +19,7 @@ spec:
         ports:
         - containerPort: 1200
         - containerPort: 8300
+        - containerPort: 8400
         - containerPort: 8700
         - containerPort: 9200
         - containerPort: 9500
@@ -56,7 +57,11 @@ spec:
     targetPort: 8300
     protocol: TCP
     name: atlas-login-gms-83
-  - port: 8700 
+  - port: 8400
+    targetPort: 8400
+    protocol: TCP
+    name: atlas-login-gms-84
+  - port: 8700
     targetPort: 8700
     protocol: TCP
     name: atlas-login-gms-87

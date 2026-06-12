@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -47,6 +48,32 @@ func (m *DamageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
 			m.crc = r.ReadUint32()
 		}
+	}
+}
+
+// Encode is the symmetric mirror of Decode (client->server damage entry). Kept
+// field-for-field in sync with Decode so AttackInfo round-trips across versions.
+func (m *DamageInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		w.WriteInt(m.monsterId)
+		w.WriteByte(m.hitAction)
+		w.WriteByte(m.forceAction)
+		w.WriteByte(m.frameIdx)
+		w.WriteByte(m.calcDamageStatIndex)
+		w.WriteShort(m.hitPositionX)
+		w.WriteShort(m.hitPositionY)
+		w.WriteShort(m.previousPositionX)
+		w.WriteShort(m.previousPositionY)
+		w.WriteShort(m.delay)
+		for _, d := range m.damages {
+			w.WriteInt(d)
+		}
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+			w.WriteInt(m.crc)
+		}
+		return w.Bytes()
 	}
 }
 

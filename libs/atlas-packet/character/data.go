@@ -222,6 +222,13 @@ func (m *CharacterData) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 
 // Stats encoding/decoding
 
+// isEvanJob reports whether the job uses the Evan extended-SP block (a per-master-level
+// SP list) instead of a single SP short. Matches the v84 client (GW_CharacterStat::Decode):
+// jobId == 2001 (Evan beginner) || jobId/100 == 22 (Evan growths 2200-2299).
+func isEvanJob(jobId uint16) bool {
+	return jobId == 2001 || jobId/100 == 22
+}
+
 func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteInt(m.Stats.Id)
 
@@ -259,7 +266,13 @@ func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteShort(m.Stats.Mp)
 	w.WriteShort(m.Stats.MaxMp)
 	w.WriteShort(m.Stats.Ap)
-	w.WriteShort(m.Stats.Sp)
+	if t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId) {
+		// Evan extended SP: byte count + count×(masterLevelIdx, sp) byte-pairs
+		// (GW_CharacterStat::DecodeExtendSP). 0 for a freshly-created Evan (no SP allocated).
+		w.WriteByte(0)
+	} else {
+		w.WriteShort(m.Stats.Sp)
+	}
 	w.WriteInt(m.Stats.Exp)
 	w.WriteInt16(m.Stats.Fame)
 
@@ -326,7 +339,16 @@ func (m *CharacterData) decodeStats(r *request.Reader, t tenant.Model) {
 	m.Stats.Mp = r.ReadUint16()
 	m.Stats.MaxMp = r.ReadUint16()
 	m.Stats.Ap = r.ReadUint16()
-	m.Stats.Sp = r.ReadUint16()
+	if t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId) {
+		// Evan extended SP (mirror of Encode): byte count + count×(masterLevelIdx, sp).
+		count := r.ReadByte()
+		for i := byte(0); i < count; i++ {
+			_ = r.ReadByte() // master-level index
+			_ = r.ReadByte() // sp
+		}
+	} else {
+		m.Stats.Sp = r.ReadUint16()
+	}
 	m.Stats.Exp = r.ReadUint32()
 	m.Stats.Fame = r.ReadInt16()
 

@@ -42,7 +42,9 @@ func (m General) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// updateTime is a later GMS chat field; v84..86 == v83 (off-by-one fix).
+			// delta §3.1.10. MED: 87-vs-95 unpinned in A4; >=87 excludes v84, keeps v83/v95.
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteAsciiString(m.msg)
@@ -54,7 +56,8 @@ func (m General) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 func (m *General) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// updateTime is a later GMS chat field; v84..86 == v83 (off-by-one fix). delta §3.1.10
 			m.updateTime = r.ReadUint32()
 		}
 		m.msg = r.ReadAsciiString()

@@ -107,7 +107,8 @@ func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 }
 
 // TestAskSlideMenuConversationDetailEncode verifies the leading slideDlgType
-// int is written for GMS major>83 and for JMS185, and omitted for GMS v83.
+// int is written for GMS v87+ and for JMS185, and omitted for GMS v83..86
+// (v84..86 == v83, off-by-one fix, delta §3.2).
 // JMS185 sub_7E2A97@0x7e2a97 reads two leading Decode4s (slideDlgType + menuType)
 // then DecodeStr(message) unconditionally; GMS v83 reads a single Decode4.
 func TestAskSlideMenuConversationDetailEncode(t *testing.T) {
@@ -123,7 +124,7 @@ func TestAskSlideMenuConversationDetailEncode(t *testing.T) {
 			d := &AskSlideMenuConversationDetail{Unknown: true, MenuType: 0x000000AA, Message: "slide"}
 			got := d.Encode(l, ctx)(nil)
 
-			leadingPresent := (v.Region == "GMS" && v.MajorVersion > 83) || v.Region == "JMS"
+			leadingPresent := (v.Region == "GMS" && v.MajorVersion >= 87) || v.Region == "JMS"
 			var want []byte
 			if leadingPresent {
 				want = append(want, intBytes(1)...) // slideDlgType (Unknown=true)

@@ -3,7 +3,32 @@ package character
 import (
 	"math"
 	"testing"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 )
+
+// TestAppliesAutoAP verifies the GMS pre-Big-Bang auto-AP version boundary.
+// v83 and v84 must both be included; v95+ excluded; non-GMS regions excluded.
+func TestAppliesAutoAP(t *testing.T) {
+	cases := []struct {
+		region string
+		major  uint16
+		want   bool
+	}{
+		{"GMS", 83, true},  // v83 unchanged
+		{"GMS", 84, true},  // v84 now included (was the bug)
+		{"GMS", 94, true},  // pre-Big-Bang upper edge
+		{"GMS", 95, false}, // post-Big-Bang excluded
+		{"JMS", 83, false}, // region-gated
+	}
+	for _, c := range cases {
+		tm, _ := tenant.Create(uuid.New(), c.region, c.major, 1)
+		if got := appliesAutoAP(tm); got != c.want {
+			t.Errorf("appliesAutoAP(%s,%d) = %v, want %v", c.region, c.major, got, c.want)
+		}
+	}
+}
 
 // TestEnforceBounds_DoesNotOverflowOnLargeCurrent pins the regression
 // where enforceBounds did the intermediate sum in int16 — a character

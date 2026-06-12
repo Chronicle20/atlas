@@ -82,7 +82,8 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		}
 		w.WriteInt(0) // choco count
 		w.WriteInt(0) // item effect
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+			// v87+ nCompletedSetItemID; v84..86 == v83 (off-by-one fix). delta §3.1.7
 			w.WriteInt(0) // nCompletedSetItemID
 		}
 		w.WriteInt(0) // chair
@@ -185,7 +186,8 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		}
 		_ = r.ReadUint32() // choco count
 		_ = r.ReadUint32() // item effect
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+			// v87+ nCompletedSetItemID; v84..86 == v83 (off-by-one fix). delta §3.1.7
 			_ = r.ReadUint32() // nCompletedSetItemID
 		}
 		_ = r.ReadUint32() // chair

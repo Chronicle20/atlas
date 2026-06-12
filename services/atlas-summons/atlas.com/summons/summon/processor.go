@@ -3,12 +3,17 @@ package summon
 import (
 	skilldata "atlas-summons/data/skill"
 	"atlas-summons/data/skill/effect"
+	"atlas-summons/effectivestats"
 	"atlas-summons/kafka/producer"
+	monstermsg "atlas-summons/monster"
 	"context"
+	"math/rand"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	summonconst "github.com/Chronicle20/atlas/libs/atlas-constants/summon"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -44,12 +49,24 @@ type effectSource interface {
 	GetEffect(skillId uint32, level byte) (effect.Model, error)
 }
 
+// statsSource provides a character's session-effective combat stats. The default
+// implementation is the effectivestats REST processor; tests substitute a stub so
+// the damage ceiling is unit-testable without a live atlas-effective-stats.
+type statsSource interface {
+	GetByCharacter(worldId world.Id, channelId channel.Id, characterId uint32) (effectivestats.Model, error)
+}
+
 type ProcessorImpl struct {
 	l       logrus.FieldLogger
 	ctx     context.Context
 	t       tenant.Model
 	emit    emitter
 	effects effectSource
+	stats   statsSource
+	// proc decides whether a prop-gated status effect lands. The default is a real
+	// RNG roll (see rollProc); tests inject a deterministic function to force or
+	// suppress procs.
+	proc func(prop float64) bool
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -59,6 +76,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 			return producer.ProviderImpl(l)(ctx)(topic)(provider)
 		},
 		effects: skilldata.NewProcessor(l, ctx),
+		stats:   effectivestats.NewProcessor(l, ctx),
+		proc:    rollProc,
 	}
 }
 
@@ -149,9 +168,111 @@ func (p *ProcessorImpl) Move(id uint32, senderCharacterId uint32, x int16, y int
 	return p.emit(EnvEventTopicSummonStatus, movedEventProvider(updated, rawMovement))
 }
 
-// Attack is implemented in Phase 3 (summon attack → monster damage).
+// Attack relays an owner's summon-attack packet. It verifies ownership, then for
+// each reported target it credits the OWNER with the (server-clamped) damage via a
+// monster DAMAGE command (FR-4.2 — so XP/drops/kill credit accrue to the player,
+// not the summon), applies stun/freeze where the roster + proc allow (FR-4.4),
+// and emits an ATTACKED event carrying the clamped targets for rebroadcast.
+// Gaviota self-cancels after a single attack (FR-4.5). A missing summon or a
+// non-owner sender is a graceful no-op (returns nil).
 func (p *ProcessorImpl) Attack(id uint32, senderCharacterId uint32, direction byte, targets []AttackTarget) error {
+	m, err := GetRegistry().Get(p.ctx, p.t, id)
+	if err != nil {
+		return nil // already gone
+	}
+	if m.OwnerCharacterId() != senderCharacterId {
+		p.l.Infof("Character [%d] attacked with summon [%d] it does not own; dropping.", senderCharacterId, id) // §11 ownership
+		return nil
+	}
+
+	eff, err := p.effects.GetEffect(m.SkillId(), m.SkillLevel())
+	if err != nil {
+		return err
+	}
+
+	// Owner combat stats drive the per-hit ceiling (FR-4.3). If unavailable, set
+	// max=0 so clampDamage treats it as "no ceiling" — never zero legit damage.
+	var max int64
+	stats, serr := p.stats.GetByCharacter(m.Field().WorldId(), m.Field().ChannelId(), m.OwnerCharacterId())
+	if serr != nil {
+		p.l.WithError(serr).Warnf("No effective-stats for owner [%d]; summon [%d] damage not clamped this hit.", m.OwnerCharacterId(), id)
+		max = 0
+	} else {
+		magic := eff.WeaponAttack() == 0
+		max = ConservativeMaxPerHit(magic, stats.WeaponAttack(), stats.MagicAttack(), eff.WeaponAttack(), eff.MagicAttack())
+	}
+
+	statuses := monsterStatusFor(m.SkillId(), eff)
+
+	clampedTargets := make([]AttackTarget, 0, len(targets))
+	for _, tgt := range targets {
+		dmg := clampDamage(tgt.Damage, max)
+		if max > 0 && int64(tgt.Damage) > max {
+			// FR-4.3 alert: warn-only (clamp-and-continue). Intentionally does NOT
+			// emit to COMMAND_TOPIC_BAN (context.md §9 — false-positive risk).
+			p.l.Infof("Summon [%d] owner [%d] reported damage [%d] > ceiling [%d] on mob [%d]; clamped. (FR-4.3 alert)",
+				id, m.OwnerCharacterId(), tgt.Damage, max, tgt.MonsterId)
+		}
+		clampedTargets = append(clampedTargets, AttackTarget{MonsterId: tgt.MonsterId, Damage: dmg})
+
+		// FR-4.2: credit the owner via monster DAMAGE.
+		if err := p.emit(monstermsg.EnvCommandTopic, monstermsg.MonsterDamageProvider(m.Field(), tgt.MonsterId, m.OwnerCharacterId(), []uint32{dmg})); err != nil {
+			p.l.WithError(err).Errorf("Unable to emit monster DAMAGE for summon [%d] target [%d].", id, tgt.MonsterId)
+		}
+
+		// FR-4.4: stun/freeze, gated by the skill's prop chance.
+		if len(statuses) > 0 && p.proc(eff.Prop()) {
+			if err := p.emit(monstermsg.EnvCommandTopic, monstermsg.MonsterApplyStatusProvider(m.Field(), tgt.MonsterId, m.OwnerCharacterId(), m.SkillId(), m.SkillLevel(), eff, statuses)); err != nil {
+				p.l.WithError(err).Errorf("Unable to emit monster APPLY_STATUS for summon [%d] target [%d].", id, tgt.MonsterId)
+			}
+		}
+	}
+
+	if err := p.emit(EnvEventTopicSummonStatus, attackedEventProvider(m, direction, clampedTargets)); err != nil {
+		p.l.WithError(err).Errorf("Unable to emit ATTACKED for summon [%d].", id)
+	}
+
+	// FR-4.5: Gaviota self-cancels after one attack.
+	if e, ok := summonconst.Lookup(m.SkillId()); ok && e.OneShot {
+		_ = p.Despawn(id, true)
+	}
 	return nil
+}
+
+// monsterStatusFor returns the monster status map (STUN/FREEZE) a summon applies
+// on hit, driven by the roster flags and the skill effect's own monsterStatus
+// map. Values are the status level (1) for boolean roster flags; effect-supplied
+// statuses carry their configured level. An empty map means no status applies.
+func monsterStatusFor(skillId uint32, eff effect.Model) map[string]int32 {
+	statuses := make(map[string]int32)
+	if e, ok := summonconst.Lookup(skillId); ok {
+		if e.Stun {
+			statuses["STUN"] = 1
+		}
+		if e.Freeze {
+			statuses["FREEZE"] = 1
+		}
+	}
+	// Layer any effect-declared statuses (e.g. data-driven freeze level).
+	for k, v := range eff.MonsterStatus() {
+		statuses[k] = int32(v)
+	}
+	return statuses
+}
+
+// rollProc is the default proc decision: prop is the skill's 0.0-1.0 chance. A
+// prop >= 1.0 always procs; otherwise a uniform random draw gates it. Tests
+// override ProcessorImpl.proc to make this deterministic.
+func rollProc(prop float64) bool {
+	if prop >= 1.0 {
+		return true
+	}
+	if prop <= 0.0 {
+		// Treat a missing/zero prop as always-apply: a roster status flag with no
+		// configured chance should still land (Cosmic applies these unconditionally).
+		return true
+	}
+	return rand.Float64() < prop
 }
 
 // Damage is implemented in Phase 4 (summon takes damage).

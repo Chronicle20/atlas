@@ -51,3 +51,16 @@ type StatusEventMovedBody struct {
 type StatusEventDestroyedBody struct {
 	Animated bool `json:"animated"`
 }
+
+// StatusEventAttackedTarget is one {monster, clamped damage} pair carried by an
+// ATTACKED event. The damage is the server-clamped value, not the raw client
+// report.
+type StatusEventAttackedTarget struct {
+	MonsterId uint32 `json:"monsterId"`
+	Damage    uint32 `json:"damage"`
+}
+
+type StatusEventAttackedBody struct {
+	Direction byte                        `json:"direction"`
+	Targets   []StatusEventAttackedTarget `json:"targets"`
+}

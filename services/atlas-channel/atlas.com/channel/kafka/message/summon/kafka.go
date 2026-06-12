@@ -63,6 +63,16 @@ type AttackCommandBody struct {
 	Targets           []AttackTargetEntry `json:"targets"`
 }
 
+// DamageCommandBody carries a monster-dealt damage report against a puppet
+// summon. JSON tags MUST stay byte-for-byte identical to the atlas-summons
+// consumer definition.
+type DamageCommandBody struct {
+	SummonId          uint32 `json:"summonId"`
+	SenderCharacterId uint32 `json:"senderCharacterId"`
+	Damage            int32  `json:"damage"`
+	MonsterIdFrom     uint32 `json:"monsterIdFrom"`
+}
+
 // EnvEventTopicSummonStatus is the EVENT_TOPIC_SUMMON_STATUS env var
 // (summons -> channel). The envelope and bodies below are re-declared
 // channel-side; their JSON tags MUST stay byte-for-byte identical to the
@@ -123,4 +133,12 @@ type StatusEventAttackedTarget struct {
 type StatusEventAttackedBody struct {
 	Direction byte                        `json:"direction"`
 	Targets   []StatusEventAttackedTarget `json:"targets"`
+}
+
+// StatusEventDamagedBody carries the damage applied to a summon and the id of
+// the monster that dealt it. JSON tags MUST stay byte-for-byte identical to the
+// atlas-summons producer definition.
+type StatusEventDamagedBody struct {
+	Damage        int32  `json:"damage"`
+	MonsterIdFrom uint32 `json:"monsterIdFrom"`
 }

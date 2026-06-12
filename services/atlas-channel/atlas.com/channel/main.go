@@ -610,6 +610,7 @@ func produceWriters() []string {
 		summoncb.SummonRemoveWriter,
 		summoncb.SummonMoveWriter,
 		summoncb.SummonAttackWriter,
+		summoncb.SummonDamageWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -709,6 +710,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
 	handlerMap[summonsb.SummonAttackHandle] = handler.SummonAttackHandleFunc
+	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc

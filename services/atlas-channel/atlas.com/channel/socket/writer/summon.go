@@ -29,3 +29,10 @@ func SummonMoveBody(ownerCharacterId uint32, summonId uint32, startX int16, star
 func SummonAttackBody(ownerCharacterId uint32, summonId uint32, direction byte, targets []summoncb.SummonAttackTarget) packet.Encode {
 	return summoncb.NewSummonAttack(ownerCharacterId, summonId, direction, targets).Encode
 }
+
+// SummonDamageBody builds the SummonDamage clientbound packet for a puppet
+// summon that took monster damage, broadcast to other sessions in the owner's
+// map so they render the floating damage number.
+func SummonDamageBody(ownerCharacterId uint32, summonId uint32, damage int32, monsterIdFrom uint32) packet.Encode {
+	return summoncb.NewSummonDamage(ownerCharacterId, summonId, uint32(damage), monsterIdFrom).Encode
+}

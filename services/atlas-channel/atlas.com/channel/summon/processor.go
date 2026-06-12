@@ -44,3 +44,11 @@ func (p *Processor) Attack(f field.Model, summonId uint32, senderCharacterId uin
 	p.l.Debugf("Requesting summon attack for summon [%d] by character [%d] against [%d] targets.", summonId, senderCharacterId, len(targets))
 	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(AttackCommandProvider(f, summonId, senderCharacterId, direction, targets))
 }
+
+// Damage emits a COMMAND_TOPIC_SUMMON DAMAGE command requesting atlas-summons
+// decrement the puppet summon's HP by the reported amount (destroying it at
+// zero) and emit a DAMAGED event for rebroadcast.
+func (p *Processor) Damage(f field.Model, summonId uint32, senderCharacterId uint32, damage int32, monsterIdFrom uint32) error {
+	p.l.Debugf("Requesting summon damage for summon [%d] by character [%d] amount [%d] from monster [%d].", summonId, senderCharacterId, damage, monsterIdFrom)
+	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(DamageCommandProvider(f, summonId, senderCharacterId, damage, monsterIdFrom))
+}

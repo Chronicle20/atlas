@@ -34,6 +34,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAttackCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -70,5 +73,15 @@ func handleAttackCommand(l logrus.FieldLogger, ctx context.Context, c Command[At
 	err := summon.NewProcessor(l, ctx).Attack(c.Body.SummonId, c.Body.SenderCharacterId, c.Body.Direction, targets)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to attack with summon [%d] for sender [%d].", c.Body.SummonId, c.Body.SenderCharacterId)
+	}
+}
+
+func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c Command[DamageCommandBody]) {
+	if c.Type != CommandTypeDamage {
+		return
+	}
+	err := summon.NewProcessor(l, ctx).Damage(c.Body.SummonId, c.Body.SenderCharacterId, c.Body.Damage, c.Body.MonsterIdFrom)
+	if err != nil {
+		l.WithError(err).Errorf("Failed to damage summon [%d] for sender [%d].", c.Body.SummonId, c.Body.SenderCharacterId)
 	}
 }

@@ -57,3 +57,13 @@ type AttackCommandBody struct {
 	Direction         byte                `json:"direction"`
 	Targets           []AttackTargetEntry `json:"targets"`
 }
+
+// DamageCommandBody carries a monster-dealt damage report against a puppet
+// summon. atlas-summons verifies the summon exists, decrements its HP, and
+// emits a DAMAGED event (destroying the summon at zero HP).
+type DamageCommandBody struct {
+	SummonId          uint32 `json:"summonId"`
+	SenderCharacterId uint32 `json:"senderCharacterId"`
+	Damage            int32  `json:"damage"`
+	MonsterIdFrom     uint32 `json:"monsterIdFrom"`
+}

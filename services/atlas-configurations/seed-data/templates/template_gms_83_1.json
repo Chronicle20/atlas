@@ -781,6 +781,11 @@
         "handler": "SummonAttackHandle"
       },
       {
+        "opCode": "0xB1",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
+      },
+      {
         "opCode": "0xBC",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
@@ -1751,6 +1756,10 @@
       {
         "opCode": "0xB2",
         "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "SummonDamage"
       },
       {
         "opCode": "0xB9",

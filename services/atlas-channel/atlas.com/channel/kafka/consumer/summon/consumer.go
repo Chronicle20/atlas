@@ -56,6 +56,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDamaged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -143,6 +148,28 @@ func handleStatusEventAttacked(sc server.Model, wp writer.Producer) message.Hand
 				writer.SummonAttackBody(e.OwnerCharacterId, e.SummonId, e.Body.Direction, targets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast summon [%d] attack for characters in map [%d].", e.SummonId, e.MapId)
+		}
+	}
+}
+
+func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[summon2.StatusEvent[summon2.StatusEventDamagedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e summon2.StatusEvent[summon2.StatusEventDamagedBody]) {
+		if e.Type != summon2.EventSummonStatusDamaged {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		// Broadcast to OTHER sessions only: the owner's client already rendered
+		// the damage locally, so re-sending would double-apply it. The DESTROYED
+		// event (handled separately) broadcasts the SummonRemove when HP hits zero.
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.OwnerCharacterId,
+			session.Announce(l)(ctx)(wp)(summonpkt.SummonDamageWriter)(
+				writer.SummonDamageBody(e.OwnerCharacterId, e.SummonId, e.Body.Damage, e.Body.MonsterIdFrom)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast summon [%d] damage for characters in map [%d].", e.SummonId, e.MapId)
 		}
 	}
 }

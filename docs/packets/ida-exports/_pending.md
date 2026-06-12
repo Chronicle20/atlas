@@ -1,11 +1,23 @@
 # Accepted permanent exclusions — packet audit (four-version registry)
 
-> **Closeout of record: task-080 (packet-audit-closeout).** This file is a
-> *registry*, not a deferral ledger. It holds **zero actionable items**. Every
-> entry is a blessed permanent exclusion with IDA evidence + a one-line
-> justification, organised by category. The word "pending" survives in the path
-> for continuity only; what matters is that **no entry requires future code or
+> **Closeout of record: task-080 (packet-audit-closeout), validated by task-081.**
+> This file is a *registry*, not a deferral ledger. It holds **zero actionable
+> items**. Every entry is a blessed permanent exclusion with IDA evidence + a
+> one-line justification, organised by category. The word "pending" survives in the
+> path for continuity only; what matters is that **no entry requires future code or
 > audit action**.
+>
+> **task-081 update (2026-06-11):** the exclusion *categories* below stand
+> unchanged, but task-081 raised their evidentiary basis from "hand-asserted +
+> per-struct byte test" to **live-IDB-validated**. Rather than re-exporting (which
+> empirically regresses the audit — see TOTAL.md §6 / `design-validation-pivot.md`),
+> task-081 built a `validate` toolchain that verifies each hand-authored read-order
+> against the live IDB, persisted **205 dispatch selectors** into the baselines,
+> corrected **54 off-by-one leading-byte omissions**, and converted the
+> partial-implementation residue into per-version **allowlists**. The audit ❌
+> residue collapsed 309 → 21. See **§12 (task-081 validation layer)** for the
+> details and the new artifacts. The OPAQUE bucket (§4) now has a dedicated
+> per-type ledger: **`docs/packets/audits/OPAQUE_LEDGER.md`**.
 >
 > Scope: the four-version (`gms_v83`/`gms_v87`/`gms_v95`/`jms_v185`) SUMMARYs
 > together carry ~325 residual `❌`/`🔍`. Every one of them is classified below
@@ -225,3 +237,77 @@ bug surfaced (BuddyInvite, section 9) was **fixed in-task**, so nothing is hande
 5. Diff the regenerated SUMMARY against this registry: any NEW `❌`/`🔍` not in a
    category above is either a real bug (-> new task) or a new analyzer artifact (->
    `tools/packet-audit` section 4.7 enhancement) — never a silent re-deferral.
+
+---
+
+## 12. task-081 validation layer (live-IDB verification of this registry)
+
+task-081 did **not** re-export the baselines (a measured regression — TOTAL.md §6).
+Instead it built a live-IDB `validate` toolchain that *checks* the hand-authored
+read-orders this registry blesses, and committed three concrete corrections. The
+categories in §3–§8 are unchanged; what follows is their upgraded evidentiary basis
+and the new machine-checkable artifacts.
+
+### 12.1 Persisted dispatch selectors (make the per-mode shapes machine-validatable)
+
+The OP/MODE-PREFIX class (§5) was previously justified by prose ("per-mode body
+shapes audited independently"). task-081 persisted the `#Mode → client case`
+mapping as a `dispatch` field on each affected baseline entry, so `validate` can
+extract the exact per-case read-order from the live IDB and diff it against the hand
+shape. Persisted counts (additive, lossless surgical writer; the typed marshal was
+dropped for silently losing `region`/`note`/`size` fields):
+
+| Baseline | `dispatch` selectors |
+|---|---|
+| `gms_v83.json` | 39 |
+| `gms_v87.json` | 54 |
+| `gms_v95.json` | 72 |
+| `gms_jms_185.json` | 40 |
+
+### 12.2 Off-by-one corrections (54 — were hand-baseline omissions, NOT exclusions)
+
+`diff-shape` surfaced a clean systematic cluster: 54 serverbound dialog handlers
+(cash-shop / shop / trunk / trade / minroom / personal-shop) whose hand baseline
+matched `live[1:]` — i.e. each omitted a single real leading `COutPacket::Encode1`
+sub-action byte (IDA-spot-checked: 0x1D / 0x06 / 0x1E, distinct from the constructor
+opcode). These were **baseline transcription gaps, not accepted exclusions**, and
+were corrected in place via `PrependCall` (v83 10 / v87 8 / v95 27 / jms 9). They are
+listed here only so the count is not mistaken for new wire bugs: **0 Atlas encoder
+bugs** were isolated (`divergent-offbyone-results.md`).
+
+### 12.3 Missing-mode allowlists (replaces "partial template" prose with a machine list)
+
+The VERSION-ABSENT / partial-template justifications (§6, §7) for *unimplemented client
+sub-ops* are now enumerated, not just described. The case↔mode bijection found **0
+extra-mode** (no Atlas writer targets a non-existent client case) and **258 distinct
+missing-mode** (client dispatch cases Atlas deliberately does not implement — it is a
+partial reimplementation: e.g. v95 `OnGuildResult` ≈42 client modes, 2 implemented).
+All are seeded into per-version allowlists:
+
+| Allowlist | entries |
+|---|---|
+| `docs/packets/audits/gms_v83/_unimplemented.json` | 34 |
+| `docs/packets/audits/gms_v87/_unimplemented.json` | 64 |
+| `docs/packets/audits/gms_v95/_unimplemented.json` | 123 |
+| `docs/packets/audits/jms_v185/_unimplemented.json` | 37 |
+
+To implement an allowlisted mode later: add the Atlas `#Mode` writer + a baseline
+`#Mode` entry with its `dispatch` selector, then remove the `{fname, case}` from that
+version's `_unimplemented.json`. A *new* un-allowlisted missing-mode is then a real
+signal (regression or a mode a new version added that Atlas should handle), not noise.
+
+### 12.4 OPAQUE bucket → dedicated ledger
+
+The OPAQUE register-boundary types (§4) now have a per-type disposition ledger at
+**`docs/packets/audits/OPAQUE_LEDGER.md`** (FR-4): each type records whether it is
+decomposable, and if not, the byte-test / per-struct ✅ that verifies Atlas's encoder
+in lieu of analyzer decomposition. No opaque type remains in an unexamined
+"analyzer-skipped" state.
+
+### 12.5 What task-081 left as honest divergent (not exclusions, not bugs)
+
+The live `validate` layer surfaces 284 divergent entries (loop / opaque-block /
+stat-mask **representation** diffs) that are left **honest divergent by design** — no
+`ValidateShape` byte-equivalence absorption was applied, so they are visible rather
+than masked. **0 are confirmed real wire bugs.** They are the "representation
+modeling" recall lever, not registry exclusions; see TOTAL.md §6.4.

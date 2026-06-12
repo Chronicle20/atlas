@@ -258,3 +258,86 @@ This discipline caught **false plan premises** in task-080:
   assumed), pinned by `TestRequestTrailerShape`-style per-version byte tests.
 
 If the analyzer and a byte-level IDA trace disagree, the IDA trace wins.
+
+---
+
+## 8. Live per-branch validation (task-081)
+
+§2's `packet-audit` run is a **static** audit: Atlas encoder vs the checked-in IDA
+export JSON. task-081 added a complementary **live** layer that verifies the
+hand-authored baseline read-orders directly against the open IDB, per dispatch
+branch. Use it to *gain confidence* in a baseline (and to surface real
+divergences); it is **read-only over the baselines except `resolve-dispatch`**,
+which writes only the `dispatch` selector field.
+
+> **Why validate, never re-export.** A fully-automated re-export of the baselines
+> was measured to **regress** the audit (it flattens switch dispatchers that the
+> hand-authored baseline decomposes per-mode): 26 packets ✅→❌ vs 3 ❌→✅. The
+> exporter is therefore a *validator*, not a replacement. Full rationale:
+> `docs/tasks/task-081-ida-export-reharvest/design-validation-pivot.md`.
+
+### 8.1 Multi-IDB MCP setup
+
+The validation subcommands drive the IDB over the **ida-pro-mcp HTTP API**
+(`--ida-url`, default `http://<host>:13337/mcp`). Multiple IDBs can be loaded at
+once and addressed by port via `--ida-port` (`select_instance`). The four-version
+convention:
+
+| Version key (`--version`) | Baseline JSON | Audit dir | MCP port |
+|---|---|---|---|
+| `gms_v83`     | `docs/packets/ida-exports/gms_v83.json`     | `gms_v83`  | 13337 |
+| `gms_v87`     | `docs/packets/ida-exports/gms_v87.json`     | `gms_v87`  | 13338 |
+| `gms_v95`     | `docs/packets/ida-exports/gms_v95.json`     | `gms_v95`  | 13339 |
+| `gms_jms_185` | `docs/packets/ida-exports/gms_jms_185.json` | `jms_v185` | 13340 |
+
+Note the JMS quirk: the `--version` key is `gms_jms_185` (matches the baseline
+filename), but its audit dir / allowlist live under **`jms_v185/`** — pass
+`--allowlist docs/packets/audits/jms_v185/_unimplemented.json` explicitly for JMS.
+
+### 8.2 The subcommands
+
+All are `go run . <sub> --version <key> [--ida-port <p>] …` from `tools/packet-audit`.
+Shared flags: `--baseline` (defaults to `docs/packets/ida-exports/<version>.json`),
+`--ida-url`, `--ida-port` (0 = active instance), `--descent-depth` (6).
+
+| Subcommand | Required flags | What it does |
+|---|---|---|
+| `validate` | `--version`, `--report` | Per dispatch branch: decompile the base ONCE via `ResolveLive`, extract the per-case wire shape, diff vs the hand-authored reads. Emits verified / divergent / missing-mode / extra-mode / unverifiable / allowlisted. Honors `--allowlist`. **Never mutates the baseline.** |
+| `resolve-dispatch` | `--version`, `--worklist` | Infer the `#Mode → client case` selector for each per-mode entry; **auto-accept ≥ `--min-confidence` (0.6)** and write the `dispatch` field into the baseline (lossless surgical write — only `dispatch` is added, every other byte verbatim); emit the lower-confidence to-confirm worklist. |
+| `infer` | `--version`, `--out` | Confidence-scored dispatch proposals (no write); the roll-up uses `--min-confidence`. |
+| `diff-shape` | `--version`, `--report` | Read-only diagnostic: for every divergent entry, the hand-vs-live read lists with the divergence position classified (leading / interior / trailing). The engine for representation triage. |
+
+### 8.3 The verdict vocabulary (distinct from SUMMARY ✅/❌/🔍)
+
+`validate` reports against the **live IDB**, so its buckets are not the static
+SUMMARY glyphs:
+
+- **verified** — the hand shape matches the live per-case read-order. The strongest
+  evidence a baseline entry can carry.
+- **divergent** — hand vs live differ. Triage with `diff-shape`: a leading single-byte
+  omission is a baseline gap (fix with `PrependCall`); a length-close loop/opaque/mask
+  difference is a representation diff (honest divergent, the modeling lever); a genuine
+  field difference is a real wire bug (→ byte-test fix). **task-081 isolated 0 real wire
+  bugs** this way — but that is the path if one surfaces.
+- **missing-mode** — a client dispatch case with no Atlas `#Mode` writer. Expected for
+  a partial reimplementation; allowlist it in `<auditdir>/_unimplemented.json`. A NEW
+  un-allowlisted missing-mode is a real signal.
+- **extra-mode** — an Atlas writer targeting a non-existent client case. Should be **0**
+  (a dead writer is a bug).
+- **unverifiable** — extraction failed (indirect/vtable dispatch, decompile failure,
+  Unresolved demangled-helper span). Honest "couldn't check," never a pass.
+- **allowlisted** — a missing-mode blessed in `_unimplemented.json`.
+
+### 8.4 Workflow for a new version's live pass
+
+1. Load the IDB; note its MCP port.
+2. `resolve-dispatch --version <key> --ida-port <p> --worklist /tmp/<v>_worklist.md`
+   to infer + auto-accept dispatch selectors (writes the `dispatch` field).
+3. `validate --version <key> --ida-port <p> --report /tmp/<v>_validate.md`.
+4. Triage `divergent` with `diff-shape`; allowlist `missing-mode` into
+   `<auditdir>/_unimplemented.json`; fix any real wire bug with a byte test (§7).
+5. Re-run the static §2 audit so the SUMMARY/TOTAL reflect any baseline corrections.
+
+The task-081 artifacts (`docs/tasks/task-081-ida-export-reharvest/*-results.md`) are
+the worked examples; `OPAQUE_LEDGER.md` records the opaque types that `validate`
+cannot decompose and how each is verified instead.

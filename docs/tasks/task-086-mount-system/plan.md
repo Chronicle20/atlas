@@ -1097,13 +1097,13 @@ git commit -m "task-086: channel taming-mob-food command + producer"
 **Files:**
 - Inspect: how atlas-channel/atlas-character emits buff cancel on job change; confirm MONSTER_RIDING is included.
 
-- [ ] **Step 1: Confirm job-change cancels MONSTER_RIDING (FR-4.2).** atlas-buffs `CancelByStatTypes`
+- [x] **Step 1: Confirm job-change cancels MONSTER_RIDING (FR-4.2).** atlas-buffs `CancelByStatTypes`
 already exists (context.md §5). Verify the job-change flow cancels by stat types and that
 MONSTER_RIDING is in the cancelled set (or add it). If the path already does
 `CancelAll`/`CancelByStatTypes`, document that no change is needed; otherwise add MONSTER_RIDING
 with a test.
 
-- [ ] **Step 2: Commit any change (or record "no change needed" in the task note).**
+- [x] **Step 2: Commit any change (or record "no change needed" in the task note).**
 
 > **FINDING (2026-06-12) — FR-4.2 IS NOT IMPLEMENTED; design assumption was wrong.** Investigation
 > (Task 30) found NO job-change → buff-cancel path anywhere in the codebase. Job change is a

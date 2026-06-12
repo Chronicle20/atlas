@@ -362,10 +362,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: BUDDYLIST
   direction: clientbound
-  opcode: 63
+  opcode: 65
   fname: CWvsContext::OnFriendResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: GUILD_OPERATION
   direction: clientbound
   opcode: 65
@@ -434,10 +434,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: CASH_PET_FOOD_RESULT
   direction: clientbound
-  opcode: 76
+  opcode: 78
   fname: CWvsContext::OnCashPetFoodResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SET_WEEK_EVENT_MESSAGE
   direction: clientbound
   opcode: 77
@@ -704,10 +704,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SCRIPT_PROGRESS_MESSAGE
   direction: clientbound
-  opcode: 122
+  opcode: 125
   fname: CWvsContext::OnScriptProgressMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: DATA_CRC_CHECK_FAILED
   direction: clientbound
   opcode: 123
@@ -824,10 +824,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: BLOW_WEATHER
   direction: clientbound
-  opcode: 142
+  opcode: 145
   fname: CField::OnBlowWeather
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: PLAY_JUKEBOX
   direction: clientbound
   opcode: 143
@@ -854,10 +854,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: CLOCK
   direction: clientbound
-  opcode: 147
+  opcode: 150
   fname: CField::OnClock
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CONTI_MOVE
   direction: clientbound
   opcode: 148
@@ -866,10 +866,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: CONTI_STATE
   direction: clientbound
-  opcode: 149
+  opcode: 152
   fname: CField_ContiMove::OnContiState
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 150
@@ -926,16 +926,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SPAWN_PLAYER
   direction: clientbound
-  opcode: 160
+  opcode: 163
   fname: CUserPool::OnUserEnterField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: REMOVE_PLAYER_FROM_MAP
   direction: clientbound
-  opcode: 161
+  opcode: 164
   fname: CUserPool::OnUserLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CHATTEXT
   direction: clientbound
   opcode: 162
@@ -1070,28 +1070,28 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOVE_PLAYER
   direction: clientbound
-  opcode: 185
+  opcode: 189
   fname: CUserRemote::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CLOSE_RANGE_ATTACK
   direction: clientbound
-  opcode: 186
+  opcode: 190
   fname: CUserRemote::OnAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: RANGED_ATTACK
   direction: clientbound
-  opcode: 187
+  opcode: 191
   fname: CUserRemote::OnAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: MAGIC_ATTACK
   direction: clientbound
-  opcode: 188
+  opcode: 192
   fname: CUserRemote::OnAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: ENERGY_ATTACK
   direction: clientbound
   opcode: 189
@@ -1148,16 +1148,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SHOW_FOREIGN_EFFECT
   direction: clientbound
-  opcode: 198
+  opcode: 202
   fname: CUser::OnEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: GIVE_FOREIGN_BUFF
   direction: clientbound
-  opcode: 199
+  opcode: 203
   fname: CUserRemote::OnSetTemporaryStat
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CANCEL_FOREIGN_BUFF
   direction: clientbound
   opcode: 200
@@ -1232,10 +1232,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: PLAYER_HINT
   direction: clientbound
-  opcode: 214
+  opcode: 218
   fname: CUserLocal::OnBalloonMsg
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: PLAY_EVENT_SOUND
   direction: clientbound
   opcode: 215
@@ -1262,10 +1262,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: OPEN_UI
   direction: clientbound
-  opcode: 220
+  opcode: 224
   fname: CUserLocal::OnOpenUI
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: LOCK_UI
   direction: clientbound
   opcode: 221
@@ -1274,10 +1274,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: DISABLE_UI
   direction: clientbound
-  opcode: 222
+  opcode: 226
   fname: CUserLocal::OnSetStandAloneMode
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SPAWN_GUIDE
   direction: clientbound
   opcode: 223
@@ -1346,22 +1346,22 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: COOLDOWN
   direction: clientbound
-  opcode: 234
+  opcode: 240
   fname: CUserLocal::OnSkillCooltimeSet
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SPAWN_MONSTER
   direction: clientbound
   opcode: 236
   fname: CMobPool::OnMobEnterField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: KILL_MONSTER
   direction: clientbound
   opcode: 237
   fname: CMobPool::OnMobLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SPAWN_MONSTER_CONTROL
   direction: clientbound
   opcode: 238
@@ -1370,16 +1370,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOVE_MONSTER
   direction: clientbound
-  opcode: 239
+  opcode: 245
   fname: CMob::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: MOVE_MONSTER_RESPONSE
   direction: clientbound
-  opcode: 240
+  opcode: 246
   fname: CMob::OnCtrlAck
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: APPLY_MONSTER_STATUS
   direction: clientbound
   opcode: 242
@@ -1424,10 +1424,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SHOW_MONSTER_HP
   direction: clientbound
-  opcode: 250
+  opcode: 256
   fname: CMob::OnHPIndicator
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CATCH_MONSTER
   direction: clientbound
   opcode: 251
@@ -1466,10 +1466,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SPAWN_NPC
   direction: clientbound
-  opcode: 257
+  opcode: 264
   fname: CNpcPool::OnNpcEnterField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: REMOVE_NPC
   direction: clientbound
   opcode: 258
@@ -1478,16 +1478,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SPAWN_NPC_REQUEST_CONTROLLER
   direction: clientbound
-  opcode: 259
+  opcode: 266
   fname: CNpcPool::OnNpcChangeController
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: NPC_ACTION
   direction: clientbound
-  opcode: 260
+  opcode: 267
   fname: CNpc::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: UPDATE_LIMITED_INFO
   direction: clientbound
   opcode: 261
@@ -1526,16 +1526,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound
-  opcode: 268
+  opcode: 275
   fname: CDropPool::OnDropEnterField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: REMOVE_ITEM_FROM_MAP
   direction: clientbound
-  opcode: 269
+  opcode: 276
   fname: CDropPool::OnDropLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CANNOT_SPAWN_KITE
   direction: clientbound
   opcode: 270
@@ -1580,10 +1580,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: REACTOR_HIT
   direction: clientbound
-  opcode: 277
+  opcode: 284
   fname: CReactorPool::OnReactorChangeState
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: REACTOR_MOVE
   direction: clientbound
   opcode: 278
@@ -1592,16 +1592,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: REACTOR_SPAWN
   direction: clientbound
-  opcode: 279
+  opcode: 286
   fname: CReactorPool::OnReactorEnterField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: REACTOR_DESTROY
   direction: clientbound
-  opcode: 280
+  opcode: 287
   fname: CReactorPool::OnReactorLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SNOWBALL_STATE
   direction: clientbound
   opcode: 281
@@ -1742,16 +1742,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: OPEN_NPC_SHOP
   direction: clientbound
-  opcode: 305
+  opcode: 312
   fname: CShopDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound
-  opcode: 306
+  opcode: 313
   fname: CShopDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: ADMIN_SHOP_MESSAGE
   direction: clientbound
   opcode: 307
@@ -1766,10 +1766,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: STORAGE
   direction: clientbound
-  opcode: 309
+  opcode: 316
   fname: CTrunkDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: FREDRICK_MESSAGE
   direction: clientbound
   opcode: 310
@@ -1862,10 +1862,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: CASHSHOP_OPERATION
   direction: clientbound
-  opcode: 325
+  opcode: 332
   fname: CCashShop::OnCashItemResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CASHSHOP_PURCHASE_EXP_CHANGED
   direction: clientbound
   opcode: 326
@@ -1922,22 +1922,22 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: KEYMAP
   direction: clientbound
-  opcode: 335
+  opcode: 344
   fname: CFuncKeyMappedMan::OnInit
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: AUTO_HP_POT
   direction: clientbound
-  opcode: 336
+  opcode: 345
   fname: CFuncKeyMappedMan::OnPetConsumeItemInit
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: AUTO_MP_POT
   direction: clientbound
-  opcode: 337
+  opcode: 346
   fname: CFuncKeyMappedMan::OnPetConsumeMPItemInit
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SEND_TV
   direction: clientbound
   opcode: 341

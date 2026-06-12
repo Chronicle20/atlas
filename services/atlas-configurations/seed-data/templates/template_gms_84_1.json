@@ -2422,15 +2422,15 @@
         "writer": "CashShopOperation",
         "options": {
           "operations": {
-            "LOAD_INVENTORY_SUCCESS": 75,
-            "LOAD_INVENTORY_FAILURE": 76,
-            "LOAD_WISHLIST": 79,
-            "UPDATE_WISHLIST": 85,
-            "PURCHASE_SUCCESS": 87,
-            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 96,
-            "INVENTORY_CAPACITY_INCREASE_FAILED": 97,
-            "CASH_ITEM_MOVED_TO_INVENTORY": 104,
-            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 106
+            "LOAD_INVENTORY_SUCCESS": 78,
+            "LOAD_INVENTORY_FAILURE": 79,
+            "LOAD_WISHLIST": 82,
+            "UPDATE_WISHLIST": 88,
+            "PURCHASE_SUCCESS": 90,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 99,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 100,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 107,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 109
           }
         }
       },

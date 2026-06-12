@@ -38,6 +38,9 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "triage" {
 		return runTriage(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "registry" {
+		return runRegistry(args[1:], stderr)
+	}
 	if len(args) > 0 && args[0] == "resolve-dispatch" {
 		return runResolveDispatch(args[1:], stderr)
 	}

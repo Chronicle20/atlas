@@ -21,9 +21,16 @@ import (
 //
 // A short-name index (byShort) maps unqualified names back to their
 // qualified registry keys for callers that don't know the package context.
+//
+// A writer-name index (byWriter) maps ("pkgDir§writerName") → qualified key
+// for callers that know the wire-protocol WriterName (from a packet ID like
+// "monster/clientbound/MonsterStatSet") but not the Go struct name ("StatSet").
+// This is populated during Pass 1.5 by resolving Operation() return values
+// through same-file const declarations.
 type TypeRegistry struct {
-	types     map[string]*TypeEntry   // qualified key
-	byShort   map[string][]string     // short name → qualified keys
+	types     map[string]*TypeEntry     // qualified key
+	byShort   map[string][]string       // short name → qualified keys
+	byWriter  map[string]string         // "pkgDir§writerName" → qualified key
 	freeFuncs map[string]*FreeFuncEntry // package-level writer-helper funcs by name
 }
 
@@ -89,6 +96,7 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 	reg := &TypeRegistry{
 		types:     map[string]*TypeEntry{},
 		byShort:   map[string][]string{},
+		byWriter:  map[string]string{},
 		freeFuncs: map[string]*FreeFuncEntry{},
 	}
 
@@ -154,6 +162,66 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Pass 1.5: build the writer-name index by resolving Operation() returns.
+	// For each file, collect same-file const string declarations, then walk
+	// Operation() methods: resolve their single-expression return body (either a
+	// bare const ident or a string literal) to the wire-protocol writer name, and
+	// record (pkgDir, writerName) → qualified registry key.
+	for _, fc := range files {
+		// Collect const string values declared in this file.
+		consts := map[string]string{} // constName → literalValue
+		for _, decl := range fc.file.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok || gd.Tok != token.CONST {
+				continue
+			}
+			for _, spec := range gd.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for i, name := range vs.Names {
+					if i >= len(vs.Values) {
+						break
+					}
+					lit, ok := vs.Values[i].(*ast.BasicLit)
+					if !ok || lit.Kind != token.STRING {
+						continue
+					}
+					// Strip surrounding double-quotes from the literal.
+					val := strings.Trim(lit.Value, `"`)
+					consts[name.Name] = val
+				}
+			}
+		}
+		// Find Operation() methods and resolve their return to a writer name.
+		for _, decl := range fc.file.Decls {
+			fd, ok := decl.(*ast.FuncDecl)
+			if !ok || fd.Name.Name != "Operation" || fd.Recv == nil || len(fd.Recv.List) != 1 {
+				continue
+			}
+			recvType := receiverIdent(fd.Recv.List[0].Type)
+			if recvType == "" {
+				continue
+			}
+			qual := qualify(fc.pkgPath, recvType)
+			if _, exists := reg.types[qual]; !exists {
+				continue
+			}
+			// Operation() must have exactly one return statement in its body.
+			writerName := operationReturnLiteral(fd.Body, consts)
+			if writerName == "" {
+				continue
+			}
+			key := fc.pkgPath + "§" + writerName
+			// Last-write-wins when multiple structs share the same writer name
+			// in one package (edge case; prefer first to preserve discovery order).
+			if _, exists := reg.byWriter[key]; !exists {
+				reg.byWriter[key] = qual
+			}
+		}
 	}
 
 	// Pass 2: for each file, find Encode/Write methods and analyze their bodies.
@@ -504,6 +572,57 @@ func (r *TypeRegistry) resolveEntry(name string) *TypeEntry {
 		return r.types[quals[0]]
 	}
 	return nil
+}
+
+// TypeForWriter looks up the qualified registry key for a struct whose
+// Operation() method returns writerName, scoped to pkgDir (the package
+// directory relative to the atlas-packet root, e.g. "monster/clientbound").
+// Returns ("", false) when no Operation() in that package maps to writerName.
+//
+// The index is built during Pass 1.5 by resolving const-backed and
+// direct-literal Operation() return bodies. It handles both the serverbound
+// *Handle pattern (e.g. NPCStartConversationHandle = "NPCStartConversationHandle")
+// and the clientbound *Writer pattern (e.g. MonsterStatSetWriter = "MonsterStatSet").
+func (r *TypeRegistry) TypeForWriter(pkgDir, writerName string) (string, bool) {
+	if r == nil {
+		return "", false
+	}
+	key := pkgDir + "§" + writerName
+	if qual, ok := r.byWriter[key]; ok {
+		return qual, true
+	}
+	return "", false
+}
+
+// operationReturnLiteral extracts the wire-name from a single-statement
+// Operation() body. It handles two forms:
+//   - `return SomeConst`   → resolved through consts to the literal value
+//   - `return "LiteralStr"` → the literal value directly
+//
+// Returns "" when the body has more than one statement, contains a non-return
+// statement, or the return expression is not a simple ident/string literal.
+func operationReturnLiteral(body *ast.BlockStmt, consts map[string]string) string {
+	if body == nil || len(body.List) != 1 {
+		return ""
+	}
+	ret, ok := body.List[0].(*ast.ReturnStmt)
+	if !ok || len(ret.Results) != 1 {
+		return ""
+	}
+	switch v := ret.Results[0].(type) {
+	case *ast.BasicLit:
+		if v.Kind == token.STRING {
+			return strings.Trim(v.Value, `"`)
+		}
+	case *ast.Ident:
+		if val, ok := consts[v.Name]; ok {
+			return val
+		}
+		// Ident not in same-file consts — could be from another file in the
+		// same package. The single-file pass cannot resolve cross-file consts
+		// without a full type-checker, so we skip rather than guess.
+	}
+	return ""
 }
 
 // qualify joins a pkgPath and struct name into the canonical registry key.

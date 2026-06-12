@@ -311,9 +311,14 @@ func reportForPacket(reps map[string]matrix.LoadedReport, pkt string) (matrix.Lo
 // KindRecurse calls from the packet's root struct. Used by IsTier1 to expand
 // opaque_types tier membership to their consumer packets (Task 3.2).
 //
-// packetID has the form "pkgdir/StructName" (e.g. "buddy/clientbound/Invite").
-// The TypeRegistry qualifies structs as "pkgdir.StructName". We split on the
-// last "/" to derive pkgPath + structName, then walk Calls transitively.
+// packetID has the form "pkgdir/WriterName" (e.g. "monster/clientbound/MonsterStatSet").
+// The TypeRegistry qualifies structs as "pkgdir.StructName" (e.g.
+// "monster/clientbound.StatSet"). We split on the last "/" to derive
+// pkgPath + writerName, then look up the qualified struct key via
+// TypeForWriter (which resolves the Operation() → const → literal chain).
+// If TypeForWriter misses (e.g. the writer name equals the struct name, as in
+// most clientbound social packets), we fall back to treating the WriterName as
+// the struct name directly.
 //
 // If typeReg is nil (PacketLibDir empty or unreadable), returns nil — IsTier1
 // falls back to prefix/explicit-packet matching only.
@@ -326,8 +331,17 @@ func transitiveRecurseTypes(typeReg *atlaspacket.TypeRegistry, packetID string) 
 		return nil
 	}
 	pkgPath := packetID[:i]
-	structName := packetID[i+1:]
-	qualKey := pkgPath + "." + structName
+	writerName := packetID[i+1:]
+
+	// Primary lookup: TypeForWriter resolves WriterName → qualified struct key
+	// via the Pass-1.5 Operation()-const index.
+	qualKey, ok := typeReg.TypeForWriter(pkgPath, writerName)
+	if !ok {
+		// Fallback: treat writerName as the struct name (covers packets where
+		// WriterName == struct name, e.g. buddy/clientbound/Invite).
+		qualKey = pkgPath + "." + writerName
+	}
+
 	// Walk the call tree transitively, collecting all RecurseType names.
 	seen := map[string]bool{}
 	var walk func(key string)

@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -95,15 +96,25 @@ func (ctx ValidationContext) Character() character.Model {
 	return ctx.character
 }
 
-// Logger returns the logger threaded into this context (may be nil for
-// contexts created without a logger).
+// Logger returns the logger threaded into this context. When no logger was
+// provided, a discard-output logrus logger is returned so callers never
+// receive a nil FieldLogger.
 func (ctx ValidationContext) Logger() logrus.FieldLogger {
+	if ctx.l == nil {
+		l := logrus.New()
+		l.SetOutput(io.Discard)
+		return l
+	}
 	return ctx.l
 }
 
-// Context returns the request context threaded into this validation context
-// (may be nil for contexts created without one).
+// Context returns the request context threaded into this validation context.
+// When no context was provided, context.Background() is returned so callers
+// never receive a nil context.
 func (ctx ValidationContext) Context() context.Context {
+	if ctx.ctx == nil {
+		return context.Background()
+	}
 	return ctx.ctx
 }
 

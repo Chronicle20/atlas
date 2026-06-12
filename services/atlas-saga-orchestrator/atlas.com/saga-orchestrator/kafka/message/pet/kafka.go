@@ -7,6 +7,8 @@ const (
 	EnvCommandTopic = "COMMAND_TOPIC_PET"
 	// CommandTypeAwardCloseness is the command type for awarding closeness to a pet
 	CommandTypeAwardCloseness = "AWARD_CLOSENESS"
+	// CommandPetEvolve is the command type for evolving a pet
+	CommandPetEvolve = "EVOLVE"
 
 	// Pet status event constants
 	EnvEventTopicPetStatus          = "EVENT_TOPIC_PET_STATUS"
@@ -26,6 +28,11 @@ type Command[E any] struct {
 type AwardClosenessCommandBody struct {
 	// Amount is the amount of closeness to add to the pet
 	Amount uint16 `json:"amount"`
+}
+
+// EvolveCommandBody represents the body of an evolve command.
+// This command is used to evolve a pet. It carries no additional fields.
+type EvolveCommandBody struct {
 }
 
 // StatusEvent represents a pet status event from atlas-pets

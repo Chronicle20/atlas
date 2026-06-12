@@ -21,3 +21,14 @@ func AwardClosenessProvider(transactionId uuid.UUID, petId uint32, amount uint16
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func EvolveProvider(transactionId uuid.UUID, petId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := &pet2.Command[pet2.EvolveCommandBody]{
+		TransactionId: transactionId,
+		PetId:         petId,
+		Type:          pet2.CommandPetEvolve,
+		Body:          pet2.EvolveCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

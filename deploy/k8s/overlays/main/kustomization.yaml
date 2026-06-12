@@ -220,7 +220,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: main-9095d1e
   - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
-    newTag: main-9095d1e
+    newTag: main-7354418
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: main-9095d1e
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory

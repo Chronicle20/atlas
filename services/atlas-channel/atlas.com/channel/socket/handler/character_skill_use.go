@@ -8,9 +8,11 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
 	"atlas-channel/socket/writer"
+	summoncmd "atlas-channel/summon"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -77,6 +79,16 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		}
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
+
+		// Summon skills additionally request atlas-summons to create the
+		// owner-bound summon. This runs alongside (not instead of) the normal
+		// skill-effect application below so the buff/cooldown still apply.
+		if summon.IsSummonSkill(sui.SkillId()) {
+			if serr := summoncmd.NewProcessor(l, ctx).Spawn(s.Field(), s.CharacterId(), sui.SkillId(), sui.SkillLevel(), c.X(), c.Y()); serr != nil {
+				l.WithError(serr).Errorf("Unable to request summon spawn for character [%d] skill [%d].", s.CharacterId(), sui.SkillId())
+			}
+		}
+
 		err = handler.UseSkill(l)(ctx)(wp, s.Field(), s.CharacterId(), *sui, se)
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())

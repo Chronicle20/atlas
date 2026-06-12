@@ -33,8 +33,8 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | CHAR_NAME_RESPONSE | CLogin::OnCheckDuplicatedIDResult | character/clientbound/CharacterNameResponse (T1) | 0x00D | 🟡 | 0x00D | 🟡 | 0x00D | 🟡 | 0x00D | 🟡 | 0x005 | 🟡 |
 | ADD_NEW_CHAR_ENTRY | CLogin::OnCreateNewCharacterResult | character/clientbound/AddCharacterEntry (T1) | 0x00E | ❌ | 0x00E | ❌ | 0x00E | ❌ | 0x00E | ❌ | 0x006 | ❌ |
 | DELETE_CHAR_RESPONSE | CLogin::OnDeleteCharacterResult | character/clientbound/DeleteCharacterResponse (T1) | 0x00F | 🟡 | 0x00F | 🟡 | 0x00F | 🟡 | 0x00F | 🟡 | 0x007 | 🟡 |
-| CHANGE_CHANNEL | CClientSocket::OnMigrateCommand | channel/clientbound/ChannelChannelChange | 0x010 | 🟡 | 0x010 | ❌ | 0x010 | 🟡 | 0x010 | 🟥 | 0x008 | 🟡 |
-| PING | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x011 | 🟡 | 0x011 | ❌ | 0x011 | 🟥 | 0x011 | 🟥 | 0x009 | 🟥 |
+| CHANGE_CHANNEL | CClientSocket::OnMigrateCommand | channel/clientbound/ChannelChannelChange | 0x010 | 🟡 | 0x010 | ❌ | 0x010 | 🟡 | 0x010 | 🟡 | 0x008 | 🟡 |
+| PING | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x011 | 🟡 | 0x011 | ❌ | 0x011 | 🟡 | 0x011 | 🟡 | 0x009 | 🟥 |
 | IDA_0X012 | sub_6717FE |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x012 | ❌ |
 | KOREAN_INTERNET_CAFE_SHIT | CClientSocket::OnAuthenCodeChanged |  | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
 | IDA_0X013 | CClientSocket::OnAuthenMessage; sub_671717 |  |  | ⬜ |  | ⬜ | 0x013 | ❌ | 0x013 | ❌ | 0x013 | ❌ |
@@ -50,17 +50,17 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | CHECK_SPW_RESULT | CLogin::OnCheckSPWResult |  | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ | 0x01B | ❌ |  | ⬜ |
 | INVENTORY_OPERATION | CWvsContext::OnInventoryOperation | inventory/clientbound/InventoryAdd (T1) | 0x01D | ❌ | 0x01D | ❌ | 0x01D | ❌ | 0x01C | ❌ | 0x01B | ❌ |
 | INVENTORY_GROW | CWvsContext::OnInventoryGrow |  | 0x01E | ❌ | 0x01E | ❌ | 0x01E | ❌ | 0x01D | ❌ | 0x01C | ❌ |
-| STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01F | ❌ | 0x01F | ❌ | 0x01F | ❌ | 0x01E | 🟥 | 0x01D | ❌ |
+| STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01F | ❌ | 0x01F | ❌ | 0x01F | ❌ | 0x01E | ❌ | 0x01D | ❌ |
 | GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x020 | ❌ | 0x020 | ❌ | 0x020 | 🟡 | 0x01F | 🟡 | 0x01E | ❌ |
-| CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x021 | ❌ | 0x021 | ❌ | 0x021 | 🟥 | 0x020 | ❌ | 0x01F | ❌ |
+| CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x01F | ❌ |
 | FORCED_STAT_SET | CWvsContext::OnForcedStatSet |  | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x020 | ❌ |
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | UPDATE_SKILLS | CWvsContext::OnChangeSkillRecordResult | character/clientbound/CharacterSkillChange (T1) | 0x024 | 🟡 | 0x024 | ❌ | 0x024 | 🟡 | 0x023 | 🟡 | 0x022 | 🟡 |
 | SKILL_USE_RESULT | CWvsContext::OnSkillUseResult |  | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ | 0x023 | ❌ |
-| FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x026 | 🟡 | 0x026 | ❌ | 0x026 | 🟥 | 0x025 | 🟥 | 0x024 | 🟥 |
-| SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageDropPickUpInventoryFull (T1) | 0x027 | ❌ | 0x027 | ❌ | 0x027 | 🟥 | 0x026 | ❌ | 0x025 | ❌ |
+| FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x026 | 🟡 | 0x026 | ❌ | 0x026 | 🟡 | 0x025 | 🟡 | 0x024 | 🟡 |
+| SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageDropPickUpInventoryFull (T1) | 0x027 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x026 | ❌ | 0x025 | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
-| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x029 | ❌ | 0x029 | ❌ | 0x029 | 🟥 | 0x028 | 🟥 | 0x026 | ❌ |
+| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x029 | ❌ | 0x029 | ❌ | 0x029 | 🟡 | 0x028 | 🟡 | 0x026 | ❌ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
@@ -68,21 +68,21 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged |  | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x02E | ❌ | 0x02C | ❌ |
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo |  | 0x030 | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x02F | ❌ | 0x02D | ❌ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
-| ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage | 0x032 | 🟡 | 0x032 | ❌ | 0x032 | 🟥 | 0x031 | 🟥 | 0x02F | 🟥 |
+| ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage | 0x032 | 🟡 | 0x032 | ❌ | 0x032 | 🟡 | 0x031 | 🟡 | 0x02F | ❌ |
 | SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult |  | 0x033 | ❌ | 0x033 | ❌ | 0x033 | ❌ | 0x032 | ❌ | 0x030 | ❌ |
 | SKILL_RESET_ITEM_RESULT | CWvsContext::OnSkillResetItemResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
-| GATHER_ITEM_RESULT | CWvsContext::OnGatherItemResult | inventory/clientbound/InventoryCompartmentMerge (T1) | 0x034 | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x034 | 🟥 | 0x031 | ❌ |
-| SORT_ITEM_RESULT | CWvsContext::OnSortItemResult | inventory/clientbound/InventoryCompartmentSort (T1) | 0x035 | ❌ | 0x035 | ❌ | 0x035 | ❌ | 0x035 | 🟥 | 0x032 | ❌ |
+| GATHER_ITEM_RESULT | CWvsContext::OnGatherItemResult | inventory/clientbound/InventoryCompartmentMerge (T1) | 0x034 | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x034 | 🟡 | 0x031 | ❌ |
+| SORT_ITEM_RESULT | CWvsContext::OnSortItemResult | inventory/clientbound/InventoryCompartmentSort (T1) | 0x035 | ❌ | 0x035 | ❌ | 0x035 | ❌ | 0x035 | 🟡 | 0x032 | ❌ |
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
 | GUILD_BBS_PACKET | CWvsContext::OnGuildBBSPacket |  | 0x03B | ❌ | 0x03B | ❌ | 0x03B | ❌ | 0x03B | ❌ |  | ⬜ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03D | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x035 | ❌ |
-| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyChangeLeader (T1) | 0x03E | 🟡 | 0x03E | ❌ | 0x03E | 🟥 | 0x03E | 🟥 | 0x036 | 🟥 |
-| BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyCapacityUpdate (T1) | 0x03F | 🟡 | 0x03F | 🟥 | 0x041 | 🟥 | 0x041 | 🟥 | 0x039 | 🟥 |
+| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyChangeLeader (T1) | 0x03E | 🟡 | 0x03E | ❌ | 0x03E | 🟡 | 0x03E | 🟡 | 0x036 | ❌ |
+| BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyCapacityUpdate (T1) | 0x03F | 🟡 | 0x03F | 🟥 | 0x041 | 🟡 | 0x041 | 🟡 | 0x039 | 🟥 |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
-| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ❌ | 0x041 | ❌ | 0x043 | 🟥 | 0x043 | 🟥 | 0x03B | 🟥 |
+| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ❌ | 0x041 | ❌ | 0x043 | 🟡 | 0x043 | ❌ | 0x03B | 🟥 |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
@@ -156,10 +156,10 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
 | IDA_0X079 | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ |
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt |  | 0x079 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07D | ❌ |  | ⬜ |
-| SCRIPT_PROGRESS_MESSAGE | CWvsContext::OnScriptProgressMessage | quest/clientbound/ScriptProgress | 0x07A | 🟡 | 0x07A | 🟥 | 0x07D | 🟥 | 0x07F | 🟥 | 0x076 | 🟥 |
+| SCRIPT_PROGRESS_MESSAGE | CWvsContext::OnScriptProgressMessage | quest/clientbound/ScriptProgress | 0x07A | 🟡 | 0x07A | 🟥 | 0x07D | 🟡 | 0x07F | 🟡 | 0x076 | 🟥 |
 | DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  | 0x07B | ❌ | 0x07B | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
 | MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  | 0x07C | ❌ | 0x07C | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x07A | ❌ |
-| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x07D | ❌ | 0x07D | ❌ | 0x085 | ❌ | 0x08D | 🟥 | 0x07B | ❌ |
+| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x07D | ❌ | 0x07D | ❌ | 0x085 | ❌ | 0x08D | ❌ | 0x07B | ❌ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
 | SET_ITC | CStage::OnSetITC |  | 0x07E | ❌ | 0x07E | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | 🟥 |  | 🟥 | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
@@ -182,13 +182,13 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | SPOUSE_CHAT | CField::OnCoupleMessage |  | 0x088 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x098 | ❌ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | 🟥 |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable |  | 0x089 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x086 | ❌ |
-| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | 🟡 | 0x08A | ❌ | 0x092 | 🟥 | 0x09A | 🟥 | 0x087 | 🟥 |
+| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | 🟡 | 0x08A | ❌ | 0x092 | 🟡 | 0x09A | 🟡 | 0x087 | 🟥 |
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | 🟥 |  | 🟥 |  | ⬜ | 0x08A | ❌ |  | ⬜ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff |  | 0x08B | ❌ | 0x08B | ❌ | 0x093 | ❌ | 0x09B | ❌ | 0x088 | ❌ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus |  | 0x08C | ❌ | 0x08C | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x089 | ❌ |
 | FIELD_OBSTACLE_ALL_RESET | CField::OnFieldObstacleAllRese; CField::OnFieldObstacleAllReset |  | 0x08D | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x08A | ❌ |
-| BLOW_WEATHER | CField::OnBlowWeather; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x08E | 🟡 | 0x08E | 🟥 | 0x096 | 🟥 | 0x09E | 🟥 | 0x08B | 🟥 |
+| BLOW_WEATHER | CField::OnBlowWeather; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x08E | 🟡 | 0x08E | 🟥 | 0x096 | 🟡 | 0x09E | 🟡 | 0x08B | 🟥 |
 | PLAY_JUKEBOX | CField::OnPlayJukeBox |  | 0x08F | ❌ | 0x08F | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x08C | ❌ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F |  | 0x090 | ❌ | 0x090 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x08D | ❌ |
 | OX_QUIZ | CField::OnQuiz |  | 0x091 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x08E | ❌ |
@@ -210,27 +210,27 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
 | SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x0A0 | ❌ | 0x0A0 | 🟥 | 0x0AB | ❌ | 0x0B3 | ❌ | 0x09E | ❌ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField | character/clientbound/CharacterDespawn (T1) | 0x0A1 | 🟡 | 0x0A1 | 🟥 | 0x0AC | 🟡 | 0x0B4 | 🟡 | 0x09F | ❌ |
-| CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A2 | ❌ | 0x0A2 | ❌ | 0x0AD | ❌ | 0x0B5 | 🟥 | 0x0A0 | 🟡 |
+| CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A2 | ❌ | 0x0A2 | ❌ | 0x0AD | ❌ | 0x0B5 | 🟡 | 0x0A0 | 🟡 |
 | CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A3 | ❌ | 0x0A3 | ❌ | 0x0AE | ❌ | 0x0B6 | 🟥 | 0x0A1 | 🟥 |
-| CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x0A4 | 🟡 | 0x0A4 | ❌ | 0x0AF | 🟥 | 0x0B7 | 🟡 | 0x0A2 | 🟥 |
+| CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x0A4 | 🟡 | 0x0A4 | ❌ | 0x0AF | 🟡 | 0x0B7 | 🟡 | 0x0A2 | 🟡 |
 | IDA_0X0A4 | CField::OnStalkResult |  |  | 🟥 |  | 🟥 | 0x0A4 | ❌ |  | ⬜ |  | ⬜ |
 | UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  | 0x0A5 | ❌ | 0x0A5 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
 | IDA_0X0A6 | sub_9F1663 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ |
 | SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
 | IDA_0X0A7 | sub_9F186A |  |  | 🟥 |  | 🟥 |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
-| SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x0A7 | 🟡 | 0x0A7 | ❌ | 0x0B2 | 🟥 | 0x0BA | 🟡 | 0x0A5 | 🟥 |
+| SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x0A7 | 🟡 | 0x0A7 | ❌ | 0x0B2 | 🟡 | 0x0BA | 🟡 | 0x0A5 | ✅ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | 🟥 |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
 | SPAWN_PET | CUser::OnPetPacket |  | 0x0A8 | ❌ | 0x0A8 | ❌ | 0x0B4 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
 | EVOLVE_PET | CUser::OnPetPacket |  | 0x0A9 | ❌ | 0x0A9 | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
 | IDA_0X0AA | CField::OnFootHoldInfo; sub_9F1DBC |  |  | 🟥 |  | 🟥 | 0x0AA | ❌ |  | ⬜ | 0x0AA | ❌ |
-| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x0AA | 🟡 | 0x0AA | ❌ | 0x0B7 | 🟥 | 0x0C9 | 🟥 | 0x0B0 | 🟥 |
+| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x0AA | 🟡 | 0x0AA | ❌ | 0x0B7 | 🟡 | 0x0C9 | 🟡 | 0x0B0 | 🟥 |
 | IDA_0X0AB | CUser::OnFollowCharacter |  |  | 🟥 |  | 🟥 |  | 🟥 |  | ⬜ | 0x0AB | ❌ |
-| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0AB | 🟡 | 0x0AB | ❌ | 0x0B8 | 🟥 | 0x0CA | 🟥 | 0x0B1 | 🟥 |
+| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0AB | 🟡 | 0x0AB | ❌ | 0x0B8 | 🟡 | 0x0CA | 🟡 | 0x0B1 | 🟥 |
 | IDA_0X0AC | CField::OnStalkResult; CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | 🟥 | 0x0AC | ❌ | 0x0AC | ❌ |
 | PET_NAMECHANGE | CPet::OnNameChanged |  | 0x0AC | ❌ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
-| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | 🟡 | 0x0AD | ❌ | 0x0BA | 🟥 | 0x0CC | 🟥 | 0x0B3 | 🟥 |
-| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ❌ | 0x0AE | ❌ | 0x0BB | 🟥 | 0x0CD | 🟥 | 0x0B4 | 🟥 |
+| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | 🟡 | 0x0AD | ❌ | 0x0BA | 🟡 | 0x0CC | 🟡 | 0x0B3 | 🟥 |
+| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ❌ | 0x0AE | ❌ | 0x0BB | ❌ | 0x0CD | ❌ | 0x0B4 | ❌ |
 | SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket |  | 0x0AF | ❌ | 0x0AF | ❌ | 0x0BC | ❌ | 0x116 | ❌ | 0x0B5 | ❌ |
 | IDA_0X0B0 | CField::OnFootHoldInfo |  |  | ⬜ |  | 🟥 |  | ⬜ | 0x0B0 | ❌ |  | ⬜ |
 | REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved |  | 0x0B0 | ❌ | 0x0B0 | ❌ | 0x0BD | ❌ | 0x117 | ❌ | 0x0B6 | ❌ |
@@ -256,7 +256,7 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | 🟥 |  | ⬜ | 0x0BF | ❌ |  | 🟥 |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0C0 | ❌ | 0x0C0 | ❌ | 0x0CD | ❌ | 0x0DA | ❌ | 0x0C6 | ❌ |
 | TESLA_TRIANGLE | CUser::OnTeslaTriangle |  |  | 🟥 |  | 🟥 |  | ⬜ | 0x0C0 | ❌ |  | 🟥 |
-| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0C1 | ❌ | 0x0C1 | ❌ | 0x0CE | 🟥 | 0x0DB | 🟡 | 0x0C7 | 🟥 |
+| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0C1 | ❌ | 0x0C1 | ❌ | 0x0CE | 🟥 | 0x0DB | 🟡 | 0x0C7 | ✅ |
 | FOLLOW_CHARACTER | CUser::OnFollowCharacter |  |  | 🟥 |  | 🟥 |  | ⬜ | 0x0C1 | ❌ |  | 🟥 |
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x0C2 | ❌ | 0x0C2 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | 🟥 |
@@ -265,22 +265,22 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ❌ | 0x0C4 | ❌ | 0x0D1 | 🟥 | 0x0DE | 🟡 | 0x0CA | ❌ |
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | 🟥 |  | 🟥 |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0C5 | ❌ | 0x0C5 | ❌ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0CB | ❌ |
-| SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0C6 | ❌ | 0x0C6 | 🟥 | 0x0D3 | 🟥 | 0x0E0 | ❌ | 0x0CC | ❌ |
+| SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0C6 | ❌ | 0x0C6 | 🟥 | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0CC | ❌ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0C7 | ❌ | 0x0C7 | 🟥 | 0x0D4 | ❌ | 0x0E1 | ❌ | 0x0CD | ❌ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | 🟡 | 0x0C8 | ❌ | 0x0D5 | 🟥 | 0x0E2 | 🟡 | 0x0CE | ❌ |
 | UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ❌ | 0x0C9 | ❌ | 0x0D6 | ❌ | 0x0E3 | 🟥 | 0x0CF | ❌ |
 | GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ❌ | 0x0CA | ❌ | 0x0D7 | ❌ | 0x0E4 | 🟥 | 0x0D0 | 🟥 |
 | GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ❌ | 0x0CB | ❌ | 0x0D8 | ❌ | 0x0E5 | 🟥 | 0x0D1 | 🟥 |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0CC | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
-| CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0CD | ✅ | 0x0CD | ❌ | 0x0DA | 🟥 | 0x0E7 | 🟡 | 0x0D3 | 🟥 |
-| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | 🟥 | 0x0E9 | 🟥 | 0x0D5 | ❌ |
+| CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0CD | ✅ | 0x0CD | ❌ | 0x0DA | 🟥 | 0x0E7 | 🟡 | 0x0D3 | 🟡 |
+| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | 🟥 | 0x0E9 | ❌ | 0x0D5 | ❌ |
 | DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
 | LUCKSACK_PASS | CUserLocal::OnMesoGive_Succeeded |  | 0x0D0 | ❌ | 0x0D0 | ❌ | 0x0DE | ❌ | 0x0EC | ❌ | 0x0D8 | ❌ |
 | LUCKSACK_FAIL | CUserLocal::OnMesoGive_Failed |  | 0x0D1 | ❌ | 0x0D1 | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0D9 | ❌ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  | 0x0D2 | ❌ | 0x0D2 | ❌ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
 | UPDATE_QUEST_INFO | CUserLocal::OnQuestResult |  | 0x0D3 | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0F2 | ❌ | 0x0DC | ❌ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | 🟥 |  | 🟥 | 0x0D4 | ✅ |
-| PLAYER_HINT | CUserLocal::OnBalloonMsg | character/clientbound/CharacterHint (T1) | 0x0D6 | 🟡 | 0x0D6 | 🟥 | 0x0E3 | 🟥 | 0x0F5 | 🟡 | 0x0DF | 🟥 |
+| PLAYER_HINT | CUserLocal::OnBalloonMsg | character/clientbound/CharacterHint (T1) | 0x0D6 | 🟡 | 0x0D6 | 🟥 | 0x0E3 | 🟡 | 0x0F5 | 🟡 | 0x0DF | 🟡 |
 | PLAY_EVENT_SOUND | CUserLocal::OnPlayEventSound |  | 0x0D7 | ❌ | 0x0D7 | ❌ | 0x0E4 | ❌ | 0x0F6 | ❌ | 0x0E0 | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserRemote::OnMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D8 | ❌ |  | ⬜ |
 | PLAY_MINI_GAME_SOUND | CUserLocal::OnPlayMinigameSound |  | 0x0D8 | ❌ | 0x0D8 | ❌ | 0x0E5 | ❌ | 0x0F7 | ❌ | 0x0E1 | ❌ |
@@ -288,13 +288,13 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | IDA_0X0DA | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | 🟥 |  | ⬜ |  | 🟥 | 0x0DA | ❌ |
 | IDA_0X0DB | CUserLocal::OnRandomMesobag_Failed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | 🟥 | 0x0DB | ❌ |
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  | 0x0DB | ❌ | 0x0DB | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
-| OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open | 0x0DC | 🟡 | 0x0DC | 🟥 | 0x0E9 | 🟥 | 0x0FB | 🟥 | 0x0E5 | 🟥 |
+| OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open | 0x0DC | 🟡 | 0x0DC | 🟥 | 0x0E9 | 🟡 | 0x0FB | 🟡 | 0x0E5 | 🟥 |
 | IDA_0X0DD | CUserLocal::OnNotifyHPDecByField |  |  | 🟥 |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DD | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock | 0x0DD | ❌ | 0x0DD | ❌ | 0x0EB | ❌ | 0x0FD | 🟥 | 0x0E7 | ❌ |
-| DISABLE_UI | CUserLocal::OnSetStandAloneMode | ui/clientbound/Disable | 0x0DE | ✅ | 0x0DE | 🟥 | 0x0EC | 🟥 | 0x0FE | 🟥 | 0x0E8 | 🟥 |
+| DISABLE_UI | CUserLocal::OnSetStandAloneMode | ui/clientbound/Disable | 0x0DE | ✅ | 0x0DE | 🟥 | 0x0EC | 🟥 | 0x0FE | 🟡 | 0x0E8 | 🟥 |
 | IDA_0X0DE | sub_A26957 |  |  | 🟥 |  | ⬜ |  | ⬜ |  | 🟥 | 0x0DE | ❌ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor |  | 0x0DF | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
-| TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) | 0x0E0 | 🟡 | 0x0E0 | ❌ | 0x0EE | 🟥 | 0x100 | 🟥 | 0x0EA | 🟥 |
+| TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) | 0x0E0 | 🟡 | 0x0E0 | ❌ | 0x0EE | 🟥 | 0x100 | ✅ | 0x0EA | 🟥 |
 | IDA_0X0E1 | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | 🟥 | 0x0E1 | ❌ |  | 🟥 |  | ⬜ |
 | SHOW_COMBO | CUserLocal::OnIncComboResponse |  | 0x0E1 | ❌ | 0x0E1 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
 | RANDOM_EMOTION | CUser::OnRandomEmotion |  | 0x0E2 | ❌ | 0x0E2 | ❌ | 0x0F0 | ❌ | 0x102 | ❌ |  | ⬜ |
@@ -308,28 +308,28 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | CHAT_MSG | CUserLocal::OnChatMsg |  | 0x0E8 | ❌ | 0x0E8 | ❌ | 0x0F6 | ❌ | 0x108 | ❌ |  | ⬜ |
 | IDA_0X0E8 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E8 | 🟡 |  | ⬜ |
 | BUFFZONE_EFFECT/SAY_IMAGE | CUserLocal::OnBuffzoneEffect |  | 0x0E9 | ❌ | 0x0E9 | ❌ | 0x0F7 | ❌ | 0x109 | ❌ |  | ⬜ |
-| COOLDOWN | CUserLocal::OnSkillCooltimeSet | character/clientbound/CharacterSkillCooldown (T1) | 0x0EA | 🟡 | 0x0EA | 🟥 | 0x0FA | 🟥 | 0x114 | 🟡 | 0x0FB | 🟥 |
+| COOLDOWN | CUserLocal::OnSkillCooltimeSet | character/clientbound/CharacterSkillCooldown (T1) | 0x0EA | 🟡 | 0x0EA | 🟥 | 0x0FA | 🟥 | 0x114 | 🟡 | 0x0FB | 🟡 |
 | OPEN_UI_WITH_OPTION | CUserLocal::OnOpenUIWithOption |  |  | 🟥 |  | ⬜ | 0x0EA | ❌ | 0x0FC | ❌ |  | ⬜ |
 | IDA_0X0EC | sub_A2F4B7 |  |  | 🟥 |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EC | ❌ |
-| SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x0EC | 🟡 | 0x0EC | 🟥 | 0x0FC | 🟡 | 0x11C | 🟥 | 0x0FD | 🟡 |
+| SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x0EC | 🟡 | 0x0EC | 🟥 | 0x0FC | 🟡 | 0x11C | 🟡 | 0x0FD | 🟡 |
 | IDA_0X0ED | sub_A2F543 |  |  | 🟥 |  | ⬜ |  | ⬜ |  | ⬜ | 0x0ED | ❌ |
-| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x0ED | 🟡 | 0x0ED | 🟥 | 0x0FD | 🟡 | 0x11D | 🟥 | 0x0FE | 🟡 |
+| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x0ED | 🟡 | 0x0ED | 🟥 | 0x0FD | 🟡 | 0x11D | 🟡 | 0x0FE | 🟡 |
 | IDA_0X0EE | sub_9F797D |  |  | 🟥 |  | 🟥 |  | ⬜ |  | ⬜ | 0x0EE | ❌ |
-| SPAWN_MONSTER_CONTROL | CMobPool::OnMobChangeController | monster/clientbound/MonsterControl (T1) | 0x0EE | 🟡 | 0x0EE | ❌ | 0x0FE | 🟡 | 0x11E | 🟥 | 0x0FF | 🟡 |
+| SPAWN_MONSTER_CONTROL | CMobPool::OnMobChangeController | monster/clientbound/MonsterControl (T1) | 0x0EE | 🟡 | 0x0EE | ❌ | 0x0FE | 🟡 | 0x11E | 🟡 | 0x0FF | 🟡 |
 | IDA_0X0EF | CUserLocal::OnRandomMesobag_Failed; sub_9F7C10 |  |  | 🟥 |  | ⬜ |  | ⬜ | 0x0EF | ❌ | 0x0EF | ❌ |
-| MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) | 0x0EF | 🟡 | 0x0EF | 🟥 | 0x0FF | 🟡 | 0x11F | 🟥 | 0x100 | 🟡 |
+| MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) | 0x0EF | 🟡 | 0x0EF | 🟥 | 0x0FF | 🟡 | 0x11F | 🟡 | 0x100 | 🟡 |
 | IDA_0X0F0 | CUserLocal::OnFieldFadeInOut; sub_A2F6DE |  |  | 🟥 |  | ⬜ |  | ⬜ | 0x0F0 | ❌ | 0x0F0 | ❌ |
-| MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0F0 | 🟡 | 0x0F0 | 🟥 | 0x100 | 🟡 | 0x120 | 🟥 | 0x101 | 🟡 |
+| MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0F0 | 🟡 | 0x0F0 | 🟥 | 0x100 | 🟡 | 0x120 | 🟡 | 0x101 | 🟡 |
 | IDA_0X0F1 | CUserLocal::OnFieldFadeOutForce; CUserLocal::OnResignQuestReturn |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F1 | ❌ | 0x0F1 | ❌ |
-| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0F2 | ✅ | 0x0F2 | ❌ | 0x102 | 🟥 | 0x122 | 🟥 | 0x103 | 🟥 |
+| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0F2 | ✅ | 0x0F2 | ❌ | 0x102 | 🟡 | 0x122 | 🟡 | 0x103 | 🟡 |
 | IDA_0X0F2 | CUserLocal::OnPassMateName |  |  | 🟥 |  | 🟥 |  | ⬜ |  | ⬜ | 0x0F2 | ❌ |
-| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0F3 | 🟡 | 0x0F3 | ❌ | 0x103 | 🟥 | 0x123 | 🟥 | 0x104 | 🟥 |
+| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0F3 | 🟡 | 0x0F3 | ❌ | 0x103 | 🟡 | 0x123 | 🟡 | 0x104 | 🟡 |
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | 🟥 |  | 🟥 |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | 🟥 |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset |  | 0x0F4 | ❌ | 0x0F4 | ❌ | 0x104 | ❌ | 0x124 | ❌ | 0x105 | ❌ |
 | IDA_0X0F5 | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | 🟥 |  | ⬜ |  | 🟥 | 0x0F5 | ❌ |
 | MOB_AFFECTED | CMob::OnAffected |  | 0x0F5 | ❌ | 0x0F5 | ❌ | 0x105 | ❌ | 0x125 | ❌ | 0x106 | ❌ |
-| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0F6 | 🟡 | 0x0F6 | ❌ | 0x106 | 🟥 | 0x126 | 🟥 | 0x107 | 🟥 |
+| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0F6 | 🟡 | 0x0F6 | ❌ | 0x106 | 🟡 | 0x126 | 🟡 | 0x107 | 🟡 |
 | IDA_0X0F6 | CUserLocal::OnChatMsg |  |  | 🟥 |  | 🟥 |  | ⬜ |  | ⬜ | 0x0F6 | ❌ |
 | IDA_0X0F7 | CUserLocal::OnBuffzoneEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill |  | 0x0F7 | ❌ | 0x0F7 | ❌ | 0x107 | ❌ | 0x127 | ❌ | 0x108 | ❌ |
@@ -344,10 +344,10 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | MOB_SPEAKING | CMob::OnIncMobChargeCount; CMob::OnMobSpeaking |  | 0x0FE | ❌ | 0x0FE | ❌ | 0x10E | ❌ | 0x12D | ❌ |  | 🟥 |
 | INC_MOB_CHARGE_COUNT | CMob::OnIncMobChargeCount; CMob::OnMobAttackedByMob; CMob::OnMobSkillDelay |  | 0x0FF | ❌ | 0x0FF | ❌ | 0x10F | ❌ | 0x12E | ❌ |  | 🟥 |
 | MOB_SKILL_DELAY | CMob::OnMobAttackedByMob; CMob::OnMobSkillDelay |  | 0x100 | ❌ | 0x100 | ❌ | 0x110 | ❌ | 0x12F | ❌ |  | 🟥 |
-| SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x101 | 🟡 | 0x101 | 🟥 | 0x112 | 🟡 | 0x137 | 🟥 | 0x116 | 🟡 |
+| SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x101 | 🟡 | 0x101 | 🟥 | 0x112 | 🟡 | 0x137 | 🟡 | 0x116 | 🟡 |
 | REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x102 | ❌ | 0x102 | ❌ | 0x113 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
-| SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x103 | 🟡 | 0x103 | 🟥 | 0x114 | 🟡 | 0x139 | 🟥 | 0x118 | 🟡 |
-| NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) | 0x104 | ❌ | 0x104 | 🟥 | 0x115 | ❌ | 0x13A | 🟥 | 0x119 | ❌ |
+| SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x103 | 🟡 | 0x103 | 🟥 | 0x114 | 🟡 | 0x139 | 🟡 | 0x118 | 🟡 |
+| NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) | 0x104 | ❌ | 0x104 | 🟥 | 0x115 | ❌ | 0x13A | ❌ | 0x119 | ❌ |
 | UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  | 0x105 | ❌ | 0x105 | ❌ | 0x116 | ❌ | 0x13B | ❌ |  | ⬜ |
 | NPC_SPECIAL_ACTION | CNpc::OnSetSpecialAction |  | 0x106 | ❌ | 0x106 | ❌ | 0x117 | ❌ | 0x13C | ❌ |  | ⬜ |
 | SET_NPC_SCRIPTABLE | CNpcTemplate::OnSetNpcScript |  | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x13D | ❌ | 0x11C | ❌ |
@@ -375,10 +375,10 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated |  | 0x113 | ❌ | 0x113 | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
 | IDA_0X114 | CMob::OnMobAttackedByMob |  |  | ⬜ |  | 🟥 |  | 🟥 |  | 🟥 | 0x114 | ❌ |
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved |  | 0x114 | ❌ | 0x114 | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
-| REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | 🟡 | 0x115 | 🟥 | 0x126 | 🟥 | 0x14E | 🟥 | 0x12D | 🟥 |
+| REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | 🟡 | 0x115 | 🟥 | 0x126 | 🟡 | 0x14E | 🟡 | 0x12D | 🟡 |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
-| REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x117 | 🟡 | 0x117 | 🟥 | 0x128 | 🟥 | 0x150 | 🟥 | 0x12F | 🟥 |
-| REACTOR_DESTROY | CReactorPool::OnReactorLeaveField | reactor/clientbound/ReactorDestroy | 0x118 | 🟡 | 0x118 | 🟥 | 0x129 | 🟥 | 0x151 | 🟥 | 0x130 | 🟥 |
+| REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x117 | 🟡 | 0x117 | 🟥 | 0x128 | 🟡 | 0x150 | 🟡 | 0x12F | 🟡 |
+| REACTOR_DESTROY | CReactorPool::OnReactorLeaveField | reactor/clientbound/ReactorDestroy | 0x118 | 🟡 | 0x118 | 🟥 | 0x129 | 🟡 | 0x151 | 🟡 | 0x130 | 🟡 |
 | SNOWBALL_STATE | CField_SnowBall::OnSnowBallState |  | 0x119 | ❌ | 0x119 | ❌ | 0x12A | ❌ | 0x152 | ❌ | 0x131 | ❌ |
 | HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit |  | 0x11A | ❌ | 0x11A | ❌ | 0x12B | ❌ | 0x153 | ❌ | 0x132 | ❌ |
 | IDA_0X11A | CNpc::OnUpdateLimitedInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11A | ❌ |
@@ -416,12 +416,12 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x134 | ❌ | 0x134 | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | MOB_NEXT_ATTACK | CMob::OnNextAttack |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x134 | ❌ |  | ⬜ |
 | MOB_ATTACKED_BY_MOB | CMob::OnMobAttackedByMob |  |  | 🟥 |  | ⬜ |  | ⬜ | 0x135 | ❌ |  | ⬜ |
-| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageShow (T1) | 0x135 | ❌ | 0x135 | 🟥 | 0x146 | 🟥 | 0x170 | 🟥 | 0x14E | ❌ |
+| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageShow (T1) | 0x135 | ❌ | 0x135 | 🟥 | 0x146 | ❌ | 0x170 | ❌ | 0x14E | ❌ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x136 | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x137 | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x138 | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | 🟡 | 0x139 | ❌ | 0x14A | 🟥 | 0x174 | 🟥 | 0x152 | 🟥 |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x13A | ❌ | 0x14B | ❌ | 0x175 | 🟥 | 0x153 | ❌ |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | 🟡 | 0x139 | ❌ | 0x14A | 🟡 | 0x174 | 🟡 | 0x152 | 🟡 |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x13A | ❌ | 0x14B | ❌ | 0x175 | 🟡 | 0x153 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament |  | 0x13B | ❌ | 0x13B | ❌ | 0x14C | ❌ | 0x176 | ❌ | 0x154 | ❌ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable |  | 0x13C | ❌ | 0x13C | ❌ | 0x14D | ❌ | 0x177 | ❌ | 0x155 | ❌ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize |  | 0x13D | ❌ | 0x13D | ❌ | 0x14E | ❌ | 0x178 | ❌ | 0x156 | ❌ |
@@ -431,8 +431,8 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | WEDDING_CEREMONY_END | CField_Wedding::OnWeddingCeremonyEnd |  | 0x141 | ❌ | 0x141 | ❌ | 0x152 | ❌ | 0x17C | ❌ | 0x15A | ❌ |
 | PARCEL | CParcelDlg::OnPacket |  | 0x142 | ❌ | 0x142 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  | 0x143 | ❌ | 0x143 | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
-| QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) | 0x144 | ❌ | 0x144 | ❌ | 0x155 | ❌ | 0x17F | 🟥 | 0x163 | 🟡 |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashShopInventory (T1) | 0x145 | ✅ | 0x145 | 🟥 | 0x156 | ❌ | 0x180 | 🟥 | 0x164 | 🟡 |
+| QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) | 0x144 | ❌ | 0x144 | ❌ | 0x155 | ❌ | 0x17F | 🟡 | 0x163 | 🟡 |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashShopInventory (T1) | 0x145 | ✅ | 0x145 | 🟥 | 0x156 | ❌ | 0x180 | 🟡 | 0x164 | 🟡 |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  | 0x146 | ❌ | 0x146 | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  | 0x147 | ❌ | 0x147 | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x148 | ❌ | 0x148 | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
@@ -444,9 +444,9 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x14D | ❌ | 0x14D | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | OPEN_GATE_REMOVED | COpenGatePool::OnOpenGateRemoved |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x14D | ❌ |  | ⬜ |
 | CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x14E | ❌ | 0x14E | ❌ | 0x15F | ❌ | 0x189 | ❌ |  | ⬜ |
-| KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) | 0x14F | 🟡 | 0x14F | 🟥 | 0x163 | 🟥 | 0x18E | 🟡 | 0x170 | 🟥 |
-| AUTO_HP_POT | CFuncKeyMappedMan::OnPetConsumeItemInit | character/clientbound/CharacterKeyMapAutoHp (T1) | 0x150 | 🟡 | 0x150 | 🟥 | 0x164 | 🟥 | 0x18F | 🟡 | 0x171 | 🟥 |
-| AUTO_MP_POT | CFuncKeyMappedMan::OnPetConsumeMPItemInit | character/clientbound/CharacterKeyMapAutoMp (T1) | 0x151 | 🟡 | 0x151 | 🟥 | 0x165 | 🟥 | 0x190 | 🟡 | 0x172 | 🟥 |
+| KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) | 0x14F | 🟡 | 0x14F | 🟥 | 0x163 | 🟡 | 0x18E | 🟡 | 0x170 | 🟡 |
+| AUTO_HP_POT | CFuncKeyMappedMan::OnPetConsumeItemInit | character/clientbound/CharacterKeyMapAutoHp (T1) | 0x150 | 🟡 | 0x150 | 🟥 | 0x164 | 🟡 | 0x18F | 🟡 | 0x171 | 🟡 |
+| AUTO_MP_POT | CFuncKeyMappedMan::OnPetConsumeMPItemInit | character/clientbound/CharacterKeyMapAutoMp (T1) | 0x151 | 🟡 | 0x151 | 🟥 | 0x165 | 🟡 | 0x190 | 🟡 | 0x172 | 🟡 |
 | SEND_TV | CMapleTVMan::OnSetMessage |  | 0x155 | ❌ | 0x155 | ❌ | 0x16A | ❌ | 0x195 | ❌ | 0x17A | ❌ |
 | REMOVE_TV | CMapleTVMan::OnClearMessage |  | 0x156 | ❌ | 0x156 | ❌ | 0x16B | ❌ | 0x196 | ❌ | 0x17B | ❌ |
 | ENABLE_TV | CMapleTVMan::OnSendMessageResult |  | 0x157 | ❌ | 0x157 | ❌ | 0x16C | ❌ | 0x197 | ❌ | 0x17C | ❌ |
@@ -912,9 +912,9 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 |---------|----|----|----|----|----|-----------|
 | v83 | 15 | 134 | 530 | 146 | 55 | 2.0% |
 | v84 | 0 | 6 | 625 | 142 | 107 | 0.0% |
-| v87 | 3 | 93 | 547 | 152 | 85 | 0.4% |
-| v95 | 9 | 151 | 542 | 70 | 108 | 1.1% |
-| JMS185 | 9 | 70 | 567 | 147 | 87 | 1.2% |
+| v87 | 3 | 120 | 552 | 152 | 53 | 0.4% |
+| v95 | 10 | 186 | 549 | 70 | 65 | 1.2% |
+| JMS185 | 11 | 85 | 570 | 147 | 67 | 1.5% |
 
 ## Conflicts
 
@@ -937,9 +937,6 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **IDA_0X00B** × v87 — registry says absent but template routes opcode 0x00B
 - 🟥 **IDA_0X00B** × v95 — registry says absent but template routes opcode 0x00B
 - 🟥 **SERVERLIST_REQUEST** × JMS185 — registry says absent but template routes opcode 0x00B
-- 🟥 **CHANGE_CHANNEL** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PING** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PING** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PING** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CHANNEL_SELECTED** × JMS185 — registry says absent but template routes opcode 0x014
 - 🟥 **PLAYER_LOGGEDIN** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -960,17 +957,11 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **IDA_0X01A** × v84 — registry says absent but template routes opcode 0x01A
 - 🟥 **IDA_0X01A** × v87 — registry says absent but template routes opcode 0x01A
 - 🟥 **RELOG** × v95 — registry says absent but template routes opcode 0x01C
-- 🟥 **STAT_CHANGED** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **VIEW_ALL_PIC_REGISTER** × JMS185 — registry says absent but template routes opcode 0x01F
 - 🟥 **VIEW_ALL_WITH_PIC** × JMS185 — registry says absent but template routes opcode 0x020
-- 🟥 **CANCEL_BUFF** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **FAME_RESPONSE** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **FAME_RESPONSE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **FAME_RESPONSE** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **UNNAMED_R45** × v83 — registry says absent but template routes opcode 0x026
 - 🟥 **UNNAMED_R45** × v84 — registry says absent but template routes opcode 0x026
 - 🟥 **CHANGE_CHANNEL** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SHOW_STATUS_INFO** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **UNNAMED_R46** × v83 — registry says absent but template routes opcode 0x027
 - 🟥 **UNNAMED_R46** × v84 — registry says absent but template routes opcode 0x027
 - 🟥 **UNNAMED_R47** × v83 — registry says absent but template routes opcode 0x027
@@ -978,31 +969,17 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **UNNAMED_R48** × v83 — registry says absent but template routes opcode 0x028
 - 🟥 **UNNAMED_R48** × v84 — registry says absent but template routes opcode 0x028
 - 🟥 **UNNAMED_R48** × v87 — registry says absent but template routes opcode 0x028
-- 🟥 **MEMO_RESULT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MEMO_RESULT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CANCEL_CHAIR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **USE_CHAIR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GENERAL_CHAT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CLOSE_CHALKBOARD** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **ENTRUSTED_SHOP_CHECK_RESULT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **ENTRUSTED_SHOP_CHECK_RESULT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **ENTRUSTED_SHOP_CHECK_RESULT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **MOVING_SHOOT_ATTACK_PREPARE** × v83 — registry says absent but template routes opcode 0x033
 - 🟥 **MOVING_SHOOT_ATTACK_PREPARE** × v84 — registry says absent but template routes opcode 0x033
-- 🟥 **GATHER_ITEM_RESULT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SORT_ITEM_RESULT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **NPC_TALK_MORE** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **NPC_TALK_MORE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **NPC_TALK_MORE** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PARTY_OPERATION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PARTY_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PARTY_OPERATION** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **BUDDYLIST** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **BUDDYLIST** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **BUDDYLIST** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **BUDDYLIST** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_OPERATION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_OPERATION** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **ITEM_SORT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **ITEM_SORT2** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1062,13 +1039,10 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **REPAIR_DURABILITY** × v83 — registry says absent but template routes opcode 0x07A
 - 🟥 **REPAIR_DURABILITY** × v84 — registry says absent but template routes opcode 0x07A
 - 🟥 **SCRIPT_PROGRESS_MESSAGE** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SCRIPT_PROGRESS_MESSAGE** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SCRIPT_PROGRESS_MESSAGE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **SCRIPT_PROGRESS_MESSAGE** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **USER_QUEST_RECORD_SET_STATE** × v83 — registry says absent but template routes opcode 0x07B
 - 🟥 **PARTY_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PARTY_OPERATION** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SET_FIELD** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CAKE_PIE_EVENT_RESULT** × v83 — registry says absent but template routes opcode 0x07F
 - 🟥 **CAKE_PIE_EVENT_RESULT** × v84 — registry says absent but template routes opcode 0x07F
@@ -1087,14 +1061,10 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **UNNAMED_R190** × v83 — registry says absent but template routes opcode 0x087
 - 🟥 **UNNAMED_R190** × v84 — registry says absent but template routes opcode 0x087
 - 🟥 **ASK_WHETHER_USE_PAMS_SONG** × v84 — registry says absent but template routes opcode 0x089
-- 🟥 **FIELD_EFFECT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **FIELD_EFFECT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **FIELD_EFFECT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **TRANSFER_CHANNEL** × v83 — registry says absent but template routes opcode 0x08A
 - 🟥 **TRANSFER_CHANNEL** × v84 — registry says absent but template routes opcode 0x08A
 - 🟥 **BLOW_WEATHER** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **BLOW_WEATHER** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **BLOW_WEATHER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **BLOW_WEATHER** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CLOCK** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CLOCK** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1109,11 +1079,8 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **BBS_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **SPAWN_PLAYER** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **REMOVE_PLAYER_FROM_MAP** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CHATTEXT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CHATTEXT1** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CHATTEXT1** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CHALKBOARD** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CHALKBOARD** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0A4** × v83 — registry says absent but template routes opcode 0x0A4
 - 🟥 **IDA_0X0A4** × v84 — registry says absent but template routes opcode 0x0A4
 - 🟥 **IDA_0X0A7** × v83 — registry says absent but template routes opcode 0x0A7
@@ -1122,8 +1089,6 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **MOVE_PET** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **MOVE_PET** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **MOVE_PET** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SHOW_SCROLL_EFFECT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SHOW_SCROLL_EFFECT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0A8** × v83 — registry says absent but template routes opcode 0x0A8
 - 🟥 **PET_CHAT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_CHAT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1136,8 +1101,6 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **CASH_GACHAPON_BUTTON** × v83 — registry says absent but template routes opcode 0x0AA
 - 🟥 **IDA_0X0AA** × v83 — registry says absent but template routes opcode 0x0AA
 - 🟥 **IDA_0X0AA** × v84 — registry says absent but template routes opcode 0x0AA
-- 🟥 **MOVE_PET** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MOVE_PET** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **MOVE_PET** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_LOOT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_LOOT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1151,19 +1114,12 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **PET_AUTO_POT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_AUTO_POT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_AUTO_POT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_CHAT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_CHAT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_CHAT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0AC** × v87 — registry says absent but template routes opcode 0x0AC
 - 🟥 **PET_EXCLUDE_ITEMS** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_EXCLUDE_ITEMS** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_EXCLUDE_ITEMS** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_EXCEPTION_LIST** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_EXCEPTION_LIST** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **PET_EXCEPTION_LIST** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_COMMAND** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_COMMAND** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_COMMAND** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **OP_BOARD_HAS_NEW** × v84 — registry says absent but template routes opcode 0x0AF
 - 🟥 **ACCOUNT_MORE_INFO** × v84 — registry says absent but template routes opcode 0x0B0
 - 🟥 **IDA_0X0B0** × v84 — registry says absent but template routes opcode 0x0B0
@@ -1184,7 +1140,6 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **TESLA_TRIANGLE** × v84 — registry says absent but template routes opcode 0x0C0
 - 🟥 **TESLA_TRIANGLE** × JMS185 — registry says absent but template routes opcode 0x0C0
 - 🟥 **FACIAL_EXPRESSION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **FACIAL_EXPRESSION** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **FOLLOW_CHARACTER** × v83 — registry says absent but template routes opcode 0x0C1
 - 🟥 **FOLLOW_CHARACTER** × v84 — registry says absent but template routes opcode 0x0C1
 - 🟥 **FOLLOW_CHARACTER** × JMS185 — registry says absent but template routes opcode 0x0C1
@@ -1197,7 +1152,6 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **SHOW_RECOVERY_UPGRADE_COUNT_EFFECT** × v83 — registry says absent but template routes opcode 0x0C5
 - 🟥 **SHOW_RECOVERY_UPGRADE_COUNT_EFFECT** × v84 — registry says absent but template routes opcode 0x0C5
 - 🟥 **SHOW_FOREIGN_EFFECT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SHOW_FOREIGN_EFFECT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GIVE_FOREIGN_BUFF** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CANCEL_FOREIGN_BUFF** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **UPDATE_PARTYMEMBER_HP** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1210,36 +1164,28 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **GUILD_MARK_CHANGED** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_MARK_CHANGED** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CANCEL_CHAIR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CANCEL_CHAIR** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DAMAGE_REACTOR** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DAMAGE_REACTOR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DAMAGE_REACTOR** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DAMAGE_REACTOR** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **SHOW_ITEM_GAIN_INCHAT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SHOW_ITEM_GAIN_INCHAT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **SUMMON_REMOVE** × v84 — registry says absent but template routes opcode 0x0D3
 - 🟥 **IDA_0X0D4** × v87 — registry says absent but template routes opcode 0x0D4
 - 🟥 **IDA_0X0D4** × v95 — registry says absent but template routes opcode 0x0D4
 - 🟥 **PLAYER_HINT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PLAYER_HINT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PLAYER_HINT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0DA** × v84 — registry says absent but template routes opcode 0x0DA
 - 🟥 **IDA_0X0DA** × v95 — registry says absent but template routes opcode 0x0DA
 - 🟥 **IDA_0X0DB** × v95 — registry says absent but template routes opcode 0x0DB
 - 🟥 **OPEN_UI** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **OPEN_UI** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **OPEN_UI** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **OPEN_UI** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0DD** × v83 — registry says absent but template routes opcode 0x0DD
 - 🟥 **LOCK_UI** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DISABLE_UI** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DISABLE_UI** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DISABLE_UI** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DISABLE_UI** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0DE** × v83 — registry says absent but template routes opcode 0x0DE
 - 🟥 **IDA_0X0DE** × v95 — registry says absent but template routes opcode 0x0DE
 - 🟥 **TALK_GUIDE** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **TALK_GUIDE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **TALK_GUIDE** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0E1** × v84 — registry says absent but template routes opcode 0x0E1
 - 🟥 **IDA_0X0E1** × v95 — registry says absent but template routes opcode 0x0E1
@@ -1248,39 +1194,24 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **CASHSHOP_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **COOLDOWN** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **COOLDOWN** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **COOLDOWN** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **OPEN_UI_WITH_OPTION** × v83 — registry says absent but template routes opcode 0x0EA
 - 🟥 **IDA_0X0EC** × v83 — registry says absent but template routes opcode 0x0EC
 - 🟥 **SPAWN_MONSTER** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SPAWN_MONSTER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0ED** × v83 — registry says absent but template routes opcode 0x0ED
 - 🟥 **KILL_MONSTER** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **KILL_MONSTER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0EE** × v83 — registry says absent but template routes opcode 0x0EE
 - 🟥 **IDA_0X0EE** × v84 — registry says absent but template routes opcode 0x0EE
-- 🟥 **SPAWN_MONSTER_CONTROL** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0EF** × v83 — registry says absent but template routes opcode 0x0EF
 - 🟥 **MOVE_MONSTER** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MOVE_MONSTER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0F0** × v83 — registry says absent but template routes opcode 0x0F0
 - 🟥 **MOVE_MONSTER_RESPONSE** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MOVE_MONSTER_RESPONSE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **APPLY_MONSTER_STATUS** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **APPLY_MONSTER_STATUS** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **APPLY_MONSTER_STATUS** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0F2** × v83 — registry says absent but template routes opcode 0x0F2
 - 🟥 **IDA_0X0F2** × v84 — registry says absent but template routes opcode 0x0F2
-- 🟥 **CANCEL_MONSTER_STATUS** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CANCEL_MONSTER_STATUS** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CANCEL_MONSTER_STATUS** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0F3** × v83 — registry says absent but template routes opcode 0x0F3
 - 🟥 **IDA_0X0F3** × v84 — registry says absent but template routes opcode 0x0F3
 - 🟥 **IDA_0X0F4** × v84 — registry says absent but template routes opcode 0x0F4
 - 🟥 **IDA_0X0F5** × v84 — registry says absent but template routes opcode 0x0F5
 - 🟥 **IDA_0X0F5** × v95 — registry says absent but template routes opcode 0x0F5
-- 🟥 **DAMAGE_MONSTER** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DAMAGE_MONSTER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DAMAGE_MONSTER** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X0F6** × v83 — registry says absent but template routes opcode 0x0F6
 - 🟥 **IDA_0X0F6** × v84 — registry says absent but template routes opcode 0x0F6
 - 🟥 **IDA_0X0F8** × v84 — registry says absent but template routes opcode 0x0F8
@@ -1294,11 +1225,8 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **INC_MOB_CHARGE_COUNT** × JMS185 — registry says absent but template routes opcode 0x0FF
 - 🟥 **MOB_SKILL_DELAY** × JMS185 — registry says absent but template routes opcode 0x100
 - 🟥 **SPAWN_NPC** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SPAWN_NPC** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **SPAWN_NPC_REQUEST_CONTROLLER** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SPAWN_NPC_REQUEST_CONTROLLER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **NPC_ACTION** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **NPC_ACTION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X10A** × v84 — registry says absent but template routes opcode 0x10A
 - 🟥 **IDA_0X10B** × v84 — registry says absent but template routes opcode 0x10B
 - 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1317,17 +1245,8 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **IDA_0X114** × v87 — registry says absent but template routes opcode 0x114
 - 🟥 **IDA_0X114** × v95 — registry says absent but template routes opcode 0x114
 - 🟥 **REACTOR_HIT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_HIT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_HIT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_HIT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **REACTOR_SPAWN** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_SPAWN** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_SPAWN** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_SPAWN** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **REACTOR_DESTROY** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_DESTROY** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_DESTROY** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REACTOR_DESTROY** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **MOB_ESCORT_STOP** × v83 — registry says absent but template routes opcode 0x131
 - 🟥 **OPEN_NPC_SHOP** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **OPEN_NPC_SHOP** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
@@ -1340,24 +1259,10 @@ Tool: `2ffd8c711d11dc392b8f03e281ce3a5b7bd37086`
 - 🟥 **MOB_ESCORT_STOP_SAY** × v83 — registry says absent but template routes opcode 0x132
 - 🟥 **MOB_ATTACKED_BY_MOB** × v83 — registry says absent but template routes opcode 0x135
 - 🟥 **STORAGE** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **STORAGE** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **STORAGE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MESSENGER** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MESSENGER** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MESSENGER** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PLAYER_INTERACTION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **QUERY_CASH_RESULT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CASHSHOP_OPERATION** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CASHSHOP_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **OPEN_GATE_CREATED** × v84 — registry says absent but template routes opcode 0x14C
 - 🟥 **KEYMAP** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **KEYMAP** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **KEYMAP** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **AUTO_HP_POT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **AUTO_HP_POT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **AUTO_HP_POT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **AUTO_MP_POT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **AUTO_MP_POT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **AUTO_MP_POT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **IDA_0X15A** × v84 — registry says absent but template routes opcode 0x15A
 

@@ -450,6 +450,178 @@
       {
         "opCode": "0x190",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x11",
+        "writer": "Ping"
+      },
+      {
+        "opCode": "0x1E",
+        "writer": "StatChanged"
+      },
+      {
+        "opCode": "0x25",
+        "writer": "FameResponse"
+      },
+      {
+        "opCode": "0x28",
+        "writer": "NoteOperation"
+      },
+      {
+        "opCode": "0x31",
+        "writer": "HiredMerchantOperation"
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x35",
+        "writer": "CompartmentSort"
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "PartyOperation"
+      },
+      {
+        "opCode": "0x41",
+        "writer": "BuddyOperation"
+      },
+      {
+        "opCode": "0x43",
+        "writer": "GuildOperation"
+      },
+      {
+        "opCode": "0x7F",
+        "writer": "ScriptProgress"
+      },
+      {
+        "opCode": "0x8D",
+        "writer": "SetField"
+      },
+      {
+        "opCode": "0x9A",
+        "writer": "FieldEffect"
+      },
+      {
+        "opCode": "0x9E",
+        "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "CharacterChatGeneral"
+      },
+      {
+        "opCode": "0xC9",
+        "writer": "PetMovement"
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "PetChat"
+      },
+      {
+        "opCode": "0xCC",
+        "writer": "PetExcludeResponse"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "PetCommandResponse"
+      },
+      {
+        "opCode": "0xE9",
+        "writer": "CharacterEffect"
+      },
+      {
+        "opCode": "0xFB",
+        "writer": "UiOpen"
+      },
+      {
+        "opCode": "0xFE",
+        "writer": "UiDisable"
+      },
+      {
+        "opCode": "0x100",
+        "writer": "GuideTalk"
+      },
+      {
+        "opCode": "0x11C",
+        "writer": "SpawnMonster"
+      },
+      {
+        "opCode": "0x11D",
+        "writer": "DestroyMonster"
+      },
+      {
+        "opCode": "0x11E",
+        "writer": "ControlMonster"
+      },
+      {
+        "opCode": "0x11F",
+        "writer": "MoveMonster"
+      },
+      {
+        "opCode": "0x120",
+        "writer": "MoveMonsterAck"
+      },
+      {
+        "opCode": "0x122",
+        "writer": "MonsterStatSet"
+      },
+      {
+        "opCode": "0x123",
+        "writer": "MonsterStatReset"
+      },
+      {
+        "opCode": "0x126",
+        "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x137",
+        "writer": "SpawnNPC"
+      },
+      {
+        "opCode": "0x139",
+        "writer": "SpawnNPCRequestController"
+      },
+      {
+        "opCode": "0x13A",
+        "writer": "NPCAction"
+      },
+      {
+        "opCode": "0x14E",
+        "writer": "ReactorHit"
+      },
+      {
+        "opCode": "0x150",
+        "writer": "ReactorSpawn"
+      },
+      {
+        "opCode": "0x151",
+        "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x170",
+        "writer": "StorageOperation"
+      },
+      {
+        "opCode": "0x174",
+        "writer": "MessengerOperation"
+      },
+      {
+        "opCode": "0x175",
+        "writer": "CharacterInteraction"
+      },
+      {
+        "opCode": "0x17F",
+        "writer": "CashShopCashQueryResult"
+      },
+      {
+        "opCode": "0x180",
+        "writer": "CashShopOperation"
       }
     ]
   },

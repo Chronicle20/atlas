@@ -1,0 +1,56 @@
+name: packet-matrix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/packet-audit/**'
+      - 'libs/atlas-packet/**'
+      - 'docs/packets/**'
+      - 'services/atlas-configurations/seed-data/templates/**'
+
+env:
+  GO_VERSION: '1.25.5'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Packet-audit tests
+        run: cd tools/packet-audit && go test ./...
+
+      - name: Coverage matrix check
+        # continue-on-error: true because ~1090 conflict rows remain after Phase-5
+        # discovery (915 cross-version template-coverage gaps + 163 absent-but-routed
+        # + 12 genuine Atlas findings). Blocking flip is a one-line follow-up once
+        # conflicts reach zero.
+        # Follow-up: task-085 follow-up: conflict burn-down
+        #   — per-version template coverage + D3 cross-version rule refinement.
+        #   Tracked in the PR that lands this gate; remove continue-on-error when
+        #   `matrix --check` exits 0 on main.
+        continue-on-error: true
+        run: |
+          set -e
+          go run ./tools/packet-audit matrix --check 2>/tmp/matrix_check.txt
+        id: matrix_check
+
+      - name: Fatal-class guard
+        # Fail unconditionally on any line that mentions orphan markers, dangling
+        # linkage, stale evidence, hash drift, unresolvable references, or malformed
+        # records — these must never be grandfathered.
+        run: |
+          count=$(grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt || true)
+          if [ "$count" -gt 0 ]; then
+            echo "::error::matrix --check reported $count fatal-class finding(s); see step output"
+            grep -iE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt || true
+            exit 1
+          fi
+          echo "Fatal-class check passed (0 hits)."

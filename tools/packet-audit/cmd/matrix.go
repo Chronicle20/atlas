@@ -135,8 +135,19 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	}
 	in.Evidence = evStatus
 	// Design §13: an evidence record for a (packet, version) with no audit
-	// report is dangling — a --check failure.
+	// report is dangling — a --check failure. Iterate sorted so stderr output
+	// is deterministic across runs.
+	evKeys := make([]matrix.EvKey, 0, len(evStatus))
 	for k := range evStatus {
+		evKeys = append(evKeys, k)
+	}
+	sort.Slice(evKeys, func(i, j int) bool {
+		if evKeys[i].Packet != evKeys[j].Packet {
+			return evKeys[i].Packet < evKeys[j].Packet
+		}
+		return evKeys[i].Version < evKeys[j].Version
+	})
+	for _, k := range evKeys {
 		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); !ok {
 			evProblems = append(evProblems,
 				fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))

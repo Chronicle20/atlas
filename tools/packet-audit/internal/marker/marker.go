@@ -102,6 +102,9 @@ func scanReader(r io.Reader, file string) ([]Marker, []string) {
 		seen[k] = line
 		ms = append(ms, m)
 	}
+	if err := sc.Err(); err != nil {
+		errs = append(errs, fmt.Sprintf("%s: scan error: %v", file, err))
+	}
 	return ms, errs
 }
 

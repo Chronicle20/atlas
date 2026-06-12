@@ -1,6 +1,6 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loginHistoryService } from "@/services/api/login-history.service";
 import { type LoginHistoryEntry, BanType } from "@/types/models/ban";
 import { CreateBanDialog } from "@/components/features/bans/CreateBanDialog";
@@ -39,6 +39,14 @@ export function LoginHistoryPage() {
     const [hasSearched, setHasSearched] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [prefillData, setPrefillData] = useState<{ banType: BanType; value: string } | null>(null);
+
+    // Reset search results when the active tenant changes so a switch never
+    // leaves the previous tenant's rows on screen (FR-2.5).
+    useEffect(() => {
+        setEntries([]);
+        setHasSearched(false);
+        setSearchCriteria({ ip: "", hwid: "", accountId: "" });
+    }, [activeTenant?.id]);
 
     const handleSearch = useCallback(async () => {
         if (!activeTenant) {

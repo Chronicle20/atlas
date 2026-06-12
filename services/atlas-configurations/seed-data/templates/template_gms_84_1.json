@@ -1035,6 +1035,21 @@
             "BUY_WORLD_TRANSFER": 49
           }
         }
+      },
+      {
+        "opCode": "0xB2",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xB4",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
       }
     ],
     "writers": [
@@ -2445,6 +2460,30 @@
       {
         "opCode": "0x15A",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0xB4",
+        "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "SummonMove"
+      },
+      {
+        "opCode": "0xB6",
+        "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0xB8",
+        "writer": "SummonSkill"
       }
     ]
   },

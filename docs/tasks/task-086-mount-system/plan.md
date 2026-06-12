@@ -321,7 +321,7 @@ Expected: clean.
 Consumes Task 1 §8 (skill-id/vehicle-id set). Today the mount branch emits MONSTER_RIDING with
 `amount = skillId`. Skill-only mounts must emit the **vehicle id**; SpaceShip is per-level.
 
-- [ ] **Step 1: Write the failing test.**
+- [x] **Step 1: Write the failing test.**
 
 Test that the reader, for Broomstick (skill 1019), emits a MONSTER_RIDING statup with
 `Amount == 1932005`, and for SpaceShip (1013) level N emits `Amount == 1932000 + N`. Use a
@@ -347,12 +347,12 @@ func TestSkillReaderSpaceShipPerLevelVehicleId(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run it (fails — undefined helper / wrong amount).**
+- [x] **Step 2: Run it (fails — undefined helper / wrong amount).**
 
 Run: `cd services/atlas-data && go test ./atlas.com/data/skill/ -run TestSkillReader -v`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement the vehicle-id mapping.**
+- [x] **Step 3: Implement the vehicle-id mapping.**
 
 If Phase B runs before Task 17 lands the atlas-constants ids, add a local map keyed on the
 literal ids and replace with the constants once Task 17 lands (note this in the commit). Extend
@@ -371,12 +371,12 @@ Add `skillOnlyMountVehicleId(skillId Id, level int) (int32, bool)` mapping the p
 beginner+Noblesse+Legend skill ids to their vehicle ids (SpaceShip → `1932000 + int32(level)`).
 Factor `mountStatupsForSkill`/`findStatup` as production helpers (no `*_testhelpers.go`).
 
-- [ ] **Step 4: Run it.**
+- [x] **Step 4: Run it.**
 
 Run: `cd services/atlas-data && go test ./atlas.com/data/skill/ -run TestSkillReader -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add services/atlas-data/atlas.com/data/skill/
@@ -384,6 +384,11 @@ git commit -m "task-086: atlas-data skill reader emits vehicle ids for skill-onl
 ```
 
 ## Task 8: Consumable reader exposes tiredness-heal (only if WZ carries it)
+
+> **SKIPPED (condition not met).** Task 1 §8.4 verified via live atlas-data that the revitalizer
+> (class 226, item 2260000) carries `incFatigue:0` / `spec.inc:0` — no WZ-driven heal field. The
+> heal is a server-side constant (30), so per this task's own conditional it is skipped; the
+> constant 30 is passed from atlas-consumables (Task 33). Boxes left unchecked intentionally.
 
 **Files:**
 - Modify: `services/atlas-data/atlas.com/data/consumable/rest.go` (+ the reader that fills `Spec`)
@@ -409,7 +414,7 @@ git commit -m "task-086: expose revitalizer tiredness-heal spec in consumable re
 
 ## Task 8b: atlas-data module gate
 
-- [ ] **Step 1:** `cd services/atlas-data && go test -race ./... && go vet ./... && go build ./...` → clean.
+- [x] **Step 1:** `cd services/atlas-data && go test -race ./... && go vet ./... && go build ./...` → clean.
 
 ---
 
@@ -724,7 +729,7 @@ git commit -m "task-086: redis active-mount registry (atlas-redis lib types)"
 
 > Land before atlas-data Task 7 and atlas-channel Task 25 switch from literal ids to constants.
 
-- [ ] **Step 1: Add skill id constants (values pinned in Task 1 §8).**
+- [x] **Step 1: Add skill id constants (values pinned in Task 1 §8).**
 
 ```go
 // Skill-only mount skills (beginner band) + Noblesse/Legend equivalents.
@@ -736,13 +741,13 @@ BalrogMountId = Id(1031)
 // … Noblesse (1000_xxxx) / Legend (2000_xxxx) variants per pinned set …
 ```
 
-- [ ] **Step 2: Add classification 226.**
+- [x] **Step 2: Add classification 226.**
 
 ```go
 ClassificationRevitalizer = Classification(226) // mount food / taming-mob food
 ```
 
-- [ ] **Step 3: Add helpers + failing test.**
+- [x] **Step 3: Add helpers + failing test.**
 
 ```go
 // skill/mount.go
@@ -754,7 +759,7 @@ Test `IsTamedMountSkill(1004) == true`, `IsTamedMountSkill(20001004) == true`,
 `IsTamedMountSkill(1019) == false`; `SkillOnlyMountVehicleId(1019,1) == (1932005,true)`;
 `SkillOnlyMountVehicleId(1013,3) == (1932003,true)`.
 
-- [ ] **Step 4: Run → implement → pass. Step 5: Commit.**
+- [x] **Step 4: Run → implement → pass. Step 5: Commit.**
 
 ```bash
 cd libs/atlas-constants && go test ./... && go vet ./...
@@ -762,7 +767,7 @@ git add libs/atlas-constants/skill libs/atlas-constants/item
 git commit -m "task-086: mount skill ids, classification 226, mount-skill helpers"
 ```
 
-- [ ] **Step 6: Back-fill Task 7 to use the new constants** (replace any literal-id map). Re-run atlas-data skill tests. Commit if changed.
+- [x] **Step 6: Back-fill Task 7 to use the new constants** (replace any literal-id map). Re-run atlas-data skill tests. Commit if changed.
 
 ## Task 18: Buff-status consumer → registry population
 

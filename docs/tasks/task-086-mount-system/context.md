@@ -344,7 +344,23 @@ and design §2. Tamed taming-mob items live in class 190 (`1902xxx`); see Heaven
 `MapleMount.java` comment (1902000 Hog, 1902001 Silver Mane, 1902002 Red Draco, 1902005
 Mimiana, 1902012 Yeti, …) and `getId() => itemid - 1901999`.
 
-### 8.7 Riding-Mimiana questline ids — ⚠ PARTIAL / divergent from design
+### 8.7 Riding-Mimiana questline ids — ✅ CORRECTED 2026-06-12 (was wrong below)
+
+> **CORRECTION (2026-06-12).** The "classic quest does not exist" conclusion below was WRONG —
+> it only grepped `deploy/seed/.../quests` JSON. **Quest 20523 "Riding Mimiana" EXISTS as WZ data**
+> for the v83 tenant (`GET /api/data/quests/20523`) and its WZ `endActions` ALREADY award:
+> saddle **1912005** (class 191, slot -19), taming-mob **1902005** (class 190, slot -18), skill
+> **10001004** (MonsterRider), and consume quest item **4032117**. Start: npc **1102002**, level 50+,
+> Cygnus Knight job, prereq **quest 20522** completed. atlas-quest `processEndActions`
+> (`services/atlas-quest/.../quest/processor.go`) builds AddAwardItem/AddCreateSkill from the WZ
+> EndActions when `complete_quest` fires — so an NPC conversation needs ONLY `start_quest` /
+> `complete_quest` (NO manual award; the `suppressAwardAssetByCompleteQuest` dedup suppresses manual
+> awards that duplicate the WZ ones). FR-9 was implemented as a single NPC conversation file
+> `deploy/seed/gms/83_1/npc-conversations/quests/quest-20523.json` (v83). Other versions' quest-20523
+> conversation is per-version data, deferred to the multi-version pre-deploy pass. The legacy notes
+> below (Empress's Knights 20522/20526 line) are still factually present but were NOT the right quest.
+
+### 8.7-legacy Riding-Mimiana questline ids — ⚠ PARTIAL / divergent from design (SUPERSEDED — see 8.7 above)
 
 **The classic v83 "Riding Mimiana" Monster-Rider acquisition quest (the one that grants the
 1004-band MonsterRider skill + a class-191 saddle + class-190 taming-mob) is NOT present in

@@ -1201,12 +1201,12 @@ git commit -m "task-086: consumables emits TamingMobFed event with tiredness hea
 - Create: quest definition JSON under the project's quest data location (use Task 1 §8 ids)
 - Use: `/convert-quest` conventions
 
-- [ ] **Step 1: Convert/author the Riding Mimiana quest so completion grants the Monster Rider
+- [x] **Step 1: Convert/author the Riding Mimiana quest so completion grants the Monster Rider
 skill (1004 band) + starter saddle (class 191) + taming-mob (class 190)** via the existing
 atlas-quest → atlas-skills skill-grant + inventory item-grant reward paths. Use `convert-quest`
 tooling; ids from context.md §8. Skip Player-NPC spawning (project convention).
 
-- [ ] **Step 2: Validate via the convert-quest tooling output. Commit.**
+- [x] **Step 2: Validate via the convert-quest tooling output. Commit.**
 
 ```bash
 git add <quest-data-paths>
@@ -1219,10 +1219,10 @@ git commit -m "task-086: Riding Mimiana quest awards Monster Rider skill + start
 - Create: NPC conversation JSON (Task 1 §8 NPC id)
 - Use: `/convert-npc` conventions
 
-- [ ] **Step 1: Author the questgiver NPC conversation state machine** following the project's JSON
+- [x] **Step 1: Author the questgiver NPC conversation state machine** following the project's JSON
 conventions; wire start/complete to the quest from Task 36.
 
-- [ ] **Step 2: Validate via convert-npc tooling. Commit.**
+- [x] **Step 2: Validate via convert-npc tooling. Commit.**
 
 ```bash
 git add <npc-data-paths>
@@ -1231,7 +1231,7 @@ git commit -m "task-086: Riding Mimiana NPC conversation"
 
 ## Task 38: Questline validation gate
 
-- [ ] **Step 1:** Run whatever validation the convert-quest/convert-npc tooling provides over the
+- [x] **Step 1:** Run whatever validation the convert-quest/convert-npc tooling provides over the
 new data; confirm no schema errors. Record result in the task note.
 
 ---

@@ -18,24 +18,21 @@ opaque_types:
   - Visitor                 # interaction.Visitor / Room — mini-room sub-structs
   - CharacterStatistics     # GW_CharacterStat — mask-driven variable stat block
 
-# Packet-prefix coverage for the opaque families above (Task 3.2 removes the
-# need for this duplication once TypeRegistry recursion is wired).
-# Every entry here is a directory that exists under libs/atlas-packet/.
+# Packet-prefix coverage for the social/lobby dispatcher families (design §8
+# baseline — complex shared structs).  Every entry is a directory under
+# libs/atlas-packet/.
+#
+# The opaque-type consumer families (inventory/, monster/, pet/, character/,
+# npc/, interaction/, storage/, cash/) were previously duplicated here as a
+# Phase-2 shortcut.  Task 3.2 wires TypeRegistry recursion so opaque_types
+# entries above expand transitively to their consumer packets — the prefix
+# duplication is no longer needed and has been removed.
 packet_prefixes:
-  # Social/lobby dispatcher families (design §8 baseline — complex shared structs)
   - party/
   - guild/          # also covers GuildMember opaque type
   - buddy/
   - messenger/      # also covers Avatar (AvatarLook) opaque type
   - note/           # atlas-packet dir: note/ (not memo/)
-  # Opaque-type consumer families (Phase-2 shortcut: duplicated from opaque_types)
-  - npc/            # clientbound/serverbound action packets use Movement
-  - interaction/    # Visitor + Room + Asset opaque types
-  - storage/        # Asset opaque type
-  - cash/           # Asset opaque type
-  - inventory/      # Asset opaque type (InventoryAdd, InventoryChangeBatch)
-  - monster/        # MonsterTemporaryStat + Movement opaque types
-  - pet/            # Pet + Movement opaque types
-  - character/      # CharacterStatistics + Pet + Avatar consumers
+  - npc/            # clientbound/ + serverbound/ subdirs (NPC conversation dispatcher)
 
 packets: []

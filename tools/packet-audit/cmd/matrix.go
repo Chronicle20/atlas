@@ -9,8 +9,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/marker"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/template"
@@ -145,13 +148,61 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
 		return exitRuntime
 	}
+
+	// Build TypeRegistry once for opaque-type recursion (Task 3.2).
+	// A missing or empty PacketLibDir is tolerated — NewTypeRegistry returns an
+	// empty registry rather than an error for a non-existent root.
+	var typeReg *atlaspacket.TypeRegistry
+	if o.PacketLibDir != "" {
+		if reg, regErr := atlaspacket.NewTypeRegistry(o.PacketLibDir); regErr == nil {
+			typeReg = reg
+		}
+		// If the dir doesn't exist or is unreadable, typeReg stays nil; IsTier1 is
+		// called with nil recurseTypes (opaque-type expansion silently skipped).
+	}
+
 	// Populate in.Tier1 for every loaded report's packet id via tiers.IsTier1.
-	// TypeRegistry recursion (recurseTypes arg) joins in Task 3.2; pass nil for now.
+	// Pass the transitive RecurseType set derived from the TypeRegistry so that
+	// opaque_types entries in tiers.yaml expand correctly to their consumer packets.
 	for _, vk := range o.Versions {
 		for _, r := range in.Reports[vk] {
 			pkt := matrix.PacketID(r)
-			if tiers.IsTier1(pkt, nil) {
+			recurseTypes := transitiveRecurseTypes(typeReg, pkt)
+			if tiers.IsTier1(pkt, recurseTypes) {
 				in.Tier1[pkt] = true
+			}
+		}
+	}
+
+	// Scan marker comments in atlas-packet test files (Task 3.2).
+	var checkProblems []string
+	checkProblems = append(checkProblems, evProblems...)
+	if o.PacketLibDir != "" {
+		if _, statErr := os.Stat(o.PacketLibDir); !os.IsNotExist(statErr) {
+			// PacketLibDir exists: scan for markers. A non-existent dir means no
+			// markers yet (Phase 1/2 runs, CI before atlas-packet has any markers).
+			markers, markerErrs, markerErr := marker.Scan(o.PacketLibDir)
+			if markerErr != nil {
+				fmt.Fprintf(stderr, "packet-audit matrix: marker scan: %v\n", markerErr)
+				return exitRuntime
+			}
+			checkProblems = append(checkProblems, markerErrs...)
+			for _, mk := range markers {
+				k := matrix.EvKey{Packet: mk.Packet, Version: mk.Version}
+				ok := false
+				if ev, has := evStatus[k]; has && ev.Address == mk.Address {
+					ok = true
+				}
+				if rep, has := reportForPacket(in.Reports[mk.Version], mk.Packet); has && rep.Address == mk.Address {
+					ok = true
+				}
+				if !ok {
+					checkProblems = append(checkProblems,
+						fmt.Sprintf("orphan marker %s:%d — %s × %s ida=%s matches no evidence record or audit report",
+							mk.File, mk.Line, mk.Packet, mk.Version, mk.Address))
+					continue
+				}
+				in.Markers[k] = matrix.MarkerStatus{Found: true, Address: mk.Address}
 			}
 		}
 	}
@@ -170,7 +221,7 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	jsPath := filepath.Join(o.OutDir, "status.json")
 
 	if o.Check {
-		return matrixCheck(m, md, js, mdPath, jsPath, evProblems, stderr)
+		return matrixCheck(m, md, js, mdPath, jsPath, checkProblems, o.Versions, stderr)
 	}
 	if err := os.MkdirAll(o.OutDir, 0o755); err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
@@ -189,16 +240,37 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 }
 
 // matrixCheck implements the full --check semantics (design §10.1):
-// fails on stale committed outputs, evidence problems (drift/dangling), and
+// fails on stale committed outputs, problems (drift/dangling/orphan), and
 // any conflict cell (conflicts are blockers, never allowlisted).
-func matrixCheck(m matrix.Matrix, md string, js []byte, mdPath, jsPath string, evProblems []string, stderr io.Writer) int {
+// versionKeys fixes the iteration order for conflict messages so output is
+// deterministic regardless of map iteration order.
+func matrixCheck(m matrix.Matrix, md string, js []byte, mdPath, jsPath string, problems []string, versionKeys []string, stderr io.Writer) int {
 	fail := false
-	for _, p := range evProblems {
+	for _, p := range problems {
 		fmt.Fprintf(stderr, "matrix --check: %s\n", p)
 		fail = true
 	}
+	// Use sorted version keys for deterministic conflict output.
+	vks := versionKeys
+	if len(vks) == 0 {
+		// Fallback: derive from rows (covers callers without explicit keys).
+		seen := map[string]bool{}
+		for _, r := range m.Rows {
+			for vk := range r.Cells {
+				seen[vk] = true
+			}
+		}
+		for vk := range seen {
+			vks = append(vks, vk)
+		}
+		sort.Strings(vks)
+	}
 	for _, r := range m.Rows {
-		for vk, c := range r.Cells {
+		for _, vk := range vks {
+			c, ok := r.Cells[vk]
+			if !ok {
+				continue
+			}
 			if c.State == matrix.StateConflict {
 				name := r.Op
 				if name == "" {
@@ -233,6 +305,66 @@ func reportForPacket(reps map[string]matrix.LoadedReport, pkt string) (matrix.Lo
 		}
 	}
 	return matrix.LoadedReport{}, false
+}
+
+// transitiveRecurseTypes returns the set of qualified type names reachable via
+// KindRecurse calls from the packet's root struct. Used by IsTier1 to expand
+// opaque_types tier membership to their consumer packets (Task 3.2).
+//
+// packetID has the form "pkgdir/StructName" (e.g. "buddy/clientbound/Invite").
+// The TypeRegistry qualifies structs as "pkgdir.StructName". We split on the
+// last "/" to derive pkgPath + structName, then walk Calls transitively.
+//
+// If typeReg is nil (PacketLibDir empty or unreadable), returns nil — IsTier1
+// falls back to prefix/explicit-packet matching only.
+func transitiveRecurseTypes(typeReg *atlaspacket.TypeRegistry, packetID string) []string {
+	if typeReg == nil || packetID == "" {
+		return nil
+	}
+	i := strings.LastIndex(packetID, "/")
+	if i < 0 {
+		return nil
+	}
+	pkgPath := packetID[:i]
+	structName := packetID[i+1:]
+	qualKey := pkgPath + "." + structName
+	// Walk the call tree transitively, collecting all RecurseType names.
+	seen := map[string]bool{}
+	var walk func(key string)
+	walk = func(key string) {
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		calls, ok := typeReg.Calls(key)
+		if !ok {
+			return
+		}
+		for _, c := range calls {
+			if c.Kind == atlaspacket.KindRecurse && c.RecurseType != "" {
+				walk(c.RecurseType)
+			}
+		}
+	}
+	walk(qualKey)
+	// Return all names except the root itself.
+	delete(seen, qualKey)
+	var out []string
+	for k := range seen {
+		out = append(out, k)
+	}
+	// Also return short (unqualified) names so tiers.yaml short names match.
+	extra := make([]string, 0, len(out))
+	for _, k := range out {
+		if j := strings.LastIndex(k, "."); j >= 0 {
+			short := k[j+1:]
+			// Strip ::EncodeForeign suffix for matching.
+			short = strings.TrimSuffix(short, "::EncodeForeign")
+			extra = append(extra, short)
+		}
+	}
+	out = append(out, extra...)
+	return out
 }
 
 func templatePathIn(dir, vk string) string {

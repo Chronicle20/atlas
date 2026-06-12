@@ -1,5 +1,5 @@
 {
-  "toolSha": "b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257",
+  "toolSha": "6d4858cdab7d1c4c500e57a7970d0560b26617ea",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
     "gms_v87": "8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66",
@@ -3832,6 +3832,2186 @@
     },
     {
       "kind": "op",
+      "op": "IDA_0X00A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00A"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00A"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00A"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00A"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X00B",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00B"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00B"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00B"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x00B"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X012",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X013",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X019",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x019"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X01A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x01A"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x01A"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x01A"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X038",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X04C",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x04C"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X04D",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X04E",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x04E"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X04F",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X050",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X051",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X052",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X053",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x053"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X054",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x054"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X059",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X05C",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X073",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X074",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X078",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X079",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X07E",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X098",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x098"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X09C",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X09D",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0A4",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0A4"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0A4"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0A6",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0A7",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0A7"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0A7"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0A8",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0A8"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0A9",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0AA",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0AA"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0AA"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0AB",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0AB"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0AB"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0AB"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0AC",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0AC"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0B0",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0B0"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0B1",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0B1"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0D4",
+      "packet": "character/clientbound/CharacterExpression",
+      "direction": "clientbound",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0D4"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0D4"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0DA",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0DA"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0DA"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0DB",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0DB"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0DD",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0DD"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0DE",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0DE"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0DE"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0E1",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0E1"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0E1"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0E4",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0E4"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0E6",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0E8",
+      "packet": "character/clientbound/CharacterExpression",
+      "direction": "clientbound",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but an Atlas audit report exists (CharacterExpression)"
+        },
+        "gms_v95": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "registry says absent but an Atlas audit report exists (CharacterExpression)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0EC",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0EC"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0ED",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0ED"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0EE",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0EE"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0EE"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0EF",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0EF"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F0",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F0"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F1",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F2",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F2"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F2"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F3",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F3"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F3"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F4",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F4"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F5",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F5"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F5"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F6",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F6"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F6"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F7",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F8",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F8"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0F9",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0F9"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X0FA",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x0FA"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X10A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x10A"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X10B",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x10B"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X10C",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x10C"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X10D",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x10D"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X10F",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X110",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X111",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X112",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x112"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X113",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x113"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X114",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x114"
+        },
+        "gms_v87": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x114"
+        },
+        "gms_v95": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x114"
+        },
+        "jms_v185": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X11A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X11B",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X12A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X12B",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X12C",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X15A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "conflict",
+          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+        },
+        "gms_v84": {
+          "state": "conflict",
+          "note": "registry says absent but template routes opcode 0x15A"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X162",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X167",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X168",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X169",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X16A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X16E",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X16F",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X173",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X17E",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "gms_v95": {
+          "state": "n-a"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X18C",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "IDA_0X19A",
+      "direction": "clientbound",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "n-a"
+        },
+        "gms_v84": {
+          "state": "n-a"
+        },
+        "gms_v87": {
+          "state": "n-a"
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report"
+        },
+        "jms_v185": {
+          "state": "n-a"
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IMITATED_NPC_DATA",
       "direction": "clientbound",
       "tier1": false,
@@ -4199,6 +6379,7 @@
     {
       "kind": "op",
       "op": "LOCK_UI",
+      "packet": "ui/clientbound/Lock",
       "direction": "clientbound",
       "tier1": false,
       "cells": {
@@ -21843,8 +24024,8 @@
           "note": "tool ✅ without byte-test"
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "state": "incomplete",
+          "note": "no audit report"
         },
         "jms_v185": {
           "state": "partial",

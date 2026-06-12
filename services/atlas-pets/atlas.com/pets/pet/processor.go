@@ -420,6 +420,8 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 							if err == nil {
 								p.tr.Update(p.ctx, p.t, petId, c.X(), c.Y(), 0, int16(fh.Id()))
 							}
+						} else if !errors.Is(err, location.ErrNotFound) {
+							p.l.WithError(err).Warnf("Unable to resolve location for character [%d] from atlas-maps; skipping pet foothold update.", actorId)
 						}
 					}
 					td := p.tr.GetById(p.ctx, p.t, pe.Id())

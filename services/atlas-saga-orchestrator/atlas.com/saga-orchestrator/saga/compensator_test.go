@@ -126,6 +126,86 @@ func TestPetEvolutionCompensationRefundsResources(t *testing.T) {
 	assert.Greater(t, lastMesosAmount, int32(0), "refund amount must be a positive credit")
 }
 
+// TestPetEvolutionCompensationDefaultsDestroyQuantity verifies that when a
+// DestroyAssetPayload carries Quantity 0 (which can happen if the saga step
+// was recorded without an explicit quantity), DispatchPetEvolutionRollbacks
+// defaults the refund quantity to 1 rather than issuing a zero-quantity
+// RequestCreateItem.
+func TestPetEvolutionCompensationDefaultsDestroyQuantity(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId  = uint32(77002)
+		rockId      = uint32(5380000)
+		testWorldId = world.Id(0)
+		testChannel = channel.Id(1)
+	)
+
+	// Spy compartment processor capturing Rock re-creation.
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+			})
+			return nil
+		},
+	}
+
+	// Character processor is not exercised by this path but must be non-nil.
+	charP := &charmock.ProcessorMock{
+		AwardMesosAndEmitFunc: func(_ uuid.UUID, _ channel.Model, _ uint32, _ uint32, _ string, _ int32, _ bool) error {
+			return nil
+		},
+	}
+
+	// Build a PetEvolution saga with a COMPLETED destroy_item step whose
+	// Quantity is 0 (the edge case), plus a FAILED evolve_pet step.
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(PetEvolution).
+		SetInitiatedBy("pet-evolution-default-qty-test").
+		AddStep("destroy_item", Completed, DestroyAsset, DestroyAssetPayload{
+			CharacterId: testCharId,
+			TemplateId:  rockId,
+			Quantity:    0, // zero triggers the default-to-1 branch
+			RemoveAll:   false,
+		}).
+		AddStep("evolve_pet", Failed, EvolvePet, EvolvePetPayload{
+			CharacterId: testCharId,
+			PetId:       99999,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCharacterProcessor(charP).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchPetEvolutionRollbacks(s)
+
+	// Rock must be refunded exactly once with quantity 1 (the zero→1 default).
+	assert.Equal(t, 1, len(createItemCalls), "Rock should be refunded exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, testCharId, createItemCalls[0].CharacterId, "refund must target the test character")
+		assert.Equal(t, rockId, createItemCalls[0].TemplateId, "refunded item must be the Rock of Evolution")
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity, "zero payload quantity must default to 1")
+	}
+}
+
 // TestCompensateCreateCharacter tests the compensateCreateCharacter function
 func TestCompensateCreateCharacter(t *testing.T) {
 	tests := []struct {

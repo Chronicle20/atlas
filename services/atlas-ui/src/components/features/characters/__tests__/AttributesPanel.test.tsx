@@ -47,7 +47,6 @@ const baseCharacter = (overrides: Record<string, unknown> = {}) =>
       name: "Test",
       level: 70,
       experience: 12345,
-      mapId: "100000000",
       worldId: 0,
       gender: 0,
       jobId: 112,

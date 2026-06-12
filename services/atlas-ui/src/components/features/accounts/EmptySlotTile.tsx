@@ -51,7 +51,6 @@ function synthesizeCharacter(template: CharacterTemplate): Character {
       face,
       ap: 0,
       sp: "",
-      mapId: template.mapId,
       spawnPoint: 0,
       gm: 0,
       x: 0,

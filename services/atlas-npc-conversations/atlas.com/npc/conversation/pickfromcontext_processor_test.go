@@ -64,3 +64,21 @@ func TestPickFromContextEmptyRoutesToEmptyNextState(t *testing.T) {
 		t.Errorf("CurrentState = %q, want %q (empty values must route to emptyNextState)", got.CurrentState(), "noEligible")
 	}
 }
+
+func TestPickFromContextValues(t *testing.T) {
+	if v, err := pickFromContextValues("10,20,30", 1); err != nil || v != "20" {
+		t.Errorf("index 1 -> (%q,%v), want (\"20\",nil)", v, err)
+	}
+	if v, err := pickFromContextValues("10,20,30", 0); err != nil || v != "10" {
+		t.Errorf("index 0 -> (%q,%v), want (\"10\",nil)", v, err)
+	}
+	if _, err := pickFromContextValues("10,20,30", 3); err == nil {
+		t.Error("index 3 (out of bounds) -> want error")
+	}
+	if _, err := pickFromContextValues("10,20,30", -1); err == nil {
+		t.Error("index -1 -> want error")
+	}
+	if _, err := pickFromContextValues("", 0); err == nil {
+		t.Error("empty list -> want error")
+	}
+}

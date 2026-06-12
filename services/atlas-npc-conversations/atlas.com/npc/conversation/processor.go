@@ -356,6 +356,23 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Store the choice context for later use
 		choiceContext = choice.Context()
 
+	case PickFromContextType:
+		pfc := state.PickFromContext()
+		if pfc == nil {
+			return errors.New("pickFromContext is nil")
+		}
+		// action == 0 means the player cancelled/closed the window: end the
+		// conversation (leave nextStateId empty). Otherwise selection is the index.
+		if action != 0 {
+			selected, serr := pickFromContextValues(ctx.Context()[pfc.ValuesContextKey()], selection)
+			if serr != nil {
+				p.l.Errorf("Invalid pickFromContext selection [%d] for character [%d] in state [%s]: %v", selection, characterId, state.Id(), serr)
+				return serr
+			}
+			choiceContext = map[string]string{pfc.ContextKey(): selected}
+			nextStateId = pfc.NextState()
+		}
+
 	default:
 		// For other state types, we shouldn't be here (they should have been processed already)
 		return fmt.Errorf("unexpected state type for Continue: %s", state.Type())

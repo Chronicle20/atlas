@@ -290,6 +290,106 @@ void __thiscall Dispatcher(void *this, CInPacket *a2)
 	}
 }
 
+// TestParseDispatchSiblingSwitch verifies that two switch statements at the
+// same brace depth (sibling switches, as seen in CField::OnPacket and
+// CUserRemotePacket in the v83 IDB) both contribute case labels to the dispatch
+// output.  The second switch must not be treated as nested/suppressed.
+func TestParseDispatchSiblingSwitch(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "sibling_switch_v83.c.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases, err := ParseDispatch(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOp := map[int]DispatchCase{}
+	for _, c := range cases {
+		byOp[c.Opcode] = c
+	}
+
+	// Ops from switch A must be present.
+	if c := byOp[0x70]; c.Handler != "CField::OnEnterField" {
+		t.Errorf("sibling-switch A: 0x70 -> %+v, want CField::OnEnterField", c)
+	}
+	if byOp[0x71].Handler == "" || byOp[0x71].Handler != byOp[0x72].Handler {
+		t.Errorf("sibling-switch A: fallthrough 0x71/0x72 not shared: %+v / %+v", byOp[0x71], byOp[0x72])
+	}
+	if byOp[0x71].Handler != "CField::OnLeaveField" {
+		t.Errorf("sibling-switch A: 0x71 -> %q, want CField::OnLeaveField", byOp[0x71].Handler)
+	}
+
+	// Ops from switch B must also be present (the sibling-switch fix).
+	if c := byOp[0x80]; c.Handler != "CField::OnUserMoveField" {
+		t.Errorf("sibling-switch B: 0x80 -> %+v, want CField::OnUserMoveField", c)
+	}
+	if c := byOp[0x81]; c.Handler != "CField::OnSummonedEnterField" {
+		t.Errorf("sibling-switch B: 0x81 -> %+v, want CField::OnSummonedEnterField", c)
+	}
+
+	// Pending labels must not leak across the switch boundary:
+	// no opcode that belongs to switch A should pick up switch B's handler.
+	for _, op := range []int{0x70, 0x71, 0x72} {
+		if byOp[op].Handler == byOp[0x80].Handler || byOp[op].Handler == byOp[0x81].Handler {
+			t.Errorf("switch A opcode 0x%X leaked switch B handler: %q", op, byOp[op].Handler)
+		}
+	}
+}
+
+// TestParseDispatchSiblingSwitchInline is a self-contained inline variant of
+// the sibling-switch test that does not depend on an external fixture file.
+// It verifies the same rule with a minimal two-switch example.
+func TestParseDispatchSiblingSwitchInline(t *testing.T) {
+	src := `
+void __thiscall CDispatcher::OnPacket(CDispatcher *this, CInPacket *a2)
+{
+  int op;
+  op = CInPacket::Decode2(a2);
+  switch ( op )
+  {
+    case 0x10u:
+      CLogin::OnFirstA(this, a2);
+      break;
+    case 0x11u:
+      CLogin::OnFirstB(this, a2);
+      break;
+  }
+  switch ( op )
+  {
+    case 0x20u:
+      CLogin::OnSecondA(this, a2);
+      break;
+    case 0x21u:
+      CLogin::OnSecondB(this, a2);
+      break;
+  }
+}
+`
+	cases, err := ParseDispatch(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOp := map[int]DispatchCase{}
+	for _, c := range cases {
+		byOp[c.Opcode] = c
+	}
+
+	wantCases := map[int]string{
+		0x10: "CLogin::OnFirstA",
+		0x11: "CLogin::OnFirstB",
+		0x20: "CLogin::OnSecondA",
+		0x21: "CLogin::OnSecondB",
+	}
+	for op, want := range wantCases {
+		if got := byOp[op].Handler; got != want {
+			t.Errorf("0x%02X: got handler %q, want %q", op, got, want)
+		}
+	}
+	if len(cases) != 4 {
+		t.Errorf("expected 4 cases from two sibling switches, got %d", len(cases))
+	}
+}
+
 // TestParseDispatchSameLineSwitchBrace covers the non-Allman shape
 // `switch ( v ) {` — the open brace on the same line as the nested switch.
 // Hex-Rays never emits this, but the suppression must not silently bind an

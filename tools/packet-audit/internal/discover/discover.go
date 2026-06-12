@@ -90,7 +90,15 @@ func ParseDispatch(text string) ([]DispatchCase, error) {
 			// brace on the same line still suppresses its whole body: the pop
 			// condition (depth <= recorded) must only fire once the body's
 			// closing brace returns to the depth the switch statement sits at.
-			nestedSwitchDepths = append(nestedSwitchDepths, depth-(openCount-closeCount))
+			preBraceDepth := depth - (openCount - closeCount)
+			// Only suppress (push onto nestedSwitchDepths) when this switch
+			// starts INSIDE a case body, i.e. pre-brace depth >= dispatchDepth.
+			// A sibling switch at the same level as the dispatch switch has
+			// pre-brace depth == dispatchDepth-1, and its case labels should
+			// bind to the dispatch just like the first switch's labels did.
+			if preBraceDepth >= dispatchDepth {
+				nestedSwitchDepths = append(nestedSwitchDepths, preBraceDepth)
+			}
 		}
 
 		insideNestedSwitch := len(nestedSwitchDepths) > 0

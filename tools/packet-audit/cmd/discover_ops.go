@@ -95,6 +95,8 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 
 	dispResults := make([]discover.DispatcherResult, 0, len(opts.Dispatchers))
 
+	multiDisp := len(opts.Dispatchers) > 1
+
 	for _, dispName := range opts.Dispatchers {
 		// Step 1: resolve dispatcher address.
 		// If the name is already a hex address (starts with "0x"), pass it directly
@@ -107,10 +109,22 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 			var err error
 			addr, ok, err = client.GetFunctionByName(ctx, dispName)
 			if err != nil {
+				if multiDisp {
+					failMsg := fmt.Sprintf("FAILED: GetFunctionByName: %v", err)
+					fmt.Fprintf(stderr, "packet-audit discover-ops: warning: dispatcher %q lookup failed: %v — continuing\n", dispName, err)
+					dispResults = append(dispResults, discover.DispatcherResult{Name: dispName, Addr: failMsg, Cases: nil})
+					continue
+				}
 				fmt.Fprintf(stderr, "packet-audit discover-ops: GetFunctionByName(%q): %v\n", dispName, err)
 				return 3
 			}
 			if !ok {
+				if multiDisp {
+					failMsg := fmt.Sprintf("FAILED: not found in IDA")
+					fmt.Fprintf(stderr, "packet-audit discover-ops: warning: dispatcher %q not found in IDA — continuing\n", dispName)
+					dispResults = append(dispResults, discover.DispatcherResult{Name: dispName, Addr: failMsg, Cases: nil})
+					continue
+				}
 				fmt.Fprintf(stderr, "packet-audit discover-ops: dispatcher %q not found in IDA\n", dispName)
 				return 3
 			}
@@ -119,6 +133,12 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 		// Step 2: decompile dispatcher.
 		text, err := client.DecompileFunction(ctx, addr)
 		if err != nil {
+			if multiDisp {
+				failMsg := fmt.Sprintf("FAILED: DecompileFunction: %v", err)
+				fmt.Fprintf(stderr, "packet-audit discover-ops: warning: dispatcher %q decompile failed: %v — continuing\n", dispName, err)
+				dispResults = append(dispResults, discover.DispatcherResult{Name: dispName, Addr: failMsg, Cases: nil})
+				continue
+			}
 			fmt.Fprintf(stderr, "packet-audit discover-ops: DecompileFunction(%q): %v\n", addr, err)
 			return 3
 		}
@@ -190,6 +210,19 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 
 	// Step 5: union across all dispatchers.
 	unified, internalCollisions := discover.Union(dispResults)
+
+	// Count how many dispatchers actually failed (FAILED: prefix in Addr).
+	failedCount := 0
+	for _, dr := range dispResults {
+		if strings.HasPrefix(dr.Addr, "FAILED:") {
+			failedCount++
+		}
+	}
+	if failedCount == len(dispResults) {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: all %d dispatcher(s) failed — cannot continue\n", len(dispResults))
+		return 3
+	}
+
 	if len(unified) == 0 && len(internalCollisions) == 0 {
 		// All dispatchers returned 0 cases — no useful discovery.
 		fmt.Fprintf(stderr, "packet-audit discover-ops: total discovered cases across all dispatchers is 0 — check dispatcher names/addresses\n")
@@ -296,7 +329,11 @@ func buildWorklist(version string, dispResults []discover.DispatcherResult, inte
 	fmt.Fprintln(&sb, "| Name | Address | Cases |")
 	fmt.Fprintln(&sb, "|---|---|---|")
 	for _, dr := range dispResults {
-		fmt.Fprintf(&sb, "| `%s` | `%s` | %d |\n", dr.Name, dr.Addr, len(dr.Cases))
+		if strings.HasPrefix(dr.Addr, "FAILED:") {
+			fmt.Fprintf(&sb, "| `%s` | %s | — |\n", dr.Name, dr.Addr)
+		} else {
+			fmt.Fprintf(&sb, "| `%s` | `%s` | %d |\n", dr.Name, dr.Addr, len(dr.Cases))
+		}
 	}
 	fmt.Fprintln(&sb)
 

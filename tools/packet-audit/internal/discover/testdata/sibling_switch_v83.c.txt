@@ -1,0 +1,34 @@
+// Fixture for sibling-switch test (task-085 Fix 1).
+// CField::OnPacket contains TWO sibling switch statements at the same brace
+// depth on the same opcode variable.  Ops from BOTH must be emitted.
+// Opcodes in switch A: 0x70, 0x71, 0x72
+// Opcodes in switch B: 0x80, 0x81 (sibling, same brace level as switch A)
+void __thiscall CField::OnPacket(CField *this, CInPacket *a2)
+{
+  int op;
+  op = CInPacket::Decode2(a2);
+  switch ( op )
+  {
+    case 0x70u:
+      CField::OnEnterField(this, a2);
+      break;
+    case 0x71u:
+    case 0x72u:
+      CField::OnLeaveField(this, a2);
+      break;
+    default:
+      break;
+  }
+  // second sibling switch on the same variable at the same brace depth
+  switch ( op )
+  {
+    case 0x80u:
+      CField::OnUserMoveField(this, a2);
+      break;
+    case 0x81u:
+      CField::OnSummonedEnterField(this, a2);
+      break;
+    default:
+      break;
+  }
+}

@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,6 +30,8 @@ type dispatcherFixture struct {
 	addr       string
 	decompText string
 	callees    []idasrc.Callee
+	decompErr  error // if non-nil, DecompileFunction returns this error
+	lookupErr  error // if non-nil, GetFunctionByName returns this error
 }
 
 // newSingleFakeMCP builds a fake MCP wired for exactly one dispatcher (the
@@ -46,6 +49,9 @@ func newSingleFakeMCP(name, addr, decompText string, callees []idasrc.Callee) *d
 
 func (f *discoverFakeMCP) GetFunctionByName(_ context.Context, name string) (string, bool, error) {
 	if fix, ok := f.byName[name]; ok {
+		if fix.lookupErr != nil {
+			return "", false, fix.lookupErr
+		}
 		return fix.addr, true, nil
 	}
 	return "", false, nil
@@ -54,6 +60,9 @@ func (f *discoverFakeMCP) GetFunctionByName(_ context.Context, name string) (str
 func (f *discoverFakeMCP) DecompileFunction(_ context.Context, addr string) (string, error) {
 	// Try exact address match first, then case-insensitive.
 	if fix, ok := f.byAddr[strings.ToLower(addr)]; ok {
+		if fix.decompErr != nil {
+			return "", fix.decompErr
+		}
 		return fix.decompText, nil
 	}
 	// Also allow lookup by name if the caller passed a name (shouldn't happen
@@ -538,5 +547,110 @@ func TestDiscoverOpsDefaultFlagIsOneElementList(t *testing.T) {
 	rows := strings.Count(s, "CClientSocket::ProcessPacket")
 	if rows < 1 {
 		t.Error("single dispatcher not found in worklist")
+	}
+}
+
+// TestDiscoverOpsOneDispatcherDecompileFailureContinues tests Fix 2:
+// when one dispatcher in a multi-dispatcher list fails Hex-Rays decompilation,
+// the run continues, a warning is emitted on stderr, the failed dispatcher
+// is recorded as FAILED in the worklist Dispatchers table, and ops from the
+// successful dispatcher are still present in ## Append.  Exit code must be 0.
+func TestDiscoverOpsOneDispatcherDecompileFailureContinues(t *testing.T) {
+	fixture := readFixture(t) // CClientSocket::ProcessPacket — decompiles fine
+
+	decompFail := errors.New("Hex-Rays decompilation failed: stack frame too complex")
+
+	fc := &discoverFakeMCP{
+		byName: map[string]dispatcherFixture{
+			"CClientSocket::ProcessPacket": {addr: "0x5e0000", decompText: fixture},
+			"CUserLocal::OnPacket":         {addr: "0xcc0000", decompText: ""},
+		},
+		byAddr: map[string]dispatcherFixture{
+			"0x5e0000": {addr: "0x5e0000", decompText: fixture},
+			"0xcc0000": {addr: "0xcc0000", decompText: "", decompErr: decompFail},
+		},
+	}
+
+	dir := t.TempDir()
+	writeSeedRegistry(t, dir, "gms_v83", nil)
+
+	outMD := filepath.Join(dir, "worklist.md")
+	opts := discoverOpsOpts{
+		Version:     "gms_v83",
+		RegistryDir: dir,
+		Dispatchers: []string{"CClientSocket::ProcessPacket", "CUserLocal::OnPacket"},
+		Out:         outMD,
+		Apply:       false,
+	}
+	var stderr strings.Builder
+	code := discoverOpsRun(opts, fc, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit 0 (one decompile failure tolerates in multi-dispatcher), got %d; stderr: %s", code, stderr.String())
+	}
+
+	// stderr must warn about the failed dispatcher by name.
+	if !strings.Contains(stderr.String(), "CUserLocal::OnPacket") {
+		t.Errorf("stderr should name the failed dispatcher; got: %s", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "decompile failed") {
+		t.Errorf("stderr should say 'decompile failed'; got: %s", stderr.String())
+	}
+
+	b, err := os.ReadFile(outMD)
+	if err != nil {
+		t.Fatalf("read worklist: %v", err)
+	}
+	s := string(b)
+
+	// Failed dispatcher must appear in the Dispatchers table with FAILED prefix.
+	if !strings.Contains(s, "CUserLocal::OnPacket") {
+		t.Error("failed dispatcher not listed in Dispatchers table")
+	}
+	if !strings.Contains(s, "FAILED:") {
+		t.Errorf("FAILED marker missing from Dispatchers table:\n%s", s)
+	}
+
+	// Ops from the successful dispatcher must still be in ## Append.
+	if !strings.Contains(s, "IDA_0X011") {
+		t.Error("IDA_0X011 from successful dispatcher missing from Append")
+	}
+}
+
+// TestDiscoverOpsAllDispatchersFailExits tests Fix 2 boundary:
+// when ALL dispatchers in a multi-dispatcher list fail, the run must exit 3
+// (cannot continue with zero discovered cases).
+func TestDiscoverOpsAllDispatchersFailExits(t *testing.T) {
+	decompFail := errors.New("decompilation error: internal IDA error")
+
+	fc := &discoverFakeMCP{
+		byName: map[string]dispatcherFixture{
+			"CDispA::OnPacket": {addr: "0xaa0000", decompText: ""},
+			"CDispB::OnPacket": {addr: "0xbb0000", decompText: ""},
+		},
+		byAddr: map[string]dispatcherFixture{
+			"0xaa0000": {addr: "0xaa0000", decompText: "", decompErr: decompFail},
+			"0xbb0000": {addr: "0xbb0000", decompText: "", decompErr: decompFail},
+		},
+	}
+
+	dir := t.TempDir()
+	writeSeedRegistry(t, dir, "gms_v83", nil)
+
+	outMD := filepath.Join(dir, "worklist.md")
+	opts := discoverOpsOpts{
+		Version:     "gms_v83",
+		RegistryDir: dir,
+		Dispatchers: []string{"CDispA::OnPacket", "CDispB::OnPacket"},
+		Out:         outMD,
+		Apply:       false,
+	}
+	var stderr strings.Builder
+	code := discoverOpsRun(opts, fc, &stderr)
+	if code != 3 {
+		t.Errorf("all dispatchers failed: expected exit 3, got %d; stderr: %s", code, stderr.String())
+	}
+	// stderr must say "all ... dispatcher(s) failed".
+	if !strings.Contains(stderr.String(), "all") || !strings.Contains(stderr.String(), "failed") {
+		t.Errorf("stderr should say all dispatchers failed; got: %s", stderr.String())
 	}
 }

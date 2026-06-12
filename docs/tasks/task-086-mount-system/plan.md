@@ -780,11 +780,11 @@ sourceId is a **tamed** mount skill (`IsTamedMountSkill`) → add to registry + 
 APPLIED skill-only → `EmitSet` only (no registry add → no ticker; FR-2.2). On EXPIRED → remove
 from registry (state already persisted; FR-4.4).
 
-- [ ] **Step 1: Copy pets character-consumer wiring (InitConsumers/InitHandlers curried form).** Define the consumed event struct matching context.md §5 atlas-buffs shapes.
+- [x] **Step 1: Copy pets character-consumer wiring (InitConsumers/InitHandlers curried form).** Define the consumed event struct matching context.md §5 atlas-buffs shapes.
 
-- [ ] **Step 2: Test — APPLIED tamed adds to registry + emits SET; APPLIED skill-only emits SET, no add; EXPIRED removes.** Use a fake registry seam. Run → fail → implement → pass.
+- [x] **Step 2: Test — APPLIED tamed adds to registry + emits SET; APPLIED skill-only emits SET, no add; EXPIRED removes.** Use a fake registry seam. Run → fail → implement → pass.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/kafka/message/buff services/atlas-mounts/atlas.com/mounts/kafka/consumer/buff
@@ -797,11 +797,11 @@ git commit -m "task-086: atlas-mounts consumes buff APPLIED/EXPIRED to drive reg
 - Create: `kafka/message/character/kafka.go`, `kafka/consumer/character/consumer.go`
 - Test: `kafka/consumer/character/consumer_test.go`
 
-- [ ] **Step 1: Copy pets character status consumer.** LOGIN registers the character as online (so
+- [x] **Step 1: Copy pets character status consumer.** LOGIN registers the character as online (so
 the ticker only touches logged-in chars); LOGOUT deregisters + removes any active-mount registry
 entry (FR-4.4). Reuse `EVENT_TOPIC_CHARACTER_STATUS` + login/logout body shapes.
 
-- [ ] **Step 2: Test login adds / logout removes the online entry + active-mount entry. Run → fail → implement → pass. Commit.**
+- [x] **Step 2: Test login adds / logout removes the online entry + active-mount entry. Run → fail → implement → pass. Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/kafka/message/character services/atlas-mounts/atlas.com/mounts/kafka/consumer/character
@@ -814,7 +814,7 @@ git commit -m "task-086: atlas-mounts online gating from login/logout events"
 - Create: `kafka/message/food/kafka.go`, `kafka/consumer/food/consumer.go`
 - Test: `kafka/consumer/food/consumer_test.go`
 
-- [ ] **Step 1: Define consumed event + handler.**
+- [x] **Step 1: Define consumed event + handler.**
 
 ```go
 const EnvEventTopic = "EVENT_TOPIC_TAMING_MOB_FOOD"
@@ -828,7 +828,7 @@ type Event struct {
 
 Handler calls `mount.NewProcessor(l,ctx,db).ApplyFeedAndEmit(...)(characterId, int(e.TirednessHeal))`.
 
-- [ ] **Step 2: Test the handler routes a fed event into ApplyFeedAndEmit (seam). Run → fail → implement → pass. Commit.**
+- [x] **Step 2: Test the handler routes a fed event into ApplyFeedAndEmit (seam). Run → fail → implement → pass. Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/kafka/message/food services/atlas-mounts/atlas.com/mounts/kafka/consumer/food
@@ -841,13 +841,13 @@ git commit -m "task-086: atlas-mounts applies TamingMobFed -> feed math + FEED e
 - Create: `mount/task.go`, `tasks/task.go` (copy pets/tasks)
 - Test: `mount/task_test.go`
 
-- [ ] **Step 1: Copy pets HungerTask → TirednessTask; cadence `time.Minute` (60s, FR-6.1).**
+- [x] **Step 1: Copy pets HungerTask → TirednessTask; cadence `time.Minute` (60s, FR-6.1).**
 
 `Run()` iterates online characters with an **active tamed mount** in the registry and calls
 `ApplyTick`. Skill-only mounts are absent from the registry → never ticked (FR-2.2). One task
 iterating the registry; no per-character goroutines/timers (NFR performance).
 
-- [ ] **Step 2: Test Run() ticks each active mount once (seam over registry + processor). Run → fail → implement → pass. Commit.**
+- [x] **Step 2: Test Run() ticks each active mount once (seam over registry + processor). Run → fail → implement → pass. Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/task.go services/atlas-mounts/atlas.com/mounts/tasks
@@ -860,10 +860,10 @@ git commit -m "task-086: 60s tiredness ticker over active-mount registry"
 - Create: `mount/rest.go`, `mount/resource.go`
 - Test: `mount/rest_test.go`
 
-- [ ] **Step 1: Copy pets rest.go + resource.go.** `GetName() == "mounts"`; route
+- [x] **Step 1: Copy pets rest.go + resource.go.** `GetName() == "mounts"`; route
 `GET /characters/{characterId}/mount` (Transform from Model). Minimal `Transform`/`Extract`.
 
-- [ ] **Step 2: Test Transform maps Model→RestModel. Run → fail → implement → pass. Commit.**
+- [x] **Step 2: Test Transform maps Model→RestModel. Run → fail → implement → pass. Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/rest.go services/atlas-mounts/atlas.com/mounts/mount/resource.go services/atlas-mounts/atlas.com/mounts/mount/rest_test.go
@@ -875,21 +875,21 @@ git commit -m "task-086: atlas-mounts REST resource (GET character mount)"
 **Files:**
 - Create: `services/atlas-mounts/atlas.com/mounts/main.go`
 
-- [ ] **Step 1: Copy pets/main.go; swap serviceName="atlas-mounts", consumer group "Mounts Service".**
+- [x] **Step 1: Copy pets/main.go; swap serviceName="atlas-mounts", consumer group "Mounts Service".**
 
 Wire: `atlas.Connect` + `mount.InitRegistry(rc)`; `database.Connect(..., SetMigrations(mount.Migration))`;
 consumers `buff`, `character`, `food` (InitConsumers + InitHandlers); REST route initializer
 `mount.InitResource`; task `tasks.Register(l, ctx)(mount.NewTirednessTask(l, db, time.Minute))`;
 producer teardown.
 
-- [ ] **Step 2: Build the service.**
+- [x] **Step 2: Build the service.**
 
 ```bash
 cd services/atlas-mounts/atlas.com/mounts && go build ./...
 ```
 Expected: clean.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/main.go
@@ -898,7 +898,7 @@ git commit -m "task-086: atlas-mounts main wiring (registry, db, consumers, task
 
 ## Task 24: atlas-mounts full module gate
 
-- [ ] **Step 1:** from worktree root run `go work sync` if needed, then:
+- [x] **Step 1:** from worktree root run `go work sync` if needed, then:
 ```bash
 cd services/atlas-mounts/atlas.com/mounts
 go test -race ./... && go vet ./... && go build ./...

@@ -1,0 +1,10 @@
+{
+  "WriterName": "OnEmptyRead",
+  "IDAName": "Foo::OnEmptyRead",
+  "Address": "0x800",
+  "BranchDepth": 0,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 2, "IDAOp": 0, "Verdict": 2, "Note": "atlas Encode4 vs missing client read — length divergence" }
+  ],
+  "Verdict": 2
+}

@@ -1,0 +1,7 @@
+{
+ "binary":"x","md5":"x","generated_at":"t",
+ "functions":{
+  "Foo::OnLeaf#Solo":{"address":"0x300","direction":"clientbound",
+    "calls":[{"op":"Decode4","guard":""},{"op":"Decode2","guard":""}]}
+ }
+}

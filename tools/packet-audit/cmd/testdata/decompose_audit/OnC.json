@@ -1,0 +1,9 @@
+{
+  "WriterName": "OnC",
+  "IDAName": "Foo::OnC#X",
+  "Address": "0x300",
+  "Rows": [
+    { "Index": 0, "Verdict": 2, "Note": "blocker" }
+  ],
+  "Verdict": 2
+}

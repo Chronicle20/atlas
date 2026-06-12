@@ -49,7 +49,8 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	worstVerdict := diff.VerdictMatch
 	var summary []report.Packet
 
-	process := func(direction csvpkg.Direction, name, pkg, fname string) {
+	process := func(c candidate, fname string) {
+		direction, name, pkg := c.dir, c.name, c.pkg
 		fields, err := src.Resolve(context.Background(), fname)
 		if err != nil {
 			if errors.Is(err, idasrc.ErrMCPUnavailable) {
@@ -71,9 +72,66 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "analyze", name+":", err)
 			return
 		}
+		// Serverbound family-operation wrapper: Atlas writes the packet as a
+		// separate [Operation/BBS sub-op] struct followed by the per-operation
+		// body. The audit's candidate points only at the body, so reconstruct the
+		// full wire by prepending the wrapper's shape — BUT only when the client
+		// export actually carries the sub-op as its leading field(s). Faithful
+		// baselines include it (compose → [wrapper, body] aligns with the client's
+		// [sub-op, body]); incomplete baselines that omit the real sub-op byte are
+		// left body-only so the audit neither manufactures a mismatch nor silently
+		// blesses the omission. See the prefixName doc on `candidate`.
+		if c.prefixName != "" {
+			ppath, pok := locateAtlasFile(opts.AtlasPacket, c.prefixName, c.prefixPkg, direction)
+			if !pok {
+				fmt.Fprintln(stderr, "locate prefix", c.prefixName+": not found")
+				return
+			}
+			pcalls, perr := atlaspacket.AnalyzeFileWithRegistry(ppath, c.prefixName, methodName(direction), reg)
+			if perr != nil {
+				fmt.Fprintln(stderr, "analyze prefix", c.prefixName+":", perr)
+				return
+			}
+			if exportCarriesPrefix(reg, ctx, pcalls, fields.Calls) {
+				calls = append(append([]atlaspacket.Call{}, pcalls...), calls...)
+			}
+		} else if c.prefixSubOps > 0 {
+			// Wrapper-less serverbound sub-op: families like buddy (BUDDYLIST_MODIFY)
+			// and npc-shop read the sub-op byte in the channel handler/dispatcher,
+			// with NO Operation wrapper struct in the packet lib. Synthesize the
+			// 1-byte sub-op prefix(es) and compose adaptively, same as a wrapper.
+			pcalls := make([]atlaspacket.Call, 0, c.prefixSubOps)
+			for i := 0; i < c.prefixSubOps; i++ {
+				pcalls = append(pcalls, atlaspacket.Call{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1})
+			}
+			if exportCarriesPrefix(reg, ctx, pcalls, fields.Calls) {
+				calls = append(append([]atlaspacket.Call{}, pcalls...), calls...)
+			}
+		}
 		flat := diff.FlattenWithRegistry(calls, ctx, reg)
 		rows := diff.Diff(flat, fields)
 		v := worstRow(rows)
+		// Flat-diff-invalid reclassification: when the Atlas writer branches on a
+		// condition the analyzer could not reduce to a version predicate (a
+		// data-dependent field like m.enteringField, or a version-derived local
+		// the flatten doesn't trace), the flat positional diff cannot faithfully
+		// compare it — it merges/picks one arm while the client reads the runtime
+		// arm. Such a ❌ is a modeling limitation, not a verified wire bug, so cap
+		// it to 🔍 (Deferred). Only Blocker verdicts are touched, so clean ✅/⚠️
+		// are never affected.
+		flatInvalid := false
+		if v == diff.VerdictBlocker && (hasUnresolvedBranch(calls) || clientReadsConditional(fields)) {
+			v = diff.VerdictDeferred
+			flatInvalid = true
+		}
+		// Absent-feature packet: the client never implements this read, so the
+		// flat all-Atlas-extra diff is meaningless. Mark N/A (Deferred), never a
+		// blocker — a version-generic Atlas writer that no client reads is not a
+		// wire bug.
+		if a, ok := src.(interface{ IsAbsent(string) bool }); ok && a.IsAbsent(fname) && v == diff.VerdictBlocker {
+			v = diff.VerdictDeferred
+			flatInvalid = true
+		}
 		writerName := qualifiedWriterName(pkg, name)
 		pkt := report.Packet{
 			WriterName:  writerName,
@@ -84,8 +142,9 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			AtlasFile:   atlasPath,
 			Rows:        rows,
 			Verdict:     v,
+			FlatInvalid: flatInvalid,
 		}
-		if v > worstVerdict {
+		if v.Severity() > worstVerdict.Severity() {
 			worstVerdict = v
 		}
 		summary = append(summary, pkt)
@@ -99,7 +158,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	// arise when the template maps multiple writer names to the same opcode and the IDA
 	// export only covers one of them.
 	for _, sc := range selectCandidates(idaExportFunctions(opts.IDASource)) {
-		process(sc.candidate.dir, sc.candidate.name, sc.candidate.pkg, sc.fname)
+		process(sc.candidate, sc.fname)
 	}
 
 	if err := writeSummary(outDir, summary); err != nil {
@@ -125,6 +184,24 @@ type candidate struct {
 	// struct names that collide across sub-domains.
 	pkg string
 	dir csvpkg.Direction
+	// prefixName/prefixPkg, when set, name an Atlas writer whose Encode shape is
+	// analyzed and PREPENDED to this candidate's body shape. They model a
+	// serverbound family-operation wrapper — e.g. guild/serverbound `Operation`
+	// (a 1-byte sub-op) or messenger/serverbound `Operation` (a 1-byte mode) —
+	// that Atlas writes as a SEPARATE struct before the per-operation body, while
+	// the client writes that sub-op inline as its leading field. Without this the
+	// audit compares the client's [sub-op, body] against Atlas's body-only shape
+	// and every field mis-aligns by one (a false ❌ that is really a modeling gap,
+	// not a wire bug): the wrapper byte IS written/read by Atlas, just in the
+	// family router rather than the leaf the candidate points at.
+	prefixName string
+	prefixPkg  string
+	// prefixSubOps, when > 0, synthesizes that many leading 1-byte sub-op fields
+	// to compose adaptively onto the body — for wrapper-LESS serverbound families
+	// (buddy BUDDYLIST_MODIFY, npc-shop action) whose sub-op byte is read by the
+	// channel handler rather than a packet-lib Operation struct. Mutually
+	// exclusive with prefixName.
+	prefixSubOps int
 }
 
 // qualifiedWriterName returns the report/file name for a candidate. When pkg
@@ -730,15 +807,15 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendSetFriendMsg":
 		// Sub-op 1 (ADD): Encode1(1) + EncodeStr(name) + EncodeStr(group).
 		// Atlas struct: buddy/serverbound/operation_add.go OperationAdd.
-		return []candidate{{name: "OperationAdd", pkg: "buddy", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationAdd", pkg: "buddy", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
 	case "CField::SendAcceptFriendMsg":
 		// Sub-op 2 (ACCEPT): Encode1(2) + Encode4(friendId).
 		// Atlas struct: buddy/serverbound/operation_accept.go OperationAccept.
-		return []candidate{{name: "OperationAccept", pkg: "buddy", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationAccept", pkg: "buddy", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
 	case "CField::SendDeleteFriendMsg":
 		// Sub-op 3 (DELETE): Encode1(3) + Encode4(friendId).
 		// Atlas struct: buddy/serverbound/operation_delete.go OperationDelete.
-		return []candidate{{name: "OperationDelete", pkg: "buddy", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationDelete", pkg: "buddy", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
 
 	// --- Social: messenger ---
 	// CSV: MESSENGER (clientbound, opcode 0xAE/174 in GMS v95) → CUIMessenger::OnPacket
@@ -786,7 +863,7 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUIMessenger::OnCreate":
 		// Sub-op 0 (ENTER): Encode1(0) + Encode4(messengerId) — client accepts invite.
 		// Atlas struct: messenger/serverbound/operation_answer_invite.go OperationAnswerInvite.
-		return []candidate{{name: "OperationAnswerInvite", pkg: "messenger", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationAnswerInvite", pkg: "messenger", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "messenger"}}
 	case "CUIMessenger::OnDestroy":
 		// Sub-op 2 (LEAVE): Encode1(2) — client leaves/closes the messenger window.
 		// Atlas struct: messenger/serverbound/operation.go Operation (op-byte dispatcher).
@@ -796,17 +873,17 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUIMessenger::SendInviteMsg":
 		// Sub-op 3 (INVITE): Encode1(3) + EncodeStr(targetCharacter).
 		// Atlas struct: messenger/serverbound/operation_invite.go OperationInvite.
-		return []candidate{{name: "OperationInvite", pkg: "messenger", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationInvite", pkg: "messenger", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "messenger"}}
 	case "CFadeWnd::SendCloseMessage":
 		// Sub-op 5 (DECLINE): Encode1(5) + EncodeStr(fromName) + EncodeStr(myName) + Encode1(0).
 		// CFadeWnd handles multiple dialog types (type=0 → messenger decline, type=1 → buddy delete,
 		// type=2/3 → miniroom, type=5 → guild); only type=0 maps to messenger OperationDeclineInvite.
 		// Atlas struct: messenger/serverbound/operation_decline_invite.go OperationDeclineInvite.
-		return []candidate{{name: "OperationDeclineInvite", pkg: "messenger", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationDeclineInvite", pkg: "messenger", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "messenger"}}
 	case "CUIMessenger::ProcessChat":
 		// Sub-op 6 (CHAT): Encode1(6) + EncodeStr(chatLine — format "name : msg").
 		// Atlas struct: messenger/serverbound/operation_chat.go OperationChat.
-		return []candidate{{name: "OperationChat", pkg: "messenger", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationChat", pkg: "messenger", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "messenger"}}
 
 	// --- Social: chat (clientbound) ---
 	// CSV: CHATTEXT (0xB5 / 181) and CHATTEXT1 (0xB6 / 182) both dispatch to CUser::OnChat.
@@ -957,15 +1034,15 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendKickPartyMsg":
 		// op=5 (EXPEL): Encode1(5) + Encode4(targetCharacterId).
 		// Atlas OperationExpel writes: WriteInt(targetCharacterId). ✓ (op byte consumed by dispatcher)
-		return []candidate{{name: "OperationExpel", pkg: "party", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationExpel", pkg: "party", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "party"}}
 	case "CField::SendChangePartyBossMsg":
 		// op=6 (CHANGE_LEADER): Encode1(6) + Encode4(targetCharacterId).
 		// Atlas OperationChangeLeader writes: WriteInt(targetCharacterId). ✓
-		return []candidate{{name: "OperationChangeLeader", pkg: "party", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationChangeLeader", pkg: "party", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "party"}}
 	case "CField::SendJoinPartyMsg":
 		// op=4 (INVITE): Encode1(4) + EncodeStr(targetName).
 		// Atlas OperationInvite writes: WriteAsciiString(name). ✓ (op byte consumed by dispatcher)
-		return []candidate{{name: "OperationInvite", pkg: "party", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationInvite", pkg: "party", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "party"}}
 
 	// CSV: PARTY_RESULT (serverbound, opcode 0x92/146 in GMS v95) → reject/accept invite response.
 	// IDA path: CUIFadeYesNo::OnMouseButton sends op=0x16 (accept) or op=0x17/0x18 (decline/ignore).
@@ -983,7 +1060,7 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::SendJoinPartyMsg#OperationJoin":
 		// Synthetic entry: client sends party join accept with partyId after receiving an invite.
 		// Atlas OperationJoin writes: WriteInt(partyId). ✓
-		return []candidate{{name: "OperationJoin", pkg: "party", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "OperationJoin", pkg: "party", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "party"}}
 
 	// --- Social: guild (clientbound) ---
 	// CSV: GUILD_OPERATION (clientbound, opcode 0x041/65 in GMS v95) → CWvsContext::OnGuildResult
@@ -1104,40 +1181,43 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Operation", pkg: "guild", dir: csvpkg.DirServerbound}}
 	case "CField::InputGuildName":
 		// Sub-op: RequestCreate — Encode1(op) + EncodeStr(name). Atlas RequestCreate writes: WriteAsciiString(name). ✓ (op consumed by dispatcher)
-		return []candidate{{name: "RequestCreate", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "RequestCreate", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendCreateGuildAgreeMsg":
 		// Sub-op: AgreementResponse — Encode1(op) + Encode1(agreed). Atlas AgreementResponse writes: WriteInt(unk)+WriteBool(agreed). ❌ wire mismatch — extra Encode4 unk.
-		return []candidate{{name: "AgreementResponse", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "AgreementResponse", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendSetGuildMarkMsg":
 		// Sub-op: SetEmblem — Encode1(op) + Encode2(logoBg) + Encode1(logoBgColor) + Encode2(logo) + Encode1(logoColor). Atlas SetEmblem writes same fields. ✓
-		return []candidate{{name: "SetEmblem", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "SetEmblem", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendInviteGuildMsg":
 		// Sub-op: InviteRequest — Encode1(op) + EncodeStr(target). Atlas InviteRequest writes: WriteAsciiString(target). ✓ (op consumed by dispatcher)
-		return []candidate{{name: "InviteRequest", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "InviteRequest", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendWithdrawGuildMsg":
 		// Sub-op: Withdraw — Encode1(op) + Encode4(charId) + EncodeStr(name). Atlas Withdraw writes: WriteInt(cid)+WriteAsciiString(name). ✓
-		return []candidate{{name: "Withdraw", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "Withdraw", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendKickGuildMsg":
 		// Sub-op: Kick — Encode1(op) + Encode4(charId) + EncodeStr(name). Atlas Kick writes: WriteInt(cid)+WriteAsciiString(name). ✓
-		return []candidate{{name: "Kick", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "Kick", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CField::SendSetGuildNoticeMsg":
 		// Sub-op: SetNotice — Encode1(op) + EncodeStr(notice). Atlas SetNotice writes: WriteAsciiString(notice). ✓
-		return []candidate{{name: "SetNotice", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "SetNotice", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CTabGuildAlliance::OnGradeChange":
 		// Sub-op: SetMemberTitle — Encode1(op) + Encode4(targetId) + Encode1(newTitle). Atlas SetMemberTitle writes: WriteInt(targetId)+WriteByte(newTitle). ✓
-		return []candidate{{name: "SetMemberTitle", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "SetMemberTitle", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CWvsContext::SendSetGuildTitleNames":
 		// Sub-op: SetTitleNames — Encode1(op) + 5×EncodeStr(title). Atlas SetTitleNames writes: 5×WriteAsciiString. ✓
-		return []candidate{{name: "SetTitleNames", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "SetTitleNames", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 	case "CWvsContext::OnGuildResult#AgreementResponse":
-		// Synthetic entry for AgreementResponse serverbound (used in guild creation agree dialog).
-		// IDA CField::SendCreateGuildAgreeMsg builds packet with Encode1(agreed bool).
-		// Atlas AgreementResponse writes: WriteInt(unk)+WriteBool(agreed). ⚠️ extra int field vs wire single bool.
-		return []candidate{{name: "AgreementResponse", pkg: "guild", dir: csvpkg.DirServerbound}}
+		// CLIENTBOUND guild-creation agreement broadcast to party members:
+		// [mode, partyId, leaderName, guildName]. This is the REQUEST shown in the
+		// agree dialog, NOT the serverbound member reply (CField::SendCreateGuildAgreeMsg
+		// → the separate serverbound AgreementResponse). Atlas's clientbound
+		// RequestAgreement writes exactly [mode, partyId, leaderName, guildName], and
+		// the mode byte is the struct's own first field (no Operation wrapper).
+		return []candidate{{name: "RequestAgreement", pkg: "guild", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::SendGuildJoinMsg":
 		// Synthetic entry for Join serverbound (guild join after invitation accepted).
 		// Atlas Join writes: WriteInt(guildId)+WriteInt(characterId). ✓
-		return []candidate{{name: "Join", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "Join", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "Operation", prefixPkg: "guild"}}
 
 	// CSV: DENY_GUILD_REQUEST (serverbound, opcode 0x07F/127 in GMS v95).
 	// Client sends decline code + inviter name when rejecting guild invite.
@@ -1150,23 +1230,23 @@ func candidatesFromFName(fname string) []candidate {
 	// CSV: BBS_OPERATION (serverbound, opcode 0x09B/155 in GMS v95) → dispatcher reads op byte.
 	case "CUIGuildBBS::SendLoadListRequest":
 		// BBS list request: Encode1(op) + Encode4(startIndex). Atlas BBSListThreads writes: WriteInt(startIndex). ✓ (op consumed by BBS dispatcher)
-		return []candidate{{name: "BBSListThreads", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "BBSListThreads", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "BBS", prefixPkg: "guild"}}
 	case "CUIGuildBBS::SendViewEntryRequest":
 		// BBS view entry: Encode1(op) + Encode4(threadId). Atlas BBSDisplayThread writes: WriteInt(threadId). ✓
-		return []candidate{{name: "BBSDisplayThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "BBSDisplayThread", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "BBS", prefixPkg: "guild"}}
 	case "CUIGuildBBS::OnCommentDelete":
 		// BBS delete reply: Encode1(op) + Encode4(threadId) + Encode4(replyId). Atlas BBSDeleteReply writes: WriteInt(threadId)+WriteInt(replyId). ✓
-		return []candidate{{name: "BBSDeleteReply", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "BBSDeleteReply", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "BBS", prefixPkg: "guild"}}
 	case "CUIGuildBBS::OnRegister":
 		// BBS create/edit: Encode1(op) + Encode1(modify) + [if modify: Encode4(threadId)] + Encode1(notice) + EncodeStr(title) + EncodeStr(msg) + Encode4(emoticon).
 		// Atlas BBSCreateOrEditThread writes same fields. ✓
-		return []candidate{{name: "BBSCreateOrEditThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "BBSCreateOrEditThread", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "BBS", prefixPkg: "guild"}}
 	case "CUIGuildBBS::OnComment":
 		// BBS reply thread: Encode1(op) + Encode4(threadId) + EncodeStr(message). Atlas BBSReplyThread writes: WriteInt(threadId)+WriteAsciiString(message). ✓
-		return []candidate{{name: "BBSReplyThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "BBSReplyThread", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "BBS", prefixPkg: "guild"}}
 	case "CUIGuildBBS::OnDelete":
 		// BBS delete thread: Encode1(op) + Encode4(threadId). Atlas BBSDeleteThread writes: WriteInt(threadId). ✓
-		return []candidate{{name: "BBSDeleteThread", pkg: "guild", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "BBSDeleteThread", pkg: "guild", dir: csvpkg.DirServerbound, prefixName: "BBS", prefixPkg: "guild"}}
 	// --- storage sub-domain (task-067) ---
 	// Clientbound CTrunkDlg::OnPacket is a mode-dispatched writer; use synthetic
 	// #-suffix FNames (one per atlas wire shape) to disambiguate.
@@ -1632,16 +1712,16 @@ func candidatesFromFName(fname string) []candidate {
 		// NPC_SHOP BUY body (op=0). CShopDlg::SendBuyRequest@0x6e9bb0 after the op byte:
 		// Encode2(slot) + Encode4(itemId) + Encode2(quantity) + Encode4(discountPrice).
 		// Atlas ShopBuy writes Short(slot) + Int(itemId) + Short(quantity) + Int(discountPrice). ✓
-		return []candidate{{name: "ShopBuy", pkg: "npc", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "ShopBuy", pkg: "npc", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
 	case "CShopDlg::SendSellRequest":
 		// NPC_SHOP SELL body (op=1). CShopDlg::SendSellRequest@0x6e7260 after the op byte:
 		// Encode2(slot/nPOS) + Encode4(itemId) + Encode2(quantity). Atlas ShopSell writes
 		// Int16(slot) + Int(itemId) + Short(quantity). ✓
-		return []candidate{{name: "ShopSell", pkg: "npc", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "ShopSell", pkg: "npc", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
 	case "CShopDlg::SendRechargeRequest":
 		// NPC_SHOP RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x6e4e90 after the
 		// op byte: Encode2(slot/nPos). Atlas ShopRecharge writes Short(slot). ✓
-		return []candidate{{name: "ShopRecharge", pkg: "npc", dir: csvpkg.DirServerbound}}
+		return []candidate{{name: "ShopRecharge", pkg: "npc", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
 	}
 	return nil
 }
@@ -1746,6 +1826,65 @@ func locateAtlasFile(root, name, pkg string, dir csvpkg.Direction) (string, bool
 	return hit, hit != ""
 }
 
+// exportCarriesPrefix reports whether the client export's leading field(s) match
+// the family-operation wrapper's flattened shape — i.e. the baseline faithfully
+// includes the sub-op byte the wrapper accounts for. It reuses diff.Diff on just
+// the export's head so the width/representation tolerance is identical to the main
+// comparison. False when the export is shorter than the wrapper or the head does
+// not match (an incomplete baseline that omitted the sub-op): the caller then
+// leaves Atlas body-only rather than manufacturing a one-field misalignment.
+func exportCarriesPrefix(reg *atlaspacket.TypeRegistry, ctx atlaspacket.GuardContext, pcalls []atlaspacket.Call, exportCalls []idasrc.FieldCall) bool {
+	flat := diff.FlattenWithRegistry(pcalls, ctx, reg)
+	if len(flat) == 0 || len(exportCalls) < len(flat) {
+		return false
+	}
+	head := idasrc.Fields{Calls: exportCalls[:len(flat)]}
+	for _, r := range diff.Diff(flat, head) {
+		if r.Verdict != diff.VerdictMatch {
+			return false
+		}
+	}
+	return true
+}
+
+// hasUnresolvedBranch reports whether any call (recursively, through loop and
+// sub-struct bodies) sits under a guard the analyzer could NOT compile to a
+// version predicate. guardFromIf tags those with a "<unparsed:...>" text (and an
+// always-true eval). These are `if m.<field>` data-dependent branches OR
+// version-derived locals (`b := <version expr>; if b`) the flatten doesn't
+// trace — either way the writer's wire shape can't be resolved statically, so a
+// flat positional diff cannot model it. Version guards (Region/MajorVersion)
+// parse cleanly and never carry this marker.
+func hasUnresolvedBranch(calls []atlaspacket.Call) bool {
+	for _, c := range calls {
+		if c.Guard != nil && strings.Contains(c.Guard.String(), "<unparsed:") {
+			return true
+		}
+		if len(c.Body) > 0 && hasUnresolvedBranch(c.Body) {
+			return true
+		}
+	}
+	return false
+}
+
+// clientReadsConditional reports whether the client's verified read-order
+// contains a conditional read — a field guarded by a runtime discriminator
+// (e.g. "mode <= 1", "controlMode != 0", "destroyType == 4") rather than the
+// loop-iteration guard ("loop X"). When the CLIENT branches on a runtime value,
+// its read SHAPE is value-dependent while Atlas writes unconditionally, so a flat
+// positional diff cannot faithfully compare them (the symmetric case to an
+// Atlas-side data-dependent branch). Loop guards are excluded — those are handled
+// by the diff's loop-body equivalence, not a flat-invalid branch.
+func clientReadsConditional(f idasrc.Fields) bool {
+	for _, c := range f.Calls {
+		g := strings.TrimSpace(c.Guard)
+		if g != "" && !strings.HasPrefix(g, "loop ") {
+			return true
+		}
+	}
+	return false
+}
+
 func branchDepth(calls []atlaspacket.Call) int {
 	maxd := 0
 	for _, c := range calls {
@@ -1761,13 +1900,7 @@ func branchDepth(calls []atlaspacket.Call) int {
 }
 
 func worstRow(rows []diff.Row) diff.Verdict {
-	w := diff.VerdictMatch
-	for _, r := range rows {
-		if r.Verdict > w {
-			w = r.Verdict
-		}
-	}
-	return w
+	return diff.WorstVerdict(rows)
 }
 
 func writeSummary(outDir string, summary []report.Packet) error {

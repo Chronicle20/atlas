@@ -10,14 +10,51 @@ import (
 type Verdict int
 
 const (
-	VerdictMatch    Verdict = iota // ✅
-	VerdictMinor                   // ⚠️
-	VerdictBlocker                 // ❌
-	VerdictDeferred                // 🔍
+	VerdictMatch      Verdict = iota // ✅
+	VerdictMinor                     // ⚠️
+	VerdictBlocker                   // ❌
+	VerdictDeferred                  // 🔍
+	VerdictUnresolved                // 🚫 — IDA read-order unknown (export gap)
 )
 
 func (v Verdict) Symbol() string {
-	return [...]string{"✅", "⚠️", "❌", "🔍"}[v]
+	return [...]string{"✅", "⚠️", "❌", "🔍", "🚫"}[v]
+}
+
+// Severity returns a priority rank for verdict aggregation — higher rank = worse /
+// more-actionable. The rank is intentionally DECOUPLED from the iota ordinal so
+// that appending new verdicts (e.g. VerdictUnresolved) never accidentally masks a
+// real Blocker.
+//
+// Ranking (highest first):
+//
+//	Blocker(❌) > Minor(⚠️) > Unresolved(🚫) > Deferred(🔍) > Match(✅)
+func (v Verdict) Severity() int {
+	switch v {
+	case VerdictBlocker:
+		return 4
+	case VerdictMinor:
+		return 3
+	case VerdictUnresolved:
+		return 2
+	case VerdictDeferred:
+		return 1
+	default: // VerdictMatch (and any future low-priority verdict)
+		return 0
+	}
+}
+
+// WorstVerdict returns the single most-actionable verdict from rows, using the
+// Severity ranking rather than ordinal comparison. An empty slice returns
+// VerdictMatch.
+func WorstVerdict(rows []Row) Verdict {
+	w := VerdictMatch
+	for _, r := range rows {
+		if r.Verdict.Severity() > w.Severity() {
+			w = r.Verdict
+		}
+	}
+	return w
 }
 
 type Row struct {
@@ -31,6 +68,8 @@ type Row struct {
 }
 
 func Diff(atlas []atlaspacket.Call, ida idasrc.Fields) []Row {
+	atlas = expandRepeatRuns(atlas, ida)
+	atlas = absorbBufferGroups(atlas, ida)
 	atlas = coalesceAtlas(atlas, ida)
 	var rows []Row
 	n := max(len(atlas), len(ida.Calls))
@@ -59,8 +98,32 @@ func Diff(atlas []atlaspacket.Call, ida idasrc.Fields) []Row {
 				r.Note = "atlas: short — missing trailing field"
 			}
 		case i >= len(ida.Calls):
-			r.Verdict = VerdictBlocker
-			r.Note = "atlas: extra — client never reads this field"
+			// Trailing opaque buffer absorbs the rest: when the client's LAST read
+			// is a DecodeBuf (e.g. PARTYDATA::Decode reads a fixed 298/378-byte
+			// block via memcpy), it consumes the remainder of the packet — so any
+			// trailing Atlas fields ARE that buffer's content, not an over-write.
+			// The audit cannot verify the buffer's exact length (opaque), consistent
+			// with the existing EncodeBuf↔* tolerance, so these are matched.
+			if len(ida.Calls) > 0 && ida.Calls[len(ida.Calls)-1].Op == idasrc.DecodeBuf {
+				r.Verdict = VerdictMatch
+				r.Note = "absorbed by trailing opaque buffer"
+			} else if i == len(ida.Calls) && i == len(atlas)-1 &&
+				atlas[i].Kind == atlaspacket.KindWrite && primWidth(atlas[i].Op) == 1 {
+				// A single trailing 1-byte primitive write that no client version
+				// reads is harmless padding (a flag byte like MovementAffectingStat=0
+				// that the client never decodes — it simply stops reading). This
+				// cannot desync the client (nothing follows it), so it is a Minor
+				// over-write, not a Blocker. Narrowly scoped to ONE trailing byte so
+				// genuine multi-field truncations still surface as blockers.
+				r.Verdict = VerdictMinor
+				r.Note = "atlas: trailing padding byte — client stops reading (harmless over-write)"
+			} else {
+				r.Verdict = VerdictBlocker
+				r.Note = "atlas: extra — client never reads this field"
+			}
+		case ida.Calls[i].Op == idasrc.Unresolved:
+			r.Verdict = VerdictUnresolved
+			r.Note = "IDA read-order unresolved: " + ida.Calls[i].Comment
 		case atlas[i].Kind == atlaspacket.KindRecurse && atlas[i].Opaque:
 			// Pass-3 opaque boundary: registered type with no encode method whose
 			// layout could not be synthesized. STABLE deferred row keyed on
@@ -82,6 +145,120 @@ func Diff(atlas []atlaspacket.Call, ida idasrc.Fields) []Row {
 		rows = append(rows, r)
 	}
 	return rows
+}
+
+// expandRepeatRuns replicates an inlined loop body (marked with RepeatLen on its
+// head) to match the client's N-element run. Atlas writes a fixed-count array via
+// `for range` (e.g. guild TitleChange's 5 ranks, written once and flattened to one
+// iteration); the client reads N copies. The pre-pass greedily counts how many
+// consecutive L-field client blocks width-match the body and emits the Atlas body
+// that many times. Only fires when at least one full iteration matches, so a body
+// that doesn't align is left untouched (no manufactured match). Walks both sides
+// with independent indices, assuming the pre-loop fields are 1:1 (they are for
+// these packets).
+func expandRepeatRuns(atlas []atlaspacket.Call, ida idasrc.Fields) []atlaspacket.Call {
+	has := false
+	for _, a := range atlas {
+		if a.RepeatLen > 0 {
+			has = true
+			break
+		}
+	}
+	if !has {
+		return atlas
+	}
+	out := make([]atlaspacket.Call, 0, len(atlas))
+	ai, ii := 0, 0
+	for ai < len(atlas) {
+		a := atlas[ai]
+		L := a.RepeatLen
+		// Only a TRAILING loop body (nothing follows it on the Atlas side) is
+		// safe to expand: the client's remaining reads are then all iterations of
+		// it, so greedy matching cannot over-consume a distinct following field.
+		if L > 0 && ai+L == len(atlas) && ii+L <= len(ida.Calls) {
+			body := atlas[ai : ai+L]
+			k := 0
+			for ii+(k+1)*L <= len(ida.Calls) && bodyMatchesClient(body, ida.Calls[ii+k*L:ii+(k+1)*L]) {
+				k++
+			}
+			if k >= 1 {
+				for r := 0; r < k; r++ {
+					for _, b := range body {
+						b.RepeatLen = 0
+						out = append(out, b)
+					}
+				}
+				ai += L
+				ii += k * L
+				continue
+			}
+		}
+		out = append(out, a)
+		ai++
+		if ii < len(ida.Calls) {
+			ii++
+		}
+	}
+	return out
+}
+
+// bodyMatchesClient reports whether each Atlas loop-body field width-matches the
+// corresponding client read in a candidate iteration.
+func bodyMatchesClient(body []atlaspacket.Call, client []idasrc.FieldCall) bool {
+	if len(body) != len(client) {
+		return false
+	}
+	for i := range body {
+		if body[i].Kind != atlaspacket.KindWrite || !widthEquivalent(body[i].Op, client[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// absorbBufferGroups collapses an expanded sub-struct field group (marked by
+// GroupLen on its head, set by FlattenWithRegistry) into a single opaque buffer
+// when the client reads that whole struct as one fixed DecodeBuf. The client's
+// GW_Friend/GW_ItemSlot/avatar structs are read as a single fixed-size buffer,
+// while Atlas serializes them field-by-field; without this collapse the trailing
+// group fields show as false "atlas extra". It walks both sides with independent
+// indices and only fires when the client read at the group's position is a
+// DecodeBuf — so the field-by-field client convention (where the group should
+// stay expanded) is left untouched, and no match is manufactured.
+func absorbBufferGroups(atlas []atlaspacket.Call, ida idasrc.Fields) []atlaspacket.Call {
+	hasGroup := false
+	for _, a := range atlas {
+		if a.GroupLen > 1 {
+			hasGroup = true
+			break
+		}
+	}
+	if !hasGroup {
+		return atlas
+	}
+	out := make([]atlaspacket.Call, 0, len(atlas))
+	ai, ii := 0, 0
+	for ai < len(atlas) {
+		a := atlas[ai]
+		if a.GroupLen > 1 && ai+a.GroupLen <= len(atlas) &&
+			ii < len(ida.Calls) && ida.Calls[ii].Op == idasrc.DecodeBuf {
+			merged := a
+			merged.Kind = atlaspacket.KindWrite
+			merged.Op = atlaspacket.EncodeBuf
+			merged.RecurseType = ""
+			merged.GroupLen = 0
+			out = append(out, merged)
+			ai += a.GroupLen
+			ii++
+			continue
+		}
+		out = append(out, a)
+		ai++
+		if ii < len(ida.Calls) {
+			ii++
+		}
+	}
+	return out
 }
 
 // coalesceAtlas is a conservative pre-pass that merges runs of adjacent
@@ -252,7 +429,45 @@ func Flatten(calls []atlaspacket.Call, ctx atlaspacket.GuardContext) []atlaspack
 // or a type is unknown, KindRecurse entries pass through unchanged (legacy path).
 // Cycle detection prevents infinite recursion when a type transitively refers to itself.
 func FlattenWithRegistry(calls []atlaspacket.Call, ctx atlaspacket.GuardContext, reg *atlaspacket.TypeRegistry) []atlaspacket.Call {
-	return flattenWithRegistryGuarded(calls, ctx, reg, map[string]bool{})
+	return flattenWithRegistryGuarded(coalesceAdjacentRepeats(calls), ctx, reg, map[string]bool{})
+}
+
+// coalesceAdjacentRepeats merges consecutive KindRepeat loops with identical body
+// shapes into one. The column-major block-writers (party.WritePartyData) encode
+// each field column as TWO adjacent loops — `for member { WriteX }` then
+// `for pad { WriteX(0) }` — that together fill one fixed array; the client reads
+// each column as a single field. Without merging, the pad loop is an extra
+// flattened entry that shifts every later column by one. Only ADJACENT loops with
+// the same flattened body are merged, so genuinely distinct loops are untouched.
+func coalesceAdjacentRepeats(calls []atlaspacket.Call) []atlaspacket.Call {
+	out := make([]atlaspacket.Call, 0, len(calls))
+	for _, c := range calls {
+		if len(c.Body) > 0 {
+			c.Body = coalesceAdjacentRepeats(c.Body)
+		}
+		if c.Kind == atlaspacket.KindRepeat && len(out) > 0 {
+			prev := out[len(out)-1]
+			if prev.Kind == atlaspacket.KindRepeat && repeatBodyEqual(prev.Body, c.Body) {
+				continue
+			}
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// repeatBodyEqual reports whether two loop bodies have the same flattened shape
+// (length + per-call Kind/Op/RecurseType), ignoring guards and field names.
+func repeatBodyEqual(a, b []atlaspacket.Call) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Kind != b[i].Kind || a[i].Op != b[i].Op || a[i].RecurseType != b[i].RecurseType {
+			return false
+		}
+	}
+	return true
 }
 
 // flattenWithRegistryGuarded is the internal recursion helper for FlattenWithRegistry.
@@ -267,7 +482,13 @@ func flattenWithRegistryGuarded(calls []atlaspacket.Call, ctx atlaspacket.GuardC
 			continue
 		}
 		if c.Kind == atlaspacket.KindRepeat {
-			out = append(out, flattenWithRegistryGuarded(c.Body, ctx, reg, visited)...)
+			body := flattenWithRegistryGuarded(c.Body, ctx, reg, visited)
+			// Mark the loop-body head so the diff can replicate it to match a
+			// client N-element run (fixed-count loop expansion).
+			if len(body) > 0 {
+				body[0].RepeatLen = len(body)
+			}
+			out = append(out, body...)
 			continue
 		}
 		if c.Kind == atlaspacket.KindRecurse && reg != nil {
@@ -279,8 +500,16 @@ func flattenWithRegistryGuarded(calls []atlaspacket.Call, ctx atlaspacket.GuardC
 			}
 			if sub, ok := reg.Calls(c.RecurseType); ok {
 				visited[c.RecurseType] = true
-				out = append(out, flattenWithRegistryGuarded(sub, ctx, reg, visited)...)
+				flat := flattenWithRegistryGuarded(sub, ctx, reg, visited)
 				delete(visited, c.RecurseType)
+				// Mark this sub-struct's flattened span so a client-side opaque
+				// DecodeBuf can absorb the whole group (see absorbBufferGroups).
+				// Set on the group head; the OUTERMOST recurse wins because the
+				// parent expansion runs after this returns.
+				if len(flat) > 1 {
+					flat[0].GroupLen = len(flat)
+				}
+				out = append(out, flat...)
 				continue
 			}
 			// Unresolved recurse target. If the registry knows it as a Pass-3

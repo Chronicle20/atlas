@@ -2,8 +2,37 @@ package idasrc
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
+
+// TestExportSourceIsAbsent pins that an `"absent": true` entry is reported as
+// absent (N/A — feature not implemented in this baseline), while a normal entry
+// and an unknown FName are not.
+func TestExportSourceIsAbsent(t *testing.T) {
+	js := `{"functions":{
+	  "Feat::Missing":{"address":"0x0","direction":"clientbound","absent":true,"calls":[]},
+	  "Feat::Present":{"address":"0x1","direction":"clientbound","calls":[{"op":"Decode1","comment":"x"}]}
+	}}`
+	p := filepath.Join(t.TempDir(), "absent.json")
+	if err := os.WriteFile(p, []byte(js), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	src, err := NewExportSource(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !src.IsAbsent("Feat::Missing") {
+		t.Error("Feat::Missing should be absent")
+	}
+	if src.IsAbsent("Feat::Present") {
+		t.Error("Feat::Present should NOT be absent")
+	}
+	if src.IsAbsent("Feat::Unknown") {
+		t.Error("unknown FName should not be absent")
+	}
+}
 
 func TestExportSourceResolve(t *testing.T) {
 	src, err := NewExportSource("testdata/gms_v95_mini.json")
@@ -265,6 +294,43 @@ func contains(haystack, needle string) bool {
 	return false
 }
 
+func TestResolveShapeUsesDispatch(t *testing.T) {
+	src, err := NewExportSource("testdata/dispatch_mini.json")
+	if err != nil {
+		t.Fatalf("NewExportSource: %v", err)
+	}
+	f, err := src.ResolveShape(context.Background(), "Foo::OnBar")
+	if err != nil {
+		t.Fatalf("ResolveShape: %v", err)
+	}
+	// pre-branch discriminator Decode1 + case-9 read only (case-8 excluded):
+	want := []Primitive{Decode1, Decode4}
+	if len(f.Calls) != len(want) {
+		t.Fatalf("ResolveShape = %d calls, want %d: %+v", len(f.Calls), len(want), f.Calls)
+	}
+	for i, w := range want {
+		if f.Calls[i].Op != w {
+			t.Errorf("call[%d].Op = %v, want %v", i, f.Calls[i].Op, w)
+		}
+	}
+}
+
+func TestExportFnParsesDispatch(t *testing.T) {
+	src, err := NewExportSource("testdata/dispatch_mini.json")
+	if err != nil {
+		t.Fatalf("NewExportSource: %v", err)
+	}
+	// Full Resolve (no dispatch filter) returns all 3 reads — proves dispatch does
+	// NOT affect Resolve, only ResolveShape.
+	f, err := src.Resolve(context.Background(), "Foo::OnBar")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if len(f.Calls) != 3 {
+		t.Errorf("Resolve = %d calls, want 3 (dispatch must not filter Resolve)", len(f.Calls))
+	}
+}
+
 func TestDispatcherPrefixUnknownKind(t *testing.T) {
 	// Forward-compat: unrecognized kinds yield no prefix (warn-and-continue,
 	// not error). A future dispatcher kind can be added without breaking
@@ -274,5 +340,61 @@ func TestDispatcherPrefixUnknownKind(t *testing.T) {
 	}
 	if p := dispatcherPrefix(""); p != nil {
 		t.Errorf("expected nil prefix for empty kind; got %d entries", len(p))
+	}
+}
+
+func TestDispatcherPrefixPerUserRemote(t *testing.T) {
+	// per-user-remote models CUserPool::OnUserRemotePacket reading Decode4
+	// characterId before routing to a CUserRemote::On* leaf (e.g. OnReceiveHP /
+	// UPDATE_PARTYMEMBER_HP). It prepends exactly one Decode4 (the characterId).
+	p := dispatcherPrefix("per-user-remote")
+	if len(p) != 1 {
+		t.Fatalf("per-user-remote prefix: got %d entries, want 1", len(p))
+	}
+	if p[0].Op != Decode4 {
+		t.Errorf("per-user-remote prefix[0]: got %v, want Decode4 (characterId)", p[0].Op)
+	}
+}
+
+func TestResolveUnresolvedCall(t *testing.T) {
+	// An export entry with an Unresolved op resolves to a single Unresolved
+	// FieldCall (a known gap), NOT an error.
+	src, err := NewExportSource("testdata/unresolved_mini.json")
+	if err != nil {
+		t.Fatalf("NewExportSource: %v", err)
+	}
+	got, err := src.Resolve(context.Background(), "Foo::OnBar")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if len(got.Calls) != 2 {
+		t.Fatalf("want 2 calls, got %d", len(got.Calls))
+	}
+	if got.Calls[1].Op != Unresolved {
+		t.Errorf("call[1].Op = %v, want Unresolved", got.Calls[1].Op)
+	}
+}
+
+func TestEntriesExposesDispatchAndHandCalls(t *testing.T) {
+	src, _ := NewExportSource("testdata/dispatch_mini.json")
+	es := src.Entries()
+	var e *BaselineEntry
+	for i := range es {
+		if es[i].FName == "Foo::OnBar" {
+			e = &es[i]
+		}
+	}
+	if e == nil {
+		t.Fatal("Foo::OnBar missing")
+	}
+	if e.Address != "0x1" {
+		t.Errorf("addr=%q", e.Address)
+	}
+	if len(e.Dispatch) != 1 || e.Dispatch[0].Case != 9 {
+		t.Errorf("dispatch=%+v", e.Dispatch)
+	}
+	// HandCalls = the full inline reads (NOT dispatch-filtered): Decode1, Decode4, Decode2
+	if len(e.HandCalls) != 3 {
+		t.Errorf("handcalls=%d want 3: %+v", len(e.HandCalls), e.HandCalls)
 	}
 }

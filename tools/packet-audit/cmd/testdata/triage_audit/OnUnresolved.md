@@ -1,0 +1,3 @@
+# OnUnresolved (← `Foo::OnUnresolved`)
+
+- **Verdict:** ❌

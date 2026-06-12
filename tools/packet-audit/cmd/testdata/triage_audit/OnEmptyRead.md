@@ -1,0 +1,3 @@
+# OnEmptyRead (← `Foo::OnEmptyRead`)
+
+- **Verdict:** ❌

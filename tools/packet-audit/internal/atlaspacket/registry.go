@@ -22,8 +22,44 @@ import (
 // A short-name index (byShort) maps unqualified names back to their
 // qualified registry keys for callers that don't know the package context.
 type TypeRegistry struct {
-	types   map[string]*TypeEntry // qualified key
-	byShort map[string][]string   // short name → qualified keys
+	types     map[string]*TypeEntry   // qualified key
+	byShort   map[string][]string     // short name → qualified keys
+	freeFuncs map[string]*FreeFuncEntry // package-level writer-helper funcs by name
+}
+
+// FreeFuncEntry holds a package-level (no-receiver) function that writes via a
+// *response.Writer parameter — a block-writer helper like party.WritePartyData.
+// The analyzer descends into it and splices its writes, since such helpers
+// encode a chunk of the wire that the calling packet's writer delegates to.
+type FreeFuncEntry struct {
+	Body *ast.BlockStmt
+	Fset *token.FileSet
+	File *ast.File
+}
+
+// FreeFunc returns the indexed block-writer helper by name.
+func (r *TypeRegistry) FreeFunc(name string) (*FreeFuncEntry, bool) {
+	if r == nil {
+		return nil, false
+	}
+	e, ok := r.freeFuncs[name]
+	return e, ok
+}
+
+// funcHasWriterParam reports whether a func signature takes a *response.Writer
+// parameter (the marker of a block-writer helper worth descending into).
+func funcHasWriterParam(ft *ast.FuncType) bool {
+	if ft == nil || ft.Params == nil {
+		return false
+	}
+	for _, p := range ft.Params.List {
+		if star, ok := p.Type.(*ast.StarExpr); ok {
+			if sel, ok := star.X.(*ast.SelectorExpr); ok && sel.Sel.Name == "Writer" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // TypeEntry holds the pre-analyzed wire shape for one struct type.
@@ -51,8 +87,9 @@ type TypeEntry struct {
 //     registry).
 func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 	reg := &TypeRegistry{
-		types:   map[string]*TypeEntry{},
-		byShort: map[string][]string{},
+		types:     map[string]*TypeEntry{},
+		byShort:   map[string][]string{},
+		freeFuncs: map[string]*FreeFuncEntry{},
 	}
 
 	type fileCtx struct {
@@ -83,6 +120,14 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 		}
 		files = append(files, fileCtx{path: path, pkgPath: rel, file: f, fset: fset})
 		for _, decl := range f.Decls {
+			// Index package-level block-writer helpers (party.WritePartyData, …)
+			// so the analyzer can descend into them.
+			if fd, ok := decl.(*ast.FuncDecl); ok {
+				if fd.Recv == nil && fd.Body != nil && funcHasWriterParam(fd.Type) {
+					reg.freeFuncs[fd.Name.Name] = &FreeFuncEntry{Body: fd.Body, Fset: fset, File: f}
+				}
+				continue
+			}
 			gd, ok := decl.(*ast.GenDecl)
 			if !ok || gd.Tok != token.TYPE {
 				continue

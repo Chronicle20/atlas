@@ -1,0 +1,3 @@
+# OnBranch (← `Foo::OnBranch`)
+
+- **Verdict:** ❌

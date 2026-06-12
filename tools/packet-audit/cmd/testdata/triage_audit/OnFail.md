@@ -1,0 +1,3 @@
+# OnFail (← `Foo::OnFail`)
+
+- **Verdict:** ❌

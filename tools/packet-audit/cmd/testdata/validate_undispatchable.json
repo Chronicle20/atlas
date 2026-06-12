@@ -1,0 +1,9 @@
+{
+ "binary":"x","md5":"x","generated_at":"t",
+ "functions":{
+  "Auth::OnCheckPasswordResult#AuthLoginFailed":{"address":"0x200","direction":"clientbound",
+    "calls":[{"op":"Decode1","guard":""},{"op":"Decode2","guard":""}]},
+  "Auth::OnCheckPasswordResult#AuthSuccess":{"address":"0x200","direction":"clientbound","dispatch":[{"discriminator":"switch","case":0}],
+    "calls":[{"op":"Decode1","guard":""},{"op":"Decode4","guard":""}]}
+ }
+}

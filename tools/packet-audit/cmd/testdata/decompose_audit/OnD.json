@@ -1,0 +1,11 @@
+{
+  "WriterName": "OnD",
+  "IDAName": "Foo::OnD",
+  "Address": "0x400",
+  "Rows": [
+    { "Index": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "Verdict": 0, "Note": "" },
+    { "Index": 2, "Verdict": 2, "Note": "atlas writes Decode2; client reads DecodeStr — mid-stream wire divergence" }
+  ],
+  "Verdict": 2
+}

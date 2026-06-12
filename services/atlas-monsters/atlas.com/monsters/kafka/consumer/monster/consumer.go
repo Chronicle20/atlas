@@ -12,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -62,6 +63,12 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnFieldCommand))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAddPuppetCommand))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemovePuppetCommand))); err != nil {
 			return err
 		}
 		t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
@@ -161,6 +168,28 @@ func handleDrainMpCommand(l logrus.FieldLogger, ctx context.Context, c command[d
 	if err := p.DrainMp(f, c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
 		l.WithError(err).Errorf("DRAIN_MP failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
 	}
+}
+
+func handleAddPuppetCommand(l logrus.FieldLogger, ctx context.Context, c addPuppetCommand) {
+	if c.Type != CommandTypeAddPuppet {
+		return
+	}
+
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	t := tenant.MustFromContext(ctx)
+	monster.GetPuppetRegistry().Add(ctx, t, f, c.OwnerCharacterId, c.X, c.Y)
+	l.Debugf("Registered puppet for owner [%d] at (%d,%d) in field [%s].", c.OwnerCharacterId, c.X, c.Y, f.Id())
+}
+
+func handleRemovePuppetCommand(l logrus.FieldLogger, ctx context.Context, c removePuppetCommand) {
+	if c.Type != CommandTypeRemovePuppet {
+		return
+	}
+
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	t := tenant.MustFromContext(ctx)
+	monster.GetPuppetRegistry().Remove(ctx, t, f, c.OwnerCharacterId)
+	l.Debugf("Removed puppet for owner [%d] in field [%s].", c.OwnerCharacterId, f.Id())
 }
 
 func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {

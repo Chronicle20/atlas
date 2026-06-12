@@ -85,6 +85,7 @@ go_services = [
   "atlas-saga-orchestrator",
   "atlas-skills",
   "atlas-storage",
+  "atlas-summons",
   "atlas-tenants",
   "atlas-transports",
   "atlas-world",

@@ -1324,14 +1324,14 @@ see memory `reference_ida_harvest_subagents`) and add version branches where the
 **Files:**
 - Create: `docs/tasks/task-086-mount-system/deploy-notes.md`
 
-- [ ] **Step 1: Document the live-config patch (known pitfall — seed templates apply only at
+- [x] **Step 1: Document the live-config patch (known pitfall — seed templates apply only at
 tenant creation).** Record that existing tenants need, per channel:
   - inbound handler opcode **0x4D** → `MountFoodHandle` added to live `Socket.Handlers`
   - outbound writer opcode for `SetTamingMobInfo` added to live `Socket.Writers`
   - **then restart the channel** (projection does not hot-reload handlers/writers).
 Reference the `bug_new_opcodes_not_in_live_tenant_config` memory.
 
-- [ ] **Step 2: Run the full repo verification gate from the worktree root.**
+- [x] **Step 2: Run the full repo verification gate from the worktree root.**
 
 ```bash
 for m in libs/atlas-packet libs/atlas-constants services/atlas-data services/atlas-mounts/atlas.com/mounts services/atlas-channel/atlas.com/channel services/atlas-consumables services/atlas-buffs; do
@@ -1341,7 +1341,7 @@ GOWORK=off tools/redis-key-guard.sh
 ```
 Expected: every module clean; redis-key-guard clean.
 
-- [ ] **Step 3: Commit deploy notes.**
+- [x] **Step 3: Commit deploy notes.**
 
 ```bash
 git add docs/tasks/task-086-mount-system/deploy-notes.md

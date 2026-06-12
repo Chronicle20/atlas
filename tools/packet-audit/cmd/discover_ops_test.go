@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -217,7 +218,10 @@ func TestDiscoverOpsApplyRefusesCollision(t *testing.T) {
 		{Op: "WORLD_WRONG", Direction: opregistry.DirClientbound, Opcode: 0x22, FName: "CNotRight::OnWrong", Provenance: "csv-import"},
 	}
 	regPath := writeSeedRegistry(t, dir, "gms_v83", seedEntries)
-	beforeStat, _ := os.Stat(regPath)
+	beforeBytes, err := os.ReadFile(regPath)
+	if err != nil {
+		t.Fatalf("read registry before run: %v", err)
+	}
 
 	outMD := filepath.Join(dir, "worklist.md")
 	opts := discoverOpsOpts{
@@ -232,9 +236,13 @@ func TestDiscoverOpsApplyRefusesCollision(t *testing.T) {
 	if code != 1 {
 		t.Errorf("expected exit 1 (collision blocker), got %d; stderr: %s", code, stderr.String())
 	}
-	afterStat, _ := os.Stat(regPath)
-	// File must not have been modified.
-	if afterStat.ModTime() != beforeStat.ModTime() {
+	afterBytes, err := os.ReadFile(regPath)
+	if err != nil {
+		t.Fatalf("read registry after run: %v", err)
+	}
+	// File contents must be identical — bytes.Equal is immune to sub-second
+	// mtime resolution issues that plagued the previous ModTime comparison.
+	if !bytes.Equal(beforeBytes, afterBytes) {
 		t.Error("registry file was modified despite collision blocker")
 	}
 }

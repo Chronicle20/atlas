@@ -86,3 +86,34 @@ skill/item/quest data read per-tenant from each version's WZ).
   workspace mode.
 - `docker buildx bake` clean for all 6 affected services: atlas-mounts, atlas-channel, atlas-data,
   atlas-consumables, atlas-npc-conversations, atlas-messages.
+
+## 9. New-service PR-env onboarding (gaps hit during the PR #743 ephemeral deploy)
+
+Adding the new `atlas-mounts` service required several PR-overlay / CI files beyond the base manifest +
+services.json. These were NOT obvious from the plan and caused two deploy failures; the authoritative
+checklist is `deploy/k8s/README.md` "Adding a new service". For atlas-mounts specifically:
+
+1. **`.github/config/services.json`** — service entry (done in Task 39). Drives the CI build matrix AND
+   the `ATLAS_SERVICES` cleanup list. After editing, **regenerate the cleanup artifact**:
+   `deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh` → commit
+   `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml`. *(Missing this failed the
+   "Resolve PR overlay" CI step → the `bot/pr-<N>-resolved` branch was never created → Argo
+   `ComparisonError`, no namespace.)*
+2. **`deploy/k8s/overlays/pr/kustomization.yaml` `images:` block** — add
+   `ghcr.io/chronicle20/atlas-mounts/atlas-mounts` with `newTag: latest`. The "Resolve PR overlay" step
+   bumps entries here to `pr-<N>-<sha>`; a service NOT in this list stays on `:latest`, which is never
+   pushed → **ImagePullBackOff** (Argo Degraded).
+3. **`ATLAS_DB_NAMES` literal** in the same kustomization.yaml `configMapGenerator` — add `atlas-mounts`.
+   The `wave0-create-dbs` presync hook loops this list to `CREATE DATABASE` per PR env; a missing entry
+   means the per-PR database is never created.
+4. **`deploy/k8s/overlays/pr/scripts/gen-db-name-suffix.sh`** → regenerate `patches/db-name-suffix.yaml`
+   (suffixes `DB_NAME` to `atlas-mounts-<env>` for per-PR DB isolation).
+5. **`deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh`** → regenerate
+   `patches/consumer-group-env.yaml` (per-PR Kafka consumer-group suffix; reads the `consumerGroupId`
+   literal from the service `main.go`).
+6. **New Kafka topics** → `deploy/k8s/base/env-configmap.yaml` + `deploy/compose/.env.example` +
+   the topic literals in the PR overlay `configMapGenerator` (gen-topic-config.sh). Done in the DOM-23 fix.
+
+Verification that the env came up: `atlas-mounts` pod Running/Ready on `...:pr-<N>-<sha>`, logs show
+Redis connect + the three `*_TOPIC_*-<env>` consumers + the 60s tiredness task + HTTP :8080, and Argo
+app health `Healthy`.

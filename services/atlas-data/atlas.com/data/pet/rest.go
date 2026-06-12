@@ -7,12 +7,15 @@ import (
 )
 
 type RestModel struct {
-	Id     uint32           `json:"-"`
-	Name   string           `json:"name"`
-	Hungry uint32           `json:"hungry"`
-	Cash   bool             `json:"cash"`
-	Life   uint32           `json:"life"`
-	Skills []SkillRestModel `json:"-"`
+	Id           uint32               `json:"-"`
+	Name         string               `json:"name"`
+	Hungry       uint32               `json:"hungry"`
+	Cash         bool                 `json:"cash"`
+	Life         uint32               `json:"life"`
+	ReqPetLevel  uint32               `json:"reqPetLevel"`
+	ReqItemId    uint32               `json:"reqItemId"`
+	Evolutions   []EvolutionRestModel `json:"evolutions"`
+	Skills       []SkillRestModel     `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -115,4 +118,9 @@ func (r SkillRestModel) GetID() string {
 func (r *SkillRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
+}
+
+type EvolutionRestModel struct {
+	TemplateId  uint32 `json:"templateId"`
+	Probability uint32 `json:"probability"`
 }

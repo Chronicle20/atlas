@@ -429,7 +429,7 @@ git commit -m "task-086: expose revitalizer tiredness-heal spec in consumable re
 - Create: `services/atlas-mounts/atlas.com/mounts/go.mod`, `logger/`, helper files (copy pets)
 - Modify: `go.work`
 
-- [ ] **Step 1: Create the directory + go.mod.**
+- [x] **Step 1: Create the directory + go.mod.**
 
 ```bash
 mkdir -p services/atlas-mounts/atlas.com/mounts
@@ -439,18 +439,18 @@ cp services/atlas-pets/atlas.com/pets/go.mod services/atlas-mounts/atlas.com/mou
 
 Copy `logger/` and any Makefile/helper files verbatim from pets, renaming the service string.
 
-- [ ] **Step 2: Add to go.work so the workspace resolves it.**
+- [x] **Step 2: Add to go.work so the workspace resolves it.**
 
 Add this line to repo-root `go.work` (alphabetical, near the atlas-pets line):
 ```
 	./services/atlas-mounts/atlas.com/mounts
 ```
 
-- [ ] **Step 3: Build the empty module.**
+- [x] **Step 3: Build the empty module.**
 
 Run: `cd services/atlas-mounts/atlas.com/mounts && go build ./... 2>&1 | head` (expect "no Go files" or unresolved imports until main.go lands — fine).
 
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/go.mod go.work services/atlas-mounts/atlas.com/mounts/logger
@@ -467,7 +467,7 @@ Schema (design §4.1): `tenant_id uuid`, `character_id uint32`, `id uuid pk`, `l
 `exp int default 0`, `tiredness int default 0`, `last_tiredness_tick_at *time.Time`; uniqueIndex on
 `(tenant_id, character_id)`.
 
-- [ ] **Step 1: Write the entity + `Make`/`Migration` (copy pets/entity.go shape).**
+- [x] **Step 1: Write the entity + `Make`/`Migration` (copy pets/entity.go shape).**
 
 ```go
 type Entity struct {
@@ -485,7 +485,7 @@ func Migration(db *gorm.DB) error { return db.AutoMigrate(&Entity{}) }
 func Make(e Entity) (Model, error) { /* build via NewModelBuilder */ }
 ```
 
-- [ ] **Step 2: Test `Make` round-trips an Entity to a Model.** Run → fail → implement `Make` → pass → commit.
+- [x] **Step 2: Test `Make` round-trips an Entity to a Model.** Run → fail → implement `Make` → pass → commit.
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/entity.go services/atlas-mounts/atlas.com/mounts/mount/entity_test.go
@@ -498,13 +498,13 @@ git commit -m "task-086: character_mounts entity + migration"
 - Create: `mount/model.go`, `mount/builder.go`
 - Test: `mount/builder_test.go`
 
-- [ ] **Step 1: Write Model (private fields + getters) and Builder (copy pets/model.go + builder.go).**
+- [x] **Step 1: Write Model (private fields + getters) and Builder (copy pets/model.go + builder.go).**
 
 Fields: `id uuid.UUID, tenantId uuid.UUID, characterId uint32, level int, exp int, tiredness int,
 lastTirednessTickAt *time.Time`. Builder defaults: `level 1, exp 0, tiredness 0`. Provide
 `Clone(m)`, `SetLevel/SetExp/SetTiredness/SetLastTick`, `Build()`.
 
-- [ ] **Step 2: Test the builder defaults (new mount → level 1/exp 0/tiredness 0).** Run → fail → implement → pass → commit.
+- [x] **Step 2: Test the builder defaults (new mount → level 1/exp 0/tiredness 0).** Run → fail → implement → pass → commit.
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/model.go services/atlas-mounts/atlas.com/mounts/mount/builder.go services/atlas-mounts/atlas.com/mounts/mount/builder_test.go
@@ -519,7 +519,7 @@ git commit -m "task-086: mount Model + Builder"
 
 Consumes Task 1 §8 (exp table + cap). Highest-logic unit — test it hard, no I/O.
 
-- [ ] **Step 1: Write failing tests for the feed math (FR-8.1/8.2/8.3).**
+- [x] **Step 1: Write failing tests for the feed math (FR-8.1/8.2/8.3).**
 
 ```go
 func TestExpNeededForLevelTableMatchesPinnedValues(t *testing.T) {
@@ -547,7 +547,7 @@ func TestApplyFeedAtCapDoesNotLevel(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run (fail). Step 3: Implement.**
+- [x] **Step 2: Run (fail). Step 3: Implement.**
 
 ```go
 const CAP = /* pinned in context.md §8 */
@@ -577,7 +577,7 @@ func ApplyFeed(in FeedInput) FeedResult {
 }
 ```
 
-- [ ] **Step 4: Run (pass). Step 5: Commit.**
+- [x] **Step 4: Run (pass). Step 5: Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/feed.go services/atlas-mounts/atlas.com/mounts/mount/feed_test.go
@@ -590,7 +590,7 @@ git commit -m "task-086: mount feed heal->exp->level math (FR-8)"
 - Modify: `mount/feed.go` (or new `mount/tiredness.go`)
 - Test: `mount/tiredness_test.go`
 
-- [ ] **Step 1: Failing test (FR-6.1/6.3): increment clamps at 99 and flags TooTired at the clamp.**
+- [x] **Step 1: Failing test (FR-6.1/6.3): increment clamps at 99 and flags TooTired at the clamp.**
 
 ```go
 func TestTickTirednessClampsAt99(t *testing.T) {
@@ -605,7 +605,7 @@ func TestTickTirednessClampsAt99(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2-4: implement `TickTiredness(t int) (int, bool)` → `min(99,t+1)`, tooTired when result==99. Run → pass. Commit.**
+- [x] **Step 2-4: implement `TickTiredness(t int) (int, bool)` → `min(99,t+1)`, tooTired when result==99. Run → pass. Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/
@@ -618,7 +618,7 @@ git commit -m "task-086: tiredness tick clamp at 99 with TooTired flag (FR-6)"
 - Create: `mount/administrator.go`, `mount/processor.go`
 - Test: `mount/processor_test.go` (DB-backed via the project's test DB helper used by atlas-pets)
 
-- [ ] **Step 1: Copy pets/administrator.go + processor.go; adapt to character_mounts.**
+- [x] **Step 1: Copy pets/administrator.go + processor.go; adapt to character_mounts.**
 
 `NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *ProcessorImpl` with
 `t := tenant.MustFromContext(ctx)`, a `kp` producer Provider, `With(WithTransaction(tx))`.
@@ -634,9 +634,9 @@ Methods (interface + impl):
 All persistence wrapped in `database.ExecuteTransaction`; persist + `mb.Put(EnvStatusEventTopic,…)`
 share one buffer so a crash neither double-applies exp nor loses tiredness (NFR resilience).
 
-- [ ] **Step 2: Test default-on-first-read + upsert scoping by tenant+character (Builder fixtures only).** Run → fail → implement → pass.
+- [x] **Step 2: Test default-on-first-read + upsert scoping by tenant+character (Builder fixtures only).** Run → fail → implement → pass.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/administrator.go services/atlas-mounts/atlas.com/mounts/mount/processor.go services/atlas-mounts/atlas.com/mounts/mount/processor_test.go
@@ -649,7 +649,7 @@ git commit -m "task-086: mount processor (default-on-read, upsert, tick/feed/set
 - Create: `kafka/message/mount/kafka.go`, `kafka/producer/producer.go`
 - Test: `kafka/message/mount/kafka_test.go`
 
-- [ ] **Step 1: Define topic + event (design §4.4 / §12). Copy pets message + producer Provider.**
+- [x] **Step 1: Define topic + event (design §4.4 / §12). Copy pets message + producer Provider.**
 
 ```go
 const (
@@ -678,7 +678,7 @@ type StatusEventBody struct {
 Producer `ProviderImpl` copied verbatim from pets. Add `setEventProvider`, `tickEventProvider`,
 `feedEventProvider` returning `model.Provider[[]kafka.Message]` keyed by characterId.
 
-- [ ] **Step 2: Test a provider marshals the expected JSON shape. Run → fail → implement → pass. Commit.**
+- [x] **Step 2: Test a provider marshals the expected JSON shape. Run → fail → implement → pass. Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/kafka/message/mount services/atlas-mounts/atlas.com/mounts/kafka/producer
@@ -694,7 +694,7 @@ git commit -m "task-086: mount status Kafka event + producer"
 Design §4.2: `TenantRegistry[uint32, MountRideContext]` keyed by character id storing
 `worldId + skillId + vehicleId`. **Route through `libs/atlas-redis` only** (repo invariant).
 
-- [ ] **Step 1: Copy pets character/registry.go pattern.**
+- [x] **Step 1: Copy pets character/registry.go pattern.**
 
 ```go
 type MountRideContext struct {
@@ -707,14 +707,14 @@ func InitRegistry(client *goredis.Client) { /* atlas.NewTenantRegistry[uint32, M
 // Add(ctx, characterId, MountRideContext); Remove(ctx, characterId); GetActive(ctx) (map[uint32]Entry, error) // {Tenant, Ctx}
 ```
 
-- [ ] **Step 2: redis-key-guard check (registry must use lib types).**
+- [x] **Step 2: redis-key-guard check (registry must use lib types).**
 
 ```bash
 GOWORK=off tools/redis-key-guard.sh   # from worktree root
 ```
 Expected: clean (no raw keyed go-redis outside libs/atlas-redis).
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add services/atlas-mounts/atlas.com/mounts/mount/registry.go services/atlas-mounts/atlas.com/mounts/mount/registry_test.go

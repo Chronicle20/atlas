@@ -92,8 +92,9 @@ func load(src io.Reader, name string) ([]Row, error) {
 			}
 			opcode := 0
 			if opcodeCell != "" {
-				opcode, err = parseOpcode(opcodeCell)
-				if err != nil {
+				var parseErr error
+				opcode, parseErr = parseOpcode(opcodeCell)
+				if parseErr != nil {
 					return nil, fmt.Errorf("%s row %d (%s) col %d: unparseable opcode %q",
 						name, rowNum+2, op, i+1, opcodeCell)
 				}

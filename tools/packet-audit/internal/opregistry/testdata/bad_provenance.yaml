@@ -1,0 +1,5 @@
+- op: LOGIN_STATUS
+  direction: clientbound
+  opcode: 0x000
+  fname: "CLogin::OnCheckPasswordResult"
+  provenance: unknown-source

@@ -108,7 +108,7 @@ func (v *VersionFile) ByFName(fname string, dir Direction) (Entry, bool) {
 
 // Registry is the loaded set of version files.
 type Registry struct {
-	Versions map[string]*VersionFile // version key -> file (nil entry means file missing)
+	Versions map[string]*VersionFile // version key -> file (absent key means file missing)
 }
 
 // LoadDir loads every <version>.yaml present in dir for the given version keys.

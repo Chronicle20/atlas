@@ -90,7 +90,7 @@ configMapGenerator:
     literals:
       # Infrastructure literals.
       - BASE_SERVICE_URL=http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local:80/api/
-      - BOOTSTRAP_SERVERS=kafka.home:9093
+      - BOOTSTRAP_SERVERS=kafka-broker.kafka.svc.cluster.local:9093
       - DB_HOST=postgres.home
       - DB_PORT=5432
       - REDIS_URL=redis.home:6379

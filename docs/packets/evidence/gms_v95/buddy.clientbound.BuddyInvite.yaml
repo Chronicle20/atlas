@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyInvite
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#Invite
+    address: "0xa12630"
+    decompile_sha256: 9d21109429a2f09b297827f23794688526f41dcf2c7ee50e357672014a4cfdb3
+verifies:
+    - libs/atlas-packet/buddy/clientbound/invite_test.go#TestBuddyInviteByteOutput

@@ -1,0 +1,10 @@
+packet: character/serverbound/Move
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlUser::EndUpdateActive
+    address: "0x9cb992"
+    decompile_sha256: 9de0491409867c7e3a5eb65ce1ca1880ac26e88ba81ee34a1bea3af43ef254da
+verifies:
+    - libs/atlas-packet/character/serverbound/version_bounds_test.go#TestMoveVersionBoundary

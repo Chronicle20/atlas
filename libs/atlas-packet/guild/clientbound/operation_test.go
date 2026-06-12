@@ -127,6 +127,8 @@ func TestMemberJoinedRoundTrip(t *testing.T) {
 // originatorName="InviterName" → 2+11=13 bytes.
 //   v83..86: 1+4+13 = 18 bytes
 //   v87+:    1+4+13+4+4 = 26 bytes
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v87 ida=0xacf7d3
 func TestInviteByteOutput(t *testing.T) {
 	cases := []struct {
 		variant   pt.TenantVariant

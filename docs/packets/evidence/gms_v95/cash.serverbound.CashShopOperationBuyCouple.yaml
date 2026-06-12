@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationBuyCouple
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuyCouple
+    address: "0x490d80"
+    decompile_sha256: 51c950c2a743ad557819dfe35d5c300013e9589bbf7820ab6734be8aebe4f444
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_operation_buy_couple_test.go#TestShopOperationBuyCoupleLeadingFieldGate

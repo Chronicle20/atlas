@@ -26,6 +26,8 @@ func etcAsset() model.Asset {
 // confirmed against IDA v83 CTrunkDlg::SetGetItems@0x7c5dfd and v95
 // CTrunkDlg::SetGetItems@0x76a390 (identical per-tab loop over bits 4/8/16/32/64,
 // meso gated on flag&2). Wire bug present in both versions; fix unconditional.
+// packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v83 ida=0x7c5dae
+// packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v95 ida=0x76a990
 func TestStorageShowSegmentation(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

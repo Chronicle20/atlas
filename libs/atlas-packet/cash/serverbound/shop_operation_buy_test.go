@@ -51,6 +51,8 @@ func TestShopOperationBuyRoundTrip(t *testing.T) {
 // nCommSN, Encode4 IsZeroGoods (single int). v87 CCashShop::OnBuy@0x477bd9
 // already sends ...nCommSN then Encode1 m_bRequestBuyOneADay + Encode4 nEventSN
 // (the byte+eventSN tail is present from v87, not v95). Gate GMS && MajorVersion>=87.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v83 ida=0x46dadd
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v87 ida=0x477bd9
 func TestShopOperationBuyBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationBuy{isPoints: true, currency: 1, serialNumber: 2, zero: 3, oneADay: 1, eventSN: 4}
@@ -79,6 +81,7 @@ func TestShopOperationBuyBytes(t *testing.T) {
 // op byte, not body), Encode1(usePoints), Encode4(nCommSN). The body after the
 // mode byte is exactly isPoints(1) + serialNumber(4) = 5 bytes; no currency, no
 // trailing v83/v87 fields.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=jms_v185 ida=0x47eaa7
 func TestShopOperationBuyJMS(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	in := ShopOperationBuy{isPoints: true, serialNumber: 0xAABBCCDD}

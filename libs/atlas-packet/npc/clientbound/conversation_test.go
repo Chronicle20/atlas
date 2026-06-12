@@ -65,6 +65,7 @@ func TestNpcConversationAskMenu(t *testing.T) {
 // TestSayImageConversationDetailEncode verifies the image-count prefix is a
 // single byte, matching CScriptMan::OnSayImage@0x6dc310 which reads the count
 // via CInPacket::Decode1 (line 61, 0x6dc3d9) before looping DecodeStr.
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=gms_v95 ida=0x6dc310
 func TestSayImageConversationDetailEncode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range test.Variants {
@@ -87,6 +88,7 @@ func TestSayImageConversationDetailEncode(t *testing.T) {
 // prefix is a single byte, matching CScriptMan::OnAskMembershopAvatar@0x6dd340
 // (case 9) which reads the count via CInPacket::Decode1 (line 55, 0x6dd394)
 // before looping Decode4 per candidate.
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v95 ida=0x6dd340
 func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range test.Variants {
@@ -111,6 +113,7 @@ func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 // (v84..86 == v83, off-by-one fix, delta §3.2).
 // JMS185 sub_7E2A97@0x7e2a97 reads two leading Decode4s (slideDlgType + menuType)
 // then DecodeStr(message) unconditionally; GMS v83 reads a single Decode4.
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=jms_v185 ida=0x7b8513
 func TestAskSlideMenuConversationDetailEncode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	intBytes := func(v uint32) []byte {

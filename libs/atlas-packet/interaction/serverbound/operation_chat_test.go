@@ -34,6 +34,9 @@ func TestOperationChatRoundTrip(t *testing.T) {
 // already prepends Encode4 get_update_time (v87 CheckAndSendChat@0x69973e shows
 // the field present), as does v95. JMS v185 also prepends update_time
 // (CheckAndSendChat@0x6db3ce). Gate: (GMS && MajorVersion>=87) || JMS.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v83 ida=0x65f438
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v87 ida=0x69973e
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=jms_v185 ida=0x6db3ce
 func TestOperationChatBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := OperationChat{updateTime: 0x11223344, message: "hi"}

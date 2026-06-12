@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyUpdate
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Update
+    address: "0xa3e31c"
+    decompile_sha256: 420e099c90b00bb31a186483854c40cd418bd130e5316fe4f633a7175081cffd
+verifies:
+    - libs/atlas-packet/party/clientbound/update_test.go#TestUpdateByteOutput

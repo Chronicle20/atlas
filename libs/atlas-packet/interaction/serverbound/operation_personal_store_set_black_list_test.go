@@ -32,6 +32,8 @@ func TestOperationPersonalStoreSetBlackListRoundTrip(t *testing.T) {
 // Per-entry strings are present in both v83 (IDA
 // CPersonalShopDlg::DeliverBlackList@0x6fdeda Encode2 count + loop EncodeStr) and
 // v95 (@0x69b0d0), so the string[] shape is unconditional.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=gms_v83 ida=0x6fdeda
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreSetBlackList version=gms_v95 ida=0x69b0d0
 func TestOperationPersonalStoreSetBlackListBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

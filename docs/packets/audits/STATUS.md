@@ -54,7 +54,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT |  | 🟥 | ❌ | ❌ | ❌ | ❌ |
 | CASHSHOP_GACHAPON_STAMP_RESULT |  | 🟥 | ❌ | ❌ | ❌ | ❌ |
 | CASHSHOP_GIFT_INFO_RESULT |  | ❌ | ❌ | 🟥 | ❌ | ❌ |
-| CASHSHOP_OPERATION | cash/clientbound/CashCashShopInventory (T1) | ❌ | 🟥 | ❌ | 🟡 | 🟡 |
+| CASHSHOP_OPERATION | cash/clientbound/CashCashShopInventory (T1) | ✅ | 🟥 | ❌ | 🟡 | 🟡 |
 | CASHSHOP_PURCHASE_EXP_CHANGED |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
 | CASH_PET_FOOD_RESULT | pet/clientbound/PetCashFoodResult (T1) | 🟡 | 🟥 | 🟥 | 🟡 | 🟥 |
@@ -371,7 +371,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | UPDATE_GM_BOARD |  | ⬜ | 🟥 | 🟥 | 🟥 | ⬜ |
 | UPDATE_HIRED_MERCHANT |  | 🟥 | ❌ | 🟥 | 🟥 | ❌ |
 | UPDATE_LIMITED_INFO |  | ❌ | ❌ | 🟥 | ❌ | ⬜ |
-| UPDATE_PARTYMEMBER_HP | party/clientbound/PartyMemberHP (T1) | ❌ | ❌ | 🟥 | 🟡 | 🟥 |
+| UPDATE_PARTYMEMBER_HP | party/clientbound/PartyMemberHP (T1) | ❌ | ❌ | 🟥 | ✅ | 🟥 |
 | UPDATE_PINCODE | login/clientbound/PinUpdate | 🟡 | ❌ | 🟡 | 🟡 | 🟥 |
 | UPDATE_QUEST_INFO |  | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
 | UPDATE_SKILLS | character/clientbound/CharacterSkillChange (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
@@ -521,7 +521,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | MONSTER_CARNIVAL |  | ❌ | ❌ | ❌ | ❌ | 🟥 |
 | MORPH_REQUEST |  | ❌ | ❌ | 🟥 | ❌ | ⬜ |
 | MOVE_DRAGON |  | ❌ | ❌ | 🟥 | ❌ | ❌ |
-| MOVE_LIFE | monster/serverbound/MonsterMovementRequest (T1) | 🟡 | 🟥 | 🟡 | 🟡 | 🟡 |
+| MOVE_LIFE | monster/serverbound/MonsterMovementRequest (T1) | ✅ | 🟥 | 🟡 | 🟡 | 🟡 |
 | MOVE_PET | pet/serverbound/PetMovementRequest (T1) | 🟡 | 🟥 | 🟡 | 🟡 | 🟥 |
 | MOVE_PLAYER |  | ❌ | ❌ | ❌ | 🟥 | ❌ |
 | MOVE_SUMMON |  | 🟥 | ❌ | ❌ | ❌ | ❌ |
@@ -717,26 +717,26 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 |--------|-----|-----|-----|-----|-----|
 | buddy/serverbound/BuddyOperationAccept (T1) | ❌ | ❌ | ❌ | 🟡 | 🟡 |
 | buddy/serverbound/BuddyOperationAdd (T1) | ❌ | ❌ | ❌ | 🟡 | 🟡 |
-| cash/serverbound/CashShopOperationBuy (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| cash/serverbound/CashShopOperationBuyCouple (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| cash/serverbound/CashShopOperationBuyFriendship (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| cash/serverbound/CashShopOperationBuy (T1) | ✅ | ❌ | ✅ | 🟡 | ✅ |
+| cash/serverbound/CashShopOperationBuyCouple (T1) | ✅ | ❌ | 🟡 | ✅ | ✅ |
+| cash/serverbound/CashShopOperationBuyFriendship (T1) | ✅ | ❌ | 🟡 | ✅ | ✅ |
 | cash/serverbound/CashShopOperationBuyNameChange (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationBuyNormal (T1) | ❌ | ❌ | ❌ | 🟡 | 🟡 |
 | cash/serverbound/CashShopOperationBuyPackage (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationBuyWorldTransfer (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationEnableEquipSlot (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| cash/serverbound/CashShopOperationGift (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| cash/serverbound/CashShopOperationGift (T1) | ✅ | ❌ | ✅ | ✅ | ✅ |
 | cash/serverbound/CashShopOperationIncreaseCharacterSlot (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationIncreaseInventory (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationIncreaseStorage (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationMoveFromCashInventory (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationMoveToCashInventory (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| cash/serverbound/CashShopOperationRebateLockerItem (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| cash/serverbound/CashShopOperationRebateLockerItem (T1) | ✅ | ❌ | 🟡 | ✅ | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| character/serverbound/ExpressionRequest (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| character/serverbound/ExpressionRequest (T1) | 🟡 | ❌ | 🟡 | 🟡 | ✅ |
 | character/serverbound/KeyMapChange (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| character/serverbound/Move (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
-| field/serverbound/FieldChange (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
+| character/serverbound/Move (T1) | ✅ | ❌ | 🟡 | 🟡 | ❌ |
+| field/serverbound/FieldChange (T1) | 🟡 | ❌ | 🟡 | ✅ | ❌ |
 | guild/clientbound/GuildBBSThread (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
 | guild/clientbound/GuildBBSThreadList (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | guild/serverbound/GuildAgreementResponse (T1) | ❌ | ❌ | ❌ | 🟡 | 🟡 |
@@ -755,7 +755,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | guild/serverbound/GuildSetTitleNames (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | guild/serverbound/GuildWithdraw (T1) | ❌ | ❌ | ❌ | 🟡 | 🟡 |
 | interaction/clientbound/InteractionInteractionUpdateMerchant (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| interaction/serverbound/InteractionOperationChat (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| interaction/serverbound/InteractionOperationChat (T1) | ✅ | ❌ | ✅ | 🟡 | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationInvite (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
@@ -764,15 +764,15 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationMemoryGameTieAnswer (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationMerchantAddToBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| interaction/serverbound/InteractionOperationMerchantBuy (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| interaction/serverbound/InteractionOperationMerchantBuy (T1) | ✅ | ❌ | 🟡 | ✅ | 🟡 |
 | interaction/serverbound/InteractionOperationMerchantPutItem (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationMerchantRemoveItem (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| interaction/serverbound/InteractionOperationPersonalStoreBuy (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| interaction/serverbound/InteractionOperationPersonalStoreBuy (T1) | ✅ | ❌ | 🟡 | 🟡 | 🟡 |
 | interaction/serverbound/InteractionOperationPersonalStorePutItem (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationPersonalStoreRemoveItem (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| interaction/serverbound/InteractionOperationPersonalStoreSetBlackList (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| interaction/serverbound/InteractionOperationPersonalStoreSetBlackList (T1) | ✅ | ❌ | 🟡 | ✅ | 🟡 |
 | interaction/serverbound/InteractionOperationTradeAddMeso (T1) | 🟡 | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) | 🟡 | ❌ | ❌ | 🟡 | ❌ |
@@ -786,7 +786,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | note/serverbound/NoteOperationDiscard (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | npc/clientbound/NpcAskAvatarConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/clientbound/NpcAskBoxTextConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
+| npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) | 🟡 | ❌ | 🟡 | ✅ | ❌ |
 | npc/clientbound/NpcAskMenuConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/clientbound/NpcAskNumberConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/clientbound/NpcAskPetAllConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
@@ -797,12 +797,12 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | npc/clientbound/NpcAskYesNoConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/clientbound/NpcNpcConversation (T1) | ❌ | ❌ | 🟡 | 🟡 | ❌ |
 | npc/clientbound/NpcSayConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| npc/clientbound/NpcSayImageConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| npc/clientbound/NpcSayImageConversationDetail (T1) | 🟡 | ❌ | 🟡 | ✅ | 🟡 |
 | npc/clientbound/NpcShopList (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/serverbound/NpcContinueConversation (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/serverbound/NpcContinueConversationSelection (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | npc/serverbound/NpcContinueConversationText (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
-| npc/serverbound/NpcShopBuy (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| npc/serverbound/NpcShopBuy (T1) | 🟡 | ❌ | 🟡 | 🟡 | ✅ |
 | npc/serverbound/NpcShopRecharge (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/serverbound/NpcShopSell (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/serverbound/NpcStartConversation (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
@@ -822,11 +822,11 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 0 | 147 | 423 | 85 | 138 | 0.0% |
+| v83 | 12 | 136 | 422 | 85 | 138 | 1.7% |
 | v84 | 0 | 0 | 567 | 82 | 144 | 0.0% |
-| v87 | 0 | 124 | 359 | 83 | 227 | 0.0% |
-| v95 | 0 | 206 | 341 | 16 | 230 | 0.0% |
-| JMS185 | 0 | 101 | 337 | 130 | 225 | 0.0% |
+| v87 | 3 | 121 | 359 | 83 | 227 | 0.4% |
+| v95 | 10 | 196 | 341 | 16 | 230 | 1.3% |
+| JMS185 | 8 | 93 | 337 | 130 | 225 | 1.2% |
 
 ## Conflicts
 

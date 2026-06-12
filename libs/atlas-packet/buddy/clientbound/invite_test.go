@@ -17,6 +17,10 @@ import (
 // originatorName="TestPlayer" → 2+10=12 bytes. GW_Friend = 4+13+1+4+17 = 39 bytes.
 //   no-fields:   1+4+12+39+1   = 57 bytes
 //   with-fields: 1+4+12+4+4+39+1 = 65 bytes
+// packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v95 ida=0xa12630
+// packet-audit:verify packet=buddy/clientbound/BuddyInvite version=jms_v185 ida=0xb2a873
 func TestBuddyInviteByteOutput(t *testing.T) {
 	const name = "TestPlayer"
 	// offset of the first field after the ascii string: mode(1)+originatorId(4)+lenPrefix(2)+len(name)

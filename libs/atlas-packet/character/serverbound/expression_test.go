@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/serverbound/ExpressionRequest version=jms_v185 ida=0xb0b8be
 func TestExpressionRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

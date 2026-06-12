@@ -32,6 +32,7 @@ func TestOperationPersonalStoreBuyRoundTrip(t *testing.T) {
 // quantity (LE), int itemCRC (LE). CItemInfo::GetItemCRC trailing field is
 // present in both GMS v83 (IDA CPersonalShopDlg::BuyItem@0x6fd261 Encode4
 // ItemCRC) and v95 (@0x69a7f0), so it is unconditional.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreBuy version=gms_v83 ida=0x6fd261
 func TestOperationPersonalStoreBuyBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

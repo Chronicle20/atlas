@@ -33,6 +33,7 @@ func TestShopOperationRebateLockerItemRoundTrip(t *testing.T) {
 // JMS185 CCashShop::OnRebateLockerItem@0x47c059 (sub-op 0x1B consumed by
 // routing): EncodeStr(SPW) then EncodeBuffer(8-byte locker SN). Empty SPW is a
 // 2-byte zero-length prefix; the 8-byte buffer is WriteLong (uint64 LE).
+// packet-audit:verify packet=cash/serverbound/CashShopOperationRebateLockerItem version=jms_v185 ida=0x47c059
 func TestShopOperationRebateLockerItemJMSBody(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	// spw empty -> 2-byte length prefix (0x0000); unk -> 8-byte LE identity.
@@ -57,6 +58,8 @@ func TestShopOperationRebateLockerItemJMSBody(t *testing.T) {
 // IDA v83 CCashShop::OnRebateLockerItem@0x46bde1 sends Encode4 ask_SPW (int) then
 // EncodeBuffer 8; v95 @0x485840 sends EncodeStr sSPW then EncodeBuffer 8. Gate
 // GMS && MajorVersion>=95.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationRebateLockerItem version=gms_v83 ida=0x46bde1
+// packet-audit:verify packet=cash/serverbound/CashShopOperationRebateLockerItem version=gms_v95 ida=0x485840
 func TestShopOperationRebateLockerItemLeadingFieldGate(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationRebateLockerItem{birthday: 0x01020304, spw: "x", unk: 0}

@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterExpression
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnEmotion
+    address: "0x9f636b"
+    decompile_sha256: d1cb8b419b46f3300790d489a632aa51b3cc3b0efd2a38f2f2c982c788d02e99
+verifies:
+    - libs/atlas-packet/character/clientbound/expression_test.go#TestCharacterExpressionRoundTrip

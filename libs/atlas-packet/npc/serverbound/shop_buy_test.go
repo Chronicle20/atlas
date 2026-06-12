@@ -33,6 +33,7 @@ func TestShopBuyRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=npc/serverbound/NpcShopBuy version=jms_v185 ida=0x7ca2c9
 func TestShopBuyDiscountPriceGate(t *testing.T) {
 	input := ShopBuy{slot: 3, itemId: 2000000, quantity: 5, discountPrice: 1000}
 

@@ -32,6 +32,8 @@ func TestOperationMerchantBuyRoundTrip(t *testing.T) {
 // (LE), int itemCRC (LE). The entrusted-merchant buy shares
 // CPersonalShopDlg::BuyItem (op 0x22 vs 0x17) and carries the same trailing
 // CItemInfo::GetItemCRC int in both v83 (@0x6fd261) and v95 (@0x69a7f0).
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=gms_v83 ida=0x6fd261
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=gms_v95 ida=0x69a7f0
 func TestOperationMerchantBuyBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

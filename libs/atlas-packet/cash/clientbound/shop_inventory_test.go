@@ -70,6 +70,9 @@ func TestCashShopInventoryEmptyRoundTrip(t *testing.T) {
 // @0x48bcff likewise reads all four trailing Decode2. The empty (no-item) body
 // is: byte mode + short count(0) + short storageSlots + short characterSlots =
 // 7 bytes for v83; v95 and JMS add 4 bytes (two shorts) = 11.
+// packet-audit:verify packet=cash/clientbound/CashCashShopInventory version=gms_v83 ida=0x4794f6
+// packet-audit:verify packet=cash/clientbound/CashCashShopInventory version=gms_v95 ida=0x494cb0
+// packet-audit:verify packet=cash/clientbound/CashCashShopInventory version=jms_v185 ida=0x48bcff
 func TestCashShopInventoryTrailingShortsGate(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := NewCashShopInventory(0x58, nil, 4, 3)

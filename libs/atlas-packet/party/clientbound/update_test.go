@@ -18,6 +18,8 @@ import (
 // v95+ (GMS >= 95 only): mode(1)+partyId(4)+WritePartyData(378) = 383 bytes.
 //   PARTYDATA = 378 bytes: portals add m_nSKillID (5th int); PQ fields (+56 bytes).
 //   Confirmed: v95 IDA memset(3732,0,0x17A=378).
+// packet-audit:verify packet=party/clientbound/PartyUpdate version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyUpdate version=jms_v185 ida=0xb297e7
 func TestUpdateByteOutput(t *testing.T) {
 	members := []party.PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},

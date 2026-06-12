@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildInvite
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#Invite
+    address: "0xacf7d3"
+    decompile_sha256: 33de556b198a894cf43baf8d0dfd1d6d9c5bb10706481025b3dc86028203b47e
+verifies:
+    - libs/atlas-packet/guild/clientbound/operation_test.go#TestInviteByteOutput

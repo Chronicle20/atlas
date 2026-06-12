@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-parties/kafka/message"
 	"atlas-parties/kafka/producer"
+	"atlas-parties/location"
 	"context"
 	"errors"
 
@@ -265,7 +266,10 @@ func (p *ProcessorImpl) ByIdProvider(characterId uint32) model.Provider[Model] {
 			if ferr != nil {
 				return Model{}, err
 			}
-			f := field.NewBuilder(fm.WorldId(), 0, fm.MapId()).Build()
+			f := field.NewBuilder(fm.WorldId(), 0, 0).Build()
+			if lf, lerr := location.GetField(p.l, p.ctx, characterId); lerr == nil {
+				f = lf
+			}
 			c = GetRegistry().Create(p.ctx, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 		}
 		return c, nil

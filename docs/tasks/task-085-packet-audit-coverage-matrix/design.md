@@ -156,6 +156,15 @@ start as `incomplete`, which is the honest state. `_pending.md` and
 The allowlists remain consumed by the existing `validate` subcommand but no
 longer influence grading.
 
+### 6.4 Scaffolding: `evidence pin`
+
+`packet-audit evidence pin --packet <pkg/dir/Struct> --version <key> --ida <fn-or-addr>`
+scaffolds the evidence YAML: resolves the function in the version's IDA export,
+computes `decompile_sha256` from the export text, and writes the record with
+empty `verifies:`/`notes:` for the author to fill. Humans and agents never
+hand-compute hashes; the same code path that pins is the one `--check` uses to
+verify, so they cannot disagree.
+
 ## 7. Byte-Test Linkage
 
 Byte-fixture tests are bound to cells via a marker comment scanned by the tool
@@ -239,7 +248,65 @@ of the protocol surface is verified / partial / incomplete / absent.
    sub-struct matrix section with the same grading, so cross-domain structures
    have an owner (fixes the v87 stat-registry escape class).
 
-## 11. Implementation Phases
+## 11. Repeatable Verification Workflow (playbook, skill, agent)
+
+The matrix defines *what done means*; this section codifies *how a cell gets
+promoted*, because the verification loop is the part of tasks 027–081 that
+worked but lived only as tribal knowledge. Three layers, each building on the
+previous:
+
+### 11.1 Playbook: `docs/packets/audits/VERIFYING_A_PACKET.md`
+
+The canonical single-packet × single-version procedure, written for a human or
+any agent. Steps:
+
+1. **Resolve scope**: look up the op in the direction's CSV; confirm
+   applicability for the target version (absent → the work is confirming `n-a`
+   or filing a `conflict`, then stop).
+2. **Check current state**: the cell in `STATUS.md`, any existing evidence
+   record, the latest audit report for the packet.
+3. **Decompile the client side**: connect to the version's IDA instance
+   (`select_instance` port mapping: v83=13337, v87=13338, v95=13339,
+   JMS185=13340), decompile the FName from the CSV, descend into helper
+   reads/writes (address-based, same rule as the exporter), and write down the
+   full ordered read/write list including guards and loop bounds.
+4. **Compare against Atlas**: the encoder/decoder in `libs/atlas-packet`,
+   including version gates. Divergence → wire fix first (own commit, own
+   review), then continue.
+5. **Derive expected bytes**: construct a concrete model fixture, hand-compute
+   the expected byte sequence from the client read order (one fixture per mode
+   for mode-driven packets).
+6. **Write the byte-test** with the `packet-audit:verify` marker (§7).
+7. **Pin evidence**: `packet-audit evidence pin …` (§6.4), fill `verifies:`.
+8. **Regenerate**: run `matrix`; confirm the cell promoted; commit test +
+   evidence + STATUS.md together.
+
+`STARTING_A_NEW_VERSION_PASS.md` becomes a thin orchestration doc: set up the
+new column/template/export, then apply this playbook per cell, hottest tier
+first.
+
+### 11.2 Skill: `/verify-packet <packet> <version>`
+
+A project skill (same pattern as `convert-npc` etc.) that walks a Claude
+session through the playbook with exact tool mechanics: CSV lookup, the
+ida-pro-mcp call sequence (batch decompile + callee descent), the marker and
+evidence formats, and the §13 failure modes (unresolvable citation, orphan
+marker). The skill enforces stop-points: it never fabricates expected bytes
+from MapleStory knowledge — every byte in a fixture must trace to a decompile
+line (Verification Over Memory rule).
+
+### 11.3 Agent: `packet-verifier`
+
+An agent definition wrapping the skill for fan-out during phase-4 fixture
+campaigns: a family sub-task dispatches one `packet-verifier` per packet ×
+version, each producing the three artifacts (byte-test, evidence record,
+promoted cell) on the task branch. Multi-instance ida-pro-mcp makes concurrent
+per-version agents viable; the dispatcher batches per IDB to respect what the
+IDA server can load. Agent output is reviewable because the artifacts are
+machine-checked (`matrix --check`) — a verifier that handwaves produces a cell
+that stays ❌, not a prose claim.
+
+## 12. Implementation Phases
 
 Each phase lands independently and is useful on its own.
 
@@ -252,17 +319,22 @@ Each phase lands independently and is useful on its own.
    `OPAQUE_LEDGER.md`; freeze the prose files.
 3. **Byte-test linkage**: marker scanner; retrofit markers onto existing
    byte-tests; `verified` promotion goes live.
-4. **Tier-1 fixture campaign**: per-family byte-fixture work, ordered by risk
-   (character stat → spawn/movement → inventory/asset → dispatcher families).
-   Each family is its own bounded sub-task with matrix-cell scope.
-5. **Process wiring**: CI `matrix --check` job, STARTING_A_NEW_VERSION_PASS.md
+4. **Playbook + skill + agent** (§11): write VERIFYING_A_PACKET.md, the
+   `/verify-packet` skill, and the `packet-verifier` agent; validate by
+   verifying 2–3 packets end-to-end (one tier-0, one tier-1 mode-driven, one
+   opaque-family member) before any campaign starts.
+5. **Tier-1 fixture campaign**: per-family byte-fixture work via
+   `packet-verifier` fan-out, ordered by risk (character stat →
+   spawn/movement → inventory/asset → dispatcher families). Each family is its
+   own bounded sub-task with matrix-cell scope.
+6. **Process wiring**: CI `matrix --check` job, STARTING_A_NEW_VERSION_PASS.md
    rewrite, task-close-gate documentation in the audit task template.
 
-Phases 1–3 + 5 are tool/process work (bounded). Phase 4 is the long tail and
+Phases 1–4 + 6 are tool/process work (bounded). Phase 5 is the long tail and
 intentionally split into family-sized sub-tasks so no single task can "close
 with deferrals" — an unfinished family is simply still ❌ in the matrix.
 
-## 12. Error Handling
+## 13. Error Handling
 
 - CSV rows with unparseable opcode pairs → `matrix` fails loudly with row
   numbers; the CSVs are inputs of record and must be fixed, not skipped.
@@ -274,7 +346,7 @@ with deferrals" — an unfinished family is simply still ❌ in the matrix.
   `incomplete` with a "citation unresolvable" note; `--check` fails.
 - Two Atlas structs claiming the same (op, direction, version) → `conflict`.
 
-## 13. Testing
+## 14. Testing
 
 - `csvops`: table-driven tests over real CSV excerpts covering present/absent/
   unknown, the `Index`-column quirk on the first version pair, and multiline
@@ -287,7 +359,7 @@ with deferrals" — an unfinished family is simply still ❌ in the matrix.
   producing a golden STATUS.md / status.json.
 - Determinism: two consecutive runs produce byte-identical output.
 
-## 14. Risks
+## 15. Risks
 
 - **Migration honesty shock**: the first STATUS.md will show far less green
   than the task-080 "closeout" implied (most 🔍 acceptances lack recoverable

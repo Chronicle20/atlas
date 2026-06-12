@@ -115,9 +115,9 @@ func transformWithTemporal(m Model, td temporalData) RestModel {
 	return rm
 }
 
-// Extract converts an inbound RestModel back to the domain Model. MapId /
-// Instance from the wire are intentionally dropped — atlas-maps owns location
-// state (task-055). The fields remain on RestModel for backward compat (D11).
+// Extract converts an inbound RestModel to the domain Model. MapId is NOT
+// mapped onto the Model here — the create path reads input.MapId separately and
+// passes it to CreateAndEmit (atlas-maps owns location state, task-087).
 func Extract(m RestModel) (Model, error) {
 	return NewModelBuilder().
 		SetId(m.Id).

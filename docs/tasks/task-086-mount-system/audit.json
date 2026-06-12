@@ -1,0 +1,53 @@
+{
+  "service": "atlas-mounts",
+  "path": "services/atlas-mounts/atlas.com/mounts",
+  "date": "2026-06-12",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "mount",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "mount/builder.go:22 NewModelBuilder, fluent setters, Build() @:61 (no validation; see M-3)" },
+        { "id": "DOM-02", "name": "ToEntity() method", "status": "pass", "evidence": "N/A by pattern; create builds Entity directly mount/administrator.go:13 (matches pets)" },
+        { "id": "DOM-03", "name": "Make(Entity) returns (Model,error)", "status": "pass", "evidence": "mount/entity.go:28" },
+        { "id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "mount/rest.go:37" },
+        { "id": "DOM-05", "name": "TransformSlice / no inline loops", "status": "pass", "evidence": "N/A single-resource GET; model.Map(Transform) resource.go:35" },
+        { "id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "mount/processor.go:39" },
+        { "id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "mount/resource.go:28" },
+        { "id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "N/A read-only; only GET resource.go:20" },
+        { "id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "resource.go:35-40" },
+        { "id": "DOM-10", "name": "Test DB tenant callbacks", "status": "pass", "evidence": "mount/processor_test.go:44 database.RegisterTenantCallbacks" },
+        { "id": "DOM-11", "name": "Providers lazy/context-scoped", "status": "pass", "evidence": "administrator.go:33,87; processor.go:71 db.WithContext(ctx)" },
+        { "id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "grep os.Getenv resource.go -> 0" },
+        { "id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "resource.go:29 calls only mount processor" },
+        { "id": "DOM-14", "name": "Handlers don't call providers", "status": "pass", "evidence": "resource.go calls p.GetByCharacterId only" },
+        { "id": "DOM-15", "name": "No direct entity writes in handlers", "status": "pass", "evidence": "grep db.Create/Save/Delete resource.go -> 0" },
+        { "id": "DOM-16", "name": "administrator.go for writes", "status": "pass", "evidence": "mount/administrator.go create/update" },
+        { "id": "DOM-17", "name": "Domain error -> HTTP status mapping", "status": "warn", "evidence": "resource.go:32,38 all errors -> 500 (only infra errors reachable on default-create GET)" },
+        { "id": "DOM-18", "name": "JSON:API interface on REST model", "status": "pass", "evidence": "rest.go:21-32 GetName/GetID/SetID" },
+        { "id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "N/A no request models; RestModel flat" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "mount/feed_test.go, mount/producer_test.go []struct + t.Run" },
+        { "id": "DOM-21", "name": "Reuse atlas-constants types", "status": "pass", "evidence": "world.Id, skill.Id/IsTamedMountSkill, skill.SkillOnlyMountVehicleId, item.GetClassification/ClassificationRevitalizer(226 added to lib item/constants.go:40), inventory.TypeFromItemId, character.TemporaryStatTypeMonsterRiding. No reinvented types." },
+        { "id": "DOM-22", "name": "Dockerfile lib wiring", "status": "pass", "evidence": "shared root Dockerfile; services.json:289, docker-bake.hcl:71, go.work:59; all direct libs in root Dockerfile COPY blocks" },
+        { "id": "DOM-23", "name": "Kafka topic in env-configmap", "status": "fail", "evidence": "EVENT_TOPIC_MOUNT_STATUS and EVENT_TOPIC_TAMING_MOB_FOOD absent from deploy/k8s/base/env-configmap.yaml, deploy/compose/.env.example, deploy/k8s/overlays/pr (grep -> 0). Saved at runtime only by topic.EnvProvider literal fallback (provider.go:18). Manifest correctly uses envFrom configMapRef atlas-env with no literal overrides." },
+        { "id": "DOM-24", "name": "Kafka producer stubbed via producertest", "status": "fail", "evidence": "atlas-mounts PASS (processor tests buffer-only; consumer tests override emit seams). FAIL in atlas-consumables food consumer_test.go:19-74: service-local capturingWriter+ConfigWriterFactory (forbidden d) and t.Cleanup(ResetInstance) (forbidden e), no TestMain noop. Mitigation: producertest has no capturing variant for the assert-shape need." }
+      ]
+    }
+  ],
+  "blocking": [
+    "DOM-23: EVENT_TOPIC_MOUNT_STATUS and EVENT_TOPIC_TAMING_MOB_FOOD missing from deploy/k8s/base/env-configmap.yaml (+ compose .env.example + pr overlay placeholder)",
+    "DOM-24: services/atlas-consumables/.../kafka/consumer/food/consumer_test.go uses a service-local capturing producer stub + t.Cleanup(ResetInstance) instead of the shared producertest with a TestMain noop floor"
+  ],
+  "nonBlocking": [
+    "M-1: dead code mount/administrator.go upsert(:60) and deleteByCharacterId(:87) are unreferenced (pets carryover) - delete",
+    "M-2: unused Extract(mount/rest.go:50) and EmitWithResult(kafka/message/message.go:61)",
+    "M-3: builder.go:61 Build() performs no invariant validation (DOM-01 nominal)",
+    "M-4: mount/resource.go maps all errors to 500 (DOM-17 not differentiated; low risk)",
+    "M-5 (informational): wire-contract structs use raw uint32 character ids to mirror upstream producers - NOT a DOM-21 violation",
+    "M-6 (informational): feed.go CAP=31 vs 29-entry mountExp table; bounded by MaxInt32 sentinel, worth confirming vs HeavenMS"
+  ]
+}

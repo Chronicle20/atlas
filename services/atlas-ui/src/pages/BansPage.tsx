@@ -3,6 +3,7 @@ import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { hiddenColumns, getColumns } from "@/pages/bans-columns";
 import { useMemo, useState } from "react";
 import { useBans, useInvalidateBans } from "@/lib/hooks/api/useBans";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import type { Ban } from "@/types/models/ban";
 import { BanType, BanTypeLabels } from "@/types/models/ban";
 import { CreateBanDialog } from "@/components/features/bans/CreateBanDialog";
@@ -56,6 +57,7 @@ export function BansPage() {
   );
   const bansQuery = useBans(activeTenant, bansQueryOptions);
   const { invalidateAll } = useInvalidateBans();
+  const { isRefreshing, onRefresh } = useGridRefresh([bansQuery]);
 
   const bans = bansQuery.data ?? [];
   const loading = bansQuery.isLoading;
@@ -110,7 +112,8 @@ export function BansPage() {
           columns={columns}
           data={bans}
           error={error}
-          onRefresh={() => invalidateAll()}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No bans found",

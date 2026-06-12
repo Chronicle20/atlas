@@ -28,6 +28,7 @@ import { Pager } from "@/components/common/Pager";
 import { getColumns, hiddenColumns } from "./merchants-columns";
 import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 
 const MERCHANTS_PAGE_SIZE = 10;
 
@@ -73,6 +74,8 @@ function MerchantsPageContent() {
     queryFn: () => merchantsService.getAllShops(),
     enabled: !!activeTenant,
   });
+
+  const { isRefreshing, onRefresh } = useGridRefresh([shopsQuery]);
 
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
@@ -148,7 +151,8 @@ function MerchantsPageContent() {
             data={shops}
             loading={loading}
             error={error}
-            onRefresh={() => shopsQuery.refetch()}
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
             initialVisibilityState={hiddenColumns}
             emptyState={{ title: "No merchant shops found", description: "There are no active merchant shops for this tenant." }}
           />

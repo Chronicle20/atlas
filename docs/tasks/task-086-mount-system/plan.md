@@ -920,7 +920,7 @@ Behavior (design §5.1; IDA toggle + both-slots facts). Insert a mount branch **
 generic `e.Duration() > 0 && len(e.StatUps()) > 0` apply. Use the existing loadCaster/seam style
 in common.go so it is unit-testable offline.
 
-- [ ] **Step 1: Write failing tests (table-driven, seams injected).**
+- [x] **Step 1: Write failing tests (table-driven, seams injected).**
 
 Cases:
 1. Already mounted (session buff state has MONSTER_RIDING for this skill) → emits `Cancel(sourceId=skillId)`, no Apply.
@@ -936,7 +936,7 @@ func TestMountTamedAppliesVehicleFromSlot18(t *testing.T)   { /* expect apply am
 func TestMountSkillOnlyNoSlotCheck(t *testing.T)            { /* skill 1019 → apply amount from effect */ }
 ```
 
-- [ ] **Step 2: Run (fail). Step 3: Implement `HandleMount` + branch.**
+- [x] **Step 2: Run (fail). Step 3: Implement `HandleMount` + branch.**
 
 ```go
 // mount.go
@@ -978,7 +978,7 @@ Resolve `isMounted` from the session buff state the buff consumer tracks (contex
 `loadEquip` via `cp.GetById(cp.InventoryDecorator)` reading slots -18/-19. `vehicleStatups`
 builds a `[]statup.Model` carrying MONSTER_RIDING with `amount = tamingMobItemId`.
 
-- [ ] **Step 4: Run (pass). Step 5: Commit.**
+- [x] **Step 4: Run (pass). Step 5: Commit.**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/skill/handler/mount.go services/atlas-channel/atlas.com/channel/skill/handler/mount_test.go services/atlas-channel/atlas.com/channel/skill/handler/common.go
@@ -991,7 +991,7 @@ git commit -m "task-086: channel mount toggle (apply/cancel, both-slots, skill-o
 - Create: `services/atlas-channel/atlas.com/channel/socket/writer/set_taming_mob_info.go`
 - Modify: `services/atlas-channel/atlas.com/channel/main.go` (`produceWriters()`)
 
-- [ ] **Step 1: Add the writer body wrapper + register the const.**
+- [x] **Step 1: Add the writer body wrapper + register the const.**
 
 ```go
 // writer/set_taming_mob_info.go
@@ -1004,9 +1004,9 @@ func SetTamingMobInfoBody(characterId, level, exp, tiredness uint32, levelUp boo
 
 Add `clientbound.SetTamingMobInfoWriter` to the `produceWriters()` string list in main.go.
 
-- [ ] **Step 2: Build.** `cd services/atlas-channel/atlas.com/channel && go build ./...` → clean.
+- [x] **Step 2: Build.** `cd services/atlas-channel/atlas.com/channel && go build ./...` → clean.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/writer/set_taming_mob_info.go services/atlas-channel/atlas.com/channel/main.go
@@ -1020,18 +1020,18 @@ git commit -m "task-086: register SET_TAMING_MOB_INFO writer in channel"
 - Modify: `main.go` (register consumer)
 - Test: `kafka/consumer/mount/consumer_test.go`
 
-- [ ] **Step 1: Define the consumed `EVENT_TOPIC_MOUNT_STATUS` event (mirror atlas-mounts §15) + handler.**
+- [x] **Step 1: Define the consumed `EVENT_TOPIC_MOUNT_STATUS` event (mirror atlas-mounts §15) + handler.**
 
 Handler: resolve session via `session.NewProcessor(l,ctx).IfPresentByCharacterId(channel)(characterId, …)`;
 broadcast `SetTamingMobInfoBody(...)` to the map via `_map.NewProcessor(l,ctx).ForSessionsInMap(s.Field(), op)`.
 On `TooTired`, also send the FR-6.3 notice to the rider only ("Your mount grew tired! Treat it
 some revitalizer before riding it again!") via the existing notice writer.
 
-- [ ] **Step 2: Test the handler emits a broadcast for SET/TICK/FEED and the notice on TooTired (seams). Run → fail → implement → pass.**
+- [x] **Step 2: Test the handler emits a broadcast for SET/TICK/FEED and the notice on TooTired (seams). Run → fail → implement → pass.**
 
-- [ ] **Step 3: Register the consumer in main.go (InitConsumers + InitHandlers).**
+- [x] **Step 3: Register the consumer in main.go (InitConsumers + InitHandlers).**
 
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/mount services/atlas-channel/atlas.com/channel/kafka/consumer/mount services/atlas-channel/atlas.com/channel/main.go
@@ -1049,9 +1049,9 @@ git commit -m "task-086: channel broadcasts SET_TAMING_MOB_INFO from mount statu
 Body: `ts(4), slot(2), itemId(4)` (IDA). Model on `socket/handler/pet_food.go` + the pet
 serverbound packet.
 
-- [ ] **Step 1: Add the serverbound decode struct (copy pet food serverbound) + a decode test.**
+- [x] **Step 1: Add the serverbound decode struct (copy pet food serverbound) + a decode test.**
 
-- [ ] **Step 2: Add the handler.**
+- [x] **Step 2: Add the handler.**
 
 ```go
 func MountFoodHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, ro map[string]interface{}) {
@@ -1067,10 +1067,10 @@ func MountFoodHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 (Introduce a small channel-side `food` producer emitting the new command topic — copy the buff
 producer pattern. The handler performs no item mutation; consumables decrements.)
 
-- [ ] **Step 3: Register `MountFoodHandle` in `produceHandlers()`** keyed to the per-tenant opcode
+- [x] **Step 3: Register `MountFoodHandle` in `produceHandlers()`** keyed to the per-tenant opcode
 (0x4D supplied by tenant config — do NOT hardcode the byte; it is wired through `Socket.Handlers`).
 
-- [ ] **Step 4: Run handler/decoder tests → pass. Step 5: Commit.**
+- [x] **Step 4: Run handler/decoder tests → pass. Step 5: Commit.**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/mount_food.go libs/atlas-packet/*/serverbound services/atlas-channel/atlas.com/channel/main.go
@@ -1083,9 +1083,9 @@ git commit -m "task-086: channel mount-food inbound handler (opcode 0x4D) -> con
 - Create: `services/atlas-channel/atlas.com/channel/kafka/message/food/kafka.go`, a channel-side food producer
 - Test: producer provider shape test
 
-- [ ] **Step 1: Define `COMMAND_TOPIC_TAMING_MOB_FOOD` + `Command{CharacterId, Slot, ItemId, …}` and the producer (copy buff producer).** Provide `RequestFeed(...)` used by Task 28.
+- [x] **Step 1: Define `COMMAND_TOPIC_TAMING_MOB_FOOD` + `Command{CharacterId, Slot, ItemId, …}` and the producer (copy buff producer).** Provide `RequestFeed(...)` used by Task 28.
 
-- [ ] **Step 2: Test provider marshals expected shape. Run → pass. Commit.**
+- [x] **Step 2: Test provider marshals expected shape. Run → pass. Commit.**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/food
@@ -1104,6 +1104,27 @@ MONSTER_RIDING is in the cancelled set (or add it). If the path already does
 with a test.
 
 - [ ] **Step 2: Commit any change (or record "no change needed" in the task note).**
+
+> **FINDING (2026-06-12) — FR-4.2 IS NOT IMPLEMENTED; design assumption was wrong.** Investigation
+> (Task 30) found NO job-change → buff-cancel path anywhere in the codebase. Job change is a
+> saga-orchestrator `ChangeJob` step (producers: `services/atlas-npc-conversations/.../operation_executor.go:1269`
+> `change_job` op, and `services/atlas-messages/.../command/character/commands.go:217` GM cmd) →
+> `handleChangeJob` (`saga/handler.go:1084`) → `character/processor.go:456 ChangeJob` emits only
+> `JOB_CHANGED` + `STAT_CHANGED`. atlas-buffs does NOT consume `JOB_CHANGED`. Since the mount buff
+> uses `MaxInt32` duration, it persists across job change → FR-4.2 unmet. The design/context note
+> ("job change cancels well before then") was aspirational, not implemented.
+>
+> **DECISION PENDING (user).** Two fixes, batched with the FR-9 questline decision:
+> - (A) **Mount-scoped** (recommended, feature-contained): extend atlas-mounts' existing
+>   character-status consumer (Task 19) to also handle `JOB_CHANGED` — on it, if the character has
+>   an active mount in the registry, emit a `CANCEL_BY_STAT_TYPES(["MONSTER_RIDING"])` buff command
+>   (atlas-buffs already consumes it → EXPIRED → channel dismount + registry remove) and remove the
+>   registry entry. Net-new: a small buff-cancel producer in atlas-mounts + `JOB_CHANGED` in its
+>   status mirror.
+> - (B) **Server-wide** (matches MapleStory, broader blast radius): add the existing fully-built
+>   `cancel_all_buffs` saga step to the job-change saga in both producers — cancels ALL buffs on
+>   any job change server-wide.
+> Until chosen, FR-4.2 remains a documented gap; tracked as **Task 30b**.
 
 ## Task 31: atlas-channel module gate
 

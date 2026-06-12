@@ -120,7 +120,7 @@ func gradeCore(a gradeArgs) Cell {
 		if a.routed {
 			return Cell{State: StateConflict, Note: fmt.Sprintf("registry says absent but template routes opcode 0x%03X", a.opcode)}
 		}
-		if a.hasReport {
+		if a.hasReport && reportResolved(a.report) {
 			return Cell{State: StateConflict, Note: "registry says absent but an Atlas audit report exists (" + a.writerName + ")"}
 		}
 		return Cell{State: StateNA}
@@ -183,4 +183,14 @@ func findReport(in Inputs, ref opEntryRef, version string) (LoadedReport, bool) 
 	}
 	r, ok := in.Reports[version][wn]
 	return r, ok
+}
+
+// reportResolved returns true when the report carries a real IDA address
+// (not an explicit placeholder). An unresolved report (Address ""/"ABSENT"/"0x0")
+// means the IDB decompile did not locate the function, so the report does not
+// constitute Atlas claiming ownership of that version's binary — it should not
+// trigger the absent-branch conflict.
+func reportResolved(r LoadedReport) bool {
+	a := r.Address
+	return a != "" && a != "ABSENT" && a != "0x0"
 }

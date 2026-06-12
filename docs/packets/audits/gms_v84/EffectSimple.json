@@ -1,6 +1,6 @@
 {
   "WriterName": "EffectSimple",
-  "IDAName": "CUser::OnEffect",
+  "IDAName": "CUser::OnEffect#EffectSimple",
   "Address": "",
   "Variant": "GMS/v84",
   "BranchDepth": 0,

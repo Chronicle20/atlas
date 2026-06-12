@@ -44,6 +44,7 @@ func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 	in.Registry.Versions["gms_v83"] = vfWith(t) // absent
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
 		WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult",
+		Address:   "0xa3f2e8", // resolved address — must trigger conflict
 		AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go", Verdict: diff.VerdictMatch,
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
@@ -51,6 +52,25 @@ func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false)
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeAbsentUnresolvedReportIsNA(t *testing.T) {
+	// Applicability=Absent, not routed, hasReport=true but Address="ABSENT":
+	// the report was not located in this version's IDB, so it does not constitute
+	// Atlas claiming ownership — must grade StateNA, not StateConflict.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t) // absent
+	in.Reports["gms_v83"] = map[string]LoadedReport{"GuildBBSListThreads": {
+		WriterName: "GuildBBSListThreads", IDAName: "CUIGuildBBS::SendLoadListRequest",
+		Address:   "ABSENT", // unresolved — function not found in IDB
+		AtlasFile: "libs/atlas-packet/guild/serverbound/bbs_list_threads.go", Verdict: diff.VerdictBlocker,
+	}}
+	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CUIGuildBBS::SendLoadListRequest": "GuildBBSListThreads"}}
+	c := gradeOpCell(in, opEntryRef{Op: "GUILD_BBS_LIST_THREADS", Dir: opregistry.DirServerbound, Opcode: 0x0E5,
+		FName: "CUIGuildBBS::SendLoadListRequest"}, "gms_v83", false)
+	if c.State != StateNA {
+		t.Errorf("absent + unresolved report must be NA; got %v (%s)", c.State.Name(), c.Note)
 	}
 }
 

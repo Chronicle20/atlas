@@ -1,6 +1,6 @@
 {
   "WriterName": "CharacterViewAllError",
-  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed",
+  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllError",
   "Address": "",
   "Variant": "GMS/v84",
   "BranchDepth": 0,

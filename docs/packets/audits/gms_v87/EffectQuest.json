@@ -1,6 +1,6 @@
 {
   "WriterName": "EffectQuest",
-  "IDAName": "CUser::OnEffect",
+  "IDAName": "CUser::OnEffect#EffectQuest",
   "Address": "0x9b1ef0",
   "Variant": "GMS/v87",
   "BranchDepth": 1,
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
+      "IDAComment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nMode — switch discriminator dispatching to 27 effect branches (case 0..26)",
+      "IDAComment": "nMode \u2014 switch discriminator dispatching to 27 effect branches (case 0..26)",
       "Verdict": 0,
       "Note": ""
     },
@@ -31,7 +31,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 3,
@@ -40,7 +40,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 4,
@@ -49,7 +49,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     },
     {
       "Index": 5,
@@ -58,7 +58,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: extra \u2014 client never reads this field"
     }
   ],
   "Verdict": 3,

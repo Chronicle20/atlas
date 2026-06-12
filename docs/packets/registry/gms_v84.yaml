@@ -1382,16 +1382,16 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: APPLY_MONSTER_STATUS
   direction: clientbound
-  opcode: 242
+  opcode: 248
   fname: CMob::OnStatSet
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085): CMobPool::OnMobPacket case 248 -> CMob::OnStatSet'
 - op: CANCEL_MONSTER_STATUS
   direction: clientbound
-  opcode: 243
+  opcode: 249
   fname: CMob::OnStatReset
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085): CMobPool::OnMobPacket case 249 -> CMob::OnStatReset'
 - op: RESET_MONSTER_ANIMATION
   direction: clientbound
   opcode: 244

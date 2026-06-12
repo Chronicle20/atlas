@@ -21096,9 +21096,9 @@
           "opcode": 242
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
-          "opcode": 242
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
+          "opcode": 248
         },
         "gms_v87": {
           "state": "partial",
@@ -21198,9 +21198,9 @@
           "opcode": 243
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
-          "opcode": 243
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
+          "opcode": 249
         },
         "gms_v87": {
           "state": "partial",

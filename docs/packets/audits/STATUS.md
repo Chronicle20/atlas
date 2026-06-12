@@ -321,9 +321,9 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | IDA_0X0F0 | CUserLocal::OnFieldFadeInOut; sub_A2F6DE |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F0 | ❌ | 0x0F0 | ❌ |
 | MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) | 0x0F0 | 🟡 | 0x0F6 | ❌ | 0x100 | 🟡 | 0x120 | 🟡 | 0x101 | 🟡 |
 | IDA_0X0F1 | CUserLocal::OnFieldFadeOutForce; CUserLocal::OnResignQuestReturn |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F1 | ❌ | 0x0F1 | ❌ |
-| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0F2 | ✅ | 0x0F2 | 🟥 | 0x102 | 🟡 | 0x122 | 🟡 | 0x103 | 🟡 |
+| APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) | 0x0F2 | ✅ | 0x0F8 | ❌ | 0x102 | 🟡 | 0x122 | 🟡 | 0x103 | 🟡 |
 | IDA_0X0F2 | CUserLocal::OnPassMateName |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F2 | ❌ |
-| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0F3 | 🟡 | 0x0F3 | 🟥 | 0x103 | 🟡 | 0x123 | 🟡 | 0x104 | 🟡 |
+| CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0F3 | 🟡 | 0x0F9 | ❌ | 0x103 | 🟡 | 0x123 | 🟡 | 0x104 | 🟡 |
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset |  | 0x0F4 | ❌ | 0x0F4 | ❌ | 0x104 | ❌ | 0x124 | ❌ | 0x105 | ❌ |
@@ -911,7 +911,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 15 | 134 | 530 | 201 | 0 | 2.2% |
-| v84 | 0 | 6 | 661 | 203 | 10 | 0.0% |
+| v84 | 0 | 6 | 663 | 203 | 8 | 0.0% |
 | v87 | 3 | 147 | 553 | 164 | 13 | 0.4% |
 | v95 | 10 | 225 | 549 | 82 | 14 | 1.3% |
 | JMS185 | 12 | 112 | 574 | 170 | 12 | 1.7% |
@@ -953,8 +953,6 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 - 🟥 **GUILD_MARK_CHANGED** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DAMAGE_REACTOR** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **LOCK_UI** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **APPLY_MONSTER_STATUS** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CANCEL_MONSTER_STATUS** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DROP_ITEM_FROM_MAPOBJECT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)

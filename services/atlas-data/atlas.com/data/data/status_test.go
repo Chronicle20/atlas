@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -95,6 +96,92 @@ func TestGetDataStatus_Empty(t *testing.T) {
 	assert.Equal(t, "dataStatus", resp.Data.Type)
 	assert.Equal(t, int64(0), resp.Data.Attributes.DocumentCount)
 	assert.Nil(t, resp.Data.Attributes.UpdatedAt)
+}
+
+func TestGetDataStatus_SharedScope(t *testing.T) {
+	db := setupStatusDB(t)
+	t.Cleanup(func() {
+		db.Exec("DELETE FROM documents")
+	})
+
+	// Canonical baseline rows are anchored to canonical.TenantUUID, exactly
+	// as a scope=shared ingest writes them.
+	canonicalId := uuid.MustParse(canonical.TenantUUID)
+	canonicalTn, err := tenant.Create(canonicalId, "GMS", 83, 1)
+	require.NoError(t, err)
+	canonicalCtx := tenant.WithContext(context.Background(), canonicalTn)
+	for i := 0; i < 2; i++ {
+		e := testDocumentEntity{
+			Id:         uuid.New(),
+			TenantId:   canonicalId,
+			Type:       "ITEM",
+			DocumentId: uint32(200 + i),
+			Content:    json.RawMessage(`{}`),
+		}
+		require.NoError(t, db.WithContext(canonicalCtx).Create(&e).Error)
+	}
+
+	router := setupStatusRouter(db)
+	caller := uuid.New() // an ordinary tenant, NOT the canonical sentinel
+
+	// scope=shared with operator credentials sees the canonical rows even
+	// though the calling tenant owns none of them.
+	req := tenantRequest(caller)
+	req.URL.RawQuery = "scope=shared"
+	req.Header.Set("X-Atlas-Operator", "1")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp struct {
+		Data struct {
+			Id         string `json:"id"`
+			Attributes struct {
+				DocumentCount int64 `json:"documentCount"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(2), resp.Data.Attributes.DocumentCount)
+	assert.Equal(t, canonical.TenantUUID, resp.Data.Id)
+
+	// Default (tenant) scope for the same caller sees none of them.
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, tenantRequest(caller))
+	require.Equal(t, http.StatusOK, w.Code)
+	var tenantResp struct {
+		Data struct {
+			Attributes struct {
+				DocumentCount int64 `json:"documentCount"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &tenantResp))
+	assert.Equal(t, int64(0), tenantResp.Data.Attributes.DocumentCount)
+}
+
+func TestGetDataStatus_SharedScope_RequiresOperator(t *testing.T) {
+	db := setupStatusDB(t)
+	router := setupStatusRouter(db)
+
+	req := tenantRequest(uuid.New())
+	req.URL.RawQuery = "scope=shared" // no X-Atlas-Operator header
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestGetDataStatus_InvalidScope(t *testing.T) {
+	db := setupStatusDB(t)
+	router := setupStatusRouter(db)
+
+	req := tenantRequest(uuid.New())
+	req.URL.RawQuery = "scope=bogus"
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestGetDataStatus_Populated(t *testing.T) {

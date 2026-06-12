@@ -61,24 +61,28 @@ type opEntryRef struct {
 // Using a struct avoids aliasing bugs when callers (worstCandidateCell,
 // gradeSubStructCell) build per-candidate inputs from shared Inputs state.
 type gradeArgs struct {
-	applicability   opregistry.Applicability
-	routed          bool
-	routedElsewhere bool // true when the same op is routed in at least one OTHER version (by that version's own opcode)
-	report          LoadedReport
-	hasReport       bool
-	evidence        EvidenceStatus
-	hasEvidence     bool
-	marker          MarkerStatus
-	tier1           bool
-	opcode          int
-	writerName      string
+	applicability                 opregistry.Applicability
+	routed                        bool
+	routedElsewhere               bool // true when the same op is routed in at least one OTHER version (by that version's own opcode)
+	report                        LoadedReport
+	hasReport                     bool
+	evidence                      EvidenceStatus
+	hasEvidence                   bool
+	marker                        MarkerStatus
+	tier1                         bool
+	opcode                        int
+	writerName                    string
+	reportFnameClaimedByPresentOp bool // true when a PRESENT op in the same version shares this report's base FName
 }
 
 // gradeOpCell evaluates design §5 in precedence order for one op×version.
 // routedElsewhere must be pre-computed by the caller (Build) using per-version
 // opcode resolution; it is true when the op is routed in at least one other
 // version's template by that version's own opcode for the op.
-func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool) Cell {
+// presentFnames is the set of FNames belonging to PRESENT ops in this version;
+// when an absent op's report fname appears in this set, the absent-report
+// conflict is suppressed (the report belongs to the present op, not this absent variant).
+func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool, presentFnames map[string]bool) Cell {
 	app := in.Registry.Applicability(ref.Op, ref.Dir, version)
 	routed := in.Routed[version][RouteKey{ref.Opcode, ref.Dir}]
 	rep, hasReport := findReport(in, ref, version)
@@ -95,18 +99,27 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool
 		tier1 = in.Tier1[pkt] || rep.FlatInvalid
 	}
 
+	// Determine whether the report's base FName is already claimed by a
+	// PRESENT op in this version. If so, the absent-report conflict is
+	// suppressed: the report belongs to the present op's variant, not here.
+	reportFnameClaimedByPresentOp := false
+	if hasReport && presentFnames != nil {
+		reportFnameClaimedByPresentOp = presentFnames[baseFName(rep.IDAName)]
+	}
+
 	args := gradeArgs{
-		applicability:   app,
-		routed:          routed,
-		routedElsewhere: routedElsewhere,
-		report:          rep,
-		hasReport:       hasReport,
-		evidence:        ev,
-		hasEvidence:     hasEv,
-		marker:          mk,
-		tier1:           tier1,
-		opcode:          ref.Opcode,
-		writerName:      rep.WriterName,
+		applicability:                 app,
+		routed:                        routed,
+		routedElsewhere:               routedElsewhere,
+		report:                        rep,
+		hasReport:                     hasReport,
+		evidence:                      ev,
+		hasEvidence:                   hasEv,
+		marker:                        mk,
+		tier1:                         tier1,
+		opcode:                        ref.Opcode,
+		writerName:                    rep.WriterName,
+		reportFnameClaimedByPresentOp: reportFnameClaimedByPresentOp,
 	}
 	return gradeCore(args)
 }
@@ -120,7 +133,12 @@ func gradeCore(a gradeArgs) Cell {
 		if a.routed {
 			return Cell{State: StateConflict, Note: fmt.Sprintf("registry says absent but template routes opcode 0x%03X", a.opcode)}
 		}
-		if a.hasReport && reportResolved(a.report) {
+		// Only raise the absent-report conflict if the report's fname is NOT
+		// already claimed by a present op in this version. When a present op in
+		// this version shares the same fname (e.g. a version-specific variant of
+		// the same dispatcher), the report belongs to that present op and the
+		// absent entry is simply not applicable here.
+		if a.hasReport && reportResolved(a.report) && !a.reportFnameClaimedByPresentOp {
 			return Cell{State: StateConflict, Note: "registry says absent but an Atlas audit report exists (" + a.writerName + ")"}
 		}
 		return Cell{State: StateNA}

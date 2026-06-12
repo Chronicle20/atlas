@@ -1,7 +1,6 @@
 package matrix
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
@@ -23,7 +22,7 @@ func baseInputs() Inputs {
 func TestGradeNA(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t /* no entries */)
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false)
+	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false, nil)
 	if c.State != StateNA {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -33,13 +32,15 @@ func TestGradeConflictTemplateRoutesAbsentOp(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t) // op absent
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false)
+	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false, nil)
 	if c.State != StateConflict {
 		t.Errorf("state = %v", c.State.Name())
 	}
 }
 
 func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
+	// Absent op, resolved report, and report's fname is NOT in the present-op set
+	// (presentFnames=nil means no present ops) → must trigger conflict.
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t) // absent
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
@@ -48,8 +49,9 @@ func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 		AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go", Verdict: diff.VerdictMatch,
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
+	// presentFnames does not contain this fname → conflict fires.
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false)
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false, map[string]bool{})
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -68,9 +70,30 @@ func TestGradeAbsentUnresolvedReportIsNA(t *testing.T) {
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CUIGuildBBS::SendLoadListRequest": "GuildBBSListThreads"}}
 	c := gradeOpCell(in, opEntryRef{Op: "GUILD_BBS_LIST_THREADS", Dir: opregistry.DirServerbound, Opcode: 0x0E5,
-		FName: "CUIGuildBBS::SendLoadListRequest"}, "gms_v83", false)
+		FName: "CUIGuildBBS::SendLoadListRequest"}, "gms_v83", false, nil)
 	if c.State != StateNA {
 		t.Errorf("absent + unresolved report must be NA; got %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeAbsentReportClaimedByPresentOpIsNA(t *testing.T) {
+	// Absent op, resolved report, but reportFnameClaimedByPresentOp=true
+	// (a present op in this version shares the same fname).
+	// Must grade StateNA, not StateConflict — the report belongs to the present op.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t) // this op is absent
+	in.Reports["gms_v83"] = map[string]LoadedReport{"Emotion": {
+		WriterName: "Emotion", IDAName: "CUser::OnEmotion",
+		Address:   "0xb1c2d3", // resolved address
+		AtlasFile: "libs/atlas-packet/user/clientbound/emotion.go", Verdict: diff.VerdictMatch,
+	}}
+	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CUser::OnEmotion": "Emotion"}}
+	// presentFnames contains "CUser::OnEmotion" — a present op in this version owns it.
+	presentFnames := map[string]bool{"CUser::OnEmotion": true}
+	c := gradeOpCell(in, opEntryRef{Op: "IDA_0X0E8", Dir: opregistry.DirClientbound, Opcode: 0x0E8,
+		FName: "CUser::OnEmotion"}, "gms_v83", false, presentFnames)
+	if c.State != StateNA {
+		t.Errorf("absent + resolved report claimed by present op must be NA; got %v (%s)", c.State.Name(), c.Note)
 	}
 }
 
@@ -94,7 +117,7 @@ func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
 	// routedElsewhere=true signals that another version routes this op (by its own opcode).
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */)
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */, nil)
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -113,7 +136,7 @@ func TestGradeCoverageGapNoReportIsIncomplete(t *testing.T) {
 	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
 	// No Reports / FNameToWriter set — no local report for this version.
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */)
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */, nil)
 	if c.State != StateIncomplete {
 		t.Errorf("coverage-gap with no report must be Incomplete (❌), not %v (%s)", c.State.Name(), c.Note)
 	}
@@ -130,7 +153,7 @@ func TestGradeUnroutedEverywhereIsIncompleteNotConflict(t *testing.T) {
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	// routedElsewhere=false: no other version routes this specific op.
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false /* routedElsewhere */)
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false /* routedElsewhere */, nil)
 	if c.State != StateIncomplete {
 		t.Errorf("unrouted-everywhere must be Incomplete, not Conflict; state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -138,7 +161,7 @@ func TestGradeUnroutedEverywhereIsIncompleteNotConflict(t *testing.T) {
 
 func TestGradePartialToolPassNoTest(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StatePartial {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -147,7 +170,7 @@ func TestGradePartialToolPassNoTest(t *testing.T) {
 func TestGradeVerifiedTier0(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
 	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StateVerified {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -156,7 +179,7 @@ func TestGradeVerifiedTier0(t *testing.T) {
 func TestGradeTier1ToolPassCapsAtPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
 	in.Tier1["login/clientbound/AccountInfo"] = true
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StatePartial {
 		t.Errorf("tier1 tool-pass must cap at partial; state = %v", c.State.Name())
 	}
@@ -167,7 +190,7 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 	in.Tier1["login/clientbound/AccountInfo"] = true
 	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StateVerified {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -176,7 +199,7 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StatePartial {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -185,7 +208,7 @@ func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 func TestGradeStaleEvidenceDegrades(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: false}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StateIncomplete {
 		t.Errorf("stale evidence must degrade; state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -193,7 +216,7 @@ func TestGradeStaleEvidenceDegrades(t *testing.T) {
 
 func TestGradeBlockerVerdictIncomplete(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictBlocker, false)
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StateIncomplete {
 		t.Errorf("state = %v", c.State.Name())
 	}
@@ -201,31 +224,28 @@ func TestGradeBlockerVerdictIncomplete(t *testing.T) {
 
 func TestGradeUnknownVersionFile(t *testing.T) {
 	in := baseInputs() // no registry file at all for gms_v84
-	c := gradeOpCell(in, refACCOUNT(), "gms_v84", false)
+	c := gradeOpCell(in, refACCOUNT(), "gms_v84", false, nil)
 	if c.State != StateIncomplete || c.Note == "" {
 		t.Errorf("unknown applicability must be incomplete+note; got %v %q", c.State.Name(), c.Note)
 	}
 }
 
-func TestGradeConflictDuplicateClaim(t *testing.T) {
-	// Two different writers with the IDENTICAL full IDAName (no #case suffix)
-	// for the same op -> StateConflict.
+func TestDemuxFamilyWorstOfNoConflict(t *testing.T) {
+	// Two writers sharing the same base FName (a demux family, e.g. CUser::OnEffect
+	// with #case suffixes) must grade worst-of — NOT conflict. Both must be marked
+	// used so neither leaks into the sub-struct section.
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	// Two writers both claim the exact same IDAName (no #case suffix).
+	// Two writers sharing the same base FName via different #case suffixes.
 	in.Reports["gms_v83"] = map[string]LoadedReport{
-		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
+		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult#A",
 			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
-		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
+		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult#B",
 			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictMatch},
 	}
-	// Both writers map to the same baseFName = "CLogin::OnAccountInfoResult".
-	in.FNameToWriter = map[string]map[string]string{"gms_v83": {
-		"CLogin::OnAccountInfoResult": "AccountInfoV1",
-	}}
 	m := Build(in, []string{"gms_v83"})
 	var cell Cell
 	for _, r := range m.Rows {
@@ -234,60 +254,57 @@ func TestGradeConflictDuplicateClaim(t *testing.T) {
 			break
 		}
 	}
-	if cell.State != StateConflict {
-		t.Errorf("duplicate-claim must be conflict; got %v (%s)", cell.State.Name(), cell.Note)
+	// Worst-of two VerdictMatch-without-marker = Partial, not Conflict.
+	if cell.State == StateConflict {
+		t.Errorf("demux family must grade worst-of, not conflict; got %v (%s)", cell.State.Name(), cell.Note)
 	}
-	if !strings.Contains(cell.Note, "two Atlas structs claim") {
-		t.Errorf("conflict note must mention 'two Atlas structs claim'; got %q", cell.Note)
+	if cell.State != StatePartial {
+		t.Errorf("demux family worst-of two Partial must be Partial; got %v (%s)", cell.State.Name(), cell.Note)
 	}
-}
-
-func TestDuplicateClaimNoSubStructLeak(t *testing.T) {
-	// When two writers carry the same IDAName (duplicate claim → Conflict on the
-	// op row), both must be marked used so neither appears as a sub-struct row.
-	in := baseInputs()
-	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
-		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.Reports["gms_v83"] = map[string]LoadedReport{
-		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
-		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictMatch},
-	}
-	m := Build(in, []string{"gms_v83"})
+	// Neither writer must leak into sub-struct rows.
 	for _, r := range m.Rows {
 		if r.Kind == RowSubStruct {
-			t.Errorf("duplicate-claim writers must not produce a sub-struct row; got packet=%q", r.Packet)
+			t.Errorf("demux-family writers must not produce a sub-struct row; got packet=%q", r.Packet)
 		}
 	}
 }
 
-func TestDuplicateClaimWithCaseSuffix(t *testing.T) {
-	// Two DIFFERENT writers carrying the same full IDAName INCLUDING a #case
-	// suffix (e.g. both named "CFoo::OnBar#A") is also a duplicate claim.
+func TestDemuxFamilyIdenticalFullIDANameWorstOf(t *testing.T) {
+	// Two writers with the IDENTICAL full IDAName (no #case suffix, same base name)
+	// sharing the same op — now grades worst-of, NOT conflict.
+	// The demux-family rule applies regardless of whether the names are suffixed.
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	// Both writers share the same full IDAName (with #case suffix).
+	// Both writers carry the exact same IDAName — demux-family worst-of applies.
 	in.Reports["gms_v83"] = map[string]LoadedReport{
-		"AccountInfoA": {WriterName: "AccountInfoA", IDAName: "CLogin::OnAccountInfoResult#Invite",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_a.go", Verdict: diff.VerdictMatch},
-		"AccountInfoB": {WriterName: "AccountInfoB", IDAName: "CLogin::OnAccountInfoResult#Invite",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_b.go", Verdict: diff.VerdictMatch},
+		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
+		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictBlocker},
 	}
 	m := Build(in, []string{"gms_v83"})
 	var cell Cell
 	for _, r := range m.Rows {
 		if r.Op == "ACCOUNT_INFO" {
 			cell = r.Cells["gms_v83"]
+			break
 		}
 	}
-	if cell.State != StateConflict {
-		t.Errorf("duplicate #case IDAName must be conflict; got %v (%s)", cell.State.Name(), cell.Note)
+	// Must NOT be conflict; worst-of VerdictMatch vs VerdictBlocker = Incomplete.
+	if cell.State == StateConflict {
+		t.Errorf("shared full IDAName must grade worst-of, not conflict; got %v (%s)", cell.State.Name(), cell.Note)
+	}
+	if cell.State != StateIncomplete {
+		t.Errorf("worst-of (match vs blocker) must be Incomplete; got %v (%s)", cell.State.Name(), cell.Note)
+	}
+	// Neither writer must leak into sub-struct rows.
+	for _, r := range m.Rows {
+		if r.Kind == RowSubStruct {
+			t.Errorf("both writers must be marked used (no sub-struct leak); got packet=%q", r.Packet)
+		}
 	}
 }
 

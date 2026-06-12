@@ -1,7 +1,6 @@
 package matrix
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -30,6 +29,21 @@ func Build(in Inputs, versionKeys []string) Matrix {
 		}
 		for f := range fnameWriters[vk] {
 			sort.Strings(fnameWriters[vk][f])
+		}
+	}
+
+	// Pre-compute per-version the set of base FNames that belong to PRESENT ops.
+	// Used to suppress the absent-report conflict when a present op in the same
+	// version already claims the report's fname (FIX B: design §5 absent branch).
+	presentFnames := map[string]map[string]bool{}
+	for _, vk := range versionKeys {
+		presentFnames[vk] = map[string]bool{}
+		if vf, ok := in.Registry.Versions[vk]; ok {
+			for _, e := range vf.Entries {
+				if e.FName != "" {
+					presentFnames[vk][e.FName] = true
+				}
+			}
 		}
 	}
 
@@ -75,7 +89,7 @@ func Build(in Inputs, versionKeys []string) Matrix {
 					break
 				}
 			}
-			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters, routedElsewhere)
+			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters, routedElsewhere, presentFnames[vk])
 			// Set the per-version opcode on the cell: the registry opcode from
 			// this specific version if the op is present there, else -1.
 			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
@@ -206,12 +220,16 @@ func lookupAnyVersion(r opregistry.Registry, op string, dir opregistry.Direction
 
 // worstCandidateCell grades each writer candidate for the op's FName and keeps
 // the worst (by severity()); marks candidates as consumed by op rows.
-// If two DIFFERENT writers carry the identical full IDAName (with or without a
-// #case suffix) that is a genuine duplicate claim — mark all as used and return
-// StateConflict immediately.
+// When multiple writers share a base FName (a legitimate client-function demux
+// such as CUser::OnEffect or CLogin::OnViewAllCharResult), the op row grades
+// worst-of across all candidates. No conflict is raised for shared base FNames
+// regardless of whether the full IDAName includes a #case suffix or not —
+// demux families are expected to share a dispatcher name.
 // routedElsewhere is pre-computed by Build (per-op, per-version) and threaded
 // through to gradeOpCell to implement the per-packet cross-version routing rule.
-func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool, routedElsewhere bool) Cell {
+// presentFnames is the set of FNames belonging to PRESENT ops in this version;
+// it is forwarded to gradeOpCell to suppress false absent-report conflicts.
+func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool, routedElsewhere bool, presentFnames map[string]bool) Cell {
 	writers := fw[vk][ref.FName]
 	if len(writers) == 0 {
 		// No candidates: grade without a report; use an empty FNameToWriter for
@@ -219,34 +237,7 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 		// the caller-supplied map through.
 		inCopy := in
 		inCopy.FNameToWriter = map[string]map[string]string{vk: {}}
-		return gradeOpCell(inCopy, ref, vk, routedElsewhere)
-	}
-
-	// Check for duplicate-claim: two or more writers carrying the exact same
-	// full IDAName — whether that name contains a #case suffix or not.
-	if len(writers) > 1 {
-		idaCount := map[string][]string{}
-		for _, wn := range writers {
-			name := in.Reports[vk][wn].IDAName
-			idaCount[name] = append(idaCount[name], wn)
-		}
-		idaNames := make([]string, 0, len(idaCount))
-		for name := range idaCount {
-			idaNames = append(idaNames, name)
-		}
-		sort.Strings(idaNames)
-		for _, idaName := range idaNames {
-			claimants := idaCount[idaName]
-			if len(claimants) >= 2 {
-				// Mark all writers for this FName as used so they don't leak
-				// into the sub-struct section.
-				for _, wn := range writers {
-					used[vk][wn] = true
-				}
-				return Cell{State: StateConflict, Note: fmt.Sprintf("two Atlas structs claim %s: %s, %s",
-					idaName, claimants[0], claimants[1])}
-			}
-		}
+		return gradeOpCell(inCopy, ref, vk, routedElsewhere, presentFnames)
 	}
 
 	worst := Cell{State: StateNA, Note: ""}
@@ -257,7 +248,7 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 		singleFName := map[string]map[string]string{vk: {ref.FName: wn}}
 		inCopy := in
 		inCopy.FNameToWriter = singleFName
-		c := gradeOpCell(inCopy, ref, vk, routedElsewhere)
+		c := gradeOpCell(inCopy, ref, vk, routedElsewhere, presentFnames)
 		if first || severity(c.State) > severity(worst.State) {
 			worst, first = c, false
 		}

@@ -78,8 +78,8 @@ export function SetupPage() {
   const uploadWz = useUploadWzFiles();
   const runProcessing = useRunDataProcessing();
 
-  const wzInput = useWzInputStatus();
-  const dataStatus = useDataStatus();
+  const wzInput = useWzInputStatus(scope);
+  const dataStatus = useDataStatus(scope);
 
   const dropsSeed = useDropsSeedStatus();
   const gachaponsSeed = useGachaponsSeedStatus();

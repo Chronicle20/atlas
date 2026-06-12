@@ -305,8 +305,32 @@ func rollProc(prop float64) bool {
 	return rand.Float64() < prop
 }
 
-// Damage is implemented in Phase 4 (summon takes damage).
+// Damage applies client-reported monster damage to a summon (puppets). It
+// verifies ownership (only the owner's client reports its summon's damage),
+// decrements HP, emits DAMAGED for rebroadcast, and despawns the summon at 0 HP
+// (which emits DESTROYED + REMOVE_PUPPET and releases the oid). A missing summon
+// or a non-owner sender is a graceful no-op (returns nil).
 func (p *ProcessorImpl) Damage(id uint32, senderCharacterId uint32, amount int32, monsterIdFrom uint32) error {
+	m, err := GetRegistry().Get(p.ctx, p.t, id)
+	if err != nil {
+		return nil // already gone
+	}
+	if m.OwnerCharacterId() != senderCharacterId {
+		p.l.Infof("Character [%d] damaged summon [%d] it does not own; dropping.", senderCharacterId, id) // §11 ownership
+		return nil
+	}
+	updated, err := GetRegistry().Update(p.ctx, p.t, id, func(cur Model) Model {
+		return cur.AddHP(-amount)
+	})
+	if err != nil {
+		return err
+	}
+	if err := p.emit(EnvEventTopicSummonStatus, damagedEventProvider(updated, amount, monsterIdFrom)); err != nil {
+		p.l.WithError(err).Errorf("Unable to emit DAMAGED for summon [%d].", id)
+	}
+	if updated.Hp() <= 0 {
+		return p.Despawn(id, true) // emits DESTROYED + REMOVE_PUPPET + oid release
+	}
 	return nil
 }
 

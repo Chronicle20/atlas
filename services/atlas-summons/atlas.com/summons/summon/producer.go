@@ -55,6 +55,18 @@ func attackedEventProvider(m Model, direction byte, targets []AttackTarget) mode
 	return producer.SingleMessageProvider(key, &value)
 }
 
+func damagedEventProvider(m Model, damage int32, monsterIdFrom uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.Field().MapId()))
+	value := StatusEvent[StatusEventDamagedBody]{
+		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
+		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
+		SummonId: m.Id(), OwnerCharacterId: m.OwnerCharacterId(), SkillId: m.SkillId(),
+		Type: EventSummonStatusDamaged,
+		Body: StatusEventDamagedBody{Damage: damage, MonsterIdFrom: monsterIdFrom},
+	}
+	return producer.SingleMessageProvider(key, &value)
+}
+
 func destroyedEventProvider(m Model, animated bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.Field().MapId()))
 	value := StatusEvent[StatusEventDestroyedBody]{

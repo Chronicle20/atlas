@@ -52,6 +52,14 @@ type StatusEventDestroyedBody struct {
 	Animated bool `json:"animated"`
 }
 
+// StatusEventDamagedBody carries the damage applied to a summon and the id of the
+// monster that dealt it. Consumed by atlas-channel to rebroadcast the
+// SummonDamage clientbound packet.
+type StatusEventDamagedBody struct {
+	Damage        int32  `json:"damage"`
+	MonsterIdFrom uint32 `json:"monsterIdFrom"`
+}
+
 // StatusEventAttackedTarget is one {monster, clamped damage} pair carried by an
 // ATTACKED event. The damage is the server-clamped value, not the raw client
 // report.

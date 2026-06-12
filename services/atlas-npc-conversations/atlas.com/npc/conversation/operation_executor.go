@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/cosmetic"
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
+	"atlas-npc-conversations/petdata"
 	"atlas-npc-conversations/saga"
 	savedlocation "atlas-npc-conversations/saved_location"
 	"atlas-npc-conversations/validation"
@@ -40,6 +41,7 @@ type OperationExecutorImpl struct {
 	t              tenant.Model
 	sagaP          saga.Processor
 	petP           pet.Processor
+	petdataP       petdata.Processor
 	cosmeticP      cosmetic.Processor
 	mapP           npcMap.Processor
 	validationP    validation.Processor
@@ -56,6 +58,7 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 		t:              t,
 		sagaP:          saga.NewProcessor(l, ctx),
 		petP:           pet.NewProcessor(l, ctx),
+		petdataP:       petdata.NewProcessor(l, ctx),
 		cosmeticP:      cosmetic.NewProcessor(l, ctx, appearanceProvider),
 		mapP:           npcMap.NewProcessor(l, ctx),
 		validationP:    validation.NewProcessor(l, ctx),
@@ -794,6 +797,55 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 
 		e.l.Infof("Fetched saved location '%s' for character [%d]: mapId=%d, portalId=%d, stored in context keys [%s, %s]",
 			locationType, characterId, savedLoc.MapId(), savedLoc.PortalId(), mapIdContextKey, portalIdContextKey)
+		return nil
+
+	case "enumerate_evolvable_pets":
+		// Format: local:enumerate_evolvable_pets
+		// Params: outputContextKey (string, default "evolvablePets"),
+		//         countContextKey (string, default "evolvableCount")
+		// Lists the character's currently-summoned pets that are evolution-eligible
+		// (evolvable template AND at/above the template's required pet level) into
+		// context: a comma-joined list of pet ids and a count.
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "evolvablePets"
+		}
+		countKey := operation.Params()["countContextKey"]
+		if countKey == "" {
+			countKey = "evolvableCount"
+		}
+
+		pets, err := e.petP.GetPets(characterId)()
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to get pets for character [%d]", characterId)
+			return err
+		}
+
+		eligible := make([]string, 0)
+		for _, pt := range pets {
+			if !pt.IsSpawned() {
+				continue
+			}
+			d, derr := e.petdataP.GetById(pt.TemplateId())
+			if derr != nil {
+				e.l.WithError(derr).Debugf("Skipping pet [%d] (template [%d]) - no evolution data for character [%d]",
+					pt.Id(), pt.TemplateId(), characterId)
+				continue
+			}
+			if d.IsEvolvable() && uint32(pt.Level()) >= d.ReqPetLevel() {
+				eligible = append(eligible, strconv.Itoa(int(pt.Id())))
+			}
+		}
+
+		if err := e.setContextValue(characterId, outputKey, strings.Join(eligible, ",")); err != nil {
+			return err
+		}
+		if err := e.setContextValue(characterId, countKey, strconv.Itoa(len(eligible))); err != nil {
+			return err
+		}
+
+		e.l.Infof("Enumerated %d evolvable pet(s) for character [%d], stored in context keys [%s, %s]",
+			len(eligible), characterId, outputKey, countKey)
 		return nil
 
 	default:

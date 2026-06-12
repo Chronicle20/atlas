@@ -8,6 +8,16 @@ type Model struct {
 	evolutions  int
 }
 
+// NewModel creates a new pet evolution data model.
+func NewModel(id uint32, reqPetLevel uint32, reqItemId uint32, evolutions int) Model {
+	return Model{
+		id:          id,
+		reqPetLevel: reqPetLevel,
+		reqItemId:   reqItemId,
+		evolutions:  evolutions,
+	}
+}
+
 // Id returns the pet's template identifier
 func (m Model) Id() uint32 { return m.id }
 

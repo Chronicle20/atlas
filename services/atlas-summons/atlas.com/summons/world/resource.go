@@ -1,0 +1,59 @@
+package world
+
+import (
+	"atlas-summons/rest"
+	"atlas-summons/summon"
+	"net/http"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	getSummonsInMap = "get_summons_in_map"
+)
+
+func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
+	return func(router *mux.Router, l logrus.FieldLogger) {
+		r := router.PathPrefix("/worlds").Subrouter()
+		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/summons", rest.RegisterHandler(l)(si)(getSummonsInMap, handleGetSummonsInMap)).Methods(http.MethodGet)
+	}
+}
+
+func handleGetSummonsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
+						p := summon.NewProcessor(d.Logger(), d.Context())
+						ms, err := p.GetInField(f)
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Unable to retrieve summons in field.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						res, err := model.SliceMap(summon.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Creating REST model.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						server.MarshalResponse[[]summon.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+					}
+				})
+			})
+		})
+	})
+}

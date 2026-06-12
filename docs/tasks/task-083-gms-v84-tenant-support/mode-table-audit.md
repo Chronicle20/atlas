@@ -39,15 +39,31 @@ DeleteCharacterResponse, PinOperation, PinUpdate, ServerIP[codes], ServerIP[mode
 | GuildOperation | `CWvsContext::OnGuildResult` @0xA82E2B | large dense range; core handled; not exhaustively value-checked |
 | NPCConversation [messageType] | `CScriptMan::OnScriptMessage` @0x76850A | core 0..10,4=ASK_MENU,13,14 OK (v84 follows v83 enum, NOT v95); `ASK_YES_NO_QUEST=12` → v84 default (v84 has 11/15, not 12) — quest yes/no dialog won't render |
 
-## NOT YET verified (lower risk: mismatch → default/benign, no boot path found)
-Outbound: CharacterEffect (0xD2), CharacterEffectForeign (0xCA), FieldEffect
-(0x8D), PetActivated (0xAB), UiOpen (0xE0), WorldMessage (0x46 — v84 client only
-extracted 0..15 vs config 0..18; verify 16,17,18), FameResponse (0x26),
-CharacterInteraction (0x141) [operations] + [enterError], Auth{Temporary,Permanent}Ban
-[failedReasonCodes] (0x00).
+## Round 2 — additional outbound writers verified against v84 client
+| table | client dispatcher (v84) | verdict |
+|---|---|---|
+| CharacterEffect | `CUserLocal::OnEffect` @0x96EA92 | OK (atlas 0..26 ⊆ client 0..27,29) |
+| CharacterEffectForeign | (shares CharacterEffect effect-type enum) | OK (inferred) |
+| FieldEffect | `CField::OnFieldEffect` @0x53F37D | OK (0..7 exact) |
+| UiOpen | `CWvsContext::UI_Open` @0xA4FD3E | OK (exact: 0,1,2,3,5,6,9,10,11,18,20,22,23,26..33) |
+| WorldMessage | `CWvsContext::OnBroadcastMsg` @0xA6DC97 | core 0..15 OK; config 16,17,18 → v84 default (benign; newer broadcast types) |
+| FameResponse | `CWvsContext::OnFameResult` @0xA6D8EE | OK (0..5 specific, 6 → generic msg) |
 
-Inbound request sub-ops (client→server; wrong value = atlas mis-reads request, no
-client crash): CashShopOperationHandle, BuddyOperationHandle, GuildOperationHandle,
+**Net outbound-writer result: cash shop was the ONLY broken table (fixed).** Every
+other outbound writer is either exact or degrades stray config values to a benign
+default — no other boot/crash path found.
+
+## Still NOT verified (lowest risk)
+- **PetActivated** (0xAB) [0..4] — `CUserPool::OnPetActionPacket` @0x97015C; pet
+  action sub-modes; mismatch → pet effect no-op (no boot).
+- **CharacterInteraction** (0x141) [operations] + [enterError] — `CMiniRoomBaseDlg::
+  OnPacketBase` @0x673DB5; base trade ops (2,3,6,9,10) + per-room vtable + enter-
+  result error code; complex, needs per-room decompile.
+- **Auth{Temporary,Permanent}Ban** [failedReasonCodes] (0x00) — login ban-reason
+  strings; login-stage, rare.
+
+Inbound request sub-ops (client→server; wrong value = atlas mis-reads request, **no
+client crash**): CashShopOperationHandle, BuddyOperationHandle, GuildOperationHandle,
 MessengerOperationHandle, CharacterInteractionHandle, NPCShopHandle,
 StorageOperationHandle, NoteOperationHandle, PartyOperationHandle, GuildBBSHandle,
 NPCContinueConversationHandle[messageType].

@@ -1345,6 +1345,141 @@ func TestEvolveRollsAndPreservesIdentity(t *testing.T) {
 	}
 }
 
+// eggDragonData returns egg pet data: a single evolution target, reqItemId 0,
+// reqPetLevel 0 -> IsEgg() == true.
+func eggDragonData() data2.Model {
+	return data2.NewModelBuilder().
+		SetReqItemId(0).
+		SetReqPetLevel(0).
+		SetEvolutions([]data2.EvolutionModel{
+			data2.NewEvolutionModel(5000029, 100),
+		}).
+		Build()
+}
+
+// characterMockOwningCash returns a character mock whose cash compartment holds
+// a single asset with the given templateId (or an empty compartment when
+// templateId == 0).
+func characterMockOwningCash(characterId uint32, templateId uint32) *cm.Processor {
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			cb := compartment.NewBuilder(uuid.New(), characterId, inventory2.TypeValueCash, 24)
+			if templateId != 0 {
+				cb.AddAsset(asset.NewBuilder(uuid.Nil, templateId).
+					SetId(1).
+					SetSlot(0).
+					SetPetId(1).
+					Build())
+			}
+			return character.NewModelBuilder().
+				SetInventory(inventory.NewBuilder(characterId).
+					SetCash(cb.Build()).
+					Build()).
+				Build(), nil
+		}
+	}
+	return cp
+}
+
+func TestSpawnHatchesEgg(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return eggDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	// Character owns the egg 5000028 in cash but NOT the baby 5000029.
+	cp := characterMockOwningCash(7000000, 5000028)
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		pet.WithCharacterProcessor(cp),
+	)
+
+	// An egg pet (template 5000028), not summoned.
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000028, "Egg", 1).
+		SetLevel(1).
+		SetSlot(-1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	oldExpiration := i.Expiration()
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if err != nil {
+		t.Fatalf("Failed to spawn (hatch) egg: %v", err)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet after hatch: %v", err)
+	}
+	// Hatched in place: templateId egg -> baby.
+	if o.TemplateId() != 5000029 {
+		t.Fatalf("Egg did not hatch. Expected templateId 5000029, got %d", o.TemplateId())
+	}
+	// Egg was consumed; the pet did NOT spawn (slot stays -1).
+	if o.Slot() != -1 {
+		t.Fatalf("Egg should not have spawned. Expected slot -1, got %d", o.Slot())
+	}
+	// Identity preserved; egg expiration preserved.
+	if o.Id() != i.Id() {
+		t.Fatalf("Hatch mutated Id. Expected %d, got %d", i.Id(), o.Id())
+	}
+	if !o.Expiration().Equal(oldExpiration) {
+		t.Fatalf("Hatch did not preserve egg expiration. old=%v new=%v", oldExpiration, o.Expiration())
+	}
+	// The inventory CHANGE_TEMPLATE cascade was buffered to swap egg -> baby.
+	if !fip.called {
+		t.Fatalf("Hatch did not cascade ChangeTemplate to inventory")
+	}
+	if fip.characterId != i.OwnerId() || fip.petId != i.Id() || fip.newTemplateId != 5000029 {
+		t.Fatalf("ChangeTemplate received wrong args: char=%d pet=%d tmpl=%d",
+			fip.characterId, fip.petId, fip.newTemplateId)
+	}
+}
+
+func TestSpawnHatchRefusedWhenBabyOwned(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return eggDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	// Character already owns the baby 5000029 in cash.
+	cp := characterMockOwningCash(7000000, 5000029)
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		pet.WithCharacterProcessor(cp),
+	)
+
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000028, "Egg", 1).
+		SetLevel(1).
+		SetSlot(-1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if err != nil {
+		t.Fatalf("Spawn returned error when refusing hatch: %v", err)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet: %v", err)
+	}
+	// Refused: templateId stays the egg.
+	if o.TemplateId() != 5000028 {
+		t.Fatalf("Egg should not hatch when baby owned. Expected templateId 5000028, got %d", o.TemplateId())
+	}
+	if fip.called {
+		t.Fatalf("Refused hatch should not cascade ChangeTemplate")
+	}
+}
+
 func TestEvolveRejectsUnderLevel(t *testing.T) {
 	dp := &pdm.Processor{}
 	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {

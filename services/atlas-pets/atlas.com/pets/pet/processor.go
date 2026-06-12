@@ -391,6 +391,47 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 						return errors.New("pet not owned by character")
 					}
 
+					// Egg hatch-on-summon: if the template is an egg, hatch into
+					// its single target in place instead of spawning. The egg is
+					// consumed and the player re-summons the resulting baby.
+					d, derr := p.dp.GetById(pe.TemplateId())
+					if derr == nil && d.IsEgg() {
+						baby := d.Evolutions()[0].TemplateId()
+
+						// Refuse if the character already owns the baby.
+						c, cerr := p.cp.GetById(p.cp.InventoryDecorator)(actorId)
+						if cerr != nil {
+							return cerr
+						}
+						if _, owned := c.Inventory().Cash().FindFirstByItemId(baby); owned {
+							p.l.Infof("Refusing to hatch egg [%d] for character [%d]: baby [%d] already owned.", petId, actorId, baby)
+							return nil // do not hatch, do not spawn
+						}
+
+						// Mutate the pet row in place: templateId egg->baby, reset
+						// stats to defaults (level 1, closeness 0, full), preserve
+						// egg expiration.
+						hatched, herr := Clone(pe).
+							SetTemplateId(baby).
+							SetLevel(1).
+							SetCloseness(0).
+							SetFullness(MaxFullness).
+							SetExpiration(pe.Expiration()).
+							Build()
+						if herr != nil {
+							return herr
+						}
+						if herr = updateOnEvolve(tx)(petId, baby, hatched.Expiration()); herr != nil {
+							return herr
+						}
+						// Cascade the in-place inventory asset swap.
+						if herr = p.ip.ChangeTemplate(mb)(uuid.Nil, actorId, petId, baby); herr != nil {
+							return herr
+						}
+						// Egg consumed; do NOT spawn. Player re-summons the baby.
+						return nil
+					}
+
 					p.l.Debugf("Attempting to spawn [%d] for character [%d].", petId, actorId)
 
 					sps, err := p.With(WithTransaction(tx)).SpawnedByOwnerProvider(actorId)()

@@ -84,20 +84,70 @@ Per-version anchors:
 
 Client SEND opcodes (Atlas `socket.handlers[]`). Unlike writers these are NOT a
 dispatch switch — they are distributed `COutPacket::COutPacket(long)` call sites
-(see task-083 §1). Not isolated in this harvest. v83 values are Cosmic-derived:
+(see task-083 §1). **Task-6.3 harvest (2026-06-12) isolated the actual send sites
+via three named anchors that exist across the dense IDBs:**
+- **Move-send** = `CVecCtrlSummoned::EndUpdateActive` (tiny fn: `COutPacket(op);
+  Encode4 summonId; CMovePath::Flush; SendPacket`).
+- **Attack-send** = `CSummoned::TryDoingAttackManual` (`COutPacket(op); Encode4
+  oid; Encode4 updateTime; Encode1 (left<<7|action); …; SendPacket`).
+- **Damage/hit-send** = `CSummoned::SetDamaged` (`COutPacket(op); Encode4 oid;
+  Encode1 attackIdx; Encode4 damage; Encode4 mobTemplateId; Encode1 (dir<0)`).
 
-| Atlas handler | v83 (Cosmic) | v84 | v87 | v95 | JMS185 | confirmation |
+| Atlas handler | v83 | v84 | v87 | v95 | JMS185 | confirmation |
 |---|---|---|---|---|---|---|
-| SummonMoveHandle   | 0xAF (175) | unconfirmed | unconfirmed | unconfirmed | unconfirmed | Cosmic-derived (v83); others **derived-unconfirmed** |
-| SummonAttackHandle | 0xB0 (176) | unconfirmed | unconfirmed | unconfirmed | unconfirmed | Cosmic-derived (v83); others **derived-unconfirmed** |
-| SummonDamageHandle | 0xB1 (177) | unconfirmed | unconfirmed | unconfirmed | unconfirmed | Cosmic-derived (v83); others **derived-unconfirmed** |
+| SummonMoveHandle   | 0xAF (175) | 0xB2? (179, derived) | 0xBB (187) | 0xCF (207) | 0xB2 (178) | v83 Cosmic + bracketed; v87/v95/jms IDA; v84 **derived-unverified** |
+| SummonAttackHandle | 0xB0 (176) | 0xB3? (180, derived) | 0xBC (188) | 0xD0 (208) | 0xB3 (179) | v83 IDA + Cosmic; v87/v95 IDA; jms bracketed; v84 **derived-unverified** |
+| SummonDamageHandle | 0xB1 (177) | 0xB4? (181, derived) | 0xBD (189) | 0xD1 (209) | 0xB4 (180) | v83 IDA + Cosmic; v87/v95/jms IDA; v84 **derived-unverified** |
+
+> **Seeding note (Task 6.3, gms_12 / gms_84 / gms_92 handler opcodes):**
+> - **v84** the naive v83-baseline 0xAF/0xB0/0xB1 **collides** with the v84 template's
+>   pet handlers (`PetDropPickUpHandle`=0xAF, `PetItemUseHandle`=0xB0,
+>   `PetItemExcludeHandle`=0xB1 — the pet band widened by +4 vs v83). So v84 summon
+>   send handlers were seeded **0xB2/0xB3/0xB4** (the first free slots immediately
+>   above the pet handler band — same "summon-handlers-follow-pet-handlers" adjacency
+>   as v83). **derived-unverified — confirm against capture.**
+> - **v12** no IDB; oldest classic; seeded the v83 baseline **0xAF/0xB0/0xB1** (no
+>   collision in gms_12 — its pet band is narrower). **derived-unverified.**
+> - **v92** no IDB; seeded **0xC8/0xC9/0xCA** (first free slots just above the derived
+>   v92 writer band 0xC2–0xC7). **derived-unverified — confirm against capture;** v92
+>   may also be on the v95-restructured high band entirely (see §1 v92 note).
+
+Per-version send anchors (IDA-confirmed unless noted):
+- **v83** Attack-send `COutPacket(0xB0)` @ `CSummoned::TryDoingAttackManual@0x7a4d42`
+  (loc `0x7a...` `COutPacket(&v138, 0xB0)`); Damage-send `COutPacket(0xB1)` @
+  `CSummoned::SetDamaged@0x7a6040`. Move-send 0xAF Cosmic-derived (= Attack-1,
+  contiguous; v83 has no named `CVecCtrlSummoned::EndUpdateActive` so not byte-read,
+  but bracketed by the IDA-confirmed Attack=0xB0).
+- **v87** Move-send `COutPacket(0xBB)` @ `CVecCtrlSummoned::EndUpdateActive@0xa591da`;
+  Attack-send `COutPacket(0xBC)` @ `CSummoned::TryDoingAttackManual@0x7f6666`;
+  Damage-send `COutPacket(0xBD)` @ `CSummoned::SetDamaged@0x7f879a`. All three IDA-confirmed,
+  contiguous 0xBB/0xBC/0xBD.
+- **v95** Move-send `COutPacket(207=0xCF)` @ `CVecCtrlSummoned::EndUpdateActive@0x9a0700`;
+  Attack-send `push 0D0h` @ `CSummoned::TryDoingAttackManual@0x751240` (`0x752260`);
+  Damage-send `COutPacket(209=0xD1)` @ `CSummoned::SetDamaged@0x74b730`. All three
+  IDA-confirmed, contiguous 0xCF/0xD0/0xD1. (Note: the send band is in the high CMSG
+  range, distinct from the v95 writer band 0x116–0x11B.)
+- **JMS185** Move-send `COutPacket(0xB2)` @ `CVecCtrlSummoned::EndUpdateActive@0xaa5fc6`;
+  Damage-send `COutPacket(0xB4)` @ `CSummoned::SetDamaged@0x828032`. Attack-send 0xB3
+  = bracketed (Move=0xB2 and Hit=0xB4 IDA-confirmed; attack-send fn not named in this
+  IDB, but the proven contiguous Move/Attack/Hit ordering forces 0xB3).
+- **v84** `GMS_v84.1_U_DEVM` IDB has **no demangled CSummoned/CVecCtrlSummoned symbols**
+  and the COutPacket-ctor / SendPacket xref enumeration is truncated by the analysis
+  DB, so the three send sites could not be isolated after reasonable effort.
+  **derived-unverified**: v84 summon dispatch is byte-identical to v83 except the
+  recv/writer band shifted +4 (pet band widened). The SEND opcodes live in the
+  independent CMSG enum; the harvest proves the send band does NOT track the writer
+  band by a fixed per-version offset (v83 send=writer-base+0, v87 send=writer-base−1,
+  jms send=writer-base−3, v95 send is a wholly separate high band). So no reliable
+  derivation from v84's writer band exists. Best-available seed = the v83 baseline
+  (0xAF/0xB0/0xB1) on the structural-identity argument, but it **must be capture-confirmed**
+  before v84 goes live.
 
 The v83 send table is independent of the recv table (recv MOVE_SUMMON 0xAF collides
 numerically with the send-side SummonSpawn 0xAF but they are distinct directions).
-For v84+/v95/JMS the send opcodes almost certainly shift with the same per-version
-band pressure as the writers, but they were not byte-read in this harvest. Treat as
-**derived-unconfirmed** and resolve from `COutPacket(long)` send-site xrefs or a live
-capture when wiring per-version handler seeding (Task 6.3).
+**Key finding: the send (CMSG) band is independent of the writer (SMSG) band** — do
+not assume a fixed offset. v84 (and v12/v92, no IDB) remain derived-unverified and
+must be resolved from a live capture or `COutPacket(long)` send-site xrefs.
 
 ## 3. Packet layout deltas
 
@@ -247,9 +297,12 @@ identical v83↔v84.
 - **Opcodes (Task 6.3 seeding):** seed the 6 writers per-version from §1. v83/v84/v87/v95/JMS185
   are IDA-confirmed; v12/v92 are derived-unverified and must be capture-confirmed
   before going live. **v95 swaps Damage(0x11B)/Skill(0x11A)** — do not assume the
-  classic Hit-then-Skill order when generating v95 templates. The 3 handler opcodes
-  are Cosmic-derived for v83 and derived-unconfirmed elsewhere (resolve from send-site
-  xrefs / capture).
+  classic Hit-then-Skill order when generating v95 templates. The 3 handler (send)
+  opcodes are now **IDA-confirmed for v87 (0xBB/0xBC/0xBD), v95 (0xCF/0xD0/0xD1) and
+  JMS185 (0xB2/0xB3/0xB4)** via the Move/Attack/Hit send anchors (§2); v83 stays
+  Cosmic+IDA (0xAF/0xB0/0xB1); **v84 and v12/v92 are derived-unverified** (no isolable
+  send site / no IDB) and must be capture-confirmed. The send band is NOT a fixed
+  offset from the writer band.
 - **Layout gating (Task 6.2):** five of six packets are **byte-stable across all
   IDA'd versions** — encode/decode needs NO version branch for Remove/Move/Attack/
   Damage/Skill. **Only SummonSpawn has a real layout delta**, and it is gated at

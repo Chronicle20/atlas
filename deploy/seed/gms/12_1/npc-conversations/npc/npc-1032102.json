@@ -13,6 +13,7 @@
                 "type": "local:enumerate_evolvable_pets",
                 "params": {
                   "outputContextKey": "evolvablePets",
+                  "labelContextKey": "evolvablePetLabels",
                   "countContextKey": "evolvableCount"
                 }
               }
@@ -20,20 +21,24 @@
             "outcomes": [
               {
                 "conditions": [
-                  {
-                    "type": "item",
-                    "operator": "<",
-                    "referenceId": "5380000",
-                    "value": "1"
-                  }
+                  { "type": "item", "operator": "<", "referenceId": "5380000", "value": "1" }
                 ],
                 "nextState": "noRock"
               },
-              {
-                "conditions": [],
-                "nextState": "confirm"
-              }
+              { "conditions": [], "nextState": "pick" }
             ]
+          }
+        },
+        {
+          "id": "pick",
+          "type": "pickFromContext",
+          "pickFromContext": {
+            "title": "Which companion shall I guide through evolution?",
+            "valuesContextKey": "evolvablePets",
+            "labelsContextKey": "evolvablePetLabels",
+            "contextKey": "selectedPetId",
+            "nextState": "confirm",
+            "emptyNextState": "noEligible"
           }
         },
         {
@@ -41,20 +46,11 @@
           "type": "dialogue",
           "dialogue": {
             "dialogueType": "sendYesNo",
-            "text": "I am Garnox, keeper of the Rock of Time. For #b600000 mesos#k and a #t5380000#, I can guide your loyal companion through its evolution. Shall we begin?",
+            "text": "I am Garnox, keeper of the Rock of Time. For #b600000 mesos#k and a #t5380000#, I can guide your companion through its evolution. Shall we begin?",
             "choices": [
-              {
-                "text": "Yes",
-                "nextState": "checkMeso"
-              },
-              {
-                "text": "No",
-                "nextState": "decline"
-              },
-              {
-                "text": "Exit",
-                "nextState": null
-              }
+              { "text": "Yes", "nextState": "checkMeso" },
+              { "text": "No", "nextState": "decline" },
+              { "text": "Exit", "nextState": null }
             ]
           }
         },
@@ -66,18 +62,11 @@
             "outcomes": [
               {
                 "conditions": [
-                  {
-                    "type": "meso",
-                    "operator": "<",
-                    "value": "600000"
-                  }
+                  { "type": "meso", "operator": "<", "value": "600000" }
                 ],
                 "nextState": "noMeso"
               },
-              {
-                "conditions": [],
-                "nextState": "doEvolve"
-              }
+              { "conditions": [], "nextState": "doEvolve" }
             ]
           }
         },
@@ -86,31 +75,12 @@
           "type": "genericAction",
           "genericAction": {
             "operations": [
-              {
-                "type": "destroy_item",
-                "params": {
-                  "itemId": "5380000",
-                  "quantity": "1"
-                }
-              },
-              {
-                "type": "award_mesos",
-                "params": {
-                  "amount": "-600000"
-                }
-              },
-              {
-                "type": "evolve_pet",
-                "params": {
-                  "petId": "{context.evolvablePets}"
-                }
-              }
+              { "type": "destroy_item", "params": { "itemId": "5380000", "quantity": "1" } },
+              { "type": "award_mesos", "params": { "amount": "-600000" } },
+              { "type": "evolve_pet", "params": { "petId": "{context.selectedPetId}" } }
             ],
             "outcomes": [
-              {
-                "conditions": [],
-                "nextState": "success"
-              }
+              { "conditions": [], "nextState": "success" }
             ]
           }
         },
@@ -121,14 +91,20 @@
             "dialogueType": "sendOk",
             "text": "The Rock of Time has done its work. Behold your companion's new form! Treat it well, and return to me when it is ready to grow once more.",
             "choices": [
-              {
-                "text": "Ok",
-                "nextState": null
-              },
-              {
-                "text": "Exit",
-                "nextState": null
-              }
+              { "text": "Ok", "nextState": null },
+              { "text": "Exit", "nextState": null }
+            ]
+          }
+        },
+        {
+          "id": "noEligible",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "None of your summoned companions are ready to evolve. Summon a pet that has grown strong enough, then seek me again.",
+            "choices": [
+              { "text": "Ok", "nextState": null },
+              { "text": "Exit", "nextState": null }
             ]
           }
         },
@@ -139,14 +115,8 @@
             "dialogueType": "sendOk",
             "text": "Evolution cannot begin without a #t5380000#. Bring me one, and make sure your companion is summoned and strong enough to take the next step.",
             "choices": [
-              {
-                "text": "Ok",
-                "nextState": null
-              },
-              {
-                "text": "Exit",
-                "nextState": null
-              }
+              { "text": "Ok", "nextState": null },
+              { "text": "Exit", "nextState": null }
             ]
           }
         },
@@ -157,14 +127,8 @@
             "dialogueType": "sendOk",
             "text": "The ritual requires #b600000 mesos#k. Come back when you can cover the cost.",
             "choices": [
-              {
-                "text": "Ok",
-                "nextState": null
-              },
-              {
-                "text": "Exit",
-                "nextState": null
-              }
+              { "text": "Ok", "nextState": null },
+              { "text": "Exit", "nextState": null }
             ]
           }
         },
@@ -175,14 +139,8 @@
             "dialogueType": "sendOk",
             "text": "Take your time. The Rock of Time waits for those who are ready.",
             "choices": [
-              {
-                "text": "Ok",
-                "nextState": null
-              },
-              {
-                "text": "Exit",
-                "nextState": null
-              }
+              { "text": "Ok", "nextState": null },
+              { "text": "Exit", "nextState": null }
             ]
           }
         }

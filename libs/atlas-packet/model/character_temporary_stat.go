@@ -726,7 +726,8 @@ func (m *CharacterTemporaryStat) getBaseTemporaryStats() []packet.Encoder {
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Energy Charge 15
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Speed 15
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Jump 15
-	// Monster Riding 13: nOption = vehicle/taming-mob item id, rOption = source skill id (IDA-confirmed v83).
+	// Monster Riding: nOption = vehicle/taming-mob item id, rOption = source skill id.
+	// Wire contract IDA-confirmed v83 — see docs/tasks/task-086-mount-system/context.md §2 (and design.md §1.1).
 	if s, ok := m.stats[character.TemporaryStatTypeMonsterRiding]; ok {
 		list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId()))
 	} else {

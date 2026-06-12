@@ -682,6 +682,7 @@ func produceWriters() []string {
 		interaction2.MiniRoomWriter,
 		mbcb.MonsterBookSetCardWriter,
 		mbcb.MonsterBookSetCoverWriter,
+		charcb.SetTamingMobInfoWriter,
 	}
 }
 

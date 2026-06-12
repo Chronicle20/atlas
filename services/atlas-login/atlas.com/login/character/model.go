@@ -11,7 +11,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -41,7 +40,6 @@ type Model struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
@@ -202,10 +200,6 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) MapId() _map.Id {
-	return m.mapId
-}
-
 func (m Model) SpawnPoint() byte {
 	return 0
 }
@@ -295,7 +289,6 @@ func (m Model) ToBuilder() *Builder {
 		experience:         m.experience,
 		fame:               m.fame,
 		gachaponExperience: m.gachaponExperience,
-		mapId:              m.mapId,
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		meso:               m.meso,
@@ -331,7 +324,6 @@ type Builder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
@@ -372,7 +364,6 @@ func (b *Builder) SetGachaponExperience(v uint32) *Builder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *Builder) SetMapId(v _map.Id) *Builder             { b.mapId = v; return b }
 func (b *Builder) SetSpawnPoint(v uint32) *Builder         { b.spawnPoint = v; return b }
 func (b *Builder) SetGm(v int) *Builder                    { b.gm = v; return b }
 func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return b }
@@ -406,7 +397,6 @@ func (b *Builder) Build() Model {
 		experience:         b.experience,
 		fame:               b.fame,
 		gachaponExperience: b.gachaponExperience,
-		mapId:              b.mapId,
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
 		meso:               b.meso,

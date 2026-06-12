@@ -160,7 +160,7 @@ func TestAwardCurrencyCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
 
 			producer := AwardCurrencyCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -208,7 +208,7 @@ func TestAwardCurrencyCommandProducer_CurrencyTypeMapping(t *testing.T) {
 func TestAwardCurrencyCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar := createTestCharacter(12345, "TestGM", true)
 
 	testCases := []struct {
 		name    string

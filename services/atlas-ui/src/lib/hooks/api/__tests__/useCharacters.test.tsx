@@ -68,7 +68,6 @@ const mockCharacter: Character = {
     face: 20000,
     ap: 0,
     sp: '0',
-    mapId: 100000000,
     spawnPoint: 0,
     gm: 0,
     x: 0,
@@ -87,7 +86,7 @@ const mockCharacters: Character[] = [
 ];
 
 const mockUpdateData: UpdateCharacterData = {
-  mapId: 100000001,
+  gm: 1,
 };
 
 // Test wrapper with QueryClient

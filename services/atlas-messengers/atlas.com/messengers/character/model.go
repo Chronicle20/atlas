@@ -2,7 +2,6 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -102,7 +101,6 @@ func (m Model) MessengerId() uint32 {
 type ForeignModel struct {
 	id      uint32
 	worldId world.Id
-	mapId   _map.Id
 	name    string
 	level   byte
 	jobId   uint16
@@ -123,10 +121,6 @@ func (m ForeignModel) JobId() uint16 {
 
 func (m ForeignModel) WorldId() world.Id {
 	return m.worldId
-}
-
-func (m ForeignModel) MapId() _map.Id {
-	return m.mapId
 }
 
 func (m ForeignModel) GM() int {

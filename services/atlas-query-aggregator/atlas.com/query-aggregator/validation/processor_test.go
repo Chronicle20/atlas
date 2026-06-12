@@ -223,9 +223,9 @@ func TestProcessorValidateStructured(t *testing.T) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
 						return character.NewModelBuilder().
+							SetId(123).
 							SetJobId(100).
 							SetMeso(10000).
-							SetMapId(2000).
 							SetFame(50).
 							Build(), nil
 					}
@@ -248,9 +248,9 @@ func TestProcessorValidateStructured(t *testing.T) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
 						return character.NewModelBuilder().
+							SetId(123).
 							SetJobId(100).
 							SetMeso(10000).
-							SetMapId(2000).
 							SetFame(50).
 							Build(), nil
 					}
@@ -434,6 +434,12 @@ func TestProcessorValidateStructured(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// MapCondition now resolves the character's map via an atlas-maps
+			// location lookup rather than a character mirror field. Stub the
+			// endpoint to report map 2000 for the test character so the
+			// mapId conditions evaluate against a known value.
+			stubLocationServer(t, tt.characterId, 2000)
+
 			// Create a mock character processor
 			mockCharProcessor := &mock.ProcessorImpl{}
 			if tt.setupMock != nil {

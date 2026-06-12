@@ -158,22 +158,25 @@ export function useRunDataProcessing(): UseMutationResult<void, Error, Scope> {
   });
 }
 
-export function useWzInputStatus(): UseQueryResult<WzInputStatus, Error> {
+// scope is appended as a third key segment so toggling tenant/shared
+// refetches under a distinct cache entry. The invalidation calls above
+// pass the 2-element prefix, which prefix-matches every scope.
+export function useWzInputStatus(scope: Scope = 'tenant'): UseQueryResult<WzInputStatus, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
-    queryKey: activeTenant ? wzInputStatusKey(activeTenant.id) : ['wzInputStatus', 'none'],
-    queryFn: () => seedService.getWzInputStatus(activeTenant!),
+    queryKey: activeTenant ? [...wzInputStatusKey(activeTenant.id), scope] : ['wzInputStatus', 'none', scope],
+    queryFn: () => seedService.getWzInputStatus(activeTenant!, scope),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,
   });
 }
 
-export function useDataStatus(): UseQueryResult<DataStatus, Error> {
+export function useDataStatus(scope: Scope = 'tenant'): UseQueryResult<DataStatus, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
-    queryKey: activeTenant ? dataStatusKey(activeTenant.id) : ['dataStatus', 'none'],
-    queryFn: () => seedService.getDataStatus(activeTenant!),
+    queryKey: activeTenant ? [...dataStatusKey(activeTenant.id), scope] : ['dataStatus', 'none', scope],
+    queryFn: () => seedService.getDataStatus(activeTenant!, scope),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

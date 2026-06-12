@@ -16,7 +16,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
@@ -46,7 +45,6 @@ type Model struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	x                  int16
@@ -212,10 +210,6 @@ func (m Model) Fame() int16 {
 
 func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
-}
-
-func (m Model) MapId() _map.Id {
-	return m.mapId
 }
 
 func (m Model) SpawnPoint() byte {

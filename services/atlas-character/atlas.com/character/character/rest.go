@@ -1,17 +1,13 @@
 package character
 
 import (
-	"atlas-character/location"
 	"context"
-	"errors"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,9 +37,10 @@ type RestModel struct {
 	Face               uint32   `json:"face"`
 	Ap                 uint16   `json:"ap"`
 	Sp                 string   `json:"sp"`
-	MapId              _map.Id   `json:"mapId"`
-	Instance           uuid.UUID `json:"instance"`
-	SpawnPoint         uint32    `json:"spawnPoint"`
+	// MapId is create-time INPUT only (consumed by Extract / POST CreateAndEmit).
+	// It is absent from GET responses — atlas-maps owns character location (task-087).
+	MapId              _map.Id `json:"mapId"`
+	SpawnPoint         uint32  `json:"spawnPoint"`
 	Gm                 int      `json:"gm"`
 	X                  int16    `json:"x"`
 	Y                  int16    `json:"y"`
@@ -71,28 +68,18 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-// Transform produces the JSON:API projection for a character.
-// MapId / Instance are no longer model-owned (task-055); they are pulled
-// in-flight from atlas-maps via the location client. On lookup failure we
-// log and emit zero values so the JSON shape stays backward-compatible (D11).
+// Transform produces the JSON:API projection for a character. MapId/Instance
+// are NOT part of the GET projection — atlas-maps owns location (task-087).
+// MapId remains on RestModel as a create-time input only (see Extract / POST).
 func Transform(l logrus.FieldLogger, ctx context.Context) func(m Model) (RestModel, error) {
 	t := tenant.MustFromContext(ctx)
 	return func(m Model) (RestModel, error) {
 		td := GetTemporalRegistry().GetById(ctx, t, m.Id())
-		f, err := location.GetField(l, ctx, m.Id())
-		if err != nil {
-			if errors.Is(err, location.ErrNotFound) {
-				l.Warnf("Transform: no atlas-maps location for [%d] (likely first login of new character); using zero values.", m.Id())
-			} else {
-				l.WithError(err).Errorf("Transform: atlas-maps lookup failed for [%d] (infrastructure error); using zero values.", m.Id())
-			}
-			f = field.NewBuilder(0, 0, 0).SetInstance(uuid.Nil).Build()
-		}
-		return transformWithTemporal(m, td, f), nil
+		return transformWithTemporal(m, td), nil
 	}
 }
 
-func transformWithTemporal(m Model, td temporalData, f field.Model) RestModel {
+func transformWithTemporal(m Model, td temporalData) RestModel {
 	rm := RestModel{
 		Id:                 m.Id(),
 		AccountId:          m.AccountId(),
@@ -119,8 +106,6 @@ func transformWithTemporal(m Model, td temporalData, f field.Model) RestModel {
 		Face:               m.Face(),
 		Ap:                 m.AP(),
 		Sp:                 m.SPString(),
-		MapId:              f.MapId(),
-		Instance:           f.Instance(),
 		SpawnPoint:         m.SpawnPoint(),
 		Gm:                 m.GM(),
 		X:                  td.X(),
@@ -130,9 +115,9 @@ func transformWithTemporal(m Model, td temporalData, f field.Model) RestModel {
 	return rm
 }
 
-// Extract converts an inbound RestModel back to the domain Model. MapId /
-// Instance from the wire are intentionally dropped — atlas-maps owns location
-// state (task-055). The fields remain on RestModel for backward compat (D11).
+// Extract converts an inbound RestModel to the domain Model. MapId is NOT
+// mapped onto the Model here — the create path reads input.MapId separately and
+// passes it to CreateAndEmit (atlas-maps owns location state, task-087).
 func Extract(m RestModel) (Model, error) {
 	return NewModelBuilder().
 		SetId(m.Id).

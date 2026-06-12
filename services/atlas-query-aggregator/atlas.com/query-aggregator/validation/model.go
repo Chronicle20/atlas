@@ -2,7 +2,9 @@ package validation
 
 import (
 	"atlas-query-aggregator/character"
+	"atlas-query-aggregator/location"
 	"atlas-query-aggregator/quest"
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -12,6 +14,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+	"github.com/sirupsen/logrus"
 )
 
 // ConditionType represents the type of condition to validate
@@ -379,7 +382,7 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 
 // Evaluate evaluates the condition against a character model
 // Returns a structured ConditionResult with evaluation details
-func (c Condition) Evaluate(character character.Model) ConditionResult {
+func (c Condition) Evaluate(l logrus.FieldLogger, ctx context.Context, character character.Model) ConditionResult {
 	var actualValue int
 	var passed bool
 	var description string
@@ -394,7 +397,15 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		actualValue = int(character.Meso())
 		description = fmt.Sprintf("Meso %s %d", c.operator, c.value)
 	case MapCondition:
-		actualValue = int(character.MapId())
+		lf, lerr := location.GetField(l, ctx, character.Id())
+		if lerr != nil {
+			// No location ⇒ cannot satisfy a map condition; treat as map 0 (fails
+			// any positive map check) rather than erroring the whole validation.
+			l.WithError(lerr).Warnf("MapCondition: location unavailable for character [%d]; using map 0.", character.Id())
+			actualValue = 0
+		} else {
+			actualValue = int(lf.MapId())
+		}
 		description = fmt.Sprintf("Map ID %s %d", c.operator, c.value)
 	case FameCondition:
 		actualValue = int(character.Fame())
@@ -853,7 +864,7 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method
-		return c.Evaluate(character)
+		return c.Evaluate(ctx.Logger(), ctx.Context(), character)
 	}
 
 	// Compare the actual value with the expected value based on the operator

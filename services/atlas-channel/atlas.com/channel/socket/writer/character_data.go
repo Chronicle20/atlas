@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
-func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.CharacterData {
+func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id) charpkt.CharacterData {
 	cd := charpkt.CharacterData{
 		Stats: charpkt.CharacterStats{
 			Id:         c.Id(),
@@ -36,7 +37,7 @@ func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.Character
 			Exp:        c.Experience(),
 			Fame:       c.Fame(),
 			GachaExp:   c.GachaponExperience(),
-			MapId:      uint32(c.MapId()),
+			MapId:      uint32(mapId),
 			SpawnPoint: c.SpawnPoint(),
 		},
 		BuddyCapacity: bl.Capacity(),

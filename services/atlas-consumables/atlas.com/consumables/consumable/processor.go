@@ -12,6 +12,7 @@ import (
 	_map3 "atlas-consumables/data/map"
 	"atlas-consumables/equipable"
 	"atlas-consumables/inventory"
+	"atlas-consumables/location"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
@@ -477,8 +478,13 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 			}
 			c, ci := fc.Get(), fi.Get()
 
-			// Dependent read: needs c.MapId(), c.X(), c.Y() — stays sequential.
-			pos, err := position.NewProcessor(l, ctx).GetInMap(c.MapId(), c.X(), c.Y(), c.X(), c.Y())()
+			lf, lerr := location.GetField(l, ctx, characterId)
+			if lerr != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, lerr)
+			}
+
+			// Dependent read: needs the character's map (from atlas-maps) + temporal X/Y.
+			pos, err := position.NewProcessor(l, ctx).GetInMap(lf.MapId(), c.X(), c.Y(), c.X(), c.Y())()
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -487,7 +493,7 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 			for _, msm := range ci.MonsterSummons() {
 				roll := uint32(rand.Int31n(100))
 				if roll < msm.Probability() {
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), lf.MapId()).Build()
 					err = monster.NewProcessor(l, ctx).CreateMonster(f, msm.TemplateId(), pos.X(), pos.Y(), 0, 0)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to summon monster [%d] for character [%d] summoning bag.", msm.TemplateId(), characterId)

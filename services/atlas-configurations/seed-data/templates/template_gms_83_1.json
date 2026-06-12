@@ -1727,6 +1727,14 @@
         "writer": "PetCommandResponse"
       },
       {
+        "opCode": "0xAF",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0xB0",
+        "writer": "SummonRemove"
+      },
+      {
         "opCode": "0xB9",
         "writer": "CharacterMovement",
         "options": {

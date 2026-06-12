@@ -36,10 +36,6 @@ func e2eInputs(t *testing.T) Inputs {
 			"gms_v83": {{0x000, opregistry.DirClientbound}: true},
 			"gms_v87": {{0x000, opregistry.DirClientbound}: true, {0x002, opregistry.DirClientbound}: true},
 		},
-		RoutedAnywhere: map[RouteKey]bool{
-			{0x000, opregistry.DirClientbound}: true,
-			{0x002, opregistry.DirClientbound}: true,
-		},
 		Evidence: map[EvKey]EvidenceStatus{},
 		Tier1:    map[string]bool{},
 		Markers:  map[EvKey]MarkerStatus{},

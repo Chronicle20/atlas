@@ -11,20 +11,19 @@ import (
 // helper: a one-version Inputs scaffold the cases mutate.
 func baseInputs() Inputs {
 	return Inputs{
-		Registry:       opregistry.Registry{Versions: map[string]*opregistry.VersionFile{}},
-		Reports:        map[string]map[string]LoadedReport{}, // version -> writer -> report
-		Routed:         map[string]map[RouteKey]bool{},       // version -> (opcode,dir) routed
-		RoutedAnywhere: map[RouteKey]bool{},                  // (opcode,dir) routed in ANY version
-		Evidence:       map[EvKey]EvidenceStatus{},           // (packet,version) -> status
-		Tier1:          map[string]bool{},                    // packet id -> tier1
-		Markers:        map[EvKey]MarkerStatus{},             // (packet,version) -> marker
+		Registry: opregistry.Registry{Versions: map[string]*opregistry.VersionFile{}},
+		Reports:  map[string]map[string]LoadedReport{}, // version -> writer -> report
+		Routed:   map[string]map[RouteKey]bool{},       // version -> (opcode,dir) routed
+		Evidence: map[EvKey]EvidenceStatus{},           // (packet,version) -> status
+		Tier1:    map[string]bool{},                    // packet id -> tier1
+		Markers:  map[EvKey]MarkerStatus{},             // (packet,version) -> marker
 	}
 }
 
 func TestGradeNA(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t /* no entries */)
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83")
+	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false)
 	if c.State != StateNA {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -34,7 +33,7 @@ func TestGradeConflictTemplateRoutesAbsentOp(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t) // op absent
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83")
+	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false)
 	if c.State != StateConflict {
 		t.Errorf("state = %v", c.State.Name())
 	}
@@ -49,44 +48,50 @@ func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83")
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false)
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
 }
 
 func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
-	// Registry: present. This version's template does NOT route it, but some
-	// other version's template does -> the task-067/068 gap class (context.md
-	// decision D3 refines design §5).
+	// Registry: present in gms_v83. This version's template does NOT route it,
+	// but another version (gms_v87) routes the SAME op by ITS own opcode.
+	// Build pre-computes routedElsewhere=true for this version and passes it
+	// directly to gradeOpCell (task-085 per-packet cross-version routing rule).
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
-	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
+	// routedElsewhere=true signals that another version routes this op (by its own opcode).
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83")
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */)
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
 }
 
 func TestGradeUnroutedEverywhereIsIncompleteNotConflict(t *testing.T) {
+	// Core regression guard for the 914-false-conflict fix (task-085):
+	// an op present + unrouted in EVERY version (routedElsewhere=false) must
+	// grade Incomplete, NOT Conflict.  A raw-opcode coincidence with some other
+	// routed op in another version's template must NOT trigger a conflict here.
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+	// routedElsewhere=false: no other version routes this specific op.
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83")
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false /* routedElsewhere */)
 	if c.State != StateIncomplete {
-		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
+		t.Errorf("unrouted-everywhere must be Incomplete, not Conflict; state = %v (%s)", c.State.Name(), c.Note)
 	}
 }
 
 func TestGradePartialToolPassNoTest(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StatePartial {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -95,7 +100,7 @@ func TestGradePartialToolPassNoTest(t *testing.T) {
 func TestGradeVerifiedTier0(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
 	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StateVerified {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -104,7 +109,7 @@ func TestGradeVerifiedTier0(t *testing.T) {
 func TestGradeTier1ToolPassCapsAtPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
 	in.Tier1["login/clientbound/AccountInfo"] = true
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StatePartial {
 		t.Errorf("tier1 tool-pass must cap at partial; state = %v", c.State.Name())
 	}
@@ -115,7 +120,7 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 	in.Tier1["login/clientbound/AccountInfo"] = true
 	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StateVerified {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -124,7 +129,7 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StatePartial {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -133,7 +138,7 @@ func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 func TestGradeStaleEvidenceDegrades(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: false}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StateIncomplete {
 		t.Errorf("stale evidence must degrade; state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -141,7 +146,7 @@ func TestGradeStaleEvidenceDegrades(t *testing.T) {
 
 func TestGradeBlockerVerdictIncomplete(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictBlocker, false)
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false)
 	if c.State != StateIncomplete {
 		t.Errorf("state = %v", c.State.Name())
 	}
@@ -149,7 +154,7 @@ func TestGradeBlockerVerdictIncomplete(t *testing.T) {
 
 func TestGradeUnknownVersionFile(t *testing.T) {
 	in := baseInputs() // no registry file at all for gms_v84
-	c := gradeOpCell(in, refACCOUNT(), "gms_v84")
+	c := gradeOpCell(in, refACCOUNT(), "gms_v84", false)
 	if c.State != StateIncomplete || c.Note == "" {
 		t.Errorf("unknown applicability must be incomplete+note; got %v %q", c.State.Name(), c.Note)
 	}
@@ -163,7 +168,6 @@ func TestGradeConflictDuplicateClaim(t *testing.T) {
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	// Two writers both claim the exact same IDAName (no #case suffix).
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
@@ -199,7 +203,6 @@ func TestDuplicateClaimNoSubStructLeak(t *testing.T) {
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
 			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
@@ -222,7 +225,6 @@ func TestDuplicateClaimWithCaseSuffix(t *testing.T) {
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	// Both writers share the same full IDAName (with #case suffix).
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"AccountInfoA": {WriterName: "AccountInfoA", IDAName: "CLogin::OnAccountInfoResult#Invite",
@@ -251,7 +253,6 @@ func TestWorstOfBlockerWinsOverMatch(t *testing.T) {
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CFoo::OnBar", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"FooBarA": {WriterName: "FooBarA", IDAName: "CFoo::OnBar#A",
 			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_a.go", Verdict: diff.VerdictMatch},
@@ -270,6 +271,84 @@ func TestWorstOfBlockerWinsOverMatch(t *testing.T) {
 	}
 }
 
+// TestBuildPerPacketRoutingConflict verifies the per-packet cross-version routing
+// rule at the Build level.  Two versions; the op is present in both.
+//
+//   - version A (gms_v83): opcode 0x010, ROUTED in A's template.
+//   - version B (gms_v87): opcode 0x020, NOT routed in B's template.
+//
+// B's opcode (0x020) must NOT collide with any routed op in A's template
+// (A only routes 0x010), so there is no global opcode coincidence.  Under the
+// OLD rule, B's cell was Conflict due to raw-opcode union.  Under the new rule:
+//
+//   - A cell: routed=true → normal (no report → Incomplete).
+//   - B cell: routedElsewhere=true (A routes the op) → Conflict ("template coverage gap").
+func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
+	// -- Scenario 1: op present in two versions, routed in A by A's opcode
+	// but NOT in B; B's opcode differs and has no raw coincidence in A.
+	// Expected: B cell = Conflict (coverage gap), A cell = Incomplete (no report).
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x010,
+		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
+	in.Registry.Versions["gms_v87"] = vfWith(t, opregistry.Entry{
+		Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x020,
+		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x010, opregistry.DirClientbound}: true} // A routes its opcode
+	in.Routed["gms_v87"] = map[RouteKey]bool{}                                         // B does NOT route 0x020
+
+	m := Build(in, []string{"gms_v83", "gms_v87"})
+	var cellA, cellB Cell
+	for _, r := range m.Rows {
+		if r.Op == "MAP_TRANSFER_RESULT" {
+			cellA = r.Cells["gms_v83"]
+			cellB = r.Cells["gms_v87"]
+		}
+	}
+	// A: routed, no report → Incomplete (normal path).
+	if cellA.State != StateIncomplete {
+		t.Errorf("A cell: routed+no-report must be Incomplete; got %v (%s)", cellA.State.Name(), cellA.Note)
+	}
+	// B: present, not routed, but routed elsewhere (in A) → Conflict (coverage gap).
+	if cellB.State != StateConflict {
+		t.Errorf("B cell: present+unrouted+routedElsewhere must be Conflict; got %v (%s)", cellB.State.Name(), cellB.Note)
+	}
+
+	// -- Scenario 2 (MAP_TRANSFER_RESULT false-positive guard): op present in
+	// two versions, routed in NEITHER; B's opcode coincides with a DIFFERENT
+	// routed op's raw opcode in A's template.  Under the old rule this fired a
+	// conflict; under the new rule both cells must be Incomplete.
+	in2 := baseInputs()
+	in2.Registry.Versions["gms_v83"] = vfWith(t,
+		opregistry.Entry{
+			Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x042,
+			FName: "CField::OnTransferFieldResult", Provenance: "csv-import"},
+		opregistry.Entry{
+			Op: "OTHER_OP", Direction: opregistry.DirClientbound, Opcode: 0x041,
+			FName: "CField::OnOtherOp", Provenance: "csv-import"})
+	in2.Registry.Versions["gms_v95"] = vfWith(t, opregistry.Entry{
+		Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x041,
+		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
+	// A routes OTHER_OP (0x041) but NOT MAP_TRANSFER_RESULT (0x042).
+	// v95's MAP_TRANSFER_RESULT opcode 0x041 coincides with A's OTHER_OP opcode.
+	in2.Routed["gms_v83"] = map[RouteKey]bool{{0x041, opregistry.DirClientbound}: true} // OTHER_OP routed, NOT MAP_TRANSFER_RESULT
+	in2.Routed["gms_v95"] = map[RouteKey]bool{}                                         // MAP_TRANSFER_RESULT not routed in v95 either
+
+	m2 := Build(in2, []string{"gms_v83", "gms_v95"})
+	for _, r := range m2.Rows {
+		if r.Op == "MAP_TRANSFER_RESULT" {
+			c83 := r.Cells["gms_v83"]
+			c95 := r.Cells["gms_v95"]
+			if c83.State == StateConflict {
+				t.Errorf("false-positive guard: v83 MAP_TRANSFER_RESULT unrouted-everywhere must NOT be Conflict; got %v (%s)", c83.State.Name(), c83.Note)
+			}
+			if c95.State == StateConflict {
+				t.Errorf("false-positive guard: v95 MAP_TRANSFER_RESULT unrouted-everywhere must NOT be Conflict; got %v (%s)", c95.State.Name(), c95.Note)
+			}
+		}
+	}
+}
+
 // --- helpers ---
 
 func refACCOUNT() opEntryRef {
@@ -284,7 +363,6 @@ func presentWithReport(t *testing.T, v diff.Verdict, flatInvalid bool) Inputs {
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
 		WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult", Address: "0xa3f2e8",
 		AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go",

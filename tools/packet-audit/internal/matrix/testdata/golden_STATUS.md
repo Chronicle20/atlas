@@ -13,7 +13,7 @@ Tool: `testsha`
 | Op | FName | Packet | v83 # | v83 | v87 # | v87 |
 |----|-------|--------|-------|-----|-------|-----|
 | LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthResult | 0x000 | 🟡 | 0x000 | ❌ |
-| ACCOUNT_INFO | CLogin::OnAccountInfoResult |  | 0x002 | 🟥 |  | 🟥 |
+| ACCOUNT_INFO | CLogin::OnAccountInfoResult |  | 0x002 | ❌ |  | 🟥 |
 
 ## Serverbound
 
@@ -30,11 +30,10 @@ Tool: `testsha`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 0 | 2 | 0 | 0 | 1 | 0.0% |
+| v83 | 0 | 2 | 1 | 0 | 0 | 0.0% |
 | v87 | 0 | 0 | 2 | 0 | 1 | 0.0% |
 
 ## Conflicts
 
-- 🟥 **ACCOUNT_INFO** × v83 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **ACCOUNT_INFO** × v87 — registry says absent but template routes opcode 0x002
 

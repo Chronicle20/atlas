@@ -41,6 +41,22 @@ func Build(in Inputs, versionKeys []string) Matrix {
 	var rows []MatrixRow
 	for _, od := range in.Registry.AllOps() {
 		row := MatrixRow{Kind: RowOp, Op: od.Op, Direction: od.Dir, Cells: map[string]Cell{}}
+
+		// Pre-compute which versions have this op PRESENT and ROUTED by that
+		// version's own opcode. This is the per-packet routing set used to
+		// compute routedElsewhere without false conflicts from raw-opcode
+		// coincidences across versions.
+		routedVersions := map[string]bool{}
+		for _, vk := range versionKeys {
+			e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk)
+			if !ok {
+				continue // op absent in this version → not routed here
+			}
+			if in.Routed[vk][RouteKey{e.Opcode, od.Dir}] {
+				routedVersions[vk] = true
+			}
+		}
+
 		for _, vk := range versionKeys {
 			ref := opEntryRef{Op: od.Op, Dir: od.Dir}
 			// Prefer this version's registry entry; fall back to any version so
@@ -50,7 +66,16 @@ func Build(in Inputs, versionKeys []string) Matrix {
 			} else if e, ok := lookupAnyVersion(in.Registry, od.Op, od.Dir); ok {
 				ref.Opcode, ref.FName = e.Opcode, e.FName
 			}
-			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters)
+			// routedElsewhere: the op is routed in at least one OTHER version's
+			// template by that version's own opcode.
+			routedElsewhere := false
+			for ovk := range routedVersions {
+				if ovk != vk {
+					routedElsewhere = true
+					break
+				}
+			}
+			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters, routedElsewhere)
 			// Set the per-version opcode on the cell: the registry opcode from
 			// this specific version if the op is present there, else -1.
 			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
@@ -184,7 +209,9 @@ func lookupAnyVersion(r opregistry.Registry, op string, dir opregistry.Direction
 // If two DIFFERENT writers carry the identical full IDAName (with or without a
 // #case suffix) that is a genuine duplicate claim — mark all as used and return
 // StateConflict immediately.
-func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool) Cell {
+// routedElsewhere is pre-computed by Build (per-op, per-version) and threaded
+// through to gradeOpCell to implement the per-packet cross-version routing rule.
+func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool, routedElsewhere bool) Cell {
 	writers := fw[vk][ref.FName]
 	if len(writers) == 0 {
 		// No candidates: grade without a report; use an empty FNameToWriter for
@@ -192,7 +219,7 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 		// the caller-supplied map through.
 		inCopy := in
 		inCopy.FNameToWriter = map[string]map[string]string{vk: {}}
-		return gradeOpCell(inCopy, ref, vk)
+		return gradeOpCell(inCopy, ref, vk, routedElsewhere)
 	}
 
 	// Check for duplicate-claim: two or more writers carrying the exact same
@@ -230,7 +257,7 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 		singleFName := map[string]map[string]string{vk: {ref.FName: wn}}
 		inCopy := in
 		inCopy.FNameToWriter = singleFName
-		c := gradeOpCell(inCopy, ref, vk)
+		c := gradeOpCell(inCopy, ref, vk, routedElsewhere)
 		if first || severity(c.State) > severity(worst.State) {
 			worst, first = c, false
 		}
@@ -240,24 +267,25 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 
 // gradeSubStructCell grades a sub-struct report (no registry op — no
 // applicability/routing logic applies). Uses gradeCore directly with
-// applicability=Present, routed/routedAnywhere=false.
+// applicability=Present, routed=true, routedElsewhere=false (sub-structs have
+// no opcode so the cross-version routing signal never fires).
 func gradeSubStructCell(in Inputs, r LoadedReport, pkt, vk string) Cell {
 	ev, hasEv := in.Evidence[EvKey{pkt, vk}]
 	mk := in.Markers[EvKey{pkt, vk}]
 	tier1 := in.Tier1[pkt] || r.FlatInvalid
 
 	args := gradeArgs{
-		applicability:  opregistry.Present,
-		routed:         true, // present + not routing-checked (sub-structs have no opcode)
-		routedAnywhere: false,
-		report:         r,
-		hasReport:      true,
-		evidence:       ev,
-		hasEvidence:    hasEv,
-		marker:         mk,
-		tier1:          tier1,
-		opcode:         -1,
-		writerName:     r.WriterName,
+		applicability:   opregistry.Present,
+		routed:          true, // present + not routing-checked (sub-structs have no opcode)
+		routedElsewhere: false,
+		report:          r,
+		hasReport:       true,
+		evidence:        ev,
+		hasEvidence:     hasEv,
+		marker:          mk,
+		tier1:           tier1,
+		opcode:          -1,
+		writerName:      r.WriterName,
 	}
 	return gradeCore(args)
 }

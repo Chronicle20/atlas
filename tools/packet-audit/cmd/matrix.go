@@ -77,12 +77,11 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		return exitRuntime
 	}
 	in := matrix.Inputs{Registry: reg,
-		Reports:        map[string]map[string]matrix.LoadedReport{},
-		Routed:         map[string]map[matrix.RouteKey]bool{},
-		RoutedAnywhere: map[matrix.RouteKey]bool{},
-		Evidence:       map[matrix.EvKey]matrix.EvidenceStatus{},
-		Tier1:          map[string]bool{},
-		Markers:        map[matrix.EvKey]matrix.MarkerStatus{},
+		Reports:  map[string]map[string]matrix.LoadedReport{},
+		Routed:   map[string]map[matrix.RouteKey]bool{},
+		Evidence: map[matrix.EvKey]matrix.EvidenceStatus{},
+		Tier1:    map[string]bool{},
+		Markers:  map[matrix.EvKey]matrix.MarkerStatus{},
 	}
 	hashes := map[string]string{}
 	exportPaths := map[string]string{}
@@ -106,12 +105,10 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 			for op := range t.Writers() {
 				k := matrix.RouteKey{Opcode: op, Dir: opregistry.DirClientbound}
 				in.Routed[vk][k] = true
-				in.RoutedAnywhere[k] = true
 			}
 			for op := range t.Handlers() {
 				k := matrix.RouteKey{Opcode: op, Dir: opregistry.DirServerbound}
 				in.Routed[vk][k] = true
-				in.RoutedAnywhere[k] = true
 			}
 		}
 		ep := exportPathIn(o.ExportsDir, vk)

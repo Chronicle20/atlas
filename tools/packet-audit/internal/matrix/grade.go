@@ -40,14 +40,13 @@ type MarkerStatus struct {
 // Inputs is everything grading consumes. All maps may be empty; rules that
 // depend on them simply never fire.
 type Inputs struct {
-	Registry       opregistry.Registry
-	Reports        map[string]map[string]LoadedReport // version -> WriterName -> report
-	FNameToWriter  map[string]map[string]string       // version -> FName -> WriterName (built from Reports)
-	Routed         map[string]map[RouteKey]bool       // version -> routed (opcode, dir)
-	RoutedAnywhere map[RouteKey]bool                  // routed in any version's template
-	Evidence       map[EvKey]EvidenceStatus
-	Tier1          map[string]bool // packet id -> tier-1
-	Markers        map[EvKey]MarkerStatus
+	Registry      opregistry.Registry
+	Reports       map[string]map[string]LoadedReport // version -> WriterName -> report
+	FNameToWriter map[string]map[string]string       // version -> FName -> WriterName (built from Reports)
+	Routed        map[string]map[RouteKey]bool       // version -> routed (opcode, dir)
+	Evidence      map[EvKey]EvidenceStatus
+	Tier1         map[string]bool // packet id -> tier-1
+	Markers       map[EvKey]MarkerStatus
 }
 
 // opEntryRef carries the union-row identity being graded for one version.
@@ -62,21 +61,24 @@ type opEntryRef struct {
 // Using a struct avoids aliasing bugs when callers (worstCandidateCell,
 // gradeSubStructCell) build per-candidate inputs from shared Inputs state.
 type gradeArgs struct {
-	applicability  opregistry.Applicability
-	routed         bool
-	routedAnywhere bool
-	report         LoadedReport
-	hasReport      bool
-	evidence       EvidenceStatus
-	hasEvidence    bool
-	marker         MarkerStatus
-	tier1          bool
-	opcode         int
-	writerName     string
+	applicability   opregistry.Applicability
+	routed          bool
+	routedElsewhere bool // true when the same op is routed in at least one OTHER version (by that version's own opcode)
+	report          LoadedReport
+	hasReport       bool
+	evidence        EvidenceStatus
+	hasEvidence     bool
+	marker          MarkerStatus
+	tier1           bool
+	opcode          int
+	writerName      string
 }
 
 // gradeOpCell evaluates design §5 in precedence order for one op×version.
-func gradeOpCell(in Inputs, ref opEntryRef, version string) Cell {
+// routedElsewhere must be pre-computed by the caller (Build) using per-version
+// opcode resolution; it is true when the op is routed in at least one other
+// version's template by that version's own opcode for the op.
+func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool) Cell {
 	app := in.Registry.Applicability(ref.Op, ref.Dir, version)
 	routed := in.Routed[version][RouteKey{ref.Opcode, ref.Dir}]
 	rep, hasReport := findReport(in, ref, version)
@@ -94,17 +96,17 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string) Cell {
 	}
 
 	args := gradeArgs{
-		applicability:  app,
-		routed:         routed,
-		routedAnywhere: in.RoutedAnywhere[RouteKey{ref.Opcode, ref.Dir}],
-		report:         rep,
-		hasReport:      hasReport,
-		evidence:       ev,
-		hasEvidence:    hasEv,
-		marker:         mk,
-		tier1:          tier1,
-		opcode:         ref.Opcode,
-		writerName:     rep.WriterName,
+		applicability:   app,
+		routed:          routed,
+		routedElsewhere: routedElsewhere,
+		report:          rep,
+		hasReport:       hasReport,
+		evidence:        ev,
+		hasEvidence:     hasEv,
+		marker:          mk,
+		tier1:           tier1,
+		opcode:          ref.Opcode,
+		writerName:      rep.WriterName,
 	}
 	return gradeCore(args)
 }
@@ -125,7 +127,7 @@ func gradeCore(a gradeArgs) Cell {
 	}
 
 	// Present from here on.
-	if !a.routed && a.routedAnywhere {
+	if !a.routed && a.routedElsewhere {
 		return Cell{State: StateConflict, Note: "op present in client and routed in another version's template, but unrouted here (template coverage gap)"}
 	}
 	if !a.hasReport {

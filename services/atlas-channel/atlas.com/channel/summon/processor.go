@@ -24,9 +24,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 
 // Spawn emits a COMMAND_TOPIC_SUMMON SPAWN command requesting atlas-summons
 // create an owner-bound summon for the given skill at the caster's position.
-func (p *Processor) Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, level byte, x int16, y int16) error {
+// auraLevel/hexLevel carry the caster's trained AURA_OF_THE_BEHOLDER (1320008)
+// and HEX_OF_THE_BEHOLDER (1320009) levels for a Beholder summon (0 otherwise);
+// atlas-summons snapshots the heal/buff from them at spawn.
+func (p *Processor) Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, level byte, x int16, y int16, auraLevel byte, hexLevel byte) error {
 	p.l.Debugf("Requesting summon spawn for character [%d] skill [%d] level [%d] at [%d,%d].", ownerCharacterId, skillId, level, x, y)
-	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(SpawnCommandProvider(f, ownerCharacterId, skillId, level, x, y))
+	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(SpawnCommandProvider(f, ownerCharacterId, skillId, level, x, y, auraLevel, hexLevel))
 }
 
 // Move emits a COMMAND_TOPIC_SUMMON MOVE command requesting atlas-summons

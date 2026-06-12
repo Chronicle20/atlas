@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	summonconst "github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -25,7 +26,7 @@ import (
 type Processor interface {
 	GetById(id uint32) (Model, error)
 	GetInField(f field.Model) ([]Model, error)
-	Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, skillLevel byte, x int16, y int16) (Model, error)
+	Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, skillLevel byte, x int16, y int16, auraLevel byte, hexLevel byte) (Model, error)
 	Move(id uint32, senderCharacterId uint32, x int16, y int16, stance byte, rawMovement []byte) error
 	Attack(id uint32, senderCharacterId uint32, direction byte, targets []AttackTarget) error
 	Damage(id uint32, senderCharacterId uint32, amount int32, monsterIdFrom uint32) error
@@ -102,8 +103,12 @@ func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 // Spawn classifies the cast skill against the summon roster, removes any
 // same-skill or mobility-conflicting existing summon for the owner, fetches the
 // skill effect for HP/duration, persists the new summon, and emits CREATED.
-// A non-summon skill is a graceful no-op (FR-1.3).
-func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, skillLevel byte, x int16, y int16) (Model, error) {
+// A non-summon skill is a graceful no-op (FR-1.3). For a Beholder
+// (TypeBuffAura) the caster's trained AURA_OF_THE_BEHOLDER / HEX_OF_THE_BEHOLDER
+// levels (auraLevel/hexLevel, resolved channel-side from the caster's skill
+// book and threaded through the SPAWN command) drive the heal/buff snapshot;
+// other summons ignore them.
+func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, skillLevel byte, x int16, y int16, auraLevel byte, hexLevel byte) (Model, error) {
 	entry, ok := summonconst.Lookup(skillId)
 	if !ok {
 		p.l.Debugf("Skill [%d] is not a summon; no spawn.", skillId) // FR-1.3 graceful no-op
@@ -141,8 +146,39 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 		SetField(f).SetX(x).SetY(y).SetHp(hp).SetMaxHp(hp).
 		SetSpawnTime(now).SetExpiresAt(expires).SetAnimated(true)
 
-	// Phase 5: Beholder aura snapshot (next-heal/next-buff timers, buff changes)
-	// is layered onto this builder.
+	// Phase 5 (FR-5.x): snapshot the Beholder's aura heal + hex buff at spawn so
+	// the periodic sweep (Task 5.2) heals/buffs the owner without re-resolving
+	// skill data each tick. The resolved values are a faithful read of the
+	// caster's trained AURA_OF_THE_BEHOLDER (1320008, heal hp + interval x) and
+	// HEX_OF_THE_BEHOLDER (1320009, buff statups + interval x + duration time).
+	if entry.Type == summonconst.TypeBuffAura {
+		if auraLevel > 0 {
+			aura, aerr := p.effects.GetEffect(uint32(skillconst.DarkKnightAuraOfTheBeholderId), auraLevel)
+			if aerr != nil {
+				p.l.WithError(aerr).Warnf("No AURA_OF_THE_BEHOLDER effect for level [%d]; Beholder [%d] will not heal.", auraLevel, id)
+			} else {
+				healInterval := time.Duration(aura.X()) * time.Second
+				b.SetHealAmount(aura.Hp()).SetHealInterval(healInterval).SetNextHealAt(now.Add(healInterval))
+			}
+		}
+		if hexLevel > 0 {
+			hex, herr := p.effects.GetEffect(uint32(skillconst.DarkKnightHexOfTheBeholderId), hexLevel)
+			if herr != nil {
+				p.l.WithError(herr).Warnf("No HEX_OF_THE_BEHOLDER effect for level [%d]; Beholder [%d] will not buff.", hexLevel, id)
+			} else {
+				buffInterval := time.Duration(hex.X()) * time.Second
+				changes := make([]StatChange, 0, len(hex.Statups()))
+				for _, su := range hex.Statups() {
+					changes = append(changes, StatChange{Type: su.Type, Amount: su.Amount})
+				}
+				b.SetBuffInterval(buffInterval).SetNextBuffAt(now.Add(buffInterval)).
+					SetBuffDuration(hex.Duration()).SetBuffLevel(hexLevel).
+					SetBuffSourceId(-int32(skillconst.DarkKnightHexOfTheBeholderId)).
+					SetBuffChanges(changes)
+			}
+		}
+	}
+
 	m := b.Build()
 
 	if err := GetRegistry().Put(p.ctx, p.t, m); err != nil {

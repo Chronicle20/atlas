@@ -9,7 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func SpawnCommandProvider(f field.Model, ownerCharacterId uint32, skillId uint32, level byte, x int16, y int16) model.Provider[[]kafka.Message] {
+func SpawnCommandProvider(f field.Model, ownerCharacterId uint32, skillId uint32, level byte, x int16, y int16, auraLevel byte, hexLevel byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(ownerCharacterId))
 	value := &summon2.Command[summon2.SpawnCommandBody]{
 		WorldId:   f.WorldId(),
@@ -23,6 +23,8 @@ func SpawnCommandProvider(f field.Model, ownerCharacterId uint32, skillId uint32
 			SkillLevel:       level,
 			X:                x,
 			Y:                y,
+			AuraLevel:        auraLevel,
+			HexLevel:         hexLevel,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

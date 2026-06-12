@@ -33,6 +33,11 @@ type SpawnCommandBody struct {
 	SkillLevel       byte   `json:"skillLevel"`
 	X                int16  `json:"x"`
 	Y                int16  `json:"y"`
+	// AuraLevel/HexLevel carry the caster's trained AURA_OF_THE_BEHOLDER (1320008)
+	// and HEX_OF_THE_BEHOLDER (1320009) levels for a Beholder summon; 0 for all
+	// other summons. The channel resolves them from the caster's skill book.
+	AuraLevel byte `json:"auraLevel"`
+	HexLevel  byte `json:"hexLevel"`
 }
 
 type MoveCommandBody struct {

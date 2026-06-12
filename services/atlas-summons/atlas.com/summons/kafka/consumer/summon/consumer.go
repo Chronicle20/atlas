@@ -46,7 +46,7 @@ func handleSpawnCommand(l logrus.FieldLogger, ctx context.Context, c Command[Spa
 		return
 	}
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	_, err := summon.NewProcessor(l, ctx).Spawn(f, c.Body.OwnerCharacterId, c.Body.SkillId, c.Body.SkillLevel, c.Body.X, c.Body.Y)
+	_, err := summon.NewProcessor(l, ctx).Spawn(f, c.Body.OwnerCharacterId, c.Body.SkillId, c.Body.SkillLevel, c.Body.X, c.Body.Y, c.Body.AuraLevel, c.Body.HexLevel)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to spawn summon for owner [%d] skill [%d].", c.Body.OwnerCharacterId, c.Body.SkillId)
 	}

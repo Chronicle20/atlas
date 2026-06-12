@@ -29,7 +29,7 @@ func TestPuppetDamageDecrementsAndDestroysAtZero(t *testing.T) {
 	p, captured := newPuppetProcessor(t, effectWithX(100, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
-	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50)
+	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestDamageByNonOwnerDropped(t *testing.T) {
 	p, captured := newPuppetProcessor(t, effectWithX(100, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
-	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50)
+	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}

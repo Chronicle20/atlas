@@ -82,7 +82,7 @@ func TestSpawnPuppetEmitsAddPuppet(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
 	// 3111002 = Fire Puppet (PUPPET).
-	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50)
+	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestDespawnPuppetEmitsRemovePuppet(t *testing.T) {
 	p, captured := newPuppetProcessor(t, effectWithX(800, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
-	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50)
+	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestSpawnNonPuppetEmitsNeitherPuppetSignal(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
 	// 3111005 = Silver Hawk (ATTACKER, not a puppet).
-	m, err := p.Spawn(f, 42, 3111005, 10, 100, -50)
+	m, err := p.Spawn(f, 42, 3111005, 10, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}

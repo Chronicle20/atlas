@@ -122,7 +122,7 @@ func effectAttacker(watk int16, prop float64) effect.Model {
 func spawnAttacker(t *testing.T, p *ProcessorImpl, skillId uint32, owner uint32) Model {
 	t.Helper()
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
-	m, err := p.Spawn(f, owner, skillId, 10, 100, -50)
+	m, err := p.Spawn(f, owner, skillId, 10, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}

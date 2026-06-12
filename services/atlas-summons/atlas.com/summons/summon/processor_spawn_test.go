@@ -76,7 +76,7 @@ func TestSpawnPuppetPersistsAndIndexes(t *testing.T) {
 	p, ten, ctx := newSpawnProcessor(t, effectWithX(800, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
-	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50)
+	m, err := p.Spawn(f, 42, 3111002, 20, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatalf("Spawn returned error: %v", err)
 	}
@@ -109,11 +109,11 @@ func TestRecastReplacesSameSkill(t *testing.T) {
 	p, ten, ctx := newSpawnProcessor(t, effectWithX(800, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
-	first, err := p.Spawn(f, 42, 3111002, 20, 100, -50)
+	first, err := p.Spawn(f, 42, 3111002, 20, 100, -50, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := p.Spawn(f, 42, 3111002, 20, 110, -60)
+	second, err := p.Spawn(f, 42, 3111002, 20, 110, -60, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestSpawnUnknownSkillNoOp(t *testing.T) {
 	p, ten, ctx := newSpawnProcessor(t, effectWithX(800, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 
-	m, err := p.Spawn(f, 42, 99999999, 1, 0, 0)
+	m, err := p.Spawn(f, 42, 99999999, 1, 0, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("expected nil error for unknown skill, got %v", err)
 	}

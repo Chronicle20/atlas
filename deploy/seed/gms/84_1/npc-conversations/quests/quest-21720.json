@@ -1,0 +1,336 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "end",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerTellsStory",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "NPC",
+              "text": "What can I do for you? Tru sent me a message saying that you've been training diligently in Victoria Island while helping him with his work. What is it? What? The Black Wings?"
+            },
+            "id": "end",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "end",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "lilinRespondsFools",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "#b(You tell her about the Puppeteer and the Black Wings, and about their mission.)#k"
+            },
+            "id": "playerTellsStory",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerTellsStory",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "playerAgrees",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "NPC",
+              "text": "I see... I didn't know there was a group called the Black Wings... They must be fools if they're trying to revive the Black Mage, knowing how dangerous he is."
+            },
+            "id": "lilinRespondsFools",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "lilinRespondsFools",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "lilinProphecy",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "That...that's true...\r\r#b(She's definitely not afraid to speak her mind.)#k"
+            },
+            "id": "playerAgrees",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerAgrees",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "playerAsksScared",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "NPC",
+              "text": "The Book of Prophecy states that the hero will revive and fight against the Black Mage. I wasn't sure if that was true, but this confirms that the Black Mage is still around."
+            },
+            "id": "lilinProphecy",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "lilinProphecy",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "lilinOffersSkill",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Aren't you scared?"
+            },
+            "id": "playerAsksScared",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkQuestStatus",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": null,
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "speaker": "NPC",
+              "text": "Scared? Pfft. Who cares if the Black Mage appears. You'll be here to protect us. If anything, this makes me want to prepare you for the big battle. Ah, that reminds me, I found a #bskill#k. Would you like to see it?"
+            },
+            "id": "lilinOffersSkill",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "21720",
+                      "type": "questStatus",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "completeQuestAndTeachSkill"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "playerRemembersSkill"
+                }
+              ]
+            },
+            "id": "checkQuestStatus",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21001003"
+                  },
+                  "type": "update_skill"
+                },
+                {
+                  "params": {
+                    "amount": "3900"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "playerRemembersSkill"
+                }
+              ]
+            },
+            "id": "completeQuestAndTeachSkill",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "lilinExplainsSkill",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "#b(You remembered the Polearm Booster skill!)#k"
+            },
+            "id": "playerRemembersSkill",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerRemembersSkill",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "lilinMotivates",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "NPC",
+              "text": "This skill was found in an ancient incomprehensible script. I had a hunch it might be a skill you used in the past, and I think I was right. You're not as strong as you used to be, but you'll get there, in time."
+            },
+            "id": "lilinExplainsSkill",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "lilinExplainsSkill",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "lilinFinalAdvice",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "NPC",
+              "text": "You are steadily becoming more powerful, and I'll be here to keep motivating you. You have nothing to be afraid of. You will not lose the battle. You didn't emerge from ice only to lose to the Black Mage, did you? This time, you'll finish him, once and for all!"
+            },
+            "id": "lilinMotivates",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "lilinMotivates",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendPrev",
+              "speaker": "NPC",
+              "text": "To do so, there's only one thing you can do. Train, train, train. Head to Victoria Island and continue training. Let's make sure you become so powerful that the Black Mage doesn't stand a chance!"
+            },
+            "id": "lilinFinalAdvice",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 21720,
+      "questName": "Aran Polearm Booster Quest",
+      "startStateMachine": {
+        "startState": "start",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "start",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21720",
+    "type": "quest-conversation"
+  }
+}

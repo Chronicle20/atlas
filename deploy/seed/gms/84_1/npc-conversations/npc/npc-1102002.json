@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1102002,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Yo. I am #p1102002#, in charge of mount raising and training for the Cygnus Knights' of Ereve!"
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1102002",
+    "type": "npc-conversation"
+  }
+}

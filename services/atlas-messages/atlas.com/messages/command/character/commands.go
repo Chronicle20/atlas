@@ -8,12 +8,36 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
+
+// buildChangeJobSaga constructs the GM job-change saga. In addition to the
+// change_job step, it appends a cancel_all_buffs step so the job change clears
+// all active buffs (MapleStory job-advancement behavior), which also dismounts
+// any MONSTER_RIDING mount (FR-4.2).
+func buildChangeJobSaga(characterId uint32, worldId world.Id, channelId channel.Id, jobId job.Id) (saga.Saga, error) {
+	return saga.NewBuilder().
+		SetSagaType(saga.QuestReward).
+		SetInitiatedBy("COMMAND").
+		AddStep("change_job", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{
+			CharacterId: characterId,
+			WorldId:     worldId,
+			ChannelId:   channelId,
+			JobId:       jobId,
+		}).
+		AddStep("cancel_all_buffs", saga.Pending, saga.CancelAllBuffs, saga.CancelAllBuffsPayload{
+			CharacterId: characterId,
+			WorldId:     worldId,
+			ChannelId:   channelId,
+		}).
+		Build()
+}
 
 func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
@@ -214,16 +238,7 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						s, buildErr := saga.NewBuilder().
-							SetSagaType(saga.QuestReward).
-							SetInitiatedBy("COMMAND").
-							AddStep("change_job", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{
-								CharacterId: id,
-								WorldId:     ch.WorldId(),
-								ChannelId:   ch.Id(),
-								JobId:       job.Id(jobId),
-							}).
-							Build()
+						s, buildErr := buildChangeJobSaga(id, ch.WorldId(), ch.Id(), job.Id(jobId))
 						if buildErr != nil {
 							l.WithError(buildErr).Errorf("Unable to build saga for job change for [%d].", id)
 							continue

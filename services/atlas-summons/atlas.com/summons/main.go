@@ -88,9 +88,11 @@ func main() {
 		Run()
 
 	// registerSweepTasks runs only on the leader-elected pod. It registers the
-	// duration-expiry sweep that despawns summons whose lifetime has elapsed.
+	// duration-expiry sweep that despawns summons whose lifetime has elapsed, and
+	// the Beholder aura sweep that heals/buffs owners of deployed Beholders.
 	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
 		tasks.Register(l, ctx)(summon.NewExpiryTask(l, ctx, time.Second))
+		tasks.Register(l, ctx)(summon.NewBeholderTask(l, ctx, time.Second))
 	}
 
 	if leaderEnabled(l) {

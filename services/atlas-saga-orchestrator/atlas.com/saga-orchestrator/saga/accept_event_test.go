@@ -125,6 +125,47 @@ func TestAcceptEvent_Match(t *testing.T) {
 	assert.Equal(t, tx, decision.Saga.TransactionId())
 }
 
+func TestAcceptEvent_EvolvePetMatch(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("evolve", Pending, EvolvePet, EvolvePetPayload{
+			CharacterId: 1,
+			PetId:       2,
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	decision, ok := p.AcceptEvent(tx, EventKindPetEvolved)
+	require.True(t, ok, "EVOLVED event must complete a pending evolve_pet step")
+	assert.Equal(t, "evolve", decision.Step.StepId())
+	assert.Equal(t, EvolvePet, decision.Step.Action())
+	assert.Equal(t, tx, decision.Saga.TransactionId())
+}
+
+func TestAcceptEvent_EvolvePetRejectsClosenessChanged(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("evolve", Pending, EvolvePet, EvolvePetPayload{
+			CharacterId: 1,
+			PetId:       2,
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	_, ok := p.AcceptEvent(tx, EventKindPetClosenessChanged)
+	assert.False(t, ok, "CLOSENESS_CHANGED must not complete an evolve_pet step")
+}
+
 func TestAcceptEvent_WarnOnceForUnmatchedEvent(t *testing.T) {
 	logger, hook := logtest.NewNullLogger()
 	ctx := acceptEventTestCtx(t)

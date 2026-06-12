@@ -1,9 +1,8 @@
-package pet
+package petdata
 
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -12,24 +11,19 @@ const (
 	Resource = "pets"
 )
 
-// RestModel represents the REST model for pets from the pets service
+// RestModel represents the REST model for pet evolution data from atlas-data
 type RestModel struct {
-	Id         uint32    `json:"-"`
-	CashId     uint64    `json:"cashId"`
-	TemplateId uint32    `json:"templateId"`
-	Name       string    `json:"name"`
-	Level      byte      `json:"level"`
-	Closeness  uint16    `json:"closeness"`
-	Fullness   byte      `json:"fullness"`
-	Expiration time.Time `json:"expiration"`
-	OwnerId    uint32    `json:"ownerId"`
-	Slot       int8      `json:"slot"`
-	X          int16     `json:"x"`
-	Y          int16     `json:"y"`
-	Stance     byte      `json:"stance"`
-	FH         int16     `json:"fh"`
-	Flag       uint16    `json:"flag"`
-	PurchaseBy uint32    `json:"purchaseBy"`
+	Id          uint32               `json:"-"`
+	Name        string               `json:"name"`
+	ReqPetLevel uint32               `json:"reqPetLevel"`
+	ReqItemId   uint32               `json:"reqItemId"`
+	Evolutions  []EvolutionRestModel `json:"evolutions"`
+}
+
+// EvolutionRestModel represents a single pet evolution target
+type EvolutionRestModel struct {
+	TemplateId  uint32 `json:"templateId"`
+	Probability uint32 `json:"probability"`
 }
 
 // GetName returns the resource name
@@ -84,5 +78,11 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 
 // Extract converts a REST model to a domain model
 func Extract(rm RestModel) (Model, error) {
-	return NewModel(rm.Id, rm.TemplateId, rm.Name, rm.Level, rm.Slot), nil
+	return Model{
+		id:          rm.Id,
+		name:        rm.Name,
+		reqPetLevel: rm.ReqPetLevel,
+		reqItemId:   rm.ReqItemId,
+		evolutions:  len(rm.Evolutions),
+	}, nil
 }

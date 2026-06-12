@@ -23,6 +23,7 @@ const (
 	QuestStart           Type = "quest_start"
 	QuestComplete        Type = "quest_complete"
 	QuestRestoreItem     Type = "quest_restore_item"
+	PetEvolution         Type = "pet_evolution"
 )
 
 // Status represents the status of a saga step
@@ -71,6 +72,7 @@ const (
 	ValidateCharacterState Action = "validate_character_state"
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
+	EvolvePet              Action = "evolve_pet"
 
 	// Skill actions
 	CreateSkill Action = "create_skill"

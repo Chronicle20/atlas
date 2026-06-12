@@ -8,11 +8,14 @@ import (
 )
 
 type RestModel struct {
-	Id     uint32           `json:"-"`
-	Hungry uint32           `json:"hungry"`
-	Cash   bool             `json:"cash"`
-	Life   uint32           `json:"life"`
-	Skills []SkillRestModel `json:"-"`
+	Id          uint32               `json:"-"`
+	Hungry      uint32               `json:"hungry"`
+	Cash        bool                 `json:"cash"`
+	Life        uint32               `json:"life"`
+	Skills      []SkillRestModel     `json:"-"`
+	ReqPetLevel uint32               `json:"reqPetLevel"`
+	ReqItemId   uint32               `json:"reqItemId"`
+	Evolutions  []EvolutionRestModel `json:"evolutions"`
 }
 
 func (r RestModel) GetName() string {
@@ -117,12 +120,22 @@ func Extract(rm RestModel) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
+	evolutions := make([]EvolutionModel, 0, len(rm.Evolutions))
+	for _, e := range rm.Evolutions {
+		evolutions = append(evolutions, EvolutionModel{
+			templateId:  e.TemplateId,
+			probability: e.Probability,
+		})
+	}
 	return Model{
-		id:     rm.Id,
-		hunger: rm.Hungry,
-		cash:   rm.Cash,
-		life:   rm.Life,
-		skills: sms,
+		id:          rm.Id,
+		hunger:      rm.Hungry,
+		cash:        rm.Cash,
+		life:        rm.Life,
+		skills:      sms,
+		reqPetLevel: rm.ReqPetLevel,
+		reqItemId:   rm.ReqItemId,
+		evolutions:  evolutions,
 	}, nil
 }
 
@@ -159,4 +172,9 @@ func ExtractSkill(rm SkillRestModel) (SkillModel, error) {
 		increase:    rm.Increase,
 		probability: rm.Probability,
 	}, nil
+}
+
+type EvolutionRestModel struct {
+	TemplateId  uint32 `json:"templateId"`
+	Probability uint32 `json:"probability"`
 }

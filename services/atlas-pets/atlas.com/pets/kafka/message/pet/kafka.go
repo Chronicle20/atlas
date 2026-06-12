@@ -16,6 +16,7 @@ const (
 	CommandAwardFullness     = "AWARD_FULLNESS"
 	CommandAwardLevel        = "AWARD_LEVEL"
 	CommandSetExclude        = "EXCLUDE"
+	CommandPetEvolve         = "EVOLVE"
 )
 
 type Command[E any] struct {
@@ -54,6 +55,9 @@ type SetExcludeCommandBody struct {
 	Items []uint32 `json:"items"`
 }
 
+type EvolveCommandBody struct {
+}
+
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_PET_MOVEMENT"
 )
@@ -82,6 +86,7 @@ const (
 	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
 	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
 	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
+	StatusEventTypeEvolved          = "EVOLVED"
 
 	DespawnReasonNormal  = "NORMAL"
 	DespawnReasonHunger  = "HUNGER"
@@ -159,4 +164,11 @@ type SlotChangedStatusEventBody struct {
 
 type ExcludeChangedStatusEventBody struct {
 	Items []uint32 `json:"items"`
+}
+
+type EvolvedStatusEventBody struct {
+	Slot          int8      `json:"slot"`
+	OldTemplateId uint32    `json:"oldTemplateId"`
+	NewTemplateId uint32    `json:"newTemplateId"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }

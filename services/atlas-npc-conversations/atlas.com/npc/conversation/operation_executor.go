@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/cosmetic"
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
+	"atlas-npc-conversations/petdata"
 	"atlas-npc-conversations/saga"
 	savedlocation "atlas-npc-conversations/saved_location"
 	"atlas-npc-conversations/validation"
@@ -40,6 +41,7 @@ type OperationExecutorImpl struct {
 	t              tenant.Model
 	sagaP          saga.Processor
 	petP           pet.Processor
+	petdataP       petdata.Processor
 	cosmeticP      cosmetic.Processor
 	mapP           npcMap.Processor
 	validationP    validation.Processor
@@ -56,6 +58,7 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 		t:              t,
 		sagaP:          saga.NewProcessor(l, ctx),
 		petP:           pet.NewProcessor(l, ctx),
+		petdataP:       petdata.NewProcessor(l, ctx),
 		cosmeticP:      cosmetic.NewProcessor(l, ctx, appearanceProvider),
 		mapP:           npcMap.NewProcessor(l, ctx),
 		validationP:    validation.NewProcessor(l, ctx),
@@ -796,6 +799,65 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			locationType, characterId, savedLoc.MapId(), savedLoc.PortalId(), mapIdContextKey, portalIdContextKey)
 		return nil
 
+	case "enumerate_evolvable_pets":
+		// Format: local:enumerate_evolvable_pets
+		// Params: outputContextKey (string, default "evolvablePets"),
+		//         labelContextKey (string, default "evolvablePetLabels"),
+		//         countContextKey (string, default "evolvableCount")
+		// Lists the character's currently-summoned, evolution-eligible pets
+		// (evolvable template AND at/above the template's required pet level) into
+		// context as index-aligned id + "Name (Species)" label lists, plus a count.
+		outputKey := operation.Params()["outputContextKey"]
+		if outputKey == "" {
+			outputKey = "evolvablePets"
+		}
+		labelKey := operation.Params()["labelContextKey"]
+		if labelKey == "" {
+			labelKey = "evolvablePetLabels"
+		}
+		countKey := operation.Params()["countContextKey"]
+		if countKey == "" {
+			countKey = "evolvableCount"
+		}
+
+		pets, err := e.petP.GetPets(characterId)()
+		if err != nil {
+			e.l.WithError(err).Errorf("Failed to get pets for character [%d]", characterId)
+			return err
+		}
+
+		eligible := make([]string, 0)
+		labels := make([]string, 0)
+		for _, pt := range pets {
+			if !pt.IsSpawned() {
+				continue
+			}
+			d, derr := e.petdataP.GetById(pt.TemplateId())
+			if derr != nil {
+				e.l.WithError(derr).Debugf("Skipping pet [%d] (template [%d]) - no evolution data for character [%d]",
+					pt.Id(), pt.TemplateId(), characterId)
+				continue
+			}
+			if d.IsEvolvable() && uint32(pt.Level()) >= d.ReqPetLevel() {
+				eligible = append(eligible, strconv.Itoa(int(pt.Id())))
+				labels = append(labels, fmt.Sprintf("%s (%s)", pt.Name(), d.Name()))
+			}
+		}
+
+		if err := e.setContextValue(characterId, outputKey, strings.Join(eligible, ",")); err != nil {
+			return err
+		}
+		if err := e.setContextValue(characterId, labelKey, strings.Join(labels, ",")); err != nil {
+			return err
+		}
+		if err := e.setContextValue(characterId, countKey, strconv.Itoa(len(eligible))); err != nil {
+			return err
+		}
+
+		e.l.Infof("Enumerated %d evolvable pet(s) for character [%d], stored in context keys [%s, %s, %s]",
+			len(eligible), characterId, outputKey, labelKey, countKey)
+		return nil
+
 	default:
 		return fmt.Errorf("unknown local operation type: %s", operationType)
 	}
@@ -847,6 +909,20 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 		stepIdCounts[stepId]++
 		built = append(built, builtStep{stepId, status, action, payload})
 	}
+
+	// A batch containing an evolve_pet step must run as a PetEvolution saga so the
+	// orchestrator reverse-walks the correct compensation path on failure (e.g.
+	// refunding the consumed evolution item + mesos when the evolution fails).
+	// Otherwise the batch defaults to InventoryTransaction. This override must win
+	// over the SetSagaType set at builder construction.
+	sagaType := saga.InventoryTransaction
+	for _, st := range built {
+		if st.action == saga.EvolvePet {
+			sagaType = saga.PetEvolution
+			break
+		}
+	}
+	builder.SetSagaType(sagaType)
 
 	// When a CompleteQuest step is emitted alongside AwardAsset steps, treat
 	// the awarded items as the quest's reported rewards so downstream
@@ -2415,6 +2491,28 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.StageClearAttemptPq, payload, nil
+
+	case "evolve_pet":
+		// Format: evolve_pet
+		// Params: petId (uint32, required) - the id of the pet to evolve. May be a
+		//         {context.xxx} reference (e.g. the pet selected via the
+		//         enumerate_evolvable_pets list).
+		petSelector, exists := operation.Params()["petId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing petId parameter for evolve_pet operation")
+		}
+
+		petIdInt, err := e.evaluateContextValueAsInt(characterId, "petId", petSelector)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.EvolvePetPayload{
+			CharacterId: characterId,
+			PetId:       uint32(petIdInt),
+		}
+
+		return stepId, saga.Pending, saga.EvolvePet, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

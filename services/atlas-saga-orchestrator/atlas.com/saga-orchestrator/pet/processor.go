@@ -14,6 +14,8 @@ import (
 type Processor interface {
 	GainClosenessAndEmit(transactionId uuid.UUID, petId uint32, amount uint16) error
 	GainCloseness(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, amount uint16) error
+	EvolveAndEmit(transactionId uuid.UUID, petId uint32) error
+	Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -41,5 +43,17 @@ func (p *ProcessorImpl) GainClosenessAndEmit(transactionId uuid.UUID, petId uint
 func (p *ProcessorImpl) GainCloseness(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, amount uint16) error {
 	return func(transactionId uuid.UUID, petId uint32, amount uint16) error {
 		return mb.Put(pet2.EnvCommandTopic, AwardClosenessProvider(transactionId, petId, amount))
+	}
+}
+
+func (p *ProcessorImpl) EvolveAndEmit(transactionId uuid.UUID, petId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.Evolve(mb)(transactionId, petId)
+	})
+}
+
+func (p *ProcessorImpl) Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error {
+	return func(transactionId uuid.UUID, petId uint32) error {
+		return mb.Put(pet2.EnvCommandTopic, EvolveProvider(transactionId, petId))
 	}
 }

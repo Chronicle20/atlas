@@ -73,6 +73,9 @@ type (
 
 	// Transport payload types
 	StartInstanceTransportPayload = sharedsaga.StartInstanceTransportPayload
+
+	// Pet evolution payload types
+	EvolvePetPayload = sharedsaga.EvolvePetPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -82,6 +85,7 @@ const (
 	QuestReward          = sharedsaga.QuestReward
 	TradeTransaction     = sharedsaga.TradeTransaction
 	GachaponTransaction  = sharedsaga.GachaponTransaction
+	PetEvolution         = sharedsaga.PetEvolution
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -151,6 +155,9 @@ const (
 	// Saved location actions
 	SaveLocation        = sharedsaga.SaveLocation
 	WarpToSavedLocation = sharedsaga.WarpToSavedLocation
+
+	// Pet evolution actions
+	EvolvePet = sharedsaga.EvolvePet
 )
 
 // ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput.

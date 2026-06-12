@@ -44,6 +44,7 @@ const (
 	AskNumberType     StateType = "askNumber"
 	AskStyleType                     StateType = "askStyle"
 	AskSlideMenuType                 StateType = "askSlideMenu"
+	PickFromContextType              StateType = "pickFromContext"
 )
 
 // StateModel represents a state in a conversation
@@ -61,6 +62,7 @@ type StateModel struct {
 	askNumber             *AskNumberModel
 	askStyle              *AskStyleModel
 	askSlideMenu          *AskSlideMenuModel
+	pickFromContext       *PickFromContextModel
 }
 
 // Id returns the state ID
@@ -128,6 +130,11 @@ func (s StateModel) AskSlideMenu() *AskSlideMenuModel {
 	return s.askSlideMenu
 }
 
+// PickFromContext returns the pick-from-context model (if type is pickFromContext)
+func (s StateModel) PickFromContext() *PickFromContextModel {
+	return s.pickFromContext
+}
+
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
 	id                    string
@@ -143,6 +150,7 @@ type StateBuilder struct {
 	askNumber             *AskNumberModel
 	askStyle              *AskStyleModel
 	askSlideMenu          *AskSlideMenuModel
+	pickFromContext       *PickFromContextModel
 }
 
 // NewStateBuilder creates a new StateBuilder
@@ -170,6 +178,7 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -187,6 +196,7 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -204,6 +214,7 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -221,6 +232,7 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -238,6 +250,7 @@ func (b *StateBuilder) SetGachaponAction(gachaponAction *GachaponActionModel) *S
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -255,6 +268,7 @@ func (b *StateBuilder) SetPartyQuestAction(partyQuestAction *PartyQuestActionMod
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -272,6 +286,7 @@ func (b *StateBuilder) SetPartyQuestBonusAction(partyQuestBonusAction *PartyQues
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -288,6 +303,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -305,6 +321,7 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.askNumber = askNumber
 	b.askStyle = nil
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -322,6 +339,7 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.askNumber = nil
 	b.askStyle = askStyle
 	b.askSlideMenu = nil
+	b.pickFromContext = nil
 	return b
 }
 
@@ -339,6 +357,25 @@ func (b *StateBuilder) SetAskSlideMenu(askSlideMenu *AskSlideMenuModel) *StateBu
 	b.askNumber = nil
 	b.askStyle = nil
 	b.askSlideMenu = askSlideMenu
+	b.pickFromContext = nil
+	return b
+}
+
+// SetPickFromContext sets the pick-from-context model
+func (b *StateBuilder) SetPickFromContext(pickFromContext *PickFromContextModel) *StateBuilder {
+	b.stateType = PickFromContextType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
+	b.partyQuestBonusAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
+	b.askSlideMenu = nil
+	b.pickFromContext = pickFromContext
 	return b
 }
 
@@ -393,6 +430,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.askSlideMenu == nil {
 			return StateModel{}, errors.New("askSlideMenu is required for askSlideMenu state")
 		}
+	case PickFromContextType:
+		if b.pickFromContext == nil {
+			return StateModel{}, errors.New("pickFromContext is required for pickFromContext state")
+		}
 	default:
 		return StateModel{}, errors.New("invalid state type")
 	}
@@ -411,6 +452,72 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		askNumber:        b.askNumber,
 		askStyle:         b.askStyle,
 		askSlideMenu:     b.askSlideMenu,
+		pickFromContext:  b.pickFromContext,
+	}, nil
+}
+
+// PickFromContextModel presents a numbered menu whose options are sourced at
+// runtime from a context value (a comma-joined list of values), with optional
+// parallel display labels. The selected value is stored into ContextKey and the
+// conversation advances to NextState. An empty/absent values list routes to
+// EmptyNextState instead of presenting a menu.
+type PickFromContextModel struct {
+	title            string
+	valuesContextKey string
+	labelsContextKey string
+	contextKey       string
+	nextState        string
+	emptyNextState   string
+}
+
+func (m PickFromContextModel) Title() string            { return m.title }
+func (m PickFromContextModel) ValuesContextKey() string { return m.valuesContextKey }
+func (m PickFromContextModel) LabelsContextKey() string { return m.labelsContextKey }
+func (m PickFromContextModel) ContextKey() string       { return m.contextKey }
+func (m PickFromContextModel) NextState() string        { return m.nextState }
+func (m PickFromContextModel) EmptyNextState() string   { return m.emptyNextState }
+
+// PickFromContextBuilder builds a PickFromContextModel.
+type PickFromContextBuilder struct {
+	title            string
+	valuesContextKey string
+	labelsContextKey string
+	contextKey       string
+	nextState        string
+	emptyNextState   string
+}
+
+func NewPickFromContextBuilder() *PickFromContextBuilder {
+	return &PickFromContextBuilder{contextKey: "selectedValue"}
+}
+
+func (b *PickFromContextBuilder) SetTitle(v string) *PickFromContextBuilder            { b.title = v; return b }
+func (b *PickFromContextBuilder) SetValuesContextKey(v string) *PickFromContextBuilder { b.valuesContextKey = v; return b }
+func (b *PickFromContextBuilder) SetLabelsContextKey(v string) *PickFromContextBuilder { b.labelsContextKey = v; return b }
+func (b *PickFromContextBuilder) SetContextKey(v string) *PickFromContextBuilder       { b.contextKey = v; return b }
+func (b *PickFromContextBuilder) SetNextState(v string) *PickFromContextBuilder        { b.nextState = v; return b }
+func (b *PickFromContextBuilder) SetEmptyNextState(v string) *PickFromContextBuilder   { b.emptyNextState = v; return b }
+
+func (b *PickFromContextBuilder) Build() (*PickFromContextModel, error) {
+	if b.valuesContextKey == "" {
+		return nil, errors.New("valuesContextKey is required")
+	}
+	if b.nextState == "" {
+		return nil, errors.New("nextState is required")
+	}
+	if b.emptyNextState == "" {
+		return nil, errors.New("emptyNextState is required")
+	}
+	if b.contextKey == "" {
+		b.contextKey = "selectedValue"
+	}
+	return &PickFromContextModel{
+		title:            b.title,
+		valuesContextKey: b.valuesContextKey,
+		labelsContextKey: b.labelsContextKey,
+		contextKey:       b.contextKey,
+		nextState:        b.nextState,
+		emptyNextState:   b.emptyNextState,
 	}, nil
 }
 

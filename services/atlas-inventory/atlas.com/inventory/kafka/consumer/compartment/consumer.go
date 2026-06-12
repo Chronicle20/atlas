@@ -84,6 +84,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleModifyEquipmentCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeTemplateCommand(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -361,5 +364,14 @@ func handleModifyEquipmentCommand(db *gorm.DB) message.Handler[compartment2.Comm
 			SetExpiration(c.Body.Expiration).
 			Build()
 		_ = compartment.NewProcessor(l, ctx, db).ModifyEquipmentAndEmit(c.TransactionId, c.CharacterId, c.Body.AssetId, stats)
+	}
+}
+
+func handleChangeTemplateCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ChangeTemplateCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ChangeTemplateCommandBody]) {
+		if c.Type != compartment2.CommandChangeTemplate {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).ChangeTemplateAndEmit(c.TransactionId, c.CharacterId, c.Body.PetId, c.Body.NewTemplateId)
 	}
 }

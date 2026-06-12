@@ -12,6 +12,7 @@ import (
 	"atlas-inventory/kafka/producer"
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -80,6 +81,8 @@ type Provider interface {
 	CompactAndSort(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error
 	ModifyEquipmentAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
 	ModifyEquipment(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
+	ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
+	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 }
 
 type Processor struct {
@@ -1760,6 +1763,43 @@ func (p *Processor) ModifyEquipment(mb *message.Buffer) func(transactionId uuid.
 		return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			ap := p.WithTransaction(tx).WithAssetProcessor(asset.NewProcessor(p.l, p.ctx, tx))
 			return ap.assetProcessor.UpdateEquipmentStats(mb)(transactionId, characterId, assetId, stats)
+		})
+	}
+}
+
+func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
+		return p.ChangeTemplate(mb)(transactionId, characterId, petId, newTemplateId)
+	})
+}
+
+// ChangeTemplate resolves the cash-compartment pet asset matching petId and swaps
+// only its templateId in place, preserving slot, cashId, expiration, and petId. It
+// emits the asset UPDATED status event (never DELETED), keeping the pet alive in
+// atlas-pets.
+func (p *Processor) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+		p.l.Debugf("Character [%d] changing template of pet [%d] asset to [%d].", characterId, petId, newTemplateId)
+		invLock := LockRegistry().Get(characterId, inventory.TypeValueCash)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			cp := p.WithTransaction(tx).WithAssetProcessor(asset.NewProcessor(p.l, p.ctx, tx))
+			c, err := cp.GetByCharacterAndType(characterId)(inventory.TypeValueCash)
+			if err != nil {
+				return err
+			}
+			c, err = cp.DecorateAsset(c)
+			if err != nil {
+				return err
+			}
+			for _, a := range c.Assets() {
+				if a.IsPet() && a.PetId() == petId {
+					return cp.assetProcessor.ChangeTemplate(mb)(transactionId, characterId, a.Id(), newTemplateId)
+				}
+			}
+			return fmt.Errorf("pet [%d] asset not found in cash compartment for character [%d]", petId, characterId)
 		})
 	}
 }

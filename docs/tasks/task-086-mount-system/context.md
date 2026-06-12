@@ -201,16 +201,165 @@ both `Encode` and `EncodeForeign`.
 
 ---
 
-## 8. Pinned game data (FILLED BY PLAN TASK 1 — empty until then)
+## 8. Pinned game data (FILLED BY PLAN TASK 1)
 
-> Task 1 replaces the bracketed placeholders below with verified values + the source it read.
-> No downstream task may consume a value still in brackets.
+> Every value below cites the source actually read (verify-over-memory).
+> Primary reference server: **HeavenMS** (ronancpl/HeavenMS @ master — v83 lineage).
+> Live data: **atlas-data** in k8s namespace `atlas-main`, GMS 83.1 tenant
+> `ec876921-c363-4cc6-9c51-5bb8d57f9553` (headers `TENANT_ID/REGION=GMS/MAJOR_VERSION=83/MINOR_VERSION=1`).
 
-- **Level cap:** `[CAP = ? — confirm 31]`
-- **expNeededForLevel(level):** `[table/formula — source: ?]`
-- **Revitalizer tiredness-heal:** `[? — confirm 30; source: ?]`
-- **Skill-only mount skill ids (beginner):** SpaceShip 1013, Yeti1 1017, Yeti2 1018, Broomstick 1019, Balrog 1031 `[confirm]`
-- **Skill-only mount vehicle ids:** Yeti1 1932003, Yeti2 1932004, Broomstick 1932005, Balrog 1932010, SpaceShip 1932000+lvl `[confirm]`
-- **Noblesse/Legend band skill ids for the above:** `[derive from constants.go patterns + confirm]`
-- **Revitalizer item id(s) / classification:** classification 226 (2260000–2269999) `[confirm exact starter-grant item id for the questline]`
-- **Riding Mimiana quest id(s), NPC id(s), starter saddle + taming-mob item ids:** `[from script comments / local data]`
+### 8.1 Level cap
+
+`CAP = 31` — a mount levels up only while `level < 31`.
+Source: HeavenMS `src/net/server/channel/handlers/UseMountFoodHandler.java`
+(`boolean levelup = mount.getExp() >= ExpTable.getMountExpNeededForLevel(level) && level < 31;`).
+
+### 8.2 expNeededForLevel(level)
+
+`getMountExpNeededForLevel(level)` returns `mount[level]` (0-indexed) from this table.
+Source: HeavenMS `src/constants/game/ExpTable.java`, field `private static final int[] mount`.
+
+```go
+// expNeededForLevel(level) == mountExp[level]; valid indices 0..28.
+var mountExp = []int32{
+    1, 24, 50, 105, 134, 196, 254, 263, 315, 367,
+    430, 543, 587, 679, 725, 897, 1146, 1394, 1701, 2247,
+    2543, 2898, 3156, 3313, 3584, 3923, 4150, 4305, 4550,
+}
+```
+
+| level | exp needed | level | exp needed | level | exp needed |
+|---|---|---|---|---|---|
+| 0 | 1 | 10 | 430 | 20 | 2543 |
+| 1 | 24 | 11 | 543 | 21 | 2898 |
+| 2 | 50 | 12 | 587 | 22 | 3156 |
+| 3 | 105 | 13 | 679 | 23 | 3313 |
+| 4 | 134 | 14 | 725 | 24 | 3584 |
+| 5 | 196 | 15 | 897 | 25 | 3923 |
+| 6 | 254 | 16 | 1146 | 26 | 4150 |
+| 7 | 263 | 17 | 1394 | 27 | 4305 |
+| 8 | 315 | 18 | 1701 | 28 | 4550 |
+| 9 | 367 | 19 | 2247 | | | | |
+
+**Array-bounds caveat (downstream Task 12 must guard):** the HeavenMS `mount[]` array has
+only **29 entries (indices 0–28)**, but the cap check allows `level < 31`. HeavenMS calls
+`getMountExpNeededForLevel(level)` with the *current* level; once a mount reaches level 29 it
+would read `mount[29]` (out of bounds) on the next feed. In practice mounts rarely reach that
+range, but the Go port must bound-check (e.g. treat any `level >= len(mountExp)` as
+"effectively max / no further level-up", or extend the table). Do **not** blindly index.
+
+### 8.3 Feed math (re-confirms design §4 from the same source)
+
+Source: HeavenMS `UseMountFoodHandler.java`:
+```
+healedTiredness = min(curTiredness, 30)
+healedFactor    = healedTiredness / 30        // float
+exp += ceil(healedFactor * (2*level + 6))
+levelup = exp >= getMountExpNeededForLevel(level) && level < 31
+```
+
+### 8.4 Revitalizer tiredness-heal
+
+`tirednessHeal = 30` — **server-side constant, NOT data-driven.** Hardcoded in
+`UseMountFoodHandler.java` as `Math.min(curTiredness, 30)`.
+
+Live WZ cross-check (atlas-data, tenant above): `GET /api/data/consumables/2260000`
+returns `incFatigue: 0` and `spec.inc: 0` — i.e. the v83 WZ spec for the only class-226 item
+present (2260000) carries **no** non-zero tiredness/fatigue value. There is therefore no
+data-driven heal to read; the pinned value is the reference-server constant **30**.
+
+**Decision for downstream tasks:** `atlas-consumables` passes the constant **30** as
+`tirednessHeal` on the `EVENT_TOPIC_TAMING_MOB_FOOD` event (design §4 / §6). The
+`EVENT_TOPIC_TAMING_MOB_FOOD` shape already carries `tirednessHeal` per-event, so if a future
+WZ item populates `incFatigue`/`spec.inc`, atlas-data's consumable reader could surface it and
+atlas-consumables could forward it — but for now it is a constant. (Verified: only item
+2260000 exists in class 226 for this tenant; 2260001–2260004 404.)
+
+### 8.5 Skill-only mount skill ids
+
+All five beginner ids confirmed present as real skill-only mount skills in **live atlas-data**
+(`GET /api/data/skills/{id}`, tenant above): each returns `skill: true`, `duration:
+2100000000`, `MPConsume: 10`. SpaceShip (1013) has `maxLevel: 2` (consistent with per-level
+vehicle id); the others `maxLevel: 1`.
+
+| Mount | Beginner | Noblesse | Legend | Evan |
+|---|---|---|---|---|
+| MonsterRider (1004-band) | 1004 | 10001004 | 20001004 | 20011004 |
+| SpaceShip | 1013 | **1001014** | — (none) | — |
+| Yeti1 | 1017 | 10001019 | 20001019 | — |
+| Yeti2 | 1018 | 10001022 | 20001022 | — |
+| Broomstick | 1019 | 10001023 | 20001023 | — |
+| Balrog | 1031 | 10001031 | 20001031 | — |
+| Corsair Battleship | — | — | — | 5221006 (own band) |
+
+Source for the Noblesse/Legend/Evan ids: HeavenMS `src/constants/skills/{Beginner,Noblesse,Legend,Evan,Corsair}.java`.
+
+**⚠ The Noblesse/Legend skill-only mount ids do NOT follow the `+10000000 / +20000000`
+band-offset pattern** that the 1004-band MonsterRider uses (and that the scout note in this
+task assumed). They are an independent layout, e.g. Noblesse SpaceShip = **1001014** (not
+10001013), Noblesse Yeti1 = 10001019 (not 10001017). **Task 17 must transcribe the exact ids
+from this table; do not derive Noblesse/Legend ids by offsetting the beginner ids.** Only the
+MonsterRider (1004) band and the Balrog mount (…1031) happen to match a clean offset; the
+others do not. Legend has no SpaceShip; Evan has only MonsterRider (no skill-only mounts).
+
+### 8.6 Skill-only mount vehicle ids (the `MONSTER_RIDING` nOption)
+
+Source: HeavenMS `src/server/MapleStatEffect.java` (mount-apply block, `isMonsterRiding()`):
+
+| Mount skill (any band) | Vehicle item id |
+|---|---|
+| SpaceShip (Beginner 1013 / Noblesse 1001014) | `1932000 + skillLevel` |
+| Yeti1 (1017 / 10001019 / 20001019) | 1932003 |
+| Yeti2 (1018 / 10001022 / 20001022) | 1932004 |
+| Broomstick (1019 / 10001023 / 20001023) | 1932005 |
+| Balrog (1031 / 10001031 / 20001031) | 1932010 |
+| Corsair Battleship (5221006) | 1932000 (out of mount scope) |
+
+Cross-check: HeavenMS `MapleCharacter.java:4435` re-applies Battleship as
+`giveBuff(1932000, 5221006, …)`, confirming the 1932xxx vehicle band and that the buff carries
+`(vehicleId, skillId)` — matching the §2 IDA encoding (`nOption=vehicleId`, `rOption=skillId`).
+Note: the live skill-effect JSON (8.5) does **not** encode the vehicle id — it is hardcoded
+server-side, which is exactly why Task 7 must add it to atlas-data's `skill/reader.go`.
+
+For **tamed** mounts (the 1004-band MonsterRider), the vehicle id is the equipped taming-mob
+item id (slot -18), per HeavenMS `MapleStatEffect.java` (`ridingMountId = mount.getItemId()`)
+and design §2. Tamed taming-mob items live in class 190 (`1902xxx`); see HeavenMS
+`MapleMount.java` comment (1902000 Hog, 1902001 Silver Mane, 1902002 Red Draco, 1902005
+Mimiana, 1902012 Yeti, …) and `getId() => itemid - 1901999`.
+
+### 8.7 Riding-Mimiana questline ids — ⚠ PARTIAL / divergent from design
+
+**The classic v83 "Riding Mimiana" Monster-Rider acquisition quest (the one that grants the
+1004-band MonsterRider skill + a class-191 saddle + class-190 taming-mob) is NOT present in
+this repo's seed data.** Searched `deploy/seed/{gms,jms}/**/npc-conversations/quests` and
+`docs/`: no quest grants skill 1004 / 10001004 / 20001004, and there is **no class-191 (191xxxx)
+saddle item anywhere in the seed data** (grep `19[01][0-9]{4}` → only 1902005/1902016/1902017/
+1902018, all class 190).
+
+What the repo **does** contain (verified) is the later **Empress's Knights "Mimiana"
+questline** (item-based mount, different mechanic — no separate saddle, no 1004-band skill):
+
+| Item | Value | Source |
+|---|---|---|
+| "Raising Mimiana" quest | **questId 20522** (questName `"Raising Mimiana"`) | `deploy/seed/gms/83_1/npc-conversations/quests/quest-20522.json` |
+| "Mimiana Recovery" quest | **questId 20526** (questName `"Mimiana Recovery"`) | `deploy/seed/gms/83_1/npc-conversations/quests/quest-20526.json` |
+| Quest-giver NPC | **2060005** (Mimiana keeper, named in quest-20522/20526 dialog `#p2060005#`); the broader Knights NPC `1202009` also references the line | quest-20522/20526 dialog + `npc-1202009.json` |
+| Mimiana egg (ETC item raised into the mount) | **4220137** (`referenceId`/`award_item`/`destroy_item` in both quests) | quest-20522.json, quest-20526.json |
+| Mimiana taming-mob item awarded (class 190) | **1902005** (`award_item` on quest-20526 completion) | quest-20526.json:105 |
+| Skill granted | **NONE** — the Knights Mimiana mount is item-driven (equip 1902005 in slot -18 + cast the 1004-band MonsterRider the character already has); no `award_skill`/`skillId` operation in either quest | quest-20522/20526.json (no skill op) |
+
+**Action for Task 36 (questline):** the design's FR-9 assumes the *classic* Riding-Mimiana
+quest (skill grant + class-191 saddle + class-190 mob). That exact data **does not exist in the
+repo** and must be authored from scratch (or sourced) rather than reused. Best-known classic
+reference values (HeavenMS / GMS v83), **UNVERIFIED against repo data — confirm before
+Task 36**:
+- Classic "Riding Mimiana" / Monster-Rider acquisition quest ≈ quest **3000** band on Mushroom
+  Castle; grants skill **1004** (Beginner MonsterRider) + saddle (class 191, `1910000`-band) +
+  a starter taming-mob (class 190). These specific ids are **not** confirmed from local data and
+  must be pinned (WZ/Quest.wz) before implementing FR-9.
+- If FR-9 is satisfied by the **Empress's Knights** Mimiana line instead, use the verified
+  20522/20526 + NPC 2060005 + items 4220137/1902005 above (no class-191 saddle, no skill grant).
+
+This divergence should be surfaced to the task owner: **FR-9's "Riding Mimiana grants the
+MonsterRider skill + class-191 saddle" premise is not backed by repo data; the only Mimiana
+data present is the item-based Knights questline.**

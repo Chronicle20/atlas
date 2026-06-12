@@ -152,7 +152,13 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 	if err := p.emit(EnvEventTopicSummonStatus, createdEventProvider(m)); err != nil {
 		p.l.WithError(err).Errorf("Unable to emit CREATED for summon [%d].", id)
 	}
-	// Phase 4: emit ADD_PUPPET to atlas-monsters for puppet summons.
+	// FR-4.x: register puppets with atlas-monsters so the monster controller
+	// picker biases toward the puppet's owner.
+	if m.IsPuppet() {
+		if err := p.emit(monstermsg.EnvCommandTopic, monstermsg.AddPuppetProvider(m.Field(), m.OwnerCharacterId(), m.X(), m.Y())); err != nil {
+			p.l.WithError(err).Errorf("Unable to emit ADD_PUPPET for summon [%d].", id)
+		}
+	}
 	// Phase 5: Beholder timer init.
 	return m, nil
 }
@@ -318,7 +324,12 @@ func (p *ProcessorImpl) Despawn(id uint32, animated bool) error {
 	if err := p.emit(EnvEventTopicSummonStatus, destroyedEventProvider(m, animated)); err != nil {
 		p.l.WithError(err).Errorf("Unable to emit DESTROYED for summon [%d].", id)
 	}
-	// Phase 4: emit REMOVE_PUPPET to atlas-monsters for puppet summons.
+	// FR-4.x: clear the puppet registration in atlas-monsters.
+	if m.IsPuppet() {
+		if err := p.emit(monstermsg.EnvCommandTopic, monstermsg.RemovePuppetProvider(m.Field(), m.OwnerCharacterId())); err != nil {
+			p.l.WithError(err).Errorf("Unable to emit REMOVE_PUPPET for summon [%d].", id)
+		}
+	}
 	// Phase 5: Beholder timer cleanup is implicit (registry removal).
 	return nil
 }

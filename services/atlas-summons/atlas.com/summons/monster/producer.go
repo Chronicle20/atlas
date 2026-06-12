@@ -33,6 +33,14 @@ const (
 	// atlas-monsters CommandTypeApplyStatus.
 	CommandTypeApplyStatus = "APPLY_STATUS"
 
+	// CommandTypeAddPuppet registers a puppet in a field so the monster controller
+	// picker biases toward the puppet's owner. Mirrors atlas-monsters
+	// CommandTypeAddPuppet.
+	CommandTypeAddPuppet = "ADD_PUPPET"
+	// CommandTypeRemovePuppet clears a previously registered puppet. Mirrors
+	// atlas-monsters CommandTypeRemovePuppet.
+	CommandTypeRemovePuppet = "REMOVE_PUPPET"
+
 	// sourceTypePlayerSkill classifies an APPLY_STATUS as originating from a
 	// player skill, matching the value the channel service uses
 	// (services/atlas-channel/.../monster/producer.go).
@@ -68,6 +76,75 @@ type applyStatusCommandBody struct {
 	Statuses          map[string]int32 `json:"statuses"`
 	Duration          uint32           `json:"duration"`
 	TickInterval      uint32           `json:"tickInterval"`
+}
+
+// addPuppetCommand is the FLAT (no Body envelope) ADD_PUPPET command. Tags MUST
+// stay byte-identical to monsters/kafka/consumer/monster/kafka.go addPuppetCommand
+// (worldId, channelId, mapId, instance, type, ownerCharacterId, x, y) or the
+// monster controller bias silently fails to register.
+type addPuppetCommand struct {
+	WorldId          world.Id   `json:"worldId"`
+	ChannelId        channel.Id `json:"channelId"`
+	MapId            _map.Id    `json:"mapId"`
+	Instance         uuid.UUID  `json:"instance"`
+	Type             string     `json:"type"`
+	OwnerCharacterId uint32     `json:"ownerCharacterId"`
+	X                int16      `json:"x"`
+	Y                int16      `json:"y"`
+}
+
+// removePuppetCommand is the FLAT (no Body envelope) REMOVE_PUPPET command. Tags
+// MUST stay byte-identical to monsters/kafka/consumer/monster/kafka.go
+// removePuppetCommand (worldId, channelId, mapId, instance, type,
+// ownerCharacterId).
+type removePuppetCommand struct {
+	WorldId          world.Id   `json:"worldId"`
+	ChannelId        channel.Id `json:"channelId"`
+	MapId            _map.Id    `json:"mapId"`
+	Instance         uuid.UUID  `json:"instance"`
+	Type             string     `json:"type"`
+	OwnerCharacterId uint32     `json:"ownerCharacterId"`
+}
+
+// addPuppetProvider registers a puppet at (x,y) for ownerCharacterId in the field
+// so atlas-monsters biases nearby monster controllers toward the owner (FR-4.x).
+func addPuppetProvider(f field.Model, ownerCharacterId uint32, x int16, y int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(ownerCharacterId))
+	value := &addPuppetCommand{
+		WorldId:          f.WorldId(),
+		ChannelId:        f.ChannelId(),
+		MapId:            f.MapId(),
+		Instance:         f.Instance(),
+		Type:             CommandTypeAddPuppet,
+		OwnerCharacterId: ownerCharacterId,
+		X:                x,
+		Y:                y,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// AddPuppetProvider is the exported entry point for the summon processor.
+func AddPuppetProvider(f field.Model, ownerCharacterId uint32, x int16, y int16) model.Provider[[]kafka.Message] {
+	return addPuppetProvider(f, ownerCharacterId, x, y)
+}
+
+// removePuppetProvider clears a previously registered puppet for ownerCharacterId.
+func removePuppetProvider(f field.Model, ownerCharacterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(ownerCharacterId))
+	value := &removePuppetCommand{
+		WorldId:          f.WorldId(),
+		ChannelId:        f.ChannelId(),
+		MapId:            f.MapId(),
+		Instance:         f.Instance(),
+		Type:             CommandTypeRemovePuppet,
+		OwnerCharacterId: ownerCharacterId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RemovePuppetProvider is the exported entry point for the summon processor.
+func RemovePuppetProvider(f field.Model, ownerCharacterId uint32) model.Provider[[]kafka.Message] {
+	return removePuppetProvider(f, ownerCharacterId)
 }
 
 // monsterDamageProvider credits ownerCharacterId with the supplied damage values

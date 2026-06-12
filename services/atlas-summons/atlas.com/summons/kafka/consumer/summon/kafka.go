@@ -43,3 +43,17 @@ type MoveCommandBody struct {
 	Stance            byte   `json:"stance"`
 	RawMovement       []byte `json:"rawMovement"`
 }
+
+// AttackTargetEntry is one {monster, reported damage} pair carried by an ATTACK
+// command. The damage is the raw client-reported value; atlas-summons clamps it.
+type AttackTargetEntry struct {
+	MonsterId uint32 `json:"monsterId"`
+	Damage    uint32 `json:"damage"`
+}
+
+type AttackCommandBody struct {
+	SummonId          uint32              `json:"summonId"`
+	SenderCharacterId uint32              `json:"senderCharacterId"`
+	Direction         byte                `json:"direction"`
+	Targets           []AttackTargetEntry `json:"targets"`
+}

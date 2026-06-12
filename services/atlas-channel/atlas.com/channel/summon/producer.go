@@ -48,3 +48,22 @@ func MoveCommandProvider(f field.Model, summonId uint32, senderCharacterId uint3
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func AttackCommandProvider(f field.Model, summonId uint32, senderCharacterId uint32, direction byte, targets []summon2.AttackTargetEntry) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
+	value := &summon2.Command[summon2.AttackCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		SummonId:  summonId,
+		Type:      summon2.CommandTypeAttack,
+		Body: summon2.AttackCommandBody{
+			SummonId:          summonId,
+			SenderCharacterId: senderCharacterId,
+			Direction:         direction,
+			Targets:           targets,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

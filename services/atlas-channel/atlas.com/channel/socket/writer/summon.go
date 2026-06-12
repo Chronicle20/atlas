@@ -22,3 +22,10 @@ func SummonRemoveBody(ownerCharacterId uint32, summonId uint32, animated bool) p
 func SummonMoveBody(ownerCharacterId uint32, summonId uint32, startX int16, startY int16, rawMovement []byte) packet.Encode {
 	return summoncb.NewSummonMove(ownerCharacterId, summonId, startX, startY, rawMovement).Encode
 }
+
+// SummonAttackBody builds the SummonAttack clientbound packet for a summon
+// attack, broadcasting the clamped per-target damage to other sessions in the
+// owner's map. targets carry {monsterOid, clamped damage} pairs.
+func SummonAttackBody(ownerCharacterId uint32, summonId uint32, direction byte, targets []summoncb.SummonAttackTarget) packet.Encode {
+	return summoncb.NewSummonAttack(ownerCharacterId, summonId, direction, targets).Encode
+}

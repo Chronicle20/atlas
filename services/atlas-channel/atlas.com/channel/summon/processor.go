@@ -36,3 +36,11 @@ func (p *Processor) Move(f field.Model, summonId uint32, senderCharacterId uint3
 	p.l.Debugf("Requesting summon move for summon [%d] by character [%d] to [%d,%d].", summonId, senderCharacterId, x, y)
 	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(MoveCommandProvider(f, summonId, senderCharacterId, x, y, stance, rawMovement))
 }
+
+// Attack emits a COMMAND_TOPIC_SUMMON ATTACK command requesting atlas-summons
+// credit the owner, clamp the reported per-target damage, and emit an ATTACKED
+// event for rebroadcast.
+func (p *Processor) Attack(f field.Model, summonId uint32, senderCharacterId uint32, direction byte, targets []summon2.AttackTargetEntry) error {
+	p.l.Debugf("Requesting summon attack for summon [%d] by character [%d] against [%d] targets.", summonId, senderCharacterId, len(targets))
+	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(AttackCommandProvider(f, summonId, senderCharacterId, direction, targets))
+}

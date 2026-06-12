@@ -31,6 +31,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAttackCommand))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -53,5 +56,19 @@ func handleMoveCommand(l logrus.FieldLogger, ctx context.Context, c Command[Move
 	err := summon.NewProcessor(l, ctx).Move(c.Body.SummonId, c.Body.SenderCharacterId, c.Body.X, c.Body.Y, c.Body.Stance, c.Body.RawMovement)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to move summon [%d] for sender [%d].", c.Body.SummonId, c.Body.SenderCharacterId)
+	}
+}
+
+func handleAttackCommand(l logrus.FieldLogger, ctx context.Context, c Command[AttackCommandBody]) {
+	if c.Type != CommandTypeAttack {
+		return
+	}
+	targets := make([]summon.AttackTarget, 0, len(c.Body.Targets))
+	for _, t := range c.Body.Targets {
+		targets = append(targets, summon.AttackTarget{MonsterId: t.MonsterId, Damage: t.Damage})
+	}
+	err := summon.NewProcessor(l, ctx).Attack(c.Body.SummonId, c.Body.SenderCharacterId, c.Body.Direction, targets)
+	if err != nil {
+		l.WithError(err).Errorf("Failed to attack with summon [%d] for sender [%d].", c.Body.SummonId, c.Body.SenderCharacterId)
 	}
 }

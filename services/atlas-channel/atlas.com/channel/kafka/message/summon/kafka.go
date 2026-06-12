@@ -48,6 +48,21 @@ type MoveCommandBody struct {
 	RawMovement       []byte `json:"rawMovement"`
 }
 
+// AttackTargetEntry is one {monster, reported damage} pair carried by an ATTACK
+// command. JSON tags MUST stay byte-for-byte identical to the atlas-summons
+// consumer definition.
+type AttackTargetEntry struct {
+	MonsterId uint32 `json:"monsterId"`
+	Damage    uint32 `json:"damage"`
+}
+
+type AttackCommandBody struct {
+	SummonId          uint32              `json:"summonId"`
+	SenderCharacterId uint32              `json:"senderCharacterId"`
+	Direction         byte                `json:"direction"`
+	Targets           []AttackTargetEntry `json:"targets"`
+}
+
 // EnvEventTopicSummonStatus is the EVENT_TOPIC_SUMMON_STATUS env var
 // (summons -> channel). The envelope and bodies below are re-declared
 // channel-side; their JSON tags MUST stay byte-for-byte identical to the
@@ -95,4 +110,17 @@ type StatusEventMovedBody struct {
 
 type StatusEventDestroyedBody struct {
 	Animated bool `json:"animated"`
+}
+
+// StatusEventAttackedTarget is one {monster, clamped damage} pair carried by an
+// ATTACKED event. JSON tags MUST stay byte-for-byte identical to the
+// atlas-summons producer definition.
+type StatusEventAttackedTarget struct {
+	MonsterId uint32 `json:"monsterId"`
+	Damage    uint32 `json:"damage"`
+}
+
+type StatusEventAttackedBody struct {
+	Direction byte                        `json:"direction"`
+	Targets   []StatusEventAttackedTarget `json:"targets"`
 }

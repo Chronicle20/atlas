@@ -51,6 +51,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventAttacked(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -112,6 +117,32 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 				writer.SummonRemoveBody(e.OwnerCharacterId, e.SummonId, e.Body.Animated)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove summon [%d] for characters in map [%d].", e.SummonId, e.MapId)
+		}
+	}
+}
+
+func handleStatusEventAttacked(sc server.Model, wp writer.Producer) message.Handler[summon2.StatusEvent[summon2.StatusEventAttackedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e summon2.StatusEvent[summon2.StatusEventAttackedBody]) {
+		if e.Type != summon2.EventSummonStatusAttacked {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		targets := make([]summonpkt.SummonAttackTarget, 0, len(e.Body.Targets))
+		for _, t := range e.Body.Targets {
+			targets = append(targets, summonpkt.NewSummonAttackTarget(t.MonsterId, t.Damage))
+		}
+
+		// Broadcast to OTHER sessions only: the owner's client already rendered
+		// the attack locally, so re-sending would double-apply it.
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.OwnerCharacterId,
+			session.Announce(l)(ctx)(wp)(summonpkt.SummonAttackWriter)(
+				writer.SummonAttackBody(e.OwnerCharacterId, e.SummonId, e.Body.Direction, targets)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast summon [%d] attack for characters in map [%d].", e.SummonId, e.MapId)
 		}
 	}
 }

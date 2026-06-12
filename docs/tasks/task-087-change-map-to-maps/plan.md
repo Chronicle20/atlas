@@ -23,7 +23,7 @@ Factor the `CHANGE_MAP` consumer body into a single `warp.Processor.ChangeMap` m
 - Create: `services/atlas-maps/atlas.com/maps/character/warp/processor_test.go`
 - Modify: `services/atlas-maps/atlas.com/maps/kafka/consumer/character/change_map.go`
 
-- [ ] **Step 1: Write the warp processor (production code first, then its test fails to compile until present).** Create `character/warp/processor.go`:
+- [x] **Step 1: Write the warp processor (production code first, then its test fails to compile until present).** Create `character/warp/processor.go`:
 
 ```go
 package warp
@@ -116,7 +116,7 @@ func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, w
 }
 ```
 
-- [ ] **Step 2: Write the failing test.** Create `character/warp/processor_test.go`:
+- [x] **Step 2: Write the failing test.** Create `character/warp/processor_test.go`:
 
 ```go
 package warp
@@ -242,12 +242,12 @@ func TestChangeMap_PersistsAndEmitsMapChanged(t *testing.T) {
 > existing `location` tests already migrate via `db.AutoMigrate(&entity{})` in
 > the same package, replicate that call here instead of `location.Migration(db)`.
 
-- [ ] **Step 3: Run the test to verify it fails.**
+- [x] **Step 3: Run the test to verify it fails.**
 
 Run: `cd services/atlas-maps/atlas.com/maps && go test ./character/warp/ -run TestChangeMap_PersistsAndEmitsMapChanged -v`
 Expected: compiles and FAILS only if the implementation is wrong; since Step 1 already wrote the implementation, this should PASS. If it does not compile, fix the migration helper name per the Step 2 note. (TDD note: if you prefer strict red-first, comment out the `ChangeMap` body to see RED, then restore.)
 
-- [ ] **Step 4: Rewire the consumer to delegate to warp.** Replace the body of `kafka/consumer/character/change_map.go` so the warp is built and called via a small command-side helper (this helper is the FR-7.2 command-side seam):
+- [x] **Step 4: Rewire the consumer to delegate to warp.** Replace the body of `kafka/consumer/character/change_map.go` so the warp is built and called via a small command-side helper (this helper is the FR-7.2 command-side seam):
 
 ```go
 package character
@@ -284,7 +284,7 @@ func handleChangeMapFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Con
 }
 ```
 
-- [ ] **Step 5: Add the command-side parity test.** Append to `character/warp/processor_test.go` a mock `Processor` capturing the dest, and assert the command helper funnels through `ChangeMap`. Because `changeMapFromCommand` lives in the consumer package, put this test in the consumer package instead — create `kafka/consumer/character/change_map_test.go`:
+- [x] **Step 5: Add the command-side parity test.** Append to `character/warp/processor_test.go` a mock `Processor` capturing the dest, and assert the command helper funnels through `ChangeMap`. Because `changeMapFromCommand` lives in the consumer package, put this test in the consumer package instead — create `kafka/consumer/character/change_map_test.go`:
 
 ```go
 package character
@@ -351,17 +351,17 @@ func TestChangeMapFromCommand_FunnelsThroughWarp(t *testing.T) {
 > `c.CharacterId`, `c.TransactionId`, `c.Type`, `c.Body.ChannelId`,
 > `c.Body.MapId`, `c.Body.Instance`, `c.Body.PortalId`).
 
-- [ ] **Step 6: Run the package tests.**
+- [x] **Step 6: Run the package tests.**
 
 Run: `cd services/atlas-maps/atlas.com/maps && go test ./character/warp/ ./kafka/consumer/character/ -v`
 Expected: PASS.
 
-- [ ] **Step 7: Build & vet the module.**
+- [x] **Step 7: Build & vet the module.**
 
 Run: `cd services/atlas-maps/atlas.com/maps && go build ./... && go vet ./...`
 Expected: clean.
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/character/warp/ services/atlas-maps/atlas.com/maps/kafka/consumer/character/
@@ -379,7 +379,7 @@ Add the REST write that calls the shared warp method, validates target-map exist
 - Modify: `services/atlas-maps/atlas.com/maps/character/location/resource.go`
 - Create: `services/atlas-maps/atlas.com/maps/character/location/resource_test.go`
 
-- [ ] **Step 1: Add the handler + testable helper to `resource.go`.** Add imports `"atlas-maps/character/warp"`, `"atlas-maps/data/map/info"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/field"`, `"github.com/Chronicle20/atlas/libs/atlas-rest/requests"`, `"github.com/google/uuid"`, and `_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"`. Register the route inside `InitResource` (next to the GET line):
+- [x] **Step 1: Add the handler + testable helper to `resource.go`.** Add imports `"atlas-maps/character/warp"`, `"atlas-maps/data/map/info"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/field"`, `"github.com/Chronicle20/atlas/libs/atlas-rest/requests"`, `"github.com/google/uuid"`, and `_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"`. Register the route inside `InitResource` (next to the GET line):
 
 ```go
 r.HandleFunc("/{characterId}/location",
@@ -447,7 +447,7 @@ func changeCharacterLocation(l logrus.FieldLogger, lp Processor, ip info.Process
 
 Add `world "github.com/Chronicle20/atlas/libs/atlas-constants/world"` to the imports (used by the `warpProcessor` interface signature).
 
-- [ ] **Step 2: Write the failing test.** Create `character/location/resource_test.go`:
+- [x] **Step 2: Write the failing test.** Create `character/location/resource_test.go`:
 
 ```go
 package location
@@ -545,17 +545,17 @@ func TestChangeCharacterLocation_NoRow_404(t *testing.T) {
 > this `errors.Is(err, gorm.ErrRecordNotFound)`); if `getByTenantAndCharacterIdProvider`
 > wraps it, adjust the helper's not-found check to match the wrapped sentinel.
 
-- [ ] **Step 3: Run the test to verify it passes.**
+- [x] **Step 3: Run the test to verify it passes.**
 
 Run: `cd services/atlas-maps/atlas.com/maps && go test ./character/location/ -run TestChangeCharacterLocation -v`
 Expected: PASS (3 sub-tests). If the no-row case does not return `gorm.ErrRecordNotFound`, fix the sentinel in both the helper and the test.
 
-- [ ] **Step 4: Build, vet, and race-test the whole module.**
+- [x] **Step 4: Build, vet, and race-test the whole module.**
 
 Run: `cd services/atlas-maps/atlas.com/maps && go build ./... && go vet ./... && go test -race ./...`
 Expected: clean.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/character/location/
@@ -575,7 +575,7 @@ Introduce the read+write client for atlas-maps location, used by the dialog (Tas
 - Create: `services/atlas-ui/src/lib/hooks/api/useCharacterLocation.ts`
 - Create: `services/atlas-ui/src/services/api/__tests__/locations.service.test.ts`
 
-- [ ] **Step 1: Add the location type.** Create `types/models/location.ts`:
+- [x] **Step 1: Add the location type.** Create `types/models/location.ts`:
 
 ```typescript
 export interface CharacterLocationAttributes {
@@ -596,7 +596,7 @@ export interface ChangeMapData {
 }
 ```
 
-- [ ] **Step 2: Add the service.** Create `services/api/locations.service.ts`, mirroring `maps.service.ts`'s envelope pattern:
+- [x] **Step 2: Add the service.** Create `services/api/locations.service.ts`, mirroring `maps.service.ts`'s envelope pattern:
 
 ```typescript
 import { api } from "@/services/api/client"; // confirm the actual client import used by characters.service.ts
@@ -629,7 +629,7 @@ export const locationsService = {
 > and `patch` are the same methods `characters.service.ts` and `maps.service.ts`
 > already use.
 
-- [ ] **Step 3: Add the read hook.** Create `lib/hooks/api/useCharacterLocation.ts`:
+- [x] **Step 3: Add the read hook.** Create `lib/hooks/api/useCharacterLocation.ts`:
 
 ```typescript
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
@@ -665,7 +665,7 @@ export function useCharacterLocation(
 > Note: match the `Tenant` import path and the `enabled`/`retry` conventions to
 > `lib/hooks/api/useCharacterEffectiveStats.ts` exactly.
 
-- [ ] **Step 4: Write the failing service test.** Create `services/api/__tests__/locations.service.test.ts`:
+- [x] **Step 4: Write the failing service test.** Create `services/api/__tests__/locations.service.test.ts`:
 
 ```typescript
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -702,17 +702,17 @@ describe("locationsService", () => {
 > `services/api/__tests__/` (e.g. `characterRender.service.test.ts`) so the
 > `vi.mock` target matches the real client module path.
 
-- [ ] **Step 5: Run the test.**
+- [x] **Step 5: Run the test.**
 
 Run: `cd services/atlas-ui && npx vitest run src/services/api/__tests__/locations.service.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Type-check.**
+- [x] **Step 6: Type-check.**
 
 Run: `cd services/atlas-ui && npm run build`
 Expected: clean (tsc compiles the new files + test).
 
-- [ ] **Step 7: Commit.**
+- [x] **Step 7: Commit.**
 
 ```bash
 git add services/atlas-ui/src/types/models/location.ts services/atlas-ui/src/services/api/locations.service.ts services/atlas-ui/src/lib/hooks/api/useCharacterLocation.ts services/atlas-ui/src/services/api/__tests__/locations.service.test.ts
@@ -730,11 +730,11 @@ Read current map from `GET .../location` and write via `PATCH .../location` (FR-
 - Modify: `services/atlas-ui/src/components/features/characters/ChangeMapDialog.tsx`
 - Create: `services/atlas-ui/src/components/features/characters/__tests__/ChangeMapDialog.test.tsx`
 
-- [ ] **Step 1: Read the current component fully** to capture its prop shape and the four `character.attributes.mapId` sites (initial value ~19, validation ~51, reset ~94, description ~156) and the `charactersService.update` write (~90).
+- [x] **Step 1: Read the current component fully** to capture its prop shape and the four `character.attributes.mapId` sites (initial value ~19, validation ~51, reset ~94, description ~156) and the `charactersService.update` write (~90).
 
 Run: `cat services/atlas-ui/src/components/features/characters/ChangeMapDialog.tsx`
 
-- [ ] **Step 2: Replace the current-map source and the write call.** Make these edits:
+- [x] **Step 2: Replace the current-map source and the write call.** Make these edits:
   1. Import the hook and service:
      ```typescript
      import { useCharacterLocation } from "@/lib/hooks/api/useCharacterLocation";
@@ -772,7 +772,7 @@ Run: `cat services/atlas-ui/src/components/features/characters/ChangeMapDialog.t
   Remove the now-unused `charactersService` import **only if** nothing else in
   the file uses it.
 
-- [ ] **Step 3: Write the failing component test.** Create `__tests__/ChangeMapDialog.test.tsx`. Mock the location hook and the service; assert the dialog shows the location-sourced current map and writes via `locationsService.changeMap`:
+- [x] **Step 3: Write the failing component test.** Create `__tests__/ChangeMapDialog.test.tsx`. Mock the location hook and the service; assert the dialog shows the location-sourced current map and writes via `locationsService.changeMap`:
 
 ```tsx
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -818,17 +818,17 @@ describe("ChangeMapDialog", () => {
 > test (Task 3) plus a lighter test that the dialog's submit handler calls
 > `locationsService.changeMap` — but prefer the full render test.
 
-- [ ] **Step 4: Run the test.**
+- [x] **Step 4: Run the test.**
 
 Run: `cd services/atlas-ui && npx vitest run src/components/features/characters/__tests__/ChangeMapDialog.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Type-check.**
+- [x] **Step 5: Type-check.**
 
 Run: `cd services/atlas-ui && npm run build`
 Expected: clean.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/atlas-ui/src/components/features/characters/ChangeMapDialog.tsx services/atlas-ui/src/components/features/characters/__tests__/ChangeMapDialog.test.tsx
@@ -846,9 +846,9 @@ Source the "Map" column from a per-row location query, keep the link, degrade gr
 - Modify: `services/atlas-ui/src/pages/characters-columns.tsx`
 - Create (if needed): a small cell component `services/atlas-ui/src/components/features/characters/CharacterMapCell.tsx`
 
-- [ ] **Step 1: Read the columns file and confirm how cells access `tenant`** (the `getColumns(tenant, …)` factory at ~line 39 passes `tenant` in). Run: `sed -n '1,200p' services/atlas-ui/src/pages/characters-columns.tsx`
+- [x] **Step 1: Read the columns file and confirm how cells access `tenant`** (the `getColumns(tenant, …)` factory at ~line 39 passes `tenant` in). Run: `sed -n '1,200p' services/atlas-ui/src/pages/characters-columns.tsx`
 
-- [ ] **Step 2: Create a per-row cell component** that runs the location hook (a column cell may use hooks because it renders as a React component). Create `components/features/characters/CharacterMapCell.tsx`:
+- [x] **Step 2: Create a per-row cell component** that runs the location hook (a column cell may use hooks because it renders as a React component). Create `components/features/characters/CharacterMapCell.tsx`:
 
 ```tsx
 import { Link } from "react-router"; // match the router import used in characters-columns.tsx
@@ -870,7 +870,7 @@ export function CharacterMapCell({ characterId, tenant }: { characterId: string;
 }
 ```
 
-- [ ] **Step 3: Replace the Map column cell** in `characters-columns.tsx` to render the new component (drop the `accessorKey: "attributes.mapId"` value read; keep a stable `id`):
+- [x] **Step 3: Replace the Map column cell** in `characters-columns.tsx` to render the new component (drop the `accessorKey: "attributes.mapId"` value read; keep a stable `id`):
 
 ```tsx
 {
@@ -884,12 +884,12 @@ export function CharacterMapCell({ characterId, tenant }: { characterId: string;
 
 Add the import `import { CharacterMapCell } from "@/components/features/characters/CharacterMapCell";`. If any sorting/filtering referenced `attributes_mapId`, remove those references (the column is no longer backed by a character field).
 
-- [ ] **Step 4: Type-check + run UI tests.**
+- [x] **Step 4: Type-check + run UI tests.**
 
 Run: `cd services/atlas-ui && npm run build && npx vitest run`
 Expected: clean / PASS. Fix any test or call site that referenced the old `attributes.mapId` column accessor.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add services/atlas-ui/src/pages/characters-columns.tsx services/atlas-ui/src/components/features/characters/CharacterMapCell.tsx
@@ -906,19 +906,19 @@ Now that no UI code reads `mapId` off the character resource, remove it from the
 **Files:**
 - Modify: `services/atlas-ui/src/types/models/character.ts`
 
-- [ ] **Step 1: Remove `mapId: number;`** from `CharacterAttributes` (line ~34) and `mapId?: number;` from `UpdateCharacterData` (line ~44).
+- [x] **Step 1: Remove `mapId: number;`** from `CharacterAttributes` (line ~34) and `mapId?: number;` from `UpdateCharacterData` (line ~44).
 
-- [ ] **Step 2: Find any remaining readers.**
+- [x] **Step 2: Find any remaining readers.**
 
 Run: `cd services/atlas-ui && grep -rn "attributes.mapId\|\.mapId" src --include=*.ts --include=*.tsx | grep -vi location`
 Expected: no character-resource readers remain (location-typed `.mapId` reads are fine). Fix any stragglers (e.g. an optimistic-update spread in `useCharacters.ts` that referenced `mapId`).
 
-- [ ] **Step 3: Type-check + tests (the build type-checks tests too).**
+- [x] **Step 3: Type-check + tests (the build type-checks tests too).**
 
 Run: `cd services/atlas-ui && npm run build && npx vitest run`
 Expected: clean / PASS. If `useUpdateCharacter`'s optimistic update or any test still references `mapId`, update it in this commit.
 
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.**
 
 ```bash
 git add services/atlas-ui/src/types/models/character.ts services/atlas-ui/src/lib/hooks/api/useCharacters.ts
@@ -937,7 +937,7 @@ Build foreign-member fields from atlas-maps location (full world/channel/map/ins
 - Modify: `services/atlas-parties/atlas.com/parties/character/processor.go:260-272`
 - Modify: `services/atlas-parties/atlas.com/parties/character/rest.go` (drop `MapId` at lines 38 and 103)
 
-- [ ] **Step 1: Add the location client.** Create `location/requests.go` — a verbatim copy of atlas-character's client (`services/atlas-character/atlas.com/character/location/requests.go`), package `location`, module-local imports unchanged (it only depends on shared libs):
+- [x] **Step 1: Add the location client.** Create `location/requests.go` — a verbatim copy of atlas-character's client (`services/atlas-character/atlas.com/character/location/requests.go`), package `location`, module-local imports unchanged (it only depends on shared libs):
 
 ```go
 package location
@@ -1000,7 +1000,7 @@ func GetField(l logrus.FieldLogger, ctx context.Context, characterId uint32) (fi
 }
 ```
 
-- [ ] **Step 2: Switch the member field construction to location.** In `character/processor.go`, change the `ByIdProvider` fallback (currently `f := field.NewBuilder(fm.WorldId(), 0, fm.MapId()).Build()` at line 268) to:
+- [x] **Step 2: Switch the member field construction to location.** In `character/processor.go`, change the `ByIdProvider` fallback (currently `f := field.NewBuilder(fm.WorldId(), 0, fm.MapId()).Build()` at line 268) to:
 
 ```go
 fm, ferr := p.GetForeignCharacterInfo(characterId)
@@ -1016,17 +1016,17 @@ c = GetRegistry().Create(p.ctx, f, characterId, fm.Name(), fm.Level(), fm.JobId(
 
 Add the import `"atlas-parties/location"`. On a location lookup failure (incl. `ErrNotFound`), the field falls back to world-only with channel/map 0 — at least as good as the prior hardcoded-channel-0 behavior, and no longer relies on the soon-deleted echo.
 
-- [ ] **Step 3: Drop the `MapId` mirror field.** In `character/rest.go`, remove the `MapId _map.Id \`json:"mapId"\`` field (line 38) and the `mapId: rm.MapId,` line in `ExtractForeign` (line 103). Remove the `_map` import if it becomes unused. Remove the `ForeignModel.mapId` field and its getter if present (`character/model.go`) — grep first; if `ForeignModel.MapId()` has no remaining callers after Step 2, delete it.
+- [x] **Step 3: Drop the `MapId` mirror field.** In `character/rest.go`, remove the `MapId _map.Id \`json:"mapId"\`` field (line 38) and the `mapId: rm.MapId,` line in `ExtractForeign` (line 103). Remove the `_map` import if it becomes unused. Remove the `ForeignModel.mapId` field and its getter if present (`character/model.go`) — grep first; if `ForeignModel.MapId()` has no remaining callers after Step 2, delete it.
 
 Run: `cd services/atlas-parties/atlas.com/parties && grep -rn "MapId\|mapId\|\.mapId" character/ | grep -v _test.go`
 Expected: no references to the foreign-character mapId remain.
 
-- [ ] **Step 4: Build, vet, race-test.**
+- [x] **Step 4: Build, vet, race-test.**
 
 Run: `cd services/atlas-parties/atlas.com/parties && go build ./... && go vet ./... && go test -race ./...`
 Expected: clean. Fix any test that constructed a `ForeignRestModel`/`ForeignModel` with `MapId`.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add services/atlas-parties/atlas.com/parties/
@@ -1045,9 +1045,9 @@ git branch --show-current
 - Modify: `services/atlas-consumables/atlas.com/consumables/consumable/processor.go` (`ConsumeSummoningSack`, ~lines 419-440)
 - Modify: `services/atlas-consumables/atlas.com/consumables/character/rest.go:38` and `character/model.go:207`
 
-- [ ] **Step 1: Add the location client.** Create `location/requests.go` — the same client as Task 7 Step 1, but `package location` under the consumables module (imports are shared libs only, so the file is byte-identical to Task 7's). Copy it verbatim.
+- [x] **Step 1: Add the location client.** Create `location/requests.go` — the same client as Task 7 Step 1, but `package location` under the consumables module (imports are shared libs only, so the file is byte-identical to Task 7's). Copy it verbatim.
 
-- [ ] **Step 2: Repoint the two `c.MapId()` reads.** In `ConsumeSummoningSack`, after `c, ci := fc.Get(), fi.Get()`, fetch the location field once and use it for both the position lookup and the spawn field:
+- [x] **Step 2: Repoint the two `c.MapId()` reads.** In `ConsumeSummoningSack`, after `c, ci := fc.Get(), fi.Get()`, fetch the location field once and use it for both the position lookup and the spawn field:
 
 ```go
 c, ci := fc.Get(), fi.Get()
@@ -1076,17 +1076,17 @@ for _, msm := range ci.MonsterSummons() {
 
 Add the import `"atlas-consumables/location"`. (`field`, `ch`, `c.X()`, `c.Y()` are already in scope.)
 
-- [ ] **Step 3: Drop the mirror `MapId`.** Remove `MapId _map.Id \`json:"mapId"\`` from `character/rest.go:38`, the `mapId: rm.MapId,` in `Extract`, and the `MapId()` getter at `character/model.go:207` plus the `mapId` struct field. Remove the now-unused `_map` import in those files if applicable.
+- [x] **Step 3: Drop the mirror `MapId`.** Remove `MapId _map.Id \`json:"mapId"\`` from `character/rest.go:38`, the `mapId: rm.MapId,` in `Extract`, and the `MapId()` getter at `character/model.go:207` plus the `mapId` struct field. Remove the now-unused `_map` import in those files if applicable.
 
 Run: `cd services/atlas-consumables/atlas.com/consumables && grep -rn "c.MapId()\|m.MapId()\|\.MapId()" consumable/ character/ | grep -v _test.go`
 Expected: the only remaining `.MapId()` calls are on `field.Model` values (`m` from `GetMap`, `lf` from location, `toField`), **never** on the `character.Model` (`c`).
 
-- [ ] **Step 4: Build, vet, race-test.**
+- [x] **Step 4: Build, vet, race-test.**
 
 Run: `cd services/atlas-consumables/atlas.com/consumables && go build ./... && go vet ./... && go test -race ./...`
 Expected: clean. Fix any test constructing the character `RestModel`/`Model` with `MapId`.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add services/atlas-consumables/atlas.com/consumables/
@@ -1105,11 +1105,11 @@ git branch --show-current
 - Modify: `services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go:~397`
 - Modify: `services/atlas-query-aggregator/atlas.com/query-aggregator/character/rest.go:39` and `character/model.go:218`
 
-- [ ] **Step 1: Add the location client.** Create `location/requests.go` — same client as Task 7 Step 1, `package location` under the query-aggregator module. Copy verbatim.
+- [x] **Step 1: Add the location client.** Create `location/requests.go` — same client as Task 7 Step 1, `package location` under the query-aggregator module. Copy verbatim.
 
-- [ ] **Step 2: Read the `MapCondition` evaluation context.** Run: `sed -n '360,450p' services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to see how `character` and the logger/context are available where `actualValue = int(character.MapId())` runs.
+- [x] **Step 2: Read the `MapCondition` evaluation context.** Run: `sed -n '360,450p' services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go` to see how `character` and the logger/context are available where `actualValue = int(character.MapId())` runs.
 
-- [ ] **Step 3: Repoint the condition.** Replace `actualValue = int(character.MapId())` with a location lookup. The validation runs with a logger + context in scope (the same ones used for the character fetch); use them:
+- [x] **Step 3: Repoint the condition.** Replace `actualValue = int(character.MapId())` with a location lookup. The validation runs with a logger + context in scope (the same ones used for the character fetch); use them:
 
 ```go
 case MapCondition:
@@ -1132,17 +1132,17 @@ case MapCondition:
 > thread them in from the caller (the function that already fetched the character
 > via the REST client has them).
 
-- [ ] **Step 4: Drop the mirror `MapId`.** Remove `MapId _map.Id \`json:"mapId"\`` from `character/rest.go:39`, the `mapId: m.MapId,` in `Extract` (line ~168), and the `MapId()` getter + `mapId` field at `character/model.go:218-220`. Remove unused `_map` import where applicable.
+- [x] **Step 4: Drop the mirror `MapId`.** Remove `MapId _map.Id \`json:"mapId"\`` from `character/rest.go:39`, the `mapId: m.MapId,` in `Extract` (line ~168), and the `MapId()` getter + `mapId` field at `character/model.go:218-220`. Remove unused `_map` import where applicable.
 
 Run: `cd services/atlas-query-aggregator/atlas.com/query-aggregator && grep -rn "character.MapId()\|\.MapId()\|mapId" character/ validation/ | grep -v _test.go`
 Expected: no remaining read of the character mirror's `MapId`; `MapCondition` now reads `lf.MapId()`.
 
-- [ ] **Step 5: Build, vet, race-test.**
+- [x] **Step 5: Build, vet, race-test.**
 
 Run: `cd services/atlas-query-aggregator/atlas.com/query-aggregator && go build ./... && go vet ./... && go test -race ./...`
 Expected: clean. Update any `MapCondition` test to stub the location lookup (or assert via the location `baseURLProvider` seam) — confirm how existing validation tests inject the character; mirror that for location.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/atlas-query-aggregator/atlas.com/query-aggregator/
@@ -1168,7 +1168,7 @@ Do each service as its own commit. The edit is mechanical: delete the struct fie
 | atlas-cashshop (`atlas-cashshop`) | `character/rest.go:38` | `character/rest.go:116` `mapId: m.MapId,` | `character/model.go:205` |
 | atlas-messengers (`atlas-messengers`) | `character/rest.go:37` (`ForeignRestModel`) | `character/rest.go:102` `mapId: rm.MapId,` | `character/model.go:128` (`ForeignModel`) |
 
-- [ ] **Step 1 (atlas-channel):** Remove the `MapId` field (`character/rest.go:38`), the `mapId: m.MapId,` extract line, and the `MapId()` getter + `mapId` field in `model.go`. Verify nothing reads it: `cd services/atlas-channel/atlas.com/channel && grep -rn "\.MapId()\|mapId" character/ | grep -v _test.go` — remaining `.MapId()` calls must be on live-session `field.Model` (e.g. `portal/processor.go`), not the character mirror. Then `go build ./... && go vet ./... && go test -race ./...`.
+- [x] **Step 1 (atlas-channel):** Remove the `MapId` field (`character/rest.go:38`), the `mapId: m.MapId,` extract line, and the `MapId()` getter + `mapId` field in `model.go`. Verify nothing reads it: `cd services/atlas-channel/atlas.com/channel && grep -rn "\.MapId()\|mapId" character/ | grep -v _test.go` — remaining `.MapId()` calls must be on live-session `field.Model` (e.g. `portal/processor.go`), not the character mirror. Then `go build ./... && go vet ./... && go test -race ./...`.
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/
@@ -1176,7 +1176,7 @@ git commit -m "refactor(atlas-channel): strip dead mapId character mirror field 
 git branch --show-current
 ```
 
-- [ ] **Step 2 (atlas-login):** Same removal (note the builder form `SetMapId(m.MapId)` — remove that builder call; if `SetMapId` becomes unused on the builder, remove the builder method too). Verify: `cd services/atlas-login/atlas.com/login && grep -rn "\.MapId()\|MapId\|mapId" character/ | grep -v _test.go` — `character_list.go` map use comes from `location.GetField`, not the mirror. Then build/vet/test.
+- [x] **Step 2 (atlas-login):** Same removal (note the builder form `SetMapId(m.MapId)` — remove that builder call; if `SetMapId` becomes unused on the builder, remove the builder method too). Verify: `cd services/atlas-login/atlas.com/login && grep -rn "\.MapId()\|MapId\|mapId" character/ | grep -v _test.go` — `character_list.go` map use comes from `location.GetField`, not the mirror. Then build/vet/test.
 
 ```bash
 git add services/atlas-login/atlas.com/login/character/
@@ -1184,7 +1184,7 @@ git commit -m "refactor(atlas-login): strip dead mapId character mirror field (t
 git branch --show-current
 ```
 
-- [ ] **Step 3 (atlas-npc-shops):** Same removal (module is `atlas-npc`). Verify the only `MapId` references left are Kafka event bodies in `kafka/message/character/`, not the GET mirror. Build/vet/test.
+- [x] **Step 3 (atlas-npc-shops):** Same removal (module is `atlas-npc`). Verify the only `MapId` references left are Kafka event bodies in `kafka/message/character/`, not the GET mirror. Build/vet/test.
 
 ```bash
 git add services/atlas-npc-shops/atlas.com/npc/character/
@@ -1192,7 +1192,7 @@ git commit -m "refactor(atlas-npc-shops): strip dead mapId character mirror fiel
 git branch --show-current
 ```
 
-- [ ] **Step 4 (atlas-cashshop):** Same removal. Verify no `.MapId()` reads remain. Build/vet/test.
+- [x] **Step 4 (atlas-cashshop):** Same removal. Verify no `.MapId()` reads remain. Build/vet/test.
 
 ```bash
 git add services/atlas-cashshop/atlas.com/cashshop/character/
@@ -1200,7 +1200,7 @@ git commit -m "refactor(atlas-cashshop): strip dead mapId character mirror field
 git branch --show-current
 ```
 
-- [ ] **Step 5 (atlas-messengers):** Remove from `ForeignRestModel` (`rest.go:37`), `ExtractForeign` (`rest.go:102`), and `ForeignModel.MapId()` + `mapId` field (`model.go:128`). Verify only Kafka event bodies reference `MapId`. Build/vet/test.
+- [x] **Step 5 (atlas-messengers):** Remove from `ForeignRestModel` (`rest.go:37`), `ExtractForeign` (`rest.go:102`), and `ForeignModel.MapId()` + `mapId` field (`model.go:128`). Verify only Kafka event bodies reference `MapId`. Build/vet/test.
 
 ```bash
 git add services/atlas-messengers/atlas.com/messengers/character/
@@ -1218,9 +1218,9 @@ Only after Tasks 7–10: delete the dead `Update` branch, remove the `Transform`
 - Modify: `services/atlas-character/atlas.com/character/character/processor.go` (delete the `if input.MapId != 0 { … Debug … }` block)
 - Modify: `services/atlas-character/atlas.com/character/character/rest.go` (Transform shim, projection, `Instance` field)
 
-- [ ] **Step 1: Delete the dead write branch.** In `processor.go`, remove the entire block (the comment + the `if input.MapId != 0 { p.l.WithFields(...).Debug(...) }`). Leave the surrounding `changes`/early-return logic intact.
+- [x] **Step 1: Delete the dead write branch.** In `processor.go`, remove the entire block (the comment + the `if input.MapId != 0 { p.l.WithFields(...).Debug(...) }`). Leave the surrounding `changes`/early-return logic intact.
 
-- [ ] **Step 2: Remove the Transform shim.** In `rest.go`, change `Transform` so it no longer calls `location.GetField`. The GET no longer emits location:
+- [x] **Step 2: Remove the Transform shim.** In `rest.go`, change `Transform` so it no longer calls `location.GetField`. The GET no longer emits location:
 
 ```go
 // Transform produces the JSON:API projection for a character. MapId/Instance
@@ -1275,19 +1275,19 @@ func transformWithTemporal(m Model, td temporalData) RestModel {
 }
 ```
 
-- [ ] **Step 3: Drop `Instance` from `RestModel`; keep `MapId` (input-only).** In the `RestModel` struct, remove the `Instance uuid.UUID \`json:"instance"\`` field (line 45). Keep `MapId _map.Id \`json:"mapId"\`` (line 44) and add a comment noting it is create-input only and absent from GET responses. Remove the `field`/`location`/`uuid` imports from `rest.go` **only if** they become unused after removing the shim (the file may still use `uuid` elsewhere — grep before deleting). `Extract` keeps populating from `input.MapId` for create — leave that path as-is.
+- [x] **Step 3: Drop `Instance` from `RestModel`; keep `MapId` (input-only).** In the `RestModel` struct, remove the `Instance uuid.UUID \`json:"instance"\`` field (line 45). Keep `MapId _map.Id \`json:"mapId"\`` (line 44) and add a comment noting it is create-input only and absent from GET responses. Remove the `field`/`location`/`uuid` imports from `rest.go` **only if** they become unused after removing the shim (the file may still use `uuid` elsewhere — grep before deleting). `Extract` keeps populating from `input.MapId` for create — leave that path as-is.
 
-- [ ] **Step 4: Verify no other call site broke.** `Transform` and `transformWithTemporal` signatures changed (the `f` param is gone).
+- [x] **Step 4: Verify no other call site broke.** `Transform` and `transformWithTemporal` signatures changed (the `f` param is gone).
 
 Run: `cd services/atlas-character/atlas.com/character && grep -rn "transformWithTemporal\|location.GetField" character/`
 Expected: `transformWithTemporal` callers updated to the new 2-arg signature; `location.GetField` still appears at `processor.go:391, 425, 1144, 1194` (those stay) but **no longer** in `rest.go`.
 
-- [ ] **Step 5: Build, vet, race-test.**
+- [x] **Step 5: Build, vet, race-test.**
 
 Run: `cd services/atlas-character/atlas.com/character && go build ./... && go vet ./... && go test -race ./...`
 Expected: clean. Update any test asserting `mapId`/`instance` on a GET response (e.g. a rest/transform test) to no longer expect them; update tests calling `transformWithTemporal` with the old 3-arg signature.
 
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ```bash
 git add services/atlas-character/atlas.com/character/character/
@@ -1301,7 +1301,7 @@ git branch --show-current
 
 Run the complete CLAUDE.md gate across every changed module before declaring done.
 
-- [ ] **Step 1: Per-module Go gate.** From the worktree root, for each changed Go module run build + vet + race tests:
+- [x] **Step 1: Per-module Go gate.** From the worktree root, for each changed Go module run build + vet + race tests:
 
 ```bash
 for m in \
@@ -1321,7 +1321,7 @@ done
 
 Expected: every module clean.
 
-- [ ] **Step 2: redis-key-guard.** From the repo/worktree root:
+- [x] **Step 2: redis-key-guard.** From the repo/worktree root:
 
 ```bash
 GOWORK=off tools/redis-key-guard.sh
@@ -1329,7 +1329,7 @@ GOWORK=off tools/redis-key-guard.sh
 
 Expected: clean (this task adds no raw go-redis usage).
 
-- [ ] **Step 3: docker bake for any service whose `go.mod`/`go.sum` changed.** Check first:
+- [x] **Step 3: docker bake for any service whose `go.mod`/`go.sum` changed.** Check first:
 
 ```bash
 git diff --name-only main... | grep -E 'services/.*/go\.(mod|sum)$' || echo "no go.mod/go.sum changes"
@@ -1343,7 +1343,7 @@ docker buildx bake atlas-maps atlas-parties atlas-consumables atlas-query-aggreg
 
 Expected: all targets build. (No new shared lib is added, so no Dockerfile/`go.work` edit is required.)
 
-- [ ] **Step 4: atlas-ui build + tests.**
+- [x] **Step 4: atlas-ui build + tests.**
 
 ```bash
 cd services/atlas-ui && npm run build && npx vitest run
@@ -1351,7 +1351,7 @@ cd services/atlas-ui && npm run build && npx vitest run
 
 Expected: clean / PASS.
 
-- [ ] **Step 5: Final commit (only if Step 3 surfaced doc/lockfile changes or any fix was needed).**
+- [x] **Step 5: Final commit (only if Step 3 surfaced doc/lockfile changes or any fix was needed).**
 
 ```bash
 git add -A && git commit -m "chore(task-087): verification gate fixes"

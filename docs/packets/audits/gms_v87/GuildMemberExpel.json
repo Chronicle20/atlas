@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (40)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "characterId",
+      "IDAComment": "charId",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,19 +38,11 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "charName",
+      "IDAComment": "name",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "expellerName",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

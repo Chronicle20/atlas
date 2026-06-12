@@ -10,29 +10,30 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "message text",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "update_time (remote tick)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "nEmotion (emote ID, packed with extra data in v95)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 4,
+      "IDAComment": "message text",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "nEmotion",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

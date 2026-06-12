@@ -1,0 +1,3 @@
+# OnRepeat (← `Foo::OnRepeat`)
+
+- **Verdict:** ❌

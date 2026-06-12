@@ -10,5 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | int32 `roomId` | ✅ |  |
+| 0 | byte | byte `sub-op = 0 (ENTER) — messenger Operation mode byte` | ✅ |  |
+| 1 | int32 | int32 `messengerId — room id` | ✅ |  |
 

@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (3)",
+      "IDAComment": "mode byte (3 = Display)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "item count",
+      "IDAComment": "note count (loop)",
       "Verdict": 0,
       "Note": ""
     },
@@ -28,26 +28,26 @@
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "item[i].senderFlag (loop — sub_4E4ADB)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "note.id",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "item[i].noteId",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 4,
+      "IDAComment": "note.senderName",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "item[i].senderName",
+      "IDAComment": "note.message",
       "Verdict": 0,
       "Note": ""
     },
@@ -55,29 +55,21 @@
       "Index": 5,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "item[i].message",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 5,
+      "IDAComment": "note.timestamp FILETIME (8 bytes)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "item[i].timestamp",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 7,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "item[i].flags",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAComment": "note.flag",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

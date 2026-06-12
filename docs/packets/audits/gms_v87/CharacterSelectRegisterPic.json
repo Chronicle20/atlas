@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "sSPW (PIC, v4==1 branch, opcode 0x1E)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 0,
+      "IDAComment": "mode (literal 1u)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -46,11 +46,12 @@
       "Index": 4,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "sSPW (PIC, appended last)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

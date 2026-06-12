@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte = 2 (Remove/OnLeave)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,10 +20,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "position (slot 0–2)",
+      "IDAComment": "position",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

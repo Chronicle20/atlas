@@ -1,0 +1,9 @@
+{
+ "binary":"x","md5":"x","generated_at":"t",
+ "functions":{
+  "Foo::OnBar#One":{"address":"0x100","direction":"clientbound",
+    "calls":[{"op":"Decode1","guard":""},{"op":"Decode4","guard":""}]},
+  "Foo::OnBar#Two":{"address":"0x100","direction":"clientbound",
+    "calls":[{"op":"Decode1","guard":""},{"op":"Decode2","guard":""}]}
+ }
+}

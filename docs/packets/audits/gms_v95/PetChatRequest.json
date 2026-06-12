@@ -11,7 +11,7 @@
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER) from this-\u003em_liPetLockerSN",
+      "IDAComment": "petLockerSN (8 bytes _LARGE_INTEGER)",
       "Verdict": 0,
       "Note": ""
     },
@@ -19,17 +19,17 @@
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "action type",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "updateTime/remote tick (v95+)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "action no",
+      "IDAComment": "nType (action type)",
       "Verdict": 0,
       "Note": ""
     },
@@ -37,20 +37,21 @@
       "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "chat text (ZXString)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 0,
+      "IDAComment": "nAction (action no)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "chat text (ZXString)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

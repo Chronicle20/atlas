@@ -353,3 +353,29 @@ Logged from `docs/tasks/task-037-character-presets/` design §7.
 - [ ] **AdminBootstrapWizard saga transactionId polling** — replace the "mutation resolved = success" assumption with per-row saga status polling (atlas-ui `AdminBootstrapWizard.tsx` step 4).
 - [ ] **`<ItemPicker>` / `<SkillPicker>` components** — replace free-text uint32 inputs in `services/atlas-ui/src/pages/{templates,tenants}-character-presets-form.tsx` with searchable pickers backed by atlas-data.
 - [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with Cygnus / Aran / Resistance / Legend 4th-job presets.
+
+## task-081 packet-audit validation follow-ups
+
+Deferred from task-081 (validation-pivot). The exporter + validation toolchain + the
+unattended four-version proof shipped; these refinements were registered rather than
+left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validation-results.md`).
+
+- [ ] **Resolve demangled `Class::Method` helper names** in the MCP client — the new
+  ida-pro-mcp `lookup_funcs` returns "Not found" for demangled names (only addr/`sub_XXXX`/
+  mangled resolve), so named-helper descent yields `Unresolved` spans that lower match
+  scores and suppress high-confidence annotations. Fix (mangle-and-retry or a `func_query`/
+  `find_regex` name search) → higher recall → more confidently-validated `#`-mode shapes.
+- [ ] **Triage the high-confidence divergences** surfaced by `validate` (≈6 across the four
+  versions in the proof run) in IDA: real Atlas wire bug → fix `libs/atlas-packet/...` with a
+  per-version byte test; hand-tracing error → correct the one baseline `calls` entry citing
+  the IDA address. Re-validate to ✅.
+- [ ] **Commit the bootstrapped `dispatch` selector annotations** (V5) into the four
+  `docs/packets/ida-exports/*.json` baselines (additive only; `calls` unchanged) once a
+  human-confirmation pass over the "ambiguous" picks lifts coverage — then re-validation is
+  fully repeatable from committed inputs.
+- [ ] **V7 ledger/guide**: update `docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md` with
+  the `infer`/`validate` + `--ida-port` multi-IDB workflow and the dispatch-selector schema;
+  re-curate the `_pending.md` registries to mark `#`-mode entries as live-verified.
+- [ ] Optional: a `validate` mode that also handles if/else-chain dispatch handlers
+  (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine
+  static-extraction wall; may not be worth the complexity).

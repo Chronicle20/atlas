@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (6)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -19,20 +19,12 @@
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "slot index",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "message text",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAComment": "message",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

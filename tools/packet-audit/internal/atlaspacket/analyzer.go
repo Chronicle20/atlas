@@ -51,6 +51,20 @@ type Call struct {
 	// curation target for the docs opaque-type registry — rather than a generic
 	// unresolved-recurse row.
 	Opaque bool
+	// GroupLen, when > 0 on the FIRST flattened field of an expanded sub-struct,
+	// records how many consecutive flattened fields constitute that sub-struct.
+	// FlattenWithRegistry sets it when it splices a resolved KindRecurse; the diff
+	// uses it so a client-side opaque DecodeBuf (which reads the whole GW_* struct
+	// as one fixed buffer) can absorb the entire field group instead of leaving
+	// the trailing fields as false "atlas extra". The outermost group wins on
+	// nesting (set last). 0 means "not a group head".
+	GroupLen int
+	// RepeatLen, when > 0 on the FIRST flattened field of an inlined loop body,
+	// records how many consecutive fields make up ONE loop iteration. The diff
+	// replicates that body to match the client's N-element run (a fixed-count
+	// loop like guild TitleChange's 5 ranks, written `for range titles` but
+	// flattened to one iteration). 0 means "not a loop-body head".
+	RepeatLen int
 }
 
 // AnalyzeFile parses a single .go (or .go.txt) file and extracts the ordered
@@ -201,6 +215,11 @@ func resolveRecurse(hint string, cc *callCtx) string {
 	case cc.reg.HasType(hint):
 		// Hint already names a registered type — keep it.
 	default:
+		// Local-var composite-literal binding (b := model.Buddy{...} → "Buddy").
+		if t, ok := cc.fieldVars[hint]; ok && t != "" {
+			resolved = t
+			break
+		}
 		if fieldName, ok := cc.rangeVars[hint]; ok {
 			if r, ok := cc.reg.FieldType(cc.enclosing, fieldName); ok && r != "" {
 				resolved = r
@@ -456,6 +475,22 @@ func (cc *callCtx) walk(node ast.Node) {
 	case *ast.ExprStmt:
 		cc.walk(n.X)
 	case *ast.AssignStmt:
+		// Record local-var → struct-type bindings from composite literals so a
+		// later `b.Encode(...)` sub-struct recurse resolves to the TYPE, not the
+		// bare variable name. Without this, `b := model.Buddy{...}; ...
+		// w.WriteByteArray(b.Encode(...))` records RecurseType "b", the registry
+		// lookup misses, and the sub-struct defers as a 🔍 instead of splicing the
+		// GW_Friend fields. Maps "b" → "Buddy".
+		for i, rhs := range n.Rhs {
+			if i >= len(n.Lhs) {
+				break
+			}
+			if id, ok := n.Lhs[i].(*ast.Ident); ok && id.Name != "_" {
+				if t := compositeLitTypeName(rhs); t != "" {
+					cc.fieldVars[id.Name] = t
+				}
+			}
+		}
 		// atlas Decode methods write to receiver fields:
 		//   m.field = r.ReadByte()
 		// The wire op lives on the RHS as a CallExpr. Walk each RHS so we
@@ -490,6 +525,33 @@ func (cc *callCtx) walk(node ast.Node) {
 		if rangeVarName != "" {
 			delete(cc.rangeVars, rangeVarName)
 		}
+	case *ast.SwitchStmt:
+		// A data-dependent switch (`switch m.<field>` / `switch byte(m.x)`) makes
+		// the writer's wire shape depend on a runtime value the flatten can't
+		// resolve — every arm is emitted (flattened) and the diff can't know which
+		// one runs. Tag the arm writes with an "<unparsed:switch ...>" guard
+		// (always-true, so the emitted shape is unchanged) so hasUnresolvedBranch
+		// flags the packet and it is reclassified flat-invalid (🔍), exactly like
+		// a data-dependent if. A version-parseable tag (rare) is left untagged.
+		if n.Init != nil {
+			cc.walk(n.Init)
+		}
+		tagText := ""
+		if n.Tag != nil {
+			var buf strings.Builder
+			printer.Fprint(&buf, cc.fset, n.Tag)
+			tagText = buf.String()
+		}
+		if tagText != "" {
+			if _, err := ParseGuard(tagText); err != nil {
+				g := &GuardExpr{eval: func(GuardContext) bool { return true }, text: "<unparsed:switch " + tagText + ">"}
+				*cc.stack = append(*cc.stack, g)
+				cc.walk(n.Body)
+				*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+				return
+			}
+		}
+		cc.walk(n.Body)
 	case *ast.ForStmt:
 		sub := cc.collectSub(n.Body)
 		cc.appendCall(Call{
@@ -499,6 +561,35 @@ func (cc *callCtx) walk(node ast.Node) {
 			Guard: cc.conjoin(),
 		})
 	case *ast.CallExpr:
+		// Free-function block-writer descent: a call to a package-level helper that
+		// writes a chunk of the wire via a *response.Writer (e.g.
+		// party.WritePartyData(ctx, w, members, leaderId)). Analyze its body and
+		// splice its writes inline. Excludes leaf helpers freeFnPrimitive already
+		// models (WritePaddedString) and guards against recursion.
+		{
+			fname := ""
+			switch fn := n.Fun.(type) {
+			case *ast.Ident:
+				fname = fn.Name
+			case *ast.SelectorExpr:
+				fname = fn.Sel.Name
+			}
+			if fname != "" {
+				// Known free-function leaf primitive (e.g. model.WritePaddedString,
+				// whether called qualified or not) → emit its wire op directly.
+				if p, ok := freeFnPrimitive(fname); ok {
+					cc.appendCall(Call{Kind: KindWrite, Op: p, Line: cc.fset.Position(n.Pos()).Line, Guard: cc.conjoin()})
+					return
+				}
+				// Block-writer helper → descend and splice its writes.
+				if cc.reg != nil {
+					if e, ok := cc.reg.FreeFunc(fname); ok && !cc.helperVisited[fname] {
+						cc.descendFreeFunc(fname, e)
+						return
+					}
+				}
+			}
+		}
 		sel, ok := n.Fun.(*ast.SelectorExpr)
 		if !ok {
 			// Handle free-function helpers like WritePaddedString(w, name, n) that
@@ -859,6 +950,53 @@ func rangeFieldName(x ast.Expr) string {
 // a .Encode/.Decode call. For x.Encode(...): returns "x". For m.sub.Encode(...):
 // returns "sub". Real type resolution requires a full type-check pass; Phase A
 // uses the identifier text as a placeholder for the diff engine to surface.
+// descendFreeFunc analyzes a block-writer helper's body and splices its writes
+// inline at the current position, using the helper's own file/fset for node
+// positions, sharing the parent's output list and guard stack (so the helper's
+// writes inherit any branch guards at the call site), and marking the helper
+// visited to prevent recursion.
+func (cc *callCtx) descendFreeFunc(name string, e *FreeFuncEntry) {
+	visited := cc.helperVisited
+	if visited == nil {
+		visited = map[string]bool{}
+	}
+	visited[name] = true
+	child := &callCtx{
+		reg:           cc.reg,
+		enclosing:     cc.enclosing,
+		pkg:           cc.pkg,
+		rangeVars:     map[string]string{},
+		fieldVars:     map[string]string{},
+		out:           cc.out,
+		stack:         cc.stack,
+		fset:          e.Fset,
+		file:          e.File,
+		helperVisited: visited,
+	}
+	child.walk(e.Body)
+	delete(visited, name)
+}
+
+// compositeLitTypeName returns the struct type name of a composite-literal RHS
+// (or &CompositeLit), so a local-var binding like `b := model.Buddy{...}` or
+// `b := &Buddy{...}` resolves to its type name ("Buddy"). Returns "" when the
+// RHS is not a recognizable struct literal. The package qualifier is dropped;
+// resolveRecurse re-qualifies via the registry.
+func compositeLitTypeName(e ast.Expr) string {
+	switch v := e.(type) {
+	case *ast.UnaryExpr: // &T{...}
+		return compositeLitTypeName(v.X)
+	case *ast.CompositeLit:
+		switch t := v.Type.(type) {
+		case *ast.Ident: // T{...}
+			return t.Name
+		case *ast.SelectorExpr: // pkg.T{...}
+			return t.Sel.Name
+		}
+	}
+	return ""
+}
+
 func receiverTypeHint(x ast.Expr) string {
 	switch v := x.(type) {
 	case *ast.Ident:

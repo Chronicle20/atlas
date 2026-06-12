@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte = 6 (Chat)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,10 +20,11 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "chat line (format: 'name : msg')",
+      "IDAComment": "message",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

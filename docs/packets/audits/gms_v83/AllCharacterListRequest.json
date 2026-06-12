@@ -6,5 +6,6 @@
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/login/serverbound/all_character_list_request.go",
   "Rows": null,
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

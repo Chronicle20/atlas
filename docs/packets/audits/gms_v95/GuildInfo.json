@@ -71,12 +71,12 @@
     },
     {
       "Index": 7,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "title[3]",
-      "Verdict": 3,
-      "Note": "sub-struct: gm — see _substruct/"
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 8,
@@ -89,7 +89,7 @@
     },
     {
       "Index": 9,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "memberCount",
@@ -98,7 +98,7 @@
     },
     {
       "Index": 10,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "count × charId (4 bytes each, packed via DecodeBuffer)",
@@ -107,7 +107,7 @@
     },
     {
       "Index": 11,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "count × GUILDMEMBER (37 bytes each, packed via DecodeBuffer)",
@@ -116,16 +116,16 @@
     },
     {
       "Index": 12,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nMaxMemberNum (capacity)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 13,
-      "AtlasOp": 4,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "nMarkBg (logoBackground)",
@@ -143,12 +143,12 @@
     },
     {
       "Index": 15,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "nMark (logo)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 16,
@@ -156,17 +156,17 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "nMarkColor (logoColor)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 17,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "notice",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 18,
@@ -175,17 +175,36 @@
       "IDAOp": 2,
       "IDAComment": "nPoint (points)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 19,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nAllianceID",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 3
+  "Verdict": 3,
+  "FlatInvalid": true
 }

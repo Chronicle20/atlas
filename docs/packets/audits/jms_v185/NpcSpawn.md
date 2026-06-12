@@ -4,19 +4,19 @@
 - **Atlas file:** `../../libs/atlas-packet/npc/clientbound/spawn.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | int32 `npcId (object id @0x7206a1)` | ✅ |  |
-| 1 | int32 | int32 `templateId (new-entry path @0x7206d8)` | ✅ |  |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `npcId (object id)` | ✅ |  |
+| 1 | int32 | int32 `templateId` | ✅ |  |
+| 2 | int16 | bytes `CNpc::Init(iPacket) — opaque npc position/appearance block` | ✅ |  |
+| 3 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 4 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 5 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 6 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 7 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 8 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
 

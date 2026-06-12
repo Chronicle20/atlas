@@ -10,5 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | int32 `messengerId — room id passed in pData (the invite's room id); op byte (=0) stripped by atlas Operation dispatcher` | ✅ |  |
+| 0 | byte | byte `sub-op = 0 (ENTER) — messenger Operation mode byte` | ✅ |  |
+| 1 | int32 | int32 `messengerId — room id passed in pData (the invite's room id)` | ✅ |  |
 

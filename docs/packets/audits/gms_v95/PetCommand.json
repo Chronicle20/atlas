@@ -11,7 +11,7 @@
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER)",
+      "IDAComment": "petLockerSN (8 bytes — _LARGE_INTEGER, m_liPetLockerSN)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "command mode",
+      "IDAComment": "commandWithName (bCommandWithName bool)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,19 +29,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "reaction index",
+      "IDAComment": "command",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "success flag",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

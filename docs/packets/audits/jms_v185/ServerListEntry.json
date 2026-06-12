@@ -160,5 +160,6 @@
       "Note": "loop body — atlas emits zero iterations (count==0)"
     }
   ],
-  "Verdict": 2
+  "Verdict": 2,
+  "FlatInvalid": false
 }

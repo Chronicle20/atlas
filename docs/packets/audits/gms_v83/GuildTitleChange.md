@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -13,8 +13,8 @@
 | 0 | byte | byte `mode byte (0x3E)` | ✅ |  |
 | 1 | int32 | int32 `guildId (guard)` | ✅ |  |
 | 2 | string | string `title[0]` | ✅ |  |
-| 3 | byte | string `title[1]` | ❌ | atlas: short — missing trailing field |
-| 4 | byte | string `title[2]` | ❌ | atlas: short — missing trailing field |
-| 5 | byte | string `title[3]` | ❌ | atlas: short — missing trailing field |
-| 6 | byte | string `title[4]` | ❌ | atlas: short — missing trailing field |
+| 3 | string | string `title[1]` | ✅ |  |
+| 4 | string | string `title[2]` | ✅ |  |
+| 5 | string | string `title[3]` | ✅ |  |
+| 6 | string | string `title[4]` | ✅ |  |
 

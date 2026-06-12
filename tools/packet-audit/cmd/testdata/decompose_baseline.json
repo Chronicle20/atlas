@@ -1,0 +1,40 @@
+{
+  "binary": "fake.dll",
+  "md5": "00000000000000000000000000000000",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "functions": {
+    "Foo::OnA": {
+      "address": "0x100",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Decode4", "comment": "an int" }
+      ]
+    },
+    "Foo::OnB": {
+      "address": "0x200",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Decode4", "comment": "an int" }
+      ]
+    },
+    "Foo::OnC#X": {
+      "address": "0x300",
+      "direction": "clientbound",
+      "dispatch": [{ "case": 1 }],
+      "calls": [
+        { "op": "Decode1", "comment": "mode byte" }
+      ]
+    },
+    "Foo::OnD": {
+      "address": "0x400",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Decode4", "comment": "an int" },
+        { "op": "Decode2", "comment": "a short" }
+      ]
+    }
+  }
+}

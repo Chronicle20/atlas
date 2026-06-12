@@ -3,7 +3,7 @@
   "IDAName": "CDropPool::OnDropLeaveField",
   "Address": "0x511e20",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "../../libs/atlas-packet/drop/clientbound/destroy.go",
   "Rows": [
     {
@@ -61,5 +61,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

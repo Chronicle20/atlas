@@ -1,0 +1,3 @@
+# OnRepr (← `Foo::OnRepr`)
+
+- **Verdict:** ❌

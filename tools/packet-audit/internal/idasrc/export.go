@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 )
 
 type exportFn struct {
@@ -24,6 +25,10 @@ type exportFn struct {
 	//                       CUserPool::OnUserRemotePacket before dispatch to
 	//                       CUserRemote::OnPetActivated). No slot, since
 	//                       OnPetActivated does not go through OnPetPacket.
+	//   "per-user-remote" → Decode4 characterId (read by
+	//                       CUserPool::OnUserRemotePacket before dispatch to a
+	//                       CUserRemote::On* leaf, e.g. OnReceiveHP /
+	//                       UPDATE_PARTYMEMBER_HP).
 	//
 	// When set, the JSON entry's own "calls" list MUST omit these prefix
 	// bytes — they are added by the resolver. Unrecognized values are
@@ -32,7 +37,20 @@ type exportFn struct {
 	Dispatcher string `json:"dispatcher,omitempty"`
 	// Notes is free-form documentation that does not affect resolution.
 	Notes string `json:"notes,omitempty"`
-	Calls []rawCall `json:"calls"`
+	// Unresolved marks a function the parser could not faithfully trace.
+	// The audit treats it as a known gap, never a false verdict.
+	Unresolved bool `json:"unresolved,omitempty"`
+	// Absent marks a packet whose client-side feature is not implemented in
+	// this baseline (e.g. guild BBS in JMS v185). There is no read order to
+	// compare against, so the audit treats it as N/A — a known gap, never a
+	// false verdict. Atlas may carry a version-generic writer for it, but the
+	// client never reads it, so a flat "all-Atlas-extra" diff is meaningless.
+	Absent bool `json:"absent,omitempty"`
+	// Dispatch, when set, selects a single case path through the function's
+	// switch dispatch. Used by ResolveShape to extract the per-opcode wire
+	// layout; does NOT affect Resolve (which returns all calls verbatim).
+	Dispatch []Selector `json:"dispatch,omitempty"`
+	Calls    []rawCall  `json:"calls"`
 }
 
 type rawCall struct {
@@ -59,6 +77,9 @@ type ExportSource struct {
 	file exportFile
 }
 
+// newExportSourceFromFile wraps an already-parsed exportFile (no disk read).
+func newExportSourceFromFile(f exportFile) *ExportSource { return &ExportSource{file: f} }
+
 func NewExportSource(path string) (*ExportSource, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -82,6 +103,70 @@ func (s *ExportSource) Functions() []string {
 
 func (s *ExportSource) Resolve(ctx context.Context, fname string) (Fields, error) {
 	return s.resolveWithVisited(ctx, fname, map[string]bool{})
+}
+
+// IsAbsent reports whether the named function is flagged absent — its
+// client-side feature is not implemented in this baseline, so there is no read
+// order to audit (N/A). Unknown FNames return false.
+func (s *ExportSource) IsAbsent(fname string) bool {
+	return s.file.Functions[fname].Absent
+}
+
+// BaselineEntry is one hand-authored baseline function exposed to the validate
+// command: its FName, base address, direction, dispatch selectors, and the
+// hand-authored reads resolved to FieldCalls.
+type BaselineEntry struct {
+	FName     string
+	Address   string
+	Direction Direction
+	Dispatch  []Selector
+	HandCalls []FieldCall
+}
+
+// Entries returns every baseline entry with its hand-authored reads resolved to
+// FieldCalls (via Resolve — the hand-authored baseline has no Delegates, so this is
+// just the inline reads; any Delegate/dispatcher is resolved consistently). Sorted by
+// FName for determinism. A resolve error for one entry is recorded as an empty
+// HandCalls (never panics) so a single bad entry does not drop the rest.
+func (s *ExportSource) Entries() []BaselineEntry {
+	ctx := context.Background()
+	out := make([]BaselineEntry, 0, len(s.file.Functions))
+	for fname, raw := range s.file.Functions {
+		dir := DirClientbound
+		if raw.Direction == "serverbound" {
+			dir = DirServerbound
+		}
+		entry := BaselineEntry{
+			FName:     fname,
+			Address:   raw.Address,
+			Direction: dir,
+			Dispatch:  raw.Dispatch,
+		}
+		if f, err := s.Resolve(ctx, fname); err == nil {
+			entry.HandCalls = f.Calls
+			entry.Direction = f.Direction
+		}
+		out = append(out, entry)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].FName < out[j].FName })
+	return out
+}
+
+// ResolveShape resolves fname (full Delegate splicing + guard composition) then
+// extracts only the wire shape selected by that entry's Dispatch path. An entry
+// with no Dispatch returns the full resolved Fields (ExtractShape's empty-dispatch
+// behavior).
+func (s *ExportSource) ResolveShape(ctx context.Context, fname string) (Fields, error) {
+	f, err := s.Resolve(ctx, fname)
+	if err != nil {
+		return Fields{}, err
+	}
+	raw, ok := s.file.Functions[fname]
+	if !ok {
+		return Fields{}, fmt.Errorf("idasrc: function %q not in export", fname)
+	}
+	return Fields{Function: f.Function, Address: f.Address, Direction: f.Direction,
+		Calls: ExtractShape(f, raw.Dispatch)}, nil
 }
 
 // resolveWithVisited is the workhorse that handles recursive Delegate descent.
@@ -166,6 +251,11 @@ func combineGuards(outer, inner string) string {
 //   per-pet-remote  → CUserPool::OnUserRemotePacket reads Decode4 characterId,
 //                     then routes to CUserRemote::OnPetActivated. The slot
 //                     byte is part of the leaf payload here, not the prefix.
+//   per-user-remote → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//                     then routes to a CUserRemote::On* leaf (e.g. OnReceiveHP,
+//                     UPDATE_PARTYMEMBER_HP). Same prefix byte as per-pet-remote
+//                     but the generic remote-user dispatch, not the pet path;
+//                     kept distinct for accurate per-packet documentation.
 //
 // Keep this list narrow and well-tested — adding a new dispatcher requires a
 // matching test in export_test.go.
@@ -186,6 +276,10 @@ func dispatcherPrefix(kind string) []FieldCall {
 		return []FieldCall{
 			{Op: Decode4, Comment: "characterId — auto-prepended via dispatcher: per-pet-remote (CUserPool::OnUserRemotePacket)"},
 		}
+	case "per-user-remote":
+		return []FieldCall{
+			{Op: Decode4, Comment: "characterId — auto-prepended via dispatcher: per-user-remote (CUserPool::OnUserRemotePacket)"},
+		}
 	}
 	return nil
 }
@@ -204,6 +298,8 @@ func parsePrim(s string) (Primitive, error) {
 		return DecodeStr, nil
 	case "DecodeBuffer", "EncodeBuffer", "DecodeBuf", "EncodeBuf":
 		return DecodeBuf, nil
+	case "Unresolved":
+		return Unresolved, nil
 	}
 	return 0, fmt.Errorf("unknown primitive %q", s)
 }

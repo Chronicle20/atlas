@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte = 4 (InviteSent/OnInviteResult)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "msg",
+      "IDAComment": "message",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,10 +29,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "success flag",
+      "IDAComment": "success",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

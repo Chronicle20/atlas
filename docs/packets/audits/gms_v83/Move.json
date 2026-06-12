@@ -26,40 +26,14 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 1,
+      "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "movement: CMovePath::Flush — encoded movement path; tool cannot linearize loop — ack:tool-limitation",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

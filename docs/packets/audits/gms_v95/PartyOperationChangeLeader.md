@@ -4,12 +4,12 @@
 - **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation_change_leader.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `op=6 (CHANGE_PARTY_BOSS)` | ❌ | width mismatch |
-| 1 | byte | int32 `PartyMemberByName = targetCharacterId` | ❌ | atlas: short — missing trailing field |
+| 0 | byte | byte `op=6 (CHANGE_PARTY_BOSS)` | ✅ |  |
+| 1 | int32 | int32 `PartyMemberByName = targetCharacterId` | ✅ |  |
 

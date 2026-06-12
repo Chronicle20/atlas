@@ -458,34 +458,38 @@
    "address": "0x5db9d0",
    "direction": "serverbound",
    "calls": [
-    {
-     "op": "DecodeStr",
-     "comment": "name"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "password"
-    },
-    {
-     "op": "DecodeBuf",
-     "comment": "hwid (16 bytes)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "gameRoomClient"
-    },
-    {
-     "op": "Decode1",
-     "comment": "gameStartMode"
-    },
-    {
-     "op": "Decode1",
-     "comment": "unknown1"
-    },
-    {
-     "op": "Decode1",
-     "comment": "unknown2 (v95 extra byte)"
-    }
+     {
+       "op": "DecodeStr",
+       "comment": "name"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "password"
+     },
+     {
+       "op": "DecodeBuf",
+       "comment": "hwid (16 bytes MachineId)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "gameRoomClient"
+     },
+     {
+       "op": "Decode1",
+       "comment": "gameStartMode"
+     },
+     {
+       "op": "Decode1",
+       "comment": "unknown1"
+     },
+     {
+       "op": "Decode1",
+       "comment": "unknown2"
+     },
+     {
+       "op": "Decode4",
+       "comment": "partnerCode (GMS trailing field)"
+     }
    ]
   },
   "CLogin::SendSelectCharPacket": {
@@ -718,6 +722,13 @@
   "CLogin::OnSetAccountResult#AfterLogin": {
    "address": "0x5d5e80",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "CInPacket::Decode1(iPacket"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5d5e80",
    "calls": [
     {
      "op": "Encode1",
@@ -762,6 +773,13 @@
   "CLogin::SendSelectCharPacket#CharacterSelectWithPic": {
    "address": "0x5da2a0",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5da2a0",
    "calls": [
     {
      "op": "EncodeStr",
@@ -824,6 +842,13 @@
   "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
    "address": "0x5d7550",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5d7550",
    "calls": [
     {
      "op": "EncodeStr",
@@ -850,6 +875,13 @@
   "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
    "address": "0x5d7550",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 3
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5d7550",
    "calls": [
     {
      "op": "Encode4",
@@ -892,6 +924,13 @@
   "CTrunkDlg::OnPacket#ErrorMessage": {
    "address": "0x76a990",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "v2",
+     "case": 24
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x76a990",
    "calls": [
     {
      "op": "Decode1",
@@ -911,31 +950,40 @@
    "address": "0x76a990",
    "direction": "clientbound",
    "calls": [
-    {
-     "op": "Decode1",
-     "comment": "mode (9/13/15/19)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "slotCount (m_nSlotCount)"
-    },
-    {
-     "op": "Decode8",
-     "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "meso (m_nMoney; ONLY if flag&2 — runtime callers never set bit 2)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode"
-    }
+     {
+       "op": "Decode1",
+       "comment": "mode (9/13/15/19)"
+     },
+     {
+       "op": "Decode1",
+       "comment": "slotCount (m_nSlotCount)"
+     },
+     {
+       "op": "Decode8",
+       "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set \u2014 runtime callers never set it)",
+       "guard": "flag & 2"
+     },
+     {
+       "op": "Decode1",
+       "comment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+       "guard": "loop perTab"
+     }
    ]
   },
   "CTrunkDlg::OnPacket#Show": {
    "address": "0x76a990",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "v2",
+     "case": 19
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x76a990",
    "calls": [
     {
      "op": "Decode1",
@@ -1004,6 +1052,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Decode2",
      "comment": "slot (nPOS; mode byte 5 written by dispatcher)"
     },
@@ -1021,6 +1073,10 @@
    "address": "0x7688e0",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Decode4",
      "comment": "amount (signed; +withdraw / -deposit; mode byte 7 written by dispatcher)"
@@ -1310,6 +1366,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Decode4",
      "comment": "update_time (get_update_time)"
     },
@@ -1334,6 +1394,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "DecodeStr",
      "comment": "name (sCharacterName)"
     }
@@ -1343,6 +1407,10 @@
    "address": "0x5397d0",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "DecodeStr",
      "comment": "name (sCharacterName)"
@@ -1367,6 +1435,10 @@
    "address": "0x69b0d0",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Decode2",
      "comment": "count (config blacklist size)"
@@ -1403,6 +1475,10 @@
    "address": "0x764450",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Decode4",
      "comment": "amount (m_nInputNo_Result)"
@@ -1494,6 +1570,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Decode2",
      "comment": "index (nIdx)"
     }
@@ -1527,6 +1607,10 @@
    "address": "0x6801e0",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "DecodeBuffer",
      "comment": "point (tagPOINT x,y = 8 bytes)"
@@ -1590,6 +1674,13 @@
   "CMiniRoomBaseDlg::OnPacketBase#Enter": {
    "address": "0x638f80",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "this->m_apAvatar[v4].p"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x638f80",
    "calls": [
     {
      "op": "Decode1",
@@ -1604,6 +1695,13 @@
   "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess": {
    "address": "0x639500",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x639500",
    "calls": [
     {
      "op": "Decode1",
@@ -1676,6 +1774,13 @@
   "CPersonalShopDlg::OnRefresh#UpdateMerchant": {
    "address": "0x51cc30",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v6"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x51cc30",
    "calls": [
     {
      "op": "Decode1",
@@ -1700,6 +1805,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "DecodeStr",
      "comment": "name (sName; op 0x30)"
     }
@@ -1710,6 +1819,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "DecodeStr",
      "comment": "name (sName; op 0x31)"
     }
@@ -1718,6 +1831,13 @@
   "CPersonalShopDlg::PutItem#Merchant": {
    "address": "0x69c880",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
+   "notes": "inferred-high-confidence (0.80) @0x69c880",
    "calls": [
     {
      "op": "Decode1",
@@ -1763,6 +1883,10 @@
    "address": "0x6987a0",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Decode2",
      "comment": "index (nIdx; op 0x26 entrusted)"
@@ -1870,6 +1994,19 @@
   "CCashShop::OnCashItemResult#OperationError": {
    "address": "0x4969f0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "v6",
+     "case": 68
+    }
+   ],
+   "notes": "inferred-high-confidence (0.67) @0x4969f0",
+   "dispatch": [
+    {
+     "discriminator": "v6",
+     "case": 68
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -1898,6 +2035,13 @@
   "CCashShop::OnCashItemResult#CashItemMovedToCashInventory": {
    "address": "0x495050",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v6"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x495050",
    "calls": [
     {
      "op": "Decode1",
@@ -1945,6 +2089,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode4",
      "comment": "nCommSN (serialNumber)"
     }
@@ -1973,6 +2121,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "EncodeStr",
      "comment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)"
     },
@@ -1998,6 +2150,10 @@
    "address": "0x491b30",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "EncodeStr",
      "comment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)"
@@ -2025,6 +2181,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode4",
      "comment": "nCommSN (serialNumber)"
     },
@@ -2042,6 +2202,10 @@
    "address": "0x482f30",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Encode4",
      "comment": "nCommSN (serialNumber)"
@@ -2071,6 +2235,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode4",
      "comment": "nCommoditySN (serialNumber)"
     }
@@ -2080,6 +2248,10 @@
    "address": "0x487b60",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "EncodeStr",
      "comment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)"
@@ -2165,6 +2337,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "EncodeBuffer",
      "comment": "liSN 8 bytes (serialNumber uint64)"
     },
@@ -2183,6 +2359,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "EncodeBuffer",
      "comment": "liSN 8 bytes (serialNumber uint64)"
     },
@@ -2196,6 +2376,10 @@
    "address": "0x485840",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "EncodeStr",
      "comment": "sSPW secondary-password string (atlas models leading int birthday - MISMATCH)"
@@ -2416,25 +2600,52 @@
    "address": "0xa02fc0",
    "direction": "clientbound",
    "calls": [
-    {
-     "op": "Decode2",
-     "comment": "tDelay (after SecondaryStat::DecodeForLocal delegate)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "MovementAffectingStat byte (conditional: only if SecondaryStat::IsMovementAffectingStat)"
-    }
+     {
+       "op": "DecodeBuffer",
+       "comment": "SecondaryStat::DecodeForLocal \u2014 mask-driven opaque stat block (per-stat values+delays)"
+     },
+     {
+       "op": "Decode2",
+       "comment": "tDelay"
+     },
+     {
+       "op": "Decode1",
+       "comment": "MovementAffectingStat \u2014 conditional: only if SecondaryStat::IsMovementAffectingStat",
+       "guard": "cond IsMovementAffectingStat"
+     }
    ]
   },
   "CUserRemote::OnSetTemporaryStat": {
    "address": "0xb13200",
    "direction": "clientbound",
-   "calls": []
+   "calls": [
+     {
+       "op": "Decode4",
+       "comment": "characterId (read by CUserPool dispatcher before OnSetTemporaryStat)"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "SecondaryStat::DecodeForRemote \u2014 opaque remote stat block"
+     },
+     {
+       "op": "Decode2",
+       "comment": "tDelay"
+     }
+   ]
   },
   "CUserRemote::OnMove": {
    "address": "0x948a80",
    "direction": "clientbound",
-   "calls": []
+   "calls": [
+     {
+       "op": "Decode4",
+       "comment": "characterId (read by CUserPool::OnUserRemotePacket before dispatch)"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "CMovePath::OnMovePacket \u2014 opaque movement path block"
+     }
+   ]
   },
   "CWvsContext::OnChangeSkillRecordResult": {
    "address": "0x9f5f30",
@@ -2503,14 +2714,15 @@
    "address": "0x8f9a70",
    "direction": "clientbound",
    "calls": [
-    {
-     "op": "Decode4",
-     "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
-    },
-    {
-     "op": "Decode1",
-     "comment": "nMode — sub-op byte dispatching to 16+ effect branches (case 0..15+); sub-op enum not modeled by pipeline"
-    }
+     {
+       "op": "Decode4",
+       "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
+     },
+     {
+       "op": "Decode1",
+       "comment": "nMode \u2014 switch discriminator dispatching to 27 effect branches (case 0..26)",
+       "guard": "switch nMode"
+     }
    ]
   },
   "CUserLocal::OnSkillCooltimeSet": {
@@ -2600,6 +2812,13 @@
   "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
    "address": "0x5de17f",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5de17f",
    "calls": [
     {
      "op": "Decode1",
@@ -2618,6 +2837,13 @@
   "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
    "address": "0x5de435",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
+   "notes": "inferred-high-confidence (0.78) @0x5de435",
    "calls": [
     {
      "op": "Decode1",
@@ -4134,43 +4360,44 @@
    "address": "0x6a2340",
    "direction": "serverbound",
    "calls": [
-    {
-     "op": "EncodeBuf",
-     "comment": "petLockerSN (8 bytes — _LARGE_INTEGER) from this->m_liPetLockerSN"
-    },
-    {
-     "op": "Encode1",
-     "comment": "action type"
-    },
-    {
-     "op": "Encode1",
-     "comment": "action no"
-    },
-    {
-     "op": "EncodeStr",
-     "comment": "chat text (ZXString)"
-    }
+     {
+       "op": "EncodeBuf",
+       "comment": "petLockerSN (8 bytes _LARGE_INTEGER)"
+     },
+     {
+       "op": "Encode4",
+       "comment": "updateTime/remote tick (v95+)"
+     },
+     {
+       "op": "Encode1",
+       "comment": "nType (action type)"
+     },
+     {
+       "op": "Encode1",
+       "comment": "nAction (action no)"
+     },
+     {
+       "op": "EncodeStr",
+       "comment": "chat text (ZXString)"
+     }
    ]
   },
   "CPet::ParseCommand": {
    "address": "0x6a3cc0",
    "direction": "serverbound",
+   "note": "COutPacket(201)+EncodeBuffer(m_liPetLockerSN,8)+Encode1(bCommandWithName)+Encode1(command) (verified live v95 @0x6a3cc0). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends — the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
    "calls": [
     {
      "op": "EncodeBuf",
-     "comment": "petLockerSN (8 bytes — _LARGE_INTEGER)"
+     "comment": "petLockerSN (8 bytes — _LARGE_INTEGER, m_liPetLockerSN)"
     },
     {
      "op": "Encode1",
-     "comment": "command mode"
+     "comment": "commandWithName (bCommandWithName bool)"
     },
     {
      "op": "Encode1",
-     "comment": "reaction index"
-    },
-    {
-     "op": "Encode1",
-     "comment": "success flag"
+     "comment": "command"
     }
    ]
   },
@@ -4645,6 +4872,19 @@
   "CWvsContext::OnMemoResult#Display": {
    "address": "0x9f9da0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 3
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9f9da0",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 3
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4689,6 +4929,19 @@
   "CWvsContext::OnMemoResult#SendError": {
    "address": "0x9f9da0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9f9da0",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4759,6 +5012,19 @@
   "CWvsContext::OnFriendResult#CapacityUpdate": {
    "address": "0xa12630",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 21
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa12630",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 21
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4773,6 +5039,19 @@
   "CWvsContext::OnFriendResult#ChannelChange": {
    "address": "0xa12630",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 20
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa12630",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 20
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4805,6 +5084,19 @@
   "CWvsContext::OnFriendResult#Invite": {
    "address": "0xa12630",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 9
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa12630",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 9
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4839,6 +5131,19 @@
   "CWvsContext::OnFriendResult#ListUpdate": {
    "address": "0xa12630",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 18
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa12630",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 18
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4861,6 +5166,19 @@
   "CWvsContext::OnFriendResult#Update": {
    "address": "0xa12630",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 8
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa12630",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 8
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5089,11 +5407,15 @@
   "CUIMessenger::OnCreate": {
    "address": "0x7f59d0",
    "direction": "serverbound",
-   "note": "client accepts a messenger invite; sends op=0 + messengerId. Op-byte consumed by atlas Operation dispatcher; sub-handler sees only messengerId.",
+   "note": "client accepts a messenger invite; COutPacket(143)+Encode1(0,ENTER)+Encode4(messengerId) (verified live v95 @0x7f59d0). The op byte is Atlas's messenger Operation wrapper, composed on the Atlas side by the audit; the export carries it faithfully as the leading field.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "sub-op = 0 (ENTER) — messenger Operation mode byte"
+    },
+    {
      "op": "Encode4",
-     "comment": "messengerId — room id passed in pData (the invite's room id); op byte (=0) stripped by atlas Operation dispatcher"
+     "comment": "messengerId — room id passed in pData (the invite's room id)"
     }
    ]
   },
@@ -5111,11 +5433,15 @@
   "CUIMessenger::SendInviteMsg": {
    "address": "0x7f5820",
    "direction": "serverbound",
-   "note": "client invites a character by name; sends op=3 + targetName. Op-byte consumed by dispatcher; sub-handler sees only targetCharacter.",
+   "note": "client invites a character by name; COutPacket(143)+Encode1(3,INVITE)+EncodeStr(target) (verified live v95 @0x7f5820). The op byte is Atlas's messenger Operation wrapper, composed on the Atlas side by the audit; the export carries it faithfully as the leading field.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "sub-op = 3 (INVITE) — messenger Operation mode byte"
+    },
+    {
      "op": "EncodeStr",
-     "comment": "sTarget — target character name to invite; op byte (=3) stripped by atlas Operation dispatcher"
+     "comment": "sTarget — target character name to invite"
     }
    ]
   },
@@ -5144,6 +5470,10 @@
    "note": "client sends a chat message; sends op=6 + chatLine. Op-byte consumed by dispatcher; sub-handler sees only msg.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "EncodeStr",
      "comment": "sText — formatted chat message ('name : msg'); op byte (=6) stripped by atlas Operation dispatcher"
     }
@@ -5152,6 +5482,7 @@
   "CUser::OnChat": {
    "address": "0x8e86c0",
    "direction": "clientbound",
+   "dispatcher": "per-user-remote",
    "note": "CHATTEXT (0xB5) / CHATTEXT1 (0xB6). characterId (Decode4) is consumed by CUserPool dispatcher before calling OnChat — not visible here. Sub-op mode byte (Decode1 line 65): 0=normal, 1=npc-name. Then DecodeStr(msg), Decode1(bOnlyBalloon). Atlas GeneralChat writes characterId+gm+msg+show; the characterId is the dispatcher prefix, gm maps to the mode byte, show maps to bOnlyBalloon.",
    "calls": [
     {
@@ -5192,27 +5523,31 @@
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) mode=8 (CREATE). Server sends: Decode4(partyId) + Decode4(townPortalFromId) + Decode4(townPortalToId) + Decode2(x) + Decode2(y). Client sets local party state. Atlas Created writes mode+partyId+2×EmptyMapId+2×shorts.",
    "calls": [
-    {
+   {
+     "op": "Decode1",
+     "comment": "mode"
+   },
+   {
      "op": "Decode4",
-     "comment": "partyId — stored as m_nPartyID"
-    },
-    {
+     "comment": "partyId"
+   },
+   {
+     "op": "Decode4",
+     "comment": "mapId1"
+   },
+   {
+     "op": "Decode4",
+     "comment": "mapId2"
+   },
+   {
      "op": "Decode2",
-     "comment": "townPortalFromId (map4 in atlas Created)"
-    },
-    {
+     "comment": "short1"
+   },
+   {
      "op": "Decode2",
-     "comment": "townPortalToId (map4 in atlas Created)"
-    },
-    {
-     "op": "Decode2",
-     "comment": "door x (short)"
-    },
-    {
-     "op": "Decode2",
-     "comment": "door y (short)"
-    }
-   ]
+     "comment": "short2"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Invite": {
    "address": "0xa10b5f",
@@ -5246,105 +5581,174 @@
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) mode=12 with isForced=0 path (DISBAND/LEAVE). Reads: Decode4(partyId)+Decode4(targetId)+Decode1(isForced). Atlas Disband writes mode+partyId+targetId+0x00+partyId — the repeated partyId is a known pattern. When isForced=0 and no party data follows, layout matches atlas structure.",
    "calls": [
-    {
-     "op": "Decode4",
-     "comment": "m_nPartyID = partyId (stored, zeroed after)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "v37 = targetId"
-    },
-    {
+   {
      "op": "Decode1",
-     "comment": "isForced flag — 0=leave/disband, 1=expelled"
-    }
-   ]
+     "comment": "mode byte"
+   },
+   {
+     "op": "Decode4",
+     "comment": "partyId"
+   },
+   {
+     "op": "Decode4",
+     "comment": "targetId"
+   },
+   {
+     "op": "Decode1",
+     "comment": "forced/disconnect flag"
+   },
+   {
+     "op": "Decode4",
+     "comment": "partyId (repeated by atlas disband)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Error": {
    "address": "0xa10e9e",
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) error sub-modes (9,10,13,17,18,22,29,32-34,36). These modes only display string-pool chat messages; no Decode calls beyond the mode byte consumed by the dispatcher. Atlas Error writes mode+name where name is a server-supplied string. Sub-op enum deferred.",
-   "calls": []
+   "dispatch": [
+    {
+     "discriminator": "v5",
+     "case": 22
+    }
+   ],
+   "dispatch": [
+    {
+     "discriminator": "v5",
+     "case": 22
+    }
+   ],
+   "calls": [
+   {
+     "op": "Decode1",
+     "comment": "mode (error code)"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "name"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#ChangeLeader": {
    "address": "0xa1169e",
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) mode=31 (CHANGE_LEADER). Reads: Decode4(newLeaderId) + Decode1(disconnected). Atlas ChangeLeader writes mode+targetCharacterId(4)+disconnected(1). Wire matches.",
    "calls": [
-    {
-     "op": "Decode4",
-     "comment": "v66 = newLeaderId — stored as dwPartyBossCharacterID"
-    },
-    {
+   {
      "op": "Decode1",
-     "comment": "v67 = disconnected flag (0=normal transfer, 1=due to disconnect)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode4",
+     "comment": "targetCharacterId"
+   },
+   {
+     "op": "Decode1",
+     "comment": "disconnected"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Join": {
    "address": "0xa11405",
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) mode=15 (JOIN). Reads: Decode4(partyId) + DecodeStr(targetName) + PARTYDATA::Decode(378 bytes). Atlas Join writes mode+partyId+name+WritePartyData(298 bytes). WritePartyData is 80 bytes short: missing aTownPortal[6].skillId (24 bytes) + aPQReward/aPQRewardType/dwPQRewardMobTemplateID/bPQReward (56 bytes).",
    "calls": [
-    {
+   {
+     "op": "Decode1",
+     "comment": "mode byte"
+   },
+   {
      "op": "Decode4",
-     "comment": "m_nPartyID = partyId"
-    },
-    {
+     "comment": "partyId"
+   },
+   {
      "op": "DecodeStr",
-     "comment": "sCharacterName = joining member name"
-    },
-    {
+     "comment": "joinedMemberName"
+   },
+   {
      "op": "DecodeBuffer",
-     "comment": "PARTYDATA::Decode(0x17A=378 bytes) — includes PARTYMEMBER+adwFieldID+aTownPortal+aPQReward fields"
-    }
-   ]
+     "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Left": {
    "address": "0xa11085",
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) mode=12 with isForced=1 path (LEFT/EXPELLED). Reads: Decode4(partyId)+Decode4(targetId)+Decode1(1)+Decode1(isForced)+DecodeStr(targetName)+PARTYDATA::Decode(378 bytes). Atlas Left writes mode+partyId+targetId+0x01+forced+name+WritePartyData(298 bytes). WritePartyData 80-byte shortfall same as Join/Update.",
-   "calls": [
+   "dispatch": [
     {
-     "op": "Decode4",
-     "comment": "m_nPartyID = partyId"
-    },
-    {
-     "op": "Decode4",
-     "comment": "v37 = targetId"
-    },
-    {
-     "op": "Decode1",
-     "comment": "isForced branch discriminator (1 = member leaving with PARTYDATA)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "v38 = forced flag (0=voluntary leave, 1=expelled by leader)"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "sCharacterName = leaving member name"
-    },
-    {
-     "op": "DecodeBuffer",
-     "comment": "PARTYDATA::Decode(0x17A=378 bytes) — full party state after member left"
+     "discriminator": "v5",
+     "case": 12
     }
-   ]
+   ],
+   "dispatch": [
+    {
+     "discriminator": "v5",
+     "case": 12
+    }
+   ],
+   "calls": [
+   {
+     "op": "Decode1",
+     "comment": "mode byte"
+   },
+   {
+     "op": "Decode4",
+     "comment": "partyId"
+   },
+   {
+     "op": "Decode4",
+     "comment": "targetId"
+   },
+   {
+     "op": "Decode1",
+     "comment": "hasName flag"
+   },
+   {
+     "op": "Decode1",
+     "comment": "forced (expel/leave)"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "targetName"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Update": {
    "address": "0xa10ea1",
    "direction": "clientbound",
    "note": "PARTY_OPERATION (0x3E) mode=7/38 (UPDATE). Reads: Decode4(partyId) + PARTYDATA::Decode(378 bytes). Atlas Update writes mode+partyId+WritePartyData(298 bytes). WritePartyData is 80 bytes short: missing aTownPortal[6].m_nSKillID (6×4=24 bytes) + aPQReward[6](24)+aPQRewardType[6](24)+dwPQRewardMobTemplateID(4)+bPQReward(4)=56 bytes. HOT PATH.",
-   "calls": [
+   "dispatch": [
     {
-     "op": "Decode4",
-     "comment": "m_nPartyID = partyId"
-    },
-    {
-     "op": "DecodeBuffer",
-     "comment": "PARTYDATA::Decode(0x17A=378 bytes) — full PARTYDATA struct including PQ reward fields"
+     "discriminator": "v5",
+     "case": 31
     }
-   ]
+   ],
+   "dispatch": [
+    {
+     "discriminator": "v5",
+     "case": 31
+    }
+   ],
+   "calls": [
+   {
+     "op": "Decode1",
+     "comment": "mode byte"
+   },
+   {
+     "op": "Decode4",
+     "comment": "partyId"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#OperationBody": {
    "address": "0xa10ab0",
@@ -5355,7 +5759,8 @@
   "CUserRemote::OnReceiveHP": {
    "address": "0x953f50",
    "direction": "clientbound",
-   "note": "UPDATE_PARTYMEMBER_HP (0xD6). CUserRemote::OnReceiveHP reads Decode4(hp)+Decode4(maxHp). The characterId is consumed upstream by CUserPool::OnUserRemotePacket before this function is called (dispatcher-prefix pattern). Atlas MemberHP writes WriteInt(characterId)+WriteInt(hp)+WriteInt(maxHp) — characterId is the packet-level prefix prepended by the opcode writer, correct. HOT PATH.",
+   "dispatcher": "per-user-remote",
+   "note": "UPDATE_PARTYMEMBER_HP (0xD6). CUserRemote::OnReceiveHP reads Decode4(hp)+Decode4(maxHp). The characterId is consumed upstream by CUserPool::OnUserRemotePacket before this function is called (dispatcher-prefix pattern), modeled via dispatcher: per-user-remote which auto-prepends Decode4(characterId). Atlas MemberHP writes WriteInt(characterId)+WriteInt(hp)+WriteInt(maxHp) — characterId is the packet-level prefix, correct. HOT PATH.",
    "calls": [
     {
      "op": "Decode4",
@@ -5487,6 +5892,19 @@
   "CWvsContext::OnGuildResult#RequestAgreement": {
    "address": "0xa0d3b0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "v3",
+     "case": 3
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa0d3b0",
+   "dispatch": [
+    {
+     "discriminator": "v3",
+     "case": 3
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5509,6 +5927,19 @@
   "CWvsContext::OnGuildResult#Invite": {
    "address": "0xa0d664",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "v3",
+     "case": 5
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa0d664",
+   "dispatch": [
+    {
+     "discriminator": "v3",
+     "case": 5
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6069,6 +6500,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode4",
      "comment": "guildId (from CWvsContext)"
     },
@@ -6079,24 +6514,29 @@
    ]
   },
   "CField::SendSetGuildMarkMsg": {
-   "address": "0x0",
+   "address": "0x52d8c0",
    "direction": "serverbound",
+   "note": "COutPacket(149)+Encode1(0xF)+Encode2(markBg)+Encode1(markBgColor)+Encode2(mark)+Encode1(markColor) (verified live v95 @0x52d8c0). The sub-op byte is Atlas's guild Operation wrapper, composed on the Atlas side by the audit. Note: v95 SET_MARK sub-op is 0xF/15, NOT jms's 9.",
    "calls": [
     {
-     "op": "Encode2",
-     "comment": "logoBackground"
-    },
-    {
      "op": "Encode1",
-     "comment": "logoBackgroundColor"
+     "comment": "sub-op = 15 (0xF, SET_MARK) — guild Operation mode byte"
     },
     {
      "op": "Encode2",
-     "comment": "logo"
+     "comment": "logoBackground (markBg)"
     },
     {
      "op": "Encode1",
-     "comment": "logoColor"
+     "comment": "logoBackgroundColor (markBgColor)"
+    },
+    {
+     "op": "Encode2",
+     "comment": "logo (mark)"
+    },
+    {
+     "op": "Encode1",
+     "comment": "logoColor (markColor)"
     }
    ]
   },
@@ -6139,9 +6579,14 @@
    ]
   },
   "CField::SendSetGuildNoticeMsg": {
-   "address": "0x0",
+   "address": "0x535180",
    "direction": "serverbound",
+   "note": "COutPacket(149)+Encode1(0x10)+EncodeStr(notice) (verified live v95 @0x535180). The sub-op byte is Atlas's guild Operation wrapper, composed on the Atlas side by the audit.",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "sub-op = 16 (0x10, SET_NOTICE) — guild Operation mode byte"
+    },
     {
      "op": "EncodeStr",
      "comment": "notice text"
@@ -6304,14 +6749,22 @@
    "address": "0x0",
    "direction": "serverbound",
    "calls": [
-    {
-     "op": "Encode4",
-     "comment": "unk (partyId or similar)"
-    },
-    {
-     "op": "Encode1",
-     "comment": "agreed bool"
-    }
+     {
+       "op": "Decode1",
+       "comment": "mode byte (3 = guild-creation agreement request)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "partyId"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "leaderName"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "guildName"
+     }
    ]
   },
   "CWvsContext::SendGuildJoinMsg": {
@@ -6649,6 +7102,18 @@
    "address": "0x53b790",
    "direction": "clientbound",
    "notes": "FIELD_EFFECT case 0 (summon). CField::OnFieldEffect@0x53b790: Decode1(mode=0) + Decode1(effect) + Decode4(x) + Decode4(y). Maps atlas EffectSummon.",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6672,6 +7137,18 @@
    "address": "0x53bb74",
    "direction": "clientbound",
    "notes": "FIELD_EFFECT case 1 (tremble). CField::OnFieldEffect@0x53b790 case 1: Decode1(mode=1) + Decode1(bHeavyNShortTremble) + Decode4(delay). Maps atlas EffectTremble.",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6706,6 +7183,18 @@
    "address": "0x53b9c1",
    "direction": "clientbound",
    "notes": "FIELD_EFFECT case 5 (boss HP tag / ShowMobHPTag). CField::OnFieldEffect@0x53b790 case 5: Decode1(mode=5) + Decode4(monsterId v12) + Decode4(currentHp v13) + Decode4(maxHp nMaxHP) + Decode1(tagColor nColor) + Decode1(tagBackgroundColor). Maps atlas EffectBossHp.",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6737,6 +7226,18 @@
    "address": "0x53bba4",
    "direction": "clientbound",
    "notes": "FIELD_EFFECT case 7 (reward roulette / Effect_RewardRullet). CField::OnFieldEffect@0x53b790 case 7: Decode1(mode=7) + Decode4(nRewardJobIdx v23) + Decode4(nRewardPartIdx v24) + Decode4(nRewardLevIdx v25). Maps atlas EffectRewardRullet.",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 7
+    }
+   ],
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 7
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6817,6 +7318,12 @@
    "address": "0x916f60",
    "direction": "clientbound",
    "notes": "TALK_GUIDE (v95 opcode 0x157/343). CUserLocal::OnTutorMsg@0x916f60 reads Decode1(bByMessage); the FALSE (==0) arm at 0x916fd8 calls DecodeStr(message) + Decode4(width) + Decode4(duration) -> CTutor::OnMessage(ZXString,int,int)@0x74c880. Atlas GuideTalkMessage encodes the leading bool as false (FIXED from true) to select this string branch.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "this->m_pTutor.p"
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6936,6 +7443,12 @@
    "address": "0x6eb7d0",
    "direction": "clientbound",
    "notes": "Same CShopDlg::OnPacket@0x6eb7d0 (nType==365). Case 0x13 (0x6eb9a4): Decode1(hasReason); if non-zero, DecodeStr(reason) and show it as a Notice, else fall through to the default Notice. Atlas ShopOperationGenericError writes Byte(mode) + Bool(hasReason) + optional AsciiString(reason). The leading mode byte is the switch discriminator.",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 365
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7095,6 +7608,12 @@
    "address": "0x6dc310",
    "direction": "clientbound",
    "notes": "Dialog type 1 (SayImage). CScriptMan::OnSayImage@0x6dc310: Decode1(count @0x6dc3d9) + loop count x DecodeStr(image @0x6dc3f7). Atlas SayImageConversationDetail.Encode (post-fix): Byte(len)+loop AsciiString(image). Count is a single byte (Decode1), NOT an int -- atlas previously wrote WriteInt; fixed in this task. Analyzer flattens the loop to one body entry.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v10"
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7178,6 +7697,12 @@
    "address": "0x9ffad0",
    "direction": "clientbound",
    "notes": "Dialog type 6 (AskQuiz). CScriptMan::OnAskQuiz@0x6dbaf0 delegates to CWvsContext::OnInitialQuiz@0x9ffad0: Decode1(flag @0x9ffaff); when flag==0 (show path): DecodeStr(title @0x9ffb4b) + DecodeStr(problem @0x9ffb5b) + DecodeStr(hint @0x9ffb6c) + Decode4(min @0x9ffb7f) + Decode4(max @0x9ffb88) + Decode4(timeSec @0x9ffb95). Atlas AskQuizConversationDetail.Encode: Bool(Fail); if !Fail: AsciiString(Title)+AsciiString(Problem)+AsciiString(Hint)+Int(Min)+Int(Max)+Int(TimeRemaining). flag==0/Fail==false both gate the full body (same polarity). Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7213,6 +7738,12 @@
    "address": "0x9f1d50",
    "direction": "clientbound",
    "notes": "Dialog type 7 (AskSpeedQuiz). CScriptMan::OnAskSpeedQuiz@0x6dbb10 delegates to CWvsContext::OnInitialSpeedQuiz@0x9f1d50: Decode1(flag @0x9f1d5b); when flag==0: Decode4(type @0x9f1daf) + Decode4(answer @0x9f1db8) + Decode4(correct @0x9f1dc1) + Decode4(remain @0x9f1dcc) + Decode4(timeSec @0x9f1ddb). Atlas AskSpeedQuizConversationDetail.Encode: Bool(Fail); if !Fail: Int(Type)+Int(Answer)+Int(Correct)+Int(Remain)+Int(TimeRemaining). Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7244,6 +7775,12 @@
    "address": "0x6dcff0",
    "direction": "clientbound",
    "notes": "Dialog type 8 (AskAvatar). CScriptMan::OnAskAvatar@0x6dcff0: DecodeStr(message @0x6dd02d) + Decode1(count @0x6dd043) + loop count x Decode4(style @0x6dd05d). Atlas AskAvatarConversationDetail.Encode: AsciiString(Message)+Byte(len)+loop Int(style). Count is a byte. Match (analyzer flattens loop).",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v6"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -7263,6 +7800,12 @@
    "address": "0x6dd340",
    "direction": "clientbound",
    "notes": "Dialog type 9 (AskMembershopAvatar). CScriptMan::OnAskMembershopAvatar@0x6dd340: DecodeStr(message @0x6dd37e) + Decode1(count @0x6dd394) + loop count x Decode4(candidate @0x6dd3ad). Atlas AskMemberShopAvatarConversationDetail.Encode (post-fix): AsciiString(Message)+Byte(len)+loop Int(candidate). Count is a single byte (Decode1) -- atlas previously wrote WriteInt; fixed in this task. Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v7"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -7282,6 +7825,12 @@
    "address": "0x6dd6e0",
    "direction": "clientbound",
    "notes": "Dialog type 10 (AskPet). CScriptMan::OnAskPet@0x6dd6e0: DecodeStr(message @0x6dd716) + Decode1(nCount @0x6dd72d) + loop nCount x {DecodeBuffer(liCashItemSN,8 @0x6dd7bb) + Decode1(unused @0x6dd7c2)}. Atlas AskPetConversationDetail.Encode: AsciiString(Message)+Byte(len)+loop{Long(cashId)+Byte(0)}. The 8-byte cashItemSN is read via DecodeBuffer(8) by the client; atlas writes WriteLong (8 bytes) -- byte-equivalent, modeled here as Decode8 for width parity. Match (analyzer flattens loop).",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "nCount <= 0"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -7305,6 +7854,12 @@
    "address": "0x6ddbe0",
    "direction": "clientbound",
    "notes": "Dialog type 11 (AskPetAll). CScriptMan::OnAskPetAll@0x6ddbe0: DecodeStr(message @0x6ddc16) + Decode1(nCount @0x6ddc2d) + Decode1(bExceptionExist @0x6ddc41) + loop nCount x {DecodeBuffer(8 @0x6ddcc9) + Decode1(unused @0x6ddcd0)}. Atlas AskPetAllConversationDetail.Encode: AsciiString(Message)+Byte(len)+Bool(ExceptionExists)+loop{Long(cashId)+Byte(0)}. cashItemSN 8-byte modeled as Decode8 for width parity with atlas WriteLong. Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "nCount > 0"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -7355,6 +7910,12 @@
    "address": "0x6dbe50",
    "direction": "clientbound",
    "notes": "Dialog type 15 (AskSlideMenu). CScriptMan::OnAskSlideMenu@0x6dbe50: Decode4(slideDlgType @0x6dbe7f, selects EX vs normal dialog) then CSlideMenuDlgEX::SetSlideMenuDlg@0x7156f0 reads Decode4(menuType @0x715715) + DecodeStr(buttonInfo/message @0x715727). Atlas AskSlideMenuConversationDetail.Encode (GMS major>83): Int(Unknown 0/1)+Int(MenuType)+AsciiString(Message). The leading Int(Unknown) maps to slideDlgType (Decode4); v95 is major>83 so the guard fires. Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "!v3"
+    }
+   ],
    "calls": [
     {
      "op": "Decode4",
@@ -7416,6 +7977,12 @@
    "address": "0x6dc110",
    "direction": "serverbound",
    "notes": "NPC_TALK_MORE (v95 opcode 65/0x41) generic continue reply. Built inside CScriptMan::OnSay@0x6dc110 after DoModal: COutPacket(65) @0x6dc267 then Encode1(0=msgType SAY @0x6dc276) + Encode1(action @0x6dc299). No trailing body for SAY (msgType 0). Atlas ContinueConversation.Encode: Byte(lastMessageType)+Byte(action). The serverbound continue dispatcher reads these two bytes; per-dialog-type trailing fields (selection int / text string) are read by ContinueConversationSelection / ContinueConversationText after this header. Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v15 != 3"
+    }
+   ],
    "calls": [
     {
      "op": "Encode1",
@@ -7466,6 +8033,10 @@
    "notes": "NPC_SHOP (v95 opcode 66/0x42) BUY body (op=0). CShopDlg::SendBuyRequest@0x6e9bb0: COutPacket(66) @0x6ea5b1 + Encode1(0 @0x6ea5c1) + Encode2(slot/commodity index @0x6ea5e5) + Encode4(itemId @0x6ea5f6) + Encode2(nCount/quantity @0x6ea604) + Encode4(discountPrice @0x6ea63a). The leading op byte (0) is consumed by the Shop dispatcher; this entry models the body AFTER the op byte. Atlas ShopBuy.Encode: Short(slot)+Int(itemId)+Short(quantity)+Int(discountPrice). Field-for-field match.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode2",
      "comment": "slot (commodity index in shop)"
     },
@@ -7489,6 +8060,10 @@
    "notes": "NPC_SHOP (v95 opcode 66/0x42) SELL body (op=1). CShopDlg::SendSellRequest@0x6e7260: COutPacket(66) @0x6e7455 + Encode1(1 @0x6e7465) + Encode2(nPOS/slot @0x6e7473) + Encode4(nItemID @0x6e7481) + Encode2(quantity @0x6e748b). The leading op byte (1) is consumed by the Shop dispatcher; this entry models the body AFTER the op byte. Atlas ShopSell.Encode: Int16(slot)+Int(itemId)+Short(quantity). Field-for-field match.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode2",
      "comment": "slot (inventory position nPOS)"
     },
@@ -7507,6 +8082,10 @@
    "direction": "serverbound",
    "notes": "NPC_SHOP (v95 opcode 66/0x42) RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x6e4e90: COutPacket(66) @0x6e4fd3 + Encode1(2 @0x6e4fe3) + Encode2(nPos/slot @0x6e4fed). The leading op byte (2) is consumed by the Shop dispatcher; this entry models the body AFTER the op byte. Atlas ShopRecharge.Encode: Short(slot). Field-for-field match.",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Encode2",
      "comment": "slot (inventory position nPos)"
@@ -7714,6 +8293,19 @@
   "CWvsContext::OnGivePopularityResult#GiveResponse": {
    "address": "0x9fea60",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9fea60",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7736,6 +8328,19 @@
   "CWvsContext::OnGivePopularityResult#ReceiveResponse": {
    "address": "0x9fea60",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9fea60",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7798,6 +8403,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#ShopSearch": {
    "address": "0x9ffcb0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 13
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9ffcb0",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 13
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7812,6 +8430,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#ShopRename": {
    "address": "0x9ffcb0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 14
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9ffcb0",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 14
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7844,6 +8475,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
    "address": "0x9ffcb0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 17
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9ffcb0",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 17
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7866,6 +8510,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice": {
    "address": "0x9ffcb0",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 18
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9ffcb0",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 18
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -7894,6 +8551,13 @@
   "CWvsContext::ResignQuest#Action": {
    "address": "0x9f3cf0",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "!usQuestID"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x9f3cf0",
    "calls": [
     {
      "op": "Decode1",
@@ -8007,6 +8671,13 @@
   "CClientSocket::OnConnect#ChannelConnect": {
    "address": "0x4aef10",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
+   "notes": "inferred-high-confidence (0.83) @0x4aef10",
    "calls": [
     {
      "op": "Decode4",

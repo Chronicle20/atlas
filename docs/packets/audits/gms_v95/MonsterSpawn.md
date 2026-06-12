@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/monster/clientbound/spawn.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -13,31 +13,5 @@
 | 0 | int32 | int32 `dwMobId (uniqueId)` | ✅ |  |
 | 1 | byte | byte `nCalcDamageIndex (atlas: controlled — region/version gated >v12 GMS \|\| JMS)` | ✅ |  |
 | 2 | int32 | int32 `dwTemplateID (monsterId)` | ✅ |  |
-| 3 | int32 | bytes `MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init — variable-length sub-struct)` | ✅ |  |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 21 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 24 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 25 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 26 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 27 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 28 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 29 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 3 | bytes | bytes `MonsterModel body (atlas delegates to m.monster.Encode; IDA delegates to CMob::SetTemporaryStat + CMob::Init — variable-length sub-struct)` | ✅ |  |
 

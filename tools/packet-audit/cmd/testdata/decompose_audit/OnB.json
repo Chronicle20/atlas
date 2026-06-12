@@ -1,0 +1,10 @@
+{
+  "WriterName": "OnB",
+  "IDAName": "Foo::OnB",
+  "Address": "0x200",
+  "Rows": [
+    { "Index": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "Verdict": 0, "Note": "" }
+  ],
+  "Verdict": 0
+}

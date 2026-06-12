@@ -5,7 +5,46 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/idasrc"
 )
+
+// TestExportCarriesPrefix pins the adaptive family-operation wrapper composition:
+// the wrapper (a 1-byte sub-op) is composed onto Atlas's body ONLY when the client
+// export faithfully carries the sub-op as its leading field. An export that omits
+// it (an incomplete baseline whose body starts with a wider field) must NOT be
+// treated as carrying the wrapper, so the caller leaves Atlas body-only rather than
+// manufacturing a one-field misalignment.
+func TestExportCarriesPrefix(t *testing.T) {
+	ctx := atlaspacket.GuardContext{Region: "GMS", MajorVersion: 95}
+	wrapper := []atlaspacket.Call{{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1}}
+
+	cases := []struct {
+		name   string
+		export []idasrc.FieldCall
+		want   bool
+	}{
+		{"faithful: export leads with sub-op byte",
+			[]idasrc.FieldCall{{Op: idasrc.Decode1, Comment: "sub-op"}, {Op: idasrc.DecodeStr}}, true},
+		{"faithful: sub-op then int32 body (BBS list)",
+			[]idasrc.FieldCall{{Op: idasrc.Decode1, Comment: "sub-op"}, {Op: idasrc.Decode4}}, true},
+		{"incomplete: sub-op omitted, body starts with int32",
+			[]idasrc.FieldCall{{Op: idasrc.Decode4}}, false},
+		{"incomplete: sub-op omitted, body starts with string",
+			[]idasrc.FieldCall{{Op: idasrc.DecodeStr}}, false},
+		{"empty export cannot carry the wrapper",
+			nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := exportCarriesPrefix(nil, ctx, wrapper, tc.export)
+			if got != tc.want {
+				t.Fatalf("exportCarriesPrefix(%s) = %v, want %v", tc.name, got, tc.want)
+			}
+		})
+	}
+}
 
 func TestPhaseAExitGate(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
@@ -33,5 +72,27 @@ func TestPhaseAExitGate(t *testing.T) {
 		if len(matches) == 0 {
 			t.Errorf("missing expected report: %s (out=%s)", want, out)
 		}
+	}
+}
+
+// TestHasUnresolvedBranch covers the negative + recursion paths of the
+// flat-invalid detector: a nil guard and a clean version guard must NOT be
+// flagged, including when nested inside a loop/sub-struct Body. The positive
+// "<unparsed:" trigger (data-dependent branches) is exercised end-to-end by the
+// audit regen, which reclassifies the data-branch packets to 🔍.
+func TestHasUnresolvedBranch(t *testing.T) {
+	ver, err := atlaspacket.ParseGuard(`t.Region() == "GMS" && t.MajorVersion() >= 87`)
+	if err != nil {
+		t.Fatalf("ParseGuard: %v", err)
+	}
+	clean := []atlaspacket.Call{
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode4, Guard: ver},
+		{Kind: atlaspacket.KindRepeat, Body: []atlaspacket.Call{
+			{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode2, Guard: ver},
+		}},
+	}
+	if hasUnresolvedBranch(clean) {
+		t.Fatal("nil/version guards must not be flagged as unresolved branches")
 	}
 }

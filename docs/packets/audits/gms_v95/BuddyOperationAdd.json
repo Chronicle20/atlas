@@ -8,12 +8,12 @@
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "op (=1, ADD) — sub-op byte for BUDDYLIST_MODIFY (opcode 153)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -26,13 +26,14 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "sFriendGroup — buddy group name",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

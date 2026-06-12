@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/monster/serverbound/movement.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
-- **Verdict:** 🔍
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -25,13 +25,10 @@
 | 12 | int32 | int32 `v107 ? TSecType<long>.GetData(v14[2]...+12) : 16768460 — atlas flyCtxTargetX` | ✅ |  |
 | 13 | int32 | int32 `v107 ? TSecType<long>.GetData(v14[2]...) : 16768460 — atlas flyCtxTargetY` | ✅ |  |
 | 14 | int32 | int32 `sub_515C39(v14[2].m_pfhFallStart) — atlas hackedCodeCRC` | ✅ |  |
-| 15 | int16 | bytes `CMovePath::Flush body (Movement elements, variable length)` | ✅ |  |
-| 16 | int16 | byte `bChasing (sub_68664B of m_bChasing)` | ❌ | width mismatch |
+| 15 | bytes | bytes `CMovePath::Flush body (Movement elements, variable length)` | ✅ |  |
+| 16 | byte | byte `bChasing (sub_68664B of m_bChasing)` | ✅ |  |
 | 17 | byte | byte `hasTarget (LODWORD(v14[1].m_ap._ZtlSecureTear_vx[1]) != 0)` | ✅ |  |
-| 18 | byte | byte `bChasing2 (m_pLadderOrRope flag)` | 🔍 | sub-struct: MovementCodec — see _substruct/ |
+| 18 | byte | byte `bChasing2 (m_pLadderOrRope flag)` | ✅ |  |
 | 19 | byte | byte `bChasingHack (m_lZMass flag)` | ✅ |  |
-| 20 | byte | int32 `tChaseDuration (vy / fall velocity)` | ❌ | width mismatch |
-| 21 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 20 | int32 | int32 `tChaseDuration (vy / fall velocity)` | ✅ |  |
 

@@ -4,12 +4,12 @@
 - **Atlas file:** `../../libs/atlas-packet/party/clientbound/error.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte (error code)` | ✅ |  |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode (error code)` | ✅ |  |
+| 1 | string | string `name` | ✅ |  |
 

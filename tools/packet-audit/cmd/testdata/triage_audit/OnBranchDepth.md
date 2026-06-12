@@ -1,0 +1,3 @@
+# OnBranchDepth (← `Foo::OnBranchDepth`)
+
+- **Verdict:** ❌

@@ -1,0 +1,12 @@
+{
+ "binary": "x", "md5": "x", "generated_at": "2026-01-01T00:00:00Z",
+ "functions": {
+  "Foo::OnBar": {
+   "address": "0x1", "direction": "clientbound",
+   "calls": [
+    {"op": "Decode4", "comment": "id"},
+    {"op": "Unresolved", "comment": "indirect dispatch via vtable; hand-trace"}
+   ]
+  }
+ }
+}

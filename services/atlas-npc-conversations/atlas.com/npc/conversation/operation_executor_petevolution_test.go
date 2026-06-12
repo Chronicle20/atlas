@@ -73,12 +73,12 @@ func TestEnumerateEvolvablePets(t *testing.T) {
 	// Two summoned pets sharing template 5000029: one level-20 (eligible),
 	// one level-10 (below the reqPetLevel of 15).
 	petP := fakePetProcessor{pets: []pet.Model{
-		pet.NewModel(1, 5000029, 20, 0),
-		pet.NewModel(2, 5000029, 10, 1),
+		pet.NewModel(1, 5000029, "Alpha", 20, 0),
+		pet.NewModel(2, 5000029, "Beta", 10, 1),
 	}}
 	// Template 5000029 is evolvable, requiring pet level 15.
 	petdataP := fakePetDataProcessor{byId: map[uint32]petdata.Model{
-		5000029: petdata.NewModel(5000029, 15, 4000000, 1),
+		5000029: petdata.NewModel(5000029, "Baby Dragon", 15, 4000000, 1),
 	}}
 
 	executor := &OperationExecutorImpl{
@@ -92,6 +92,7 @@ func TestEnumerateEvolvablePets(t *testing.T) {
 	op, err := NewOperationBuilder().
 		SetType("local:enumerate_evolvable_pets").
 		AddParamValue("outputContextKey", "evolvablePets").
+		AddParamValue("labelContextKey", "evolvablePetLabels").
 		AddParamValue("countContextKey", "evolvableCount").
 		Build()
 	if err != nil {
@@ -118,6 +119,16 @@ func TestEnumerateEvolvablePets(t *testing.T) {
 	}
 	if ids != "1" {
 		t.Errorf("evolvablePets = %q, want %q", ids, "1")
+	}
+
+	// Only the eligible pet (id 1) appears, labelled "Name (Species)" and
+	// index-aligned with the id list.
+	labels, err := executor.getContextValue(characterId, "evolvablePetLabels")
+	if err != nil {
+		t.Fatalf("failed to read evolvablePetLabels: %v", err)
+	}
+	if labels != "Alpha (Baby Dragon)" {
+		t.Errorf("evolvablePetLabels = %q, want %q", labels, "Alpha (Baby Dragon)")
 	}
 }
 

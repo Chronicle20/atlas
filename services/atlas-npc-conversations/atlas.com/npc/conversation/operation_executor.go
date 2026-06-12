@@ -802,13 +802,18 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 	case "enumerate_evolvable_pets":
 		// Format: local:enumerate_evolvable_pets
 		// Params: outputContextKey (string, default "evolvablePets"),
+		//         labelContextKey (string, default "evolvablePetLabels"),
 		//         countContextKey (string, default "evolvableCount")
-		// Lists the character's currently-summoned pets that are evolution-eligible
+		// Lists the character's currently-summoned, evolution-eligible pets
 		// (evolvable template AND at/above the template's required pet level) into
-		// context: a comma-joined list of pet ids and a count.
+		// context as index-aligned id + "Name (Species)" label lists, plus a count.
 		outputKey := operation.Params()["outputContextKey"]
 		if outputKey == "" {
 			outputKey = "evolvablePets"
+		}
+		labelKey := operation.Params()["labelContextKey"]
+		if labelKey == "" {
+			labelKey = "evolvablePetLabels"
 		}
 		countKey := operation.Params()["countContextKey"]
 		if countKey == "" {
@@ -822,6 +827,7 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		}
 
 		eligible := make([]string, 0)
+		labels := make([]string, 0)
 		for _, pt := range pets {
 			if !pt.IsSpawned() {
 				continue
@@ -834,18 +840,22 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 			}
 			if d.IsEvolvable() && uint32(pt.Level()) >= d.ReqPetLevel() {
 				eligible = append(eligible, strconv.Itoa(int(pt.Id())))
+				labels = append(labels, fmt.Sprintf("%s (%s)", pt.Name(), d.Name()))
 			}
 		}
 
 		if err := e.setContextValue(characterId, outputKey, strings.Join(eligible, ",")); err != nil {
 			return err
 		}
+		if err := e.setContextValue(characterId, labelKey, strings.Join(labels, ",")); err != nil {
+			return err
+		}
 		if err := e.setContextValue(characterId, countKey, strconv.Itoa(len(eligible))); err != nil {
 			return err
 		}
 
-		e.l.Infof("Enumerated %d evolvable pet(s) for character [%d], stored in context keys [%s, %s]",
-			len(eligible), characterId, outputKey, countKey)
+		e.l.Infof("Enumerated %d evolvable pet(s) for character [%d], stored in context keys [%s, %s, %s]",
+			len(eligible), characterId, outputKey, labelKey, countKey)
 		return nil
 
 	default:

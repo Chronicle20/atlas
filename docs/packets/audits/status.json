@@ -1,5 +1,5 @@
 {
-  "toolSha": "fb901025107d3f119896514d3ffa5d488a0a3405",
+  "toolSha": "0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
     "gms_v87": "8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66",
@@ -207,11 +207,11 @@
       "op": "APPLY_MONSTER_STATUS",
       "packet": "monster/clientbound/MonsterStatSet",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -219,11 +219,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -368,11 +368,11 @@
       "op": "AUTO_HP_POT",
       "packet": "character/clientbound/CharacterKeyMapAutoHp",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -384,11 +384,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -397,11 +397,11 @@
       "op": "AUTO_MP_POT",
       "packet": "character/clientbound/CharacterKeyMapAutoMp",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -409,15 +409,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -594,11 +594,11 @@
       "op": "BUDDYLIST",
       "packet": "buddy/clientbound/BuddyCapacityUpdate",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "conflict",
@@ -706,11 +706,11 @@
       "op": "CANCEL_CHAIR",
       "packet": "character/clientbound/CharacterSitResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -722,7 +722,7 @@
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "jms_v185": {
           "state": "conflict",
@@ -735,11 +735,11 @@
       "op": "CANCEL_FOREIGN_BUFF",
       "packet": "character/clientbound/BuffCancelForeign",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -751,7 +751,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -764,11 +764,11 @@
       "op": "CANCEL_MONSTER_STATUS",
       "packet": "monster/clientbound/MonsterStatReset",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -780,7 +780,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -1140,11 +1140,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -1208,11 +1208,11 @@
       "op": "CASH_PET_FOOD_RESULT",
       "packet": "pet/clientbound/PetCashFoodResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -1224,7 +1224,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -1293,11 +1293,11 @@
       "op": "CHALKBOARD",
       "packet": "character/clientbound/ChalkboardUse",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -1305,11 +1305,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -1407,11 +1407,11 @@
       "op": "CHARLIST",
       "packet": "character/clientbound/CharacterList",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -1419,11 +1419,11 @@
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -1465,11 +1465,11 @@
       "op": "CHAR_NAME_RESPONSE",
       "packet": "character/clientbound/CharacterNameResponse",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -1477,15 +1477,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -1998,11 +1998,11 @@
       "op": "CONFIRM_SHOP_TRANSACTION",
       "packet": "npc/clientbound/NpcShopOperationGenericError",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -2010,11 +2010,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -2112,11 +2112,11 @@
       "op": "COOLDOWN",
       "packet": "character/clientbound/CharacterSkillCooldown",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -2128,11 +2128,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -2141,11 +2141,11 @@
       "op": "DAMAGE_MONSTER",
       "packet": "monster/clientbound/MonsterDamage",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -2153,15 +2153,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -2255,11 +2255,11 @@
       "op": "DELETE_CHAR_RESPONSE",
       "packet": "character/clientbound/DeleteCharacterResponse",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -2267,15 +2267,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -2611,7 +2611,7 @@
       "op": "FACIAL_EXPRESSION",
       "packet": "character/clientbound/CharacterExpression",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -2627,7 +2627,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -3361,7 +3361,7 @@
       "op": "GATHER_ITEM_RESULT",
       "packet": "inventory/clientbound/InventoryCompartmentMerge",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -3431,11 +3431,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -3448,11 +3448,11 @@
       "op": "GIVE_FOREIGN_BUFF",
       "packet": "character/clientbound/BuffGiveForeign",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "conflict",
@@ -3460,11 +3460,11 @@
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -3616,7 +3616,7 @@
       "op": "GUILD_MARK_CHANGED",
       "packet": "guild/clientbound/GuildForeignEmblemChanged",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -3632,7 +3632,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -3645,7 +3645,7 @@
       "op": "GUILD_NAME_CHANGED",
       "packet": "guild/clientbound/GuildForeignNameChanged",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -3665,7 +3665,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -3674,7 +3674,7 @@
       "op": "GUILD_OPERATION",
       "packet": "guild/clientbound/GuildCapacityChange",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -3994,7 +3994,7 @@
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict 🔍"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -4036,11 +4036,11 @@
       "op": "KILL_MONSTER",
       "packet": "monster/clientbound/MonsterDestroy",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -4048,15 +4048,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -4596,11 +4596,11 @@
       "op": "MEMO_RESULT",
       "packet": "note/clientbound/NoteDisplay",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -4612,7 +4612,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -4652,11 +4652,11 @@
       "op": "MESSENGER",
       "packet": "messenger/clientbound/MessengerAdd",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -4664,15 +4664,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -5329,11 +5329,11 @@
       "op": "MOVE_MONSTER",
       "packet": "monster/clientbound/MonsterMovement",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -5341,7 +5341,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -5349,7 +5349,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -5358,11 +5358,11 @@
       "op": "MOVE_MONSTER_RESPONSE",
       "packet": "monster/clientbound/MonsterMovementAck",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -5370,15 +5370,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -5387,11 +5387,11 @@
       "op": "MOVE_PET",
       "packet": "pet/clientbound/PetMovement",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -5416,11 +5416,11 @@
       "op": "MOVE_PLAYER",
       "packet": "character/clientbound/CharacterMovement",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -5428,11 +5428,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -5979,11 +5979,11 @@
       "op": "OPEN_NPC_SHOP",
       "packet": "npc/clientbound/NpcShopOperationGenericError",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -5991,11 +5991,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -6146,7 +6146,7 @@
       "op": "PARTY_OPERATION",
       "packet": "party/clientbound/PartyChangeLeader",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -6166,7 +6166,7 @@
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         }
       }
     },
@@ -6230,11 +6230,11 @@
       "op": "PET_CHAT",
       "packet": "pet/clientbound/PetChat",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -6242,7 +6242,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -6259,11 +6259,11 @@
       "op": "PET_COMMAND",
       "packet": "pet/clientbound/PetCommandResponse",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -6288,11 +6288,11 @@
       "op": "PET_EXCEPTION_LIST",
       "packet": "pet/clientbound/PetExcludeResponse",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -6374,11 +6374,11 @@
       "op": "PLAYER_HINT",
       "packet": "character/clientbound/CharacterHint",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -6386,11 +6386,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -6403,7 +6403,7 @@
       "op": "PLAYER_INTERACTION",
       "packet": "interaction/clientbound/InteractionInteractionChat",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -6419,7 +6419,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -6597,7 +6597,7 @@
       "op": "QUERY_CASH_RESULT",
       "packet": "cash/clientbound/CashQueryResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -6613,11 +6613,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -7135,11 +7135,11 @@
       "op": "REMOVE_PLAYER_FROM_MAP",
       "packet": "character/clientbound/CharacterDespawn",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -7147,11 +7147,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -8081,7 +8081,7 @@
       "op": "SHOW_CHAIR",
       "packet": "character/clientbound/CharacterChairShow",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -8097,7 +8097,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -8380,11 +8380,11 @@
       "op": "SHOW_MONSTER_HP",
       "packet": "monster/clientbound/MonsterHealth",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -8396,7 +8396,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -8460,11 +8460,11 @@
       "op": "SHOW_SCROLL_EFFECT",
       "packet": "character/clientbound/ItemUpgrade",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -8472,11 +8472,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -8514,11 +8514,11 @@
       "op": "SHOW_STATUS_INFO",
       "packet": "character/clientbound/StatusMessageDropPickUpInventoryFull",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -8530,7 +8530,7 @@
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -8759,7 +8759,7 @@
       "op": "SORT_ITEM_RESULT",
       "packet": "inventory/clientbound/InventoryCompartmentSort",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -8958,11 +8958,11 @@
       "op": "SPAWN_MONSTER",
       "packet": "monster/clientbound/MonsterSpawn",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -8970,7 +8970,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -8978,7 +8978,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -8987,11 +8987,11 @@
       "op": "SPAWN_MONSTER_CONTROL",
       "packet": "monster/clientbound/MonsterControl",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -8999,7 +8999,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -9007,7 +9007,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -9016,11 +9016,11 @@
       "op": "SPAWN_NPC",
       "packet": "npc/clientbound/NpcSpawn",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -9028,7 +9028,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -9036,7 +9036,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -9045,11 +9045,11 @@
       "op": "SPAWN_NPC_REQUEST_CONTROLLER",
       "packet": "npc/clientbound/NpcSpawnRequestController",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -9057,7 +9057,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -9065,7 +9065,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -9465,11 +9465,11 @@
       "op": "TALK_GUIDE",
       "packet": "npc/clientbound/NpcGuideTalkIdx",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -9928,7 +9928,7 @@
       "op": "UPDATE_PARTYMEMBER_HP",
       "packet": "party/clientbound/PartyMemberHP",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -9944,7 +9944,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -10014,11 +10014,11 @@
       "op": "UPDATE_SKILLS",
       "packet": "character/clientbound/CharacterSkillChange",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -10026,15 +10026,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -10098,7 +10098,7 @@
       "op": "VIEW_ALL_CHAR",
       "packet": "character/clientbound/CharacterViewAllCharacters",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "conflict",
@@ -10683,7 +10683,7 @@
       "op": "ALLIANCE_OPERATION",
       "packet": "guild/serverbound/GuildInviteReject",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -10703,7 +10703,7 @@
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         }
       }
     },
@@ -10712,7 +10712,7 @@
       "op": "ALLIANCE_REQUEST",
       "packet": "guild/serverbound/GuildOperation",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -10905,11 +10905,11 @@
       "op": "AUTO_DISTRIBUTE_AP",
       "packet": "character/serverbound/AutoDistributeAp",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -10921,11 +10921,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -10958,11 +10958,11 @@
       "op": "BBS_OPERATION",
       "packet": "guild/serverbound/GuildBBSListThreads",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -10970,11 +10970,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -11091,7 +11091,7 @@
       "op": "BUDDYLIST_MODIFY",
       "packet": "buddy/serverbound/BuddyOperationDelete",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -11107,11 +11107,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -11120,11 +11120,11 @@
       "op": "CANCEL_BUFF",
       "packet": "character/serverbound/BuffCancelRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -11136,7 +11136,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -11149,11 +11149,11 @@
       "op": "CANCEL_CHAIR",
       "packet": "character/serverbound/ChairFixed",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -11165,7 +11165,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -11206,11 +11206,11 @@
       "op": "CANCEL_ITEM_EFFECT",
       "packet": "character/serverbound/ItemCancel",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -11235,7 +11235,7 @@
       "op": "CASHSHOP_OPERATION",
       "packet": "cash/serverbound/CashShopOperationGetPurchaseRecord",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -11251,7 +11251,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -11542,11 +11542,11 @@
       "op": "CHAR_INFO_REQUEST",
       "packet": "character/serverbound/InfoRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -11554,15 +11554,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -11629,7 +11629,7 @@
       "op": "CHECK_CASH",
       "packet": "cash/serverbound/CashCheckWallet",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -11645,7 +11645,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -11658,7 +11658,7 @@
       "op": "CHECK_CHAR_NAME",
       "packet": "character/serverbound/CheckName",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -11670,11 +11670,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -11828,11 +11828,11 @@
       "op": "CLOSE_CHALKBOARD",
       "packet": "character/serverbound/ChalkboardClose",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -11840,11 +11840,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -11993,11 +11993,11 @@
       "op": "CREATE_CHAR",
       "packet": "character/serverbound/CreateCharacter",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -12005,11 +12005,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -12022,7 +12022,7 @@
       "op": "CREATE_CHAR_IN_CS",
       "packet": "character/serverbound/CreateCharacter",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "conflict",
@@ -12038,7 +12038,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "n-a"
@@ -12107,11 +12107,11 @@
       "op": "DELETE_CHAR",
       "packet": "character/serverbound/DeleteCharacter",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -12119,11 +12119,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -12162,7 +12162,7 @@
       "op": "DENY_GUILD_REQUEST",
       "packet": "guild/serverbound/GuildInviteReject",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -12178,7 +12178,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -12216,7 +12216,7 @@
       "op": "DESTROY_PET_ITEM_REQUEST",
       "packet": "pet/serverbound/PetSpawn",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -12228,7 +12228,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -12245,11 +12245,11 @@
       "op": "DISTRIBUTE_AP",
       "packet": "character/serverbound/AutoDistributeAp",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -12265,7 +12265,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -12274,11 +12274,11 @@
       "op": "DISTRIBUTE_SP",
       "packet": "character/serverbound/DistributeSp",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -12286,11 +12286,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -12847,7 +12847,7 @@
       "op": "GUILD_OPERATION",
       "packet": "guild/serverbound/GuildOperation",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -12863,7 +12863,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -12876,11 +12876,11 @@
       "op": "HEAL_OVER_TIME",
       "packet": "character/serverbound/HealOverTime",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -13044,7 +13044,7 @@
       "op": "ITEM_MOVE",
       "packet": "inventory/serverbound/InventoryMove",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -13060,7 +13060,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -13156,7 +13156,7 @@
       "op": "ITEM_SORT",
       "packet": "inventory/serverbound/InventoryCompartmentMergeRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -13185,7 +13185,7 @@
       "op": "ITEM_SORT2",
       "packet": "inventory/serverbound/InventoryCompartmentSortRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -13485,11 +13485,11 @@
       "op": "MESO_DROP",
       "packet": "character/serverbound/DropMeso",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -13501,7 +13501,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -13514,7 +13514,7 @@
       "op": "MESSENGER",
       "packet": "guild/serverbound/GuildInviteReject",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -13530,7 +13530,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -13954,11 +13954,11 @@
       "op": "MOVE_LIFE",
       "packet": "monster/serverbound/MonsterMovementRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -13966,15 +13966,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -13983,11 +13983,11 @@
       "op": "MOVE_PET",
       "packet": "pet/serverbound/PetMovementRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -13995,11 +13995,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14150,7 +14150,7 @@
       "op": "NEW_YEAR_CARD_REQUEST",
       "packet": "guild/serverbound/GuildOperation",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "conflict",
@@ -14166,7 +14166,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "n-a"
@@ -14206,7 +14206,7 @@
       "op": "NOTE_ACTION",
       "packet": "note/serverbound/NoteOperationSend",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -14222,7 +14222,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14235,7 +14235,7 @@
       "op": "NPC_ACTION",
       "packet": "npc/serverbound/NpcActionRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -14251,7 +14251,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -14376,11 +14376,11 @@
       "op": "NPC_TALK_MORE",
       "packet": "npc/clientbound/NpcAskSlideMenuConversationDetail",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -14392,7 +14392,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14653,7 +14653,7 @@
       "op": "PARTY_OPERATION",
       "packet": "party/serverbound/PartyOperation",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -14669,7 +14669,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14682,7 +14682,7 @@
       "op": "PARTY_RESULT",
       "packet": "guild/serverbound/GuildInviteReject",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "conflict",
@@ -14698,7 +14698,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14767,11 +14767,11 @@
       "op": "PET_AUTO_POT",
       "packet": "pet/serverbound/PetItemUse",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -14779,7 +14779,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -14796,11 +14796,11 @@
       "op": "PET_CHAT",
       "packet": "pet/serverbound/PetChatRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -14808,7 +14808,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -14825,11 +14825,11 @@
       "op": "PET_COMMAND",
       "packet": "pet/serverbound/PetCommand",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -14837,11 +14837,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14854,11 +14854,11 @@
       "op": "PET_EXCLUDE_ITEMS",
       "packet": "pet/serverbound/PetExcludeItem",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -14866,11 +14866,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -14883,11 +14883,11 @@
       "op": "PET_FOOD",
       "packet": "pet/serverbound/PetFood",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -14899,11 +14899,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -14924,7 +14924,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -15938,7 +15938,7 @@
       "op": "SPAWN_PET",
       "packet": "pet/serverbound/PetSpawn",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -15950,7 +15950,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -15958,7 +15958,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -18251,11 +18251,11 @@
       "op": "USE_CHAIR",
       "packet": "character/serverbound/ChairPortable",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -18267,7 +18267,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -18448,7 +18448,7 @@
       "op": "USE_ITEM",
       "packet": "inventory/serverbound/InventoryItemUse",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -18464,7 +18464,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -18831,7 +18831,7 @@
       "op": "USE_UPGRADE_SCROLL",
       "packet": "inventory/serverbound/InventoryScrollUse",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -18847,7 +18847,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19137,7 +19137,7 @@
     {
       "kind": "sub-struct",
       "packet": "buddy/serverbound/BuddyOperationAccept",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19153,18 +19153,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "buddy/serverbound/BuddyOperationAdd",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19180,22 +19180,22 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuy",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19203,26 +19203,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuyCouple",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19230,26 +19230,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuyFriendship",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19257,22 +19257,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuyNameChange",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19288,7 +19288,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19299,7 +19299,7 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuyNormal",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19315,18 +19315,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuyPackage",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19342,7 +19342,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19353,7 +19353,7 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationBuyWorldTransfer",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19369,7 +19369,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19380,7 +19380,7 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationEnableEquipSlot",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19396,7 +19396,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19407,11 +19407,11 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationGift",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19419,22 +19419,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationIncreaseCharacterSlot",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19450,7 +19450,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19461,7 +19461,7 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationIncreaseInventory",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19477,7 +19477,7 @@
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19515,7 +19515,7 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationMoveFromCashInventory",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19531,7 +19531,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19542,7 +19542,7 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationMoveToCashInventory",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19558,7 +19558,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19569,11 +19569,11 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationRebateLockerItem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19581,22 +19581,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashShopOperationSetWishlist",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19612,7 +19612,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19623,11 +19623,11 @@
     {
       "kind": "sub-struct",
       "packet": "character/serverbound/ExpressionRequest",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19635,15 +19635,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -19681,7 +19681,7 @@
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19689,11 +19689,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19735,7 +19735,7 @@
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19743,11 +19743,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19785,7 +19785,7 @@
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildAgreementResponse",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19801,11 +19801,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -19828,7 +19828,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19843,7 +19843,7 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19851,11 +19851,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19870,7 +19870,7 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19878,11 +19878,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19897,7 +19897,7 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19905,11 +19905,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19924,7 +19924,7 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19932,11 +19932,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -19947,7 +19947,7 @@
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildInviteRequest",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -19963,11 +19963,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -19990,7 +19990,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20001,7 +20001,7 @@
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildKick",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20017,18 +20017,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildRequestCreate",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20044,18 +20044,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildSetEmblem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20071,18 +20071,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildSetMemberTitle",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20098,18 +20098,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildSetNotice",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20125,11 +20125,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -20152,7 +20152,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20163,7 +20163,7 @@
     {
       "kind": "sub-struct",
       "packet": "guild/serverbound/GuildWithdraw",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20179,18 +20179,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "interaction/clientbound/InteractionInteractionUpdateMerchant",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20206,7 +20206,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20229,22 +20229,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationFieldAddToBlackList",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20260,7 +20260,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20271,7 +20271,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationFieldRemoveFromBlackList",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20287,7 +20287,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20298,7 +20298,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationInvite",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20314,7 +20314,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20325,7 +20325,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMemoryGameFlipCard",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20341,7 +20341,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20352,7 +20352,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMemoryGameMoveStone",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20368,7 +20368,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20379,7 +20379,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20395,7 +20395,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20406,7 +20406,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMemoryGameTieAnswer",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20422,7 +20422,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20433,7 +20433,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMerchantAddToBlackList",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20449,7 +20449,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20460,11 +20460,11 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMerchantBuy",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20472,22 +20472,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMerchantPutItem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20503,7 +20503,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20514,7 +20514,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20530,7 +20530,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20541,7 +20541,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationMerchantRemoveItem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20557,7 +20557,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20568,7 +20568,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20584,7 +20584,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20595,11 +20595,11 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationPersonalStoreBuy",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20607,22 +20607,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationPersonalStorePutItem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20638,7 +20638,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20649,7 +20649,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationPersonalStoreRemoveItem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20665,7 +20665,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20676,11 +20676,11 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationPersonalStoreSetBlackList",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20688,26 +20688,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationTradeAddMeso",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20719,7 +20719,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20730,7 +20730,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationTradeConfirm",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20746,7 +20746,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20757,11 +20757,11 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationTradePutItem",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20773,7 +20773,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20784,7 +20784,7 @@
     {
       "kind": "sub-struct",
       "packet": "interaction/serverbound/InteractionOperationTransaction",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20800,7 +20800,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20838,11 +20838,11 @@
     {
       "kind": "sub-struct",
       "packet": "messenger/serverbound/MessengerOperation",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20850,26 +20850,26 @@
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "messenger/serverbound/MessengerOperationAnswerInvite",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20877,26 +20877,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "messenger/serverbound/MessengerOperationChat",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20904,26 +20904,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "messenger/serverbound/MessengerOperationInvite",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -20931,22 +20931,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "note/serverbound/NoteOperation",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20962,7 +20962,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -20973,7 +20973,7 @@
     {
       "kind": "sub-struct",
       "packet": "note/serverbound/NoteOperationDiscard",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -20989,7 +20989,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -21000,11 +21000,11 @@
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskAvatarConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21012,26 +21012,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskBoxTextConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21039,26 +21039,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskMemberShopAvatarConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21066,11 +21066,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -21081,11 +21081,11 @@
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskMenuConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21093,26 +21093,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskNumberConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21120,26 +21120,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskPetAllConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21147,26 +21147,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskPetConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21174,26 +21174,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskQuizConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21201,26 +21201,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskSpeedQuizConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21228,26 +21228,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskTextConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21255,26 +21255,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcAskYesNoConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21282,15 +21282,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -21309,11 +21309,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -21324,11 +21324,11 @@
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcSayConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21336,26 +21336,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/clientbound/NpcSayImageConversationDetail",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21363,15 +21363,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -21405,11 +21405,11 @@
     {
       "kind": "sub-struct",
       "packet": "npc/serverbound/NpcContinueConversation",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21417,15 +21417,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -21436,7 +21436,7 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21444,11 +21444,11 @@
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ⚠️"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -21463,7 +21463,7 @@
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21471,11 +21471,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -21486,11 +21486,11 @@
     {
       "kind": "sub-struct",
       "packet": "npc/serverbound/NpcShopBuy",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21498,26 +21498,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/serverbound/NpcShopRecharge",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21525,26 +21525,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/serverbound/NpcShopSell",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21552,26 +21552,26 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "npc/serverbound/NpcStartConversation",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -21579,22 +21579,22 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "party/serverbound/PartyOperationChangeLeader",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21610,18 +21610,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "party/serverbound/PartyOperationExpel",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21637,18 +21637,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "party/serverbound/PartyOperationInvite",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21664,18 +21664,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "party/serverbound/PartyOperationJoin",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21691,11 +21691,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         }
       }
     },
@@ -21783,7 +21783,7 @@
     {
       "kind": "sub-struct",
       "packet": "storage/serverbound/StorageOperationMeso",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21799,7 +21799,7 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",
@@ -21810,7 +21810,7 @@
     {
       "kind": "sub-struct",
       "packet": "storage/serverbound/StorageOperationRetrieveAsset",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21826,18 +21826,18 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
     {
       "kind": "sub-struct",
       "packet": "storage/serverbound/StorageOperationStoreAsset",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21853,11 +21853,11 @@
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },

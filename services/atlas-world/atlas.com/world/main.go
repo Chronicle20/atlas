@@ -96,7 +96,7 @@ func main() {
 	// Process-level shutting-down flag; flipped on SIGTERM teardown so
 	// /readyz reports not-ready before the rest of shutdown.
 	var shuttingDown atomic.Bool
-	ready := func() bool { return caughtUp.CaughtUpNow() && !shuttingDown.Load() }
+	ready := func() bool { return configuration.SnapshotReady() && !shuttingDown.Load() }
 	tdm.TeardownFunc(func() {
 		shuttingDown.Store(true)
 		l.Info("Flipped /readyz to not-ready for graceful shutdown.")

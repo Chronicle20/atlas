@@ -88,6 +88,19 @@ func PublishSnapshot(tenants map[uuid.UUID]tenant.RestModel) {
 	readyOnce.Do(func() { close(readyCh) })
 }
 
+// SnapshotReady reports whether the first PublishSnapshot has populated the
+// tenant config (readyCh closed). Non-blocking — suitable for a /readyz gate
+// so readiness reflects actual snapshot availability rather than just Kafka
+// catch-up. Once true it stays true (readyCh is closed once, via readyOnce).
+func SnapshotReady() bool {
+	select {
+	case <-readyCh:
+		return true
+	default:
+		return false
+	}
+}
+
 // initializeRatesFromConfig initializes the rate registry with rates from
 // configuration. Called by the bridge onChange hook (configuration.
 // ReinitChangedRates) on initial apply and on each tenant config change.

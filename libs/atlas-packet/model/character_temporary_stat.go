@@ -338,6 +338,15 @@ func NewCharacterTemporaryStatBase(bDynamicTermSet bool) CharacterTemporaryStatB
 	}
 }
 
+func NewCharacterTemporaryStatBaseWithOptions(bDynamicTermSet bool, nOption int32, rOption int32) CharacterTemporaryStatBase {
+	return CharacterTemporaryStatBase{
+		tLastUpdated:    time.Now().Unix(),
+		bDynamicTermSet: bDynamicTermSet,
+		nOption:         nOption,
+		rOption:         rOption,
+	}
+}
+
 func readTime(r *request.Reader) int64 {
 	interval := r.ReadBool()
 	delta := int64(r.ReadInt32()) * 1000
@@ -717,8 +726,12 @@ func (m *CharacterTemporaryStat) getBaseTemporaryStats() []packet.Encoder {
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Energy Charge 15
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Speed 15
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Jump 15
-	// TODO look up actual buff values if riding mount.
-	list = append(list, NewCharacterTemporaryStatBase(false)) // Monster Riding 13
+	// Monster Riding 13: nOption = vehicle/taming-mob item id, rOption = source skill id (IDA-confirmed v83).
+	if s, ok := m.stats[character.TemporaryStatTypeMonsterRiding]; ok {
+		list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId()))
+	} else {
+		list = append(list, NewCharacterTemporaryStatBase(false)) // Monster Riding 13
+	}
 	list = append(list, NewSpeedInfusionTemporaryStat())      // 17
 	list = append(list, NewGuidedBulletTemporaryStat())       // 17
 	list = append(list, NewCharacterTemporaryStatBase(true))  // Undead 15

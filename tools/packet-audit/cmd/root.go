@@ -56,6 +56,9 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "discover-ops" {
 		return runDiscoverOps(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "verify-serverbound" {
+		return runVerifyServerbound(args[1:], stderr)
+	}
 	fs := flag.NewFlagSet("packet-audit", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	opts := Options{}

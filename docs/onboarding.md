@@ -58,6 +58,16 @@ Each service record needs the tenant it applies to:
 - **channel-service**: `tenants: [{id, ipAddress, worlds: [{id, channels: [{id, port}]}]}]`
 - **drops-service**: minimal, just the tenant list
 
+> **Ports are version-derived.** Each tenant's `port` is `majorVersion × 100`
+> (login) and `+1` (channel) — one formula in
+> `services/atlas-pr-bootstrap/scripts/version-ports.sh`, consumed by both the
+> bootstrap and the LB-port generator. The set of versions a cluster exposes
+> on its LoadBalancers is declared once in `deploy/k8s/base/versions.json`;
+> run `tools/gen-lb-ports.sh` to regenerate the k8s port blocks. See
+> `docs/runbooks/ephemeral-pr-deployments.md` → "Adding (or removing) a game
+> version". The bootstrap upserts only its own tenant into the live `services`
+> config, so additional co-resident versions persist across re-runs.
+
 ## Step 3 — Game content *(optional, but required for gameplay)*
 
 *Web UI → **Setup***. Offers buttons for:

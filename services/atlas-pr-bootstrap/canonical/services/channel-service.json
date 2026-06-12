@@ -21,7 +21,7 @@
               "channels": [
                 {
                   "id": 0,
-                  "port": 8301
+                  "port": 0
                 }
               ]
             }

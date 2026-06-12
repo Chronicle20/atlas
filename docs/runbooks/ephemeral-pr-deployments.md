@@ -581,3 +581,48 @@ cluster-infra mirrors the new shape into the live ConfigMap. Order
 of merges matters: cluster-infra changes land BEFORE the consuming
 atlas PR, otherwise the next PostDelete Job wedges with
 `CreateContainerConfigError: configmap "atlas-pr-cleanup-env" not found`.
+
+## §9.14 Adding (or removing) a game version
+
+A version's login/channel ports are derived from its `majorVersion`
+(`loginPort = major × 100`, `channelPort = loginPort + 1`) by one shared
+formula (`services/atlas-pr-bootstrap/scripts/version-ports.sh`). Two places
+that used to be hand-maintained are now generated from a single declared list.
+
+**To expose a new version on the LoadBalancers:**
+
+1. Add the version to `deploy/k8s/base/versions.json`:
+   ```json
+   { "region": "gms", "majorVersion": 84, "minorVersion": 1 }
+   ```
+   (Two versions may not share a `majorVersion` — they would collide on the
+   same port; the generator rejects this.)
+2. Regenerate the manifests:
+   ```bash
+   tools/gen-lb-ports.sh
+   ```
+   This rewrites the `# BEGIN/END generated:*` blocks in
+   `deploy/k8s/base/atlas-{login,channel}.yaml`. Nothing outside the markers
+   changes. CI (`gen-lb-ports --check`) fails any PR where these drift.
+3. Commit both the `versions.json` edit and the regenerated manifests, then
+   redeploy the base.
+
+The tenant row and its per-tenant configuration still have to exist:
+ephemeral envs get them from `atlas-pr-bootstrap`; persistent envs from the
+UI Templates → Clone flow. The declared version set only controls **LB
+exposure**.
+
+**Additive bootstrap guarantee.** `atlas-pr-bootstrap` now upserts only its
+canonical tenant into the live `services` config (keyed by tenant id) and
+leaves every other tenant entry untouched. A second version added by hand in
+an ephemeral env **survives every bootstrap re-run** — its socket listener
+and its per-tenant Kafka consumers are no longer drained. (Previously the
+bootstrap rebuilt `tenants[]` from a template and clobbered the second
+version, leaving its consumers drained so clients logged in and hung.)
+
+**Coexistence verification (manual repro).** With v83 (canonical) + v84
+(hand-added) both present in the `services` config, re-run the bootstrap and
+confirm in the login/channel logs:
+- `projection.applied op=add` for **both** tenants, and
+- **no** `projection.applied op=drain` for v84,
+then connect a v84 client and confirm the login handshake completes (no hang).

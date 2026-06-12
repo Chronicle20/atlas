@@ -31,6 +31,8 @@ setup() {
         local base
         base="$(basename "$f")"
         [ "$base" = "lib.sh" ] && continue
+        [ "$base" = "version-ports.sh" ] && continue
+        [ "$base" = "service-config.sh" ] && continue
         if ! printf '%s\n' "$chmod_line" | grep -qF "/atlas/${base}"; then
             missing+=("$base")
         fi

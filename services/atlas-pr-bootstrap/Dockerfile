@@ -54,6 +54,8 @@ RUN curl -fsSL --retry 3 --retry-delay 5 \
 
 WORKDIR /atlas
 COPY scripts/lib.sh /atlas/lib.sh
+COPY scripts/version-ports.sh /atlas/version-ports.sh
+COPY scripts/service-config.sh /atlas/service-config.sh
 COPY scripts/bootstrap.sh /atlas/bootstrap.sh
 COPY scripts/cleanup.sh /atlas/cleanup.sh
 COPY scripts/sweep-orphans.sh /atlas/sweep-orphans.sh

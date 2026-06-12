@@ -17,6 +17,7 @@ spec:
       - name: atlas-channel
         image: ghcr.io/chronicle20/atlas-channel/atlas-channel:latest
         ports:
+        # BEGIN generated:container-ports (tools/gen-lb-ports.sh — edit deploy/k8s/base/versions.json)
         - containerPort: 1201
         - containerPort: 8301
         - containerPort: 8401
@@ -24,6 +25,7 @@ spec:
         - containerPort: 9201
         - containerPort: 9501
         - containerPort: 18501
+        # END generated:container-ports
         - containerPort: 8080
         envFrom:
         - configMapRef:
@@ -49,6 +51,7 @@ spec:
   selector:
     app: atlas-channel
   ports:
+  # BEGIN generated:service-ports (tools/gen-lb-ports.sh — edit deploy/k8s/base/versions.json)
   - port: 1201
     targetPort: 1201
     protocol: TCP
@@ -77,4 +80,5 @@ spec:
     targetPort: 18501
     protocol: TCP
     name: atlas-channel-jms-185
+  # END generated:service-ports
   loadBalancerIP: 192.168.23.232

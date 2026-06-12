@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -148,10 +149,16 @@ func TestDiscoverOpsWorklist(t *testing.T) {
 // appended entries and LoadVersion still validates.
 func TestDiscoverOpsApply(t *testing.T) {
 	fixture := readFixture(t)
+	// CLogin::OnFoo (0x11) appears in the fixture; the fake callee map gives it
+	// an explicit address so we can assert the IDA.Address is set correctly.
+	const onFooAddr = "0x5e1100"
 	fc := &discoverFakeMCP{
 		dispatcherName: "CClientSocket::ProcessPacket",
 		dispatcherAddr: "0x5e0000",
 		decompText:     fixture,
+		callees: []idasrc.Callee{
+			{Name: "CLogin::OnFoo", Addr: onFooAddr},
+		},
 	}
 
 	dir := t.TempDir()
@@ -183,7 +190,7 @@ func TestDiscoverOpsApply(t *testing.T) {
 	if len(vf.Entries) <= len(seedEntries) {
 		t.Errorf("no entries appended: got %d, want > %d", len(vf.Entries), len(seedEntries))
 	}
-	// The new entry for 0x11 must be present.
+	// The new entry for 0x11 must be present with correct provenance and IDA address.
 	found := false
 	for _, e := range vf.Entries {
 		if e.Opcode == 0x11 && e.Direction == opregistry.DirClientbound {
@@ -193,6 +200,14 @@ func TestDiscoverOpsApply(t *testing.T) {
 			}
 			if e.IDA == nil {
 				t.Error("new entry missing IDA ref")
+			} else {
+				// IDA.Address must be the callee's address from the fake client,
+				// not the dispatcher fallback address.
+				wantAddr, _ := strconv.ParseUint(strings.TrimPrefix(onFooAddr, "0x"), 16, 64)
+				if e.IDA.Address != wantAddr {
+					t.Errorf("new entry IDA.Address = %d (0x%x), want %d (0x%x) from callee map",
+						e.IDA.Address, e.IDA.Address, wantAddr, wantAddr)
+				}
 			}
 		}
 	}

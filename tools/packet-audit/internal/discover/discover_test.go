@@ -143,6 +143,121 @@ func TestParseDispatchNestedSwitch(t *testing.T) {
 	}
 }
 
+// TestParseDispatchBracedCaseBody verifies that a case body wrapped in braces
+// (Hex-Rays sometimes emits these) binds the handler to the correct opcode and
+// does not leak it to the following case.
+func TestParseDispatchBracedCaseBody(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "process_packet_v83.c.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases, err := ParseDispatch(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOp := map[int]DispatchCase{}
+	for _, c := range cases {
+		byOp[c.Opcode] = c
+	}
+
+	// 0x50 has a braced body: the handler must bind to 0x50, not leak to 0x51.
+	c50 := byOp[0x50]
+	if c50.Handler != "CLogin::OnBracedBody" {
+		t.Errorf("0x50 braced-body: got handler %q, want CLogin::OnBracedBody", c50.Handler)
+	}
+
+	// 0x51 must bind its own handler independently.
+	c51 := byOp[0x51]
+	if c51.Handler != "CLogin::OnAfterBraced" {
+		t.Errorf("0x51 after-braced: got handler %q, want CLogin::OnAfterBraced", c51.Handler)
+	}
+
+	// They must not share a handler (no leak from braced case).
+	if c50.Handler == c51.Handler {
+		t.Errorf("0x50 leaked handler to 0x51: both have %q", c50.Handler)
+	}
+}
+
+// TestParseDispatchBracedIfInCase verifies that a handler inside a braced if
+// body within a case arm is bound to the case's pending opcode.
+func TestParseDispatchBracedIfInCase(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "process_packet_v83.c.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases, err := ParseDispatch(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOp := map[int]DispatchCase{}
+	for _, c := range cases {
+		byOp[c.Opcode] = c
+	}
+
+	// 0x52: handler is inside an if (...) { } block; must still bind to 0x52.
+	c52 := byOp[0x52]
+	if c52.Handler != "CLogin::OnBracedIf" {
+		t.Errorf("0x52 braced-if: got handler %q, want CLogin::OnBracedIf", c52.Handler)
+	}
+}
+
+// TestParseDispatchNestedSwitchOuterHandlerAfterInner verifies that the outer
+// case's handler (which appears AFTER the nested switch body closes) is still
+// bound to the outer opcode.
+func TestParseDispatchNestedSwitchOuterHandlerAfterInner(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "process_packet_v83.c.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases, err := ParseDispatch(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOp := map[int]DispatchCase{}
+	for _, c := range cases {
+		byOp[c.Opcode] = c
+	}
+
+	// 0x40's nested switch contains 0x01 and 0x02; after the inner switch closes,
+	// CLogin::OnMigrateIn is called at the outer case level.
+	c40 := byOp[0x40]
+	if c40.Handler != "CLogin::OnMigrateIn" {
+		t.Errorf("0x40 outer handler after nested switch: got %q, want CLogin::OnMigrateIn", c40.Handler)
+	}
+
+	// Inner labels must still be suppressed.
+	if _, ok := byOp[0x01]; ok {
+		t.Error("inner nested-switch label 0x01 leaked as top-level opcode after outer-handler fix")
+	}
+	if _, ok := byOp[0x02]; ok {
+		t.Error("inner nested-switch label 0x02 leaked as top-level opcode after outer-handler fix")
+	}
+}
+
+// TestParseDispatchZeroCases verifies that ParseDispatch returns an empty (not
+// nil) slice — not an error — when given text with no switch statement. Callers
+// that receive zero cases should treat this as suspicious (wrong function or
+// if-based dispatch; see ParseDispatch contract).
+func TestParseDispatchZeroCases(t *testing.T) {
+	const noSwitch = `
+void __thiscall Dispatcher(void *this, CInPacket *a2)
+{
+  if (op == 1) { CFoo::OnOne(this, a2); }
+  if (op == 2) { CFoo::OnTwo(this, a2); }
+}
+`
+	cases, err := ParseDispatch(noSwitch)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cases == nil {
+		t.Error("ParseDispatch returned nil; want empty slice for zero-case result")
+	}
+	if len(cases) != 0 {
+		t.Errorf("expected 0 cases from if-based dispatch, got %d", len(cases))
+	}
+}
+
 // TestParseDispatchVtableNoVoid ensures a vtable cast line containing 'void'
 // does not bind 'void' as a handler (probe finding 3 — vtable variant).
 func TestParseDispatchVtableNoVoid(t *testing.T) {

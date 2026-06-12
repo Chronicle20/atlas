@@ -37,33 +37,71 @@ var (
 //
 // Scoping rules (robustness against real Hex-Rays output):
 //   - Brace depth is tracked per line. The depth at which the FIRST case label
-//     appears is recorded as the dispatch depth; only case labels at exactly
-//     that depth are treated as dispatch arms. Deeper case labels (nested
-//     switch bodies) are silently ignored.
+//     appears is recorded as the dispatch depth; any case label at depth >=
+//     dispatchDepth where the line is NOT inside a nested switch is treated as
+//     a dispatch arm. Braced case bodies (depth == dispatchDepth+1) are handled
+//     transparently.
+//   - Nested switches are tracked by depth: when a "switch (" keyword appears
+//     after dispatchDepth is established, the current depth is pushed onto a
+//     stack; everything until the brace depth drops back to that recorded depth
+//     is "inside a nested switch" and case labels / calls / terminators there
+//     are silently skipped for the outer dispatch.
 //   - goto/return on a line clears pending labels (like break) so that a tail
 //     goto/return case does not leak its labels into the next real case.
 //   - All call matches on a line are scanned (not just the first); the first
 //     non-noise candidate with a plausible handler shape is chosen.
+//
+// CONTRACT: Only switch-based dispatch is supported. An if/else-if chain
+// that dispatches by opcode will yield zero cases — callers should treat a
+// zero-case result as suspicious (wrong function or unsupported dispatch form).
 func ParseDispatch(text string) ([]DispatchCase, error) {
-	var out []DispatchCase
+	out := make([]DispatchCase, 0)
 	var pending []int
 	depth := 0
 	dispatchDepth := -1 // depth of the enclosing switch's case labels; -1 = unseen
 
+	// nestedSwitchDepths is a stack of brace depths at which nested switch
+	// statements were opened. A line is "inside a nested switch" when this stack
+	// is non-empty. We push when we encounter "switch (" after dispatchDepth is
+	// set; we pop when brace depth returns to the recorded depth (or below).
+	var nestedSwitchDepths []int
+
 	for _, line := range strings.Split(text, "\n") {
-		// Count brace changes on this line BEFORE acting on case/call so that
-		// a closing '}' correctly reduces depth before we check for case labels.
+		// Count brace changes on this line BEFORE detecting switch keywords and
+		// acting on case/call so that a closing '}' correctly reduces depth before
+		// we check for case labels.
 		openCount := strings.Count(line, "{")
 		closeCount := strings.Count(line, "}")
 		depth += openCount - closeCount
+
+		// Pop any nested-switch depth entries that have been exited (brace depth
+		// fell to or below the recorded entry depth).
+		for len(nestedSwitchDepths) > 0 && depth <= nestedSwitchDepths[len(nestedSwitchDepths)-1] {
+			nestedSwitchDepths = nestedSwitchDepths[:len(nestedSwitchDepths)-1]
+		}
+
+		// Detect a new nested switch AFTER dispatchDepth has been established.
+		// We use the code portion (comment-stripped) to avoid false positives from
+		// comments that happen to contain "switch (".
+		codePart := stripLineComment(line)
+		if dispatchDepth != -1 && strings.Contains(codePart, "switch (") {
+			// Record the depth AFTER counting braces on this line so that
+			// subsequent case labels inside the nested switch body are suppressed.
+			nestedSwitchDepths = append(nestedSwitchDepths, depth)
+		}
+
+		insideNestedSwitch := len(nestedSwitchDepths) > 0
 
 		if m := caseRe.FindStringSubmatch(line); m != nil {
 			// Record the dispatch depth on the very first case label seen.
 			if dispatchDepth == -1 {
 				dispatchDepth = depth
 			}
-			// Only record labels at the dispatch depth; ignore nested ones.
-			if depth == dispatchDepth {
+			// Record labels at the dispatch depth and NOT inside a nested switch.
+			// depth >= dispatchDepth covers braced case bodies (depth == dispatchDepth+1
+			// for the label line itself is not typical, but depth == dispatchDepth is
+			// the normal case for the label line; the body may be at depth+1).
+			if !insideNestedSwitch && depth == dispatchDepth {
 				op, err := parseIntLabel(m[1])
 				if err != nil {
 					return nil, fmt.Errorf("bad case label %q: %w", m[1], err)
@@ -81,12 +119,12 @@ func ParseDispatch(text string) ([]DispatchCase, error) {
 		// Strip trailing C++ // comment before scanning calls and terminators so
 		// that keywords like "goto" or "return" appearing only in comment text do
 		// not falsely clear pending labels.
-		codePart := stripLineComment(line)
+		// (codePart was already computed above for the switch-detection pass.)
 
-		// Only bind calls when we are at the dispatch depth. Deeper depths mean
-		// we are inside a nested block (e.g., a nested switch inside a case arm)
-		// and calls there must not be bound to the enclosing pending labels.
-		if depth == dispatchDepth {
+		// Bind calls when we have pending labels and are NOT inside a nested switch.
+		// depth > dispatchDepth is fine here — it covers braced case bodies and
+		// braced if-bodies inside a case arm.
+		if !insideNestedSwitch {
 			if matches := callRe.FindAllStringSubmatch(codePart, -1); matches != nil {
 				for _, m := range matches {
 					name := m[1]
@@ -105,11 +143,11 @@ func ParseDispatch(text string) ([]DispatchCase, error) {
 			}
 		}
 
-		// break / goto / return all end a case body at the dispatch depth; only
-		// check the code portion of the line to avoid false triggers from comment
-		// text, and only at the dispatch depth so that break/goto/return inside
-		// nested switch arms do not clear the enclosing pending labels.
-		if depth == dispatchDepth &&
+		// break / goto / return all end a case body; only check the code portion
+		// to avoid false triggers from comment text, and only when NOT inside a
+		// nested switch so that break/goto/return inside nested switch arms do not
+		// clear the enclosing pending labels.
+		if !insideNestedSwitch &&
 			(strings.Contains(codePart, "break;") ||
 				strings.Contains(codePart, "goto ") ||
 				strings.Contains(codePart, "return")) {

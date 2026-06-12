@@ -104,6 +104,10 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 		fmt.Fprintf(stderr, "packet-audit discover-ops: ParseDispatch: %v\n", err)
 		return 3
 	}
+	if len(cases) == 0 {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: dispatcher yielded 0 cases — wrong function or if-based dispatch; see ParseDispatch contract\n")
+		return 3
+	}
 
 	// Step 4: resolve sub_ callees via GetCallees on the dispatcher.
 	callees, err := client.GetCallees(ctx, addr)

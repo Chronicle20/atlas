@@ -95,6 +95,18 @@ func (ctx ValidationContext) Character() character.Model {
 	return ctx.character
 }
 
+// Logger returns the logger threaded into this context (may be nil for
+// contexts created without a logger).
+func (ctx ValidationContext) Logger() logrus.FieldLogger {
+	return ctx.l
+}
+
+// Context returns the request context threaded into this validation context
+// (may be nil for contexts created without one).
+func (ctx ValidationContext) Context() context.Context {
+	return ctx.ctx
+}
+
 // Quest returns the quest model for the given quest ID
 func (ctx ValidationContext) Quest(questId uint32) (quest.Model, bool) {
 	q, exists := ctx.quests[questId]

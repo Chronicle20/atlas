@@ -11,7 +11,12 @@ import (
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/quest"
+	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +26,38 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
+
+// testLogger returns a logger that discards output, for use in tests that
+// exercise condition evaluation (which now logs on the MapCondition path).
+func testLogger() logrus.FieldLogger {
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	return l
+}
+
+// stubLocationServer stands up an httptest server that answers the
+// atlas-maps GET /characters/{id}/location endpoint with the supplied map id
+// and points MAPS_SERVICE_URL at it. MapCondition evaluation now resolves the
+// character's map via this location lookup instead of a character mirror
+// field. Returns the logger/context the evaluation should use.
+func stubLocationServer(t *testing.T, characterId uint32, mapId uint32) (logrus.FieldLogger, context.Context) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, fmt.Sprintf("/characters/%d/location", characterId)) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = io.WriteString(w, fmt.Sprintf(`{"data":{"type":"character-locations","id":"%d","attributes":{"worldId":0,"channelId":0,"mapId":%d,"instance":"00000000-0000-0000-0000-000000000000"}}}`, characterId, mapId))
+	}))
+	t.Cleanup(srv.Close)
+	// Trailing slash matters: location requests.go formats
+	// "<base>characters/%d/location".
+	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
+	return testLogger(), context.Background()
+}
 
 // fakeMonsterBookProcessor satisfies the monsterbook.Processor interface for
 // tests. Tests set total/err to simulate atlas-monster-book responses.
@@ -62,7 +98,6 @@ func TestCondition_Evaluate(t *testing.T) {
 		SetId(123).
 		SetJobId(100).
 		SetMeso(10000).
-		SetMapId(2000).
 		SetFame(50).
 		SetGender(0). // 0 = male
 		SetLevel(25).
@@ -75,6 +110,10 @@ func TestCondition_Evaluate(t *testing.T) {
 		SetLuck(15).
 		SetInventory(inventoryModel).
 		Build()
+
+	// MapCondition resolves the character's map via an atlas-maps location
+	// lookup; stub it to report map 2000 for character 123.
+	l, ctx := stubLocationServer(t, 123, 2000)
 
 	tests := []struct {
 		name         string
@@ -773,7 +812,7 @@ func TestCondition_Evaluate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.condition.Evaluate(character)
+			result := tt.condition.Evaluate(l, ctx, character)
 
 			if result.Passed != tt.wantPassed {
 				t.Errorf("Condition.Evaluate() passed = %v, want %v", result.Passed, tt.wantPassed)
@@ -942,7 +981,6 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 		SetId(123).
 		SetJobId(100).
 		SetMeso(10000).
-		SetMapId(2000).
 		SetFame(50).
 		SetGender(0).
 		SetLevel(25).
@@ -1599,7 +1637,7 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.condition.Evaluate(character)
+			result := tt.condition.Evaluate(testLogger(), context.Background(), character)
 
 			if result.Passed != tt.wantPassed {
 				t.Errorf("Condition.Evaluate() passed = %v, want %v", result.Passed, tt.wantPassed)
@@ -1719,7 +1757,7 @@ func TestCondition_ErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.condition.Evaluate(character)
+			result := tt.condition.Evaluate(testLogger(), context.Background(), character)
 
 			if result.Passed != tt.wantPassed {
 				t.Errorf("Condition.Evaluate() passed = %v, want %v", result.Passed, tt.wantPassed)
@@ -2126,7 +2164,7 @@ func TestCondition_MonsterBookCount(t *testing.T) {
 			operator:      GreaterEqual,
 			value:         5,
 		}
-		result := cond.Evaluate(char)
+		result := cond.Evaluate(testLogger(), context.Background(), char)
 		if result.Passed {
 			t.Errorf("Expected Passed=false without context")
 		}

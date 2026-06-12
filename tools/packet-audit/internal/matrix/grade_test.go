@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
@@ -151,6 +152,42 @@ func TestGradeUnknownVersionFile(t *testing.T) {
 	c := gradeOpCell(in, refACCOUNT(), "gms_v84")
 	if c.State != StateIncomplete || c.Note == "" {
 		t.Errorf("unknown applicability must be incomplete+note; got %v %q", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeConflictDuplicateClaim(t *testing.T) {
+	// Two different writers with the IDENTICAL full IDAName (no #case suffix)
+	// for the same op -> StateConflict.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	// Two writers both claim the exact same IDAName (no #case suffix).
+	in.Reports["gms_v83"] = map[string]LoadedReport{
+		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
+		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictMatch},
+	}
+	// Both writers map to the same baseFName = "CLogin::OnAccountInfoResult".
+	in.FNameToWriter = map[string]map[string]string{"gms_v83": {
+		"CLogin::OnAccountInfoResult": "AccountInfoV1",
+	}}
+	m := Build(in, []string{"gms_v83"})
+	var cell Cell
+	for _, r := range m.Rows {
+		if r.Op == "ACCOUNT_INFO" {
+			cell = r.Cells["gms_v83"]
+			break
+		}
+	}
+	if cell.State != StateConflict {
+		t.Errorf("duplicate-claim must be conflict; got %v (%s)", cell.State.Name(), cell.Note)
+	}
+	if !strings.Contains(cell.Note, "two Atlas structs claim") {
+		t.Errorf("conflict note must mention 'two Atlas structs claim'; got %q", cell.Note)
 	}
 }
 

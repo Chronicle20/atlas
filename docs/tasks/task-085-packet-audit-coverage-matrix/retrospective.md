@@ -102,3 +102,7 @@ and byte-tests scattered through `libs/atlas-packet`.
 Task-085 (this task) implements the remediation: an evidence-graded coverage
 matrix as the primary artifact, with a mandatory byte-fixture oracle for the
 tier the flat diff cannot verify. See `design.md`.
+
+---
+
+Implementation landed via plan.md in this folder; STATUS.md is the artifact of record.

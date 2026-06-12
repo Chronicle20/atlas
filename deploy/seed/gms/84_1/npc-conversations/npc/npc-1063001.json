@@ -1,0 +1,193 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1063001,
+      "startState": "checkQuestAndItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2053",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": "<",
+                    "referenceId": "4031026",
+                    "type": "item",
+                    "value": "20"
+                  }
+                ],
+                "nextState": "checkInventorySpaceQuest"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkInventorySpaceRepeatable"
+              }
+            ]
+          },
+          "id": "checkQuestAndItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031026",
+                    "type": "inventorySpace",
+                    "value": "20"
+                  }
+                ],
+                "nextState": "awardQuestItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpaceQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4020000",
+                    "type": "inventorySpace",
+                    "value": "4"
+                  }
+                ],
+                "nextState": "selectRandomItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpaceRepeatable",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Check for a available slot on your ETC inventory."
+          },
+          "id": "noInventorySpace",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031026",
+                  "quantity": "20"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpToSleepywood"
+              }
+            ]
+          },
+          "id": "awardQuestItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "4020000,4020002,4020006",
+                  "outputContextKey": "selectedItemId",
+                  "weights": "1,1,1"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "awardRandomItem"
+              }
+            ]
+          },
+          "id": "selectRandomItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.selectedItemId}",
+                  "quantity": "4"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpToSleepywood"
+              }
+            ]
+          },
+          "id": "awardRandomItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "105040300",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToSleepywood",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1063001",
+    "type": "npc-conversation"
+  }
+}

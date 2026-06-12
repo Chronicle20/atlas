@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Mushroom Town - Tutorial portal showing jump down instructions",
+      "mapId": 10000,
+      "portalId": "advice09",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "show_jump_down_hint",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "height": "6",
+                  "hint": "Press #e#b[Down]#k on the arrow key#n and#e#b[Alt]#k#n at the same time to jump downwards.",
+                  "width": "450"
+                },
+                "type": "show_hint"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "advice09",
+    "type": "portal-action"
+  }
+}

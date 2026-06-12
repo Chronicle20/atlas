@@ -14,6 +14,7 @@ const (
 // RestModel represents the REST model for pet evolution data from atlas-data
 type RestModel struct {
 	Id          uint32               `json:"-"`
+	Name        string               `json:"name"`
 	ReqPetLevel uint32               `json:"reqPetLevel"`
 	ReqItemId   uint32               `json:"reqItemId"`
 	Evolutions  []EvolutionRestModel `json:"evolutions"`
@@ -79,6 +80,7 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:          rm.Id,
+		name:        rm.Name,
 		reqPetLevel: rm.ReqPetLevel,
 		reqItemId:   rm.ReqItemId,
 		evolutions:  len(rm.Evolutions),

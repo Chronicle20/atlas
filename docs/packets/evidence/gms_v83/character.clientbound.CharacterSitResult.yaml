@@ -6,4 +6,6 @@ ida:
     function: CUserLocal::OnSitResult
     address: "0x959797"
     decompile_sha256: c1928515c51632c8aa7316857c4293b8e363fbcd1efa7c8dc5ac410c4b1e2d72
-notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (CharacterSitResult row): divergent-length exclusive if/else (byte+short vs byte); client reads Decode1 + conditional Decode2 - matches."
+verifies:
+    - character/clientbound/sit_result_test.go#TestCharacterSitResultByteOutput
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (CharacterSitResult row): divergent-length exclusive if/else (byte+short vs byte); client reads Decode1 + conditional Decode2 - matches. Byte-fixture added (task-085 4.4): one fixture per mode (sit 01+chairId LE / cancel 00) derived from the export's ordered calls @ 0x959797."

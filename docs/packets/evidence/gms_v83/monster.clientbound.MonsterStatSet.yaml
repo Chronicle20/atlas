@@ -1,0 +1,11 @@
+packet: monster/clientbound/MonsterStatSet
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnStatSet
+    address: "0x66c301"
+    decompile_sha256: 3e150605b339f01c2e0598942e734c46fdd79657f0d4e5752c828cdbadbafc49
+verifies:
+    - monster/clientbound/stat_test.go#TestMonsterStatSetByteOutputV83
+notes: "Opaque-family member (OPAQUE_LEDGER 'mob temporary-stat blob', VERIFIED-EXCEPTION): export decomposes only to Decode4(mobId) + 16-byte mask buf + per-stat body buf; the byte test asserts the full 32-byte wire for a single-Speed-stat fixture, with Atlas's trailing tDelay/calcDamageStatIndex/bStat absorbed by the trailing opaque buffer per the audit report."

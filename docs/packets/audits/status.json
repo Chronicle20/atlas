@@ -210,8 +210,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify"
+          "state": "verified"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -709,8 +708,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify"
+          "state": "verified"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -2341,8 +2339,7 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "state": "verified"
         },
         "gms_v84": {
           "state": "conflict",

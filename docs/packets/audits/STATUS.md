@@ -21,7 +21,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | ADMIN_SHOP |  | ❌ | ❌ | 🟥 | ❌ | ❌ |
 | ADMIN_SHOP_MESSAGE |  | ❌ | ❌ | 🟥 | ❌ | 🟥 |
 | ALLIANCE_OPERATION |  | ❌ | ❌ | 🟥 | 🟥 | ❌ |
-| APPLY_MONSTER_STATUS | monster/clientbound/MonsterStatSet (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟥 |
+| APPLY_MONSTER_STATUS | monster/clientbound/MonsterStatSet (T1) | ✅ | ❌ | 🟡 | 🟡 | 🟥 |
 | ARIANT_ARENA_SHOW_RESULT |  | ❌ | ❌ | 🟥 | 🟥 | ❌ |
 | ARIANT_ARENA_USER_SCORE |  | ❌ | ❌ | 🟥 | ❌ | 🟥 |
 | ARIANT_RESULT |  | 🟥 | ❌ | 🟥 | 🟥 | ⬜ |
@@ -39,7 +39,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | BUFFZONE_EFFECT/SAY_IMAGE |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
 | CAKE_PIE_EVENT_RESULT |  | 🟥 | 🟥 | 🟥 | ❌ | ⬜ |
 | CANCEL_BUFF | character/clientbound/BuffCancel (T1) | ❌ | ❌ | 🟥 | ❌ | 🟥 |
-| CANCEL_CHAIR | character/clientbound/CharacterSitResult (T1) | 🟡 | ❌ | 🟥 | 🟡 | 🟥 |
+| CANCEL_CHAIR | character/clientbound/CharacterSitResult (T1) | ✅ | ❌ | 🟥 | 🟡 | 🟥 |
 | CANCEL_FOREIGN_BUFF | character/clientbound/BuffCancelForeign (T1) | 🟡 | ❌ | 🟥 | 🟡 | 🟥 |
 | CANCEL_MONSTER_STATUS | monster/clientbound/MonsterStatReset (T1) | 🟡 | ❌ | 🟥 | 🟡 | 🟥 |
 | CANCEL_NAME_CHANGE_BY_OTHER |  | ❌ | ❌ | 🟥 | 🟥 | ⬜ |
@@ -97,7 +97,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 | DELETE_CHAR_RESPONSE | character/clientbound/DeleteCharacterResponse (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | DESTROY_HIRED_MERCHANT |  | 🟥 | ❌ | ❌ | 🟥 | 🟥 |
 | DESTROY_SHOP_RESULT |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
-| DISABLE_UI | ui/clientbound/Disable | 🟡 | 🟥 | 🟥 | 🟥 | 🟡 |
+| DISABLE_UI | ui/clientbound/Disable | ✅ | 🟥 | 🟥 | 🟥 | 🟡 |
 | DISALLOWED_DELIVERY_QUEST_LIST |  | ⬜ | ⬜ | ⬜ | ❌ | ⬜ |
 | DOJO_WARP_UP |  | 🟥 | ❌ | 🟥 | 🟥 | 🟥 |
 | DRAGON_BALL_BOX |  | ⬜ | ⬜ | ⬜ | ❌ | ⬜ |
@@ -822,7 +822,7 @@ Tool: `b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 12 | 136 | 422 | 85 | 138 | 1.7% |
+| v83 | 15 | 133 | 422 | 85 | 138 | 2.1% |
 | v84 | 0 | 0 | 567 | 82 | 144 | 0.0% |
 | v87 | 3 | 121 | 359 | 83 | 227 | 0.4% |
 | v95 | 10 | 196 | 341 | 16 | 230 | 1.3% |

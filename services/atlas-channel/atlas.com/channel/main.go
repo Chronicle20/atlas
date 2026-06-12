@@ -32,6 +32,7 @@ import (
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
+	mountConsumer "atlas-channel/kafka/consumer/mount"
 	monsterDomain "atlas-channel/monster"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
@@ -202,6 +203,7 @@ func main() {
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	// Boot the configuration projection: subscribe to the two config-status
 	// topics, gate on caught-up so we don't drive the listener registry
@@ -527,6 +529,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 

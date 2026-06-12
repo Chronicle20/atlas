@@ -2,21 +2,35 @@ package pet
 
 // Model represents a pet in the NPC conversations domain
 type Model struct {
-	id   uint32
-	slot int8
+	id         uint32
+	templateId uint32
+	level      byte
+	slot       int8
 }
 
 // NewModel creates a new pet model
-func NewModel(id uint32, slot int8) Model {
+func NewModel(id uint32, templateId uint32, level byte, slot int8) Model {
 	return Model{
-		id:   id,
-		slot: slot,
+		id:         id,
+		templateId: templateId,
+		level:      level,
+		slot:       slot,
 	}
 }
 
 // Id returns the pet's unique identifier
 func (m Model) Id() uint32 {
 	return m.id
+}
+
+// TemplateId returns the pet's template identifier
+func (m Model) TemplateId() uint32 {
+	return m.templateId
+}
+
+// Level returns the pet's level
+func (m Model) Level() byte {
+	return m.level
 }
 
 // Slot returns the pet's slot position

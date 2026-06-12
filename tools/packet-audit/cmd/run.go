@@ -139,7 +139,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			Address:     fields.Address,
 			Variant:     fmt.Sprintf("%s/v%d", ctx.Region, ctx.MajorVersion),
 			BranchDepth: branchDepth(calls),
-			AtlasFile:   atlasPath,
+			AtlasFile:   repoRelAtlasFile(atlasPath),
 			Rows:        rows,
 			Verdict:     v,
 			FlatInvalid: flatInvalid,
@@ -1824,6 +1824,30 @@ func locateAtlasFile(root, name, pkg string, dir csvpkg.Direction) (string, bool
 		return nil
 	})
 	return hit, hit != ""
+}
+
+// repoRelAtlasFile returns a stable, repo-relative display path for an Atlas
+// source file so a committed audit report never embeds a machine-specific
+// absolute prefix (a developer home directory, a CI workspace). This is for
+// DISPLAY only — the analyzer reads the file via the original (possibly
+// absolute) path; only the value stored in the report is normalized, so the
+// read path is never affected.
+//
+// A relative input — the documented `--atlas-packet ../../libs/atlas-packet`
+// invocation or the `libs/atlas-packet` default — is already safe and is
+// returned unchanged so existing reports do not churn. An absolute input is
+// rewritten to start at the `libs/atlas-packet/` marker; if that marker is
+// absent it falls back to the base name. Either way the result is never absolute.
+func repoRelAtlasFile(p string) string {
+	s := filepath.ToSlash(p)
+	if !filepath.IsAbs(p) {
+		return s
+	}
+	const marker = "libs/atlas-packet/"
+	if i := strings.LastIndex(s, marker); i >= 0 {
+		return s[i:]
+	}
+	return filepath.Base(s)
 }
 
 // exportCarriesPrefix reports whether the client export's leading field(s) match

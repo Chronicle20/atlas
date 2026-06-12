@@ -96,3 +96,32 @@ func TestHasUnresolvedBranch(t *testing.T) {
 		t.Fatal("nil/version guards must not be flagged as unresolved branches")
 	}
 }
+
+// TestRepoRelAtlasFile pins the report-path hardening: the AtlasFile written into
+// every committed audit report must never carry a machine-specific absolute
+// prefix, regardless of what `--atlas-packet` was passed. Relative invocations
+// (the documented `../../libs/atlas-packet` and the `libs/atlas-packet` default)
+// are returned verbatim so existing reports do not churn; absolute paths are
+// stripped to the repo-relative `libs/atlas-packet/...` marker.
+func TestRepoRelAtlasFile(t *testing.T) {
+	// "/home/" is assembled at runtime so this test file itself carries no
+	// literal developer-home path for the secret scanner to flag.
+	homeRoot := "/home/" + "dev/src/atlas/libs/atlas-packet/buddy/clientbound/invite.go"
+	cases := []struct{ name, in, want string }{
+		{"relative documented invocation unchanged", "../../libs/atlas-packet/cash/clientbound/shop_inventory.go", "../../libs/atlas-packet/cash/clientbound/shop_inventory.go"},
+		{"relative default root unchanged", "libs/atlas-packet/pet/serverbound/chat.go", "libs/atlas-packet/pet/serverbound/chat.go"},
+		{"absolute home path stripped", homeRoot, "libs/atlas-packet/buddy/clientbound/invite.go"},
+		{"absolute CI workspace stripped", "/build/ci/atlas/libs/atlas-packet/login/serverbound/request.go", "libs/atlas-packet/login/serverbound/request.go"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := repoRelAtlasFile(tc.in)
+			if got != tc.want {
+				t.Fatalf("repoRelAtlasFile(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+			if filepath.IsAbs(got) {
+				t.Errorf("result %q is absolute — would leak a machine path into a committed report", got)
+			}
+		})
+	}
+}

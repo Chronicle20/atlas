@@ -85,9 +85,11 @@ func ParseDispatch(text string) ([]DispatchCase, error) {
 		// comments that happen to contain "switch (".
 		codePart := stripLineComment(line)
 		if dispatchDepth != -1 && strings.Contains(codePart, "switch (") {
-			// Record the depth AFTER counting braces on this line so that
-			// subsequent case labels inside the nested switch body are suppressed.
-			nestedSwitchDepths = append(nestedSwitchDepths, depth)
+			// Record the PRE-brace depth so a `switch (v) {` line with the open
+			// brace on the same line still suppresses its whole body: the pop
+			// condition (depth <= recorded) must only fire once the body's
+			// closing brace returns to the depth the switch statement sits at.
+			nestedSwitchDepths = append(nestedSwitchDepths, depth-(openCount-closeCount))
 		}
 
 		insideNestedSwitch := len(nestedSwitchDepths) > 0

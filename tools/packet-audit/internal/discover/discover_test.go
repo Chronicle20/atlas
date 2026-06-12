@@ -289,3 +289,43 @@ void __thiscall Dispatcher(void *this, CInPacket *a2)
 		t.Errorf("0x50 vtable arm: got handler %q, want CGame::OnSomePacket", c50.Handler)
 	}
 }
+
+// TestParseDispatchSameLineSwitchBrace covers the non-Allman shape
+// `switch ( v ) {` — the open brace on the same line as the nested switch.
+// Hex-Rays never emits this, but the suppression must not silently bind an
+// inner arm's handler to the outer case label if input is hand-edited.
+func TestParseDispatchSameLineSwitchBrace(t *testing.T) {
+	src := `
+  switch ( op )
+  {
+    case 0xA0u:
+      switch ( v ) {
+        case 1u:
+          CLogin::OnInnerA1(v3);
+          break;
+      }
+      CLogin::OnOuterA0(v3, a2);
+      break;
+    case 0xA1u:
+      CLogin::OnNextA1(v3);
+      break;
+  }
+`
+	cases, err := ParseDispatch(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOp := map[int]DispatchCase{}
+	for _, c := range cases {
+		byOp[c.Opcode] = c
+	}
+	if _, ok := byOp[0x01]; ok {
+		t.Error("inner nested-switch label leaked as top-level opcode")
+	}
+	if got := byOp[0xA0].Handler; got != "CLogin::OnOuterA0" {
+		t.Errorf("0xA0 handler = %q, want CLogin::OnOuterA0", got)
+	}
+	if got := byOp[0xA1].Handler; got != "CLogin::OnNextA1" {
+		t.Errorf("0xA1 handler = %q, want CLogin::OnNextA1", got)
+	}
+}

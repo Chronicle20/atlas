@@ -57,6 +57,8 @@ func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
 	// Registry: present in gms_v83. This version's template does NOT route it,
 	// but another version (gms_v87) routes the SAME op by ITS own opcode.
+	// A local audit report exists, so this IS a real template-wiring gap
+	// (Atlas implements the op but the template doesn't wire the opcode).
 	// Build pre-computes routedElsewhere=true for this version and passes it
 	// directly to gradeOpCell (task-085 per-packet cross-version routing rule).
 	in := baseInputs()
@@ -64,11 +66,36 @@ func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
+	// Provide a local report so the coverage-gap conflict fires (not mere absence).
+	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
+		WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult",
+		AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go", Verdict: diff.VerdictMatch,
+	}}
+	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
 	// routedElsewhere=true signals that another version routes this op (by its own opcode).
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */)
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeCoverageGapNoReportIsIncomplete(t *testing.T) {
+	// Present + routedElsewhere=true but NO local audit report → Incomplete (❌),
+	// not Conflict. Without a local report Atlas hasn't implemented this op in
+	// this version, so the "template coverage gap" conflict must NOT fire.
+	// This is the regression guard for the 398-cell class that was previously
+	// mis-graded as 🟥.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
+	// No Reports / FNameToWriter set — no local report for this version.
+	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */)
+	if c.State != StateIncomplete {
+		t.Errorf("coverage-gap with no report must be Incomplete (❌), not %v (%s)", c.State.Name(), c.Note)
 	}
 }
 
@@ -286,6 +313,7 @@ func TestWorstOfBlockerWinsOverMatch(t *testing.T) {
 func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
 	// -- Scenario 1: op present in two versions, routed in A by A's opcode
 	// but NOT in B; B's opcode differs and has no raw coincidence in A.
+	// B has a local report (Atlas implements it), so the coverage-gap conflict fires.
 	// Expected: B cell = Conflict (coverage gap), A cell = Incomplete (no report).
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
@@ -296,6 +324,13 @@ func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
 		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x010, opregistry.DirClientbound}: true} // A routes its opcode
 	in.Routed["gms_v87"] = map[RouteKey]bool{}                                         // B does NOT route 0x020
+	// B (gms_v87) has a local report — Atlas implements this op — so the
+	// coverage-gap conflict must fire (template-wiring gap, not mere absence).
+	in.Reports["gms_v87"] = map[string]LoadedReport{"TransferFieldResult": {
+		WriterName: "TransferFieldResult", IDAName: "CField::OnTransferFieldResult",
+		AtlasFile: "libs/atlas-packet/field/clientbound/transfer_field_result.go", Verdict: diff.VerdictMatch,
+	}}
+	in.FNameToWriter = map[string]map[string]string{"gms_v87": {"CField::OnTransferFieldResult": "TransferFieldResult"}}
 
 	m := Build(in, []string{"gms_v83", "gms_v87"})
 	var cellA, cellB Cell
@@ -309,9 +344,9 @@ func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
 	if cellA.State != StateIncomplete {
 		t.Errorf("A cell: routed+no-report must be Incomplete; got %v (%s)", cellA.State.Name(), cellA.Note)
 	}
-	// B: present, not routed, but routed elsewhere (in A) → Conflict (coverage gap).
+	// B: present, not routed, routed elsewhere (in A), has report → Conflict (coverage gap).
 	if cellB.State != StateConflict {
-		t.Errorf("B cell: present+unrouted+routedElsewhere must be Conflict; got %v (%s)", cellB.State.Name(), cellB.Note)
+		t.Errorf("B cell: present+unrouted+routedElsewhere+hasReport must be Conflict; got %v (%s)", cellB.State.Name(), cellB.Note)
 	}
 
 	// -- Scenario 2 (MAP_TRANSFER_RESULT false-positive guard): op present in

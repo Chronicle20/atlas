@@ -148,23 +148,31 @@ func TestMatrixMissingTemplateWarning(t *testing.T) {
 func TestMatrixCheckConflictFails(t *testing.T) {
 	root := t.TempDir()
 
-	// Registry: LOGIN_STATUS present in both gms_v83 and gms_v84 at opcode 0x000 clientbound.
+	// Registry: v83 has LOGIN_STATUS at opcode 0x000 clientbound.
 	mustCopy(t, filepath.Join("..", "internal", "opregistry", "testdata", "good_version.yaml"),
 		filepath.Join(root, "registry", "gms_v83.yaml"))
-	// gms_v84 registry: same op so it's Present in both.
-	mustCopy(t, filepath.Join("..", "internal", "opregistry", "testdata", "good_version.yaml"),
-		filepath.Join(root, "registry", "gms_v84.yaml"))
+	// v84 registry: LOGIN_STATUS is ABSENT (only SPAWN_MONSTER present), so when
+	// the v84 template routes opcode 0x000 clientbound the Absent-branch conflict
+	// fires ("registry says absent but template routes opcode 0x000").
+	// This conflict is independent of whether a local audit report exists.
+	if err := os.MkdirAll(filepath.Join(root, "registry"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	v84Registry := "- op: SPAWN_MONSTER\n  direction: clientbound\n  opcode: 0x0EC\n  fname: \"CMobPool::OnMobEnterField\"\n  provenance: csv-import\n"
+	if err := os.WriteFile(filepath.Join(root, "registry", "gms_v84.yaml"), []byte(v84Registry), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
-	// v83 template routes opcode 0x000 clientbound (LOGIN_STATUS): routedAnywhere = true.
+	// v83 template routes opcode 0x000 clientbound (LOGIN_STATUS).
 	mustCopy(t, filepath.Join("..", "internal", "matrix", "testdata", "templates", "template_gms_83_1.json"),
 		filepath.Join(root, "templates", "template_gms_83_1.json"))
-	// v84 template: does NOT route 0x000 clientbound — produces routing-gap conflict.
-	// Use a template with only a handler so no clientbound ops are routed.
+	// v84 template routes opcode 0x000 clientbound — but LOGIN_STATUS is Absent in
+	// v84's registry → "registry says absent but template routes opcode 0x000" conflict.
 	if err := os.MkdirAll(filepath.Join(root, "templates"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	noWriterTemplate := `{"region":"GMS","majorVersion":84,"minorVersion":1,"socket":{"handlers":[{"opCode":"0x01","handler":"SomeHandle"}],"writers":[]}}`
-	if err := os.WriteFile(filepath.Join(root, "templates", "template_gms_84_1.json"), []byte(noWriterTemplate), 0o644); err != nil {
+	v84Template := `{"region":"GMS","majorVersion":84,"minorVersion":1,"socket":{"handlers":[],"writers":[{"opCode":"0x00","writer":"AuthSuccess"}]}}`
+	if err := os.WriteFile(filepath.Join(root, "templates", "template_gms_84_1.json"), []byte(v84Template), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

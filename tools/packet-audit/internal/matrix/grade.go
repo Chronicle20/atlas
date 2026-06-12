@@ -127,11 +127,15 @@ func gradeCore(a gradeArgs) Cell {
 	}
 
 	// Present from here on.
-	if !a.routed && a.routedElsewhere {
-		return Cell{State: StateConflict, Note: "op present in client and routed in another version's template, but unrouted here (template coverage gap)"}
-	}
 	if !a.hasReport {
 		return Cell{State: StateIncomplete, Note: "no audit report"}
+	}
+	// Atlas implements this op in this version (a report exists) but this
+	// version's tenant template does not route its opcode, while another
+	// version's template does — a real template-wiring gap (design §10.1
+	// template leg), not mere absence.
+	if !a.routed && a.routedElsewhere {
+		return Cell{State: StateConflict, Note: "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)"}
 	}
 
 	if a.hasEvidence && !a.evidence.Fresh {

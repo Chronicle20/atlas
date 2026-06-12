@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -32,5 +33,24 @@ func TestSummonSkill(t *testing.T) {
 				t.Errorf("newStance = %d, want 6", out.NewStance())
 			}
 		})
+	}
+}
+
+// TestSummonSkillBytes pins the exact wire layout. SummonSkill is
+// byte-identical across all versions (summon-packet-delta.md §3.6), so a single
+// v83 assertion guards against an accidental version branch.
+func TestSummonSkillBytes(t *testing.T) {
+	in := NewSummonSkill(42, 1320009, 6)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, summonSkillId=1320009=0x00142449, newStance=6
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid
+		0x49, 0x24, 0x14, 0x00, // summonSkillId
+		0x06, // newStance
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("bytes = % X, want % X", got, want)
 	}
 }

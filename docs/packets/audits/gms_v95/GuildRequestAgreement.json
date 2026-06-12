@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildRequestAgreement",
-  "IDAName": "CWvsContext::OnGuildResult#RequestAgreement",
-  "Address": "0xa0d3b0",
+  "IDAName": "CWvsContext::OnGuildResult#AgreementResponse",
+  "Address": "0x0",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
   "AtlasFile": "../../libs/atlas-packet/guild/clientbound/operation.go",
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (3)",
+      "IDAComment": "mode byte (3 = guild-creation agreement request)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "leaderName (gradeName in IDA)",
+      "IDAComment": "leaderName",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,10 +38,11 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "guildName (skillID string in IDA)",
+      "IDAComment": "guildName",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

@@ -475,5 +475,6 @@
       "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 2,
+  "FlatInvalid": false
 }

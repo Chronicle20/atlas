@@ -20,10 +20,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nMode — sub-op byte dispatching to 27+ effect branches (case 0..26); sub-op enum not modeled by pipeline",
+      "IDAComment": "nMode — switch discriminator dispatching to 27 effect branches (case 0..26)",
       "Verdict": 2,
       "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

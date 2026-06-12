@@ -10,6 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte = 6 (Chat)` | ✅ |  |
-| 1 | string | string `chat line (format: 'name : msg')` | ✅ |  |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | string | string `message` | ✅ |  |
 

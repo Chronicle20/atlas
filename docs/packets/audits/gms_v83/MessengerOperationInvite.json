@@ -8,40 +8,23 @@
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "op (5)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAComment": "sub-op = 3 (INVITE)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "fromName",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "myName",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "pad (0)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAComment": "target character name",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

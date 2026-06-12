@@ -4,12 +4,13 @@
 - **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_set_member_title.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `new grade / alliance tier` | ❌ | width mismatch |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `sub-op=0xE` | ✅ |  |
+| 1 | int32 | int32 `charId` | ✅ |  |
+| 2 | byte | byte `grade` | ✅ |  |
 

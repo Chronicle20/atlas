@@ -4,7 +4,8 @@
 - **Atlas file:** `../../libs/atlas-packet/character/clientbound/appearance_update.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** 🔍
+- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
 
 ## Wire-level diff
 
@@ -12,22 +13,16 @@
 |---|---|---|---|---|
 | 0 | int32 | int32 `characterId — read by CUserPool::OnUserRemotePacket` | ✅ |  |
 | 1 | byte | byte `v4 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem` | ✅ |  |
-| 2 | byte | bytes `AvatarLook::Decode (guard: v4 & 1)` | ✅ |  |
+| 2 | bytes | bytes `AvatarLook::Decode (guard: v4 & 1)` | ✅ |  |
 | 3 | byte | byte `nSpeed (guard: v4 & 2)` | ✅ |  |
-| 4 | int32 | byte `nCarryItemEffect (guard: v4 & 4)` | ❌ | width mismatch |
+| 4 | byte | byte `nCarryItemEffect (guard: v4 & 4)` | ✅ |  |
 | 5 | byte | byte `bCouple flag` | ✅ |  |
 | 6 | int32 | bytes `liCoupleItemSN (8 bytes) + liPairItemSN (8 bytes) + dwPairCharacterId (4 bytes)` | ✅ |  |
-| 7 | byte | byte `bFriendship flag` | ✅ |  |
-| 8 | int32 | bytes `liFriendshipItemSN (8) + liFriendshipPairItemSN (8) + dwFriendCharacterId (4)` | ✅ |  |
-| 9 | byte | byte `bMarriage flag` | ✅ |  |
-| 10 | byte | int32 `dwMarriageCharacterID (guard: bMarriage)` | ❌ | width mismatch |
-| 11 | int32 | int32 `dwMarriagePairCharacterID (guard: bMarriage)` | ✅ |  |
-| 12 | byte | int32 `nWeddingRingID (guard: bMarriage)` | ❌ | width mismatch |
-| 13 | int32 | int32 `nCompletedSetItemID` | ✅ |  |
-| 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 7 | byte | byte `bFriendship flag` | ❌ | atlas: short — missing trailing field |
+| 8 | byte | bytes `liFriendshipItemSN (8) + liFriendshipPairItemSN (8) + dwFriendCharacterId (4)` | ❌ | atlas: short — missing trailing field |
+| 9 | byte | byte `bMarriage flag` | ❌ | atlas: short — missing trailing field |
+| 10 | byte | int32 `dwMarriageCharacterID (guard: bMarriage)` | ❌ | atlas: short — missing trailing field |
+| 11 | byte | int32 `dwMarriagePairCharacterID (guard: bMarriage)` | ❌ | atlas: short — missing trailing field |
+| 12 | byte | int32 `nWeddingRingID (guard: bMarriage)` | ❌ | atlas: short — missing trailing field |
+| 13 | byte | int32 `nCompletedSetItemID` | ❌ | atlas: short — missing trailing field |
 

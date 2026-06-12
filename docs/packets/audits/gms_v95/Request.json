@@ -29,7 +29,7 @@
       "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "hwid (16 bytes)",
+      "IDAComment": "hwid (16 bytes MachineId)",
       "Verdict": 0,
       "Note": ""
     },
@@ -65,7 +65,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "unknown2 (v95 extra byte)",
+      "IDAComment": "unknown2",
       "Verdict": 0,
       "Note": ""
     },
@@ -73,11 +73,12 @@
       "Index": 7,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "partnerCode (GMS trailing field)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

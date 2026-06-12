@@ -3,8 +3,8 @@
 - **IDA:** 0xa3e31c
 - **Atlas file:** `../../libs/atlas-packet/party/clientbound/update.go`
 - **Variant:** GMS/v83
-- **Branch depth:** 0
-- **Verdict:** ❌
+- **Branch depth:** 1
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -12,12 +12,17 @@
 |---|---|---|---|---|
 | 0 | byte | byte `mode byte (7 or 34)` | ✅ |  |
 | 1 | int32 | int32 `partyId` | ✅ |  |
-| 2 | byte | int32 `PARTYDATA ids[0..5]` | ❌ | atlas: short — missing trailing field |
-| 3 | byte | string `PARTYDATA names[0..5] (padded 13 each)` | ❌ | atlas: short — missing trailing field |
-| 4 | byte | int32 `PARTYDATA jobs[0..5]` | ❌ | atlas: short — missing trailing field |
-| 5 | byte | int32 `PARTYDATA levels[0..5]` | ❌ | atlas: short — missing trailing field |
-| 6 | byte | int32 `PARTYDATA channels[0..5]` | ❌ | atlas: short — missing trailing field |
-| 7 | byte | int32 `PARTYDATA leaderId` | ❌ | atlas: short — missing trailing field |
-| 8 | byte | int32 `PARTYDATA maps[0..5]` | ❌ | atlas: short — missing trailing field |
-| 9 | byte | int32 `PARTYDATA portals[6] × 4 ints: townId+fieldId+ptX+ptY (v83 no m_nSKillID, no PQ arrays)` | ❌ | atlas: short — missing trailing field |
+| 2 | int32 | bytes `PARTYDATA::Decode — fixed 298-byte block (qmemcpy 0x12A); read as one opaque buffer, NOT field-by-field` | ✅ |  |
+| 3 | bytes | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 4 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 5 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 6 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 7 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 8 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 9 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 10 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 11 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 12 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 13 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 14 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
 

@@ -4,17 +4,14 @@
 - **Atlas file:** `../../libs/atlas-packet/character/clientbound/buff_give.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ⚠️
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `characterId (read by CUserPool dispatcher before OnSetTemporaryStat)` | ✅ |  |
+| 1 | bytes | bytes `SecondaryStat::DecodeForRemote — opaque remote stat block` | ✅ |  |
+| 2 | int16 | int16 `tDelay` | ✅ |  |
+| 3 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

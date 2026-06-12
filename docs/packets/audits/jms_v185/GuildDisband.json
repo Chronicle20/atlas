@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (Disband)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -23,16 +23,8 @@
       "IDAComment": "guildId",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "message",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

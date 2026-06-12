@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte = 5 (InviteDeclined/OnBlocked)` | ✅ |  |
-| 1 | string | string `blocked user name` | ✅ |  |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | string | string `message` | ✅ |  |
 | 2 | byte | byte `declineMode` | ✅ |  |
 

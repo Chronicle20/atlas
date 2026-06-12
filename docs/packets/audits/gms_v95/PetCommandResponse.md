@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/pet/clientbound/command.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ⚠️
 
 ## Wire-level diff
 
@@ -15,5 +15,5 @@
 | 2 | byte | byte `mode (v5 — 0/1 picks reaction table; 2+ falls through)` | ✅ |  |
 | 3 | byte | byte `reaction index — gated on mode == 0 (interaction) or mode == 1 (food)` | ✅ |  |
 | 4 | byte | byte `success flag — gated same as reaction index` | ✅ |  |
-| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 5 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

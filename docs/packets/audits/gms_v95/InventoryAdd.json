@@ -61,5 +61,6 @@
       "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
     }
   ],
-  "Verdict": 3
+  "Verdict": 3,
+  "FlatInvalid": false
 }

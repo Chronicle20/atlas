@@ -11,7 +11,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "hp — current HP of the remote party member",
+      "IDAComment": "characterId — auto-prepended via dispatcher: per-user-remote (CUserPool::OnUserRemotePacket)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "maxHp — max HP of the remote party member",
+      "IDAComment": "hp — current HP of the remote party member",
       "Verdict": 0,
       "Note": ""
     },
@@ -28,11 +28,12 @@
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "maxHp — max HP of the remote party member",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

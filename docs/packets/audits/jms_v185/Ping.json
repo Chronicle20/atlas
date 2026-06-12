@@ -6,5 +6,6 @@
   "BranchDepth": 0,
   "AtlasFile": "../../libs/atlas-packet/socket/clientbound/ping.go",
   "Rows": null,
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

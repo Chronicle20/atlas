@@ -4,13 +4,13 @@
 - **Atlas file:** `../../libs/atlas-packet/chat/serverbound/general.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | string `message text` | ❌ | width mismatch |
-| 1 | string | int32 `nEmotion (emote ID, packed with extra data in v95)` | ❌ | width mismatch |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `update_time (remote tick)` | ✅ |  |
+| 1 | string | string `message text` | ✅ |  |
+| 2 | byte | byte `nEmotion` | ✅ |  |
 

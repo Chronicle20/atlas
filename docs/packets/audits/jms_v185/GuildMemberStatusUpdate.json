@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (MemberStatusUpdate)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,28 +38,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "channelId",
+      "IDAComment": "online",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "job",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "level",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/monster/serverbound/movement.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -19,8 +19,5 @@
 | 6 | int32 | int32 `hackedCode (v12[288])` | ✅ |  |
 | 7 | int32 | int32 `flyCtxTargetX (or 16768460 default when not in dev-mode)` | ✅ |  |
 | 8 | int32 | int32 `flyCtxTargetY (or 16768460 default)` | ✅ |  |
-| 9 | int16 | bytes `CMovePath::Flush body (Movement elements). v83 lacks the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail that v87+ carry.` | ✅ |  |
-| 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 9 | bytes | bytes `CMovePath::Flush body (Movement elements). v83 lacks the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail that v87+ carry.` | ✅ |  |
 

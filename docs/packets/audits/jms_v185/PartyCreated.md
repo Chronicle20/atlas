@@ -10,10 +10,10 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte = 1 (Created)` | ✅ |  |
+| 0 | byte | byte `mode` | ✅ |  |
 | 1 | int32 | int32 `partyId` | ✅ |  |
-| 2 | int32 | int32 `memberId (zeros ok — atlas writes EmptyMapId as placeholder)` | ✅ |  |
-| 3 | int32 | int32 `mapId (zeros ok — atlas writes EmptyMapId as placeholder)` | ✅ |  |
-| 4 | int16 | int16 `jobId (zeros ok — atlas writes 0)` | ✅ |  |
-| 5 | int16 | int16 `level (zeros ok — atlas writes 0)` | ✅ |  |
+| 2 | int32 | int32 `mapId1` | ✅ |  |
+| 3 | int32 | int32 `mapId2` | ✅ |  |
+| 4 | int16 | int16 `short1` | ✅ |  |
+| 5 | int16 | int16 `short2` | ✅ |  |
 

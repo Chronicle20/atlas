@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/monster/clientbound/movement.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -22,16 +22,16 @@
 | 9 | int32 | int32 `randTimeForAreaAttack count (nCount)` | ✅ |  |
 | 10 | int32 | int32 `randTimeForAreaAttack[i] — per entry, loop nCount times` | ✅ |  |
 | 11 | int32 | bytes `Movement body via CMovePath::OnMovePacket (variable-length elements)` | ✅ |  |
-| 12 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 21 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 12 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 13 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 14 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 15 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 16 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 17 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 18 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 19 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 20 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 21 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 22 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 23 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
 

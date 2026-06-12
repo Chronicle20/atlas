@@ -3,7 +3,7 @@
   "IDAName": "CField::OnClock",
   "Address": "0x5361bd",
   "Variant": "GMS/v83",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "../../libs/atlas-packet/field/clientbound/clock.go",
   "Rows": [
     {
@@ -70,5 +70,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

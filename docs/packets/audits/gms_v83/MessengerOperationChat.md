@@ -4,12 +4,12 @@
 - **Atlas file:** `../../libs/atlas-packet/messenger/serverbound/operation_chat.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | byte `op (6)` | ❌ | width mismatch |
-| 1 | byte | string `text` | ❌ | atlas: short — missing trailing field |
+| 0 | byte | byte `op (6)` | ✅ |  |
+| 1 | string | string `text` | ✅ |  |
 

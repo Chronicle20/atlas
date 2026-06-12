@@ -6,5 +6,6 @@
   "BranchDepth": 0,
   "AtlasFile": "../../libs/atlas-packet/character/serverbound/chalkboard_close.go",
   "Rows": null,
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

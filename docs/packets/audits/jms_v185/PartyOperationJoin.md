@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `sub-op = 0 (JOIN_RESPONSE)` | ❌ | width mismatch |
-| 1 | byte | int32 `partyId` | ❌ | atlas: short — missing trailing field |
+| 0 | byte | byte `sub-op = 0 (JOIN_RESPONSE)` | ✅ |  |
+| 1 | int32 | int32 `partyId` | ✅ |  |
 | 2 | byte | byte `accepted flag (1=accept, 0=decline)` | ❌ | atlas: short — missing trailing field |
 

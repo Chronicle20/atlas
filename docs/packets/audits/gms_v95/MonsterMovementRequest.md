@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/monster/serverbound/movement.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
-- **Verdict:** 🔍
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -25,13 +25,10 @@
 | 12 | int32 | int32 `flyCtxTargetX (or 16768460 default)` | ✅ |  |
 | 13 | int32 | int32 `flyCtxTargetY (or 16768460 default)` | ✅ |  |
 | 14 | int32 | int32 `hackedCodeCRC (fall start CRC)` | ✅ |  |
-| 15 | int16 | bytes `CMovePath::Flush body (Movement elements)` | ✅ |  |
-| 16 | int16 | byte `bChasing` | ❌ | width mismatch |
+| 15 | bytes | bytes `CMovePath::Flush body (Movement elements)` | ✅ |  |
+| 16 | byte | byte `bChasing` | ✅ |  |
 | 17 | byte | byte `hasTarget` | ✅ |  |
-| 18 | byte | byte `bChasing2 (ladder)` | 🔍 | sub-struct: MovementCodec — see _substruct/ |
+| 18 | byte | byte `bChasing2 (ladder)` | ✅ |  |
 | 19 | byte | byte `bChasingHack (zMass)` | ✅ |  |
-| 20 | byte | int32 `tChaseDuration` | ❌ | width mismatch |
-| 21 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 20 | int32 | int32 `tChaseDuration` | ✅ |  |
 

@@ -4,12 +4,12 @@
 - **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation_change_leader.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `sub-op = 5 (CHANGE_LEADER)` | ❌ | width mismatch |
-| 1 | byte | string `target character name` | ❌ | atlas: short — missing trailing field |
+| 0 | byte | byte `sub-op=6` | ✅ |  |
+| 1 | int32 | int32 `charId` | ✅ |  |
 

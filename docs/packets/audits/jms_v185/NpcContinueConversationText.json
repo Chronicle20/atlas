@@ -11,7 +11,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "msgType = 3 (AskText @0x7b78d4)",
+      "IDAComment": "msgType = 3 (AskText reply)",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "action (@0x7b78e2)",
+      "IDAComment": "action (0=cancel, 1=text entered)",
       "Verdict": 2,
       "Note": "atlas: short — missing trailing field"
     },
@@ -29,10 +29,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "answer text (only if action==1 @0x7b7900)",
+      "IDAComment": "answer text",
       "Verdict": 2,
       "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

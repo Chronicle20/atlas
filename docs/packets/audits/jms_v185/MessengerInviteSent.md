@@ -10,7 +10,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte = 4 (InviteSent/OnInviteResult)` | ✅ |  |
-| 1 | string | string `msg` | ✅ |  |
-| 2 | byte | byte `success flag` | ✅ |  |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | string | string `message` | ✅ |  |
+| 2 | byte | byte `success` | ✅ |  |
 

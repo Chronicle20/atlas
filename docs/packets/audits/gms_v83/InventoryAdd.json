@@ -65,10 +65,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "trailing addMov byte ONLY if any entry set nCurItemPos (equip move/remove)",
+      "IDAComment": "trailing addMov byte — ONLY if any entry set nCurItemPos (equip move/remove)",
       "Verdict": 2,
       "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 3
+  "Verdict": 3,
+  "FlatInvalid": true
 }

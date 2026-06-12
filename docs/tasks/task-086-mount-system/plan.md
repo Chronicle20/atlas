@@ -1128,7 +1128,7 @@ with a test.
 
 ## Task 31: atlas-channel module gate
 
-- [ ] **Step 1:** `cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./... && go build ./...` → clean. Fix + commit.
+- [x] **Step 1:** `cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./... && go build ./...` → clean. Fix + commit.
 
 ---
 
@@ -1142,15 +1142,15 @@ with a test.
 - Modify: `main.go` (register consumer)
 - Test: `kafka/consumer/food/consumer_test.go`
 
-- [ ] **Step 1: Define consumed `COMMAND_TOPIC_TAMING_MOB_FOOD` command + handler.**
+- [x] **Step 1: Define consumed `COMMAND_TOPIC_TAMING_MOB_FOOD` command + handler.**
 
 Handler validates `item.GetClassification(itemId) == item.ClassificationRevitalizer` (226),
 decrements one via the existing `ConsumeItem`/`RequestItemConsume` path, then emits `TamingMobFed`.
 The heal→exp→level math stays in atlas-mounts (Task 12/20).
 
-- [ ] **Step 2: Test — class-226 item routes to consume + emits fed event; non-226 is rejected. Run → fail → implement → pass.**
+- [x] **Step 2: Test — class-226 item routes to consume + emits fed event; non-226 is rejected. Run → fail → implement → pass.**
 
-- [ ] **Step 3: Register the consumer in main.go. Commit.**
+- [x] **Step 3: Register the consumer in main.go. Commit.**
 
 ```bash
 git add services/atlas-consumables/atlas.com/consumables/kafka services/atlas-consumables/atlas.com/consumables/main.go
@@ -1163,12 +1163,12 @@ git commit -m "task-086: consumables handles taming-mob-food command (class 226)
 - Modify: the new `food` event pkg + producer
 - Test: provider shape test
 
-- [ ] **Step 1: Define `EVENT_TOPIC_TAMING_MOB_FOOD` + `{characterId, itemId, tirednessHeal}` + provider.**
+- [x] **Step 1: Define `EVENT_TOPIC_TAMING_MOB_FOOD` + `{characterId, itemId, tirednessHeal}` + provider.**
 
 `tirednessHeal` comes from the consumable spec (Task 8) if data-driven, else the pinned constant
 (Task 1 §8). Emit after a successful consume.
 
-- [ ] **Step 2: Test provider shape. Run → pass. Commit.**
+- [x] **Step 2: Test provider shape. Run → pass. Commit.**
 
 ```bash
 git add services/atlas-consumables/atlas.com/consumables/kafka
@@ -1177,19 +1177,19 @@ git commit -m "task-086: consumables emits TamingMobFed event with tiredness hea
 
 ## Task 34: atlas-consumables module gate
 
-- [ ] **Step 1:** `cd services/atlas-consumables && go test -race ./... && go vet ./... && go build ./...` → clean. Commit fixups.
+- [x] **Step 1:** `cd services/atlas-consumables && go test -race ./... && go vet ./... && go build ./...` → clean. Commit fixups.
 
 ## Task 35: Cross-service Kafka contract check
 
 **Files:** none (review).
 
-- [ ] **Step 1: Confirm topic env-var names + JSON field tags match exactly across producer/consumer pairs:**
+- [x] **Step 1: Confirm topic env-var names + JSON field tags match exactly across producer/consumer pairs:**
   - channel→consumables `COMMAND_TOPIC_TAMING_MOB_FOOD` (Task 29 ↔ Task 32)
   - consumables→mounts `EVENT_TOPIC_TAMING_MOB_FOOD` (Task 33 ↔ Task 20)
   - mounts→channel `EVENT_TOPIC_MOUNT_STATUS` (Task 15 ↔ Task 27)
   Grep each topic constant in both modules and diff the body struct field tags. Fix mismatches.
 
-- [ ] **Step 2: Commit any contract fix.**
+- [x] **Step 2: Commit any contract fix.**
 
 ---
 

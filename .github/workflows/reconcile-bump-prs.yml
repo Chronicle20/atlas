@@ -1,0 +1,222 @@
+name: Reconcile Image-Bump PRs
+
+# ============================================================================
+# WHY THIS EXISTS
+# ----------------------------------------------------------------------------
+# main-publish.yml ends each run by opening a bot PR
+# (`bot/main-image-bump-<sha>`) that edits ONE shared file —
+# deploy/k8s/overlays/main/kustomization.yaml — and enables auto-merge. A run
+# finishes the moment it opens that PR; it does NOT wait for the PR to merge,
+# and auto-merge then waits several minutes for the bot PR's own checks.
+#
+# So when two builds land on main close together, the second run branches off a
+# `main` that does NOT yet contain the first run's not-yet-merged overlay edit
+# and rewrites the SAME `newTag:` line. Whichever bot PR merges first wins; the
+# other becomes a permanent same-line merge conflict
+# (mergeable=CONFLICTING / mergeStateStatus=DIRTY). GitHub auto-merge refuses to
+# merge a conflicting branch and never auto-rebases, so the loser sits OPEN
+# forever and has to be cleaned up by hand (e.g. PR #722).
+#
+# WHAT THIS DOES
+# ----------------------------------------------------------------------------
+# Fires whenever the main overlay changes (i.e. a bump PR just merged) and
+# self-heals every still-open, conflicting bump PR by RE-DERIVING its branch on
+# top of fresh main:
+#   - Recover the PR's intent = the (image -> tag) pairs it changed relative to
+#     where it was branched (branch overlay vs merge-base overlay).
+#   - Re-apply each pair onto fresh main ONLY if that build SHA is newer than
+#     main's current tag for the image (regression guard via git ancestry). A
+#     bump made obsolete by a newer build of the same service is dropped.
+#   - If nothing survives the guard, the PR is fully superseded -> close it and
+#     delete its branch.
+#   - Otherwise reset the branch to current main, re-apply the surviving bumps
+#     + a monotonic CATALOG_REVISION stamp, and force-push. The conflict
+#     disappears and the PR's existing auto-merge carries it the rest of the
+#     way.
+#
+# Idempotent and self-terminating: a healed PR's eventual merge re-triggers this
+# workflow, which then finds nothing left to reconcile and exits.
+# ============================================================================
+
+on:
+  push:
+    branches: [main]
+    # Only the overlay bump matters — that's what a merged bot PR (or a manual
+    # edit) touches. main-publish.yml path-ignores this same file, so the two
+    # workflows never both react to the same push.
+    paths:
+      - 'deploy/k8s/overlays/main/kustomization.yaml'
+  workflow_dispatch:
+
+concurrency:
+  # Serialize so two overlay pushes can't double-heal (force-push races) the
+  # same bot PR. Never cancel an in-flight reconcile — losing it could leave a
+  # PR half-rewritten.
+  group: reconcile-bump-prs
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile open bump PRs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # force-push the re-derived bot branch
+      pull-requests: write  # close superseded PRs, (re-)enable auto-merge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Same PAT main-publish uses: a force-push to the bot branch must
+          # re-trigger PR Validation so auto-merge has a fresh green check to
+          # wait on. Commits pushed with the default GITHUB_TOKEN do NOT trigger
+          # workflows, which would re-strand the PR. Falls back to GITHUB_TOKEN
+          # so the workflow still runs (degraded) if the secret is absent.
+          token: ${{ secrets.MANIFEST_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        run: |
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64" \
+            -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
+      - name: Reconcile open bump PRs
+        env:
+          GH_TOKEN: ${{ secrets.MANIFEST_PAT || secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          OVERLAY=deploy/k8s/overlays/main/kustomization.yaml
+          BRANCH_PREFIX="bot/main-image-bump-"
+
+          git config user.name 'atlas-image-bot'
+          git config user.email 'atlas-image-bot@users.noreply.github.com'
+
+          # Make sure ancestry / merge-base checks see every remote branch.
+          git fetch --quiet --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          # All open bot bump PRs. (`head:` search matches exact branch names,
+          # not prefixes, so we filter client-side.)
+          mapfile -t NUMBERS < <(gh pr list \
+            --state open \
+            --json number,headRefName \
+            --jq ".[] | select(.headRefName | startswith(\"${BRANCH_PREFIX}\")) | .number")
+
+          if [ "${#NUMBERS[@]}" -eq 0 ]; then
+            echo "No open bump PRs. Nothing to reconcile."
+            exit 0
+          fi
+
+          for NUMBER in "${NUMBERS[@]}"; do
+            # GitHub computes `mergeable` asynchronously; right after a merge a
+            # sibling PR is often still UNKNOWN. Re-query until it settles.
+            BRANCH=""
+            MERGEABLE="UNKNOWN"
+            for attempt in 1 2 3 4 5 6; do
+              read -r BRANCH MERGEABLE < <(gh pr view "$NUMBER" \
+                --json headRefName,mergeable \
+                --jq '"\(.headRefName) \(.mergeable)"')
+              [ "$MERGEABLE" != "UNKNOWN" ] && break
+              echo "PR #${NUMBER}: mergeable still UNKNOWN (attempt ${attempt}); waiting..."
+              sleep 5
+            done
+
+            echo "::group::PR #${NUMBER} (${BRANCH}) mergeable=${MERGEABLE}"
+
+            # Only touch genuinely stuck PRs. CLEAN/BLOCKED/UNSTABLE are either
+            # merging fine or waiting on checks — leave auto-merge alone.
+            if [ "$MERGEABLE" != "CONFLICTING" ]; then
+              echo "Not conflicting; skipping."
+              echo "::endgroup::"
+              continue
+            fi
+
+            BUILD_SHA="${BRANCH#${BRANCH_PREFIX}}"
+            MERGE_BASE=$(git merge-base "origin/main" "origin/${BRANCH}")
+
+            # Recover the PR's intent: every image whose newTag the branch
+            # changed relative to its merge-base. The bot only ever rewrites
+            # values (never adds/removes/reorders images), so the two overlays
+            # share an identical image list+order and column-aligned `paste`
+            # is a safe join.
+            git show "${MERGE_BASE}:${OVERLAY}"   > /tmp/base.yaml
+            git show "origin/${BRANCH}:${OVERLAY}" > /tmp/branch.yaml
+
+            # Start from a clean copy of current main and re-apply surviving bumps.
+            git checkout -B "reconcile/${BRANCH}" "origin/main" --quiet
+
+            APPLIED=0
+            while IFS=$'\t' read -r IMG TARGET; do
+              [ -n "$IMG" ] || continue
+
+              CUR=$(yq -r "(.images[] | select(.name == \"${IMG}\") | .newTag) // \"\"" "$OVERLAY")
+              if [ "$CUR" = "$TARGET" ]; then
+                echo "  ${IMG}: already at ${TARGET}"
+                continue
+              fi
+
+              # Regression guard: only ever move a tag forward. TARGET is
+              # main-<sha>. If main currently holds main-<X> and <X> is NOT an
+              # ancestor of this build's commit, main is newer-or-equal — drop
+              # the bump (a later build of this service already won).
+              TARGET_SHA="${TARGET#main-}"
+              if [[ "$CUR" == main-* ]]; then
+                CUR_SHA="${CUR#main-}"
+                if ! git merge-base --is-ancestor "$CUR_SHA" "$TARGET_SHA" 2>/dev/null; then
+                  echo "  ${IMG}: main already at ${CUR} (newer-or-equal than ${TARGET}); dropping"
+                  continue
+                fi
+              fi
+
+              echo "  ${IMG}: ${CUR:-<unset>} -> ${TARGET}"
+              yq -i "(.images[] | select(.name == \"${IMG}\") | .newTag) = \"${TARGET}\"" "$OVERLAY"
+              APPLIED=$((APPLIED + 1))
+            done < <(
+              paste \
+                <(yq -r '.images[] | .name'   /tmp/branch.yaml) \
+                <(yq -r '.images[] | .newTag' /tmp/branch.yaml) \
+                <(yq -r '.images[] | .newTag' /tmp/base.yaml) \
+                | awk -F'\t' '$2 != $3 { print $1 "\t" $2 }'
+            )
+
+            if [ "$APPLIED" -eq 0 ]; then
+              echo "Every bump in PR #${NUMBER} is superseded by newer builds on main. Closing."
+              gh pr close "$NUMBER" --delete-branch \
+                --comment "Superseded by newer image builds: every service this PR bumped has since been advanced to a newer \`main-<sha>\` on main. Closing automatically (self-healing reconcile, run ${RUN_ID})."
+              git checkout --quiet origin/main
+              git branch -D "reconcile/${BRANCH}" --quiet 2>/dev/null || true
+              echo "::endgroup::"
+              continue
+            fi
+
+            # CATALOG_REVISION mirrors main-publish's stamp (the build commit's
+            # full SHA in every seed dir). Keep it monotonic: only stamp if this
+            # build is newer than main's current revision, so healing an older —
+            # but still service-newest — PR never rewinds the catalog marker.
+            FULL_SHA=$(git rev-parse "$BUILD_SHA" 2>/dev/null || true)
+            CUR_REV=$(cat deploy/seed/gms/83_1/CATALOG_REVISION 2>/dev/null || echo "")
+            if [ -n "$FULL_SHA" ] && { [ -z "$CUR_REV" ] || git merge-base --is-ancestor "$CUR_REV" "$FULL_SHA" 2>/dev/null; }; then
+              for dir in deploy/seed/*/*/; do
+                printf '%s' "$FULL_SHA" > "${dir}CATALOG_REVISION"
+              done
+            fi
+
+            git add "$OVERLAY" deploy/seed
+            git commit --quiet -m "chore(images): reconcile bump for ${BUILD_SHA} onto $(git rev-parse --short=7 origin/main)" \
+              -m "Self-healing re-derivation after a conflicting overlay merge left bot/main-image-bump-${BUILD_SHA} stuck. Re-applies the surviving (non-superseded) image-tag bumps on top of current main so auto-merge can complete." \
+              -m "Refs reconcile-bump-prs run ${RUN_ID}."
+
+            # Replace the conflicting branch head. force-with-lease guards
+            # against a concurrent update to the bot branch.
+            EXPECT=$(git rev-parse "origin/${BRANCH}")
+            git push --force-with-lease="${BRANCH}:${EXPECT}" origin "reconcile/${BRANCH}:${BRANCH}"
+
+            # Auto-merge persists across a head update, but re-enable defensively
+            # in case it was ever cleared. Idempotent.
+            gh pr merge "$NUMBER" --auto --squash --delete-branch \
+              || echo "::warning::Could not (re-)enable auto-merge on #${NUMBER}; it may need manual review."
+
+            git checkout --quiet origin/main
+            git branch -D "reconcile/${BRANCH}" --quiet 2>/dev/null || true
+            echo "Reconciled PR #${NUMBER}: ${APPLIED} bump(s) re-applied onto fresh main."
+            echo "::endgroup::"
+          done

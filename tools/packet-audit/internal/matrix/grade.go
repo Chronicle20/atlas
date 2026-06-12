@@ -7,12 +7,16 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
-type routeKey struct {
+// RouteKey is an (opcode, direction) pair used to record which ops a tenant
+// template routes. Exported so cmd/matrix.go can build Inputs.
+type RouteKey struct {
 	Opcode int
 	Dir    opregistry.Direction
 }
 
-type evKey struct {
+// EvKey is the (packet-id, version) pair that keys evidence and marker maps.
+// Exported so cmd/matrix.go can build Inputs.
+type EvKey struct {
 	Packet  string // "buddy/clientbound/Invite"
 	Version string // "gms_v83"
 }
@@ -39,11 +43,11 @@ type Inputs struct {
 	Registry       opregistry.Registry
 	Reports        map[string]map[string]LoadedReport // version -> WriterName -> report
 	FNameToWriter  map[string]map[string]string       // version -> FName -> WriterName (built from Reports)
-	Routed         map[string]map[routeKey]bool       // version -> routed (opcode, dir)
-	RoutedAnywhere map[routeKey]bool                  // routed in any version's template
-	Evidence       map[evKey]EvidenceStatus
+	Routed         map[string]map[RouteKey]bool        // version -> routed (opcode, dir)
+	RoutedAnywhere map[RouteKey]bool                   // routed in any version's template
+	Evidence       map[EvKey]EvidenceStatus
 	Tier1          map[string]bool // packet id -> tier-1
-	Markers        map[evKey]MarkerStatus
+	Markers        map[EvKey]MarkerStatus
 }
 
 // opEntryRef carries the union-row identity being graded for one version.
@@ -74,7 +78,7 @@ type gradeArgs struct {
 // gradeOpCell evaluates design §5 in precedence order for one op×version.
 func gradeOpCell(in Inputs, ref opEntryRef, version string) Cell {
 	app := in.Registry.Applicability(ref.Op, ref.Dir, version)
-	routed := in.Routed[version][routeKey{ref.Opcode, ref.Dir}]
+	routed := in.Routed[version][RouteKey{ref.Opcode, ref.Dir}]
 	rep, hasReport := findReport(in, ref, version)
 
 	var pkt string
@@ -84,15 +88,15 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string) Cell {
 	var tier1 bool
 	if hasReport {
 		pkt = PacketID(rep)
-		ev, hasEv = in.Evidence[evKey{pkt, version}]
-		mk = in.Markers[evKey{pkt, version}]
+		ev, hasEv = in.Evidence[EvKey{pkt, version}]
+		mk = in.Markers[EvKey{pkt, version}]
 		tier1 = in.Tier1[pkt] || rep.FlatInvalid
 	}
 
 	args := gradeArgs{
 		applicability:  app,
 		routed:         routed,
-		routedAnywhere: in.RoutedAnywhere[routeKey{ref.Opcode, ref.Dir}],
+		routedAnywhere: in.RoutedAnywhere[RouteKey{ref.Opcode, ref.Dir}],
 		report:         rep,
 		hasReport:      hasReport,
 		evidence:       ev,

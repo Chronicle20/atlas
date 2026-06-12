@@ -13,11 +13,11 @@ func baseInputs() Inputs {
 	return Inputs{
 		Registry:       opregistry.Registry{Versions: map[string]*opregistry.VersionFile{}},
 		Reports:        map[string]map[string]LoadedReport{}, // version -> writer -> report
-		Routed:         map[string]map[routeKey]bool{},       // version -> (opcode,dir) routed
-		RoutedAnywhere: map[routeKey]bool{},                  // (opcode,dir) routed in ANY version
-		Evidence:       map[evKey]EvidenceStatus{},           // (packet,version) -> status
+		Routed:         map[string]map[RouteKey]bool{},       // version -> (opcode,dir) routed
+		RoutedAnywhere: map[RouteKey]bool{},                  // (opcode,dir) routed in ANY version
+		Evidence:       map[EvKey]EvidenceStatus{},           // (packet,version) -> status
 		Tier1:          map[string]bool{},                    // packet id -> tier1
-		Markers:        map[evKey]MarkerStatus{},             // (packet,version) -> marker
+		Markers:        map[EvKey]MarkerStatus{},             // (packet,version) -> marker
 	}
 }
 
@@ -33,7 +33,7 @@ func TestGradeNA(t *testing.T) {
 func TestGradeConflictTemplateRoutesAbsentOp(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t) // op absent
-	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83")
 	if c.State != StateConflict {
 		t.Errorf("state = %v", c.State.Name())
@@ -63,8 +63,8 @@ func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[routeKey]bool{} // not routed here
-	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
+	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult"}, "gms_v83")
 	if c.State != StateConflict {
@@ -94,7 +94,7 @@ func TestGradePartialToolPassNoTest(t *testing.T) {
 
 func TestGradeVerifiedTier0(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictMatch, false)
-	in.Markers[evKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
 	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
 	if c.State != StateVerified {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
@@ -113,8 +113,8 @@ func TestGradeTier1ToolPassCapsAtPartial(t *testing.T) {
 func TestGradeTier1FixturePromotes(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, true) // diff verdict advisory on tier1
 	in.Tier1["login/clientbound/AccountInfo"] = true
-	in.Markers[evKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
-	in.Evidence[evKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
 	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
 	if c.State != StateVerified {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
@@ -123,7 +123,7 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 
 func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
-	in.Evidence[evKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}
 	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
 	if c.State != StatePartial {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
@@ -132,7 +132,7 @@ func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 
 func TestGradeStaleEvidenceDegrades(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
-	in.Evidence[evKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: false}
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: false}
 	c := gradeOpCell(in, refACCOUNT(), "gms_v83")
 	if c.State != StateIncomplete {
 		t.Errorf("stale evidence must degrade; state = %v (%s)", c.State.Name(), c.Note)
@@ -162,8 +162,8 @@ func TestGradeConflictDuplicateClaim(t *testing.T) {
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	// Two writers both claim the exact same IDAName (no #case suffix).
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
@@ -198,8 +198,8 @@ func TestDuplicateClaimNoSubStructLeak(t *testing.T) {
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
 			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
@@ -221,8 +221,8 @@ func TestDuplicateClaimWithCaseSuffix(t *testing.T) {
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	// Both writers share the same full IDAName (with #case suffix).
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"AccountInfoA": {WriterName: "AccountInfoA", IDAName: "CLogin::OnAccountInfoResult#Invite",
@@ -250,8 +250,8 @@ func TestWorstOfBlockerWinsOverMatch(t *testing.T) {
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CFoo::OnBar", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{
 		"FooBarA": {WriterName: "FooBarA", IDAName: "CFoo::OnBar#A",
 			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_a.go", Verdict: diff.VerdictMatch},
@@ -283,8 +283,8 @@ func presentWithReport(t *testing.T, v diff.Verdict, flatInvalid bool) Inputs {
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
 		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
-	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
-	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
 		WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult", Address: "0xa3f2e8",
 		AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go",

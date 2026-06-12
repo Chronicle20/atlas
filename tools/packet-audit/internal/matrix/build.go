@@ -177,8 +177,8 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 // applicability/routing logic applies). Uses gradeCore directly with
 // applicability=Present, routed/routedAnywhere=false.
 func gradeSubStructCell(in Inputs, r LoadedReport, pkt, vk string) Cell {
-	ev, hasEv := in.Evidence[evKey{pkt, vk}]
-	mk := in.Markers[evKey{pkt, vk}]
+	ev, hasEv := in.Evidence[EvKey{pkt, vk}]
+	mk := in.Markers[EvKey{pkt, vk}]
 	tier1 := in.Tier1[pkt] || r.FlatInvalid
 
 	args := gradeArgs{

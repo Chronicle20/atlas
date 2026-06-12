@@ -32,17 +32,17 @@ func e2eInputs(t *testing.T) Inputs {
 			"gms_v87": {"AuthResult": {WriterName: "AuthResult", IDAName: "CLogin::OnCheckPasswordResult", Address: "0x6f1230",
 				AtlasFile: "libs/atlas-packet/login/clientbound/auth_result.go", Verdict: diff.VerdictDeferred}},
 		},
-		Routed: map[string]map[routeKey]bool{
+		Routed: map[string]map[RouteKey]bool{
 			"gms_v83": {{0x000, opregistry.DirClientbound}: true},
 			"gms_v87": {{0x000, opregistry.DirClientbound}: true, {0x002, opregistry.DirClientbound}: true},
 		},
-		RoutedAnywhere: map[routeKey]bool{
+		RoutedAnywhere: map[RouteKey]bool{
 			{0x000, opregistry.DirClientbound}: true,
 			{0x002, opregistry.DirClientbound}: true,
 		},
-		Evidence: map[evKey]EvidenceStatus{},
+		Evidence: map[EvKey]EvidenceStatus{},
 		Tier1:    map[string]bool{},
-		Markers:  map[evKey]MarkerStatus{},
+		Markers:  map[EvKey]MarkerStatus{},
 	}
 	return in
 }

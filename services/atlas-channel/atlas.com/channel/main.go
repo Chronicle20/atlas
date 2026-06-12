@@ -32,7 +32,6 @@ import (
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
-	monsterDomain "atlas-channel/monster"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
@@ -47,9 +46,11 @@ import (
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
+	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/listener"
 	"atlas-channel/logger"
+	monsterDomain "atlas-channel/monster"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -93,9 +94,9 @@ import (
 	invsb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/serverbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	messengersb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/serverbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monstercb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	monstersb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/serverbound"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
@@ -116,6 +117,7 @@ import (
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
+	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -174,6 +176,7 @@ func main() {
 	member.InitConsumers(l)(cmf)(consumerGroupId)
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	summonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
@@ -436,6 +439,9 @@ func buildListener(
 		if err := register(monster.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -599,6 +605,8 @@ func produceWriters() []string {
 		monstercb.MonsterControlWriter,
 		monstercb.MonsterMovementWriter,
 		monstercb.MonsterMovementAckWriter,
+		summoncb.SummonSpawnWriter,
+		summoncb.SummonRemoveWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,

@@ -2,11 +2,14 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/maps/location"
 	"atlas-channel/message"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	chatCB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	chat "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
@@ -62,10 +65,16 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(tc.Id())
 					if err == nil {
-						if resultMode == 0x09 {
-							return af(chatCB.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tc.MapId()), tc.X(), tc.Y()).Encode)(s)
+						tcMapId := _map.Id(0)
+						if f, ferr := location.GetField(l, ctx, tc.Id()); ferr == nil {
+							tcMapId = f.MapId()
+						} else if !errors.Is(ferr, location.ErrNotFound) {
+							l.WithError(ferr).Warnf("Unable to resolve atlas-maps location for whisper-find target [%d]; reporting map 0.", tc.Id())
 						}
-						return af(chatCB.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tc.MapId())).Encode)(s)
+						if resultMode == 0x09 {
+							return af(chatCB.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tcMapId), tc.X(), tc.Y()).Encode)(s)
+						}
+						return af(chatCB.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tcMapId)).Encode)(s)
 					}
 
 					// TODO find a way to look up remote channel.

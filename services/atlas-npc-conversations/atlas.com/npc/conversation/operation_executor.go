@@ -900,6 +900,20 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 		built = append(built, builtStep{stepId, status, action, payload})
 	}
 
+	// A batch containing an evolve_pet step must run as a PetEvolution saga so the
+	// orchestrator reverse-walks the correct compensation path on failure (e.g.
+	// refunding the consumed evolution item + mesos when the evolution fails).
+	// Otherwise the batch defaults to InventoryTransaction. This override must win
+	// over the SetSagaType set at builder construction.
+	sagaType := saga.InventoryTransaction
+	for _, st := range built {
+		if st.action == saga.EvolvePet {
+			sagaType = saga.PetEvolution
+			break
+		}
+	}
+	builder.SetSagaType(sagaType)
+
 	// When a CompleteQuest step is emitted alongside AwardAsset steps, treat
 	// the awarded items as the quest's reported rewards so downstream
 	// services (atlas-quest → atlas-channel) can display them on completion.
@@ -2467,6 +2481,28 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.StageClearAttemptPq, payload, nil
+
+	case "evolve_pet":
+		// Format: evolve_pet
+		// Params: petId (uint32, required) - the id of the pet to evolve. May be a
+		//         {context.xxx} reference (e.g. the pet selected via the
+		//         enumerate_evolvable_pets list).
+		petSelector, exists := operation.Params()["petId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing petId parameter for evolve_pet operation")
+		}
+
+		petIdInt, err := e.evaluateContextValueAsInt(characterId, "petId", petSelector)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.EvolvePetPayload{
+			CharacterId: characterId,
+			PetId:       uint32(petIdInt),
+		}
+
+		return stepId, saga.Pending, saga.EvolvePet, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

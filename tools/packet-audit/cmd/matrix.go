@@ -80,6 +80,7 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		Markers:        map[matrix.EvKey]matrix.MarkerStatus{},
 	}
 	hashes := map[string]string{}
+	exportPaths := map[string]string{}
 	for _, vk := range o.Versions {
 		reps, err := matrix.LoadReports(filepath.Join(o.AuditsDir, vk))
 		if err != nil {
@@ -118,8 +119,25 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 			return exitRuntime
 		} else {
 			hashes[vk] = fmt.Sprintf("%x", sha256.Sum256(raw))
+			exportPaths[vk] = ep
 		}
 	}
+
+	evStatus, evProblems, err := matrix.BuildEvidenceInputs(o.EvidenceDir, exportPaths)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
+		return exitRuntime
+	}
+	in.Evidence = evStatus
+	// Design §13: an evidence record for a (packet, version) with no audit
+	// report is dangling — a --check failure.
+	for k := range evStatus {
+		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); !ok {
+			evProblems = append(evProblems,
+				fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))
+		}
+	}
+
 	m := matrix.Build(in, o.Versions)
 	m.ExportHashes = hashes
 	m.ToolSHA = toolTreeSHA()
@@ -134,7 +152,7 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	jsPath := filepath.Join(o.OutDir, "status.json")
 
 	if o.Check {
-		return matrixCheck(m, md, js, mdPath, jsPath, stderr)
+		return matrixCheck(m, md, js, mdPath, jsPath, evProblems, stderr)
 	}
 	if err := os.MkdirAll(o.OutDir, 0o755); err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
@@ -152,13 +170,29 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// matrixCheck implements --check (full semantics finish in Phase 2 Task 2.4;
-// at this stage: committed-output freshness only).
-func matrixCheck(m matrix.Matrix, md string, js []byte, mdPath, jsPath string, stderr io.Writer) int {
-	_ = m // reserved for Phase 2 conflict-gate logic
+// matrixCheck implements the full --check semantics (design §10.1):
+// fails on stale committed outputs, evidence problems (drift/dangling), and
+// any conflict cell (conflicts are blockers, never allowlisted).
+func matrixCheck(m matrix.Matrix, md string, js []byte, mdPath, jsPath string, evProblems []string, stderr io.Writer) int {
 	fail := false
+	for _, p := range evProblems {
+		fmt.Fprintf(stderr, "matrix --check: %s\n", p)
+		fail = true
+	}
+	for _, r := range m.Rows {
+		for vk, c := range r.Cells {
+			if c.State == matrix.StateConflict {
+				name := r.Op
+				if name == "" {
+					name = r.Packet
+				}
+				fmt.Fprintf(stderr, "matrix --check: conflict %s × %s — %s\n", name, vk, c.Note)
+				fail = true
+			}
+		}
+	}
 	if cur, err := os.ReadFile(mdPath); err != nil || string(cur) != md {
-		fmt.Fprintf(stderr, "matrix --check: %s is stale — regenerate with `packet-audit matrix` and commit\n", mdPath)
+		fmt.Fprintf(stderr, "matrix --check: %s is stale — regenerate and commit\n", mdPath)
 		fail = true
 	}
 	if cur, err := os.ReadFile(jsPath); err != nil || string(cur) != string(js) {
@@ -169,6 +203,18 @@ func matrixCheck(m matrix.Matrix, md string, js []byte, mdPath, jsPath string, s
 		return exitBlocker
 	}
 	return 0
+}
+
+// reportForPacket finds the LoadedReport (if any) for a given packet id within
+// a version's report map. It checks each report using PacketID for normalization.
+// Task 3.2 reuses this helper.
+func reportForPacket(reps map[string]matrix.LoadedReport, pkt string) (matrix.LoadedReport, bool) {
+	for _, r := range reps {
+		if matrix.PacketID(r) == pkt {
+			return r, true
+		}
+	}
+	return matrix.LoadedReport{}, false
 }
 
 func templatePathIn(dir, vk string) string {

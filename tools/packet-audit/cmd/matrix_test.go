@@ -123,6 +123,77 @@ func TestMatrixMissingTemplateWarning(t *testing.T) {
 	}
 }
 
+// TestMatrixCheckConflictFails: a matrix with a conflict cell must make
+// --check exit 1 mentioning "conflict" (design §10.1).
+//
+// Conflict condition: registry says LOGIN_STATUS is Present in gms_v84 (own
+// file with one entry at 0x000 clientbound), and the template routes opcode
+// 0x000 clientbound. But we ADD a second version gms_v84 whose registry file
+// is empty while the template routes 0x000 → that produces a routing-gap
+// conflict ("op present in client and routed in another version's template,
+// but unrouted here").
+//
+// Simpler approach: two versions (v83 + v84). v83 template routes 0x02 cb
+// (AccountInfo). v84 registry file exists (Absent applicability for LOGIN_STATUS)
+// but v84 template also routes 0x000 cb. Because routedAnywhere[{0x000, cb}]=true
+// (v83's template routes it) but v84's template also routes 0x000 cb too — so
+// no gap there.
+//
+// Cleanest: one version, registry says LOGIN_STATUS Present at opcode 0x000 cb.
+// Template routes opcode 0x001 cb. For opcode 0x001, the registry has NO entry
+// at 0x001 — but the grading is based on op-name applicability, not opcode.
+//
+// Actually the simplest: two versions. v83 template routes op X. v84 registry
+// file exists but v84 template does NOT route op X → routing-gap conflict for v84.
+func TestMatrixCheckConflictFails(t *testing.T) {
+	root := t.TempDir()
+
+	// Registry: LOGIN_STATUS present in both gms_v83 and gms_v84 at opcode 0x000 clientbound.
+	mustCopy(t, filepath.Join("..", "internal", "opregistry", "testdata", "good_version.yaml"),
+		filepath.Join(root, "registry", "gms_v83.yaml"))
+	// gms_v84 registry: same op so it's Present in both.
+	mustCopy(t, filepath.Join("..", "internal", "opregistry", "testdata", "good_version.yaml"),
+		filepath.Join(root, "registry", "gms_v84.yaml"))
+
+	// v83 template routes opcode 0x000 clientbound (LOGIN_STATUS): routedAnywhere = true.
+	mustCopy(t, filepath.Join("..", "internal", "matrix", "testdata", "templates", "template_gms_83_1.json"),
+		filepath.Join(root, "templates", "template_gms_83_1.json"))
+	// v84 template: does NOT route 0x000 clientbound — produces routing-gap conflict.
+	// Use a template with only a handler so no clientbound ops are routed.
+	if err := os.MkdirAll(filepath.Join(root, "templates"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	noWriterTemplate := `{"region":"GMS","majorVersion":84,"minorVersion":1,"socket":{"handlers":[{"opCode":"0x01","handler":"SomeHandle"}],"writers":[]}}`
+	if err := os.WriteFile(filepath.Join(root, "templates", "template_gms_84_1.json"), []byte(noWriterTemplate), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	args := []string{
+		"--registry-dir", filepath.Join(root, "registry"),
+		"--audits-dir", filepath.Join(root, "audits"),
+		"--templates-dir", filepath.Join(root, "templates"),
+		"--exports-dir", filepath.Join(root, "exports"),
+		"--versions", "gms_v83,gms_v84",
+		"--out-dir", filepath.Join(root, "audits"),
+	}
+
+	// Generate outputs first.
+	if code := runMatrix(args, os.Stderr); code != 0 {
+		t.Fatalf("generate exit = %d", code)
+	}
+
+	// --check must fail because of the conflict cell.
+	var stderrBuf strings.Builder
+	checkArgs := append(args, "--check")
+	code := runMatrix(checkArgs, &stderrBuf)
+	if code != exitBlocker {
+		t.Fatalf("--check with conflict: exit = %d (want %d); stderr: %s", code, exitBlocker, stderrBuf.String())
+	}
+	if !strings.Contains(stderrBuf.String(), "conflict") {
+		t.Errorf("expected 'conflict' in stderr, got: %s", stderrBuf.String())
+	}
+}
+
 func mustCopy(t *testing.T, src, dst string) {
 	t.Helper()
 	b, err := os.ReadFile(src)

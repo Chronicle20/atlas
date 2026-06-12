@@ -45,6 +45,13 @@ func LoadRecord(path string) (Record, error) {
 	return loadRecordBytes(raw, path)
 }
 
+// ParseRecord validates a marshaled YAML record (e.g. one just produced by
+// yaml.Marshal) using the same rules as LoadRecord. name is used in error
+// messages only (typically the intended file path).
+func ParseRecord(raw []byte, name string) (Record, error) {
+	return loadRecordBytes(raw, name)
+}
+
 func loadRecordBytes(raw []byte, path string) (Record, error) {
 	var r Record
 	if err := yaml.Unmarshal(raw, &r); err != nil {

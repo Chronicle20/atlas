@@ -47,3 +47,26 @@ func TestEvidencePinUnresolvableCitationFails(t *testing.T) {
 		t.Fatal("pin must fail when the export lacks the cited function")
 	}
 }
+
+// TestEvidencePinBogusCategory: --category BOGUS must exit 3 and write nothing.
+func TestEvidencePinBogusCategory(t *testing.T) {
+	out := t.TempDir()
+	var stderrBuf bytes.Buffer
+	code := runEvidence([]string{
+		"pin",
+		"--packet", "login/clientbound/Foo",
+		"--version", "gms_v83",
+		"--ida", "CLogin::OnFoo",
+		"--category", "BOGUS",
+		"--export", filepath.Join("testdata", "gms_v95_mini.json"),
+		"--evidence-dir", out,
+	}, &stderrBuf)
+	if code != 3 {
+		t.Fatalf("pin with bogus category: exit = %d (want 3); stderr: %s", code, stderrBuf.String())
+	}
+	// Must write nothing.
+	p := evidence.RecordPath(out, "gms_v83", "login/clientbound/Foo")
+	if _, err := evidence.LoadRecord(p); err == nil {
+		t.Error("pin with bogus category must not write any file")
+	}
+}

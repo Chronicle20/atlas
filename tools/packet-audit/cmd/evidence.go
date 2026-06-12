@@ -60,7 +60,12 @@ func runEvidence(args []string, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "packet-audit evidence pin: %v\n", err)
 		return 3
 	}
+	// Validate by round-tripping through the loader before writing anything.
 	p := evidence.RecordPath(*dir, *version, *packet)
+	if _, err := evidence.ParseRecord(raw, p); err != nil {
+		fmt.Fprintf(stderr, "packet-audit evidence pin: record validation failed: %v\n", err)
+		return 3
+	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		fmt.Fprintf(stderr, "packet-audit evidence pin: %v\n", err)
 		return 3

@@ -8,9 +8,8 @@ import (
 
 // Model is an immutable representation of a character's mount progression.
 //
-// NOTE (task-086 Task 10): this is the minimal Model required to make the
-// character_mounts entity + Make round-trip testable. Task 11 fleshes out the
-// full Model/Builder (validation, domain methods, exp/level helpers, etc.).
+// Construct via NewModelBuilder / Clone; mutate via the builder's setters and
+// Build(). Fields are private with read-only getters to preserve immutability.
 type Model struct {
 	tenantId            uuid.UUID
 	characterId         uint32

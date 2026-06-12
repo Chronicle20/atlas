@@ -6,10 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// ModelBuilder constructs an immutable mount Model.
-//
-// NOTE (task-086 Task 10): minimal builder sufficient for the entity Make
-// round-trip. Task 11 expands this with validation and domain mutators.
+// ModelBuilder constructs an immutable mount Model. Defaults: level 1, exp 0,
+// tiredness 0, nil lastTirednessTickAt. Use Clone to seed a builder from an
+// existing Model.
 type ModelBuilder struct {
 	tenantId            uuid.UUID
 	characterId         uint32
@@ -29,6 +28,14 @@ func NewModelBuilder(tenantId uuid.UUID, characterId uint32, id uuid.UUID) *Mode
 		exp:         0,
 		tiredness:   0,
 	}
+}
+
+func Clone(m Model) *ModelBuilder {
+	return NewModelBuilder(m.TenantId(), m.CharacterId(), m.Id()).
+		SetLevel(m.Level()).
+		SetExp(m.Exp()).
+		SetTiredness(m.Tiredness()).
+		SetLastTirednessTickAt(m.LastTirednessTickAt())
 }
 
 func (b *ModelBuilder) SetLevel(level int) *ModelBuilder {

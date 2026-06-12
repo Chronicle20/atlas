@@ -336,7 +336,7 @@ Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for
 - [ ] Verify no remaining `next-themes` wrapper edge cases (system preference, theme flicker on initial SSR-ish load). The simplified `ThemeProvider` drops the "system" option in favour of explicit light/dark — revisit if users miss it.
 
 ### Tenant-switch invariant (correctness)
-- [ ] Manual smoke test: tenant switching invalidates the React Query cache (new invariant from Phase 2, see `docs/tasks/task-004-atlas-ui-vite-migration/risks.md` R6). The Vitest covers the effect firing; a real-tenant E2E check is still needed.
+- [x] ~~Manual smoke test: tenant switching invalidates the React Query cache (new invariant from Phase 2, see `docs/tasks/task-004-atlas-ui-vite-migration/risks.md` R6).~~ Done (task-091) — the synchronous `applyTenant` set-before-fetch ordering is now covered by an automated unit test in `services/atlas-ui/src/context/__tests__/tenant-context.test.tsx` (assertions run inside the `act` callback, before the re-render). The header-passthrough smoke test below remains.
 - [ ] Manual smoke test: all four tenant headers (`TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, SCREAMING_SNAKE_CASE) reach Go services unchanged — verify in devtools or server logs.
 
 ### Playwright (not in task-004 scope)

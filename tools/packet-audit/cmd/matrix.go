@@ -29,6 +29,7 @@ type matrixOpts struct {
 	TemplatesDir string
 	ExportsDir   string
 	EvidenceDir  string // consumed from Phase 2 on; empty = no evidence
+	TiersFile    string // consumed from Phase 2 on; defaults to docs/packets/evidence/tiers.yaml
 	PacketLibDir string // consumed from Phase 3 on (marker scan); empty = no markers
 	Versions     []string
 	OutDir       string
@@ -45,6 +46,7 @@ func runMatrix(args []string, stderr io.Writer) int {
 	fs.StringVar(&o.TemplatesDir, "templates-dir", "services/atlas-configurations/seed-data/templates", "tenant seed templates dir")
 	fs.StringVar(&o.ExportsDir, "exports-dir", "docs/packets/ida-exports", "IDA export JSON dir")
 	fs.StringVar(&o.EvidenceDir, "evidence-dir", "docs/packets/evidence", "evidence ledger dir")
+	fs.StringVar(&o.TiersFile, "tiers", "docs/packets/evidence/tiers.yaml", "tier-1 membership YAML")
 	fs.StringVar(&o.PacketLibDir, "packet-lib", "libs/atlas-packet", "atlas-packet root for marker scanning")
 	fs.StringVar(&versionsCSV, "versions", strings.Join(matrix.VersionKeys, ","), "comma-separated version keys")
 	fs.StringVar(&o.OutDir, "out-dir", "docs/packets/audits", "output dir for STATUS.md/status.json")
@@ -135,6 +137,22 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); !ok {
 			evProblems = append(evProblems,
 				fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))
+		}
+	}
+
+	tiers, err := matrix.LoadTiers(o.TiersFile)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
+		return exitRuntime
+	}
+	// Populate in.Tier1 for every loaded report's packet id via tiers.IsTier1.
+	// TypeRegistry recursion (recurseTypes arg) joins in Task 3.2; pass nil for now.
+	for _, vk := range o.Versions {
+		for _, r := range in.Reports[vk] {
+			pkt := matrix.PacketID(r)
+			if tiers.IsTier1(pkt, nil) {
+				in.Tier1[pkt] = true
+			}
 		}
 	}
 

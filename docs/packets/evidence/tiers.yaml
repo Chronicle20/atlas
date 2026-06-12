@@ -1,0 +1,41 @@
+# Tier-1 membership (task-085 design §8): these packets can only reach
+# `verified` through a linked byte-fixture test; the flat-diff verdict is
+# advisory. Moving a packet between tiers is a reviewed edit to this file.
+
+# The 8 opaque families from OPAQUE_LEDGER.md. Exact Go type names as they
+# appear in libs/atlas-packet/model/ and libs/atlas-packet/interaction/.
+# TypeRegistry recursion (atlaspacket.TypeRegistry) will expand these to
+# the full transitive packet set in Task 3.2; until then the packet_prefixes
+# stanza below duplicates the coverage so membership is never silently
+# narrower (D4 Phase-2 shortcut rule).
+opaque_types:
+  - MonsterTemporaryStat    # CMob::SetTemporaryStat — mask-driven ~25-field blob
+  - Movement                # model.Movement — element-loop move-path (monster, pet, char, npc)
+  - Pet                     # CPet body — prefix decomposed, body opaque
+  - Avatar                  # AvatarLook byte-blob in messenger/clientbound/{add,update}
+  - Asset                   # model.Asset / GW_ItemSlotBase — per-tab item-slot loop
+  - GuildMember             # GUILDMEMBER — packed fixed-stride 37-byte array
+  - Visitor                 # interaction.Visitor / Room — mini-room sub-structs
+  - CharacterStatistics     # GW_CharacterStat — mask-driven variable stat block
+
+# Packet-prefix coverage for the opaque families above (Task 3.2 removes the
+# need for this duplication once TypeRegistry recursion is wired).
+# Every entry here is a directory that exists under libs/atlas-packet/.
+packet_prefixes:
+  # Social/lobby dispatcher families (design §8 baseline — complex shared structs)
+  - party/
+  - guild/          # also covers GuildMember opaque type
+  - buddy/
+  - messenger/      # also covers Avatar (AvatarLook) opaque type
+  - note/           # atlas-packet dir: note/ (not memo/)
+  # Opaque-type consumer families (Phase-2 shortcut: duplicated from opaque_types)
+  - npc/            # clientbound/serverbound action packets use Movement
+  - interaction/    # Visitor + Room + Asset opaque types
+  - storage/        # Asset opaque type
+  - cash/           # Asset opaque type
+  - inventory/      # Asset opaque type (InventoryAdd, InventoryChangeBatch)
+  - monster/        # MonsterTemporaryStat + Movement opaque types
+  - pet/            # Pet + Movement opaque types
+  - character/      # CharacterStatistics + Pet + Avatar consumers
+
+packets: []

@@ -314,6 +314,51 @@ of the protocol surface is verified / partial / incomplete / absent.
    sub-struct matrix section with the same grading, so cross-domain structures
    have an owner (fixes the v87 stat-registry escape class).
 
+### 10.1 Remediation path: conflict cells
+
+A 🟥 is a three-way disagreement between the operation registry, the version's
+template, and Atlas code gates. Remediation starts with diagnosis against the
+IDB — the only neutral arbiter — then fixes the leg that is wrong:
+
+1. **Registry wrong** (seed transcription error, discovery blind spot) →
+   correct the registry entry with `provenance: manual` + an IDA citation.
+   Doc-only PR; the cell re-grades on regeneration.
+2. **Template wrong** (op unrouted in a version whose client has it, or routed
+   where the client lacks it) → fix the seed template in
+   atlas-configurations **and patch live tenant configs** — seed templates
+   apply only at tenant creation, so a template-only fix silently does nothing
+   for existing tenants (the "unhandled message op" bug class), and the
+   channel must be restarted because handler/writer projections don't
+   hot-reload.
+3. **Atlas code wrong** (version gate includes a version whose client lacks
+   the packet, or excludes one that has it) → a wire fix through the normal
+   playbook: code change + byte-test + evidence record.
+
+Conflicts are blockers in `matrix --check`: they cannot be allowlisted or
+deferred, because every conflict is by definition a place where the server can
+emit something a client cannot parse (or vice versa).
+
+### 10.2 Remediation path: degraded verified cells
+
+A ✅ cell can fall back to ❌ three ways; each has its own path, and none has
+an administrative shortcut back to green — promotion is always back through
+the playbook:
+
+1. **Evidence hash drift** (re-export changed the decompile text) → inspect
+   whether the change is material. Cosmetic churn (Hex-Rays
+   variable/label renaming) → re-pin via `evidence pin` after confirming the
+   read order is unchanged. Material change → full playbook re-verification;
+   if the read order actually differs, that is a finding to investigate, not
+   a re-pin.
+2. **Broken test linkage** (linked test deleted or renamed) → orphan-marker
+   `--check` failure; restore or re-point the marker. If the test was deleted
+   because the packet's encoder changed, the cell needs re-verification, not
+   just a marker fix.
+3. **Tool verdict flip** (tier-0 cells after an analyzer/exporter change) →
+   task-081-style delta triage: hand-confirm against the IDB which side is
+   right. Outcome is either an Atlas wire fix or a tool/export fix — never a
+   silent re-accept of the old verdict.
+
 ## 11. Repeatable Verification Workflow (playbook, skill, agent)
 
 The matrix defines *what done means*; this section codifies *how a cell gets

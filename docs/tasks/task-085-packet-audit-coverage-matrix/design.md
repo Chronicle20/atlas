@@ -44,9 +44,15 @@ single artifact showing what is actually verified per packet × version. See
 - Handler/semantic verification (the NPC-discriminator and monster-book bug
   classes). Out of scope here; tracked by the matrix only insofar as scope
   boundaries become visible.
-- Auditing versions beyond the current four baselines (gms_v83, gms_v87,
-  gms_v95, jms_v185). The matrix supports adding columns (e.g. gms_v84,
-  gms_v92) cheaply, but populating them is a separate version-pass task.
+- Auditing versions beyond the five baselines (gms_v83, gms_v84, gms_v87,
+  gms_v95, jms_v185). The matrix supports adding columns (e.g. gms_v92)
+  cheaply, but populating them is a separate version-pass task. gms_v84 is in
+  the baseline because a v84 tenant ships (task-083), but it has no IDA
+  export or audit reports yet — its column starts honestly `incomplete` and
+  is populated during rollout (registry discovery + export harvest + audit
+  run). Task-083's finding that v84 is byte-identical to v83 predicts the
+  column will largely mirror v83 once populated; the matrix verifies that
+  rather than assuming it.
 
 ## 4. Architecture Overview
 
@@ -97,10 +103,16 @@ Applicability is owned by a repo artifact, not by the hand-maintained CSVs:
 ```
 docs/packets/registry/
   gms_v83.yaml
+  gms_v84.yaml
   gms_v87.yaml
   gms_v95.yaml
   jms_v185.yaml
 ```
+
+(The CSVs have no v84 column; `gms_v84.yaml` is seeded as a copy of the v83
+seed flagged `provenance: csv-import` with a v84 note, then corrected by
+`discover-ops` against the v84 IDB — consistent with task-083's v84≡v83
+finding while still verifying it.)
 
 One file per version; one entry per operation present in that version:
 
@@ -165,6 +177,7 @@ docs/packets/evidence/
   gms_v83/
     buddy.clientbound.Invite.yaml
     monster.clientbound.Spawn.yaml
+  gms_v84/ …
   gms_v87/ …
   gms_v95/ …
   jms_v185/ …
@@ -265,11 +278,11 @@ package, columns = versions:
 ```
 ## Clientbound
 
-| Op | Packet | v83 | v87 | v95 | JMS185 |
-|----|--------|-----|-----|-----|--------|
-| LOGIN_STATUS | login/AuthResult | ✅ | ✅ | ✅ | 🟡 |
-| ACCOUNT_INFO | login/AccountInfo | 🟡 | 🟡 | ✅ | ⬜ |
-| SPAWN_MONSTER | monster/Spawn (T1) | 🟡 | ❌ | 🟡 | ❌ |
+| Op | Packet | v83 | v84 | v87 | v95 | JMS185 |
+|----|--------|-----|-----|-----|-----|--------|
+| LOGIN_STATUS | login/AuthResult | ✅ | 🟡 | ✅ | ✅ | 🟡 |
+| ACCOUNT_INFO | login/AccountInfo | 🟡 | ❌ | 🟡 | ✅ | ⬜ |
+| SPAWN_MONSTER | monster/Spawn (T1) | 🟡 | ❌ | ❌ | 🟡 | ❌ |
 ```
 
 Plus a per-version totals block (counts + percentages per state), a conflicts
@@ -378,10 +391,12 @@ Each phase lands independently and is useful on its own.
    `/verify-packet` skill, and the `packet-verifier` agent; validate by
    verifying 2–3 packets end-to-end (one tier-0, one tier-1 mode-driven, one
    opaque-family member) before any campaign starts.
-5. **Operation discovery** (§5.2): `discover-ops` against the four existing
-   IDBs; reconcile against the seeded registry. This both repairs the CSV
-   tail-end gaps for current versions and proves the workflow that future
-   version passes will start with.
+5. **Operation discovery** (§5.2): `discover-ops` against the five baseline
+   IDBs (including v84); reconcile against the seeded registry. This both
+   repairs the CSV tail-end gaps for current versions and proves the workflow
+   that future version passes will start with. For v84 this phase also
+   harvests the IDA export and runs the first audit pass, bringing its column
+   to parity with the other four.
 6. **Tier-1 fixture campaign**: per-family byte-fixture work via
    `packet-verifier` fan-out, ordered by risk (character stat →
    spawn/movement → inventory/asset → dispatcher families). Each family is its

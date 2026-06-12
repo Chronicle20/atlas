@@ -35,7 +35,7 @@ Per the project convention each Go change is TDD: write failing test → run (fa
 
 This task produces no code — it resolves the values downstream tasks consume. **Do not guess from memory.** Use these sources and record what you read.
 
-- [ ] **Step 1: Pin mount skill-id / vehicle-id set (OQ 9.6).**
+- [x] **Step 1: Pin mount skill-id / vehicle-id set (OQ 9.6).**
 
 Read `libs/atlas-constants/skill/constants.go` and confirm the band-offset pattern
 (beginner `100x`, Noblesse `1000100x`, Legend `2000100x`, Evan `2001100x`). For each
@@ -45,13 +45,13 @@ skill table (or live atlas-data skill effects). Record the full id set + vehicle
 (Yeti1→1932003, Yeti2→1932004, Broomstick→1932005, Balrog→1932010, SpaceShip→`1932000+lvl`)
 in context.md §8.
 
-- [ ] **Step 2: Pin exp-to-level table + cap (OQ 9.4).**
+- [x] **Step 2: Pin exp-to-level table + cap (OQ 9.4).**
 
 Source `getMountExpNeededForLevel` from the reference server and confirm the level cap
 (believed 31). Record the exact table or formula in context.md §8. If only a formula is
 available, write it as a Go-ready expression.
 
-- [ ] **Step 3: Pin revitalizer tiredness-heal (OQ 9.4).**
+- [x] **Step 3: Pin revitalizer tiredness-heal (OQ 9.4).**
 
 Query the revitalizer consumable's WZ spec via live atlas-data
 (`GET /api/data/consumables/{id}` with TENANT_ID/REGION/MAJOR_VERSION/MINOR_VERSION headers —
@@ -59,13 +59,13 @@ see the `reference_atlas_data_wz_inspection` memory) or MinIO. If the WZ spec la
 value, use reference parity (30) and document the fallback. Record the value + whether it is
 per-item (data-driven) or a constant.
 
-- [ ] **Step 4: Pin questline data ids (OQ for FR-9).**
+- [x] **Step 4: Pin questline data ids (OQ for FR-9).**
 
 From script comments / local quest data, record the Riding Mimiana quest id(s), NPC id(s),
 the Monster Rider skill id granted, and the starter saddle (class 191) + taming-mob (class 190)
 item ids in context.md §8.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 cd .worktrees/task-086-mount-system   # or your worktree root
@@ -88,7 +88,7 @@ Goal: replace the zeroed Monster Riding base stat (line ~720, the `// TODO look 
 values if riding mount.` placeholder) so it encodes `nOption = stored stat amount`,
 `rOption = stored stat sourceId`.
 
-- [ ] **Step 1: Write the failing byte-level test (self path).**
+- [x] **Step 1: Write the failing byte-level test (self path).**
 
 Append to `character_temporary_stat_test.go` (follow the existing `TestCTSEncode…` style — `pt.CreateContext("GMS",83,1)`, `tenant.Create`, `AddStat`, then `bytes.Equal`/`bytes.Contains` on the wire segment):
 
@@ -111,12 +111,12 @@ func TestCTSMonsterRidingBaseStatEncodesVehicleAndSkill(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to confirm it fails.**
+- [x] **Step 2: Run the test to confirm it fails.**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestCTSMonsterRidingBaseStatEncodes -v`
 Expected: FAIL (block is currently zeroed).
 
-- [ ] **Step 3: Implement — thread the stored stat into the base stat.**
+- [x] **Step 3: Implement — thread the stored stat into the base stat.**
 
 In `character_temporary_stat.go`, change `getBaseTemporaryStats()` so the Monster Riding entry
 looks up the active stat and, when present, builds a populated base stat. Add a constructor that
@@ -147,12 +147,12 @@ Then replace the placeholder line:
 (Use the actual field name for the stats map — confirm it is `m.stats` keyed by
 `character.TemporaryStatType` per context.md §5.)
 
-- [ ] **Step 4: Run the test to confirm it passes.**
+- [x] **Step 4: Run the test to confirm it passes.**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestCTSMonsterRidingBaseStatEncodes -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add libs/atlas-packet/model/character_temporary_stat.go libs/atlas-packet/model/character_temporary_stat_test.go
@@ -166,7 +166,7 @@ git commit -m "task-086: encode MONSTER_RIDING base stat with vehicle id + skill
 
 `getBaseTemporaryStats` is shared, but the foreign path is acceptance-critical — prove it.
 
-- [ ] **Step 1: Write the asserting test (foreign path).**
+- [x] **Step 1: Write the asserting test (foreign path).**
 
 ```go
 func TestCTSMonsterRidingForeignEncodesVehicleAndSkill(t *testing.T) {
@@ -184,12 +184,12 @@ func TestCTSMonsterRidingForeignEncodesVehicleAndSkill(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run it.**
+- [x] **Step 2: Run it.**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestCTSMonsterRidingForeign -v`
 Expected: PASS (Task 2's fix is shared). If FAIL, `EncodeForeign` does not append the base block at the same index — inspect and fix `getBaseTemporaryStats`/`EncodeForeign`.
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add libs/atlas-packet/model/character_temporary_stat_test.go
@@ -200,7 +200,7 @@ git commit -m "task-086: assert MONSTER_RIDING foreign-buff encoding carries veh
 
 **Files:** none (verification).
 
-- [ ] **Step 1: Run the module test/vet/build.**
+- [x] **Step 1: Run the module test/vet/build.**
 
 ```bash
 cd libs/atlas-packet
@@ -208,7 +208,7 @@ go test -race ./... && go vet ./... && go build ./...
 ```
 Expected: all clean; the two new MONSTER_RIDING tests pass.
 
-- [ ] **Step 2: Commit (if anything changed) — otherwise skip.**
+- [x] **Step 2: Commit (if anything changed) — otherwise skip.**
 
 ## Task 5: SET_TAMING_MOB_INFO writer — packet model
 
@@ -220,7 +220,7 @@ Field order (IDA-confirmed): `characterId(4), level(4), exp(4), tiredness(4), le
 Model the file on an existing clientbound writer in the same package (open one, e.g. a
 character buff writer, to copy the `Encode`/writer-const idiom and the package's response.Writer usage).
 
-- [ ] **Step 1: Write the failing encode test.**
+- [x] **Step 1: Write the failing encode test.**
 
 ```go
 func TestSetTamingMobInfoFieldOrder(t *testing.T) {
@@ -239,12 +239,12 @@ func TestSetTamingMobInfoFieldOrder(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run it (fails — type undefined).**
+- [x] **Step 2: Run it (fails — type undefined).**
 
 Run: `cd libs/atlas-packet && go test ./character/clientbound/ -run TestSetTamingMobInfo -v`
 Expected: FAIL (compile error / undefined `NewSetTamingMobInfo`).
 
-- [ ] **Step 3: Implement the writer.**
+- [x] **Step 3: Implement the writer.**
 
 ```go
 package clientbound
@@ -285,12 +285,12 @@ func (m SetTamingMobInfo) Encode(l logrus.FieldLogger, _ context.Context) func(o
 (Confirm `response.NewWriter` + `WriteInt`/`WriteBool` are the idioms used by neighboring
 writers in this package; match them exactly — names may differ, e.g. `WriteUint32`.)
 
-- [ ] **Step 4: Run it.**
+- [x] **Step 4: Run it.**
 
 Run: `cd libs/atlas-packet && go test ./character/clientbound/ -run TestSetTamingMobInfo -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add libs/atlas-packet/character/clientbound/set_taming_mob_info.go libs/atlas-packet/character/clientbound/set_taming_mob_info_test.go
@@ -301,7 +301,7 @@ git commit -m "task-086: add SET_TAMING_MOB_INFO clientbound writer"
 
 **Files:** none.
 
-- [ ] **Step 1: Run.**
+- [x] **Step 1: Run.**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./...

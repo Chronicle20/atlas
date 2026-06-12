@@ -8,7 +8,7 @@ Covers clientbound ops (dispatcher switch analysis). Serverbound FName verificat
 | Name | Address | Cases |
 |---|---|---|
 | `0xa07a08` | `0xa07a08` | 90 |
-| `0x531325` | `0x531325` | 6 |
+| `0x531325` | `0x531325` | 29 |
 | `0x5f80ff` | `0x5f80ff` | 21 |
 | `0x478e2b` | `0x478e2b` | 10 |
 | `0x5a4205` | `0x5a4205` | 3 |
@@ -39,6 +39,7 @@ Covers clientbound ops (dispatcher switch analysis). Serverbound FName verificat
 | `0x57b5b4` | `0x57b5b4` | 4 |
 | `0x5814fd` | `0x5814fd` | 0 |
 | `0x585255` | `0x585255` | 0 |
+| `0x950747` | FAILED: DecompileFunction: idasrc: MCP soft failure: Decompilation failed at 0x950747 | — |
 
 ## Append
 
@@ -58,34 +59,12 @@ Registry entries whose opcode IDA did not discover. They are NOT auto-deleted.
 | `CHANNEL_SELECTED` | `0x014` | `CSecurityClient::OnPacket` |
 | `HACKSHIELD_REQUEST` | `0x015` | `CLogin::OnEnableSPWResult` |
 | `CHECK_CRC_RESULT` | `0x019` | `CClientSocket::OnCheckCrcResult` |
-| `BLOCKED_MAP` | `0x083` | `CField::OnTransferFieldReqIgnored` |
-| `BLOCKED_SERVER` | `0x084` | `CField::OnTransferChannelReqIgnored` |
-| `FORCED_MAP_EQUIP` | `0x085` | `CField::OnFieldSpecificData` |
-| `MULTICHAT` | `0x086` | `CField::OnGroupMessage` |
-| `WHISPER` | `0x087` | `CField::OnWhisper` |
-| `SPOUSE_CHAT` | `0x088` | `CField::OnCoupleMessage` |
-| `SUMMON_ITEM_INAVAILABLE` | `0x089` | `CField::OnSummonItemInavailable` |
-| `FIELD_EFFECT` | `0x08A` | `CField::OnFieldEffect` |
-| `FIELD_OBSTACLE_ONOFF` | `0x08B` | `CField::OnFieldObstacleOnOff` |
-| `FIELD_OBSTACLE_ONOFF_LIST` | `0x08C` | `CField::OnFieldObstacleOnOffStatus` |
-| `FIELD_OBSTACLE_ALL_RESET` | `0x08D` | `CField::OnFieldObstacleAllRese` |
-| `BLOW_WEATHER` | `0x08E` | `CField::OnBlowWeather` |
-| `PLAY_JUKEBOX` | `0x08F` | `CField::OnPlayJukeBox` |
-| `ADMIN_RESULT` | `0x090` | `CField::OnAdminResult` |
-| `OX_QUIZ` | `0x091` | `CField::OnQuiz` |
-| `GMEVENT_INSTRUCTIONS` | `0x092` | `CField::OnDesc` |
 | `CLOCK` | `0x093` | `CField::OnClock` |
 | `CONTI_MOVE` | `0x094` | `CField_ContiMove::OnContiMove` |
 | `CONTI_STATE` | `0x095` | `CField_ContiMove::OnContiState` |
-| `SET_QUEST_CLEAR` | `0x096` | `CField::OnSetQuestClear` |
-| `SET_QUEST_TIME` | `0x097` | `CField::OnSetQuestTime` |
-| `ARIANT_RESULT` | `0x098` | `CField::OnWarnMessage` |
-| `SET_OBJECT_STATE` | `0x099` | `CField::OnSetObjectState` |
-| `STOP_CLOCK` | `0x09A` | `CField::OnDestroyClock` |
 | `ARIANT_ARENA_SHOW_RESULT` | `0x09B` | `CField_AriantArena::OnShowResult` |
 | `PYRAMID_GAUGE` | `0x09D` | `CField_Massacre::OnMassacreIncGauge` |
 | `PYRAMID_SCORE` | `0x09E` | `CField_MassacreResult::OnMassacreResult` |
-| `QUICKSLOT_INIT` | `0x09F` | `CQuickslotKeyMappedMan::OnInit` |
 | `SPAWN_PLAYER` | `0x0A0` | `CUserPool::OnUserEnterField` |
 | `REMOVE_PLAYER_FROM_MAP` | `0x0A1` | `CUserPool::OnUserLeaveField` |
 | `SPAWN_PET` | `0x0A8` | `CUser::OnPetPacket` |

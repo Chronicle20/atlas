@@ -679,8 +679,9 @@
 - op: FIELD_OBSTACLE_ALL_RESET
   direction: clientbound
   opcode: 141
-  fname: CField::OnFieldObstacleAllRese
-  provenance: csv-import
+  fname: CField::OnFieldObstacleAllReset
+  provenance: manual
+  note: IDA v83 CField::OnPacket (0x531325) case 0x8D -> CField::OnFieldObstacleAllReset (0x5330B6). CSV had the name truncated to OnFieldObstacleAllRese (missing trailing 't').
 - op: BLOW_WEATHER
   direction: clientbound
   opcode: 142
@@ -751,6 +752,13 @@
   opcode: 155
   fname: CField_AriantArena::OnShowResult
   provenance: csv-import
+- op: IDA_0X09C
+  direction: clientbound
+  opcode: 156
+  fname: CField::OnStalkResult
+  provenance: ida-discovered
+  ida:
+    address: 5444389
 - op: PYRAMID_GAUGE
   direction: clientbound
   opcode: 157

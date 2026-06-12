@@ -1,0 +1,271 @@
+package cmd
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/discover"
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/idasrc"
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
+	"gopkg.in/yaml.v3"
+)
+
+type discoverOpsOpts struct {
+	Version     string
+	RegistryDir string
+	Dispatcher  string
+	IDAURL      string
+	IDAPort     int
+	Out         string // worklist markdown path
+	Apply       bool
+}
+
+// runDiscoverOps is the discover-ops subcommand entry point. It accepts an
+// injectable MCPClient so tests can supply a fake; when client is nil the real
+// HTTP client is constructed from the flag values.
+func runDiscoverOps(args []string, stderr io.Writer) int {
+	fs := flag.NewFlagSet("packet-audit discover-ops", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	var opts discoverOpsOpts
+	fs.StringVar(&opts.Version, "version", "", "target version key, e.g. gms_v83 (required)")
+	fs.StringVar(&opts.RegistryDir, "registry-dir", "docs/packets/registry", "directory containing <version>.yaml registry files")
+	fs.StringVar(&opts.Dispatcher, "dispatcher", "CClientSocket::ProcessPacket", "dispatcher function name in IDA")
+	fs.StringVar(&opts.IDAURL, "ida-url", "http://127.0.0.1:13337/mcp", "IDA-MCP HTTP endpoint")
+	fs.IntVar(&opts.IDAPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance)")
+	fs.StringVar(&opts.Out, "out", "", "worklist markdown output path (default: docs/packets/registry/discover_<version>.md)")
+	fs.BoolVar(&opts.Apply, "apply", false, "when true, append discovered ops to the registry YAML")
+
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
+		fmt.Fprintln(stderr, "packet-audit discover-ops: flag parse error:", err)
+		return 3
+	}
+	if opts.Version == "" {
+		fmt.Fprintln(stderr, "packet-audit discover-ops: missing required flag --version")
+		return 3
+	}
+	if opts.Out == "" {
+		opts.Out = filepath.Join(opts.RegistryDir, "discover_"+opts.Version+".md")
+	}
+
+	var client idasrc.MCPClient
+	hc := &http.Client{Timeout: 60 * time.Second}
+	if opts.IDAPort != 0 {
+		client = idasrc.NewMCPHTTPClientWithInstance(opts.IDAURL, hc, opts.IDAPort)
+	} else {
+		client = idasrc.NewMCPHTTPClient(opts.IDAURL, hc)
+	}
+	return discoverOpsRun(opts, client, stderr)
+}
+
+// discoverOpsRun is the pure (injectable) core of discover-ops.
+func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Writer) int {
+	ctx := context.Background()
+
+	// Step 1: resolve dispatcher address.
+	addr, ok, err := client.GetFunctionByName(ctx, opts.Dispatcher)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: GetFunctionByName(%q): %v\n", opts.Dispatcher, err)
+		return 3
+	}
+	if !ok {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: dispatcher %q not found in IDA\n", opts.Dispatcher)
+		return 3
+	}
+
+	// Step 2: decompile dispatcher.
+	text, err := client.DecompileFunction(ctx, addr)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: DecompileFunction(%q): %v\n", addr, err)
+		return 3
+	}
+
+	// Step 3: parse dispatch switch.
+	cases, err := discover.ParseDispatch(text)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: ParseDispatch: %v\n", err)
+		return 3
+	}
+
+	// Step 4: resolve sub_ callees via GetCallees on the dispatcher.
+	callees, err := client.GetCallees(ctx, addr)
+	if err != nil {
+		// Non-fatal: proceed without sub_ resolution.
+		fmt.Fprintf(stderr, "packet-audit discover-ops: GetCallees warning: %v\n", err)
+	}
+	calleeByAddr := map[string]string{} // hex-addr (lower) -> demangled name
+	for _, c := range callees {
+		if c.Name != "" {
+			calleeByAddr[strings.ToLower(c.Addr)] = c.Name
+		}
+	}
+
+	// Resolve sub_ handlers to demangled names when GetCallees provides a match.
+	discovered := make([]discover.Discovered, 0, len(cases))
+	for _, dc := range cases {
+		handler := dc.Handler
+		if strings.HasPrefix(handler, "sub_") {
+			// IDA callee addresses are in the same hex format as the sub_ suffix.
+			// Try: "0x" + lower(suffix), and also the raw suffix as decimal.
+			suffix := strings.ToLower(handler[4:]) // strip "sub_"
+			lookupKey := "0x" + suffix
+			if dm, ok := calleeByAddr[lookupKey]; ok && dm != "" {
+				handler = dm
+			}
+		}
+		discovered = append(discovered, discover.Discovered{
+			Opcode:  dc.Opcode,
+			Handler: handler,
+			Address: addr, // use dispatcher addr as proxy; real per-case addr needs xref
+		})
+	}
+
+	// Step 5: load existing registry for this version.
+	regPath := filepath.Join(opts.RegistryDir, opts.Version+".yaml")
+	vf, err := loadRegistryOrEmpty(regPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: load registry %q: %v\n", regPath, err)
+		return 3
+	}
+
+	// Step 6: reconcile clientbound.
+	res := discover.Reconcile(vf, discovered, opregistry.DirClientbound)
+
+	// Step 7: write worklist markdown.
+	md := buildWorklist(opts.Version, res)
+	if err := os.MkdirAll(filepath.Dir(opts.Out), 0o755); err != nil {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: mkdir %q: %v\n", filepath.Dir(opts.Out), err)
+		return 3
+	}
+	if err := os.WriteFile(opts.Out, []byte(md), 0o644); err != nil {
+		fmt.Fprintf(stderr, "packet-audit discover-ops: write worklist: %v\n", err)
+		return 3
+	}
+
+	// Step 8: --apply logic.
+	if opts.Apply {
+		if len(res.Collisions) > 0 {
+			fmt.Fprintf(stderr, "packet-audit discover-ops: --apply refused: %d collision(s) must be resolved manually (see %s)\n", len(res.Collisions), opts.Out)
+			return 1
+		}
+		if len(res.Append) > 0 {
+			if err := applyAppend(regPath, vf, res.Append, opts.Version); err != nil {
+				fmt.Fprintf(stderr, "packet-audit discover-ops: --apply failed: %v\n", err)
+				return 3
+			}
+		}
+	}
+
+	return 0
+}
+
+// loadRegistryOrEmpty loads the registry YAML for a version; if the file does
+// not exist it returns an empty VersionFile (first-run / v84 case).
+func loadRegistryOrEmpty(path string) (*opregistry.VersionFile, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return opregistry.NewVersionFile(nil), nil
+	}
+	return opregistry.LoadVersion(path)
+}
+
+// applyAppend merges the new entries into the existing registry YAML and
+// self-validates via LoadVersion.
+func applyAppend(path string, existing *opregistry.VersionFile, toAppend []opregistry.Entry, version string) error {
+	entries := append(append([]opregistry.Entry(nil), existing.Entries...), toAppend...)
+	// Stable sort: clientbound first, then by opcode, then by op name.
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].Direction != entries[j].Direction {
+			return entries[i].Direction == opregistry.DirClientbound
+		}
+		if entries[i].Opcode != entries[j].Opcode {
+			return entries[i].Opcode < entries[j].Opcode
+		}
+		return entries[i].Op < entries[j].Op
+	})
+
+	raw, err := yaml.Marshal(entries)
+	if err != nil {
+		return err
+	}
+	header := "# Generated by `packet-audit registry seed` — operation universe for " + version + ".\n" +
+		"# Corrections/additions are hand-edited here (provenance: manual|ida-discovered);\n" +
+		"# the source CSVs are frozen historical reference (design task-085 §5.1).\n"
+	if err := os.WriteFile(path, []byte(header+string(raw)), 0o644); err != nil {
+		return err
+	}
+	// Self-validate to catch any schema/uniqueness violation.
+	if _, err := opregistry.LoadVersion(path); err != nil {
+		return fmt.Errorf("self-validation after apply failed: %w", err)
+	}
+	return nil
+}
+
+// buildWorklist renders the reconciliation result as a markdown worklist.
+func buildWorklist(version string, res discover.ReconcileResult) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "# discover-ops worklist — %s\n\n", version)
+	fmt.Fprintf(&sb, "Generated by `packet-audit discover-ops --version %s`.\n\n", version)
+
+	fmt.Fprintln(&sb, "## Append")
+	fmt.Fprintln(&sb)
+	if len(res.Append) == 0 {
+		fmt.Fprintln(&sb, "_No new ops discovered._")
+	} else {
+		fmt.Fprintln(&sb, "New ops discovered by IDA that are not yet in the registry.")
+		fmt.Fprintln(&sb, "Apply with `--apply` after reviewing.")
+		fmt.Fprintln(&sb)
+		fmt.Fprintln(&sb, "| Op | Opcode | FName | Provenance |")
+		fmt.Fprintln(&sb, "|---|---|---|---|")
+		for _, e := range res.Append {
+			fmt.Fprintf(&sb, "| `%s` | `0x%03X` | `%s` | %s |\n", e.Op, e.Opcode, e.FName, e.Provenance)
+		}
+	}
+	fmt.Fprintln(&sb)
+
+	fmt.Fprintln(&sb, "## Review")
+	fmt.Fprintln(&sb)
+
+	// Collisions.
+	if len(res.Collisions) == 0 && len(res.MissingAtDiscovery) == 0 {
+		fmt.Fprintln(&sb, "_No collisions or missing ops._")
+	} else {
+		if len(res.Collisions) > 0 {
+			fmt.Fprintln(&sb, "### Collisions")
+			fmt.Fprintln(&sb)
+			fmt.Fprintln(&sb, "Same opcode, different handler. `--apply` is refused until these are resolved.")
+			fmt.Fprintln(&sb)
+			fmt.Fprintln(&sb, "| Op | Opcode | Registry FName | IDA FName |")
+			fmt.Fprintln(&sb, "|---|---|---|---|")
+			for _, c := range res.Collisions {
+				fmt.Fprintf(&sb, "| `%s` | `0x%03X` | `%s` | `%s` |\n",
+					c.Entry.Op, c.Entry.Opcode, c.Entry.FName, c.Discovered.Handler)
+			}
+			fmt.Fprintln(&sb)
+		}
+		if len(res.MissingAtDiscovery) > 0 {
+			fmt.Fprintln(&sb, "### Missing at discovery")
+			fmt.Fprintln(&sb)
+			fmt.Fprintln(&sb, "Registry entries whose opcode IDA did not discover. They are NOT auto-deleted.")
+			fmt.Fprintln(&sb)
+			fmt.Fprintln(&sb, "| Op | Opcode | FName |")
+			fmt.Fprintln(&sb, "|---|---|---|")
+			for _, e := range res.MissingAtDiscovery {
+				fmt.Fprintf(&sb, "| `%s` | `0x%03X` | `%s` |\n", e.Op, e.Opcode, e.FName)
+			}
+			fmt.Fprintln(&sb)
+		}
+	}
+
+	return sb.String()
+}

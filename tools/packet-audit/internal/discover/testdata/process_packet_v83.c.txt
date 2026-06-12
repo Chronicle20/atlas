@@ -1,0 +1,29 @@
+void __thiscall CClientSocket::ProcessPacket(CClientSocket *this, CInPacket *a2)
+{
+  int op;
+  op = CInPacket::Decode2(a2);
+  switch ( op )
+  {
+    case 0x11u:
+      CLogin::OnFoo(this, a2);
+      break;
+    case 0x12u:
+    case 0x13u:
+      CLogin::OnBarBaz(this, a2);
+      break;
+    case 200u:
+      CLogin::OnCheckPasswordResult(this, a2);
+      break;
+    case 0x20u:
+      sub_5E1230(this, a2);
+      break;
+    case 0x21u:
+      CLogin::OnAccountInfoResult(this, a2);
+      break;
+    case 0x22u:
+      CLogin::OnWorldInformation(this, a2);
+      break;
+    default:
+      break;
+  }
+}

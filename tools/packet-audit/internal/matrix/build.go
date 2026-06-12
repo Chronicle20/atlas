@@ -51,12 +51,33 @@ func Build(in Inputs, versionKeys []string) Matrix {
 				ref.Opcode, ref.FName = e.Opcode, e.FName
 			}
 			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters)
+			// Set the per-version opcode on the cell: the registry opcode from
+			// this specific version if the op is present there, else -1.
+			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
+				cell.Opcode = e.Opcode
+			} else {
+				cell.Opcode = -1
+			}
 			row.Cells[vk] = cell
 		}
 		// Tier + packet annotation from any version's report.
 		row.Packet, row.Tier1 = rowPacketAndTier(in, fnameWriters, row, versionKeys)
+		// Collect distinct base FNames across versions where the op is present.
+		row.FNames = rowFNames(in.Registry, od.Op, od.Dir, versionKeys)
 		rows = append(rows, row)
 	}
+
+	// Sort op rows by baseline opcode ascending; baseline = opcode from the
+	// first version (in versionKeys order) that has the op present.
+	// Tie-break by op name ascending.
+	sort.SliceStable(rows, func(i, j int) bool {
+		oi := baselineOpcode(rows[i], versionKeys)
+		oj := baselineOpcode(rows[j], versionKeys)
+		if oi != oj {
+			return oi < oj
+		}
+		return rows[i].Op < rows[j].Op
+	})
 
 	// Sub-struct rows: reports never consumed by an op row.
 	sub := map[string]MatrixRow{}
@@ -71,7 +92,9 @@ func Build(in Inputs, versionKeys []string) Matrix {
 				mr = MatrixRow{Kind: RowSubStruct, Packet: pkt, Cells: map[string]Cell{}}
 			}
 			mr.Tier1 = mr.Tier1 || in.Tier1[pkt] || r.FlatInvalid
-			mr.Cells[vk] = gradeSubStructCell(in, r, pkt, vk)
+			c := gradeSubStructCell(in, r, pkt, vk)
+			c.Opcode = -1 // sub-struct cells always have no opcode
+			mr.Cells[vk] = c
 			sub[pkt] = mr
 		}
 	}
@@ -84,12 +107,54 @@ func Build(in Inputs, versionKeys []string) Matrix {
 		mr := sub[k]
 		for _, vk := range versionKeys { // fill gaps so columns align
 			if _, ok := mr.Cells[vk]; !ok {
-				mr.Cells[vk] = Cell{State: StateIncomplete, Note: "no audit report"}
+				mr.Cells[vk] = Cell{State: StateIncomplete, Note: "no audit report", Opcode: -1}
 			}
 		}
 		rows = append(rows, mr)
 	}
 	return Matrix{Rows: rows}
+}
+
+// baselineOpcode returns the opcode from the first version (in versionKeys
+// order) where the op row has a non-negative opcode, or math.MaxInt32 as a
+// fallback so rows with no present version sort last.
+func baselineOpcode(row MatrixRow, versionKeys []string) int {
+	for _, vk := range versionKeys {
+		if c, ok := row.Cells[vk]; ok && c.Opcode >= 0 {
+			return c.Opcode
+		}
+	}
+	return 1<<31 - 1 // sort absent-everywhere rows last
+}
+
+// rowFNames collects the distinct base FNames (plus FNameAlts) across all
+// versions where the op is present in the registry. Empty FNames (UNNAMED_R
+// rows) are dropped. Result is sorted and deduplicated.
+func rowFNames(reg opregistry.Registry, op string, dir opregistry.Direction, versionKeys []string) []string {
+	seen := map[string]bool{}
+	for _, vk := range versionKeys {
+		e, ok := lookupVersion(reg, op, dir, vk)
+		if !ok {
+			continue
+		}
+		if e.FName != "" {
+			seen[e.FName] = true
+		}
+		for _, alt := range e.FNameAlts {
+			if alt != "" {
+				seen[alt] = true
+			}
+		}
+	}
+	if len(seen) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(seen))
+	for f := range seen {
+		out = append(out, f)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // lookupVersion looks up op+dir in a specific version's file, if it exists.

@@ -123,9 +123,12 @@ func (s *State) UnmarshalJSON(b []byte) error {
 }
 
 // Cell is one graded (op|packet, direction, version) cell.
+// Opcode is the per-version registry opcode for op rows, or -1 when the op is
+// absent from that version's registry or for sub-struct rows.
 type Cell struct {
-	State State  `json:"state"`
-	Note  string `json:"note,omitempty"` // conflict detail / degradation reason
+	State  State  `json:"state"`
+	Note   string `json:"note,omitempty"` // conflict detail / degradation reason
+	Opcode int    `json:"opcode,omitempty"`
 }
 
 // RowKind separates op rows (registry-joined) from sub-struct rows
@@ -170,7 +173,8 @@ type MatrixRow struct {
 	Packet    string               `json:"packet,omitempty"`    // "buddy/clientbound/Invite" when an Atlas struct exists
 	Direction opregistry.Direction `json:"direction,omitempty"` // empty for sub-struct rows
 	Tier1     bool                 `json:"tier1"`
-	Cells     map[string]Cell      `json:"cells"` // version key -> cell
+	FNames    []string             `json:"fnames,omitempty"` // distinct base FNames across versions where op is present
+	Cells     map[string]Cell      `json:"cells"`            // version key -> cell
 }
 
 // Matrix is the full joined result.

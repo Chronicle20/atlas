@@ -79,6 +79,19 @@ func TestBuildAndRenderGolden(t *testing.T) {
 	if !strings.Contains(got, "## Sub-structs") || !strings.Contains(got, "StatRegistry") {
 		t.Error("sub-struct section missing")
 	}
+	// LOGIN_STATUS must show 0x000 in the v83 opcode column.
+	loginFound := false
+	for _, line := range strings.Split(got, "\n") {
+		if strings.HasPrefix(line, "| LOGIN_STATUS ") {
+			loginFound = true
+			if !strings.Contains(line, "0x000") {
+				t.Errorf("LOGIN_STATUS row missing 0x000 opcode: %q", line)
+			}
+		}
+	}
+	if !loginFound {
+		t.Error("LOGIN_STATUS row not found in markdown output")
+	}
 	// No wall-clock date anywhere (determinism; context.md D2).
 	if strings.Contains(got, "20") && strings.Contains(got, "T") && strings.Contains(got, "Z") {
 		// crude guard: full ISO timestamps must not appear

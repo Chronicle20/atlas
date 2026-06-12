@@ -10,21 +10,21 @@ Tool: `testsha`
 
 ## Clientbound
 
-| Op | Packet | v83 | v87 |
-|----|--------|-----|-----|
-| ACCOUNT_INFO |  | 🟥 | 🟥 |
-| LOGIN_STATUS | login/clientbound/AuthResult | 🟡 | ❌ |
+| Op | FName | Packet | v83 # | v83 | v87 # | v87 |
+|----|-------|--------|-------|-----|-------|-----|
+| LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthResult | 0x000 | 🟡 | 0x000 | ❌ |
+| ACCOUNT_INFO | CLogin::OnAccountInfoResult |  | 0x002 | 🟥 |  | 🟥 |
 
 ## Serverbound
 
-| Op | Packet | v83 | v87 |
-|----|--------|-----|-----|
+| Op | FName | Packet | v83 # | v83 | v87 # | v87 |
+|----|-------|--------|-------|-----|-------|-----|
 
 ## Sub-structs & shared types
 
-| Packet | v83 | v87 |
-|--------|-----|-----|
-| model/StatRegistry | 🟡 | ❌ |
+| Packet | FName | v83 # | v83 | v87 # | v87 |
+|--------|-------|-------|-----|-------|-----|
+| model/StatRegistry |  |  | 🟡 |  | ❌ |
 
 ## Totals
 

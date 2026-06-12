@@ -43,14 +43,25 @@ func RenderMarkdown(m Matrix, versionKeys []string) string {
 	return b.String()
 }
 
-func renderDirection(b *strings.Builder, m Matrix, versionKeys []string, dir opregistry.Direction, title string) {
-	fmt.Fprintf(b, "%s\n\n| Op | Packet |", title)
-	for _, vk := range versionKeys {
-		fmt.Fprintf(b, " %s |", colLabel(vk))
+// opcodeCell renders the opcode column value for a given row+version.
+// Returns "0x%03X" when the cell has a non-negative opcode, else blank.
+func opcodeCell(row MatrixRow, vk string) string {
+	if c, ok := row.Cells[vk]; ok && c.Opcode >= 0 {
+		return fmt.Sprintf("0x%03X", c.Opcode)
 	}
-	b.WriteString("\n|----|--------|")
+	return ""
+}
+
+func renderDirection(b *strings.Builder, m Matrix, versionKeys []string, dir opregistry.Direction, title string) {
+	// Header: | Op | FName | Packet | v83 # | v83 | v84 # | v84 | ...
+	fmt.Fprintf(b, "%s\n\n| Op | FName | Packet |", title)
+	for _, vk := range versionKeys {
+		lbl := colLabel(vk)
+		fmt.Fprintf(b, " %s # | %s |", lbl, lbl)
+	}
+	b.WriteString("\n|----|-------|--------|")
 	for range versionKeys {
-		b.WriteString("-----|")
+		b.WriteString("-------|-----|")
 	}
 	b.WriteString("\n")
 	for _, r := range m.Rows {
@@ -61,9 +72,10 @@ func renderDirection(b *strings.Builder, m Matrix, versionKeys []string, dir opr
 		if r.Tier1 && pkt != "" {
 			pkt += " (T1)"
 		}
-		fmt.Fprintf(b, "| %s | %s |", r.Op, pkt)
+		fname := strings.Join(r.FNames, "; ")
+		fmt.Fprintf(b, "| %s | %s | %s |", r.Op, fname, pkt)
 		for _, vk := range versionKeys {
-			fmt.Fprintf(b, " %s |", r.Cells[vk].State.Symbol())
+			fmt.Fprintf(b, " %s | %s |", opcodeCell(r, vk), r.Cells[vk].State.Symbol())
 		}
 		b.WriteString("\n")
 	}
@@ -71,13 +83,15 @@ func renderDirection(b *strings.Builder, m Matrix, versionKeys []string, dir opr
 }
 
 func renderSubStructs(b *strings.Builder, m Matrix, versionKeys []string) {
-	b.WriteString("## Sub-structs & shared types\n\n| Packet |")
+	// Header: | Packet | FName | v83 # | v83 | ...  (op# columns always blank for sub-structs)
+	b.WriteString("## Sub-structs & shared types\n\n| Packet | FName |")
 	for _, vk := range versionKeys {
-		fmt.Fprintf(b, " %s |", colLabel(vk))
+		lbl := colLabel(vk)
+		fmt.Fprintf(b, " %s # | %s |", lbl, lbl)
 	}
-	b.WriteString("\n|--------|")
+	b.WriteString("\n|--------|-------|")
 	for range versionKeys {
-		b.WriteString("-----|")
+		b.WriteString("-------|-----|")
 	}
 	b.WriteString("\n")
 	for _, r := range m.Rows {
@@ -88,9 +102,14 @@ func renderSubStructs(b *strings.Builder, m Matrix, versionKeys []string) {
 		if r.Tier1 {
 			pkt += " (T1)"
 		}
-		fmt.Fprintf(b, "| %s |", pkt)
+		// FName for sub-struct is the baseFName of the report IDAName; FNames
+		// field is nil for sub-struct rows so we use the packet's base name from
+		// Packet (last segment after the final "/") as a fallback display.
+		fname := strings.Join(r.FNames, "; ")
+		fmt.Fprintf(b, "| %s | %s |", pkt, fname)
 		for _, vk := range versionKeys {
-			fmt.Fprintf(b, " %s |", r.Cells[vk].State.Symbol())
+			// op# is always blank for sub-structs (Opcode = -1)
+			fmt.Fprintf(b, " %s | %s |", opcodeCell(r, vk), r.Cells[vk].State.Symbol())
 		}
 		b.WriteString("\n")
 	}

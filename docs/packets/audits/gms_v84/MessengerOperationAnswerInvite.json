@@ -1,0 +1,21 @@
+{
+  "WriterName": "MessengerOperationAnswerInvite",
+  "IDAName": "CUIMessenger::OnCreate",
+  "Address": "",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/serverbound/operation_answer_invite.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

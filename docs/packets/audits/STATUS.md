@@ -6,6 +6,7 @@
 Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 
 - export gms_v83: `ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17`
+- export gms_v84: `110cc3cb71e8abef11f33e6875c0830c625305acfce6b7e15f1c29cc8438794d`
 - export gms_v87: `8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66`
 - export gms_v95: `b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3`
 - export jms_v185: `f91a7c12d00cd2cd0879508b85c5fd6ec15db4bd1f73ca14979021a989dc8b36`
@@ -66,7 +67,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | CHARGE_PARAM_RESULT |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | CHARLIST | character/clientbound/CharacterList (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | CHAR_INFO | character/clientbound/CharacterInfo (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| CHAR_NAME_RESPONSE | character/clientbound/CharacterNameResponse (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| CHAR_NAME_RESPONSE | character/clientbound/CharacterNameResponse (T1) | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 |
 | CHATTEXT | chat/clientbound/ChatGeneralChat | ❌ | 🟥 | ❌ | 🟡 | 🟡 |
 | CHATTEXT1 | chat/clientbound/ChatGeneralChat | 🟥 | ❌ | 🟥 | 🟡 | 🟥 |
 | CHAT_MSG |  | ❌ | ❌ | 🟥 | 🟥 | ⬜ |
@@ -94,7 +95,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | DAMAGE_PLAYER | character/clientbound/CharacterDamage (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | DAMAGE_SUMMON |  | 🟥 | 🟥 | 🟥 | ❌ | 🟥 |
 | DATA_CRC_CHECK_FAILED |  | 🟥 | 🟥 | ❌ | 🟥 | ❌ |
-| DELETE_CHAR_RESPONSE | character/clientbound/DeleteCharacterResponse (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| DELETE_CHAR_RESPONSE | character/clientbound/DeleteCharacterResponse (T1) | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 |
 | DESTROY_HIRED_MERCHANT |  | 🟥 | ❌ | ❌ | 🟥 | 🟥 |
 | DESTROY_SHOP_RESULT |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
 | DISABLE_UI | ui/clientbound/Disable | ✅ | 🟥 | 🟥 | 🟥 | 🟡 |
@@ -248,7 +249,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | KILL_MONSTER | monster/clientbound/MonsterDestroy (T1) | 🟡 | 🟥 | 🟡 | 🟡 | 🟡 |
 | KOREAN_EVENT |  | 🟥 | 🟥 | ❌ | 🟥 | ❌ |
 | KOREAN_INTERNET_CAFE_SHIT |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
-| LAST_CONNECTED_WORLD | login/clientbound/SelectWorld | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
+| LAST_CONNECTED_WORLD | login/clientbound/SelectWorld | 🟡 | 🟡 | 🟡 | 🟡 | ❌ |
 | LEFT_KNOCK_BACK |  | 🟥 | ❌ | ❌ | 🟥 | ❌ |
 | LIMITED_NPC_DISABLE_INFO |  | ❌ | ❌ | 🟥 | 🟥 | 🟥 |
 | LOCK_UI | ui/clientbound/Lock | ❌ | 🟥 | ❌ | 🟥 | 🟥 |
@@ -349,7 +350,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | REACTOR_HIT | reactor/clientbound/ReactorHit | 🟡 | 🟥 | 🟡 | 🟡 | 🟡 |
 | REACTOR_MOVE |  | 🟥 | 🟥 | ❌ | 🟥 | ❌ |
 | REACTOR_SPAWN | reactor/clientbound/ReactorSpawn | 🟡 | 🟥 | 🟡 | 🟥 | 🟡 |
-| RECOMMENDED_WORLD_MESSAGE | login/clientbound/ServerListRecommendations | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
+| RECOMMENDED_WORLD_MESSAGE | login/clientbound/ServerListRecommendations | 🟡 | 🟡 | 🟡 | 🟡 | ❌ |
 | RELOG_RESPONSE |  | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
 | REMOVE_DOOR |  | 🟥 | ❌ | ❌ | 🟥 | ❌ |
 | REMOVE_DRAGON |  | 🟥 | 🟥 | 🟥 | ❌ | 🟥 |
@@ -368,7 +369,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | SEND_TV |  | 🟥 | 🟥 | ❌ | ❌ | ❌ |
 | SERVERMESSAGE |  | ❌ | 🟥 | 🟥 | ❌ | 🟥 |
 | SERVERSTATUS | login/clientbound/ServerStatus | 🟡 | ❌ | 🟡 | 🟡 | 🟥 |
-| SERVER_IP | login/clientbound/ServerIP | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
+| SERVER_IP | login/clientbound/ServerIP | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 |
 | SESSION_VALUE |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | SET_AVATAR_MEGAPHONE |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | SET_BACK_EFFECT |  | 🟥 | ❌ | ❌ | ❌ | ❌ |
@@ -396,7 +397,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | SHOW_CONSUME_EFFECT |  | ❌ | ❌ | 🟥 | 🟥 | 🟥 |
 | SHOW_FOREIGN_EFFECT | character/clientbound/EffectQuest (T1) | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
 | SHOW_ITEM_EFFECT |  | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
-| SHOW_ITEM_GAIN_INCHAT | character/clientbound/EffectQuest (T1) | 🟥 | ❌ | 🟥 | 🟥 | 🟥 |
+| SHOW_ITEM_GAIN_INCHAT | character/clientbound/EffectQuest (T1) | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT |  | ⬜ | ⬜ | 🟥 | 🟥 | ⬜ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT |  | 🟥 | ⬜ | ⬜ | 🟥 | ⬜ |
 | SHOW_ITEM_RELEASE_EFFECT |  | 🟥 | 🟥 | ⬜ | 🟥 | ⬜ |
@@ -459,12 +460,12 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | UPDATE_HIRED_MERCHANT |  | 🟥 | ❌ | 🟥 | 🟥 | ❌ |
 | UPDATE_LIMITED_INFO |  | ❌ | ❌ | 🟥 | ❌ | ⬜ |
 | UPDATE_PARTYMEMBER_HP | party/clientbound/PartyMemberHP (T1) | ❌ | ❌ | 🟥 | ✅ | 🟥 |
-| UPDATE_PINCODE | login/clientbound/PinUpdate | 🟡 | ❌ | 🟡 | 🟡 | 🟥 |
+| UPDATE_PINCODE | login/clientbound/PinUpdate | 🟡 | 🟡 | 🟡 | 🟡 | 🟥 |
 | UPDATE_QUEST_INFO |  | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
 | UPDATE_SKILLS | character/clientbound/CharacterSkillChange (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | VEGA_SCROLL |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | VICIOUS_HAMMER |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
-| VIEW_ALL_CHAR | character/clientbound/CharacterViewAllCharacters (T1) | 🟥 | ❌ | 🟥 | 🟥 | ❌ |
+| VIEW_ALL_CHAR | character/clientbound/CharacterViewAllCharacters (T1) | 🟥 | 🟥 | 🟥 | 🟥 | ❌ |
 | WEB_BOARD_AUTHKEY_UPDATE |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | WEDDING_CEREMONY_END |  | 🟥 | ❌ | ❌ | ❌ | 🟥 |
 | WEDDING_GIFT_RESULT |  | ❌ | ❌ | 🟥 | ❌ | 🟥 |
@@ -910,7 +911,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 15 | 133 | 423 | 146 | 163 | 2.0% |
-| v84 | 0 | 0 | 567 | 142 | 171 | 0.0% |
+| v84 | 0 | 6 | 559 | 142 | 173 | 0.0% |
 | v87 | 3 | 121 | 363 | 151 | 242 | 0.4% |
 | v95 | 10 | 196 | 351 | 70 | 253 | 1.2% |
 | JMS185 | 8 | 93 | 373 | 145 | 261 | 1.1% |
@@ -1481,7 +1482,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 - 🟥 **SHOW_CONSUME_EFFECT** × v95 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **SHOW_CONSUME_EFFECT** × JMS185 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **SHOW_FOREIGN_EFFECT** × v83 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
-- 🟥 **SHOW_FOREIGN_EFFECT** × v84 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
+- 🟥 **SHOW_FOREIGN_EFFECT** × v84 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
 - 🟥 **SHOW_FOREIGN_EFFECT** × v87 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
 - 🟥 **SHOW_FOREIGN_EFFECT** × v95 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
 - 🟥 **SHOW_FOREIGN_EFFECT** × JMS185 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
@@ -1491,6 +1492,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 - 🟥 **SHOW_ITEM_EFFECT** × v95 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **SHOW_ITEM_EFFECT** × JMS185 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **SHOW_ITEM_GAIN_INCHAT** × v83 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
+- 🟥 **SHOW_ITEM_GAIN_INCHAT** × v84 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
 - 🟥 **SHOW_ITEM_GAIN_INCHAT** × v87 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
 - 🟥 **SHOW_ITEM_GAIN_INCHAT** × v95 — two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple
 - 🟥 **SHOW_ITEM_GAIN_INCHAT** × JMS185 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
@@ -1613,6 +1615,7 @@ Tool: `6d4858cdab7d1c4c500e57a7970d0560b26617ea`
 - 🟥 **UPDATE_QUEST_INFO** × v95 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **UPDATE_QUEST_INFO** × JMS185 — op present in client and routed in another version's template, but unrouted here (template coverage gap)
 - 🟥 **VIEW_ALL_CHAR** × v83 — two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed
+- 🟥 **VIEW_ALL_CHAR** × v84 — two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed
 - 🟥 **VIEW_ALL_CHAR** × v87 — two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed
 - 🟥 **VIEW_ALL_CHAR** × v95 — two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed
 - 🟥 **WEDDING_CEREMONY_END** × v83 — op present in client and routed in another version's template, but unrouted here (template coverage gap)

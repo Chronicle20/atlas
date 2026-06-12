@@ -2,6 +2,7 @@
   "toolSha": "6d4858cdab7d1c4c500e57a7970d0560b26617ea",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
+    "gms_v84": "110cc3cb71e8abef11f33e6875c0830c625305acfce6b7e15f1c29cc8438794d",
     "gms_v87": "8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66",
     "gms_v95": "b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3",
     "jms_v185": "f91a7c12d00cd2cd0879508b85c5fd6ec15db4bd1f73ca14979021a989dc8b36"
@@ -74,7 +75,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -214,7 +215,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -684,7 +685,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "conflict",
@@ -712,7 +713,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "conflict",
@@ -741,7 +742,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v87": {
           "state": "conflict",
@@ -770,7 +771,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "conflict",
@@ -908,7 +909,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -1298,7 +1299,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -1327,7 +1328,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -1412,7 +1413,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -1441,7 +1442,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -1469,8 +1470,8 @@
           "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v87": {
           "state": "partial",
@@ -1612,7 +1613,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -2146,7 +2147,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -2175,7 +2176,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -2259,8 +2260,8 @@
           "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v87": {
           "state": "partial",
@@ -2505,7 +2506,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -2534,7 +2535,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -2671,7 +2672,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict 🚫"
         },
         "gms_v87": {
           "state": "conflict",
@@ -3008,7 +3009,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -3394,7 +3395,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -3423,7 +3424,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -3678,7 +3679,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -6162,7 +6163,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -6303,8 +6304,8 @@
           "note": "tool ✅ without byte-test"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "partial",
+          "note": "tool ✅ without byte-test"
         },
         "gms_v87": {
           "state": "partial",
@@ -6446,7 +6447,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -6781,7 +6782,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -6837,7 +6838,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -7572,7 +7573,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -8331,7 +8332,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -8415,7 +8416,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -8444,7 +8445,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -8473,7 +8474,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -8530,7 +8531,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -9091,8 +9092,8 @@
           "note": "tool ✅ without byte-test"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "partial",
+          "note": "tool ✅ without byte-test"
         },
         "gms_v87": {
           "state": "partial",
@@ -9234,7 +9235,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -9600,7 +9601,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -9628,8 +9629,8 @@
           "note": "tool ✅ without byte-test"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "partial",
+          "note": "tool ✅ without byte-test"
         },
         "gms_v87": {
           "state": "partial",
@@ -9797,7 +9798,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -10351,7 +10352,7 @@
         },
         "gms_v84": {
           "state": "conflict",
-          "note": "op present in client and routed in another version's template, but unrouted here (template coverage gap)"
+          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple"
         },
         "gms_v87": {
           "state": "conflict",
@@ -10407,8 +10408,8 @@
           "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "conflict",
+          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple"
         },
         "gms_v87": {
           "state": "conflict",
@@ -10645,7 +10646,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -10699,7 +10700,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v87": {
           "state": "conflict",
@@ -11085,7 +11086,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -11114,7 +11115,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -11172,7 +11173,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -11425,7 +11426,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -11650,7 +11651,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -12003,7 +12004,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -12140,8 +12141,8 @@
           "note": "tool ✅ without byte-test"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "partial",
+          "note": "tool ✅ without byte-test"
         },
         "gms_v87": {
           "state": "partial",
@@ -12198,7 +12199,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -12281,8 +12282,8 @@
           "note": "two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed"
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "conflict",
+          "note": "two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed"
         },
         "gms_v87": {
           "state": "conflict",
@@ -12531,7 +12532,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -12839,7 +12840,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -13089,7 +13090,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -13142,7 +13143,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -13304,7 +13305,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "conflict",
@@ -13333,7 +13334,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "conflict",
@@ -13390,7 +13391,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "conflict",
@@ -13528,7 +13529,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -13697,7 +13698,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -13726,7 +13727,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -13755,7 +13756,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -13784,7 +13785,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -13983,7 +13984,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -14012,7 +14013,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -14177,7 +14178,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -14291,7 +14292,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -14429,7 +14430,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -14458,7 +14459,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -14889,7 +14890,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -14918,7 +14919,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ⚠️"
         },
         "gms_v87": {
           "state": "conflict",
@@ -15060,7 +15061,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -15528,7 +15529,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -15669,7 +15670,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -16361,7 +16362,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -16559,7 +16560,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "conflict",
@@ -17037,7 +17038,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -17066,7 +17067,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -17124,7 +17125,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -17207,7 +17208,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -17264,7 +17265,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -17341,7 +17342,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "conflict",
@@ -17426,7 +17427,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -17455,7 +17456,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -17675,7 +17676,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -17897,7 +17898,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -17954,7 +17955,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -20248,7 +20249,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -20434,7 +20435,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "conflict",
@@ -21043,7 +21044,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -21071,7 +21072,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -21100,7 +21101,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -21129,7 +21130,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -21373,7 +21374,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "verified"
@@ -21397,7 +21398,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -21421,7 +21422,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -21580,7 +21581,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "verified"
@@ -21738,7 +21739,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -21790,7 +21791,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -21816,7 +21817,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -21842,7 +21843,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -21869,7 +21870,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -21895,7 +21896,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -21922,7 +21923,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -21976,7 +21977,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -22003,7 +22004,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -22030,7 +22031,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -22057,7 +22058,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -22084,7 +22085,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -22380,7 +22381,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "verified"
@@ -22620,7 +22621,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -22753,7 +22754,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -22833,7 +22834,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -22859,7 +22860,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -22913,7 +22914,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -22994,7 +22995,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -23021,7 +23022,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23048,7 +23049,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23075,7 +23076,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23156,7 +23157,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23183,7 +23184,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23210,7 +23211,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23236,7 +23237,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23263,7 +23264,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23290,7 +23291,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23317,7 +23318,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23344,7 +23345,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -23371,7 +23372,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -23398,7 +23399,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23425,7 +23426,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23452,7 +23453,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -23479,7 +23480,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23506,7 +23507,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23532,7 +23533,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "partial",
@@ -23559,7 +23560,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v87": {
           "state": "partial",
@@ -23586,7 +23587,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ⚠️"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -23613,7 +23614,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23640,7 +23641,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23666,7 +23667,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",
@@ -23693,7 +23694,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23720,7 +23721,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23855,7 +23856,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "tier-1 without fixture; verdict 🔍"
         },
         "gms_v87": {
           "state": "incomplete",
@@ -23882,7 +23883,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -23909,7 +23910,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict ❌"
         },
         "gms_v87": {
           "state": "partial",
@@ -24017,7 +24018,7 @@
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report"
+          "note": "verdict 🚫"
         },
         "gms_v87": {
           "state": "partial",

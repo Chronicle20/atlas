@@ -1,0 +1,3236 @@
+{
+  "binary": "",
+  "md5": "",
+  "generated_at": "2026-06-12T18:36:28Z",
+  "functions": {
+    "AvatarLook::Decode": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaCreated": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CAffectedAreaPool::OnAffectedAreaRemoved": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnBuy": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnBuyCouple": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnBuyFriendship": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashShopInventory": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnRebateLockerItem": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::SendGiftsPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CClientSocket::OnAliveReq#PingReceive": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CClientSocket::OnAliveReq#PongSend": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CClientSocket::OnConnect#ChannelConnect": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CClientSocket::OnConnect#Hello": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CClientSocket::OnConnect#StartError": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CClientSocket::OnMigrateCommand": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CDropPool::OnDropEnterField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CDropPool::OnDropLeaveField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnBlowWeather": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnClock": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#BossHp": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#RewardRullet": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#String": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Summon": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::OnFieldEffect#Tremble": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::Send": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::SendChatMsg": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::SendTransferChannelRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField::SendTransferFieldRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CField_ContiMove::OnContiState": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::OnInit": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::OnPetConsumeItemInit": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::OnPetConsumeMPItemInit": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CFuncKeyMappedMan::SaveFuncKeyMap": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::LoginAuth": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::MakeVACDlg": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnCheckDuplicatedIDResult": {
+      "address": "0x60eca7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "\u003cdefault\u003e",
+          "ref": "sub_418C8E"
+        }
+      ]
+    },
+    "CLogin::OnCheckPasswordResult": {
+      "address": "0x60d368",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v101 == (void *)2"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v101 == (void *)2"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v101 == (void *)2",
+          "ref": "dword_C49AB8"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v101 == (void *)2",
+          "ref": "dword_C49AB4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v36 \u003c= 1u",
+          "ref": "dword_C49AB8"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v36 \u003c= 1u",
+          "ref": "dword_C49AB8"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v36 \u003c= 1u \u0026\u0026 v39 == (void *)10",
+          "ref": "sub_428D05"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v36 \u003c= 1u",
+          "ref": "sub_428D05"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v36 \u003c= 1u"
+        }
+      ]
+    },
+    "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnCheckPasswordResult#AuthPermanentBan": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnCheckPasswordResult#AuthTemporaryBan": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnCheckPinCodeResult": {
+      "address": "0x611975",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CLogin::OnCheckPinCodeResult#RegisterPin": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnCheckUserLimitResult": {
+      "address": "0x60e275",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CLogin::OnCreateNewCharacterResult": {
+      "address": "0x60f268",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "GW_CharacterStat::Decode"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "AvatarLook::Decode"
+        }
+      ]
+    },
+    "CLogin::OnCreateNewCharacterResult#AddCharacterError": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnDeleteCharacterResult": {
+      "address": "0x60ed4a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CLogin::OnLatestConnectedWorld": {
+      "address": "0x60d26e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "this[95] == 1"
+        }
+      ]
+    },
+    "CLogin::OnRecommendWorldMessage": {
+      "address": "0x60d2ba",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "this[95] == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "this[95] == 1 \u0026\u0026 v4 \u003e 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "this[95] == 1 \u0026\u0026 v4 \u003e 0"
+        }
+      ]
+    },
+    "CLogin::OnSelectCharacterResult": {
+      "address": "0x61085f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CLogin::OnSelectWorldResult": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnSetAccountResult": {
+      "address": "0x611809",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CLogin::OnSetAccountResult#AfterLogin": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnUpdatePinCodeResult": {
+      "address": "0x611c99",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::OnWorldInformation": {
+      "address": "0x60e5b3",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v7"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v12 \u0026\u0026 v12 \u003e 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v12 \u0026\u0026 v12 \u003e 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(int)a2 \u003e= 0 \u0026\u0026 v12 \u0026\u0026 v12 \u003e 0"
+        }
+      ]
+    },
+    "CLogin::OnWorldInformation#ServerListEnd": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendCheckPasswordPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendCheckUserLimitPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendDeleteCharPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendLoginPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendNewCharPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacket#CharacterSelectWithPic": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CLogin::SendViewAllCharPacket": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnCreateFailed": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxEnterField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMessageBoxPool::OnMessageBoxLeaveField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::CheckAndSendChat": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::GenerateMovePath": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::OnCtrlAck": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::OnDamaged": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::OnHPIndicator": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::OnMove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::OnStatReset": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::OnStatSet": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::SetTemporaryStat": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMobPool::OnMobChangeController": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMobPool::OnMobEnterField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMobPool::OnMobLeaveField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CNpc::OnMove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CNpcPool::OnNpcChangeController": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CNpcPool::OnNpcEnterField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "COutPacket::Encode1": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPersonalShopDlg::BuyItem": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPersonalShopDlg::BuyItem#Merchant": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPersonalShopDlg::DeliverBlackList": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::DoAction": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::Init": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::OnAction": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::OnActionCommand": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::OnLoadExceptionList": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::OnMove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::ParseCommand": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::SendDropPickUpRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CPet::SendUpdateExceptionListRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CQuest::StartQuest#ActionScriptEnd": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CQuest::StartQuest#ActionScriptStart": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CReactorPool::FindHitReactor": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CReactorPool::OnReactorChangeState": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CReactorPool::OnReactorEnterField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CReactorPool::OnReactorLeaveField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskAvatar#AskAvatar": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskBoxText#AskBoxText": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskMenu#AskMenu": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskMenu#Selection": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskNumber#AskNumber": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskPet#AskPet": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskPetAll#AskPetAll": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskQuiz#AskQuiz": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskSlideMenu#AskSlideMenu": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskText#AskText": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskText#Reply": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnAskYesNo#AskYesNo": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnSay#Reply": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnSay#Say": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnSayImage#SayImage": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CScriptMan::OnScriptMessage": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#GenericError": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#LevelRequirement": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#Simple": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::SendBuyRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::SendRechargeRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::SendSellRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CShopDlg::SetShopDlg": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CStage::OnSetField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CStage::OnSetField#WarpToMap": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CTradingRoomDlg::PutItem": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CTradingRoomDlg::PutMoney": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#Show": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#UpdateAssets": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CTrunkDlg::SetGetItems": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnComment": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnCommentDelete": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnDelete": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::OnRegister": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::SendLoadListRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIGuildBBS::SendViewEntryRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnCreate": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnDestroy": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Add": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Chat": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteDeclined": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#InviteSent": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Join": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Remove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#RequestInvite": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::OnPacket#Update": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::ProcessChat": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIMessenger::SendInviteMsg": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUser::OnADBoard": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUser::OnEffect": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUser::ShowItemUpgradeEffect": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::CheckPortal_Collision": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::HandleLButtonClk": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::HandleXKeyDown": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnBalloonMsg": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnOpenUI": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnSetDirectionMode": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnSetStandAloneMode": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnSitResult": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnSkillCooltimeSet": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnTutorMsg#Idx": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::OnTutorMsg#Message": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::SendSkillCancelRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserLocal::TalkToNpc": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserPool::OnUserEnterField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserPool::OnUserLeaveField": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserPool::OnUserRemotePacket": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnAttack": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnAvatarModified": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnHit": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnMove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnPetActivated": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnResetTemporaryStat": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUserRemote::OnSetTemporaryStat": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CVecCtrlPet::EndUpdateActive": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CVecCtrlUser::EndUpdateActive": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnCashPetFoodResult": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnChangeSkillRecordResult": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnCharacterInfo": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ErrorSimple": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#OpenShop": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ShopRename": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnEntrustedShopCheckResult#ShopSearch": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#CapacityUpdate": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ChannelChange": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Error": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Invite": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#ListUpdate": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnFriendResult#Update": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#ErrorResponse": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#GiveResponse": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGivePopularityResult#ReceiveResponse": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildBBSPacket": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#AgreementResponse": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#CapacityChange": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#Disband": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#EmblemChange": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessage": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#Info": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#Invite": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberExpel": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberJoined": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberLeft": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberStatusUpdate": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#MemberTitleUpdate": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#NoticeChange": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#RequestAgreement": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnGuildResult#TitleChange": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnInventoryOperation#Add": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnInventoryOperation#ChangeBatch": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnInventoryOperation#ChangeMove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnInventoryOperation#QuantityUpdate": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnInventoryOperation#Remove": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#Display": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#Refresh": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendError": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendSuccess": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnMessage": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#ChangeLeader": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Created": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Disband": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Error": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Invite": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#InviteReject": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Join": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Left": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#OperationBody": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnPartyResult#Update": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnScriptProgressMessage": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnStatChanged": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnTemporaryStatReset": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::OnTemporaryStatSet": {
+      "address": "",
+      "direction": "clientbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::ResignQuest#Action": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendAbilityUpRequest#DistributeAp": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendCharacterInfoRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendDropMoneyRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendDropPickUpRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendEmotionChange": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendGivePopularityRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendPetFoodItemUseRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendSitOnPortableChairRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendSkillUpRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeItemCancelRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeRequest": {
+      "address": "",
+      "direction": "serverbound",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "GUILDMEMBER::Decode": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "GW_CharacterStat::Decode": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "dword_C49AB4": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "dword_C49AB8": {
+      "address": "",
+      "direction": "",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "sub_418C8E": {
+      "address": "0x418c8e",
+      "direction": "",
+      "calls": null
+    },
+    "sub_428D05": {
+      "address": "0x428d05",
+      "direction": "",
+      "calls": null
+    }
+  }
+}

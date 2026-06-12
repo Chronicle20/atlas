@@ -492,9 +492,78 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case AskSlideMenuType:
 		// Process ask slide menu state
 		return p.processAskSlideMenuState(ctx, state)
+	case PickFromContextType:
+		// Process pick-from-context state
+		return p.processPickFromContextState(ctx, state)
 	default:
 		return "", errors.New("unknown state type")
 	}
+}
+
+// splitCSV splits a comma-joined context value, returning nil for an empty
+// string (so an absent/empty list is len 0, not [""]).
+func splitCSV(s string) []string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, ",")
+}
+
+// pickFromContextValues returns the value at the given selection index within a
+// comma-joined context list, or an error if the list is empty or the index is
+// out of bounds.
+func pickFromContextValues(valuesStr string, selection int32) (string, error) {
+	values := splitCSV(valuesStr)
+	if len(values) == 0 {
+		return "", errors.New("no values available in context")
+	}
+	if selection < 0 || selection >= int32(len(values)) {
+		return "", fmt.Errorf("selection [%d] out of bounds [0,%d)", selection, len(values))
+	}
+	return values[selection], nil
+}
+
+// processPickFromContextState presents a numbered menu sourced from a context
+// list. An empty list routes to the configured emptyNextState.
+func (p *ProcessorImpl) processPickFromContextState(ctx ConversationContext, state StateModel) (string, error) {
+	m := state.PickFromContext()
+	if m == nil {
+		return "", errors.New("pickFromContext is nil")
+	}
+
+	values := splitCSV(ctx.Context()[m.ValuesContextKey()])
+	if len(values) == 0 {
+		// No options to choose from — route to the empty fallback state.
+		return m.EmptyNextState(), nil
+	}
+
+	// Parallel labels (fall back to the raw values if absent or mismatched).
+	labels := values
+	if m.LabelsContextKey() != "" {
+		ls := splitCSV(ctx.Context()[m.LabelsContextKey()])
+		if len(ls) == len(values) {
+			labels = ls
+		}
+	}
+
+	processedTitle, err := ReplaceContextPlaceholders(m.Title(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in pickFromContext title for state [%s]. Using original title.", state.Id())
+		processedTitle = m.Title()
+	}
+
+	mb := message.NewBuilder().AddText(processedTitle).NewLine()
+	for i, label := range labels {
+		processedLabel, lerr := ReplaceContextPlaceholders(label, ctx.Context())
+		if lerr != nil {
+			processedLabel = label
+		}
+		mb.OpenItem(i).BlueText().AddText(processedLabel).CloseItem().NewLine()
+	}
+
+	npcSender.NewProcessor(p.l, p.ctx).SendSimple(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId())(mb.String())
+	return state.Id(), nil
 }
 
 // processDialogueState processes a dialogue state

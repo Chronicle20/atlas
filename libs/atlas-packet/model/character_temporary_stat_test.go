@@ -70,17 +70,16 @@ func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
 	}
 	mask, stat := got[:16], got[16:26]
 
-	// Mask: bit 32 (SLOW) plus the always-present base temp stat bits
-	// (EnergyCharge..Undead, shifts 82-88 on v83). Atlas wire order is
-	// (H_high, H_low, L_high, L_low) per int, each LE.
-	// Bits 82-88 land in mask.H[18..24] -> int[1] = 0x01FC0000
-	//   little-endian bytes: 00 00 FC 01
-	// Bit 32 lands in mask.L[32] -> int[2] = 0x00000001
-	//   little-endian bytes: 01 00 00 00
+	// Mask: SLOW plus the always-present TwoState base stat bits
+	// (EnergyCharge..Undead). On v83/v84 the client reads the TwoState group from
+	// mask dword[2] (wire bytes 8-11), bits 82-88 -> 0x01FC0000, with RideVehicle at
+	// 0x00200000 (IDA v83 SecondaryStat::DecodeForLocal @0x781D0E, gate 1<<(i+82)).
+	// SLOW also lands in dword[2] at 0x00000001 (no collision with bits 18-24), so
+	// int[2] = 0x01FC0001 -> little-endian bytes 01 00 FC 01. int[1] is now empty.
 	wantMask := []byte{
 		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0xFC, 0x01,
-		0x01, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x01, 0x00, 0xFC, 0x01,
 		0x00, 0x00, 0x00, 0x00,
 	}
 	if !bytes.Equal(mask, wantMask) {
@@ -169,5 +168,38 @@ func TestCTSMonsterRidingForeignEncodesVehicleAndSkill(t *testing.T) {
 	want := []byte{0xb0, 0x05, 0x1d, 0x00, 0xec, 0x03, 0x00, 0x00}
 	if !bytes.Contains(got, want) {
 		t.Fatalf("foreign Monster Riding base stat missing nOption=1902000,rOption=1004; got % x", got)
+	}
+}
+
+// TestCTSMonsterRidingV83MaskAndNoDoubleEncode verifies the v83 mount GIVE_BUFF
+// layout: the TwoState/RideVehicle mask bit lands in mask dword[2] (wire bytes
+// 8-11) where the v83 client reads it, NOT dword[1]; and the stat is encoded only
+// as a TwoState base stat (no truncated per-stat block). Regression for the mount
+// not rendering on the v83 client.
+func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeMonsterRiding), 1004, 1902000, 1, time.Now().Add(time.Hour))
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// Mask dword[1] (bytes 4-7) must be empty; the TwoState group lives in dword[2].
+	if !bytes.Equal(got[4:8], []byte{0, 0, 0, 0}) {
+		t.Fatalf("mask dword[1] should be empty (TwoState moved to dword[2]); got % x", got[4:8])
+	}
+	// Mask dword[2] (bytes 8-11) = 0x01FC0000 -> LE 00 00 FC 01, includes RideVehicle 0x00200000.
+	if !bytes.Equal(got[8:12], []byte{0x00, 0x00, 0xFC, 0x01}) {
+		t.Fatalf("mask dword[2] should carry TwoState 0x01FC0000 (RideVehicle bit set); got % x", got[8:12])
+	}
+	// No truncated per-stat block: byte 16+ should be the 2 leading bytes (00 00),
+	// not the old int16(1902000)=0x05B0 per-stat value.
+	if got[16] != 0 || got[17] != 0 {
+		t.Fatalf("expected 2 leading bytes (00 00) after mask, not a per-stat block; got % x", got[16:20])
+	}
+	// The RideVehicle base stat still carries nOption=1902000, rOption=1004.
+	want := []byte{0xb0, 0x05, 0x1d, 0x00, 0xec, 0x03, 0x00, 0x00}
+	if !bytes.Contains(got, want) {
+		t.Fatalf("RideVehicle base stat (1902000,1004) missing; got % x", got)
 	}
 }

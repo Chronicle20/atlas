@@ -41,7 +41,10 @@ func Scan(root string) ([]Marker, []string, error) {
 			return err
 		}
 		defer f.Close()
-		rel, _ := filepath.Rel(root, path)
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			rel = path // fall back to the absolute path in marker locations
+		}
 		ms, es := scanReader(f, filepath.ToSlash(rel))
 		all = append(all, ms...)
 		errs = append(errs, es...)

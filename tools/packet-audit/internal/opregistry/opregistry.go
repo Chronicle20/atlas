@@ -140,8 +140,6 @@ func (r Registry) Applicability(op string, dir Direction, versionKey string) App
 	return Absent
 }
 
-// AllOps returns the union of (op, direction) across all loaded versions,
-// sorted for deterministic iteration: clientbound first, then by op name.
 // NewVersionFile builds an in-memory VersionFile (no schema validation —
 // callers that need validation go through LoadVersion).
 func NewVersionFile(entries []Entry) *VersionFile {
@@ -152,6 +150,8 @@ func NewVersionFile(entries []Entry) *VersionFile {
 	return vf
 }
 
+// AllOps returns the union of (op, direction) across all loaded versions,
+// sorted for deterministic iteration: clientbound first, then by op name.
 func (r Registry) AllOps() []struct {
 	Op  string
 	Dir Direction

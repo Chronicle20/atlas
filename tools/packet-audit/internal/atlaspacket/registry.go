@@ -641,12 +641,6 @@ func operationReturnLiteralWithIdent(body *ast.BlockStmt, consts map[string]stri
 	return "", ""
 }
 
-// operationReturnLiteral is a backward-compatible wrapper used by tests.
-func operationReturnLiteral(body *ast.BlockStmt, consts map[string]string) string {
-	_, val := operationReturnLiteralWithIdent(body, consts)
-	return val
-}
-
 // stripWriterSuffix removes a trailing "Writer", "Handle", or "Handler" suffix
 // from a const name to produce the alternate audit-tool WriterName.
 // Returns "" if the name has no recognized suffix.

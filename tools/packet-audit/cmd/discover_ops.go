@@ -120,7 +120,7 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 			}
 			if !ok {
 				if multiDisp {
-					failMsg := fmt.Sprintf("FAILED: not found in IDA")
+					failMsg := "FAILED: not found in IDA"
 					fmt.Fprintf(stderr, "packet-audit discover-ops: warning: dispatcher %q not found in IDA — continuing\n", dispName)
 					dispResults = append(dispResults, discover.DispatcherResult{Name: dispName, Addr: failMsg, Cases: nil})
 					continue

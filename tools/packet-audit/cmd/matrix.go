@@ -165,11 +165,15 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	// empty registry rather than an error for a non-existent root.
 	var typeReg *atlaspacket.TypeRegistry
 	if o.PacketLibDir != "" {
-		if reg, regErr := atlaspacket.NewTypeRegistry(o.PacketLibDir); regErr == nil {
+		reg, regErr := atlaspacket.NewTypeRegistry(o.PacketLibDir)
+		if regErr == nil {
 			typeReg = reg
+		} else {
+			// typeReg stays nil; IsTier1 runs with nil recurseTypes, so
+			// opaque-type tier expansion is skipped — warn so a parse failure
+			// can't silently narrow tier-1 membership.
+			fmt.Fprintf(stderr, "packet-audit matrix: warning: packet-lib analysis unavailable (%v) — opaque-type tier expansion skipped\n", regErr)
 		}
-		// If the dir doesn't exist or is unreadable, typeReg stays nil; IsTier1 is
-		// called with nil recurseTypes (opaque-type expansion silently skipped).
 	}
 
 	// Populate in.Tier1 for every loaded report's packet id via tiers.IsTier1.

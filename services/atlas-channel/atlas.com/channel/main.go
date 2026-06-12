@@ -104,6 +104,7 @@ import (
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
+	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	petcb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	petsb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/serverbound"
@@ -742,6 +743,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[petsb.PetChatHandle] = handler.PetChatHandleFunc
 	handlerMap[petsb.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
 	handlerMap[petsb.PetFoodHandle] = handler.PetFoodHandleFunc
+	handlerMap[mountsb.MountFoodHandle] = handler.MountFoodHandleFunc
 	handlerMap[invsb.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
 	handlerMap[charsb.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
 	handlerMap[invsb.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc

@@ -1,6 +1,7 @@
 package main
 
 import (
+	summoncmd "atlas-summons/kafka/consumer/summon"
 	"atlas-summons/logger"
 	"atlas-summons/summon"
 	"atlas-summons/world"
@@ -58,10 +59,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	// Kafka consumers are registered in Phase 1 (status command consumer +
-	// character-status despawn cascade). The manager is constructed now so the
-	// /debug/consumers route and later InitConsumers calls have a target.
-	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	// Kafka consumers: the COMMAND_TOPIC_SUMMON command consumer (SPAWN) and the
+	// character-status despawn cascade (logout / channel-change / map-change).
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	summoncmd.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := summoncmd.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register summon command handlers.")
+	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

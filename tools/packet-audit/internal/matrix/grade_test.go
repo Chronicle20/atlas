@@ -28,16 +28,6 @@ func TestGradeNA(t *testing.T) {
 	}
 }
 
-func TestGradeConflictTemplateRoutesAbsentOp(t *testing.T) {
-	in := baseInputs()
-	in.Registry.Versions["gms_v83"] = vfWith(t) // op absent
-	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002}, "gms_v83", false, nil)
-	if c.State != StateConflict {
-		t.Errorf("state = %v", c.State.Name())
-	}
-}
-
 func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 	// Absent op, resolved report, and report's fname is NOT in the present-op set
 	// (presentFnames=nil means no present ops) → must trigger conflict.

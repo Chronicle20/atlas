@@ -126,53 +126,50 @@ func TestMatrixMissingTemplateWarning(t *testing.T) {
 // TestMatrixCheckConflictFails: a matrix with a conflict cell must make
 // --check exit 1 mentioning "conflict" (design §10.1).
 //
-// Conflict condition: registry says LOGIN_STATUS is Present in gms_v84 (own
-// file with one entry at 0x000 clientbound), and the template routes opcode
-// 0x000 clientbound. But we ADD a second version gms_v84 whose registry file
-// is empty while the template routes 0x000 → that produces a routing-gap
-// conflict ("op present in client and routed in another version's template,
-// but unrouted here").
-//
-// Simpler approach: two versions (v83 + v84). v83 template routes 0x02 cb
-// (AccountInfo). v84 registry file exists (Absent applicability for LOGIN_STATUS)
-// but v84 template also routes 0x000 cb. Because routedAnywhere[{0x000, cb}]=true
-// (v83's template routes it) but v84's template also routes 0x000 cb too — so
-// no gap there.
-//
-// Cleanest: one version, registry says LOGIN_STATUS Present at opcode 0x000 cb.
-// Template routes opcode 0x001 cb. For opcode 0x001, the registry has NO entry
-// at 0x001 — but the grading is based on op-name applicability, not opcode.
-//
-// Actually the simplest: two versions. v83 template routes op X. v84 registry
-// file exists but v84 template does NOT route op X → routing-gap conflict for v84.
+// Conflict condition (template-wiring gap, design §10.1):
+//   - Two versions: gms_v83 and gms_v84.
+//   - LOGIN_STATUS is Present in both registries: v83 at opcode 0x000, v84 at opcode 0x001.
+//   - v83 template routes 0x000 (LOGIN_STATUS in v83) → routedVersions contains v83.
+//   - v84 template does NOT route 0x001 → LOGIN_STATUS is unrouted in v84.
+//   - v84 has an audit report for LOGIN_STATUS (resolved address) → Atlas implements it.
+//   - Result: routedElsewhere=true (v83 routes it), hasReport=true, !routed(v84)
+//     → template-wiring-gap conflict fires for v84.
 func TestMatrixCheckConflictFails(t *testing.T) {
 	root := t.TempDir()
+
+	if err := os.MkdirAll(filepath.Join(root, "registry"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "templates"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Registry: v83 has LOGIN_STATUS at opcode 0x000 clientbound.
 	mustCopy(t, filepath.Join("..", "internal", "opregistry", "testdata", "good_version.yaml"),
 		filepath.Join(root, "registry", "gms_v83.yaml"))
-	// v84 registry: LOGIN_STATUS is ABSENT (only SPAWN_MONSTER present), so when
-	// the v84 template routes opcode 0x000 clientbound the Absent-branch conflict
-	// fires ("registry says absent but template routes opcode 0x000").
-	// This conflict is independent of whether a local audit report exists.
-	if err := os.MkdirAll(filepath.Join(root, "registry"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	v84Registry := "- op: SPAWN_MONSTER\n  direction: clientbound\n  opcode: 0x0EC\n  fname: \"CMobPool::OnMobEnterField\"\n  provenance: csv-import\n"
+	// Registry: v84 has LOGIN_STATUS at opcode 0x001 clientbound (different opcode).
+	v84Registry := "- op: LOGIN_STATUS\n  direction: clientbound\n  opcode: 0x001\n  fname: \"CLogin::OnCheckPasswordResult\"\n  provenance: csv-import\n"
 	if err := os.WriteFile(filepath.Join(root, "registry", "gms_v84.yaml"), []byte(v84Registry), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	// v83 template routes opcode 0x000 clientbound (LOGIN_STATUS).
+	// v83 template routes opcode 0x000 clientbound (LOGIN_STATUS in v83).
 	mustCopy(t, filepath.Join("..", "internal", "matrix", "testdata", "templates", "template_gms_83_1.json"),
 		filepath.Join(root, "templates", "template_gms_83_1.json"))
-	// v84 template routes opcode 0x000 clientbound — but LOGIN_STATUS is Absent in
-	// v84's registry → "registry says absent but template routes opcode 0x000" conflict.
-	if err := os.MkdirAll(filepath.Join(root, "templates"), 0o755); err != nil {
+	// v84 template does NOT route 0x001 — LOGIN_STATUS is unrouted in v84.
+	// This creates a template-wiring gap (routedElsewhere=true, hasReport=true).
+	v84Template := `{"region":"GMS","majorVersion":84,"minorVersion":1,"socket":{"handlers":[],"writers":[]}}`
+	if err := os.WriteFile(filepath.Join(root, "templates", "template_gms_84_1.json"), []byte(v84Template), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	v84Template := `{"region":"GMS","majorVersion":84,"minorVersion":1,"socket":{"handlers":[],"writers":[{"opCode":"0x00","writer":"AuthSuccess"}]}}`
-	if err := os.WriteFile(filepath.Join(root, "templates", "template_gms_84_1.json"), []byte(v84Template), 0o644); err != nil {
+
+	// v84 audit report for LOGIN_STATUS: Atlas implements it (resolved address).
+	// Writer "AuthResult" maps to FName "CLogin::OnCheckPasswordResult".
+	if err := os.MkdirAll(filepath.Join(root, "audits", "gms_v84"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	v84Report := `{"WriterName":"AuthResult","IDAName":"CLogin::OnCheckPasswordResult","Address":"0x5e9900","Variant":"GMS/v84","BranchDepth":0,"AtlasFile":"libs/atlas-packet/login/clientbound/auth_result.go","Rows":[],"Verdict":0,"FlatInvalid":false}`
+	if err := os.WriteFile(filepath.Join(root, "audits", "gms_v84", "AuthResult.json"), []byte(v84Report), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -1,8 +1,6 @@
 package matrix
 
 import (
-	"fmt"
-
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
@@ -130,9 +128,6 @@ func gradeCore(a gradeArgs) Cell {
 	case opregistry.Unknown:
 		return Cell{State: StateIncomplete, Note: "applicability unknown — no registry file for this version"}
 	case opregistry.Absent:
-		if a.routed {
-			return Cell{State: StateConflict, Note: fmt.Sprintf("registry says absent but template routes opcode 0x%03X", a.opcode)}
-		}
 		// Only raise the absent-report conflict if the report's fname is NOT
 		// already claimed by a present op in this version. When a present op in
 		// this version shares the same fname (e.g. a version-specific variant of

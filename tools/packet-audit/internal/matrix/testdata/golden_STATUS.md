@@ -13,7 +13,7 @@ Tool: `testsha`
 | Op | FName | Packet | v83 # | v83 | v87 # | v87 |
 |----|-------|--------|-------|-----|-------|-----|
 | LOGIN_STATUS | CLogin::OnCheckPasswordResult | login/clientbound/AuthResult | 0x000 | 🟡 | 0x000 | ❌ |
-| ACCOUNT_INFO | CLogin::OnAccountInfoResult |  | 0x002 | ❌ |  | 🟥 |
+| ACCOUNT_INFO | CLogin::OnAccountInfoResult | login/clientbound/AccountInfo | 0x002 | ❌ | 0x003 | 🟥 |
 
 ## Serverbound
 
@@ -35,5 +35,5 @@ Tool: `testsha`
 
 ## Conflicts
 
-- 🟥 **ACCOUNT_INFO** × v87 — registry says absent but template routes opcode 0x002
+- 🟥 **ACCOUNT_INFO** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 

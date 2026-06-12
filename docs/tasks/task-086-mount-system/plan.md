@@ -1278,6 +1278,26 @@ Expected: all succeed. A missing `COPY libs/...` only surfaces here — fix the 
 
 - [ ] **Step 2: Commit any Dockerfile fix.**
 
+## Task 41b: Cross-version packet verification (PRE-DEPLOY GATE — added 2026-06-12)
+
+**Files:** as needed — `libs/atlas-packet/...`, `services/atlas-channel/...`; record findings in `docs/tasks/task-086-mount-system/deploy-notes.md`.
+
+The mount packet *body layouts* were built against IDA-confirmed **v83** facts only (context.md §2).
+The feature must support GMS 12/83/87/92/95 and JMS 185. Before enabling on any non-v83 tenant,
+IDA-verify these 3 packets on the v87 / v95 / JMS IDBs (user loads each IDB; one at a time —
+see memory `reference_ida_harvest_subagents`) and add version branches where they differ:
+
+- [ ] **Step 1: Monster Riding two-state CTS stat.** Verify the `getBaseTemporaryStats()` two-state
+  block layout + the Monster Riding `(nOption=vehicleId, rOption=skillId, time)` encoding on v87/v95/jms.
+  If the block ordering or field encoding differs, branch in `character_temporary_stat.go`.
+- [ ] **Step 2: `SET_TAMING_MOB_INFO` body.** Verify `characterId,level,exp,tiredness,levelUp` field
+  order/widths per version; add version branches to the writer (Task 5) if needed.
+- [ ] **Step 3: Food request `0x4D` body.** Verify `ts,slot,itemId` decode per version; branch the
+  serverbound decoder (Task 28) if needed.
+- [ ] **Step 4: JMS skill ids.** Re-confirm 1004/1013/1017/1018/1019/1031 (+ Noblesse/Legend) exist
+  with the same ids in JMS skill data; adjust `skill/mount.go` helpers if JMS diverges.
+- [ ] **Step 5: Record per-version findings + any branches added in deploy-notes.md.**
+
 ## Task 42: Live-config deployment note + final full gate (OQ 9.7)
 
 **Files:**

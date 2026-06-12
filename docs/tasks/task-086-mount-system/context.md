@@ -19,6 +19,23 @@ broadcasts mount info. A questline (Riding Mimiana) awards the skill + starter e
 
 ## 2. IDA-confirmed wire facts (v83, port 13337) — do not re-derive
 
+> **MULTI-VERSION SCOPE (decided 2026-06-12).** The feature must support ALL supported
+> versions: **GMS 12 / 83 / 87 / 92 / 95 and JMS 185**. The architecture is already
+> version-agnostic — opcodes are resolved per-tenant from config, the CTS encoder is
+> version-branched (`buildCharacterTemporaryStatRegistry`), and skill/item data is read
+> per-tenant from each version's WZ. The wire facts in this table are **IDA-confirmed for
+> v83 ONLY**. Three packet *body layouts* must be IDA-verified on the v87 / v95 / JMS IDBs
+> and given version branches if they differ, as a **PRE-DEPLOY GATE** (new plan Task 41b),
+> before the feature is enabled on any non-v83 tenant:
+> 1. the Monster Riding two-state CTS stat (`getBaseTemporaryStats()` block — currently a
+>    fixed layout for all versions);
+> 2. `SET_TAMING_MOB_INFO` body (Task 5 — single fixed layout, no version branch yet);
+> 3. the food-request `0x4D` body (Task 28).
+> Also re-confirm the mount skill ids (1004/1013/1017/1018/1019/1031) for JMS (almost
+> certainly identical — beginner-band ids are global — but unverified). Decision: continue
+> building on the v83 baseline now (most remaining tasks are version-neutral service/Kafka
+> logic); run the cross-version IDA pass before deploy.
+
 From `design.md` §1.1. These are authoritative; build against them:
 
 | Fact | Value |

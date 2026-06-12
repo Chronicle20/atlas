@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,15 +24,17 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
   const currentMapId = location?.attributes.mapId;
 
   const [mapId, setMapId] = useState<string>(currentMapId != null ? String(currentMapId) : "");
+  const [syncedMapId, setSyncedMapId] = useState<number | undefined>(currentMapId);
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string>("");
 
-  // Sync the input with the resolved current map once the location query loads.
-  useEffect(() => {
-    if (currentMapId != null) {
-      setMapId(String(currentMapId));
-    }
-  }, [currentMapId]);
+  // Adjust the field when the location query resolves to a new map id (React's
+  // "adjust state during render" pattern — avoids a set-state-in-effect and won't
+  // clobber in-progress edits on a same-value refetch).
+  if (currentMapId != null && currentMapId !== syncedMapId) {
+    setSyncedMapId(currentMapId);
+    setMapId(String(currentMapId));
+  }
 
   const validateMapId = (value: string): string => {
     // Clear any existing validation error
@@ -105,7 +107,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
 
       // Refresh the character's location so the dialog/table reflect the new map.
       queryClient.invalidateQueries({
-        queryKey: characterLocationKeys.detail(activeTenant?.id, character.id),
+        queryKey: characterLocationKeys.detail(activeTenant.id, character.id),
       });
 
       // Reset form state on success

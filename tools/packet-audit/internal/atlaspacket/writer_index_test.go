@@ -105,6 +105,12 @@ func TestTypeForWriterRealTree(t *testing.T) {
 		{"party/serverbound", "OperationExpel", "party/serverbound.OperationExpel"},
 		// serverbound const-backed handle: "NPCStartConversationHandle" → StartConversation
 		{"npc/serverbound", "NPCStartConversationHandle", "npc/serverbound.StartConversation"},
+		// alt-key (const name minus "Writer" suffix): audit WriterName "MonsterMovement"
+		// from const MonsterMovementWriter = "MoveMonster" → struct Movement
+		{"monster/clientbound", "MonsterMovement", "monster/clientbound.Movement"},
+		// alt-key (const name minus "Writer"): audit WriterName "MonsterSpawn"
+		// from const MonsterSpawnWriter = "SpawnMonster" → struct Spawn
+		{"monster/clientbound", "MonsterSpawn", "monster/clientbound.Spawn"},
 	}
 	for _, c := range cases {
 		qual, ok := reg.TypeForWriter(c.pkgDir, c.writerName)

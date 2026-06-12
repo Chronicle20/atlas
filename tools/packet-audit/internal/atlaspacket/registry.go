@@ -211,15 +211,28 @@ func NewTypeRegistry(atlasPacketRoot string) (*TypeRegistry, error) {
 				continue
 			}
 			// Operation() must have exactly one return statement in its body.
-			writerName := operationReturnLiteral(fd.Body, consts)
+			constIdent, writerName := operationReturnLiteralWithIdent(fd.Body, consts)
 			if writerName == "" {
 				continue
 			}
+			// Primary key: const value (e.g. "MoveMonster" from const MonsterMovementWriter = "MoveMonster").
 			key := fc.pkgPath + "§" + writerName
-			// Last-write-wins when multiple structs share the same writer name
-			// in one package (edge case; prefer first to preserve discovery order).
+			// Prefer-first: keep the first struct discovered per writer name.
 			if _, exists := reg.byWriter[key]; !exists {
 				reg.byWriter[key] = qual
+			}
+			// Alternate key: const name minus "Writer"/"Handle"/"Handler" suffix
+			// (e.g. "MonsterMovement" from const name "MonsterMovementWriter").
+			// Audit WriterNames are sometimes generated from the const name rather
+			// than the const value, so we index both to handle that discrepancy.
+			if constIdent != "" {
+				altName := stripWriterSuffix(constIdent)
+				if altName != "" && altName != writerName {
+					altKey := fc.pkgPath + "§" + altName
+					if _, exists := reg.byWriter[altKey]; !exists {
+						reg.byWriter[altKey] = qual
+					}
+				}
 			}
 		}
 	}
@@ -594,33 +607,54 @@ func (r *TypeRegistry) TypeForWriter(pkgDir, writerName string) (string, bool) {
 	return "", false
 }
 
-// operationReturnLiteral extracts the wire-name from a single-statement
+// operationReturnLiteralWithIdent extracts the wire-name from a single-statement
 // Operation() body. It handles two forms:
 //   - `return SomeConst`   → resolved through consts to the literal value
 //   - `return "LiteralStr"` → the literal value directly
 //
-// Returns "" when the body has more than one statement, contains a non-return
+// Returns (constIdent, literalValue). constIdent is the identifier name when the
+// return is const-backed (e.g. "MonsterMovementWriter"); it is "" for a direct
+// literal. literalValue is the resolved string value, or "" on failure.
+// Returns ("", "") when the body has more than one statement, contains a non-return
 // statement, or the return expression is not a simple ident/string literal.
-func operationReturnLiteral(body *ast.BlockStmt, consts map[string]string) string {
+func operationReturnLiteralWithIdent(body *ast.BlockStmt, consts map[string]string) (constIdent, literalValue string) {
 	if body == nil || len(body.List) != 1 {
-		return ""
+		return "", ""
 	}
 	ret, ok := body.List[0].(*ast.ReturnStmt)
 	if !ok || len(ret.Results) != 1 {
-		return ""
+		return "", ""
 	}
 	switch v := ret.Results[0].(type) {
 	case *ast.BasicLit:
 		if v.Kind == token.STRING {
-			return strings.Trim(v.Value, `"`)
+			return "", strings.Trim(v.Value, `"`)
 		}
 	case *ast.Ident:
 		if val, ok := consts[v.Name]; ok {
-			return val
+			return v.Name, val
 		}
 		// Ident not in same-file consts — could be from another file in the
 		// same package. The single-file pass cannot resolve cross-file consts
 		// without a full type-checker, so we skip rather than guess.
+	}
+	return "", ""
+}
+
+// operationReturnLiteral is a backward-compatible wrapper used by tests.
+func operationReturnLiteral(body *ast.BlockStmt, consts map[string]string) string {
+	_, val := operationReturnLiteralWithIdent(body, consts)
+	return val
+}
+
+// stripWriterSuffix removes a trailing "Writer", "Handle", or "Handler" suffix
+// from a const name to produce the alternate audit-tool WriterName.
+// Returns "" if the name has no recognized suffix.
+func stripWriterSuffix(constName string) string {
+	for _, sfx := range []string{"Writer", "Handler", "Handle"} {
+		if strings.HasSuffix(constName, sfx) && len(constName) > len(sfx) {
+			return constName[:len(constName)-len(sfx)]
+		}
 	}
 	return ""
 }

@@ -40,6 +40,8 @@ steps 1–8. Constraints, in priority order:
 3. Wire divergences (step 4) are a separate commit before the verification
    commit, with a byte-test proving the fix.
 4. Final commit contains: the test (+marker), the evidence YAML, regenerated
-   STATUS.md + status.json, and `packet-audit matrix --check` exits 0.
+   STATUS.md + status.json, and `packet-audit matrix --check` introduces no
+   new problems (no orphan/dangling/stale/drift lines for your packet, no
+   conflict-count increase; exit 0 once the seed-conflict backlog is zero).
 5. Report format: `<packet> × <version>: <old state> → <new state>, commit
    <sha>` or `BLOCKED at step <n>: <reason>`.

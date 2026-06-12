@@ -19,7 +19,10 @@ Non-negotiable rules:
    verification commit.
 4. The three artifacts land together in one commit: byte-test (with
    `packet-audit:verify` marker), evidence YAML, regenerated
-   STATUS.md/status.json. `packet-audit matrix --check` must exit 0.
+   STATUS.md/status.json. `packet-audit matrix --check` must introduce no
+   new problems: zero orphan/dangling/stale/drift lines for your packet and
+   no conflict-count increase (exit 0 once the pre-existing seed-conflict
+   backlog is gone — see the playbook's note on `--check` exit codes).
 5. If the packet is tier-1 mode-driven, one fixture per mode (the registry
    entry and audit report's dispatch selectors enumerate the modes).
 

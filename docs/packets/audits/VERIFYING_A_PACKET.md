@@ -62,15 +62,24 @@ command succeeds, open the YAML and add the `verifies:` field manually:
     verifies:
       - <test file>#<TestName>
 
-The `--ida` argument is the function name exactly as it appears in the IDA
-export (e.g. `OnPartyResult`), not a hex address. The tool resolves the
-address from the export and embeds it in the record automatically.
+The `--ida` argument is the function name exactly as it appears as a key in
+the IDA export's `functions` map (e.g. `CWvsContext::OnPartyResult` — fully
+qualified, including any `#case` suffix the export uses), not a hex address.
+The tool resolves the address from the export and embeds it in the record
+automatically.
 
 ## 8. Regenerate and verify promotion
     go run ./tools/packet-audit matrix
     go run ./tools/packet-audit matrix --check
 The cell must now be ✅. Commit test + evidence + STATUS.md/status.json
 together.
+
+Note on `--check` exit codes: until the registry-seed conflict backlog is
+burned down (task-085 Phase 5), `matrix --check` exits 1 from pre-existing 🟥
+conflicts unrelated to your cell. Your bar is: the run must introduce **no
+new problems** — zero orphan/dangling/stale/drift lines mentioning your
+packet, and the conflict count must not increase. Once conflicts reach zero,
+the bar becomes a clean exit 0.
 
 ## Failure modes (design §13)
 - `evidence pin` fails "not in export" → the citation is unresolvable; the

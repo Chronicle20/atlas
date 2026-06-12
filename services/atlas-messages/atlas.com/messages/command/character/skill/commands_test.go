@@ -21,7 +21,6 @@ func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) chara
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
-		SetMapId(mapId).
 		SetAccountId(100).
 		Build()
 }

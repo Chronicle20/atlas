@@ -185,7 +185,6 @@ func TestExtract(t *testing.T) {
 		Face:               20000,
 		Ap:                 50,
 		Sp:                 "10,5,3",
-		MapId:              100000000,
 		SpawnPoint:         0,
 		Gm:                 1,
 		X:                  0,
@@ -226,9 +225,6 @@ func TestExtract(t *testing.T) {
 	}
 	if model.Fame() != rm.Fame {
 		t.Errorf("Fame mismatch: expected %d, got %d", rm.Fame, model.Fame())
-	}
-	if model.MapId() != rm.MapId {
-		t.Errorf("MapId mismatch: expected %d, got %d", rm.MapId, model.MapId())
 	}
 	if model.Gm() != (rm.Gm == 1) {
 		t.Errorf("Gm mismatch: expected %v, got %v", rm.Gm == 1, model.Gm())

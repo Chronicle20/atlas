@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
+	"atlas-messages/location"
 	"atlas-messages/map"
 	"atlas-messages/message"
 	"atlas-messages/rate"
@@ -106,7 +107,13 @@ func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					msg := "You are in map " + strconv.Itoa(int(character.MapId()))
+					mapId := _map2.Id(0)
+					if lf, err := location.GetField(l, ctx, character.Id()); err == nil {
+						mapId = lf.MapId()
+					} else if !errors.Is(err, location.ErrNotFound) {
+						l.WithError(err).Warnf("Unable to resolve atlas-maps location for character [%d]; reporting map 0.", character.Id())
+					}
+					msg := "You are in map " + strconv.Itoa(int(mapId))
 					if f.Instance() != uuid.Nil {
 						msg += " [instance: " + f.Instance().String() + "]"
 					}
@@ -135,7 +142,13 @@ func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f f
 				return func(ctx context.Context) error {
 					rp := rate.NewProcessor(l, ctx)
 					mp := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), character.MapId()).Build()
+					mapId := _map2.Id(0)
+					if lf, err := location.GetField(l, ctx, character.Id()); err == nil {
+						mapId = lf.MapId()
+					} else if !errors.Is(err, location.ErrNotFound) {
+						l.WithError(err).Warnf("Unable to resolve atlas-maps location for character [%d]; reporting map 0.", character.Id())
+					}
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), mapId).Build()
 
 					r, err := rp.GetByCharacter(ch, character.Id())
 					if err != nil {

@@ -60,7 +60,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Invalid skill ID: %s", skillIdStr), []uint32{c.Id()})
 						}
 					}, true
@@ -71,7 +71,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown skill ID: %d", skillId), []uint32{c.Id()})
 						}
 					}, true
@@ -81,7 +81,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Skill #%d is not a buff skill.", skillId), []uint32{c.Id()})
 						}
 					}, true
@@ -96,7 +96,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown skill: %s", skillQuery), []uint32{c.Id()})
 						}
 					}, true
@@ -114,7 +114,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("No buff skills match: %s", skillQuery), []uint32{c.Id()})
 						}
 					}, true
@@ -125,7 +125,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							_ = msgProc.IssuePinkText(f, 0, fmt.Sprintf("Multiple skills match \"%s\":", skillQuery), []uint32{c.Id()})
 							for _, s := range buffableSkills {
 								_ = msgProc.IssuePinkText(f, 0, fmt.Sprintf("  #%d - %s", s.Id(), s.Name()), []uint32{c.Id()})
@@ -143,7 +143,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 				return func(l logrus.FieldLogger) func(ctx context.Context) error {
 					return func(ctx context.Context) error {
 						msgProc := message.NewProcessor(l, ctx)
-						f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+						f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Skill %s has no buff effects.", foundSkill.Name()), []uint32{c.Id()})
 					}
 				}, true
@@ -153,7 +153,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 			if target == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if target == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(target))
@@ -163,7 +163,7 @@ func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 				return func(ctx context.Context) error {
 					bp := buff.NewProcessor(l, ctx)
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
 					ids, err := idProvider()
 					if err != nil {

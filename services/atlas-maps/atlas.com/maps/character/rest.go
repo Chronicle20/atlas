@@ -2,19 +2,15 @@ package character
 
 import (
 	"strconv"
-
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // RestModel is the minimal projection of the atlas-character JSON:API
 // resource needed by atlas-maps. atlas-character exposes many more
-// attributes; only the fields we consume (position + map id) are
-// declared here.
+// attributes; only the fields we consume (position) are declared here.
 type RestModel struct {
-	Id    uint32  `json:"-"`
-	MapId _map.Id `json:"mapId"`
-	X     int16   `json:"x"`
-	Y     int16   `json:"y"`
+	Id uint32 `json:"-"`
+	X  int16  `json:"x"`
+	Y  int16  `json:"y"`
 }
 
 // GetName returns the JSON:API resource type. Must match atlas-character.

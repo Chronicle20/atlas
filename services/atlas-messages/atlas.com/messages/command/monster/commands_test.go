@@ -15,7 +15,7 @@ func testCharacter(isGm bool) character.Model {
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().SetId(1).SetGm(gm).SetMapId(100000000).Build()
+	return character.NewModelBuilder().SetId(1).SetGm(gm).Build()
 }
 
 func TestParseSpawnArgs(t *testing.T) {

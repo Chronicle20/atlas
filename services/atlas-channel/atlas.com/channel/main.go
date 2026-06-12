@@ -118,6 +118,7 @@ import (
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
 	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
+	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -607,6 +608,7 @@ func produceWriters() []string {
 		monstercb.MonsterMovementAckWriter,
 		summoncb.SummonSpawnWriter,
 		summoncb.SummonRemoveWriter,
+		summoncb.SummonMoveWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -704,6 +706,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cashsb.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc

@@ -34,3 +34,12 @@ type SpawnCommandBody struct {
 	X                int16  `json:"x"`
 	Y                int16  `json:"y"`
 }
+
+type MoveCommandBody struct {
+	SummonId          uint32 `json:"summonId"`
+	SenderCharacterId uint32 `json:"senderCharacterId"`
+	X                 int16  `json:"x"`
+	Y                 int16  `json:"y"`
+	Stance            byte   `json:"stance"`
+	RawMovement       []byte `json:"rawMovement"`
+}

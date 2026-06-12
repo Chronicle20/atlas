@@ -28,6 +28,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveCommand))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -40,5 +43,15 @@ func handleSpawnCommand(l logrus.FieldLogger, ctx context.Context, c Command[Spa
 	_, err := summon.NewProcessor(l, ctx).Spawn(f, c.Body.OwnerCharacterId, c.Body.SkillId, c.Body.SkillLevel, c.Body.X, c.Body.Y)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to spawn summon for owner [%d] skill [%d].", c.Body.OwnerCharacterId, c.Body.SkillId)
+	}
+}
+
+func handleMoveCommand(l logrus.FieldLogger, ctx context.Context, c Command[MoveCommandBody]) {
+	if c.Type != CommandTypeMove {
+		return
+	}
+	err := summon.NewProcessor(l, ctx).Move(c.Body.SummonId, c.Body.SenderCharacterId, c.Body.X, c.Body.Y, c.Body.Stance, c.Body.RawMovement)
+	if err != nil {
+		l.WithError(err).Errorf("Failed to move summon [%d] for sender [%d].", c.Body.SummonId, c.Body.SenderCharacterId)
 	}
 }

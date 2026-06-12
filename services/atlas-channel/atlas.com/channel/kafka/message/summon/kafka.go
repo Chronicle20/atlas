@@ -39,6 +39,15 @@ type SpawnCommandBody struct {
 	Y                int16  `json:"y"`
 }
 
+type MoveCommandBody struct {
+	SummonId          uint32 `json:"summonId"`
+	SenderCharacterId uint32 `json:"senderCharacterId"`
+	X                 int16  `json:"x"`
+	Y                 int16  `json:"y"`
+	Stance            byte   `json:"stance"`
+	RawMovement       []byte `json:"rawMovement"`
+}
+
 // EnvEventTopicSummonStatus is the EVENT_TOPIC_SUMMON_STATUS env var
 // (summons -> channel). The envelope and bodies below are re-declared
 // channel-side; their JSON tags MUST stay byte-for-byte identical to the
@@ -75,6 +84,13 @@ type StatusEventCreatedBody struct {
 	Stance       byte  `json:"stance"`
 	Puppet       bool  `json:"puppet"`
 	Animated     bool  `json:"animated"`
+}
+
+type StatusEventMovedBody struct {
+	X           int16  `json:"x"`
+	Y           int16  `json:"y"`
+	Stance      byte   `json:"stance"`
+	RawMovement []byte `json:"rawMovement"`
 }
 
 type StatusEventDestroyedBody struct {

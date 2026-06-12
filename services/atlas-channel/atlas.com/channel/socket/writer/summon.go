@@ -16,3 +16,9 @@ func SummonSpawnBody(ownerCharacterId uint32, summonId uint32, skillId uint32, l
 func SummonRemoveBody(ownerCharacterId uint32, summonId uint32, animated bool) packet.Encode {
 	return summoncb.NewSummonRemove(ownerCharacterId, summonId, animated).Encode
 }
+
+// SummonMoveBody builds the SummonMove clientbound packet for a moved summon,
+// rebroadcasting the raw movement blob byte-faithfully to other sessions.
+func SummonMoveBody(ownerCharacterId uint32, summonId uint32, startX int16, startY int16, rawMovement []byte) packet.Encode {
+	return summoncb.NewSummonMove(ownerCharacterId, summonId, startX, startY, rawMovement).Encode
+}

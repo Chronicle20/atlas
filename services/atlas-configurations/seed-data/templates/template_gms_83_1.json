@@ -771,6 +771,11 @@
         "handler": "PetItemExcludeHandle"
       },
       {
+        "opCode": "0xAF",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
         "opCode": "0xBC",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
@@ -1733,6 +1738,10 @@
       {
         "opCode": "0xB0",
         "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "SummonMove"
       },
       {
         "opCode": "0xB9",

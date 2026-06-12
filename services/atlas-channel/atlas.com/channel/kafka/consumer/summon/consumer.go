@@ -41,6 +41,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMoved(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDestroyed(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -67,6 +72,27 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 				writer.SummonSpawnBody(e.OwnerCharacterId, e.SummonId, e.SkillId, e.Body.SkillLevel, e.Body.X, e.Body.Y, e.Body.Stance, e.Body.MovementType, e.Body.Puppet, e.Body.Animated)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn summon [%d] for characters in map [%d].", e.SummonId, e.MapId)
+		}
+	}
+}
+
+func handleStatusEventMoved(sc server.Model, wp writer.Producer) message.Handler[summon2.StatusEvent[summon2.StatusEventMovedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e summon2.StatusEvent[summon2.StatusEventMovedBody]) {
+		if e.Type != summon2.EventSummonStatusMoved {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		// Broadcast to OTHER sessions only: the owner's client already rendered
+		// the move locally, so re-sending would double-apply it.
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.OwnerCharacterId,
+			session.Announce(l)(ctx)(wp)(summonpkt.SummonMoveWriter)(
+				writer.SummonMoveBody(e.OwnerCharacterId, e.SummonId, e.Body.X, e.Body.Y, e.Body.RawMovement)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to move summon [%d] for characters in map [%d].", e.SummonId, e.MapId)
 		}
 	}
 }

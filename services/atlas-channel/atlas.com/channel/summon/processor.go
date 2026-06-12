@@ -28,3 +28,11 @@ func (p *Processor) Spawn(f field.Model, ownerCharacterId uint32, skillId uint32
 	p.l.Debugf("Requesting summon spawn for character [%d] skill [%d] level [%d] at [%d,%d].", ownerCharacterId, skillId, level, x, y)
 	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(SpawnCommandProvider(f, ownerCharacterId, skillId, level, x, y))
 }
+
+// Move emits a COMMAND_TOPIC_SUMMON MOVE command requesting atlas-summons
+// reposition the given summon (ownership is verified there) and rebroadcast the
+// raw movement blob byte-faithfully.
+func (p *Processor) Move(f field.Model, summonId uint32, senderCharacterId uint32, x int16, y int16, stance byte, rawMovement []byte) error {
+	p.l.Debugf("Requesting summon move for summon [%d] by character [%d] to [%d,%d].", summonId, senderCharacterId, x, y)
+	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(MoveCommandProvider(f, summonId, senderCharacterId, x, y, stance, rawMovement))
+}

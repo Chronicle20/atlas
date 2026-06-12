@@ -57,6 +57,11 @@ func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetTemplateId(templateId uint32) *ModelBuilder {
+	b.templateId = templateId
+	return b
+}
+
 func (b *ModelBuilder) SetCloseness(closeness uint16) *ModelBuilder {
 	b.closeness = closeness
 	return b

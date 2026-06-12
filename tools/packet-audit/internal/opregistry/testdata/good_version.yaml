@@ -1,0 +1,19 @@
+- op: LOGIN_STATUS
+  direction: clientbound
+  opcode: 0x000
+  fname: "CLogin::OnCheckPasswordResult"
+  provenance: csv-import
+- op: SERVERLIST_REREQUEST
+  direction: serverbound
+  opcode: 0x004
+  fname: "CLogin::Init"
+  fname_alts:
+    - "CLogin::ChangeStepImmediate"
+  provenance: csv-import
+- op: SPAWN_MONSTER
+  direction: clientbound
+  opcode: 0x0EC
+  fname: "CMobPool::OnMobEnterField"
+  provenance: ida-discovered
+  ida:
+    address: 0x5e1230

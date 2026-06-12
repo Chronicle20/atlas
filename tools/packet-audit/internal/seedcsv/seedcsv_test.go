@@ -46,10 +46,18 @@ func TestLoadServerboundQuirks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
+	// Line numbers are set to physical CSV record numbers (header=1, first data row=2).
+	lp := rows[0]
+	if lp.Line != 2 {
+		t.Errorf("LOGIN_PASSWORD Line = %d, want 2", lp.Line)
+	}
 	// Empty FName kept.
 	gl := rows[1]
 	if gl.Op != "GUEST_LOGIN" || gl.FName != "" {
 		t.Errorf("row1 = %+v", gl)
+	}
+	if gl.Line != 3 {
+		t.Errorf("GUEST_LOGIN Line = %d, want 3", gl.Line)
 	}
 	if !gl.Versions["GMS:83"].Present || gl.Versions["GMS:83"].Opcode != 0x002 {
 		t.Errorf("GUEST_LOGIN v83 = %+v", gl.Versions["GMS:83"])
@@ -58,6 +66,21 @@ func TestLoadServerboundQuirks(t *testing.T) {
 	sr := rows[2]
 	if sr.FName != "CLogin::Init" || len(sr.FNameAlts) != 1 || sr.FNameAlts[0] != "CLogin::ChangeStepImmediate" {
 		t.Errorf("multiline fname = %q alts=%v", sr.FName, sr.FNameAlts)
+	}
+	// SERVERLIST_REREQUEST is a multi-line CSV record but still one data record (rowNum=2).
+	if sr.Line != 4 {
+		t.Errorf("SERVERLIST_REREQUEST Line = %d, want 4", sr.Line)
+	}
+	// n/a placeholder row: Op="n/a", FName="n/a". Line is the next record = 5.
+	na := rows[3]
+	if na.Op != "n/a" || na.FName != "n/a" {
+		t.Errorf("n/a row = %+v", na)
+	}
+	if na.Line != 5 {
+		t.Errorf("n/a row Line = %d, want 5", na.Line)
+	}
+	if !na.Versions["GMS:83"].Present {
+		t.Errorf("n/a row GMS:83 should be present")
 	}
 }
 

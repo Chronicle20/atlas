@@ -26,6 +26,7 @@ type Row struct {
 	FName     string
 	FNameAlts []string
 	Versions  map[string]Cell // "REGION:major" -> cell
+	Line      int             // physical CSV record number (header=1, first data row=2)
 }
 
 func Load(path string) ([]Row, error) {
@@ -64,6 +65,8 @@ func load(src io.Reader, name string) ([]Row, error) {
 
 	var out []Row
 	for rowNum, rec := range records[1:] {
+		// rowNum is 0-indexed over data records; physical line = rowNum+2 (header=1).
+		physicalLine := rowNum + 2
 		if len(rec) < 2 {
 			continue
 		}
@@ -72,7 +75,7 @@ func load(src io.Reader, name string) ([]Row, error) {
 			continue
 		}
 		fnameLines := strings.Split(strings.TrimSpace(rec[1]), "\n")
-		row := Row{Op: op, FName: strings.TrimSpace(fnameLines[0]), Versions: map[string]Cell{}}
+		row := Row{Op: op, FName: strings.TrimSpace(fnameLines[0]), Versions: map[string]Cell{}, Line: physicalLine}
 		for _, alt := range fnameLines[1:] {
 			if a := strings.TrimSpace(alt); a != "" {
 				row.FNameAlts = append(row.FNameAlts, a)

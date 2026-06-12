@@ -1495,16 +1495,18 @@
   opcode: 21
   fname: CClientSocket::OnConnect
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R38
   direction: serverbound
   opcode: 22
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 38: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R39
   direction: serverbound
   opcode: 23
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 39: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CLIENT_START
   direction: serverbound
   opcode: 24
@@ -1520,16 +1522,18 @@
   opcode: 26
   fname: ""
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R45
   direction: serverbound
   opcode: 27
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 45: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R46
   direction: serverbound
   opcode: 28
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 46: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHANGE_MAP
   direction: serverbound
   opcode: 29
@@ -1628,16 +1632,18 @@
   opcode: 45
   fname: CUserLocal::RequestUpgradeTombEffect
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R74
   direction: serverbound
   opcode: 46
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 74: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R75
   direction: serverbound
   opcode: 47
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 75: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOB_BANISH_PLAYER
   direction: serverbound
   opcode: 48
@@ -1913,11 +1919,12 @@
   opcode: 90
   fname: CWvsContext::SendGivePopularityRequest
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R149
   direction: serverbound
   opcode: 91
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 149: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHAR_INFO_REQUEST
   direction: serverbound
   opcode: 92
@@ -2254,11 +2261,12 @@
     - CMemoListDlg::SetRet
     - CWvsContext::OnMemoNotify_Receive
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R221
   direction: serverbound
   opcode: 135
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 221: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: USE_DOOR
   direction: serverbound
   opcode: 136
@@ -2458,16 +2466,18 @@
   opcode: 175
   fname: CPet::SendUpdateExceptionListRequest
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R288
   direction: serverbound
   opcode: 176
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 288: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R289
   direction: serverbound
   opcode: 177
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 289: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_SUMMON
   direction: serverbound
   opcode: 178
@@ -2500,26 +2510,29 @@
   opcode: 182
   fname: CSummoned::SendRemove
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R296
   direction: serverbound
   opcode: 183
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 296: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R297
   direction: serverbound
   opcode: 184
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 297: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_DRAGON
   direction: serverbound
   opcode: 185
   fname: CVecCtrlDragon::EndUpdateActive
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R299
   direction: serverbound
   opcode: 186
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 299: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHANGE_QUICKSLOT
   direction: serverbound
   opcode: 187
@@ -2535,21 +2548,24 @@
   opcode: 191
   fname: CUserLocal::SendRepeatEffectRemoveRequest
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R320
   direction: serverbound
   opcode: 192
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 320: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R321
   direction: serverbound
   opcode: 192
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 321: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R322
   direction: serverbound
   opcode: 193
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 322: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_LIFE
   direction: serverbound
   opcode: 194
@@ -2610,16 +2626,18 @@
   opcode: 205
   fname: CMob::SendEscortStopEndRequest
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R338
   direction: serverbound
   opcode: 206
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 338: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R339
   direction: serverbound
   opcode: 207
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 339: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: NPC_ACTION
   direction: serverbound
   opcode: 208
@@ -2630,36 +2648,41 @@
   opcode: 209
   fname: CNpc::RequestSpecialAction
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R344
   direction: serverbound
   opcode: 210
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 344: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R345
   direction: serverbound
   opcode: 211
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 345: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R346
   direction: serverbound
   opcode: 212
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 346: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITEM_PICKUP
   direction: serverbound
   opcode: 213
   fname: CWvsContext::SendDropPickUpRequest
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R348
   direction: serverbound
   opcode: 214
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 348: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R349
   direction: serverbound
   opcode: 215
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 349: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: DAMAGE_REACTOR
   direction: serverbound
   opcode: 216
@@ -2677,21 +2700,24 @@
   opcode: 218
   fname: CUserLocal::ResetNLCPQ
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R355
   direction: serverbound
   opcode: 219
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 355: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R356
   direction: serverbound
   opcode: 220
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 356: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R357
   direction: serverbound
   opcode: 221
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 357: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: SNOWBALL
   direction: serverbound
   opcode: 222
@@ -2717,16 +2743,18 @@
   opcode: 226
   fname: CField_GuildBoss::BasicActionAttack
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R363
   direction: serverbound
   opcode: 227
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 363: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R364
   direction: serverbound
   opcode: 228
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 364: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MONSTER_CARNIVAL
   direction: serverbound
   opcode: 229
@@ -2742,11 +2770,12 @@
   opcode: 234
   fname: CWvsContext::SendCancelPartyWanted
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R372
   direction: serverbound
   opcode: 235
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 372: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: REQUEST_FOOTHOLD_INFO
   direction: serverbound
   opcode: 236
@@ -2767,21 +2796,24 @@
   opcode: 239
   fname: ""
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R377
   direction: serverbound
   opcode: 240
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 377: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R378
   direction: serverbound
   opcode: 241
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 378: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R379
   direction: serverbound
   opcode: 242
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 379: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHECK_CASH
   direction: serverbound
   opcode: 244
@@ -2822,36 +2854,42 @@
   opcode: 246
   fname: CCashShop::OnStatusCoupon
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R387
   direction: serverbound
   opcode: 247
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 387: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R388
   direction: serverbound
   opcode: 248
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 388: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R389
   direction: serverbound
   opcode: 249
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 389: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R390
   direction: serverbound
   opcode: 250
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 390: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R391
   direction: serverbound
   opcode: 251
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 391: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R392
   direction: serverbound
   opcode: 252
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 392: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: OPEN_ITEMUI
   direction: serverbound
   opcode: 253
@@ -2874,26 +2912,30 @@
   opcode: 256
   fname: CUIRaisePieceWnd::SendPutItem
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R397
   direction: serverbound
   opcode: 257
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 397: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R398
   direction: serverbound
   opcode: 258
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 398: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R399
   direction: serverbound
   opcode: 259
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 399: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R400
   direction: serverbound
   opcode: 260
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 400: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: REQUEST_AUTH_KEY
   direction: serverbound
   opcode: 261
@@ -2904,21 +2946,24 @@
   opcode: 262
   fname: CUIWebEvent::SendRequestAuthKey
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R403
   direction: serverbound
   opcode: 263
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 403: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R404
   direction: serverbound
   opcode: 264
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 404: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R405
   direction: serverbound
   opcode: 265
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 405: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITC_STATUS_CHARGE
   direction: serverbound
   opcode: 266
@@ -2952,26 +2997,29 @@
     - CITCWnd_Tab::OnButtonClicked
     - CITCBidAuctionDlg::OnButtonClicked
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R419
   direction: serverbound
   opcode: 269
-  fname: n/a
+  fname: ""
   provenance: csv-import
-- op: n/a
+  note: 'CSV serverbound row 419: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R420
   direction: serverbound
   opcode: 270
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 420: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: JMS_SLASH_COMMAND
   direction: serverbound
   opcode: 271
   fname: CUICharacterSaleDlg::SendCheckDuplicateIDPacket
   provenance: csv-import
-- op: n/a
+- op: UNNAMED_R422
   direction: serverbound
   opcode: 272
-  fname: n/a
+  fname: ""
   provenance: csv-import
+  note: 'CSV serverbound row 422: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITEM_UPGRADE_UPDATE
   direction: serverbound
   opcode: 276

@@ -2088,12 +2088,12 @@
   fname: CCashShop::SendCheckNameChangePossiblePacket
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R18
   direction: serverbound
   opcode: 17
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 18: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: WORLD_TRANSFER
   direction: serverbound
   opcode: 18
@@ -2186,18 +2186,18 @@
   fname: CLogin::SendSelectCharPacketByVAC
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R38
   direction: serverbound
   opcode: 33
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 38: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R39
   direction: serverbound
   opcode: 34
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 39: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CLIENT_START
   direction: serverbound
   opcode: 35
@@ -2335,18 +2335,18 @@
   fname: CUserLocal::RequestUpgradeTombEffect
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R74
   direction: serverbound
   opcode: 54
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 74: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R75
   direction: serverbound
   opcode: 55
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 75: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOB_BANISH_PLAYER
   direction: serverbound
   opcode: 56
@@ -2647,12 +2647,12 @@
   fname: CWvsContext::SendGivePopularityRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R149
   direction: serverbound
   opcode: 96
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 149: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHAR_INFO_REQUEST
   direction: serverbound
   opcode: 97
@@ -2975,12 +2975,12 @@
     - CWvsContext::OnMemoNotify_Receive
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R221
   direction: serverbound
   opcode: 132
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 221: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: USE_DOOR
   direction: serverbound
   opcode: 133
@@ -3141,12 +3141,12 @@
   fname: CWvsContext::OnFamilySummonRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R245
   direction: serverbound
   opcode: 154
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 245: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: BBS_OPERATION
   direction: serverbound
   opcode: 155
@@ -3260,18 +3260,18 @@
   fname: CPet::SendUpdateExceptionListRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R288
   direction: serverbound
   opcode: 173
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 288: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R289
   direction: serverbound
   opcode: 174
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 289: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_SUMMON
   direction: serverbound
   opcode: 175
@@ -3303,30 +3303,30 @@
     - CSummoned::TryDoingSummon
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R296
   direction: serverbound
   opcode: 179
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 296: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R297
   direction: serverbound
   opcode: 180
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 297: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_DRAGON
   direction: serverbound
   opcode: 181
   fname: CVecCtrlDragon::EndUpdateActive
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R299
   direction: serverbound
   opcode: 182
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 299: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHANGE_QUICKSLOT
   direction: serverbound
   opcode: 183
@@ -3399,42 +3399,42 @@
   fname: CNpc::RequestSpecialAction
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R344
   direction: serverbound
   opcode: 199
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 344: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R345
   direction: serverbound
   opcode: 200
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 345: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R346
   direction: serverbound
   opcode: 201
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 346: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITEM_PICKUP
   direction: serverbound
   opcode: 202
   fname: CWvsContext::SendDropPickUpRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R348
   direction: serverbound
   opcode: 203
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 348: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R349
   direction: serverbound
   opcode: 204
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 349: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: DAMAGE_REACTOR
   direction: serverbound
   opcode: 205
@@ -3455,24 +3455,24 @@
   fname: CUserLocal::ResetNLCPQ
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R355
   direction: serverbound
   opcode: 208
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 355: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R356
   direction: serverbound
   opcode: 209
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 356: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R357
   direction: serverbound
   opcode: 210
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 357: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: SNOWBALL
   direction: serverbound
   opcode: 211
@@ -3503,36 +3503,36 @@
   fname: CField_GuildBoss::BasicActionAttack
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R363
   direction: serverbound
   opcode: 216
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 363: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R364
   direction: serverbound
   opcode: 217
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 364: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MONSTER_CARNIVAL
   direction: serverbound
   opcode: 218
   fname: CUIMonsterCarnival::RequestSend
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R366
   direction: serverbound
   opcode: 219
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 366: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R369
   direction: serverbound
   opcode: 221
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 369: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: PARTY_SEARCH_START
   direction: serverbound
   opcode: 222
@@ -3545,12 +3545,12 @@
   fname: CWvsContext::SendCancelPartyWanted
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R372
   direction: serverbound
   opcode: 224
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 372: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: REQUEST_FOOTHOLD_INFO
   direction: serverbound
   opcode: 225
@@ -3563,12 +3563,12 @@
   fname: CField::OnRequestFootHoldInfo
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R377
   direction: serverbound
   opcode: 227
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 377: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHECK_CASH
   direction: serverbound
   opcode: 228
@@ -3612,36 +3612,36 @@
   fname: CCashShop::OnStatusCoupon
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R387
   direction: serverbound
   opcode: 231
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 387: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R388
   direction: serverbound
   opcode: 232
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 388: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R389
   direction: serverbound
   opcode: 233
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 389: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R390
   direction: serverbound
   opcode: 234
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 390: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R391
   direction: serverbound
   opcode: 235
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 391: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: OPEN_ITEMUI
   direction: serverbound
   opcode: 236
@@ -3668,30 +3668,30 @@
   fname: CUIRaisePieceWnd::SendPutItem
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R397
   direction: serverbound
   opcode: 240
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 397: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R398
   direction: serverbound
   opcode: 241
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 398: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R399
   direction: serverbound
   opcode: 242
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 399: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R400
   direction: serverbound
   opcode: 243
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 400: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: REQUEST_AUTH_KEY
   direction: serverbound
   opcode: 244
@@ -3704,24 +3704,24 @@
   fname: CUIWebEvent::SendRequestAuthKey
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+- op: UNNAMED_R403
   direction: serverbound
   opcode: 246
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 403: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R404
   direction: serverbound
   opcode: 247
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: n/a
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 404: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+- op: UNNAMED_R405
   direction: serverbound
   opcode: 248
-  fname: n/a
+  fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 405: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITC_STATUS_CHARGE
   direction: serverbound
   opcode: 251

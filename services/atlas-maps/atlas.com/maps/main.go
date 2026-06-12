@@ -4,6 +4,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	characterClient "atlas-maps/character"
 	"atlas-maps/character/location"
+	"atlas-maps/character/warp"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	data2 "atlas-maps/kafka/consumer/data"
@@ -28,6 +29,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-maps"
@@ -122,7 +125,9 @@ func main() {
 		AddRouteInitializer(_map.InitResource(GetServer())).
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).
-		AddRouteInitializer(location.InitResource(GetServer())(db)).
+		AddRouteInitializer(location.InitResource(GetServer())(db, func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) location.WarpProcessor {
+			return warp.NewProcessor(l, ctx, db)
+		})).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

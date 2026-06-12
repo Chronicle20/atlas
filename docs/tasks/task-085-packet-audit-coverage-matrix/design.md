@@ -1,0 +1,300 @@
+# Task-085: Evidence-Graded Packet Coverage Matrix + Tiered Byte-Fixture Oracle
+
+Date: 2026-06-12
+Status: Draft for review
+Predecessor analysis: `retrospective.md` (same folder)
+
+## 1. Problem
+
+The packet-audit workstream (tasks 027–081) produced verdicts nobody trusts
+without re-deriving them by hand, closure-by-prose-deferral instead of
+verification, verdicts from four tool generations mixed in one baseline, and no
+single artifact showing what is actually verified per packet × version. See
+`retrospective.md` for the full evidence.
+
+## 2. Goals
+
+1. **One legible artifact**: a generated coverage matrix — packet operation ×
+   version, split by direction — where every cell is `verified / partial /
+   incomplete / n-a`, derivable by machine and readable by a human at a glance.
+2. **Evidence-graded verdicts**: cell states are computed from machine-checkable
+   evidence rules. Prose-only deferrals stop counting as done.
+3. **Tiered oracle**: packets the flat diff cannot verify (opaque/mode-driven)
+   require a byte-fixture test to reach `verified`; the diff verdict alone can
+   never promote them.
+4. **Automatic re-baselining**: any change to `tools/packet-audit`, the IDA
+   exports, or `libs/atlas-packet` regenerates the matrix; drift appears as cell
+   diffs in the PR.
+5. **Version-applicability awareness**: packets absent from a region/version
+   (per the opcode CSVs) render as `n-a`, distinct from `incomplete`; packets
+   Atlas routes that the CSV says are absent become an explicit finding.
+
+## 3. Non-Goals
+
+- Rewriting the flat diff into a semantic/branch-aware diff engine. The tier-1
+  byte-fixture oracle sidesteps that limitation instead.
+- Live-wire capture / replay infrastructure (Direction C from brainstorming).
+  Deferred to a future task; the evidence model below leaves room for a
+  `capture` evidence kind.
+- Handler/semantic verification (the NPC-discriminator and monster-book bug
+  classes). Out of scope here; tracked by the matrix only insofar as scope
+  boundaries become visible.
+- Auditing versions beyond the current four baselines (gms_v83, gms_v87,
+  gms_v95, jms_v185). The matrix supports adding columns (e.g. gms_v84,
+  gms_v92) cheaply, but populating them is a separate version-pass task.
+
+## 4. Architecture Overview
+
+Three new pieces, all inside `tools/packet-audit`, plus one data migration:
+
+```
+opcode CSVs ──┐
+audit runs ───┤
+evidence/ ────┼──► matrix subcommand ──► docs/packets/audits/STATUS.md (+ status.json)
+test-link ────┤
+tier file ────┘
+```
+
+1. **Evidence ledger** (`docs/packets/evidence/`): structured per-packet,
+   per-version records replacing prose acceptance in `_pending.md`.
+2. **Byte-test linkage scanner**: discovers byte-fixture tests in
+   `libs/atlas-packet` via machine-readable marker comments and binds them to
+   matrix cells.
+3. **`matrix` subcommand**: joins CSV applicability, latest audit verdicts,
+   evidence records, and test linkage into `STATUS.md` / `status.json`, applying
+   the grading rules below. A `matrix --check` mode exits non-zero on evidence
+   drift or grading regressions for CI.
+
+## 5. Cell-State Semantics
+
+For each (operation, direction, version) cell, evaluated in order:
+
+| State | Symbol | Rule |
+|-------|--------|------|
+| **n-a** | ⬜ | The opcode CSV marks the packet absent in this version (empty index + `0x000`), AND the version's template does not route it, AND no Atlas encoder/decoder claims it for this version. |
+| **conflict** | 🟥 | Applicability disagreement: CSV says absent but the template routes it (or vice versa), or Atlas code version-gates it into a version the CSV excludes. Always a finding; never silently rendered as n-a or incomplete. |
+| **verified** | ✅ | Tier 0: latest-tool ✅ verdict AND a linked byte-fixture test citing IDA evidence for this version. Tier 1: linked byte-fixture test citing IDA evidence (the diff verdict is advisory and cannot gate). |
+| **partial** | 🟡 | Latest-tool ✅ verdict without a byte-test; OR an evidence-pinned deferral whose pinned decompile hash still matches the current IDA export. |
+| **incomplete** | ❌ | Everything else — including every prose-only deferral existing today, ❌/🔍 verdicts without pinned evidence, and stale evidence (hash drift). |
+
+"Latest-tool" means the verdict was produced by the current `tools/packet-audit`
+commit against the current IDA exports. The matrix records the tool version
+(git SHA of `tools/packet-audit` tree) and export hashes used per run; a verdict
+produced by an older generation grades as if absent.
+
+### 5.1 Version applicability from the opcode CSVs
+
+`docs/packets/MapleStory Ops - ClientBound.csv` and `... - ServerBound.csv` are
+the source of truth for which operations exist per version. Format per row: op
+name, client FName, then per-version (index, hex-opcode) pairs. Absence is
+encoded as an empty index with `0x000`.
+
+A new `internal/csvops` parser exposes
+`Applicability(op, direction, version) → present | absent | unknown`:
+
+- `present`: non-empty index or non-zero opcode.
+- `absent`: empty index AND `0x000`.
+- `unknown`: the version has no column in the CSV (matrix renders the cell as
+  `incomplete` with an "applicability unknown" note — never guessed).
+
+The matrix cross-checks applicability against the per-version tenant template
+(`services/atlas-configurations/seed-data/templates/`) and against Atlas
+version gates discovered by the existing analyzer. Disagreement → `conflict`.
+This generalizes the task-067/068 "template coverage gap" findings into a
+standing check and catches the reverse case (Atlas emitting packets a version's
+client cannot parse).
+
+## 6. Evidence Ledger
+
+### 6.1 Layout
+
+```
+docs/packets/evidence/
+  gms_v83/
+    buddy.clientbound.Invite.yaml
+    monster.clientbound.Spawn.yaml
+  gms_v87/ …
+  gms_v95/ …
+  jms_v185/ …
+```
+
+One file per (packet, version) that needs evidence beyond a tool ✅. Schema:
+
+```yaml
+packet: buddy/clientbound/Invite        # pkg path + struct, matches audit report
+direction: clientbound
+version: gms_v83
+category: OPAQUE | TRUNCATION | REPRESENTATION | OP-MODE-PREFIX |
+          LOOP-EXCLUSIVE-BRANCH | VERSION-ABSENT | TIER1-FIXTURE
+ida:
+  function: "CWvsContext::OnFriendResult#Invite"
+  address: 0xa3f2e8
+  decompile_sha256: "ab12…"             # hash of the decompile text in the export
+verifies:
+  - libs/atlas-packet/buddy/clientbound/invite_test.go#TestInviteByteOutput_v83
+notes: >
+  Optional human context. Never consulted by grading.
+```
+
+### 6.2 Drift checking
+
+`matrix --check` recomputes `decompile_sha256` from the current IDA export
+(`docs/packets/ida-exports/*.json`) for every evidence record. Hash mismatch →
+the record is stale → the cell degrades to `incomplete` and the check fails.
+This is what makes a re-export or exporter improvement automatically invalidate
+acceptance decisions that were based on the old dump — fixing retrospective
+finding #4 (no re-audit loop).
+
+### 6.3 Migration
+
+The existing `_pending.md` entries, `OPAQUE_LEDGER.md` rows, and
+`_unimplemented.json` allowlists are migrated into evidence records **only where
+the original IDA citation is recoverable** (function + address present in the
+prose). Entries without recoverable citations are NOT migrated — their cells
+start as `incomplete`, which is the honest state. `_pending.md` and
+`OPAQUE_LEDGER.md` are then frozen with a banner pointing at the evidence dir.
+The allowlists remain consumed by the existing `validate` subcommand but no
+longer influence grading.
+
+## 7. Byte-Test Linkage
+
+Byte-fixture tests are bound to cells via a marker comment scanned by the tool
+(simple line scan, no AST dependency):
+
+```go
+// packet-audit:verify packet=buddy/clientbound/Invite version=gms_v83 ida=0xa3f2e8
+func TestInviteByteOutput_v83(t *testing.T) { … }
+```
+
+Rules:
+
+- One marker per (packet, version); a test may carry multiple markers (the
+  common 4-variant sweep test carries four).
+- The scanner verifies the marker's `ida` address appears in the matching
+  evidence record (or, for tier-0 packets, in the audit report); orphan markers
+  fail `matrix --check`.
+- `go test ./...` passing in `libs/atlas-packet` is a precondition recorded by
+  CI, not by the scanner — the scanner only proves linkage exists.
+
+Existing byte-tests from tasks 065–069/080 are retrofitted with markers during
+migration (they already cite IDA addresses in comments or commit messages).
+
+## 8. Tier Definition
+
+`docs/packets/evidence/tiers.yaml` enumerates tier-1 membership explicitly —
+no inference:
+
+- The 8 opaque type families from `OPAQUE_LEDGER.md` (mob temporary-stat,
+  movement path, CPet body, AvatarLook blob, Asset/ItemSlotBase, GUILDMEMBER
+  array, interaction Visitor/Room, GW_CharacterStat mask) — every packet that
+  recurses into them.
+- Mode-driven dispatcher families: party, guild, buddy, messenger, note, NPC
+  conversation, interaction, storage, cash, memo.
+- Any packet whose latest audit report carries `FlatInvalid`.
+
+Everything else is tier 0. Moving a packet between tiers is a reviewed edit to
+`tiers.yaml`. Tier 1 cells can only reach `verified` through a byte-fixture
+test; a tool ✅ on a tier-1 packet renders at most `partial`.
+
+## 9. STATUS.md Rendering
+
+Generated, never hand-edited. Per direction, one table; rows grouped by domain
+package, columns = versions:
+
+```
+## Clientbound
+
+| Op | Packet | v83 | v87 | v95 | JMS185 |
+|----|--------|-----|-----|-----|--------|
+| LOGIN_STATUS | login/AuthResult | ✅ | ✅ | ✅ | 🟡 |
+| ACCOUNT_INFO | login/AccountInfo | 🟡 | 🟡 | ✅ | ⬜ |
+| SPAWN_MONSTER | monster/Spawn (T1) | 🟡 | ❌ | 🟡 | ❌ |
+```
+
+Plus a per-version totals block (counts + percentages per state), a conflicts
+section listing every 🟥 with its disagreement, and a generation stamp (tool
+SHA, export hashes, date). `status.json` carries the same data for tooling.
+
+The summary block is the human deliverable: at a glance, per version, how much
+of the protocol surface is verified / partial / incomplete / absent.
+
+## 10. Process Rules (replacing closure-by-deferral)
+
+1. **Task-close gate**: a future audit/version task is done when every cell in
+   its declared scope is `verified`, `partial`-with-evidence, or `n-a` — and
+   the scope declaration itself is a list of matrix cells in the PRD. No prose
+   acceptance.
+2. **Re-baseline on change**: CI runs `matrix --check` on every PR touching
+   `tools/packet-audit/`, `libs/atlas-packet/`, `docs/packets/ida-exports/`,
+   or `docs/packets/evidence/`. The regenerated STATUS.md is committed in the
+   same PR; cell regressions (any cell degrading) fail unless the PR
+   description owns them.
+3. **New version pass**: add the CSV column, template, IDA export; the matrix
+   auto-grows with cells pre-filled from applicability (⬜/❌). The pass's job
+   is turning ❌ into ✅/🟡 — progress is the matrix diff itself.
+   `STARTING_A_NEW_VERSION_PASS.md` is updated to this workflow, including the
+   task-081 subcommand invocations it currently omits.
+4. **Shared sub-structs get rows**: registry types audited in their own right
+   (GW_CharacterStat, stat-registry, AvatarLook, …) appear in a separate
+   sub-struct matrix section with the same grading, so cross-domain structures
+   have an owner (fixes the v87 stat-registry escape class).
+
+## 11. Implementation Phases
+
+Each phase lands independently and is useful on its own.
+
+1. **Matrix generator (read-only)**: `csvops` parser, applicability model,
+   `matrix` subcommand joining CSVs + existing audit JSON; STATUS.md with
+   everything graded honestly (mostly 🟡/❌ at first; no evidence ledger yet —
+   deferrals all render ❌). Includes the conflict check.
+2. **Evidence ledger + drift check**: schema, loader, `--check` hash
+   verification; migrate the recoverable subset of `_pending.md` /
+   `OPAQUE_LEDGER.md`; freeze the prose files.
+3. **Byte-test linkage**: marker scanner; retrofit markers onto existing
+   byte-tests; `verified` promotion goes live.
+4. **Tier-1 fixture campaign**: per-family byte-fixture work, ordered by risk
+   (character stat → spawn/movement → inventory/asset → dispatcher families).
+   Each family is its own bounded sub-task with matrix-cell scope.
+5. **Process wiring**: CI `matrix --check` job, STARTING_A_NEW_VERSION_PASS.md
+   rewrite, task-close-gate documentation in the audit task template.
+
+Phases 1–3 + 5 are tool/process work (bounded). Phase 4 is the long tail and
+intentionally split into family-sized sub-tasks so no single task can "close
+with deferrals" — an unfinished family is simply still ❌ in the matrix.
+
+## 12. Error Handling
+
+- CSV rows with unparseable opcode pairs → `matrix` fails loudly with row
+  numbers; the CSVs are inputs of record and must be fixed, not skipped.
+- Evidence file referencing a packet/version with no audit report → `--check`
+  failure (dangling evidence).
+- Marker comment referencing a missing evidence record or mismatched address →
+  `--check` failure (orphan marker).
+- IDA export missing a function an evidence record cites → cell degrades to
+  `incomplete` with a "citation unresolvable" note; `--check` fails.
+- Two Atlas structs claiming the same (op, direction, version) → `conflict`.
+
+## 13. Testing
+
+- `csvops`: table-driven tests over real CSV excerpts covering present/absent/
+  unknown, the `Index`-column quirk on the first version pair, and multiline
+  FName cells (e.g. `CLogin::Init` rows).
+- Grading: unit tests per rule in §5, including precedence (conflict beats
+  n-a, stale evidence degrades, tier-1 ✅-without-fixture caps at partial).
+- Drift: fixture test where an export hash changes and the cell degrades.
+- Marker scanner: golden-file tests over real test-file excerpts.
+- End-to-end: a small synthetic CSV + audit JSON + evidence dir + test tree
+  producing a golden STATUS.md / status.json.
+- Determinism: two consecutive runs produce byte-identical output.
+
+## 14. Risks
+
+- **Migration honesty shock**: the first STATUS.md will show far less green
+  than the task-080 "closeout" implied (most 🔍 acceptances lack recoverable
+  citations). This is the point, but it should be expected in review.
+- **Marker discipline**: marker comments can rot if tests are renamed; the
+  orphan-marker check catches deletion but not semantic drift of the test body.
+  Mitigated by keeping fixtures (expected bytes) inside the linked test.
+- **CSV authority**: the CSVs are hand-maintained. The conflict state surfaces
+  disagreements rather than trusting either side blindly, but CSV errors will
+  generate conflict noise until corrected.

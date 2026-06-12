@@ -71,6 +71,10 @@
         "handler": "CharacterSelectedHandle"
       },
       {
+        "opCode": "0x14",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
         "handler": "CharacterCheckNameHandle"
@@ -94,6 +98,10 @@
         "opCode": "0x19",
         "validator": "NoOpValidator",
         "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x1A",
+        "handler": "StartErrorHandle"
       },
       {
         "opCode": "0x1C",
@@ -131,6 +139,10 @@
         "handler": "NoOpHandler"
       },
       {
+        "opCode": "0x2A",
+        "handler": "ChannelChangeHandle"
+      },
+      {
         "opCode": "0x2D",
         "validator": "LoggedInValidator",
         "handler": "CharacterChairInteractionHandle"
@@ -139,6 +151,10 @@
         "opCode": "0x2E",
         "validator": "LoggedInValidator",
         "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x36",
+        "handler": "CharacterChatGeneralHandle"
       },
       {
         "opCode": "0x37",
@@ -151,14 +167,146 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x41",
+        "handler": "NPCContinueConversationHandle"
+      },
+      {
+        "opCode": "0x4B",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x4C",
+        "handler": "CompartmentSortHandle"
+      },
+      {
+        "opCode": "0x4D",
+        "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x4E",
+        "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x4F",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x52",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x5D",
+        "handler": "CharacterItemUseScrollHandle"
+      },
+      {
+        "opCode": "0x62",
+        "handler": "CharacterDistributeApHandle"
+      },
+      {
+        "opCode": "0x64",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
+        "opCode": "0x66",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x68",
+        "handler": "CharacterBuffCancel"
+      },
+      {
         "opCode": "0x6A",
         "validator": "LoggedInValidator",
         "handler": "CharacterDropMesoHandle"
       },
       {
+        "opCode": "0x6D",
+        "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x6E",
+        "handler": "PetSpawnHandle"
+      },
+      {
+        "opCode": "0x77",
+        "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0x8F",
+        "handler": "MessengerOperationHandle"
+      },
+      {
+        "opCode": "0x91",
+        "handler": "PartyOperationHandle"
+      },
+      {
+        "opCode": "0x96",
+        "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x99",
+        "handler": "BuddyOperationHandle"
+      },
+      {
+        "opCode": "0x9A",
+        "handler": "NoteOperationHandle"
+      },
+      {
         "opCode": "0x9F",
         "validator": "LoggedInValidator",
         "handler": "CharacterKeyMapChangeHandle"
+      },
+      {
+        "opCode": "0xB3",
+        "handler": "GuildBBSHandle"
+      },
+      {
+        "opCode": "0xC7",
+        "handler": "PetMovementHandle"
+      },
+      {
+        "opCode": "0xC8",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xC9",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xCA",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xCB",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xCC",
+        "handler": "PetItemExcludeHandle"
+      },
+      {
+        "opCode": "0xE3",
+        "handler": "MonsterMovementHandle"
+      },
+      {
+        "opCode": "0xF1",
+        "handler": "NPCActionHandle"
+      },
+      {
+        "opCode": "0xF6",
+        "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0xF9",
+        "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0x112",
+        "handler": "CashShopCheckWalletHandle"
+      },
+      {
+        "opCode": "0x113",
+        "handler": "CashShopOperationHandle"
       }
     ],
     "writers": [

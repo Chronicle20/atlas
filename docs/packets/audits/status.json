@@ -1,5 +1,5 @@
 {
-  "toolSha": "79f88941fa4087cde88c0cb4b875ff49065a7f37",
+  "toolSha": "a15e4d45ddd4021b4aa421e7549ee7db929c23d1",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
     "gms_v84": "110cc3cb71e8abef11f33e6875c0830c625305acfce6b7e15f1c29cc8438794d",
@@ -1571,8 +1571,8 @@
           "opcode": 20
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 20
         },
         "jms_v185": {
@@ -1855,8 +1855,8 @@
           "opcode": 24
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 24
         },
         "gms_v95": {
@@ -1865,8 +1865,8 @@
           "opcode": 25
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 14
         }
       }
@@ -1933,8 +1933,8 @@
           "opcode": 25
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 26
         },
         "jms_v185": {
@@ -3056,8 +3056,8 @@
           "opcode": 41
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 42
         },
         "jms_v185": {
@@ -3360,8 +3360,8 @@
           "opcode": 42
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 44
         },
         "gms_v95": {
@@ -3840,8 +3840,8 @@
           "opcode": 52
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 54
         },
         "jms_v185": {
@@ -4658,18 +4658,17 @@
           "opcode": 60
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 63
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 65
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "verified",
           "opcode": 52
         }
       }
@@ -5331,8 +5330,8 @@
           "opcode": 72
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 75
         },
         "jms_v185": {
@@ -5368,8 +5367,8 @@
           "opcode": 73
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 76
         },
         "jms_v185": {
@@ -5473,8 +5472,8 @@
           "opcode": 74
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 77
         },
         "jms_v185": {
@@ -5614,8 +5613,8 @@
           "opcode": 75
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 78
         },
         "jms_v185": {
@@ -5646,13 +5645,13 @@
           "opcode": 73
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 76
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 79
         },
         "jms_v185": {
@@ -5964,18 +5963,18 @@
           "opcode": 76
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 79
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 82
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 68
         }
       }
@@ -6954,8 +6953,8 @@
           "opcode": 89
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 93
         },
         "jms_v185": {
@@ -7027,13 +7026,13 @@
           "opcode": 90
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 98
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 82
         }
       }
@@ -7059,8 +7058,8 @@
           "opcode": 88
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 91
         },
         "gms_v95": {
@@ -7132,13 +7131,13 @@
           "opcode": 89
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 92
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 100
         },
         "jms_v185": {
@@ -7237,13 +7236,13 @@
           "opcode": 90
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 93
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 102
         },
         "jms_v185": {
@@ -7428,13 +7427,13 @@
           "opcode": 92
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 95
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 104
         },
         "jms_v185": {
@@ -7674,8 +7673,8 @@
           "opcode": 94
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 97
         },
         "gms_v95": {
@@ -7747,8 +7746,8 @@
           "opcode": 95
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 98
         },
         "gms_v95": {
@@ -7757,8 +7756,8 @@
           "opcode": 107
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 90
         }
       }
@@ -7956,8 +7955,8 @@
           "opcode": 100
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 109
         },
         "jms_v185": {
@@ -8093,18 +8092,18 @@
           "opcode": 98
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 101
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 110
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 93
         }
       }
@@ -8778,18 +8777,18 @@
           "opcode": 107
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 110
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 119
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 102
         }
       }
@@ -10011,13 +10010,13 @@
           "opcode": 128
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 143
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 123
         }
       }
@@ -10327,13 +10326,13 @@
           "opcode": 130
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 145
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 125
         }
       }
@@ -10580,13 +10579,13 @@
           "opcode": 135
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 150
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 130
         }
       }
@@ -10901,13 +10900,13 @@
           "opcode": 138
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 153
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 133
         }
       }
@@ -11045,8 +11044,8 @@
           "opcode": 139
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 154
         },
         "jms_v185": {
@@ -13295,8 +13294,8 @@
           "opcode": 163
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 179
         },
         "jms_v185": {
@@ -14275,18 +14274,18 @@
           "opcode": 167
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 179
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 199
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 170
         }
       }
@@ -14382,18 +14381,18 @@
           "opcode": 168
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 180
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 200
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 171
         }
       }
@@ -14524,18 +14523,18 @@
           "opcode": 169
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 181
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 201
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 172
         }
       }
@@ -14665,18 +14664,18 @@
           "opcode": 170
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 182
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 202
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 173
         }
       }
@@ -14768,18 +14767,18 @@
           "opcode": 171
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 183
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 203
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 174
         }
       }
@@ -14876,18 +14875,18 @@
           "opcode": 172
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 184
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 204
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 175
         }
       }
@@ -16083,8 +16082,8 @@
           "opcode": 200
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 227
         },
         "jms_v185": {
@@ -17087,8 +17086,8 @@
           "opcode": 210
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 241
         },
         "jms_v185": {
@@ -17508,18 +17507,18 @@
           "opcode": 202
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 215
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 246
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 213
         }
       }
@@ -17721,18 +17720,18 @@
           "opcode": 205
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 218
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 249
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 216
         }
       }
@@ -19654,8 +19653,8 @@
           "opcode": 241
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 274
         },
         "jms_v185": {
@@ -19782,8 +19781,8 @@
           "opcode": 242
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 275
         },
         "jms_v185": {

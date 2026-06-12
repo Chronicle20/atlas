@@ -71,6 +71,11 @@
         "handler": "CharacterSelectedHandle"
       },
       {
+        "opCode": "0x14",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
         "handler": "CharacterCheckNameHandle"
@@ -84,6 +89,10 @@
         "opCode": "0x17",
         "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x18",
+        "handler": "PongHandle"
       },
       {
         "opCode": "0x19",
@@ -119,11 +128,6 @@
         "opCode": "0x24",
         "validator": "LoggedInValidator",
         "handler": "NoOpHandler"
-      },
-      {
-        "opCode": "0x14",
-        "validator": "NoOpValidator",
-        "handler": "CharacterLoggedInHandle"
       },
       {
         "opCode": "0x28",
@@ -250,9 +254,17 @@
         }
       },
       {
+        "opCode": "0x2C",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
         "opCode": "0x34",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle"
+      },
+      {
+        "opCode": "0x3F",
+        "handler": "NPCContinueConversationHandle"
       },
       {
         "opCode": "0x4A",
@@ -260,14 +272,78 @@
         "handler": "CharacterInventoryMoveHandle"
       },
       {
+        "opCode": "0x4C",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x4F",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x5B",
+        "handler": "CharacterAutoDistributeApHandle"
+      },
+      {
+        "opCode": "0x5C",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
+        "opCode": "0x5D",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x5F",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x61",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x62",
+        "handler": "FameChangeHandle"
+      },
+      {
         "opCode": "0x64",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle"
       },
       {
+        "opCode": "0x65",
+        "handler": "PetSpawnHandle"
+      },
+      {
         "opCode": "0x67",
         "validator": "LoggedInValidator",
         "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0x6E",
+        "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0xB3",
+        "handler": "PetMovementHandle"
+      },
+      {
+        "opCode": "0xB4",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xB5",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xB6",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xB7",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xB8",
+        "handler": "PetItemExcludeHandle"
       },
       {
         "opCode": "0xC8",
@@ -486,6 +562,14 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0xD7",
+        "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0xDA",
+        "handler": "ReactorHitHandle"
       }
     ],
     "writers": [

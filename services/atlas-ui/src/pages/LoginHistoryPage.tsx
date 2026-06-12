@@ -1,6 +1,6 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { loginHistoryService } from "@/services/api/login-history.service";
 import { type LoginHistoryEntry, BanType } from "@/types/models/ban";
 import { CreateBanDialog } from "@/components/features/bans/CreateBanDialog";
@@ -41,12 +41,17 @@ export function LoginHistoryPage() {
     const [prefillData, setPrefillData] = useState<{ banType: BanType; value: string } | null>(null);
 
     // Reset search results when the active tenant changes so a switch never
-    // leaves the previous tenant's rows on screen (FR-2.5).
-    useEffect(() => {
+    // leaves the previous tenant's rows on screen (FR-2.5). Done during render
+    // (React's "adjusting state when a prop changes" pattern) rather than in an
+    // effect — it avoids a cascading-render lint error, skips a spurious
+    // mount-time reset, and clears the rows before the next paint.
+    const [prevTenantId, setPrevTenantId] = useState(activeTenant?.id);
+    if (activeTenant?.id !== prevTenantId) {
+        setPrevTenantId(activeTenant?.id);
         setEntries([]);
         setHasSearched(false);
         setSearchCriteria({ ip: "", hwid: "", accountId: "" });
-    }, [activeTenant?.id]);
+    }
 
     const handleSearch = useCallback(async () => {
         if (!activeTenant) {

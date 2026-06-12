@@ -69,7 +69,6 @@ func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, w
 	}
 
 	if _, err := p.lp.Set(characterId, dest); err != nil {
-		p.l.WithError(err).Errorf("ChangeMap: location.Set failed for character [%d].", characterId)
 		return err
 	}
 

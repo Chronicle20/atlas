@@ -55,6 +55,20 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.Hungry = uint32(i.GetIntegerWithDefault("hungry", 0))
 			m.Cash = i.GetBool("cash", true)
 			m.Life = uint32(i.GetIntegerWithDefault("life", 0))
+			m.ReqPetLevel = uint32(i.GetIntegerWithDefault("evolReqPetLvl", 0))
+			m.ReqItemId = uint32(i.GetIntegerWithDefault("evolReqItemID", 0))
+			m.Evolutions = make([]EvolutionRestModel, 0)
+			evolNo := int(i.GetIntegerWithDefault("evolNo", 0))
+			for n := 1; n <= evolNo; n++ {
+				tid := uint32(i.GetIntegerWithDefault(fmt.Sprintf("evol%d", n), 0))
+				if tid == 0 {
+					continue // tolerate gaps
+				}
+				m.Evolutions = append(m.Evolutions, EvolutionRestModel{
+					TemplateId:  tid,
+					Probability: uint32(i.GetIntegerWithDefault(fmt.Sprintf("evolProb%d", n), 0)),
+				})
+			}
 
 			it, err := exml.ChildByName("interact")
 			if err != nil {

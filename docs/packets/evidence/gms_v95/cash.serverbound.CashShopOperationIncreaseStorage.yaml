@@ -1,0 +1,9 @@
+packet: cash/serverbound/CashShopOperationIncreaseStorage
+direction: serverbound
+version: gms_v95
+category: LOOP-EXCLUSIVE-BRANCH
+ida:
+    function: CCashShop::OnIncTrunkCount
+    address: "0x48dc70"
+    decompile_sha256: 2b3756a244cd7e2c331e3dc3018d8fe3ff8a3b4896a93a7f14937bc6a3f3fed2
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (cash row): exclusive-branch over-count (if item {int} else {byte}) + loop-flatten; runtime fires one arm. Wire verified."

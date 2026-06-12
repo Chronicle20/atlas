@@ -1,0 +1,9 @@
+packet: party/clientbound/PartyInvite
+direction: clientbound
+version: gms_v95
+category: OP-MODE-PREFIX
+ida:
+    function: CWvsContext::OnPartyResult#Invite
+    address: "0xa10b5f"
+    decompile_sha256: afa90922da9e535099511f1ff2446a12988132032ed1b763d1ff016da29448dc
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (party clientbound row): OnPartyResult mode-byte prefix; bodies verified after 2019dd581; hot-path byte tests added in task-066."

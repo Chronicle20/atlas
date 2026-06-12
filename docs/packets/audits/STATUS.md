@@ -35,11 +35,11 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 | BLOW_WEATHER | field/clientbound/FieldEffectWeather | 🟡 | 🟥 | 🟥 | 🟥 | 🟡 |
 | BONUS_EXP_CHANGED |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | BRIDLE_MOB_CATCH_FAIL |  | ❌ | ❌ | ❌ | ❌ | ❌ |
-| BUDDYLIST | buddy/clientbound/BuddyCapacityUpdate (T1) | ❌ | 🟥 | 🟥 | 🟥 | ❌ |
+| BUDDYLIST | buddy/clientbound/BuddyCapacityUpdate (T1) | 🟡 | 🟥 | 🟥 | 🟥 | ❌ |
 | BUFFZONE_EFFECT/SAY_IMAGE |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
 | CAKE_PIE_EVENT_RESULT |  | 🟥 | 🟥 | 🟥 | ❌ | ⬜ |
 | CANCEL_BUFF | character/clientbound/BuffCancel (T1) | ❌ | ❌ | 🟥 | ❌ | 🟥 |
-| CANCEL_CHAIR | character/clientbound/CharacterSitResult (T1) | ❌ | ❌ | 🟥 | ❌ | 🟥 |
+| CANCEL_CHAIR | character/clientbound/CharacterSitResult (T1) | 🟡 | ❌ | 🟥 | 🟡 | 🟥 |
 | CANCEL_FOREIGN_BUFF | character/clientbound/BuffCancelForeign (T1) | 🟡 | ❌ | 🟥 | 🟡 | 🟥 |
 | CANCEL_MONSTER_STATUS | monster/clientbound/MonsterStatReset (T1) | 🟡 | ❌ | 🟥 | 🟡 | 🟥 |
 | CANCEL_NAME_CHANGE_BY_OTHER |  | ❌ | ❌ | 🟥 | 🟥 | ⬜ |
@@ -157,7 +157,7 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 | INC_MOB_CHARGE_COUNT |  | 🟥 | 🟥 | ❌ | ❌ | 🟥 |
 | INVENTORY_GROW |  | 🟥 | 🟥 | 🟥 | 🟥 | 🟥 |
 | INVENTORY_OPERATION | inventory/clientbound/InventoryAdd (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| KEYMAP | character/clientbound/CharacterKeyMap (T1) | ❌ | 🟥 | 🟥 | ❌ | ❌ |
+| KEYMAP | character/clientbound/CharacterKeyMap (T1) | 🟡 | 🟥 | 🟥 | 🟡 | 🟡 |
 | KILL_MONSTER | monster/clientbound/MonsterDestroy (T1) | 🟡 | 🟥 | 🟡 | 🟡 | 🟡 |
 | KOREAN_EVENT |  | 🟥 | 🟥 | ❌ | 🟥 | ❌ |
 | KOREAN_INTERNET_CAFE_SHIT |  | ❌ | ❌ | ❌ | ❌ | ⬜ |
@@ -235,7 +235,7 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 | OPEN_UI_WITH_OPTION |  | 🟥 | ⬜ | 🟥 | 🟥 | ⬜ |
 | OX_QUIZ |  | 🟥 | ❌ | ❌ | 🟥 | 🟥 |
 | PARCEL |  | ❌ | ❌ | ❌ | ❌ | ❌ |
-| PARTY_OPERATION | party/clientbound/PartyChangeLeader (T1) | ❌ | ❌ | 🟥 | 🟥 | ❌ |
+| PARTY_OPERATION | party/clientbound/PartyChangeLeader (T1) | 🟡 | ❌ | 🟥 | 🟥 | ❌ |
 | PARTY_VALUE |  | ❌ | ❌ | ❌ | ❌ | ❌ |
 | PASS_MATE_NAME |  | 🟥 | ❌ | 🟥 | 🟥 | ⬜ |
 | PET_CHAT | pet/clientbound/PetChat (T1) | 🟡 | ❌ | 🟡 | 🟥 | 🟥 |
@@ -727,14 +727,14 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 | cash/serverbound/CashShopOperationEnableEquipSlot (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationGift (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | cash/serverbound/CashShopOperationIncreaseCharacterSlot (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| cash/serverbound/CashShopOperationIncreaseInventory (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| cash/serverbound/CashShopOperationIncreaseStorage (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| cash/serverbound/CashShopOperationIncreaseInventory (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
+| cash/serverbound/CashShopOperationIncreaseStorage (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationMoveFromCashInventory (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationMoveToCashInventory (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | cash/serverbound/CashShopOperationSetWishlist (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | character/serverbound/ExpressionRequest (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| character/serverbound/KeyMapChange (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| character/serverbound/KeyMapChange (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | character/serverbound/Move (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
 | field/serverbound/FieldChange (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
 | guild/clientbound/GuildBBSThread (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
@@ -755,7 +755,7 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 | guild/serverbound/GuildSetTitleNames (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | guild/serverbound/GuildWithdraw (T1) | ❌ | ❌ | ❌ | 🟡 | 🟡 |
 | interaction/clientbound/InteractionInteractionUpdateMerchant (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
-| interaction/serverbound/InteractionOperationChat (T1) | ❌ | ❌ | 🟡 | 🟡 | 🟡 |
+| interaction/serverbound/InteractionOperationChat (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
 | interaction/serverbound/InteractionOperationInvite (T1) | ❌ | ❌ | ❌ | 🟡 | ❌ |
@@ -798,7 +798,7 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 | npc/clientbound/NpcNpcConversation (T1) | ❌ | ❌ | 🟡 | 🟡 | ❌ |
 | npc/clientbound/NpcSayConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/clientbound/NpcSayImageConversationDetail (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
-| npc/clientbound/NpcShopList (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| npc/clientbound/NpcShopList (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/serverbound/NpcContinueConversation (T1) | 🟡 | ❌ | 🟡 | 🟡 | 🟡 |
 | npc/serverbound/NpcContinueConversationSelection (T1) | ❌ | ❌ | ❌ | ❌ | ❌ |
 | npc/serverbound/NpcContinueConversationText (T1) | 🟡 | ❌ | 🟡 | 🟡 | ❌ |
@@ -822,11 +822,11 @@ Tool: `0d9be2a41dc5579b526a855f8ac1dcbfe326c7cd`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 0 | 140 | 430 | 85 | 138 | 0.0% |
+| v83 | 0 | 147 | 423 | 85 | 138 | 0.0% |
 | v84 | 0 | 0 | 567 | 82 | 144 | 0.0% |
-| v87 | 0 | 122 | 361 | 83 | 227 | 0.0% |
-| v95 | 0 | 200 | 347 | 16 | 230 | 0.0% |
-| JMS185 | 0 | 98 | 340 | 130 | 225 | 0.0% |
+| v87 | 0 | 124 | 359 | 83 | 227 | 0.0% |
+| v95 | 0 | 206 | 341 | 16 | 230 | 0.0% |
+| JMS185 | 0 | 101 | 337 | 130 | 225 | 0.0% |
 
 ## Conflicts
 

@@ -1,5 +1,5 @@
 {
-  "toolSha": "d91bcbe27c683b73fb78e9878eb9e9f16b510e7d",
+  "toolSha": "6398fadb87d337e93f506654ba280b56b51463f6",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
     "gms_v84": "110cc3cb71e8abef11f33e6875c0830c625305acfce6b7e15f1c29cc8438794d",
@@ -597,23 +597,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 8
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 8
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 8
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed: CharacterViewAllError, CharacterViewAllSearchFailed",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
           "opcode": 8
         },
         "jms_v185": {
@@ -13380,8 +13380,7 @@
           "opcode": 179
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but an Atlas audit report exists (GuildBBSListThreads)",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -17332,23 +17331,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 198
         },
         "gms_v84": {
           "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
           "opcode": 198
         },
         "gms_v87": {
           "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
           "opcode": 211
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 224
         },
         "jms_v185": {
@@ -17866,23 +17865,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 206
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 206
         },
         "gms_v87": {
           "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
           "opcode": 219
         },
         "gms_v95": {
           "state": "conflict",
-          "note": "two Atlas structs claim CUser::OnEffect: EffectQuest, EffectSimple",
+          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
           "opcode": 233
         },
         "jms_v185": {

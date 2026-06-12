@@ -4,15 +4,17 @@ package pet
 type Model struct {
 	id         uint32
 	templateId uint32
+	name       string
 	level      byte
 	slot       int8
 }
 
 // NewModel creates a new pet model
-func NewModel(id uint32, templateId uint32, level byte, slot int8) Model {
+func NewModel(id uint32, templateId uint32, name string, level byte, slot int8) Model {
 	return Model{
 		id:         id,
 		templateId: templateId,
+		name:       name,
 		level:      level,
 		slot:       slot,
 	}
@@ -21,6 +23,11 @@ func NewModel(id uint32, templateId uint32, level byte, slot int8) Model {
 // Id returns the pet's unique identifier
 func (m Model) Id() uint32 {
 	return m.id
+}
+
+// Name returns the pet's given name
+func (m Model) Name() string {
+	return m.name
 }
 
 // TemplateId returns the pet's template identifier

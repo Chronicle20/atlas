@@ -19,7 +19,7 @@ type Processor interface {
 	GetById(id uint32) (Model, error)
 	GetInField(f field.Model) ([]Model, error)
 	Spawn(f field.Model, ownerCharacterId uint32, skillId uint32, skillLevel byte, x int16, y int16) (Model, error)
-	Move(id uint32, senderCharacterId uint32, x int16, y int16, stance byte) error
+	Move(id uint32, senderCharacterId uint32, x int16, y int16, stance byte, rawMovement []byte) error
 	Attack(id uint32, senderCharacterId uint32, direction byte, targets []AttackTarget) error
 	Damage(id uint32, senderCharacterId uint32, amount int32, monsterIdFrom uint32) error
 	Despawn(id uint32, animated bool) error
@@ -127,9 +127,26 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 	return m, nil
 }
 
-// Move is implemented in Phase 2 (movement relay).
-func (p *ProcessorImpl) Move(id uint32, senderCharacterId uint32, x int16, y int16, stance byte) error {
-	return nil
+// Move relays an owner's summon-move packet: it verifies ownership (a character
+// may only move a summon it owns — §11), updates the persisted position, and
+// emits MOVED carrying the raw movement blob for byte-faithful rebroadcast. A
+// missing summon or a non-owner sender is a graceful no-op (returns nil).
+func (p *ProcessorImpl) Move(id uint32, senderCharacterId uint32, x int16, y int16, stance byte, rawMovement []byte) error {
+	m, err := GetRegistry().Get(p.ctx, p.t, id)
+	if err != nil {
+		return nil
+	}
+	if m.OwnerCharacterId() != senderCharacterId {
+		p.l.Infof("Character [%d] moved summon [%d] it does not own; dropping.", senderCharacterId, id) // §11 ownership
+		return nil
+	}
+	updated, err := GetRegistry().Update(p.ctx, p.t, id, func(cur Model) Model {
+		return cur.Move(x, y, stance)
+	})
+	if err != nil {
+		return err
+	}
+	return p.emit(EnvEventTopicSummonStatus, movedEventProvider(updated, rawMovement))
 }
 
 // Attack is implemented in Phase 3 (summon attack → monster damage).

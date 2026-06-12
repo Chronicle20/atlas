@@ -22,6 +22,20 @@ func createdEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, &value)
 }
 
+func movedEventProvider(m Model, rawMovement []byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.Field().MapId()))
+	value := StatusEvent[StatusEventMovedBody]{
+		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
+		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
+		SummonId: m.Id(), OwnerCharacterId: m.OwnerCharacterId(), SkillId: m.SkillId(),
+		Type: EventSummonStatusMoved,
+		Body: StatusEventMovedBody{
+			X: m.X(), Y: m.Y(), Stance: m.Stance(), RawMovement: rawMovement,
+		},
+	}
+	return producer.SingleMessageProvider(key, &value)
+}
+
 func destroyedEventProvider(m Model, animated bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.Field().MapId()))
 	value := StatusEvent[StatusEventDestroyedBody]{

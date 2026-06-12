@@ -41,6 +41,13 @@ type StatusEventCreatedBody struct {
 	Animated     bool  `json:"animated"`
 }
 
+type StatusEventMovedBody struct {
+	X           int16  `json:"x"`
+	Y           int16  `json:"y"`
+	Stance      byte   `json:"stance"`
+	RawMovement []byte `json:"rawMovement"`
+}
+
 type StatusEventDestroyedBody struct {
 	Animated bool `json:"animated"`
 }

@@ -4,10 +4,17 @@
 
 # The 8 opaque families from OPAQUE_LEDGER.md. Exact Go type names as they
 # appear in libs/atlas-packet/model/ and libs/atlas-packet/interaction/.
-# TypeRegistry recursion (atlaspacket.TypeRegistry) will expand these to
-# the full transitive packet set in Task 3.2; until then the packet_prefixes
-# stanza below duplicates the coverage so membership is never silently
-# narrower (D4 Phase-2 shortcut rule).
+#
+# TypeRegistry recursion (Task 3.2) now resolves opaque_types entries to their
+# consumer packets via TypeForWriter + transitiveRecurseTypes. This covers the
+# full WriterName→StructName→KindRecurse chain for packets that directly call
+# subStruct.Encode (e.g. monster stat packets reach MonsterTemporaryStat).
+#
+# Remaining limitation: packets that use WriteByteArray(subStruct.Encode(...))
+# do NOT produce a KindRecurse, so model.Movement/Pet/Asset consumers that use
+# this pattern (MonsterMovement, inventory/clientbound/InventoryAdd, etc.) are
+# NOT reached via opaque_types recursion. The packet_prefixes entries below
+# retain coverage for those families (D4 — must not narrow silently).
 opaque_types:
   - MonsterTemporaryStat    # CMob::SetTemporaryStat — mask-driven ~25-field blob
   - Movement                # model.Movement — element-loop move-path (monster, pet, char, npc)
@@ -18,9 +25,13 @@ opaque_types:
   - Visitor                 # interaction.Visitor / Room — mini-room sub-structs
   - CharacterStatistics     # GW_CharacterStat — mask-driven variable stat block
 
-# Packet-prefix coverage for the opaque families above (Task 3.2 removes the
-# need for this duplication once TypeRegistry recursion is wired for the
-# WriterName→StructName mapping gap; see TypeRegistry NEEDS_CONTEXT note below).
+# Packet-prefix coverage. Two categories:
+#   1. Social/lobby dispatcher families (design §8 baseline): these are inherently
+#      complex shared-struct consumers; kept unconditionally.
+#   2. Opaque-type consumer families: retained because WriteByteArray(x.Encode(...))
+#      patterns do not produce KindRecurse entries, so TypeRegistry recursion cannot
+#      reach the opaque type from those callers. Removing these prefixes would silently
+#      drop T1 for MonsterMovement, PetMovement, InventoryAdd, CharacterSpawn etc.
 # Every entry here is a directory that exists under libs/atlas-packet/.
 packet_prefixes:
   # Social/lobby dispatcher families (design §8 baseline — complex shared structs)
@@ -29,13 +40,8 @@ packet_prefixes:
   - buddy/
   - messenger/      # also covers Avatar (AvatarLook) opaque type
   - note/           # atlas-packet dir: note/ (not memo/)
-  # Opaque-type consumer families (Phase-2 shortcut retained: TypeRegistry
-  # recursion cannot yet resolve opaque consumers because PacketID uses
-  # WriterName while the TypeRegistry keys on the actual Go struct name;
-  # the two differ systematically — e.g. WriterName "MonsterStatSet" vs
-  # struct "StatSet".  Once a WriterName→StructName index is added to the
-  # TypeRegistry API, these prefixes can be removed.)
-  - npc/            # clientbound/serverbound action packets use Movement
+  # Opaque-type consumer families (WriteByteArray pattern — recursion can't trace these)
+  - npc/            # clientbound/serverbound action packets use Movement; no conversation/ subdir
   - interaction/    # Visitor + Room + Asset opaque types
   - storage/        # Asset opaque type
   - cash/           # Asset opaque type

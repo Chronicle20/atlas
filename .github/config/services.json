@@ -429,6 +429,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-summons",
+      "type": "go-service",
+      "path": "services/atlas-summons",
+      "module_path": "services/atlas-summons/atlas.com/summons",
+      "docker_image": "ghcr.io/chronicle20/atlas-summons/atlas-summons",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-tenants",
       "type": "go-service",
       "path": "services/atlas-tenants",

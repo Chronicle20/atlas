@@ -22,7 +22,7 @@ import (
 type discoverOpsOpts struct {
 	Version     string
 	RegistryDir string
-	Dispatcher  string
+	Dispatchers []string // one or more dispatcher names/addresses
 	IDAURL      string
 	IDAPort     int
 	Out         string // worklist markdown path
@@ -36,10 +36,11 @@ func runDiscoverOps(args []string, stderr io.Writer) int {
 	fs := flag.NewFlagSet("packet-audit discover-ops", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var opts discoverOpsOpts
+	var dispatcherFlag string
 	fs.StringVar(&opts.Version, "version", "", "target version key, e.g. gms_v83 (required)")
 	fs.StringVar(&opts.RegistryDir, "registry-dir", "docs/packets/registry", "directory containing <version>.yaml registry files")
-	fs.StringVar(&opts.Dispatcher, "dispatcher", "CClientSocket::ProcessPacket", "dispatcher function name in IDA")
-	fs.StringVar(&opts.IDAURL, "ida-url", "http://127.0.0.1:13337/mcp", "IDA-MCP HTTP endpoint")
+	fs.StringVar(&dispatcherFlag, "dispatcher", "CClientSocket::ProcessPacket", "comma-separated list of dispatcher function names and/or hex addresses")
+	fs.StringVar(&opts.IDAURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.IntVar(&opts.IDAPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance)")
 	fs.StringVar(&opts.Out, "out", "", "worklist markdown output path (default: docs/packets/registry/discover_<version>.md)")
 	fs.BoolVar(&opts.Apply, "apply", false, "when true, append discovered ops to the registry YAML")
@@ -57,6 +58,18 @@ func runDiscoverOps(args []string, stderr io.Writer) int {
 	}
 	if opts.Out == "" {
 		opts.Out = filepath.Join(opts.RegistryDir, "discover_"+opts.Version+".md")
+	}
+
+	// Parse comma-separated dispatcher list, trimming whitespace and dropping empties.
+	for _, d := range strings.Split(dispatcherFlag, ",") {
+		d = strings.TrimSpace(d)
+		if d != "" {
+			opts.Dispatchers = append(opts.Dispatchers, d)
+		}
+	}
+	if len(opts.Dispatchers) == 0 {
+		fmt.Fprintln(stderr, "packet-audit discover-ops: --dispatcher produced an empty list")
+		return 3
 	}
 
 	var client idasrc.MCPClient
@@ -80,84 +93,110 @@ func runDiscoverOps(args []string, stderr io.Writer) int {
 func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Writer) int {
 	ctx := context.Background()
 
-	// Step 1: resolve dispatcher address.
-	addr, ok, err := client.GetFunctionByName(ctx, opts.Dispatcher)
-	if err != nil {
-		fmt.Fprintf(stderr, "packet-audit discover-ops: GetFunctionByName(%q): %v\n", opts.Dispatcher, err)
-		return 3
-	}
-	if !ok {
-		fmt.Fprintf(stderr, "packet-audit discover-ops: dispatcher %q not found in IDA\n", opts.Dispatcher)
-		return 3
-	}
+	dispResults := make([]discover.DispatcherResult, 0, len(opts.Dispatchers))
 
-	// Step 2: decompile dispatcher.
-	text, err := client.DecompileFunction(ctx, addr)
-	if err != nil {
-		fmt.Fprintf(stderr, "packet-audit discover-ops: DecompileFunction(%q): %v\n", addr, err)
-		return 3
-	}
-
-	// Step 3: parse dispatch switch.
-	cases, err := discover.ParseDispatch(text)
-	if err != nil {
-		fmt.Fprintf(stderr, "packet-audit discover-ops: ParseDispatch: %v\n", err)
-		return 3
-	}
-	if len(cases) == 0 {
-		fmt.Fprintf(stderr, "packet-audit discover-ops: dispatcher yielded 0 cases — wrong function or if-based dispatch; see ParseDispatch contract\n")
-		return 3
-	}
-
-	// Step 4: resolve sub_ callees via GetCallees on the dispatcher.
-	callees, err := client.GetCallees(ctx, addr)
-	if err != nil {
-		// Non-fatal: proceed without sub_ resolution.
-		fmt.Fprintf(stderr, "packet-audit discover-ops: GetCallees warning: %v\n", err)
-	}
-	calleeByAddr := map[string]string{} // hex-addr (lower) -> demangled name
-	for _, c := range callees {
-		if c.Name != "" {
-			calleeByAddr[strings.ToLower(c.Addr)] = c.Name
-		}
-	}
-
-	// Resolve sub_ handlers to demangled names when GetCallees provides a match.
-	// Address assignment: use the callee's own address when it appears in the
-	// callee map (either as the resolved demangled name or the raw sub_ stub);
-	// fall back to the dispatcher's address only when no callee entry is found.
-	discovered := make([]discover.Discovered, 0, len(cases))
-	for _, dc := range cases {
-		handler := dc.Handler
-		handlerAddr := addr // fallback: dispatcher address
-		if strings.HasPrefix(handler, "sub_") {
-			// IDA callee addresses are in the same hex format as the sub_ suffix.
-			suffix := strings.ToLower(handler[4:]) // strip "sub_"
-			lookupKey := "0x" + suffix
-			if dm, ok := calleeByAddr[lookupKey]; ok && dm != "" {
-				handler = dm
-				handlerAddr = lookupKey
-			} else {
-				// Keep the sub_ name; use the address embedded in the name.
-				handlerAddr = lookupKey
-			}
+	for _, dispName := range opts.Dispatchers {
+		// Step 1: resolve dispatcher address.
+		// If the name is already a hex address (starts with "0x"), pass it directly
+		// to DecompileFunction without a name lookup.
+		var addr string
+		if strings.HasPrefix(strings.ToLower(dispName), "0x") {
+			addr = dispName
 		} else {
-			// Named handler: find its address from the callee map by reverse lookup.
-			for callAddr, callName := range calleeByAddr {
-				if callName == handler {
-					handlerAddr = callAddr
-					break
+			var ok bool
+			var err error
+			addr, ok, err = client.GetFunctionByName(ctx, dispName)
+			if err != nil {
+				fmt.Fprintf(stderr, "packet-audit discover-ops: GetFunctionByName(%q): %v\n", dispName, err)
+				return 3
+			}
+			if !ok {
+				fmt.Fprintf(stderr, "packet-audit discover-ops: dispatcher %q not found in IDA\n", dispName)
+				return 3
+			}
+		}
+
+		// Step 2: decompile dispatcher.
+		text, err := client.DecompileFunction(ctx, addr)
+		if err != nil {
+			fmt.Fprintf(stderr, "packet-audit discover-ops: DecompileFunction(%q): %v\n", addr, err)
+			return 3
+		}
+
+		// Step 3: parse dispatch switch.
+		cases, err := discover.ParseDispatch(text)
+		if err != nil {
+			fmt.Fprintf(stderr, "packet-audit discover-ops: ParseDispatch(%q): %v\n", dispName, err)
+			return 3
+		}
+		if len(cases) == 0 {
+			// Warn but continue — if-range routers legitimately parse to 0.
+			fmt.Fprintf(stderr, "packet-audit discover-ops: warning: dispatcher %q@%s yielded 0 cases — may be if-based dispatch; continuing\n", dispName, addr)
+			dispResults = append(dispResults, discover.DispatcherResult{Name: dispName, Addr: addr, Cases: nil})
+			continue
+		}
+
+		// Step 4: resolve sub_ callees via GetCallees on the dispatcher.
+		callees, err := client.GetCallees(ctx, addr)
+		if err != nil {
+			// Non-fatal: proceed without sub_ resolution.
+			fmt.Fprintf(stderr, "packet-audit discover-ops: GetCallees warning (%q): %v\n", dispName, err)
+		}
+		calleeByAddr := map[string]string{} // hex-addr (lower) -> demangled name
+		for _, c := range callees {
+			if c.Name != "" {
+				calleeByAddr[strings.ToLower(c.Addr)] = c.Name
+			}
+		}
+
+		// Resolve sub_ handlers to demangled names when GetCallees provides a match.
+		discovered := make([]discover.Discovered, 0, len(cases))
+		for _, dc := range cases {
+			handler := dc.Handler
+			handlerAddr := addr // fallback: dispatcher address
+			if strings.HasPrefix(handler, "sub_") {
+				// IDA callee addresses are in the same hex format as the sub_ suffix.
+				suffix := strings.ToLower(handler[4:]) // strip "sub_"
+				lookupKey := "0x" + suffix
+				if dm, ok := calleeByAddr[lookupKey]; ok && dm != "" {
+					handler = dm
+					handlerAddr = lookupKey
+				} else {
+					// Keep the sub_ name; use the address embedded in the name.
+					handlerAddr = lookupKey
+				}
+			} else {
+				// Named handler: find its address from the callee map by reverse lookup.
+				for callAddr, callName := range calleeByAddr {
+					if callName == handler {
+						handlerAddr = callAddr
+						break
+					}
 				}
 			}
+			discovered = append(discovered, discover.Discovered{
+				Opcode:  dc.Opcode,
+				Handler: handler,
+				Address: handlerAddr,
+			})
 		}
-		discovered = append(discovered, discover.Discovered{
-			Opcode:  dc.Opcode,
-			Handler: handler,
-			Address: handlerAddr,
+
+		dispResults = append(dispResults, discover.DispatcherResult{
+			Name:  dispName,
+			Addr:  addr,
+			Cases: discovered,
 		})
 	}
 
-	// Step 5: load existing registry for this version.
+	// Step 5: union across all dispatchers.
+	unified, internalCollisions := discover.Union(dispResults)
+	if len(unified) == 0 && len(internalCollisions) == 0 {
+		// All dispatchers returned 0 cases — no useful discovery.
+		fmt.Fprintf(stderr, "packet-audit discover-ops: total discovered cases across all dispatchers is 0 — check dispatcher names/addresses\n")
+		return 3
+	}
+
+	// Step 6: load existing registry for this version.
 	regPath := filepath.Join(opts.RegistryDir, opts.Version+".yaml")
 	vf, err := loadRegistryOrEmpty(regPath)
 	if err != nil {
@@ -165,11 +204,11 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 		return 3
 	}
 
-	// Step 6: reconcile clientbound.
-	res := discover.Reconcile(vf, discovered, opregistry.DirClientbound)
+	// Step 7: reconcile clientbound.
+	res := discover.Reconcile(vf, unified, opregistry.DirClientbound)
 
-	// Step 7: write worklist markdown.
-	md := buildWorklist(opts.Version, res)
+	// Step 8: write worklist markdown.
+	md := buildWorklist(opts.Version, dispResults, internalCollisions, res)
 	if err := os.MkdirAll(filepath.Dir(opts.Out), 0o755); err != nil {
 		fmt.Fprintf(stderr, "packet-audit discover-ops: mkdir %q: %v\n", filepath.Dir(opts.Out), err)
 		return 3
@@ -179,8 +218,13 @@ func discoverOpsRun(opts discoverOpsOpts, client idasrc.MCPClient, stderr io.Wri
 		return 3
 	}
 
-	// Step 8: --apply logic.
+	// Step 9: --apply logic.
 	if opts.Apply {
+		// Internal collisions block --apply just like registry collisions do.
+		if len(internalCollisions) > 0 {
+			fmt.Fprintf(stderr, "packet-audit discover-ops: --apply refused: %d discovery-internal collision(s) must be resolved manually (see %s)\n", len(internalCollisions), opts.Out)
+			return 1
+		}
 		if len(res.Collisions) > 0 {
 			fmt.Fprintf(stderr, "packet-audit discover-ops: --apply refused: %d collision(s) must be resolved manually (see %s)\n", len(res.Collisions), opts.Out)
 			return 1
@@ -238,11 +282,22 @@ func applyAppend(path string, existing *opregistry.VersionFile, toAppend []opreg
 }
 
 // buildWorklist renders the reconciliation result as a markdown worklist.
-func buildWorklist(version string, res discover.ReconcileResult) string {
+// The header lists the dispatcher set used (name@address with case counts).
+func buildWorklist(version string, dispResults []discover.DispatcherResult, internalCollisions []discover.InternalCollision, res discover.ReconcileResult) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "# discover-ops worklist — %s (clientbound only)\n\n", version)
 	fmt.Fprintf(&sb, "Generated by `packet-audit discover-ops --version %s`.\n", version)
 	fmt.Fprintln(&sb, "Covers clientbound ops (dispatcher switch analysis). Serverbound FName verification is deferred to Task 5.4 (operator-gated live run).")
+	fmt.Fprintln(&sb)
+
+	// Dispatcher set header.
+	fmt.Fprintln(&sb, "## Dispatchers")
+	fmt.Fprintln(&sb)
+	fmt.Fprintln(&sb, "| Name | Address | Cases |")
+	fmt.Fprintln(&sb, "|---|---|---|")
+	for _, dr := range dispResults {
+		fmt.Fprintf(&sb, "| `%s` | `%s` | %d |\n", dr.Name, dr.Addr, len(dr.Cases))
+	}
 	fmt.Fprintln(&sb)
 
 	fmt.Fprintln(&sb, "## Append")
@@ -264,10 +319,26 @@ func buildWorklist(version string, res discover.ReconcileResult) string {
 	fmt.Fprintln(&sb, "## Review")
 	fmt.Fprintln(&sb)
 
-	// Collisions.
-	if len(res.Collisions) == 0 && len(res.MissingAtDiscovery) == 0 {
-		fmt.Fprintln(&sb, "_No collisions or missing ops._")
+	hasReviewContent := len(internalCollisions) > 0 || len(res.Collisions) > 0 || len(res.MissingAtDiscovery) > 0
+	if !hasReviewContent {
+		fmt.Fprintln(&sb, "_No collisions, internal collisions, or missing ops._")
 	} else {
+		// Discovery-internal collisions.
+		if len(internalCollisions) > 0 {
+			fmt.Fprintln(&sb, "### Discovery-internal collisions")
+			fmt.Fprintln(&sb)
+			fmt.Fprintln(&sb, "Two dispatchers claim the same opcode with different handlers. These are excluded from the union. `--apply` is refused until these are resolved.")
+			fmt.Fprintln(&sb)
+			fmt.Fprintln(&sb, "| Opcode | Dispatcher A | Handler A | Dispatcher B | Handler B |")
+			fmt.Fprintln(&sb, "|---|---|---|---|---|")
+			for _, ic := range internalCollisions {
+				fmt.Fprintf(&sb, "| `0x%03X` | `%s` | `%s` | `%s` | `%s` |\n",
+					ic.Opcode, ic.DispA, ic.HandlerA.Handler, ic.DispB, ic.HandlerB.Handler)
+			}
+			fmt.Fprintln(&sb)
+		}
+
+		// Registry collisions.
 		if len(res.Collisions) > 0 {
 			fmt.Fprintln(&sb, "### Collisions")
 			fmt.Fprintln(&sb)
@@ -281,6 +352,7 @@ func buildWorklist(version string, res discover.ReconcileResult) string {
 			}
 			fmt.Fprintln(&sb)
 		}
+
 		if len(res.MissingAtDiscovery) > 0 {
 			fmt.Fprintln(&sb, "### Missing at discovery")
 			fmt.Fprintln(&sb)

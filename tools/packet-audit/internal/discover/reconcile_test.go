@@ -77,3 +77,107 @@ func TestHasAlt(t *testing.T) {
 		t.Error("hasAlt false positive")
 	}
 }
+
+// TestUnionDedupesSameOpcodeAndHandler verifies that two dispatchers reporting
+// the same (opcode, handler) pair produce a single entry in the union.
+func TestUnionDedupesSameOpcodeAndHandler(t *testing.T) {
+	d := Discovered{Opcode: 0x10, Handler: "CField::OnEnterField", Address: "0xabc"}
+	perDisp := []DispatcherResult{
+		{Name: "CField::OnPacket", Addr: "0xf000", Cases: []Discovered{d}},
+		{Name: "CWvsContext::OnPacket", Addr: "0xe000", Cases: []Discovered{d}},
+	}
+	cases, collisions := Union(perDisp)
+	if len(collisions) != 0 {
+		t.Errorf("expected 0 internal collisions, got %d: %+v", len(collisions), collisions)
+	}
+	if len(cases) != 1 {
+		t.Errorf("expected 1 deduped case, got %d: %+v", len(cases), cases)
+	}
+	if cases[0].Opcode != 0x10 || cases[0].Handler != "CField::OnEnterField" {
+		t.Errorf("unexpected case: %+v", cases[0])
+	}
+}
+
+// TestUnionInternalCollision verifies that two dispatchers reporting the same
+// opcode with different handlers produce an InternalCollision and NO case entry.
+func TestUnionInternalCollision(t *testing.T) {
+	dA := Discovered{Opcode: 0x20, Handler: "CField::OnSomething", Address: "0x1000"}
+	dB := Discovered{Opcode: 0x20, Handler: "CLogin::OnSomethingElse", Address: "0x2000"}
+	perDisp := []DispatcherResult{
+		{Name: "CField::OnPacket", Addr: "0xf000", Cases: []Discovered{dA}},
+		{Name: "CLogin::OnPacket", Addr: "0xe000", Cases: []Discovered{dB}},
+	}
+	cases, collisions := Union(perDisp)
+	if len(collisions) != 1 {
+		t.Errorf("expected 1 internal collision, got %d: %+v", len(collisions), collisions)
+	}
+	if len(cases) != 0 {
+		t.Errorf("expected 0 cases (colliding op excluded), got %d: %+v", len(cases), cases)
+	}
+	col := collisions[0]
+	if col.Opcode != 0x20 {
+		t.Errorf("collision opcode = 0x%X, want 0x20", col.Opcode)
+	}
+	if col.HandlerA.Handler == col.HandlerB.Handler {
+		t.Error("collision HandlerA and HandlerB must differ")
+	}
+}
+
+// TestUnionMergesTwoDispatchers verifies that non-colliding ops from two
+// dispatchers are all present in the union.
+func TestUnionMergesTwoDispatchers(t *testing.T) {
+	perDisp := []DispatcherResult{
+		{
+			Name: "CField::OnPacket",
+			Addr: "0xf000",
+			Cases: []Discovered{
+				{Opcode: 0x10, Handler: "CField::OnEnterField", Address: "0x1000"},
+				{Opcode: 0x11, Handler: "CField::OnLeaveField", Address: "0x1100"},
+			},
+		},
+		{
+			Name: "CLogin::OnPacket",
+			Addr: "0xe000",
+			Cases: []Discovered{
+				{Opcode: 0x20, Handler: "CLogin::OnCheckPassword", Address: "0x2000"},
+				{Opcode: 0x21, Handler: "CLogin::OnSelectWorld", Address: "0x2100"},
+			},
+		},
+	}
+	cases, collisions := Union(perDisp)
+	if len(collisions) != 0 {
+		t.Errorf("expected 0 collisions, got %d: %+v", len(collisions), collisions)
+	}
+	if len(cases) != 4 {
+		t.Errorf("expected 4 cases in union, got %d: %+v", len(cases), cases)
+	}
+	// Verify sorted by opcode
+	for i := 1; i < len(cases); i++ {
+		if cases[i].Opcode <= cases[i-1].Opcode {
+			t.Errorf("cases not sorted by opcode at index %d: 0x%X <= 0x%X", i, cases[i].Opcode, cases[i-1].Opcode)
+		}
+	}
+}
+
+// TestUnionZeroCaseDispatcherDoesNotBreakOthers verifies that a dispatcher
+// yielding 0 cases does not prevent other dispatchers' cases from appearing in
+// the union.
+func TestUnionZeroCaseDispatcherDoesNotBreakOthers(t *testing.T) {
+	perDisp := []DispatcherResult{
+		{Name: "CField::OnPacket", Addr: "0xf000", Cases: []Discovered{}}, // 0 cases
+		{
+			Name: "CLogin::OnPacket",
+			Addr: "0xe000",
+			Cases: []Discovered{
+				{Opcode: 0x30, Handler: "CLogin::OnFoo", Address: "0x3000"},
+			},
+		},
+	}
+	cases, collisions := Union(perDisp)
+	if len(collisions) != 0 {
+		t.Errorf("expected 0 collisions, got %d", len(collisions))
+	}
+	if len(cases) != 1 || cases[0].Opcode != 0x30 {
+		t.Errorf("expected 1 case from the non-zero dispatcher, got %+v", cases)
+	}
+}

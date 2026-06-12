@@ -6,6 +6,7 @@ package discover
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -222,6 +223,83 @@ type Discovered struct {
 type Collision struct {
 	Entry      opregistry.Entry
 	Discovered Discovered
+}
+
+// InternalCollision records that two different dispatchers claim the SAME
+// opcode but disagree on the handler. These are excluded from the union and
+// must be reviewed by a human before landing in the registry.
+type InternalCollision struct {
+	Opcode   int
+	DispA    string // dispatcher name / address that first claimed this opcode
+	HandlerA Discovered
+	DispB    string // dispatcher name / address that disagreed
+	HandlerB Discovered
+}
+
+// DispatcherResult holds the per-dispatcher output before union.
+type DispatcherResult struct {
+	Name  string // function name or hex address as supplied by the caller
+	Addr  string // resolved hex address from IDA
+	Cases []Discovered
+}
+
+// Union merges per-dispatcher Discovered slices into a single deduplicated
+// slice. The rules are:
+//   - Same opcode, same handler (case-sensitive) → deduplicated silently; the
+//     first entry wins.
+//   - Same opcode, different handler → recorded as an InternalCollision and
+//     excluded from the returned cases (needs human eyes).
+//
+// The returned cases slice is sorted by opcode for deterministic output.
+func Union(perDispatcher []DispatcherResult) (cases []Discovered, internalCollisions []InternalCollision) {
+	type entry struct {
+		d        Discovered
+		dispName string
+	}
+	byOpcode := map[int]entry{}
+
+	for _, dr := range perDispatcher {
+		for _, d := range dr.Cases {
+			if prev, ok := byOpcode[d.Opcode]; ok {
+				if prev.d.Handler == d.Handler {
+					// exact duplicate — keep the first; skip silently
+					continue
+				}
+				// different handler — internal collision: remove from union, record it
+				delete(byOpcode, d.Opcode)
+				internalCollisions = append(internalCollisions, InternalCollision{
+					Opcode:   d.Opcode,
+					DispA:    prev.dispName,
+					HandlerA: prev.d,
+					DispB:    dr.Name,
+					HandlerB: d,
+				})
+			} else {
+				// check if already flagged as collision
+				alreadyCollision := false
+				for _, ic := range internalCollisions {
+					if ic.Opcode == d.Opcode {
+						alreadyCollision = true
+						break
+					}
+				}
+				if !alreadyCollision {
+					byOpcode[d.Opcode] = entry{d: d, dispName: dr.Name}
+				}
+			}
+		}
+	}
+
+	cases = make([]Discovered, 0, len(byOpcode))
+	for _, e := range byOpcode {
+		cases = append(cases, e.d)
+	}
+	// stable sort by opcode for deterministic output
+	sort.Slice(cases, func(i, j int) bool { return cases[i].Opcode < cases[j].Opcode })
+	sort.Slice(internalCollisions, func(i, j int) bool {
+		return internalCollisions[i].Opcode < internalCollisions[j].Opcode
+	})
+	return cases, internalCollisions
 }
 
 // ReconcileResult is the output of Reconcile.

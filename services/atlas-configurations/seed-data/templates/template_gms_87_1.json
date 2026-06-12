@@ -491,18 +491,6 @@
     "writers": [
       {
         "opCode": "0x00",
-        "writer": "AuthSuccess"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthTemporaryBan"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthPermanentBan"
-      },
-      {
-        "opCode": "0x00",
         "writer": "AuthLoginFailed",
         "options": {
           "failedReasonCodes": {
@@ -527,6 +515,18 @@
             "FULL_CLIENT_NOTICE": 27
           }
         }
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan"
       },
       {
         "opCode": "0x03",
@@ -576,11 +576,11 @@
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEntry"
+        "writer": "ServerListEnd"
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEnd"
+        "writer": "ServerListEntry"
       },
       {
         "opCode": "0x0B",
@@ -659,6 +659,14 @@
         }
       },
       {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x11",
+        "writer": "Ping"
+      },
+      {
         "opCode": "0x1A",
         "writer": "SelectWorld"
       },
@@ -671,10 +679,6 @@
         "writer": "PicResult"
       },
       {
-        "opCode": "0x10",
-        "writer": "ChannelChange"
-      },
-      {
         "opCode": "0x1D",
         "writer": "CharacterInventoryChange"
       },
@@ -683,8 +687,56 @@
         "writer": "StatChanged"
       },
       {
+        "opCode": "0x20",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x21",
+        "writer": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x24",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0x26",
+        "writer": "FameResponse"
+      },
+      {
+        "opCode": "0x27",
+        "writer": "CharacterStatusMessage"
+      },
+      {
+        "opCode": "0x29",
+        "writer": "NoteOperation"
+      },
+      {
+        "opCode": "0x32",
+        "writer": "HiredMerchantOperation"
+      },
+      {
         "opCode": "0x3D",
         "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "PartyOperation"
+      },
+      {
+        "opCode": "0x41",
+        "writer": "BuddyOperation"
+      },
+      {
+        "opCode": "0x43",
+        "writer": "GuildOperation"
+      },
+      {
+        "opCode": "0x4E",
+        "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x7D",
+        "writer": "ScriptProgress"
       },
       {
         "opCode": "0x85",
@@ -693,6 +745,14 @@
       {
         "opCode": "0x87",
         "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0x92",
+        "writer": "FieldEffect"
+      },
+      {
+        "opCode": "0x96",
+        "writer": "FieldEffectWeather"
       },
       {
         "opCode": "0xAB",
@@ -705,6 +765,30 @@
       {
         "opCode": "0xAD",
         "writer": "CharacterChatGeneral"
+      },
+      {
+        "opCode": "0xAF",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xB2",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "PetMovement"
+      },
+      {
+        "opCode": "0xB8",
+        "writer": "PetChat"
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "PetExcludeResponse"
+      },
+      {
+        "opCode": "0xBB",
+        "writer": "PetCommandResponse"
       },
       {
         "opCode": "0xC6",
@@ -815,8 +899,64 @@
         }
       },
       {
+        "opCode": "0xC7",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xC8",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xC9",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "CharacterDamage"
+      },
+      {
         "opCode": "0xD2",
         "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xD3",
+        "writer": "CharacterEffectForeign"
+      },
+      {
+        "opCode": "0xD4",
+        "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xDA",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xDB",
+        "writer": "CharacterEffect"
+      },
+      {
+        "opCode": "0xE3",
+        "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0xE9",
+        "writer": "UiOpen"
+      },
+      {
+        "opCode": "0xEC",
+        "writer": "UiDisable"
+      },
+      {
+        "opCode": "0xEE",
+        "writer": "GuideTalk"
+      },
+      {
+        "opCode": "0xFA",
+        "writer": "CharacterSkillCooldown"
       },
       {
         "opCode": "0xFC",
@@ -943,6 +1083,22 @@
         "writer": "MoveMonsterAck"
       },
       {
+        "opCode": "0x102",
+        "writer": "MonsterStatSet"
+      },
+      {
+        "opCode": "0x103",
+        "writer": "MonsterStatReset"
+      },
+      {
+        "opCode": "0x106",
+        "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "MonsterHealth"
+      },
+      {
         "opCode": "0x112",
         "writer": "SpawnNPC"
       },
@@ -1059,142 +1215,6 @@
         }
       },
       {
-        "opCode": "0x155",
-        "writer": "CashShopCashQueryResult"
-      },
-      {
-        "opCode": "0x156",
-        "writer": "CashShopOperation"
-      },
-      {
-        "opCode": "0x20",
-        "writer": "CharacterBuffGive"
-      },
-      {
-        "opCode": "0x24",
-        "writer": "CharacterSkillChange"
-      },
-      {
-        "opCode": "0xC7",
-        "writer": "CharacterAttackMelee"
-      },
-      {
-        "opCode": "0xC8",
-        "writer": "CharacterAttackRanged"
-      },
-      {
-        "opCode": "0xC9",
-        "writer": "CharacterAttackMagic"
-      },
-      {
-        "opCode": "0xCA",
-        "writer": "CharacterAttackEnergy"
-      },
-      {
-        "opCode": "0xCD",
-        "writer": "CharacterDamage"
-      },
-      {
-        "opCode": "0xD4",
-        "writer": "CharacterBuffGiveForeign"
-      },
-      {
-        "opCode": "0x11",
-        "writer": "Ping"
-      },
-      {
-        "opCode": "0x21",
-        "writer": "CharacterBuffCancel"
-      },
-      {
-        "opCode": "0x26",
-        "writer": "FameResponse"
-      },
-      {
-        "opCode": "0x27",
-        "writer": "CharacterStatusMessage"
-      },
-      {
-        "opCode": "0x29",
-        "writer": "NoteOperation"
-      },
-      {
-        "opCode": "0x32",
-        "writer": "HiredMerchantOperation"
-      },
-      {
-        "opCode": "0x3E",
-        "writer": "PartyOperation"
-      },
-      {
-        "opCode": "0x41",
-        "writer": "BuddyOperation"
-      },
-      {
-        "opCode": "0x43",
-        "writer": "GuildOperation"
-      },
-      {
-        "opCode": "0x7D",
-        "writer": "ScriptProgress"
-      },
-      {
-        "opCode": "0x92",
-        "writer": "FieldEffect"
-      },
-      {
-        "opCode": "0x96",
-        "writer": "FieldEffectWeather"
-      },
-      {
-        "opCode": "0xAF",
-        "writer": "ChalkboardUse"
-      },
-      {
-        "opCode": "0xB2",
-        "writer": "CharacterItemUpgrade"
-      },
-      {
-        "opCode": "0xB7",
-        "writer": "PetMovement"
-      },
-      {
-        "opCode": "0xB8",
-        "writer": "PetChat"
-      },
-      {
-        "opCode": "0xBA",
-        "writer": "PetExcludeResponse"
-      },
-      {
-        "opCode": "0xBB",
-        "writer": "PetCommandResponse"
-      },
-      {
-        "opCode": "0xD3",
-        "writer": "CharacterEffectForeign"
-      },
-      {
-        "opCode": "0xE3",
-        "writer": "CharacterHint"
-      },
-      {
-        "opCode": "0xE9",
-        "writer": "UiOpen"
-      },
-      {
-        "opCode": "0x102",
-        "writer": "MonsterStatSet"
-      },
-      {
-        "opCode": "0x103",
-        "writer": "MonsterStatReset"
-      },
-      {
-        "opCode": "0x106",
-        "writer": "MonsterDamage"
-      },
-      {
         "opCode": "0x126",
         "writer": "ReactorHit"
       },
@@ -1213,6 +1233,14 @@
       {
         "opCode": "0x14A",
         "writer": "MessengerOperation"
+      },
+      {
+        "opCode": "0x155",
+        "writer": "CashShopCashQueryResult"
+      },
+      {
+        "opCode": "0x156",
+        "writer": "CashShopOperation"
       },
       {
         "opCode": "0x163",

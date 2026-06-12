@@ -1,5 +1,5 @@
 {
-  "toolSha": "2ffd8c711d11dc392b8f03e281ce3a5b7bd37086",
+  "toolSha": "79f88941fa4087cde88c0cb4b875ff49065a7f37",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
     "gms_v84": "110cc3cb71e8abef11f33e6875c0830c625305acfce6b7e15f1c29cc8438794d",
@@ -143,8 +143,7 @@
           "opcode": 2
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x002",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -209,8 +208,7 @@
           "opcode": 3
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x003",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -246,8 +244,7 @@
           "opcode": 3
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x003",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -283,8 +280,7 @@
           "opcode": 4
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x004",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -393,8 +389,7 @@
           "opcode": 5
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x005",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -430,8 +425,7 @@
           "opcode": 6
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x006",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -505,8 +499,7 @@
           "opcode": 7
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x007",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -542,8 +535,7 @@
           "opcode": 7
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x007",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -580,8 +572,7 @@
           "opcode": 8
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x008",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -707,23 +698,19 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00A",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -764,8 +751,7 @@
           "opcode": 10
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00A",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -854,23 +840,19 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00B",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00B",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00B",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00B",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -913,8 +895,7 @@
           "opcode": 11
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x00B",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -1317,8 +1298,8 @@
           "opcode": 17
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 9
         }
       }
@@ -1559,8 +1540,7 @@
           "opcode": 20
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x014",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -1743,8 +1723,7 @@
           "opcode": 22
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x016",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -1760,18 +1739,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x017",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x017",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x017",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -1990,8 +1966,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x019",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -2008,23 +1983,19 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x019",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x019",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x019",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x019",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -2080,18 +2051,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x01A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x01A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x01A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -2296,8 +2264,7 @@
           "opcode": 28
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x01C",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -2521,8 +2488,7 @@
           "opcode": 30
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x01F",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -2595,8 +2561,7 @@
           "opcode": 31
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x020",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -3041,13 +3006,11 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x026",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x026",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -3148,13 +3111,11 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x027",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x027",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -3181,13 +3142,11 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x027",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x027",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -3283,18 +3242,15 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x028",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x028",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x028",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -4052,13 +4008,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x033",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x033",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -4905,8 +4859,8 @@
           "opcode": 65
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 57
         }
       }
@@ -5090,8 +5044,8 @@
           "opcode": 67
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 59
         }
       }
@@ -5439,8 +5393,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x046",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -5577,13 +5530,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x047",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x047",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -5944,18 +5895,18 @@
           "opcode": 76
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 78
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 79
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 70
         }
       }
@@ -5970,8 +5921,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x04C",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -6148,8 +6098,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x04E",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -6674,8 +6623,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x053",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -6779,8 +6727,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x054",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -7352,13 +7299,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x05A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x05A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -7685,13 +7630,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x05E",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x05E",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -7830,13 +7773,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x05F",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x05F",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -8072,13 +8013,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x061",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x061",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -9950,8 +9889,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x079",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -10094,13 +10032,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x07A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x07A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -10151,8 +10087,8 @@
           "opcode": 127
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 118
         }
       }
@@ -10300,8 +10236,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x07B",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -10595,13 +10530,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x07F",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x07F",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -10782,8 +10715,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x080",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -10921,8 +10853,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x082",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -11138,13 +11069,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x083",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x083",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -11427,8 +11356,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x086",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -11567,8 +11495,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x087",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -11576,8 +11503,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x087",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -11598,13 +11524,11 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x087",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x087",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -11812,8 +11736,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x089",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -11972,8 +11895,8 @@
           "opcode": 154
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 135
         }
       }
@@ -12022,13 +11945,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x08A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x08A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -13149,8 +13070,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x098",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -14103,13 +14023,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0A4",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0A4",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -14314,13 +14232,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0A7",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0A7",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -14422,8 +14338,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0A8",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -14635,8 +14550,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AA",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -14670,13 +14584,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AA",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AA",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -14726,8 +14638,8 @@
           "opcode": 201
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 176
         }
       }
@@ -14779,8 +14691,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AB",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -14814,18 +14725,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AB",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AB",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AB",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -14907,8 +14815,8 @@
           "opcode": 202
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 177
         }
       }
@@ -14932,8 +14840,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AC",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -15052,8 +14959,8 @@
           "opcode": 204
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 179
         }
       }
@@ -15211,8 +15118,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0AF",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -15284,8 +15190,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0B0",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -15318,8 +15223,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0B0",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -15462,8 +15366,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0B1",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -16201,8 +16104,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0BC",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -16307,13 +16209,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0BD",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0BD",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -16381,8 +16281,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0BE",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -16523,8 +16422,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0BF",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -16537,8 +16435,7 @@
           "opcode": 191
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0BF",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -16659,13 +16556,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C0",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C0",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -16678,8 +16573,7 @@
           "opcode": 192
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C0",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -16731,13 +16625,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C1",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C1",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -16750,8 +16642,7 @@
           "opcode": 193
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C1",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -16892,8 +16783,7 @@
           "opcode": 194
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C2",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -16993,8 +16883,7 @@
           "opcode": 195
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C3",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -17150,13 +17039,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C5",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C5",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -17221,13 +17108,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C5",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0C5",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -17798,8 +17683,8 @@
           "opcode": 205
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 218
         },
         "gms_v95": {
@@ -17873,8 +17758,8 @@
           "opcode": 206
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 219
         },
         "gms_v95": {
@@ -18287,8 +18172,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0D3",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -18362,13 +18246,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0D4",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0D4",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -18778,8 +18660,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0DA",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -18787,8 +18668,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0DA",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -18856,8 +18736,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0DB",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -18966,8 +18845,8 @@
           "opcode": 251
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 229
         }
       }
@@ -19015,8 +18894,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0DD",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -19129,8 +19007,8 @@
           "opcode": 222
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 236
         },
         "gms_v95": {
@@ -19139,8 +19017,8 @@
           "opcode": 254
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 232
         }
       }
@@ -19155,8 +19033,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0DE",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -19168,8 +19045,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0DE",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -19370,8 +19246,8 @@
           "opcode": 224
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 238
         },
         "gms_v95": {
@@ -19379,8 +19255,8 @@
           "opcode": 256
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 234
         }
       }
@@ -19462,8 +19338,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0E1",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -19472,8 +19347,7 @@
           "opcode": 225
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0E1",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -19805,8 +19679,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0E4",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -20316,8 +20189,8 @@
           "opcode": 234
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 250
         },
         "gms_v95": {
@@ -20342,8 +20215,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0EA",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -20442,8 +20314,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0EC",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -20585,8 +20456,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0ED",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -20717,13 +20587,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0EE",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0EE",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -20887,8 +20755,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0EF",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -21025,8 +20892,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F0",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -21262,13 +21128,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F2",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F2",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -21367,13 +21231,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F3",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F3",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -21439,8 +21301,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F4",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -21544,8 +21405,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F5",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -21553,8 +21413,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F5",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -21683,13 +21542,11 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F6",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F6",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -21856,8 +21713,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F8",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -21924,8 +21780,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0F9",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -22021,8 +21876,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0FA",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -22065,18 +21919,18 @@
           "opcode": 250
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 266
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 298
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 267
         }
       }
@@ -22345,8 +22199,7 @@
           "opcode": 301
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0FE",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -22383,8 +22236,7 @@
           "opcode": 302
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x0FF",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -22420,8 +22272,7 @@
           "opcode": 303
         },
         "jms_v185": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x100",
+          "state": "n-a",
           "opcode": -1
         }
       }
@@ -22833,8 +22684,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x10A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -22866,8 +22716,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x10B",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -22968,8 +22817,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x10C",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -23032,8 +22880,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x10D",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -23580,8 +23427,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x112",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
@@ -23648,8 +23494,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x113",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -23718,18 +23563,15 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x114",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x114",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x114",
+          "state": "n-a",
           "opcode": -1
         },
         "jms_v185": {
@@ -25191,8 +25033,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x131",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -25327,8 +25168,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x132",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -25496,8 +25336,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x135",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v84": {
@@ -26395,8 +26234,7 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x14C",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {
@@ -26751,8 +26589,7 @@
           "opcode": 346
         },
         "gms_v84": {
-          "state": "conflict",
-          "note": "registry says absent but template routes opcode 0x15A",
+          "state": "n-a",
           "opcode": -1
         },
         "gms_v87": {

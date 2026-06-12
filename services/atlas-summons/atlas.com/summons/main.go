@@ -1,6 +1,7 @@
 package main
 
 import (
+	characterevt "atlas-summons/kafka/consumer/character"
 	summoncmd "atlas-summons/kafka/consumer/summon"
 	"atlas-summons/logger"
 	"atlas-summons/summon"
@@ -63,8 +64,12 @@ func main() {
 	// character-status despawn cascade (logout / channel-change / map-change).
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	summoncmd.InitConsumers(l)(cmf)(consumerGroupId)
+	characterevt.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := summoncmd.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register summon command handlers.")
+	}
+	if err := characterevt.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register character status handlers.")
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })

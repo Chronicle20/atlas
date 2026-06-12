@@ -53,20 +53,48 @@ DeleteCharacterResponse, PinOperation, PinUpdate, ServerIP[codes], ServerIP[mode
 other outbound writer is either exact or degrades stray config values to a benign
 default — no other boot/crash path found.
 
-## Still NOT verified (lowest risk)
-- **PetActivated** (0xAB) [0..4] — `CUserPool::OnPetActionPacket` @0x97015C; pet
-  action sub-modes; mismatch → pet effect no-op (no boot).
-- **CharacterInteraction** (0x141) [operations] + [enterError] — `CMiniRoomBaseDlg::
-  OnPacketBase` @0x673DB5; base trade ops (2,3,6,9,10) + per-room vtable + enter-
-  result error code; complex, needs per-room decompile.
-- **Auth{Temporary,Permanent}Ban** [failedReasonCodes] (0x00) — login ban-reason
-  strings; login-stage, rare.
+## Round 3 — final outbound + auth
+| table | client | verdict |
+|---|---|---|
+| **Auth{Temporary,Permanent}Ban** [failedReasonCodes] | identical to `AuthLoginFailed` (version-STABLE v83==v87==v95) | **OK** (the "differs" flag was the empty-template artifact) |
+| **PetActivated** (0xAB) | `CUserPool::OnPetActionPacket` @0x97015C → CPet vtable | low risk — value is a pass-through "leave reason", not switched; no boot |
+| **CharacterInteraction** (0x141) [operations] | `CMiniRoomBaseDlg::OnPacketBase` @0x673DB5 | values 2,3,4,5,6,10 base-handled; 8,25 → per-room vtable; all within client range |
+| CharacterInteraction [enterError] | miniroom enter-result (per-room) | error-reason strings; out-of-range → generic/no message (benign) |
 
-Inbound request sub-ops (client→server; wrong value = atlas mis-reads request, **no
-client crash**): CashShopOperationHandle, BuddyOperationHandle, GuildOperationHandle,
-MessengerOperationHandle, CharacterInteractionHandle, NPCShopHandle,
-StorageOperationHandle, NoteOperationHandle, PartyOperationHandle, GuildBBSHandle,
-NPCContinueConversationHandle[messageType].
+## FINAL STATE
+**Every outbound writer (the client-dispatch / boot-risk class) is verified.**
+CashShopOperation was the ONLY broken table (uniform +3) → fixed (template + live).
+All others are exact or degrade stray values to a benign switch-default. No other
+boot/disconnect path exists in the mode tables.
+
+Minor non-boot findings (cosmetic / rare): NPC `ASK_YES_NO_QUEST=12` dead in v84;
+WorldMessage 16-18, Storage `ERROR_MESSAGE=24`, Party 19/22/23/27-29 → benign default.
+
+## Round 4 — inbound request sub-ops (verified via client send-op histogram)
+Method: extract the set of first-`Encode1` sub-op constants the v84 client emits at
+each inbound opcode (the `COutPacket(op)+Encode1(subop)` send-sites), confirm atlas's
+config covers them. **No inbound enum is shifted** — atlas's values match the
+client's sends for every common action.
+
+| inbound handler | client send-ops | verdict |
+|---|---|---|
+| NPCShopHandle (0x3D) | {1,2,3} | OK (⊆ atlas 0..3) |
+| StorageOperationHandle (0x3E) | {4,5,6,7,8} | OK (exact) |
+| MessengerOperationHandle (0x7C) | {2,3,5,6} | OK (⊆ atlas) |
+| CharacterInteractionHandle (0x7D) | 38 ops | OK (all ⊆ atlas superset) |
+| PartyOperationHandle (0x7E) | {1,2,3,4,5} | OK (⊆ atlas 1..6) |
+| BuddyOperationHandle (0x86) | {0,2,3} | OK (⊆ atlas 0..3) |
+| NoteOperationHandle (0x87) | {1,2} | OK (⊆ atlas 0..2) |
+| GuildOperationHandle (0x82) | {0,2,5,6,7,8,9,13,14,15,16,30} | client 0,9 not in atlas → 2 unimplemented guild request types ("unhandled" log, no crash) |
+| CashShopOperationHandle (0xEB) | {3..49,32,72} | client 32,72 not in atlas → 2 unimplemented cash request types |
+| GuildBBSHandle (0x9B) | (none extracted) | unverified, low-value |
+| NPCContinueConversationHandle [messageType] | = NPCConversation msgType | OK core (ASK_YES_NO_QUEST=12 dead, as outbound) |
+
+## AUDIT COMPLETE
+All 34 version-sensitive tables checked against the v84 client. **CashShopOperation
+(outbound) was the single shifted/broken table → fixed.** Every other table is exact
+or benign-degraded; inbound handlers carry no shift (only a few unimplemented request
+types in guild/cash-shop, which log "unhandled" rather than misbehave).
 
 ## v84 IDB names added (CWvsContext::OnPacket recv handlers + dialogs)
 OnMessage 0x27, OnFriendResult 0x41, OnEntrustedShopCheckResult 0x32,

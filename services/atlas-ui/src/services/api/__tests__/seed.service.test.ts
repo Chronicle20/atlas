@@ -229,3 +229,55 @@ describe('seedService status projections', () => {
     await expect(seedService.getDropsSeedStatus(mockTenant)).rejects.toThrow(/500/);
   });
 });
+
+describe('seedService scope-aware data status reads', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function jsonApi(attributes: Record<string, unknown>) {
+    return {
+      ok: true,
+      json: async () => ({ data: { type: 't', id: 'current', attributes } }),
+    };
+  }
+
+  it('defaults getWzInputStatus to tenant scope without operator header', async () => {
+    fetchMock.mockResolvedValue(jsonApi({ fileCount: 0, totalBytes: 0, updatedAt: null }));
+    await seedService.getWzInputStatus(mockTenant);
+    const call = fetchMock.mock.calls[0];
+    if (!call) throw new Error('fetch was not called');
+    expect(call[0]).toBe('/api/data/wz?scope=tenant');
+    const headers = (call[1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBeNull();
+  });
+
+  it('requests shared scope and sends the operator header for getWzInputStatus', async () => {
+    fetchMock.mockResolvedValue(jsonApi({ fileCount: 8, totalBytes: 100, updatedAt: null }));
+    const s = await seedService.getWzInputStatus(mockTenant, 'shared');
+    const call = fetchMock.mock.calls[0];
+    if (!call) throw new Error('fetch was not called');
+    expect(call[0]).toBe('/api/data/wz?scope=shared');
+    const headers = (call[1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBe('1');
+    expect(s.fileCount).toBe(8);
+  });
+
+  it('requests shared scope and sends the operator header for getDataStatus', async () => {
+    fetchMock.mockResolvedValue(
+      jsonApi({ documentCount: 5, updatedAt: null, baselineRestoredAt: null, baselineSha256: null }),
+    );
+    await seedService.getDataStatus(mockTenant, 'shared');
+    const call = fetchMock.mock.calls[0];
+    if (!call) throw new Error('fetch was not called');
+    expect(call[0]).toBe('/api/data/status?scope=shared');
+    const headers = (call[1] as RequestInit).headers as Headers;
+    expect(headers.get('X-Atlas-Operator')).toBe('1');
+  });
+});

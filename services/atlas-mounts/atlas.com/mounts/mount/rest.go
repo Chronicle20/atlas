@@ -2,8 +2,6 @@ package mount
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // RestModel is the JSON:API representation of a character's mount progression.
@@ -43,19 +41,4 @@ func Transform(m Model) (RestModel, error) {
 		Tiredness:           m.Tiredness(),
 		LastTirednessTickAt: m.LastTirednessTickAt(),
 	}, nil
-}
-
-// Extract maps a RestModel back into a Model. tenantId is not part of the REST
-// payload, so it is left zero; callers that persist must supply it.
-func Extract(rm RestModel) (Model, error) {
-	id, err := uuid.Parse(rm.Id)
-	if err != nil {
-		return Model{}, err
-	}
-	return NewModelBuilder(uuid.Nil, rm.CharacterId, id).
-		SetLevel(rm.Level).
-		SetExp(rm.Exp).
-		SetTiredness(rm.Tiredness).
-		SetLastTirednessTickAt(rm.LastTirednessTickAt).
-		Build()
 }

@@ -53,37 +53,3 @@ func update(db *gorm.DB) func(m Model) error {
 			}).Error
 	}
 }
-
-// upsert creates the mount row for (tenant, character) if absent, otherwise
-// updates the existing row's progression fields. The unique index
-// (tenant_id, character_id) guarantees at most one row per character.
-func upsert(db *gorm.DB) func(t tenant.Model, m Model) (Model, error) {
-	return func(t tenant.Model, m Model) (Model, error) {
-		e, err := getByCharacterId(db, m.CharacterId())
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				return create(db)(t, m)
-			}
-			return Model{}, err
-		}
-		// Preserve the existing row id; update progression in place.
-		nm, err := Clone(m).Build()
-		if err != nil {
-			return Model{}, err
-		}
-		if err = update(db)(nm); err != nil {
-			return Model{}, err
-		}
-		e.Level = nm.Level()
-		e.Exp = nm.Exp()
-		e.Tiredness = nm.Tiredness()
-		e.LastTirednessTickAt = nm.LastTirednessTickAt()
-		return Make(e)
-	}
-}
-
-// deleteByCharacterId removes the mount row for the tenant-in-context and the
-// given character.
-func deleteByCharacterId(db *gorm.DB, characterId uint32) error {
-	return db.Where("character_id = ?", characterId).Delete(&Entity{}).Error
-}

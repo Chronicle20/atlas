@@ -142,6 +142,16 @@ func (r Registry) Applicability(op string, dir Direction, versionKey string) App
 
 // AllOps returns the union of (op, direction) across all loaded versions,
 // sorted for deterministic iteration: clientbound first, then by op name.
+// NewVersionFile builds an in-memory VersionFile (no schema validation —
+// callers that need validation go through LoadVersion).
+func NewVersionFile(entries []Entry) *VersionFile {
+	vf := &VersionFile{Entries: entries, byKey: make(map[string]Entry, len(entries))}
+	for _, e := range entries {
+		vf.byKey[key(e.Op, e.Direction)] = e
+	}
+	return vf
+}
+
 func (r Registry) AllOps() []struct {
 	Op  string
 	Dir Direction

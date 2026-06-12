@@ -138,7 +138,13 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 			name := in.Reports[vk][wn].IDAName
 			idaCount[name] = append(idaCount[name], wn)
 		}
-		for idaName, claimants := range idaCount {
+		idaNames := make([]string, 0, len(idaCount))
+		for name := range idaCount {
+			idaNames = append(idaNames, name)
+		}
+		sort.Strings(idaNames)
+		for _, idaName := range idaNames {
+			claimants := idaCount[idaName]
 			if len(claimants) >= 2 {
 				// Mark all writers for this FName as used so they don't leak
 				// into the sub-struct section.

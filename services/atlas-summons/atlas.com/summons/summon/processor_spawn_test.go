@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
@@ -150,5 +151,33 @@ func TestSpawnUnknownSkillNoOp(t *testing.T) {
 	}
 	if len(byOwner) != 0 {
 		t.Fatalf("expected nothing persisted for unknown skill, got %d", len(byOwner))
+	}
+}
+
+// TestSpawnLaterVersionSummonNoOp verifies FR-1.3: casting a summon skill that
+// exists in later game versions but is NOT in the v83 roster is a graceful
+// no-op — no error, nothing persisted, no panic (Q5).
+//
+// skillconst.EvanStage1DragonSoulId (22000000) is a real Evan skill introduced
+// in v84 and is provably absent from the v83 summon roster in
+// libs/atlas-constants/summon/roster.go (grep returns empty).
+func TestSpawnLaterVersionSummonNoOp(t *testing.T) {
+	p, ten, ctx := newSpawnProcessor(t, effectWithX(800, 60000))
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+
+	// EvanStage1DragonSoul (22000000) is a real v84+ skill; absent from roster.
+	m, err := p.Spawn(f, 42, uint32(skillconst.EvanStage1DragonSoulId), 1, 0, 0, 0, 0)
+	if err != nil {
+		t.Fatalf("expected nil error for later-version skill, got %v", err)
+	}
+	if m.Id() != 0 {
+		t.Fatalf("expected empty model for later-version skill, got id %d", m.Id())
+	}
+	byOwner, err := GetRegistry().GetByOwner(ctx, ten, 42)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byOwner) != 0 {
+		t.Fatalf("expected nothing persisted for later-version skill, got %d", len(byOwner))
 	}
 }

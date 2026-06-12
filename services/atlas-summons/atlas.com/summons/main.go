@@ -5,9 +5,11 @@ import (
 	summoncmd "atlas-summons/kafka/consumer/summon"
 	"atlas-summons/logger"
 	"atlas-summons/summon"
+	"atlas-summons/tasks"
 	"atlas-summons/world"
 	"context"
 	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -85,10 +87,10 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	// registerSweepTasks is empty in Phase 0; the duration-expiry sweep is
-	// registered here in Phase 1. The leader-election scaffolding is wired now so
-	// later phases only append tasks.
+	// registerSweepTasks runs only on the leader-elected pod. It registers the
+	// duration-expiry sweep that despawns summons whose lifetime has elapsed.
 	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
+		tasks.Register(l, ctx)(summon.NewExpiryTask(l, ctx, time.Second))
 	}
 
 	if leaderEnabled(l) {

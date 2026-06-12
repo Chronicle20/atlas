@@ -22,13 +22,17 @@ import (
 // field.Model. Times serialize as unix-milli (0 == zero time), matching the
 // monster blueprint's time-field convention.
 type storedSummon struct {
-	Id               uint32        `json:"id"`
-	OwnerCharacterId uint32        `json:"ownerCharacterId"`
-	SkillId          uint32        `json:"skillId"`
-	SkillLevel       byte          `json:"skillLevel"`
-	SummonType       string        `json:"summonType"`
-	MovementType     byte          `json:"movementType"`
-	WorldId          byte          `json:"worldId"`
+	Id                 uint32 `json:"id"`
+	TenantId           string `json:"tenantId"`
+	TenantRegion       string `json:"tenantRegion"`
+	TenantMajorVersion uint16 `json:"tenantMajorVersion"`
+	TenantMinorVersion uint16 `json:"tenantMinorVersion"`
+	OwnerCharacterId   uint32 `json:"ownerCharacterId"`
+	SkillId            uint32 `json:"skillId"`
+	SkillLevel         byte   `json:"skillLevel"`
+	SummonType         string `json:"summonType"`
+	MovementType       byte   `json:"movementType"`
+	WorldId            byte   `json:"worldId"`
 	ChannelId        byte          `json:"channelId"`
 	MapId            uint32        `json:"mapId"`
 	Instance         string        `json:"instance"`
@@ -67,13 +71,17 @@ func msToTime(ms int64) time.Time {
 	return time.UnixMilli(ms).UTC()
 }
 
-func toStored(m Model) storedSummon {
+func toStored(t tenant.Model, m Model) storedSummon {
 	changes := make([]StatChange, len(m.buffChanges))
 	copy(changes, m.buffChanges)
 	f := m.Field()
 	return storedSummon{
-		Id:               m.id,
-		OwnerCharacterId: m.ownerCharacterId,
+		Id:                 m.id,
+		TenantId:           t.Id().String(),
+		TenantRegion:       t.Region(),
+		TenantMajorVersion: t.MajorVersion(),
+		TenantMinorVersion: t.MinorVersion(),
+		OwnerCharacterId:   m.ownerCharacterId,
 		SkillId:          m.skillId,
 		SkillLevel:       m.skillLevel,
 		SummonType:       string(m.summonType),
@@ -102,14 +110,22 @@ func toStored(m Model) storedSummon {
 	}
 }
 
-func fromStored(s storedSummon) Model {
-	inst, err := uuid.Parse(s.Instance)
+func fromStored(s storedSummon) (tenant.Model, Model, error) {
+	tenantId, err := uuid.Parse(s.TenantId)
 	if err != nil {
+		return tenant.Model{}, Model{}, err
+	}
+	t, err := tenant.Create(tenantId, s.TenantRegion, s.TenantMajorVersion, s.TenantMinorVersion)
+	if err != nil {
+		return tenant.Model{}, Model{}, err
+	}
+	inst, perr := uuid.Parse(s.Instance)
+	if perr != nil {
 		inst = uuid.Nil
 	}
 	f := field.NewBuilder(world.Id(s.WorldId), channel.Id(s.ChannelId), _map.Id(s.MapId)).
 		SetInstance(inst).Build()
-	return NewBuilder().
+	m := NewBuilder().
 		SetId(s.Id).
 		SetOwnerCharacterId(s.OwnerCharacterId).
 		SetSkillId(s.SkillId).
@@ -135,6 +151,7 @@ func fromStored(s storedSummon) Model {
 		SetBuffDuration(s.BuffDuration).
 		SetBuffChanges(s.BuffChanges).
 		Build()
+	return t, m, nil
 }
 
 type Registry struct {
@@ -168,7 +185,7 @@ func ownerSuffix(t tenant.Model, characterId uint32) string {
 }
 
 func (r *Registry) Put(ctx context.Context, t tenant.Model, m Model) error {
-	if err := r.reg.Put(ctx, storeSuffix(t, m.Id()), toStored(m)); err != nil {
+	if err := r.reg.Put(ctx, storeSuffix(t, m.Id()), toStored(t, m)); err != nil {
 		return err
 	}
 	member := fmt.Sprintf("%d", m.Id())
@@ -183,7 +200,11 @@ func (r *Registry) Get(ctx context.Context, t tenant.Model, id uint32) (Model, e
 	if err != nil {
 		return Model{}, err
 	}
-	return fromStored(s), nil
+	_, m, derr := fromStored(s)
+	if derr != nil {
+		return Model{}, derr
+	}
+	return m, nil
 }
 
 func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error) {
@@ -216,12 +237,20 @@ func (r *Registry) loadMembers(ctx context.Context, t tenant.Model, set *atlasre
 
 func (r *Registry) Update(ctx context.Context, t tenant.Model, id uint32, fn func(Model) Model) (Model, error) {
 	s, err := r.reg.Update(ctx, storeSuffix(t, id), func(cur storedSummon) storedSummon {
-		return toStored(fn(fromStored(cur)))
+		_, m, derr := fromStored(cur)
+		if derr != nil {
+			return cur
+		}
+		return toStored(t, fn(m))
 	})
 	if err != nil {
 		return Model{}, err
 	}
-	return fromStored(s), nil
+	_, m, derr := fromStored(s)
+	if derr != nil {
+		return Model{}, derr
+	}
+	return m, nil
 }
 
 func (r *Registry) Remove(ctx context.Context, t tenant.Model, id uint32) error {
@@ -234,15 +263,22 @@ func (r *Registry) Remove(ctx context.Context, t tenant.Model, id uint32) error 
 	return r.reg.Remove(ctx, storeSuffix(t, id))
 }
 
-// GetAll returns every stored summon across tenants (used by sweep tasks).
-func (r *Registry) GetAll(ctx context.Context) ([]Model, error) {
+// GetAll returns every stored summon grouped by tenant. The tenant is rebuilt
+// from the fields embedded in each stored value (mirroring atlas-monsters'
+// Registry.GetMonsters), so sweep tasks can construct a tenant-scoped context
+// per group. Undecodable entries are skipped.
+func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error) {
 	stored, err := r.reg.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Model, 0, len(stored))
+	out := make(map[tenant.Model][]Model)
 	for _, s := range stored {
-		out = append(out, fromStored(s))
+		t, m, derr := fromStored(s)
+		if derr != nil {
+			continue
+		}
+		out[t] = append(out[t], m)
 	}
 	return out, nil
 }

@@ -247,6 +247,38 @@ func TestUnmarshalAwaitInventoryCreatedStep(t *testing.T) {
 	}
 }
 
+func TestUnmarshalEvolvePetStep(t *testing.T) {
+	raw := `{
+		"stepId": "evolve_pet-1",
+		"status": "pending",
+		"action": "evolve_pet",
+		"payload": {
+			"characterId": 100,
+			"petId": 200
+		},
+		"createdAt": "2026-06-12T00:00:00Z",
+		"updatedAt": "2026-06-12T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != EvolvePet {
+		t.Fatalf("expected action EvolvePet, got %q", step.Action)
+	}
+	p, ok := step.Payload.(EvolvePetPayload)
+	if !ok {
+		t.Fatalf("expected EvolvePetPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.PetId != 200 {
+		t.Errorf("petId: expected 200, got %d", p.PetId)
+	}
+}
+
 func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 	// Mirrors the sentinel-payload shape that character-factory emits before
 	// orchestrator result-forwarding substitutes the real characterId.

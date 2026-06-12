@@ -157,3 +157,17 @@ func TestCTSMonsterRidingBaseStatEncodesVehicleAndSkill(t *testing.T) {
 		t.Fatalf("Monster Riding base stat missing nOption=1902000,rOption=1004; got % x", got)
 	}
 }
+
+func TestCTSMonsterRidingForeignEncodesVehicleAndSkill(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeMonsterRiding), 1004, 1902000, 1, time.Now().Add(time.Hour))
+
+	got := input.EncodeForeign(nil, ctx)(nil)
+
+	want := []byte{0xb0, 0x05, 0x1d, 0x00, 0xec, 0x03, 0x00, 0x00}
+	if !bytes.Contains(got, want) {
+		t.Fatalf("foreign Monster Riding base stat missing nOption=1902000,rOption=1004; got % x", got)
+	}
+}

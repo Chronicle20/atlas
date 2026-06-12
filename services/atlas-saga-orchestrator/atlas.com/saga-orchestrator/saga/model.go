@@ -79,6 +79,7 @@ const (
 	ValidateCharacterState = sharedsaga.ValidateCharacterState
 	IncreaseBuddyCapacity  = sharedsaga.IncreaseBuddyCapacity
 	GainCloseness          = sharedsaga.GainCloseness
+	EvolvePet              = sharedsaga.EvolvePet
 
 	// Skill actions
 	CreateSkill = sharedsaga.CreateSkill
@@ -201,6 +202,7 @@ type (
 	RebalanceStat                       = sharedsaga.RebalanceStat
 	IncreaseBuddyCapacityPayload        = sharedsaga.IncreaseBuddyCapacityPayload
 	GainClosenessPayload                = sharedsaga.GainClosenessPayload
+	EvolvePetPayload                    = sharedsaga.EvolvePetPayload
 	CompleteQuestPayload                = sharedsaga.CompleteQuestPayload
 	StartQuestPayload                   = sharedsaga.StartQuestPayload
 	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
@@ -1213,6 +1215,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case GainCloseness:
 		var payload GainClosenessPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EvolvePet:
+		var payload EvolvePetPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

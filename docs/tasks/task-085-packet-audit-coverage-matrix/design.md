@@ -319,8 +319,9 @@ any agent. Steps:
 2. **Check current state**: the cell in `STATUS.md`, any existing evidence
    record, the latest audit report for the packet.
 3. **Decompile the client side**: connect to the version's IDA instance
-   (`select_instance` port mapping: v83=13337, v87=13338, v95=13339,
-   JMS185=13340), decompile the FName from the registry entry, descend into helper
+   (enumerate live instances and `select_instance` the one whose loaded IDB
+   matches the target version — ports vary by IDA launch order, never
+   hardcode them), decompile the FName from the registry entry, descend into helper
    reads/writes (address-based, same rule as the exporter), and write down the
    full ordered read/write list including guards and loop bounds.
 4. **Compare against Atlas**: the encoder/decoder in `libs/atlas-packet`,

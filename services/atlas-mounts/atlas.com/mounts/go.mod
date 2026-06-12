@@ -3,17 +3,22 @@ module atlas-mounts
 go 1.25.5
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.4
 	go.elastic.co/ecslogrus v1.0.0
+	gorm.io/gorm v1.31.1
 )
 
 require github.com/stretchr/testify v1.11.1 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 )
 
 replace github.com/Chronicle20/atlas/libs/atlas-constants => ../../../../libs/atlas-constants

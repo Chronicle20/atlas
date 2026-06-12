@@ -55,7 +55,9 @@ func TestBuildAndRenderGolden(t *testing.T) {
 	got := RenderMarkdown(m, []string{"gms_v83", "gms_v87"})
 	golden := filepath.Join("testdata", "golden_STATUS.md")
 	if os.Getenv("UPDATE_GOLDEN") == "1" {
-		os.WriteFile(golden, []byte(got), 0o644)
+		if err := os.WriteFile(golden, []byte(got), 0o644); err != nil {
+			t.Fatalf("write golden: %v", err)
+		}
 	}
 	want, err := os.ReadFile(golden)
 	if err != nil {

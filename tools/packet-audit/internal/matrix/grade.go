@@ -68,7 +68,6 @@ type gradeArgs struct {
 	marker         MarkerStatus
 	tier1          bool
 	opcode         int
-	dir            opregistry.Direction
 	writerName     string
 }
 
@@ -101,7 +100,6 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string) Cell {
 		marker:         mk,
 		tier1:          tier1,
 		opcode:         ref.Opcode,
-		dir:            ref.Dir,
 		writerName:     rep.WriterName,
 	}
 	return gradeCore(args)

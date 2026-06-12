@@ -43,12 +43,10 @@ func Build(in Inputs, versionKeys []string) Matrix {
 		row := MatrixRow{Kind: RowOp, Op: od.Op, Direction: od.Dir, Cells: map[string]Cell{}}
 		for _, vk := range versionKeys {
 			ref := opEntryRef{Op: od.Op, Dir: od.Dir}
-			if vf, ok := in.Registry.Versions[vk]; ok {
-				if e, ok := vf.Lookup(od.Op, od.Dir); ok {
-					ref.Opcode, ref.FName = e.Opcode, e.FName
-				} else if e, ok := lookupAnyVersion(in.Registry, od.Op, od.Dir); ok {
-					ref.Opcode, ref.FName = e.Opcode, e.FName // opcode for routing checks of absent ops
-				}
+			// Prefer this version's registry entry; fall back to any version so
+			// absent ops still get an opcode for routing-conflict checks.
+			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
+				ref.Opcode, ref.FName = e.Opcode, e.FName
 			} else if e, ok := lookupAnyVersion(in.Registry, od.Op, od.Dir); ok {
 				ref.Opcode, ref.FName = e.Opcode, e.FName
 			}
@@ -94,6 +92,14 @@ func Build(in Inputs, versionKeys []string) Matrix {
 	return Matrix{Rows: rows}
 }
 
+// lookupVersion looks up op+dir in a specific version's file, if it exists.
+func lookupVersion(r opregistry.Registry, op string, dir opregistry.Direction, vk string) (opregistry.Entry, bool) {
+	if vf, ok := r.Versions[vk]; ok {
+		return vf.Lookup(op, dir)
+	}
+	return opregistry.Entry{}, false
+}
+
 func lookupAnyVersion(r opregistry.Registry, op string, dir opregistry.Direction) (opregistry.Entry, bool) {
 	var vks []string
 	for vk := range r.Versions {
@@ -109,30 +115,39 @@ func lookupAnyVersion(r opregistry.Registry, op string, dir opregistry.Direction
 }
 
 // worstCandidateCell grades each writer candidate for the op's FName and keeps
-// the worst (max State); marks candidates as consumed by op rows.
-// If two DIFFERENT writers carry the identical full IDAName (no #case suffix),
-// that is a genuine duplicate claim — return StateConflict immediately.
+// the worst (by severity()); marks candidates as consumed by op rows.
+// If two DIFFERENT writers carry the identical full IDAName (with or without a
+// #case suffix) that is a genuine duplicate claim — mark all as used and return
+// StateConflict immediately.
 func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool) Cell {
 	writers := fw[vk][ref.FName]
 	if len(writers) == 0 {
-		// No candidates: grade without a report.
-		return gradeOpCell(in, ref, vk)
+		// No candidates: grade without a report; use an empty FNameToWriter for
+		// this version so Build always derives its own index rather than leaking
+		// the caller-supplied map through.
+		inCopy := in
+		inCopy.FNameToWriter = map[string]map[string]string{vk: {}}
+		return gradeOpCell(inCopy, ref, vk)
 	}
 
-	// Check for duplicate-claim: multiple writers with the exact same full IDAName
-	// (not just sharing a baseFName via #case suffixes).
+	// Check for duplicate-claim: two or more writers carrying the exact same
+	// full IDAName — whether that name contains a #case suffix or not.
 	if len(writers) > 1 {
-		// Count how many writers have the exact baseFName (no suffix) as their full IDAName.
-		var exactMatches []string
+		idaCount := map[string][]string{}
 		for _, wn := range writers {
-			r := in.Reports[vk][wn]
-			if r.IDAName == ref.FName {
-				exactMatches = append(exactMatches, wn)
-			}
+			name := in.Reports[vk][wn].IDAName
+			idaCount[name] = append(idaCount[name], wn)
 		}
-		if len(exactMatches) > 1 {
-			return Cell{State: StateConflict, Note: fmt.Sprintf("two Atlas structs claim %s: %s, %s",
-				ref.FName, exactMatches[0], exactMatches[1])}
+		for idaName, claimants := range idaCount {
+			if len(claimants) >= 2 {
+				// Mark all writers for this FName as used so they don't leak
+				// into the sub-struct section.
+				for _, wn := range writers {
+					used[vk][wn] = true
+				}
+				return Cell{State: StateConflict, Note: fmt.Sprintf("two Atlas structs claim %s: %s, %s",
+					idaName, claimants[0], claimants[1])}
+			}
 		}
 	}
 
@@ -145,7 +160,7 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 		inCopy := in
 		inCopy.FNameToWriter = singleFName
 		c := gradeOpCell(inCopy, ref, vk)
-		if first || c.State > worst.State {
+		if first || severity(c.State) > severity(worst.State) {
 			worst, first = c, false
 		}
 	}
@@ -171,7 +186,6 @@ func gradeSubStructCell(in Inputs, r LoadedReport, pkt, vk string) Cell {
 		marker:         mk,
 		tier1:          tier1,
 		opcode:         -1,
-		dir:            "",
 		writerName:     r.WriterName,
 	}
 	return gradeCore(args)

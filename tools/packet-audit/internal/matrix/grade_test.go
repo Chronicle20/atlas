@@ -11,13 +11,13 @@ import (
 // helper: a one-version Inputs scaffold the cases mutate.
 func baseInputs() Inputs {
 	return Inputs{
-		Registry: opregistry.Registry{Versions: map[string]*opregistry.VersionFile{}},
-		Reports:  map[string]map[string]LoadedReport{},  // version -> writer -> report
-		Routed:   map[string]map[routeKey]bool{},        // version -> (opcode,dir) routed
-		RoutedAnywhere: map[routeKey]bool{},             // (opcode,dir) routed in ANY version
-		Evidence: map[evKey]EvidenceStatus{},            // (packet,version) -> status
-		Tier1:    map[string]bool{},                     // packet id -> tier1
-		Markers:  map[evKey]MarkerStatus{},              // (packet,version) -> marker
+		Registry:       opregistry.Registry{Versions: map[string]*opregistry.VersionFile{}},
+		Reports:        map[string]map[string]LoadedReport{}, // version -> writer -> report
+		Routed:         map[string]map[routeKey]bool{},       // version -> (opcode,dir) routed
+		RoutedAnywhere: map[routeKey]bool{},                  // (opcode,dir) routed in ANY version
+		Evidence:       map[evKey]EvidenceStatus{},           // (packet,version) -> status
+		Tier1:          map[string]bool{},                    // packet id -> tier1
+		Markers:        map[evKey]MarkerStatus{},             // (packet,version) -> marker
 	}
 }
 
@@ -191,6 +191,85 @@ func TestGradeConflictDuplicateClaim(t *testing.T) {
 	}
 }
 
+func TestDuplicateClaimNoSubStructLeak(t *testing.T) {
+	// When two writers carry the same IDAName (duplicate claim → Conflict on the
+	// op row), both must be marked used so neither appears as a sub-struct row.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Reports["gms_v83"] = map[string]LoadedReport{
+		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
+		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictMatch},
+	}
+	m := Build(in, []string{"gms_v83"})
+	for _, r := range m.Rows {
+		if r.Kind == RowSubStruct {
+			t.Errorf("duplicate-claim writers must not produce a sub-struct row; got packet=%q", r.Packet)
+		}
+	}
+}
+
+func TestDuplicateClaimWithCaseSuffix(t *testing.T) {
+	// Two DIFFERENT writers carrying the same full IDAName INCLUDING a #case
+	// suffix (e.g. both named "CFoo::OnBar#A") is also a duplicate claim.
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	// Both writers share the same full IDAName (with #case suffix).
+	in.Reports["gms_v83"] = map[string]LoadedReport{
+		"AccountInfoA": {WriterName: "AccountInfoA", IDAName: "CLogin::OnAccountInfoResult#Invite",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_a.go", Verdict: diff.VerdictMatch},
+		"AccountInfoB": {WriterName: "AccountInfoB", IDAName: "CLogin::OnAccountInfoResult#Invite",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_b.go", Verdict: diff.VerdictMatch},
+	}
+	m := Build(in, []string{"gms_v83"})
+	var cell Cell
+	for _, r := range m.Rows {
+		if r.Op == "ACCOUNT_INFO" {
+			cell = r.Cells["gms_v83"]
+		}
+	}
+	if cell.State != StateConflict {
+		t.Errorf("duplicate #case IDAName must be conflict; got %v (%s)", cell.State.Name(), cell.Note)
+	}
+}
+
+func TestWorstOfBlockerWinsOverMatch(t *testing.T) {
+	// Two per-case writers of one dispatcher FName: one grades Incomplete
+	// (VerdictBlocker), the other grades Partial (VerdictMatch without marker).
+	// The op row must be Incomplete — Blocker must win under severity().
+	in := baseInputs()
+	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CFoo::OnBar", Provenance: "csv-import"})
+	in.Routed["gms_v83"] = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.RoutedAnywhere = map[routeKey]bool{{0x002, opregistry.DirClientbound}: true}
+	in.Reports["gms_v83"] = map[string]LoadedReport{
+		"FooBarA": {WriterName: "FooBarA", IDAName: "CFoo::OnBar#A",
+			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_a.go", Verdict: diff.VerdictMatch},
+		"FooBarB": {WriterName: "FooBarB", IDAName: "CFoo::OnBar#B",
+			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_b.go", Verdict: diff.VerdictBlocker},
+	}
+	m := Build(in, []string{"gms_v83"})
+	var cell Cell
+	for _, r := range m.Rows {
+		if r.Op == "ACCOUNT_INFO" {
+			cell = r.Cells["gms_v83"]
+		}
+	}
+	if cell.State != StateIncomplete {
+		t.Errorf("Blocker case must win worst-of (Incomplete); got %v (%s)", cell.State.Name(), cell.Note)
+	}
+}
+
 // --- helpers ---
 
 func refACCOUNT() opEntryRef {
@@ -209,7 +288,7 @@ func presentWithReport(t *testing.T, v diff.Verdict, flatInvalid bool) Inputs {
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
 		WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult", Address: "0xa3f2e8",
 		AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go",
-		Verdict: v, FlatInvalid: flatInvalid,
+		Verdict:   v, FlatInvalid: flatInvalid,
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
 	return in
@@ -218,5 +297,5 @@ func presentWithReport(t *testing.T, v diff.Verdict, flatInvalid bool) Inputs {
 // vfWith builds a VersionFile from entries via LoadVersion round-trip semantics.
 func vfWith(t *testing.T, entries ...opregistry.Entry) *opregistry.VersionFile {
 	t.Helper()
-	return opregistry.NewVersionFile(entries) // small exported ctor; add to opregistry
+	return opregistry.NewVersionFile(entries)
 }

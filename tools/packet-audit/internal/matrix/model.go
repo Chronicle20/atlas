@@ -32,7 +32,10 @@ func TemplatePath(versionKey string) string {
 	return "services/atlas-configurations/seed-data/templates/" + name
 }
 
-// State is the graded cell state, in design §5 precedence order.
+// State is the graded cell state. The declared order is the design §5
+// precedence order (NA < Conflict < Verified < Partial < Incomplete) and is
+// part of the status.json contract — do NOT reorder it. For worst-of
+// comparisons use severity(), not the numeric value.
 type State int
 
 const (
@@ -42,6 +45,23 @@ const (
 	StatePartial
 	StateIncomplete
 )
+
+// severity maps a State to its worst-of rank. Conflict is the most severe
+// (must win the worst-of comparison), then Incomplete, Partial, Verified, NA.
+func severity(s State) int {
+	switch s {
+	case StateConflict:
+		return 4
+	case StateIncomplete:
+		return 3
+	case StatePartial:
+		return 2
+	case StateVerified:
+		return 1
+	default: // StateNA
+		return 0
+	}
+}
 
 func (s State) Symbol() string {
 	switch s {

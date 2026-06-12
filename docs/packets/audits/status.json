@@ -1,5 +1,5 @@
 {
-  "toolSha": "980e74491fbfd9f32e7ab0e7fc7c7c808d3bd552",
+  "toolSha": "b30982b2b9c5735cf6a7b97c12a45dcfe3a1b257",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
     "gms_v87": "8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66",
@@ -509,11 +509,11 @@
       "op": "BLOW_WEATHER",
       "packet": "field/clientbound/FieldEffectWeather",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -529,7 +529,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -902,11 +902,11 @@
       "op": "CANNOT_SPAWN_KITE",
       "packet": "field/clientbound/FieldKiteError",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -922,7 +922,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -2083,11 +2083,11 @@
       "op": "CONTI_STATE",
       "packet": "field/clientbound/FieldTransport",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "conflict",
@@ -2095,7 +2095,7 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "conflict",
@@ -2103,7 +2103,7 @@
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -3004,11 +3004,11 @@
       "op": "FIELD_EFFECT",
       "packet": "field/clientbound/FieldEffectBossHp",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -3016,11 +3016,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "conflict",
@@ -7049,11 +7049,11 @@
       "op": "REMOVE_KITE",
       "packet": "field/clientbound/FieldKiteDestroy",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -7061,15 +7061,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -7078,7 +7078,7 @@
       "op": "REMOVE_MIST",
       "packet": "field/clientbound/FieldAffectedAreaRemoved",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "conflict",
@@ -7090,15 +7090,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -7612,11 +7612,11 @@
       "op": "SET_FIELD",
       "packet": "field/clientbound/FieldSetField",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -7624,7 +7624,7 @@
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v95": {
           "state": "conflict",
@@ -7632,7 +7632,7 @@
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         }
       }
     },
@@ -8900,11 +8900,11 @@
       "op": "SPAWN_KITE",
       "packet": "field/clientbound/FieldKiteSpawn",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -8912,15 +8912,15 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         }
       }
     },
@@ -15492,11 +15492,11 @@
       "op": "REQUEST_FOOTHOLD_INFO",
       "packet": "field/clientbound/FieldSetField",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -15504,15 +15504,15 @@
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "verdict ❌"
+          "note": "tier-1 without fixture; verdict ❌"
         }
       }
     },
@@ -19708,7 +19708,7 @@
       "cells": {
         "gms_v83": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v84": {
           "state": "incomplete",
@@ -19716,11 +19716,11 @@
         },
         "gms_v87": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "gms_v95": {
           "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "note": "tier-1: needs byte-fixture test to verify"
         },
         "jms_v185": {
           "state": "incomplete",

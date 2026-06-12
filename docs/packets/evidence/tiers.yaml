@@ -10,11 +10,17 @@
 # full WriterName→StructName→KindRecurse chain for packets that directly call
 # subStruct.Encode (e.g. monster stat packets reach MonsterTemporaryStat).
 #
-# Remaining limitation: packets that use WriteByteArray(subStruct.Encode(...))
-# do NOT produce a KindRecurse, so model.Movement/Pet/Asset consumers that use
-# this pattern (MonsterMovement, inventory/clientbound/InventoryAdd, etc.) are
-# NOT reached via opaque_types recursion. The packet_prefixes entries below
-# retain coverage for those families (D4 — must not narrow silently).
+# Remaining limitations (verified during review — note WriteByteArray itself IS
+# modeled as KindRecurse by the analyzer; the real gaps are different):
+#   1. Short-name misresolution: the analyzer drops the `model.` qualifier on
+#      field-type hints, so e.g. monster/clientbound.Movement's `model.Movement`
+#      field resolves to the consumer package's own Movement struct
+#      (self-recursion) instead of the opaque model.Movement.
+#   2. WriterName mismatches: some reports' WriterNames match neither the
+#      Operation() const value nor its suffix-stripped alt key (e.g.
+#      InventoryAdd), so TypeForWriter misses.
+# Until those are fixed (follow-up task), the packet_prefixes entries below
+# retain coverage for the affected families (D4 — must not narrow silently).
 opaque_types:
   - MonsterTemporaryStat    # CMob::SetTemporaryStat — mask-driven ~25-field blob
   - Movement                # model.Movement — element-loop move-path (monster, pet, char, npc)
@@ -28,10 +34,10 @@ opaque_types:
 # Packet-prefix coverage. Two categories:
 #   1. Social/lobby dispatcher families (design §8 baseline): these are inherently
 #      complex shared-struct consumers; kept unconditionally.
-#   2. Opaque-type consumer families: retained because WriteByteArray(x.Encode(...))
-#      patterns do not produce KindRecurse entries, so TypeRegistry recursion cannot
-#      reach the opaque type from those callers. Removing these prefixes would silently
-#      drop T1 for MonsterMovement, PetMovement, InventoryAdd, CharacterSpawn etc.
+#   2. Opaque-type consumer families: retained because of the recursion gaps
+#      documented above (short-name misresolution + WriterName mismatches).
+#      Removing these prefixes would silently drop T1 for MonsterMovement,
+#      PetMovement, InventoryAdd, CharacterSpawn etc.
 # Every entry here is a directory that exists under libs/atlas-packet/.
 packet_prefixes:
   # Social/lobby dispatcher families (design §8 baseline — complex shared structs)
@@ -49,5 +55,6 @@ packet_prefixes:
   - monster/        # MonsterTemporaryStat + Movement opaque types
   - pet/            # Pet + Movement opaque types
   - character/      # CharacterStatistics + Pet + Avatar consumers
+  - field/          # SET_FIELD encodes charpkt.CharacterData → CharacterStatistics/Asset/Pet
 
 packets: []

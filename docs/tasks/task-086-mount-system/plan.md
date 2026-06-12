@@ -1243,7 +1243,7 @@ new data; confirm no schema errors. Record result in the task note.
 **Files:**
 - Modify: `.github/config/services.json`, `docker-bake.hcl` (`go.work` already done in Task 9)
 
-- [ ] **Step 1: Add the services.json entry (alphabetical).**
+- [x] **Step 1: Add the services.json entry (alphabetical).**
 
 ```json
 {
@@ -1256,9 +1256,9 @@ new data; confirm no schema errors. Record result in the task note.
 }
 ```
 
-- [ ] **Step 2: Add `"atlas-mounts",` to `go_services` in `docker-bake.hcl` (alphabetical).**
+- [x] **Step 2: Add `"atlas-mounts",` to `go_services` in `docker-bake.hcl` (alphabetical).**
 
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ```bash
 git add .github/config/services.json docker-bake.hcl
@@ -1270,11 +1270,11 @@ git commit -m "task-086: register atlas-mounts in services.json + docker-bake"
 **Files:**
 - Create: `deploy/k8s/base/atlas-mounts.yaml` (copy `atlas-pets.yaml`)
 
-- [ ] **Step 1: Copy atlas-pets.yaml → atlas-mounts.yaml; replace all `atlas-pets`→`atlas-mounts`,
+- [x] **Step 1: Copy atlas-pets.yaml → atlas-mounts.yaml; replace all `atlas-pets`→`atlas-mounts`,
 set `DB_NAME: "atlas-mounts"`. No LB socket ports (REST+Kafka only).** Add to the base
 kustomization if the repo lists manifests there (check `deploy/k8s/base/kustomization.yaml`).
 
-- [ ] **Step 2: Commit.**
+- [x] **Step 2: Commit.**
 
 ```bash
 git add deploy/k8s/base/atlas-mounts.yaml deploy/k8s/base/kustomization.yaml
@@ -1285,7 +1285,7 @@ git commit -m "task-086: atlas-mounts k8s manifest"
 
 **Files:** none (verification — mandatory per CLAUDE.md).
 
-- [ ] **Step 1: From the worktree root, bake the new service + every service whose go.mod changed.**
+- [x] **Step 1: From the worktree root, bake the new service + every service whose go.mod changed.**
 
 ```bash
 docker buildx bake atlas-mounts
@@ -1297,7 +1297,7 @@ docker buildx bake atlas-buffs        # only if its go.mod changed
 Expected: all succeed. A missing `COPY libs/...` only surfaces here — fix the repo-root
 `Dockerfile` if any bake fails (no new shared lib was added, so this should pass clean).
 
-- [ ] **Step 2: Commit any Dockerfile fix.**
+- [x] **Step 2: Commit any Dockerfile fix.**
 
 ## Task 41b: Cross-version packet verification (PRE-DEPLOY GATE — added 2026-06-12)
 

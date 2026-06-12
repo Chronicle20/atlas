@@ -3,18 +3,31 @@ package food
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"sync"
 	"testing"
 
+	"atlas-consumables/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
 
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
+
+// TestMain installs the shared no-op producer floor so any emit that escapes a
+// test (e.g. a path that reaches the real producer singleton) discards instead
+// of hanging on broker retries. Individual tests that need to inspect emissions
+// install their own capturing manager on top of this floor; none of them reset
+// the singleton in cleanup (DOM-24(e)).
+func TestMain(m *testing.M) {
+	producertest.InstallNoop()
+	os.Exit(m.Run())
+}
 
 // capturingWriter records every WriteMessages call so tests can verify what the
 // food consumer emitted (or did not emit).
@@ -65,12 +78,17 @@ func (r *writerRegistry) get(topicName string) *capturingWriter {
 	return r.writers[topicName]
 }
 
+// setupCapturingProducer installs a capturing producer manager on top of the
+// TestMain no-op floor. It deliberately does NOT register a cleanup that resets
+// the producer singleton: DOM-24(e) forbids un-stubbing the shared singleton in
+// test cleanup, which would leave later tests racing against an uninitialized
+// manager. The TestMain floor remains the baseline; each test simply layers its
+// own capturing manager and the last writer wins.
 func setupCapturingProducer(t *testing.T) *writerRegistry {
 	t.Helper()
 	reg := newWriterRegistry()
 	kafkaProducer.ResetInstance()
 	kafkaProducer.GetManager(kafkaProducer.ConfigWriterFactory(reg.factory()))
-	t.Cleanup(kafkaProducer.ResetInstance)
 	return reg
 }
 
@@ -129,32 +147,52 @@ func TestHandleRequestFeedNon226Rejects(t *testing.T) {
 
 // TestTamingMobFedEventProviderShape verifies the event provider produces the
 // exact cross-service contract (worldId/characterId/itemId/tirednessHeal) that
-// atlas-mounts Task 20 consumes, with the pinned heal of 30.
+// atlas-mounts Task 20 consumes, with the pinned heal of 30. This is the event
+// a class-226 (revitalizer) feed emits once its reservation commits.
 func TestTamingMobFedEventProviderShape(t *testing.T) {
 	if foodmsg.RevitalizerTirednessHeal != 30 {
 		t.Fatalf("expected pinned tiredness heal 30, got %d", foodmsg.RevitalizerTirednessHeal)
 	}
 
-	ev := foodmsg.Event{
-		WorldId:       world.Id(2),
-		CharacterId:   42,
-		ItemId:        2260000,
-		TirednessHeal: foodmsg.RevitalizerTirednessHeal,
-	}
-	b, err := json.Marshal(ev)
+	const (
+		wantWorld  = world.Id(2)
+		wantCharId = uint32(42)
+		wantItemId = uint32(2260000) // classification 226 revitalizer
+	)
+
+	msgs, err := consumable.TamingMobFedEventProvider(wantWorld, wantCharId, wantItemId, foodmsg.RevitalizerTirednessHeal)()
 	if err != nil {
-		t.Fatalf("marshal event: %v", err)
+		t.Fatalf("provider error: %v", err)
 	}
-	var decoded map[string]any
-	if err := json.Unmarshal(b, &decoded); err != nil {
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 TamingMobFed message, got %d", len(msgs))
+	}
+
+	var ev foodmsg.Event
+	if err := json.Unmarshal(msgs[0].Value, &ev); err != nil {
 		t.Fatalf("unmarshal event: %v", err)
+	}
+	if ev.WorldId != wantWorld {
+		t.Fatalf("expected worldId %d, got %d", wantWorld, ev.WorldId)
+	}
+	if ev.CharacterId != wantCharId {
+		t.Fatalf("expected characterId %d, got %d", wantCharId, ev.CharacterId)
+	}
+	if ev.ItemId != wantItemId {
+		t.Fatalf("expected itemId %d, got %d", wantItemId, ev.ItemId)
+	}
+	if ev.TirednessHeal != 30 {
+		t.Fatalf("expected tirednessHeal 30, got %d", ev.TirednessHeal)
+	}
+
+	// JSON wire keys must match the cross-service contract.
+	var decoded map[string]any
+	if err := json.Unmarshal(msgs[0].Value, &decoded); err != nil {
+		t.Fatalf("unmarshal event map: %v", err)
 	}
 	for _, k := range []string{"worldId", "characterId", "itemId", "tirednessHeal"} {
 		if _, ok := decoded[k]; !ok {
-			t.Fatalf("event JSON missing key %q; got %s", k, string(b))
+			t.Fatalf("event JSON missing key %q; got %s", k, string(msgs[0].Value))
 		}
-	}
-	if int(decoded["tirednessHeal"].(float64)) != 30 {
-		t.Fatalf("expected tirednessHeal 30, got %v", decoded["tirednessHeal"])
 	}
 }

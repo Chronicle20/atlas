@@ -96,6 +96,76 @@ func TestProcessorImpl_Count_Populated(t *testing.T) {
 	}
 }
 
+func TestProcessorImpl_Create_CrossTenantSameSlug(t *testing.T) {
+	l := logrus.New()
+	te1 := countTestTenant(t)
+	te2 := countTestTenant(t)
+	ctx1 := tenant.WithContext(context.Background(), te1)
+	ctx2 := tenant.WithContext(context.Background(), te2)
+	db := countTestDatabase(t)
+
+	p1 := gachapon.NewProcessor(l, ctx1, db)
+	p2 := gachapon.NewProcessor(l, ctx2, db)
+
+	// Regression: the gachapons primary key was the slug ("id") alone, not
+	// scoped by tenant. Gachapon slugs are identical across tenants, so the
+	// second tenant to seed a slug collided on the primary key and got zero
+	// rows. Each tenant must be able to own its own copy of a slug.
+	seedCountGachapon(t, p1, te1.Id(), "henesys")
+	seedCountGachapon(t, p2, te2.Id(), "henesys")
+
+	g1, err := p1.GetById("henesys")
+	if err != nil {
+		t.Fatalf("tenant 1 GetById(henesys): %v", err)
+	}
+	if g1.TenantId() != te1.Id() {
+		t.Errorf("tenant 1 row tenant = %s, want %s", g1.TenantId(), te1.Id())
+	}
+	g2, err := p2.GetById("henesys")
+	if err != nil {
+		t.Fatalf("tenant 2 GetById(henesys): %v", err)
+	}
+	if g2.TenantId() != te2.Id() {
+		t.Errorf("tenant 2 row tenant = %s, want %s", g2.TenantId(), te2.Id())
+	}
+
+	c1, _, err := p1.Count()
+	if err != nil {
+		t.Fatalf("tenant 1 Count: %v", err)
+	}
+	c2, _, err := p2.Count()
+	if err != nil {
+		t.Fatalf("tenant 2 Count: %v", err)
+	}
+	if c1 != 1 || c2 != 1 {
+		t.Errorf("per-tenant counts = %d, %d; want 1, 1", c1, c2)
+	}
+
+	// Slug-based Update must not reach across tenants. With a shared slug this
+	// is only correct because the tenant callback scopes the write; assert it.
+	if err := p1.Update("henesys", "renamed-by-1", 60, 30, 10); err != nil {
+		t.Fatalf("tenant 1 Update(henesys): %v", err)
+	}
+	g2After, err := p2.GetById("henesys")
+	if err != nil {
+		t.Fatalf("tenant 2 GetById(henesys) after tenant 1 update: %v", err)
+	}
+	if g2After.Name() != "count-henesys" {
+		t.Errorf("tenant 1 Update leaked into tenant 2: name = %q, want %q", g2After.Name(), "count-henesys")
+	}
+
+	// Slug-based Delete must not reach across tenants either.
+	if err := p1.Delete("henesys"); err != nil {
+		t.Fatalf("tenant 1 Delete(henesys): %v", err)
+	}
+	if _, err := p2.GetById("henesys"); err != nil {
+		t.Errorf("tenant 1 Delete removed tenant 2's row: %v", err)
+	}
+	if _, err := p1.GetById("henesys"); err == nil {
+		t.Error("tenant 1 Delete did not remove tenant 1's own row")
+	}
+}
+
 func TestProcessorImpl_Count_TenantIsolation(t *testing.T) {
 	l := logrus.New()
 	te1 := countTestTenant(t)

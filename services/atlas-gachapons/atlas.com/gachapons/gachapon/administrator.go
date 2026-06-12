@@ -3,6 +3,7 @@ package gachapon
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -13,6 +14,7 @@ func CreateGachapon(db *gorm.DB, m Model) error {
 	}
 
 	e := &entity{
+		Uid:            uuid.New(),
 		TenantId:       m.TenantId(),
 		ID:             m.Id(),
 		Name:           m.Name(),

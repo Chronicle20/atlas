@@ -28,29 +28,40 @@ jobs:
         run: cd tools/packet-audit && go test ./...
 
       - name: Coverage matrix check
-        # continue-on-error: true because ~1090 conflict rows remain after Phase-5
-        # discovery (915 cross-version template-coverage gaps + 163 absent-but-routed
-        # + 12 genuine Atlas findings). Blocking flip is a one-line follow-up once
-        # conflicts reach zero.
+        # ~1090 conflict rows remain after Phase-5 discovery (915 cross-version
+        # template-coverage gaps + 163 absent-but-routed + 12 genuine Atlas
+        # findings); exit 1 is grandfathered until the conflict burn-down follow-up
+        # task clears them.  Exit 0 (clean) and exit 1 (conflicts only) both let
+        # step 2 pass; exit 3 (runtime failure) is a hard stop.
         # Follow-up: task-085 follow-up: conflict burn-down
         #   — per-version template coverage + D3 cross-version rule refinement.
-        #   Tracked in the PR that lands this gate; remove continue-on-error when
-        #   `matrix --check` exits 0 on main.
-        continue-on-error: true
+        #   Remove the exit-1 exception in step 2 when `matrix --check` exits 0
+        #   on main.
         run: |
-          set -e
+          set +e
           go run ./tools/packet-audit matrix --check 2>/tmp/matrix_check.txt
+          rc=$?
+          echo $rc > /tmp/matrix_check_code
+          exit 0
         id: matrix_check
 
       - name: Fatal-class guard
+        # Fail on runtime errors (exit 3: corrupt registry, unreadable template,
+        # etc.) — these are not grandfathered conflicts.
         # Fail unconditionally on any line that mentions orphan markers, dangling
-        # linkage, stale evidence, hash drift, unresolvable references, or malformed
-        # records — these must never be grandfathered.
+        # linkage, stale evidence, hash drift, unresolvable references, malformed
+        # records, or missing IDA exports — these must never be grandfathered.
         run: |
-          count=$(grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt || true)
-          if [ "$count" -gt 0 ]; then
-            echo "::error::matrix --check reported $count fatal-class finding(s); see step output"
-            grep -iE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt || true
+          recorded_code=$(cat /tmp/matrix_check_code)
+          if [ "$recorded_code" -ne 0 ] && [ "$recorded_code" -ne 1 ]; then
+            echo "::error::matrix --check exited $recorded_code (runtime failure); output follows:"
+            cat /tmp/matrix_check.txt
             exit 1
           fi
-          echo "Fatal-class check passed (0 hits)."
+          count=$(grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true)
+          if [ "$count" -gt 0 ]; then
+            echo "::error::matrix --check reported $count fatal-class finding(s); see step output"
+            grep -iE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true
+            exit 1
+          fi
+          echo "Fatal-class check passed (exit=$recorded_code, 0 fatal hits)."

@@ -194,7 +194,7 @@ After the registry, template, and export exist, run the static audit for the new
 version. From the worktree root:
 
 ```bash
-go run . \
+go run ./tools/packet-audit \
   --csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
   --csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
   --atlas-packet    libs/atlas-packet \
@@ -203,8 +203,7 @@ go run . \
   --output          docs/packets/audits
 ```
 
-(Run from `tools/packet-audit/` and adjust paths with `../../` prefix, or run
-from the worktree root as above.) This writes `docs/packets/audits/<version>/SUMMARY.md`
+Run from the worktree root. This writes `docs/packets/audits/<version>/SUMMARY.md`
 plus per-packet `.md` detail files; `--output` is the parent directory, not the
 versioned subdirectory.
 
@@ -241,9 +240,110 @@ Flags:
 ```
 
 Triage `divergent` entries with `diff-shape`; allowlist genuine `missing-mode`
-cases into `docs/packets/audits/<version>/_unimplemented.json`. Refer to
-`STARTING_A_NEW_VERSION_PASS.md §8.2–8.4` (legacy doc) for the full
-`resolve-dispatch` / `triage` / `decompose` subcommand workflows.
+cases into `docs/packets/audits/<version>/_unimplemented.json`.
+
+**`decompose` — extend the baseline with live IDA reads for every exported entry**
+
+```bash
+go run ./tools/packet-audit decompose \
+  --version   <version-key> \
+  --ida-port  <port> \
+  --out       /tmp/<version>_extended.json \
+  --report    /tmp/<version>_decompose.md
+```
+
+Flags:
+
+```
+  -audit-dir string
+        committed audit dir (default: docs/packets/audits/<version>)
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -out string
+        output extended baseline JSON path (required)
+  -report string
+        output markdown report path (required)
+  -version string
+        target version key, e.g. gms_v83 (required)
+```
+
+> **JMS quirk**: `--version gms_jms_185` defaults `--audit-dir` to
+> `docs/packets/audits/gms_jms_185`, which does not exist; the actual audit dir
+> is `docs/packets/audits/jms_v185`. Always pass `--audit-dir
+> docs/packets/audits/jms_v185` explicitly for JMS passes.
+
+**`triage` — produce a divergent-entry worklist from the extended baseline**
+
+```bash
+go run ./tools/packet-audit triage \
+  --version   <version-key> \
+  --ida-port  <port> \
+  --report    /tmp/<version>_triage.md
+```
+
+Flags:
+
+```
+  -audit-dir string
+        committed audit dir (default: docs/packets/audits/<version>)
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -report string
+        output markdown worklist path (required)
+  -version string
+        target version key, e.g. gms_v95 (required)
+```
+
+> **JMS quirk**: same as `decompose` — pass `--audit-dir
+> docs/packets/audits/jms_v185` explicitly for `--version gms_jms_185`.
+
+**`resolve-dispatch` — auto-write high-confidence selectors into the baseline**
+
+```bash
+go run ./tools/packet-audit resolve-dispatch \
+  --version   <version-key> \
+  --ida-port  <port> \
+  --worklist  /tmp/<version>_resolve.md
+```
+
+Flags:
+
+```
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -min-confidence float
+        auto-accept threshold (default 0.6)
+  -version string
+        target version key, e.g. gms_v95 (required)
+  -worklist string
+        output confirmation worklist markdown path (required)
+```
+
+Review the worklist for low-confidence picks before committing the mutated baseline.
 
 ---
 
@@ -414,7 +514,8 @@ Three degradation paths, each with its own remediation:
 **3. Tool verdict flip** (tier-0 cells after an analyzer or exporter change):
 - Delta triage: diff before/after `grep -rE '\| (❌|🔍) \|' docs/packets/audits/*/SUMMARY.md`.
 - Hand-confirm against the IDB which side is right (the IDA trace always wins
-  over the analyzer verdict — §7 of the legacy doc).
+  over the analyzer verdict — use `triage` / `decompose` from §1.4 above to
+  re-run the live decompile and compare against the committed baseline).
 - Outcome is either an Atlas wire fix or a tool/export correction — never a
   silent re-accept of the old verdict.
 

@@ -1,11 +1,14 @@
 package pet
 
 type Model struct {
-	id     uint32
-	hunger uint32
-	cash   bool
-	life   uint32
-	skills []SkillModel
+	id           uint32
+	hunger       uint32
+	cash         bool
+	life         uint32
+	skills       []SkillModel
+	reqPetLevel  uint32
+	reqItemId    uint32
+	evolutions   []EvolutionModel
 }
 
 func (m Model) Id() uint32 {
@@ -28,12 +31,35 @@ func (m Model) Skills() []SkillModel {
 	return m.skills
 }
 
+func (m Model) ReqPetLevel() uint32 {
+	return m.reqPetLevel
+}
+
+func (m Model) ReqItemId() uint32 {
+	return m.reqItemId
+}
+
+func (m Model) Evolutions() []EvolutionModel {
+	return m.evolutions
+}
+
+func (m Model) IsEgg() bool {
+	return len(m.evolutions) == 1 && m.reqItemId == 0 && m.reqPetLevel == 0
+}
+
+func (m Model) IsEvolvable() bool {
+	return len(m.evolutions) > 0 && m.reqItemId != 0
+}
+
 type ModelBuilder struct {
-	id     uint32
-	hunger uint32
-	cash   bool
-	life   uint32
-	skills []SkillModel
+	id          uint32
+	hunger      uint32
+	cash        bool
+	life        uint32
+	skills      []SkillModel
+	reqPetLevel uint32
+	reqItemId   uint32
+	evolutions  []EvolutionModel
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -73,13 +99,31 @@ func (b *ModelBuilder) AddSkill(skill SkillModel) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetReqPetLevel(reqPetLevel uint32) *ModelBuilder {
+	b.reqPetLevel = reqPetLevel
+	return b
+}
+
+func (b *ModelBuilder) SetReqItemId(reqItemId uint32) *ModelBuilder {
+	b.reqItemId = reqItemId
+	return b
+}
+
+func (b *ModelBuilder) SetEvolutions(evolutions []EvolutionModel) *ModelBuilder {
+	b.evolutions = evolutions
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
-		id:     b.id,
-		hunger: b.hunger,
-		cash:   b.cash,
-		life:   b.life,
-		skills: b.skills,
+		id:          b.id,
+		hunger:      b.hunger,
+		cash:        b.cash,
+		life:        b.life,
+		skills:      b.skills,
+		reqPetLevel: b.reqPetLevel,
+		reqItemId:   b.reqItemId,
+		evolutions:  b.evolutions,
 	}
 }
 
@@ -132,4 +176,17 @@ func (b *SkillModelBuilder) Build() SkillModel {
 		increase:    b.increase,
 		probability: b.probability,
 	}
+}
+
+type EvolutionModel struct {
+	templateId  uint32
+	probability uint32
+}
+
+func (e EvolutionModel) TemplateId() uint32 {
+	return e.templateId
+}
+
+func (e EvolutionModel) Probability() uint32 {
+	return e.probability
 }

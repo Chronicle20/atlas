@@ -12,6 +12,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -34,6 +35,18 @@ type stubStatsSource struct {
 
 func (s stubStatsSource) GetByCharacter(_ world.Id, _ channel.Id, _ uint32) (effectivestats.Model, error) {
 	return s.model, s.err
+}
+
+// stubWeaponSource is a fake equipped-weapon-type source satisfying the
+// weaponSource seam. It returns a fixed weapon type so the physical ceiling is
+// deterministic without a live atlas-inventory.
+type stubWeaponSource struct {
+	weaponType item.WeaponType
+	err        error
+}
+
+func (s stubWeaponSource) GetEquippedWeaponType(_ uint32) (item.WeaponType, error) {
+	return s.weaponType, s.err
 }
 
 // capturedMessage is a topic + a decoded payload map captured by the fake emitter.
@@ -63,7 +76,11 @@ func newAttackProcessor(t *testing.T, eff effect.Model, watk uint32, statsErr er
 	}
 	ctx := tenant.WithContext(context.Background(), ten)
 
-	stats, _ := effectivestats.Extract(effectivestats.RestModel{WeaponAttack: watk, MagicAttack: watk})
+	// Non-zero str/dex so the faithful weapon-type ceiling computes a positive
+	// bound (maxBaseDmg = 0 with zero stats would degrade to "no ceiling").
+	stats, _ := effectivestats.Extract(effectivestats.RestModel{
+		WeaponAttack: watk, MagicAttack: watk, Strength: 200, Dexterity: 100, Luck: 50,
+	})
 
 	captured := &[]capturedMessage{}
 	p := &ProcessorImpl{
@@ -72,6 +89,7 @@ func newAttackProcessor(t *testing.T, eff effect.Model, watk uint32, statsErr er
 		t:       ten,
 		effects: stubEffectSource{eff: eff},
 		stats:   stubStatsSource{model: stats, err: statsErr},
+		equip:   stubWeaponSource{weaponType: item.WeaponTypeOneHandedSword},
 		// force a proc so the test can assert APPLY_STATUS deterministically.
 		proc: func(_ float64) bool { return true },
 		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {

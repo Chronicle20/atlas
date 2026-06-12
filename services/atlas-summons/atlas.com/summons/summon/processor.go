@@ -4,6 +4,7 @@ import (
 	skilldata "atlas-summons/data/skill"
 	"atlas-summons/data/skill/effect"
 	"atlas-summons/effectivestats"
+	"atlas-summons/inventory"
 	"atlas-summons/kafka/producer"
 	monstermsg "atlas-summons/monster"
 	"context"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	summonconst "github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -56,6 +58,13 @@ type statsSource interface {
 	GetByCharacter(worldId world.Id, channelId channel.Id, characterId uint32) (effectivestats.Model, error)
 }
 
+// weaponSource resolves the owner's equipped main-weapon type, required by the
+// weapon-type-aware physical damage ceiling (FaithfulMaxPerHit). The default
+// implementation is the inventory REST processor; tests substitute a stub.
+type weaponSource interface {
+	GetEquippedWeaponType(characterId uint32) (item.WeaponType, error)
+}
+
 type ProcessorImpl struct {
 	l       logrus.FieldLogger
 	ctx     context.Context
@@ -63,6 +72,7 @@ type ProcessorImpl struct {
 	emit    emitter
 	effects effectSource
 	stats   statsSource
+	equip   weaponSource
 	// proc decides whether a prop-gated status effect lands. The default is a real
 	// RNG roll (see rollProc); tests inject a deterministic function to force or
 	// suppress procs.
@@ -77,6 +87,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		},
 		effects: skilldata.NewProcessor(l, ctx),
 		stats:   effectivestats.NewProcessor(l, ctx),
+		equip:   inventory.NewProcessor(l, ctx),
 		proc:    rollProc,
 	}
 }
@@ -190,7 +201,8 @@ func (p *ProcessorImpl) Attack(id uint32, senderCharacterId uint32, direction by
 		return err
 	}
 
-	// Owner combat stats drive the per-hit ceiling (FR-4.3). If unavailable, set
+	// Owner combat stats drive the per-hit ceiling (FR-4.3), a faithful port of
+	// Cosmic's weapon-type-aware calcMaxDamage. If stats are unavailable, set
 	// max=0 so clampDamage treats it as "no ceiling" — never zero legit damage.
 	var max int64
 	stats, serr := p.stats.GetByCharacter(m.Field().WorldId(), m.Field().ChannelId(), m.OwnerCharacterId())
@@ -199,7 +211,19 @@ func (p *ProcessorImpl) Attack(id uint32, senderCharacterId uint32, direction by
 		max = 0
 	} else {
 		magic := eff.WeaponAttack() == 0
-		max = ConservativeMaxPerHit(magic, stats.WeaponAttack(), stats.MagicAttack(), eff.WeaponAttack(), eff.MagicAttack())
+		// The physical branch needs the equipped weapon type. A failed lookup
+		// degrades to WeaponTypeNone (Cosmic's SWORD1H no-weapon fallback) rather
+		// than disabling the clamp; magic ignores weapon type entirely.
+		weaponType := item.WeaponTypeNone
+		if !magic {
+			if wt, werr := p.equip.GetEquippedWeaponType(m.OwnerCharacterId()); werr != nil {
+				p.l.WithError(werr).Warnf("No equipped-weapon type for owner [%d]; summon [%d] physical ceiling uses SWORD1H fallback.", m.OwnerCharacterId(), id)
+			} else {
+				weaponType = wt
+			}
+		}
+		max = FaithfulMaxPerHit(magic, stats.WeaponAttack(), stats.MagicAttack(), stats.Intelligence(),
+			stats.Strength(), stats.Dexterity(), stats.Luck(), weaponType, eff.WeaponAttack(), eff.MagicAttack())
 	}
 
 	statuses := monsterStatusFor(m.SkillId(), eff)

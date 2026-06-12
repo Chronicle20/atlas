@@ -22,6 +22,13 @@ claims it) or filing a 🟥 conflict — then stop.
 - Any evidence record: `docs/packets/evidence/<version>/<packet dots>.yaml`.
 - The latest audit report: `docs/packets/audits/<version>/<Writer>.{json,md}`.
 
+Dispatcher-family trap: an op row whose FName fans out to several per-case
+writers (PARTY_OPERATION, MESSENGER, STORAGE, …) grades **worst-of all
+siblings**. Promoting one mode improves that packet's cell in `status.json`
+but the STATUS.md op row stays at the worst sibling until the whole family is
+done. If you need a visible STATUS.md flip, pick a single-writer op; for
+campaign work on a family, plan to verify every sibling.
+
 ## 3. Decompile the client side
 - Enumerate live instances (`mcp__ida-pro__list_instances`) and
   `select_instance` the one whose loaded IDB matches the target version —
@@ -41,6 +48,12 @@ Concrete model fixture; hand-compute the byte sequence from the client read
 order. One fixture per mode for mode-driven packets. Cite the decompile line
 for every field in a comment.
 
+Opaque-family caveat: for OPAQUE_LEDGER families the export's `calls` stop at
+the opaque buffer boundary (`DecodeBuf`). Bytes inside the blob cannot cite a
+per-field decompile line; derive them from the Atlas encoder source plus the
+audit report's "absorbed by trailing opaque buffer" rows, and say so in the
+test comment (the OPAQUE_LEDGER VERIFIED-EXCEPTION discipline).
+
 ## 6. Write the byte-test
 With the marker above the function:
 
@@ -52,7 +65,12 @@ The table is a `[]struct{ variant pt.TenantVariant; ... }` slice that
 accesses `pt.Variants` by index; see `TestInviteByteOutput` for a complete
 example with per-variant byte counts and IDA evidence comments.
 
-## 7. Pin evidence
+## 7. Pin evidence (tier-1 only)
+Tier-0 cells promote on tool-✅ + marker alone — do NOT pin a record for
+them: an evidence record is a standing freshness liability (export drift
+would degrade the cell to ❌), so only carry one where the grading rules
+need it (tier-1, or a deferral that evidence justifies).
+
     go run ./tools/packet-audit evidence pin --packet <id> --version <key> \
       --ida "<FName>" --category TIER1-FIXTURE
 

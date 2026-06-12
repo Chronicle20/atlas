@@ -1,0 +1,113 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1052011,
+      "startState": "welcome",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "askLeave",
+                "text": "Next"
+              },
+              {
+                "nextState": "decline",
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "This device is connected to outside."
+          },
+          "id": "welcome",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "welcome",
+                "text": "Previous"
+              },
+              {
+                "nextState": "confirmLeave",
+                "text": "Next"
+              },
+              {
+                "nextState": "decline",
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Are you going to give up and leave this place?"
+          },
+          "id": "askLeave",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Yes"
+              },
+              {
+                "nextState": "decline",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You'll have to start from scratch the next time you come in..."
+          },
+          "id": "confirmLeave",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Alright, see you next time."
+          },
+          "id": "decline",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "103000100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1052011",
+    "type": "npc-conversation"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Sky ferry transit map (Ereve to Orbis) - Block portal to prevent manual exit during transport",
+      "mapId": 200090021,
+      "portalId": "move_EreOrb",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": []
+          }
+        }
+      ]
+    },
+    "id": "move_EreOrb",
+    "type": "portal-action"
+  }
+}

@@ -240,7 +240,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-9095d1e
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-3aa70e1
+    newTag: main-73e9ed1
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-3aa70e1
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book

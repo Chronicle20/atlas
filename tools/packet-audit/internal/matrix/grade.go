@@ -43,8 +43,8 @@ type Inputs struct {
 	Registry       opregistry.Registry
 	Reports        map[string]map[string]LoadedReport // version -> WriterName -> report
 	FNameToWriter  map[string]map[string]string       // version -> FName -> WriterName (built from Reports)
-	Routed         map[string]map[RouteKey]bool        // version -> routed (opcode, dir)
-	RoutedAnywhere map[RouteKey]bool                   // routed in any version's template
+	Routed         map[string]map[RouteKey]bool       // version -> routed (opcode, dir)
+	RoutedAnywhere map[RouteKey]bool                  // routed in any version's template
 	Evidence       map[EvKey]EvidenceStatus
 	Tier1          map[string]bool // packet id -> tier-1
 	Markers        map[EvKey]MarkerStatus

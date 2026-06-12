@@ -16,6 +16,13 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/template"
 )
 
+// exitRuntime is the exit code for runtime errors (missing flags parsed, I/O errors, etc.).
+// exitBlocker is the exit code for --check stale/conflict failures.
+const (
+	exitRuntime = 3
+	exitBlocker = 1
+)
+
 type matrixOpts struct {
 	RegistryDir  string
 	AuditsDir    string
@@ -48,7 +55,13 @@ func runMatrix(args []string, stderr io.Writer) int {
 		}
 		return 3
 	}
-	o.Versions = strings.Split(versionsCSV, ",")
+	// TrimSpace each entry and drop empties (handles "v83, v84" or trailing commas).
+	raw := strings.Split(versionsCSV, ",")
+	for _, v := range raw {
+		if s := strings.TrimSpace(v); s != "" {
+			o.Versions = append(o.Versions, s)
+		}
+	}
 	return matrixRun(o, os.Stdout, stderr)
 }
 
@@ -56,7 +69,7 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	reg, err := opregistry.LoadDir(o.RegistryDir, o.Versions)
 	if err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
-		return 1
+		return exitRuntime
 	}
 	in := matrix.Inputs{Registry: reg,
 		Reports:        map[string]map[string]matrix.LoadedReport{},
@@ -71,12 +84,19 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		reps, err := matrix.LoadReports(filepath.Join(o.AuditsDir, vk))
 		if err != nil {
 			fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
-			return 1
+			return exitRuntime
 		}
 		in.Reports[vk] = reps
 		in.Routed[vk] = map[matrix.RouteKey]bool{}
 		tp := templatePathIn(o.TemplatesDir, vk)
-		if t, err := template.Load(tp); err == nil {
+		if t, err := template.Load(tp); os.IsNotExist(err) {
+			// Missing template is a warning: grading continues without routing data.
+			fmt.Fprintf(stderr, "packet-audit matrix: warning: no template for %s (%v)\n", vk, err)
+		} else if err != nil {
+			// Other errors (permission denied, corrupt JSON, etc.) are fatal.
+			fmt.Fprintf(stderr, "packet-audit matrix: error loading template for %s: %v\n", vk, err)
+			return exitRuntime
+		} else {
 			for op := range t.Writers() {
 				k := matrix.RouteKey{Opcode: op, Dir: opregistry.DirClientbound}
 				in.Routed[vk][k] = true
@@ -87,11 +107,16 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 				in.Routed[vk][k] = true
 				in.RoutedAnywhere[k] = true
 			}
-		} else {
-			fmt.Fprintf(stderr, "packet-audit matrix: warning: no template for %s (%v)\n", vk, err)
 		}
 		ep := exportPathIn(o.ExportsDir, vk)
-		if raw, err := os.ReadFile(ep); err == nil {
+		if raw, err := os.ReadFile(ep); os.IsNotExist(err) {
+			// Missing export file: warn but continue (not all versions have exports yet).
+			fmt.Fprintf(stderr, "packet-audit matrix: warning: no export file for %s (%s)\n", vk, ep)
+		} else if err != nil {
+			// Unreadable-but-existing export is a hard failure.
+			fmt.Fprintf(stderr, "packet-audit matrix: error reading export for %s: %v\n", vk, err)
+			return exitRuntime
+		} else {
 			hashes[vk] = fmt.Sprintf("%x", sha256.Sum256(raw))
 		}
 	}
@@ -103,7 +128,7 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	js, err := matrix.RenderJSON(m)
 	if err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
-		return 1
+		return exitRuntime
 	}
 	mdPath := filepath.Join(o.OutDir, "STATUS.md")
 	jsPath := filepath.Join(o.OutDir, "status.json")
@@ -113,15 +138,15 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	}
 	if err := os.MkdirAll(o.OutDir, 0o755); err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
-		return 1
+		return exitRuntime
 	}
 	if err := os.WriteFile(mdPath, []byte(md), 0o644); err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
-		return 1
+		return exitRuntime
 	}
 	if err := os.WriteFile(jsPath, js, 0o644); err != nil {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
-		return 1
+		return exitRuntime
 	}
 	fmt.Fprintf(stdout, "wrote %s and %s\n", mdPath, jsPath)
 	return 0
@@ -141,7 +166,7 @@ func matrixCheck(m matrix.Matrix, md string, js []byte, mdPath, jsPath string, s
 		fail = true
 	}
 	if fail {
-		return 1
+		return exitBlocker
 	}
 	return 0
 }

@@ -4,6 +4,9 @@
 package matrix
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
@@ -93,6 +96,32 @@ func (s State) Name() string {
 	}
 }
 
+func (s State) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Name())
+}
+
+func (s *State) UnmarshalJSON(b []byte) error {
+	var name string
+	if err := json.Unmarshal(b, &name); err != nil {
+		return err
+	}
+	switch name {
+	case "n-a":
+		*s = StateNA
+	case "conflict":
+		*s = StateConflict
+	case "verified":
+		*s = StateVerified
+	case "partial":
+		*s = StatePartial
+	case "incomplete":
+		*s = StateIncomplete
+	default:
+		return fmt.Errorf("unknown State %q", name)
+	}
+	return nil
+}
+
 // Cell is one graded (op|packet, direction, version) cell.
 type Cell struct {
 	State State  `json:"state"`
@@ -108,11 +137,38 @@ const (
 	RowSubStruct
 )
 
+func (k RowKind) kindName() string {
+	if k == RowSubStruct {
+		return "sub-struct"
+	}
+	return "op"
+}
+
+func (k RowKind) MarshalJSON() ([]byte, error) {
+	return json.Marshal(k.kindName())
+}
+
+func (k *RowKind) UnmarshalJSON(b []byte) error {
+	var name string
+	if err := json.Unmarshal(b, &name); err != nil {
+		return err
+	}
+	switch name {
+	case "op":
+		*k = RowOp
+	case "sub-struct":
+		*k = RowSubStruct
+	default:
+		return fmt.Errorf("unknown RowKind %q", name)
+	}
+	return nil
+}
+
 type MatrixRow struct {
 	Kind      RowKind              `json:"kind"`
-	Op        string               `json:"op,omitempty"`     // RowOp only
-	Packet    string               `json:"packet,omitempty"` // "buddy/clientbound/Invite" when an Atlas struct exists
-	Direction opregistry.Direction `json:"direction"`
+	Op        string               `json:"op,omitempty"`        // RowOp only
+	Packet    string               `json:"packet,omitempty"`    // "buddy/clientbound/Invite" when an Atlas struct exists
+	Direction opregistry.Direction `json:"direction,omitempty"` // empty for sub-struct rows
 	Tier1     bool                 `json:"tier1"`
 	Cells     map[string]Cell      `json:"cells"` // version key -> cell
 }

@@ -102,6 +102,16 @@ func (t *BeholderTask) sweepBuff(ctx context.Context, ten tenant.Model, m Model,
 		t.l.WithError(err).Warnf("Beholder sweep failed to apply buff to owner [%d] of summon [%d].", m.OwnerCharacterId(), m.Id())
 		return
 	}
+	// Emit the SKILL status event so the channel rebroadcasts the SummonSkill
+	// buff-pulse visual map-wide. Cosmic (Character.java:4487) plays the HEX buff
+	// pulse at stance (random*3)+6, i.e. 6-8; the sweep fires once per due tick on
+	// the leader pod and can't replicate per-tick client-side randomization, so it
+	// uses the lowest valid buff-pulse stance (6) deterministically. A failure here
+	// is non-fatal: the buff already applied, so the timer must still advance.
+	const beholderBuffStance = byte(6)
+	if err := t.emit(EnvEventTopicSummonStatus, skillEventProvider(m, beholderBuffStance)); err != nil {
+		t.l.WithError(err).Warnf("Beholder sweep failed to emit skill effect for summon [%d].", m.Id())
+	}
 	next := m.NextBuffAt().Add(interval)
 	if _, err := GetRegistry().Update(ctx, ten, m.Id(), func(cur Model) Model {
 		return Clone(cur).SetNextBuffAt(next).Build()

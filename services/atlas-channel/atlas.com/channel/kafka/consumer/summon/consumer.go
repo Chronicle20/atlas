@@ -61,6 +61,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventSkill(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -170,6 +175,29 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 				writer.SummonDamageBody(e.OwnerCharacterId, e.SummonId, e.Body.Damage, e.Body.MonsterIdFrom)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast summon [%d] damage for characters in map [%d].", e.SummonId, e.MapId)
+		}
+	}
+}
+
+func handleStatusEventSkill(sc server.Model, wp writer.Producer) message.Handler[summon2.StatusEvent[summon2.StatusEventSkillBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e summon2.StatusEvent[summon2.StatusEventSkillBody]) {
+		if e.Type != summon2.EventSummonStatusSkill {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		// Broadcast map-wide INCLUDING the owner: unlike move/attack/damage, the
+		// Beholder aura skill pulse is a server-driven visual the owner's client did
+		// not render locally, so everyone in the map must receive it. summonSkillId
+		// is the summon's source skill id (e.SkillId).
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
+			session.Announce(l)(ctx)(wp)(summonpkt.SummonSkillWriter)(
+				writer.SummonSkillBody(e.OwnerCharacterId, e.SkillId, e.Body.NewStance)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast summon [%d] skill effect for characters in map [%d].", e.SummonId, e.MapId)
 		}
 	}
 }

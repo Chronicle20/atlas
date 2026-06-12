@@ -1762,6 +1762,10 @@
         "writer": "SummonDamage"
       },
       {
+        "opCode": "0xB4",
+        "writer": "SummonSkill"
+      },
+      {
         "opCode": "0xB9",
         "writer": "CharacterMovement",
         "options": {

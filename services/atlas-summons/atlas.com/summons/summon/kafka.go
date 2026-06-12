@@ -15,6 +15,7 @@ const (
 	EventSummonStatusAttacked  = "ATTACKED"
 	EventSummonStatusDamaged   = "DAMAGED"
 	EventSummonStatusDestroyed = "DESTROYED"
+	EventSummonStatusSkill     = "SKILL"
 )
 
 // StatusEvent is the summon-status event envelope. It is exported because
@@ -71,4 +72,12 @@ type StatusEventAttackedTarget struct {
 type StatusEventAttackedBody struct {
 	Direction byte                        `json:"direction"`
 	Targets   []StatusEventAttackedTarget `json:"targets"`
+}
+
+// StatusEventSkillBody carries the Beholder aura skill-effect visual. NewStance
+// is the animation stance the client plays (Cosmic uses 5 for the heal pulse and
+// 6-8 for the buff pulse). Consumed by atlas-channel to rebroadcast the
+// SummonSkill clientbound packet map-wide.
+type StatusEventSkillBody struct {
+	NewStance byte `json:"newStance"`
 }

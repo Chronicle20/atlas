@@ -36,3 +36,10 @@ func SummonAttackBody(ownerCharacterId uint32, summonId uint32, direction byte, 
 func SummonDamageBody(ownerCharacterId uint32, summonId uint32, damage int32, monsterIdFrom uint32) packet.Encode {
 	return summoncb.NewSummonDamage(ownerCharacterId, summonId, uint32(damage), monsterIdFrom).Encode
 }
+
+// SummonSkillBody builds the SummonSkill clientbound packet for a Beholder aura
+// skill pulse, broadcast map-wide (including the owner) so every client renders
+// the heal/buff visual. summonSkillId is the summon's source skill id.
+func SummonSkillBody(ownerCharacterId uint32, summonSkillId uint32, newStance byte) packet.Encode {
+	return summoncb.NewSummonSkill(ownerCharacterId, summonSkillId, newStance).Encode
+}

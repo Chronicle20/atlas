@@ -91,6 +91,7 @@ const (
 	EventSummonStatusAttacked  = "ATTACKED"
 	EventSummonStatusDamaged   = "DAMAGED"
 	EventSummonStatusDestroyed = "DESTROYED"
+	EventSummonStatusSkill     = "SKILL"
 )
 
 // StatusEvent is the summon-status event envelope consumed from atlas-summons.
@@ -146,4 +147,10 @@ type StatusEventAttackedBody struct {
 type StatusEventDamagedBody struct {
 	Damage        int32  `json:"damage"`
 	MonsterIdFrom uint32 `json:"monsterIdFrom"`
+}
+
+// StatusEventSkillBody carries the Beholder aura skill-effect visual. JSON tags
+// MUST stay byte-for-byte identical to the atlas-summons producer definition.
+type StatusEventSkillBody struct {
+	NewStance byte `json:"newStance"`
 }

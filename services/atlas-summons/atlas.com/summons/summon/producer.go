@@ -67,6 +67,18 @@ func damagedEventProvider(m Model, damage int32, monsterIdFrom uint32) model.Pro
 	return producer.SingleMessageProvider(key, &value)
 }
 
+func skillEventProvider(m Model, newStance byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.Field().MapId()))
+	value := StatusEvent[StatusEventSkillBody]{
+		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
+		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
+		SummonId: m.Id(), OwnerCharacterId: m.OwnerCharacterId(), SkillId: m.SkillId(),
+		Type: EventSummonStatusSkill,
+		Body: StatusEventSkillBody{NewStance: newStance},
+	}
+	return producer.SingleMessageProvider(key, &value)
+}
+
 func destroyedEventProvider(m Model, animated bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.Field().MapId()))
 	value := StatusEvent[StatusEventDestroyedBody]{

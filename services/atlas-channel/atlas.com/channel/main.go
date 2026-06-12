@@ -611,6 +611,7 @@ func produceWriters() []string {
 		summoncb.SummonMoveWriter,
 		summoncb.SummonAttackWriter,
 		summoncb.SummonDamageWriter,
+		summoncb.SummonSkillWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,

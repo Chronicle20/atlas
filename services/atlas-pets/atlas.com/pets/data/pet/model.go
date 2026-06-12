@@ -183,6 +183,13 @@ type EvolutionModel struct {
 	probability uint32
 }
 
+func NewEvolutionModel(templateId uint32, probability uint32) EvolutionModel {
+	return EvolutionModel{
+		templateId:  templateId,
+		probability: probability,
+	}
+}
+
 func (e EvolutionModel) TemplateId() uint32 {
 	return e.templateId
 }

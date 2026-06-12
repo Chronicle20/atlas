@@ -28,6 +28,7 @@ var (
 	ErrAtlasDataUnreachable = errors.New("atlas-data unreachable")
 	ErrPresetValidation     = errors.New("preset validation failed")
 	ErrNameDuplicate        = errors.New("name duplicate")
+	ErrTemplateNotFound     = errors.New("no character creation template for the chosen job/subjob/gender")
 )
 
 // NameInvalidError is returned when the name validity check rejects the name for a
@@ -68,6 +69,19 @@ func NewProcessorWithClients(l logrus.FieldLogger, pc configuration.PresetClient
 	return &ProcessorImpl{l: l, presetClient: pc, nameClient: nc, dataClient: dc}
 }
 
+// findCreationTemplate returns the character-creation template matching the chosen
+// (jobIndex, subJobIndex, gender). A missing template (e.g. a job with no creation
+// config yet, such as a newly-introduced class) yields ok=false so the caller can
+// reject the request gracefully rather than returning a nil error.
+func findCreationTemplate(templates []template.RestModel, jobIndex, subJobIndex uint32, gender byte) (template.RestModel, bool) {
+	for _, ref := range templates {
+		if ref.JobIndex == jobIndex && ref.SubJobIndex == subJobIndex && ref.Gender == gender {
+			return ref, true
+		}
+	}
+	return template.RestModel{}, false
+}
+
 // Create validates and initiates character creation via saga
 func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, error) {
 	// Validate character name
@@ -90,17 +104,10 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 		return "", err
 	}
 
-	var found = false
-	var tmpl template.RestModel
-	for _, ref := range tc.Characters.Templates {
-		if ref.JobIndex == input.JobIndex && ref.SubJobIndex == input.SubJobIndex && ref.Gender == input.Gender {
-			found = true
-			tmpl = ref
-		}
-	}
+	tmpl, found := findCreationTemplate(tc.Characters.Templates, input.JobIndex, input.SubJobIndex, input.Gender)
 	if !found {
-		p.l.WithError(err).Errorf("Unable to find template validation configuration")
-		return "", err
+		p.l.Errorf("No character creation template for jobIndex [%d] subJobIndex [%d] gender [%d]; rejecting creation so the client receives a failure instead of hanging.", input.JobIndex, input.SubJobIndex, input.Gender)
+		return "", ErrTemplateNotFound
 	}
 
 	if !validFace(tmpl.Faces, input.Face) {

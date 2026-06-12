@@ -10,6 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte (2)` | ✅ |  |
-| 1 | byte | byte `slot index` | ✅ |  |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | byte | byte `position` | ✅ |  |
 

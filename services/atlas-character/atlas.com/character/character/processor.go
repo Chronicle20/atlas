@@ -50,6 +50,12 @@ const (
 	CommandDistributeApAbilityMp           = "MP"
 )
 
+// appliesAutoAP reports whether Beginner/Noblesse/Legend auto-AP assignment applies.
+// Pre-Big-Bang GMS behavior (..94 era); v84 included. Evidence: v84-packet-delta.md §3-5.
+func appliesAutoAP(t tenant.Model) bool {
+	return t.IsRegion("GMS") && t.MajorAtMost(94)
+}
+
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
 	ByIdProvider(decorators ...model.Decorator[Model]) func(id uint32) model.Provider[Model]
@@ -1333,8 +1339,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 			for i := range amount {
 				effectiveLevel = effectiveLevel + i + 1
 
-				if p.t.Region() == "GMS" && p.t.MajorVersion() == 83 {
-					// TODO properly define this range. For these versions, Beginner, Noblesse, and Legend AP are auto assigned.
+				if appliesAutoAP(p.t) {
 					if job.IsBeginner(c.JobId()) && effectiveLevel < 11 {
 						if effectiveLevel < 6 {
 							addedStr += 5

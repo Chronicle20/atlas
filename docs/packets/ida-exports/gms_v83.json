@@ -94,6 +94,13 @@
   "CLogin::OnCheckPasswordResult#AuthTemporaryBan": {
    "address": "0x5f83ee",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "TSingleton<CUITitle>::ms_pInstance"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5f83ee",
    "calls": [
     {
      "op": "Decode1",
@@ -595,30 +602,38 @@
    "address": "0x5f6952",
    "direction": "serverbound",
    "calls": [
-    {
-     "op": "DecodeStr",
-     "comment": "name"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "password"
-    },
-    {
-     "op": "DecodeBuf",
-     "comment": "hwid (16 bytes)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "gameRoomClient"
-    },
-    {
-     "op": "Decode1",
-     "comment": "gameStartMode"
-    },
-    {
-     "op": "Decode1",
-     "comment": "unknown1"
-    }
+     {
+       "op": "DecodeStr",
+       "comment": "name"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "password"
+     },
+     {
+       "op": "DecodeBuf",
+       "comment": "hwid (16 bytes MachineId)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "gameRoomClient"
+     },
+     {
+       "op": "Decode1",
+       "comment": "gameStartMode"
+     },
+     {
+       "op": "Decode1",
+       "comment": "unknown1"
+     },
+     {
+       "op": "Decode1",
+       "comment": "unknown2"
+     },
+     {
+       "op": "Decode4",
+       "comment": "partnerCode (GMS trailing field)"
+     }
    ]
   },
   "CLogin::SendSelectCharPacket": {
@@ -642,6 +657,13 @@
   "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic": {
    "address": "0x5f726d",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5f726d",
    "calls": [
     {
      "op": "Encode1",
@@ -668,6 +690,13 @@
   "CLogin::SendSelectCharPacket#CharacterSelectWithPic": {
    "address": "0x5f726d",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "discriminator": "m_bLoginOpt",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5f726d",
    "calls": [
     {
      "op": "EncodeStr",
@@ -727,6 +756,13 @@
   "CLogin::OnSetAccountResult#AfterLogin": {
    "address": "0x5fc731",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "CInPacket::Decode1(a3"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5fc731",
    "calls": [
     {
      "op": "Encode1",
@@ -745,6 +781,13 @@
   "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
    "address": "0x5f76ae",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "<default>"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5f76ae",
    "calls": [
     {
      "op": "Encode1",
@@ -864,60 +907,70 @@
    "address": "0x7c5dfd",
    "direction": "clientbound",
    "calls": [
-    {
-     "op": "Decode1",
-     "comment": "mode (9/13/15/19; consumed by OnPacket dispatcher then SetGetItems)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "slotCount (SetGetItems *(this+62))"
-    },
-    {
-     "op": "Decode8",
-     "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; v21)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "meso (*(this+63); ONLY if flag&2 \u2014 runtime callers never set bit 2)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode"
-    }
+     {
+       "op": "Decode1",
+       "comment": "mode (9/13/15/19)"
+     },
+     {
+       "op": "Decode1",
+       "comment": "slotCount (m_nSlotCount)"
+     },
+     {
+       "op": "Decode8",
+       "comment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "meso (m_nMoney; ONLY if tab-flag bit 1 set \u2014 runtime callers never set it)",
+       "guard": "flag & 2"
+     },
+     {
+       "op": "Decode1",
+       "comment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+       "guard": "loop perTab"
+     }
    ]
   },
   "CWvsContext::OnInventoryOperation#Add": {
    "address": "0xa1ead9",
    "direction": "clientbound",
-   "calls": [
+   "dispatch": [
     {
-     "op": "Decode1",
-     "comment": "exclRequest/update_time flag (if !=0 reset excl + get_update_time)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "count (number of operation entries)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "action (0 = Add)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "invType"
-    },
-    {
-     "op": "Decode2",
-     "comment": "slot"
-    },
-    {
-     "op": "DecodeBuffer",
-     "comment": "asset GW_ItemSlotBase::Decode (case 0) \u2014 sub-struct, tool-opaque"
-    },
-    {
-     "op": "Decode1",
-     "comment": "trailing addMov byte ONLY if any entry set nCurItemPos (equip move/remove)"
+     "discriminator": "v16",
+     "case": 1
     }
+   ],
+   "notes": "inferred-high-confidence (0.88) @0xa1ead9",
+   "calls": [
+     {
+       "op": "Decode1",
+       "comment": "exclRequest/update_time flag (if !=0 reset excl + get_update_time)"
+     },
+     {
+       "op": "Decode1",
+       "comment": "count (number of operation entries)"
+     },
+     {
+       "op": "Decode1",
+       "comment": "action (0 = Add)"
+     },
+     {
+       "op": "Decode1",
+       "comment": "invType"
+     },
+     {
+       "op": "Decode2",
+       "comment": "slot"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "asset GW_ItemSlotBase::Decode (case 0) \u2014 sub-struct, tool-opaque"
+     },
+     {
+       "op": "Decode1",
+       "comment": "trailing addMov byte \u2014 ONLY if any entry set nCurItemPos (equip move/remove)",
+       "guard": "cond nCurItemPos"
+     }
    ]
   },
   "CWvsContext::OnInventoryOperation#QuantityUpdate": {
@@ -1041,6 +1094,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "EncodeStr",
      "comment": "message (chat text). NOTE: v83 has NO leading update_time (v95-only addition)"
     }
@@ -1072,6 +1129,10 @@
    "address": "0x7c37ca",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Encode4",
      "comment": "meso amount"
@@ -1119,6 +1180,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode2",
      "comment": "count (config blacklist size)"
     },
@@ -1155,6 +1220,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode4",
      "comment": "ask_SPW() int (v31). NOTE: v83 is a 4-byte int; v95 sends EncodeStr sSPW"
     },
@@ -1180,6 +1249,10 @@
    "address": "0x470a5a",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Encode4",
      "comment": "ask_SPW() int (v31). NOTE: v83 is a 4-byte int; v95 sends EncodeStr sSPW"
@@ -1207,6 +1280,10 @@
    "direction": "serverbound",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode4",
      "comment": "field A (*(this+1304)). NOTE: v83 leading is int; v95 sends EncodeStr sSPW here"
     },
@@ -1228,6 +1305,10 @@
    "address": "0x46bde1",
    "direction": "serverbound",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Encode4",
      "comment": "ask_SPW() int (a2). NOTE: v83 is a 4-byte int; v95 sends EncodeStr sSPW"
@@ -1441,16 +1522,33 @@
    "address": "0x98385d",
    "direction": "clientbound",
    "calls": [
-    {
-     "op": "Decode2",
-     "comment": "tDelay (after SecondaryStat::DecodeForRemote delegate)"
-    }
+     {
+       "op": "Decode4",
+       "comment": "characterId (read by CUserPool dispatcher before OnSetTemporaryStat)"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "SecondaryStat::DecodeForRemote \u2014 opaque remote stat block"
+     },
+     {
+       "op": "Decode2",
+       "comment": "tDelay"
+     }
    ]
   },
   "CUserRemote::OnMove": {
    "address": "0x9726ae",
    "direction": "clientbound",
-   "calls": []
+   "calls": [
+     {
+       "op": "Decode4",
+       "comment": "characterId (read by CUserPool::OnUserRemotePacket before dispatch)"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "CMovePath::OnMovePacket \u2014 opaque movement path block"
+     }
+   ]
   },
   "CWvsContext::OnChangeSkillRecordResult": {
    "address": "0xa1e48c",
@@ -1519,14 +1617,15 @@
    "address": "0x9377d9",
    "direction": "clientbound",
    "calls": [
-    {
-     "op": "Decode4",
-     "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
-    },
-    {
-     "op": "Decode1",
-     "comment": "nMode \u2014 sub-op byte dispatching to 27+ effect branches (case 0..26); sub-op enum not modeled by pipeline"
-    }
+     {
+       "op": "Decode4",
+       "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"
+     },
+     {
+       "op": "Decode1",
+       "comment": "nMode \u2014 switch discriminator dispatching to 27 effect branches (case 0..26)",
+       "guard": "switch nMode"
+     }
    ]
   },
   "CUserLocal::OnSkillCooltimeSet": {
@@ -1778,6 +1877,13 @@
   "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
    "address": "0x5facca",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5facca",
    "calls": [
     {
      "op": "Decode1",
@@ -1796,6 +1902,19 @@
   "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
    "address": "0x5facca",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
+   "notes": "inferred-high-confidence (0.78) @0x5facca",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "this->m_bIsWaitingVAC"
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -3168,6 +3287,7 @@
   "CPet::ParseCommand": {
    "address": "0x704d5d",
    "direction": "serverbound",
+   "note": "COutPacket(0xA9)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live v83 @0x704d5d). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends — the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
    "calls": [
     {
      "op": "EncodeBuf",
@@ -3175,15 +3295,11 @@
     },
     {
      "op": "Encode1",
-     "comment": "command mode"
+     "comment": "commandWithName (byName bool)"
     },
     {
      "op": "Encode1",
-     "comment": "reaction index"
-    },
-    {
-     "op": "Encode1",
-     "comment": "success flag"
+     "comment": "command"
     }
    ]
   },
@@ -3434,39 +3550,46 @@
    "address": "0xa2508b",
    "direction": "clientbound",
    "note": "mode=3 (DISPLAY). Reads item count then loops calling sub_4E4ADB per item. Wire identical to v95.",
-   "calls": [
+   "dispatch": [
     {
-     "op": "Decode1",
-     "comment": "mode byte (3)"
-    },
-    {
-     "op": "Decode1",
-     "comment": "item count"
-    },
-    {
-     "op": "Decode1",
-     "comment": "item[i].senderFlag (loop \u2014 sub_4E4ADB)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "item[i].noteId"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "item[i].senderName"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "item[i].message"
-    },
-    {
-     "op": "Decode4",
-     "comment": "item[i].timestamp"
-    },
-    {
-     "op": "Decode1",
-     "comment": "item[i].flags"
+     "case": 0,
+     "guard": "v12"
     }
+   ],
+   "calls": [
+     {
+       "op": "Decode1",
+       "comment": "mode byte (3 = Display)"
+     },
+     {
+       "op": "Decode1",
+       "comment": "note count (loop)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "note.id",
+       "guard": "loop count"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "note.senderName",
+       "guard": "loop count"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "note.message",
+       "guard": "loop count"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "note.timestamp FILETIME (8 bytes)",
+       "guard": "loop count"
+     },
+     {
+       "op": "Decode1",
+       "comment": "note.flag",
+       "guard": "loop count"
+     }
    ]
   },
   "CWvsContext::OnMemoResult#SendSuccess": {
@@ -3515,22 +3638,46 @@
    "direction": "clientbound",
    "note": "mode=7/0xA/0x12. Calls CWvsContext::CFriend::Reset which reads the full buddy list. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (7/0xA/0x12)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode1",
+     "comment": "count"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "GW_Friend \u00d7count"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "inShop flags \u00d7count"
+   }
+ ]
   },
   "CWvsContext::OnFriendResult#Update": {
    "address": "0xa3f2e8",
    "direction": "clientbound",
    "note": "mode=8. UpdateFriend reads characterId+channelId+mapId. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (8)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode4",
+     "comment": "characterId"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "GW_Friend block"
+   },
+   {
+     "op": "Decode1",
+     "comment": "inShop"
+   }
+ ]
   },
   "CWvsContext::OnFriendResult#Invite": {
    "address": "0xa3f2e8",
@@ -3594,6 +3741,12 @@
    "address": "0xa3f2e8",
    "direction": "clientbound",
    "note": "mode=0x15. Reads buddyListCapacity byte. Wire identical to v95.",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 21
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -3621,31 +3774,31 @@
    "direction": "clientbound",
    "note": "mode=8 (CREATED). v83: Decode4(partyId) + Decode4(memberId) + Decode4(mapId) + Decode2(jobId) + Decode2(level) + memset(3732,0,0x12A=298). Self-creation path, no PARTYDATA::Decode called externally.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (8)"
-    },
-    {
+     "comment": "mode"
+   },
+   {
      "op": "Decode4",
      "comment": "partyId"
-    },
-    {
+   },
+   {
      "op": "Decode4",
-     "comment": "memberId"
-    },
-    {
+     "comment": "mapId1"
+   },
+   {
      "op": "Decode4",
-     "comment": "mapId"
-    },
-    {
+     "comment": "mapId2"
+   },
+   {
      "op": "Decode2",
-     "comment": "jobId"
-    },
-    {
+     "comment": "short1"
+   },
+   {
      "op": "Decode2",
-     "comment": "level"
-    }
-   ]
+     "comment": "short2"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Invite": {
    "address": "0xa3e31c",
@@ -3675,70 +3828,42 @@
    "direction": "clientbound",
    "note": "mode=12/Left with forcedByte=0. v83: Decode4(partyId) + Decode4(targetId) + Decode1(forced) [branch 0=disband] + PARTYDATA::Decode(298). Wire shape identical to v95 except PARTYDATA size.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (12)"
-    },
-    {
+     "comment": "mode byte"
+   },
+   {
      "op": "Decode4",
      "comment": "partyId"
-    },
-    {
+   },
+   {
      "op": "Decode4",
      "comment": "targetId"
-    },
-    {
+   },
+   {
      "op": "Decode1",
-     "comment": "forced (1=expel, 0=disband/leave)"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "targetName"
-    },
-    {
+     "comment": "forced/disconnect flag"
+   },
+   {
      "op": "Decode4",
-     "comment": "PARTYDATA ids[6] \u00d7 6"
-    },
-    {
-     "op": "Decode1",
-     "comment": "PARTYDATA names[6] \u00d7 6 (padded 13)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA jobs[6] \u00d7 6"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA levels[6] \u00d7 6"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA channels[6] \u00d7 6"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA leaderId"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA maps[6] \u00d7 6"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA portals[6] \u00d7 4 ints (v83: no m_nSKillID, no PQ fields)"
-    }
-   ]
+     "comment": "partyId (repeated by atlas disband)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Error": {
    "address": "0xa3e31c",
    "direction": "clientbound",
    "note": "mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36. Error codes \u2014 no further reads or trivial string decode. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (error code)"
-    }
-   ]
+     "comment": "mode (error code)"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "name"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#ChangeLeader": {
    "address": "0xa3e31c",
@@ -3764,74 +3889,58 @@
    "direction": "clientbound",
    "note": "mode=15. v83: Decode4(partyId) + DecodeStr(joinedName) + PARTYDATA::Decode(298). Wire shape identical to v95 except PARTYDATA size (298 vs 378).",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (15)"
-    },
-    {
+     "comment": "mode byte"
+   },
+   {
      "op": "Decode4",
      "comment": "partyId"
-    },
-    {
+   },
+   {
      "op": "DecodeStr",
      "comment": "joinedMemberName"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA ids[6] \u00d7 6"
-    },
-    {
-     "op": "Decode1",
-     "comment": "PARTYDATA names[6] (padded 13 \u00d7 6)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA jobs/levels/channels \u00d7 6 each"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA leaderId"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA maps[6]"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA portals[6] \u00d7 4 ints (v83 no skillId, no PQ)"
-    }
-   ]
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Left": {
    "address": "0xa3e31c",
    "direction": "clientbound",
    "note": "mode=12. v83: Decode4(partyId)+Decode4(targetId)+Decode1(forced)+DecodeStr(targetName)+PARTYDATA::Decode(298). Forced branch reads PARTYDATA. Wire shape identical to v95 except PARTYDATA size.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (12)"
-    },
-    {
+     "comment": "mode byte"
+   },
+   {
      "op": "Decode4",
      "comment": "partyId"
-    },
-    {
+   },
+   {
      "op": "Decode4",
      "comment": "targetId"
-    },
-    {
+   },
+   {
      "op": "Decode1",
-     "comment": "forced (1=expel/forced, 0=leave/disband)"
-    },
-    {
+     "comment": "hasName flag"
+   },
+   {
+     "op": "Decode1",
+     "comment": "forced (expel/leave)"
+   },
+   {
      "op": "DecodeStr",
-     "comment": "targetName (via ZXString assign)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA (298 bytes in v83)"
-    }
-   ]
+     "comment": "targetName"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
+   }
+ ]
   },
   "CWvsContext::OnPartyResult#Update": {
    "address": "0xa3e31c",
@@ -3847,36 +3956,8 @@
      "comment": "partyId"
     },
     {
-     "op": "Decode4",
-     "comment": "PARTYDATA ids[0..5]"
-    },
-    {
-     "op": "DecodeStr",
-     "comment": "PARTYDATA names[0..5] (padded 13 each)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA jobs[0..5]"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA levels[0..5]"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA channels[0..5]"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA leaderId"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA maps[0..5]"
-    },
-    {
-     "op": "Decode4",
-     "comment": "PARTYDATA portals[6] \u00d7 4 ints: townId+fieldId+ptX+ptY (v83 no m_nSKillID, no PQ arrays)"
+     "op": "DecodeBuffer",
+     "comment": "PARTYDATA::Decode \u2014 fixed 298-byte block (qmemcpy 0x12A); read as one opaque buffer, NOT field-by-field"
     }
    ]
   },
@@ -4036,47 +4117,23 @@
    "direction": "clientbound",
    "note": "mode=0x27. v83: Decode4(guildId)+Decode4(characterId)+sub_4E4445(member struct 0x24 bytes)+1 byte online. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (0x27)"
-    },
-    {
+     "comment": "mode"
+   },
+   {
      "op": "Decode4",
-     "comment": "guildId (v241)"
-    },
-    {
+     "comment": "guildId"
+   },
+   {
      "op": "Decode4",
-     "comment": "characterId (v56)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.name (padded 13, via sub_4E4445 = 0x24 bytes struct)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.jobId"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.level"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.title"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.online flag (uint32)"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.signature"
-    },
-    {
-     "op": "Decode4",
-     "comment": "member.allianceTitle"
-    }
-   ]
+     "comment": "charId"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "GUILDMEMBER::Decode (37-byte block)"
+   }
+ ]
   },
   "CWvsContext::OnGuildResult#MemberLeft": {
    "address": "0xa37490",
@@ -4305,7 +4362,60 @@
    "address": "0xa1233f",
    "direction": "clientbound",
    "note": "v83 BBSThread sub-handler. Address is the outer thunk; inner function not separately named. Wire assumed identical to v95. Audit cannot confirm without decompiling inner function.",
-   "calls": []
+   "calls": [
+     {
+       "op": "Decode1",
+       "comment": "mode (0x07 BBSThread sub-op, read by OnGuildBBSPacket dispatcher)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "threadId"
+     },
+     {
+       "op": "Decode4",
+       "comment": "posterCharId"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "createdAt FILETIME (8 bytes)"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "title"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "text"
+     },
+     {
+       "op": "Decode4",
+       "comment": "emoticonId"
+     },
+     {
+       "op": "Decode4",
+       "comment": "replyCount (loop count)"
+     },
+     {
+       "op": "Decode4",
+       "comment": "reply.id",
+       "guard": "loop replyCount"
+     },
+     {
+       "op": "Decode4",
+       "comment": "reply.posterCharId",
+       "guard": "loop replyCount"
+     },
+     {
+       "op": "DecodeBuffer",
+       "comment": "reply.createdAt FILETIME (8 bytes)",
+       "guard": "loop replyCount"
+     },
+     {
+       "op": "DecodeStr",
+       "comment": "reply.message",
+       "guard": "loop replyCount"
+     }
+   ]
   },
   "CUIGuildBBS::SendLoadListRequest": {
    "address": "0x0",
@@ -4348,88 +4458,160 @@
    "direction": "clientbound",
    "note": "mode=0 (OnEnter). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (0)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode1",
+     "comment": "position"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "AvatarLook::Decode (opaque block)"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "name"
+   },
+   {
+     "op": "Decode1",
+     "comment": "channelId"
+   },
+   {
+     "op": "Decode1",
+     "comment": "pad"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#Join": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=1 (OnSelfEnterResult). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (1)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode1",
+     "comment": "position"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#Remove": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=2 (OnLeave). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (2)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode1",
+     "comment": "position"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#RequestInvite": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=3 (OnInvite). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (3)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "fromName"
+   },
+   {
+     "op": "Decode1",
+     "comment": "pad"
+   },
+   {
+     "op": "Decode4",
+     "comment": "messengerId"
+   },
+   {
+     "op": "Decode1",
+     "comment": "pad"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#InviteSent": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=4 (OnInviteResult). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (4)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "message"
+   },
+   {
+     "op": "Decode1",
+     "comment": "success"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#InviteDeclined": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=5 (OnBlocked). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (5)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "message"
+   },
+   {
+     "op": "Decode1",
+     "comment": "declineMode"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#Chat": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=6 (OnChat). v83 dispatcher confirmed. Wire identical to v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (6)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "DecodeStr",
+     "comment": "message"
+   }
+ ]
   },
   "CUIMessenger::OnPacket#Update": {
    "address": "0x8511fc",
    "direction": "clientbound",
    "note": "mode=7 (OnAvatar). v83 dispatcher confirmed. Wire identical to v95. Note: v83 OnPacket also has mode=8 (OnMigrated) absent from v95.",
    "calls": [
-    {
+   {
      "op": "Decode1",
-     "comment": "mode byte (7)"
-    }
-   ]
+     "comment": "mode"
+   },
+   {
+     "op": "Decode1",
+     "comment": "position"
+   },
+   {
+     "op": "DecodeBuffer",
+     "comment": "AvatarLook::Decode (opaque block)"
+   }
+ ]
   },
   "CUIMessenger::OnCreate": {
    "address": "0x8511fc",
@@ -4462,22 +4644,14 @@
    "direction": "serverbound",
    "note": "Client sends op=5+fromName+myName when declining. Wire identical to v95.",
    "calls": [
-    {
-     "op": "Encode1",
-     "comment": "op (5)"
-    },
-    {
-     "op": "EncodeStr",
-     "comment": "fromName"
-    },
-    {
-     "op": "EncodeStr",
-     "comment": "myName"
-    },
-    {
-     "op": "Encode1",
-     "comment": "pad (0)"
-    }
+     {
+       "op": "Encode1",
+       "comment": "sub-op = 3 (INVITE)"
+     },
+     {
+       "op": "EncodeStr",
+       "comment": "target character name"
+     }
    ]
   },
   "CUIMessenger::ProcessChat": {
@@ -4816,6 +4990,19 @@
   "CField::OnFieldEffect#Summon": {
    "address": "0x5330f7",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5330f7",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 0
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4838,6 +5025,19 @@
   "CField::OnFieldEffect#Tremble": {
    "address": "0x5330f7",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5330f7",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 1
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4870,6 +5070,19 @@
   "CField::OnFieldEffect#BossHp": {
    "address": "0x5330f7",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5330f7",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 5
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4900,6 +5113,19 @@
   "CField::OnFieldEffect#RewardRullet": {
    "address": "0x5330f7",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 7
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0x5330f7",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 7
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4923,6 +5149,12 @@
    "address": "0x960239",
    "direction": "clientbound",
    "notes": "TALK_GUIDE. v83 CUserLocal::OnTutorMsg@0x960239 has the SAME message/hint split as v95: Decode1(bByMessage); the FALSE (==0) arm at 0x960284 calls DecodeStr(message)+Decode4(width)+Decode4(duration) -> CTutor::OnMessage(ZXString,int,int). Atlas GuideTalkMessage writes the leading bool as false (matches v95). Phase-2 unconditional fix VERIFIED correct for v83 \u2014 no version gate needed.",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -4946,6 +5178,12 @@
    "address": "0x960239",
    "direction": "clientbound",
    "notes": "TALK_GUIDE. Same v83 CUserLocal::OnTutorMsg@0x960239 handler; the TRUE (!=0) arm at 0x960268 calls Decode4(hintId)+Decode4(duration) -> CTutor::OnMessage(int,int), NO string. Same polarity as v95. Atlas GuideTalkIdx writes the leading bool as true. Phase-2 unconditional fix VERIFIED correct for v83.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "CInPacket::Decode1(a2"
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5034,6 +5272,12 @@
    "address": "0x756da7",
    "direction": "clientbound",
    "notes": "Same v83 CShopDlg::OnPacket@0x756da7 (nType==0x132). Case 17 (0x756f1b): Decode1(hasReason); if non-zero, DecodeStr(reason) and show it as a Notice, else default Notice. Atlas ShopOperationGenericError writes Byte(mode)+Bool(hasReason)+optional AsciiString(reason). The mode byte is the switch discriminator.",
+   "dispatch": [
+    {
+     "discriminator": "nType",
+     "case": 306
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5204,6 +5448,12 @@
    "address": "0x961275",
    "direction": "clientbound",
    "notes": "Dialog type 1 in v95 (NOTE: v83 OnScriptMessage switch has NO SayImage case \u2014 CScriptMan::OnSayImage@0x961275 EXISTS in v83 and is invokable via SetUtilDlgEx_IMAGE but is not reachable through the standard script-message msgType dispatch; in v83 SayImage is a Say(0) variant with images set separately). The handler itself: Decode1(count @0x961302)+loop count x DecodeStr(image @0x961318). Atlas SayImageConversationDetail (post-fix): Byte(len)+loop AsciiString. Count is a single byte (Decode1) NOT int \u2014 Phase-2 unconditional WriteByte fix VERIFIED correct for v83. Analyzer flattens the loop.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v9"
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5288,6 +5538,12 @@
    "address": "0xa26b09",
    "direction": "clientbound",
    "notes": "Dialog type 5 (AskQuiz) in v83 / type 6 in v95. v83 CScriptMan::OnAskQuiz@0x747a22 delegates to CWvsContext::OnInitialQuiz@0xa26b09: Decode1(fail); if fail==0: DecodeStr(title)+DecodeStr(problem)+DecodeStr(hint)+Decode4(min)+Decode4(max)+Decode4(timeRemaining). Atlas AskQuizConversationDetail: Bool(Fail); if !Fail: AsciiString(Title)+AsciiString(Problem)+AsciiString(Hint)+Int(Min)+Int(Max)+Int(TimeRemaining). Match. Analyzer flattens the conditional.",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5329,6 +5585,12 @@
    "address": "0xa26c66",
    "direction": "clientbound",
    "notes": "Dialog type 6 (AskSpeedQuiz) in v83 / type 7 in v95. v83 CScriptMan::OnAskSpeedQuiz@0x747a34 delegates to CWvsContext::OnInitialSpeedQuiz@0xa26c66: Decode1(fail); if fail==0: Decode4(type)+Decode4(answer)+Decode4(correct)+Decode4(remain)+Decode4(timeRemaining). Atlas AskSpeedQuizConversationDetail: Bool(Fail); if !Fail: Int(Type)+Int(Answer)+Int(Correct)+Int(Remain)+Int(TimeRemaining). Match. Analyzer flattens the conditional.",
+   "dispatch": [
+    {
+     "case": 0,
+     "default": true
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5365,6 +5627,12 @@
    "address": "0x74713d",
    "direction": "clientbound",
    "notes": "Dialog type 7 (AskAvatar) in v83 / type 8 in v95. v83 CScriptMan::OnAskAvatar@0x74713d body: DecodeStr(message @0x74715e)+Decode1(count @0x747172)+loop count x Decode4(style @0x74718e). Atlas AskAvatarConversationDetail: AsciiString(Message)+Byte(len)+loop Int(style). Match. Count is Decode1 (byte).",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v5"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -5385,6 +5653,12 @@
    "address": "0x74730b",
    "direction": "clientbound",
    "notes": "Dialog type 8 (AskMembershopAvatar) in v83 / type 9 in v95. v83 CScriptMan::OnAskMembershopAvatar@0x74730b: DecodeStr(message @0x74732c)+Decode1(count @0x747340)+loop count x Decode4(candidate @0x74735c). Atlas AskMemberShopAvatarConversationDetail (post-fix): AsciiString(Message)+Byte(len)+loop Int(candidate). Count is a single byte (Decode1) \u2014 Phase-2 unconditional WriteByte fix VERIFIED correct for v83.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v5"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -5430,6 +5704,12 @@
    "address": "0x74775c",
    "direction": "clientbound",
    "notes": "Dialog type 10 (AskPetAll) in v83 / type 11 in v95. v83 CScriptMan::OnAskPetAll@0x74775c body: DecodeStr(message @0x747776)+Decode1(count @0x74778d)+Decode1(exceptionExists @0x74779c)+loop count x {DecodeBuffer(8) cashId @0x7477e3 + Decode1 @0x7477eb}. Atlas AskPetAllConversationDetail: AsciiString(Message)+Byte(len)+Bool(ExceptionExists)+loop{Long+Byte(0)}. Field order matches (count before exceptionExists). Analyzer flattens the loop.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v4 > 0"
+    }
+   ],
    "calls": [
     {
      "op": "DecodeStr",
@@ -5516,6 +5796,12 @@
    "address": "0x7467ab",
    "direction": "serverbound",
    "notes": "NPC_TALK_MORE generic continue reply, built inside v83 CScriptMan::OnSay@0x7467ab after DoModal (0x7468ae): COutPacket(0x3C)+Encode1(0 msgType)+Encode1(action). Atlas ContinueConversation writes Byte(lastMessageType)+Byte(action). Dispatcher header; selection/text trailing fields are separate structs. Match.",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "v16 != 3"
+    }
+   ],
    "calls": [
     {
      "op": "Encode1",
@@ -5555,6 +5841,10 @@
    "notes": "NPC_SHOP BUY body (op=0). v83 CShopDlg::SendBuyRequest@0x7561c1 after COutPacket(0x3D)+Encode1(0 op @0x756956): Encode2(slot @0x756976)+Encode4(itemId @0x756986)+Encode2(quantity @0x756991)+Encode4(discountPrice @0x75699c). Atlas ShopBuy writes Short(slot)+Int(itemId)+Short(quantity)+Int(discountPrice). Match.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode2",
      "comment": "slot (commodity index in shop; v57)"
     },
@@ -5578,6 +5868,10 @@
    "notes": "NPC_SHOP SELL body (op=1). v83 CShopDlg::SendSellRequest@0x756a04 after COutPacket(0x3D)+Encode1(1 op @0x756bc1): Encode2(slot @0x756bcc)+Encode4(itemId @0x756bd7)+Encode2(quantity @0x756be2). Atlas ShopSell writes Int16(slot)+Int(itemId)+Short(quantity). Match.",
    "calls": [
     {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
+    {
      "op": "Encode2",
      "comment": "slot / nPOS (a2)"
     },
@@ -5596,6 +5890,10 @@
    "direction": "serverbound",
    "notes": "NPC_SHOP RECHARGE body (op=2). v83 CShopDlg::SendRechargeRequest@0x756c28 after COutPacket(0x3D)+Encode1(2 op @0x756d51): Encode2(slot @0x756d5a). Atlas ShopRecharge writes Short(slot). Match.",
    "calls": [
+    {
+     "op": "Encode1",
+     "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+    },
     {
      "op": "Encode2",
      "comment": "slot / nPos (v7)"
@@ -5803,6 +6101,13 @@
   "CWvsContext::OnGivePopularityResult#ReceiveResponse": {
    "address": "0xa223dc",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "v8",
+     "case": 1
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa223dc",
    "calls": [
     {
      "op": "Decode1",
@@ -5851,6 +6156,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#ShopSearch": {
    "address": "0xa27d75",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 13
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa27d75",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 13
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5865,6 +6183,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#ShopRename": {
    "address": "0xa27d75",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 14
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa27d75",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 14
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5897,6 +6228,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
    "address": "0xa27d75",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 17
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa27d75",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 17
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -5919,6 +6263,19 @@
   "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice": {
    "address": "0xa27d75",
    "direction": "clientbound",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 18
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa27d75",
+   "dispatch": [
+    {
+     "discriminator": "switch",
+     "case": 18
+    }
+   ],
    "calls": [
     {
      "op": "Decode1",
@@ -6010,6 +6367,13 @@
   "CWvsContext::ResignQuest#Action": {
    "address": "0xa26ea7",
    "direction": "serverbound",
+   "dispatch": [
+    {
+     "case": 0,
+     "guard": "!v18"
+    }
+   ],
+   "notes": "inferred-high-confidence (1.00) @0xa26ea7",
    "calls": [
     {
      "op": "Encode1",

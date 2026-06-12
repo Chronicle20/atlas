@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (9/13/15/19; consumed by OnPacket dispatcher then SetGetItems)",
+      "IDAComment": "mode (9/13/15/19)",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "slotCount (SetGetItems *(this+62))",
+      "IDAComment": "slotCount (m_nSlotCount)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 3,
-      "IDAComment": "tab-flag bitmask (8 bytes via DecodeBuffer; v21)",
+      "IDAComment": "tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "meso (*(this+63); ONLY if flag\u00262 — runtime callers never set bit 2)",
+      "IDAComment": "meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -47,10 +47,11 @@
       "AtlasOp": 0,
       "AtlasKind": 1,
       "IDAOp": 0,
-      "IDAComment": "PER-TAB count byte; repeated once per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
+      "IDAComment": "PER-TAB count byte; repeated per set tab bit (4/8/16/32/64), each followed by count*GW_ItemSlotBase::Decode",
       "Verdict": 3,
       "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
     }
   ],
-  "Verdict": 3
+  "Verdict": 3,
+  "FlatInvalid": true
 }

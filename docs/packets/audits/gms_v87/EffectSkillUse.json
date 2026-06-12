@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path)",
+      "IDAComment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nMode — sub-op byte (16+ effect branches); sub-op enum not modeled by pipeline",
+      "IDAComment": "nMode — switch discriminator dispatching to 27 effect branches (case 0..26)",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -70,5 +70,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

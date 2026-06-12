@@ -1,0 +1,11 @@
+{
+ "binary":"x","md5":"x","generated_at":"t",
+ "functions":{
+  "Foo::OnBar#A":{"address":"0x100","direction":"clientbound",
+    "dispatch":[{"discriminator":"switch","case":1}],
+    "calls":[{"op":"Decode1","guard":""},{"op":"Decode4","guard":""}]},
+  "Foo::OnBar#Short":{"address":"0x100","direction":"clientbound",
+    "dispatch":[{"discriminator":"switch","case":2}],
+    "calls":[{"op":"Decode1","guard":""}]}
+ }
+}

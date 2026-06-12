@@ -1,0 +1,3 @@
+# OnB (← `Foo::OnB`)
+
+- **Verdict:** ✅

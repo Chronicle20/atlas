@@ -1,6 +1,6 @@
 # GuildSetNotice (← `CField::SendSetGuildNoticeMsg`)
 
-- **IDA:** 0x0
+- **IDA:** 0x535180
 - **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_set_notice.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
@@ -10,5 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | string `notice text` | ✅ |  |
+| 0 | byte | byte `sub-op = 16 (0x10, SET_NOTICE) — guild Operation mode byte` | ✅ |  |
+| 1 | string | string `notice text` | ✅ |  |
 

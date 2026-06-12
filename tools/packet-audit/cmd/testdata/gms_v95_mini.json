@@ -1,0 +1,21 @@
+{
+  "binary": "MapleStory.exe",
+  "md5": "0000000000000000000000000000",
+  "generated_at": "2025-01-01T00:00:00Z",
+  "functions": {
+    "CLogin::OnFoo": {
+      "address": "0x1",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode4", "comment": "characterId" }
+      ]
+    },
+    "CLogin::OnBar": {
+      "address": "0x2",
+      "direction": "serverbound",
+      "calls": [
+        { "op": "Decode1", "comment": "flag" }
+      ]
+    }
+  }
+}

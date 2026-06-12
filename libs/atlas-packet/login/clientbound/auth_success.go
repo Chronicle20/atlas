@@ -78,8 +78,8 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteLong(0)
 			}
 
-			if t.MajorVersion() >= 87 {
-				w.WriteLong(0)
+			if t.MajorAtLeast(84) {
+				w.WriteLong(0) // client key m_aClientKey[8]: GMS v84+ (client reads it >83, not >=87; IDA OnCheckPasswordResult)
 			}
 		} else if t.Region() == "JMS" {
 			w.WriteAsciiString(m.name)
@@ -140,8 +140,8 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 				_ = r.ReadUint64()
 			}
 
-			if t.MajorVersion() >= 87 {
-				_ = r.ReadUint64()
+			if t.MajorAtLeast(84) {
+				_ = r.ReadUint64() // client key m_aClientKey[8]: GMS v84+ (mirror of Encode)
 			}
 		} else if t.Region() == "JMS" {
 			m.name = r.ReadAsciiString()

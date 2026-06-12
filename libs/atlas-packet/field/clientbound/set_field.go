@@ -43,7 +43,8 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ decode-opt header (CClientOptMan::DecodeOpt); v84..86 == v83 (off-by-one fix). delta §3.1.6
 			w.WriteShort(0) // decode opt
 		}
 		w.WriteInt(uint32(m.channelId))
@@ -72,7 +73,8 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 
 		w.WriteByteArray(m.characterData.Encode(l, ctx)(options))
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ logout-gift block (OnSetLogoutGiftConfig reads 4 ints); v84..86 == v83 (off-by-one fix). delta §3.1.6
 			w.WriteInt(0) // logout gifts
 			w.WriteInt(0)
 			w.WriteInt(0)
@@ -89,7 +91,8 @@ func (m *SetField) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 	return func(r *request.Reader, options map[string]interface{}) {
 		t := tenant.MustFromContext(ctx)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ decode-opt header; v84..86 == v83 (off-by-one fix). delta §3.1.6
 			_ = r.ReadUint16() // decode opt
 		}
 		m.channelId = channel.Id(r.ReadUint32())
@@ -118,7 +121,8 @@ func (m *SetField) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 
 		m.characterData.Decode(l, ctx)(r, options)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ logout-gift block; v84..86 == v83 (off-by-one fix). delta §3.1.6
 			_ = r.ReadUint32() // logout gifts
 			_ = r.ReadUint32()
 			_ = r.ReadUint32()

@@ -214,6 +214,9 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 			w.WriteByte(m.levelType)
 			w.WriteByte(m.level)
 			w.WriteInt(m.experience)
+			if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+				w.WriteInt32(-1) // nDurability (-1 = no durability): GMS v84+ equip field, ordered experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode +212; absent v83). IDA-verified.
+			}
 			w.WriteInt(m.hammersApplied)
 
 			if t.Region() == "JMS" {
@@ -422,6 +425,9 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 				m.levelType = r.ReadByte()
 				m.level = r.ReadByte()
 				m.experience = r.ReadUint32()
+				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+					_ = r.ReadInt32() // nDurability: GMS v84+, ordered experience/durability/hammersApplied (mirror of Encode)
+				}
 				m.hammersApplied = r.ReadUint32()
 
 				if t.Region() == "JMS" {

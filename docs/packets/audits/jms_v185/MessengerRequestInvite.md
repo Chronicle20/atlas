@@ -10,9 +10,9 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte = 3 (RequestInvite) — consumed by OnPacket before calling OnInvite` | ✅ |  |
-| 1 | string | string `fromName (inviter)` | ✅ |  |
-| 2 | byte | byte `pad byte` | ✅ |  |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | string | string `fromName` | ✅ |  |
+| 2 | byte | byte `pad` | ✅ |  |
 | 3 | int32 | int32 `messengerId` | ✅ |  |
-| 4 | byte | byte `pad byte` | ✅ |  |
+| 4 | byte | byte `pad` | ✅ |  |
 

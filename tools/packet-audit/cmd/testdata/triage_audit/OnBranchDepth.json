@@ -1,0 +1,11 @@
+{
+  "WriterName": "OnBranchDepth",
+  "IDAName": "Foo::OnBranchDepth",
+  "Address": "0x700",
+  "BranchDepth": 1,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 0, "IDAOp": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "AtlasOp": 2, "IDAOp": 0, "Verdict": 2, "Note": "atlas Encode4 vs client Decode1 — apparent flat mismatch on branching handler" }
+  ],
+  "Verdict": 2
+}

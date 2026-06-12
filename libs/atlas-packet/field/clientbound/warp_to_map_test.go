@@ -21,7 +21,9 @@ func TestWarpToMapWireLength(t *testing.T) {
 	cases := map[string]int{
 		// DecodeOpt is gated >83 (present v87+); oldDriverID is gated GMS>=95; hp is 4 bytes only for GMS>=95, else 2 (incl. JMS).
 		"GMS v28":  21, // channelId(4)+sNotifier(1)+bCharData(1)+mapId(4)+portal(1)+hp(2)+timestamp(8); no DecodeOpt/nNotifierCheck/revive/chase (gated >28)
-		"GMS v83":  25, // v28 + nNotifierCheck(2)+revive(1)+chase(1); no DecodeOpt (gated >83), hp 2
+		"GMS v83":  25, // v28 + nNotifierCheck(2)+revive(1)+chase(1); no DecodeOpt (gated >=87), hp 2
+		"GMS v84":  25, // == v83: DecodeOpt is v87+, not v84 (off-by-one fix, delta §3.1.6)
+		"GMS v86":  25, // == v83: still pre-v87, no DecodeOpt
 		"GMS v87":  27, // v83 + DecodeOpt(2); still no oldDriverID (gated >=95), hp 2
 		"GMS v95":  33, // v87 + oldDriverID(4); hp widened 2->4
 		"JMS v185": 31, // v83(25) - chase(1) + DecodeOpt(2)+JMSpair(5); no oldDriverID (GMS-only); hp stays 2 (JMS185 @0x7eec9d Decode2)

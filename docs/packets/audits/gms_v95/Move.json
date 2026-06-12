@@ -80,40 +80,14 @@
     },
     {
       "Index": 8,
-      "AtlasOp": 1,
+      "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation",
       "Verdict": 0,
       "Note": ""
-    },
-    {
-      "Index": 9,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 10,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 11,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

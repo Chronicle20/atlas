@@ -66,8 +66,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     },
     {
       "Index": 7,
@@ -75,8 +75,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     },
     {
       "Index": 8,
@@ -84,8 +84,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     },
     {
       "Index": 9,
@@ -93,8 +93,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     },
     {
       "Index": 10,
@@ -102,8 +102,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     },
     {
       "Index": 11,
@@ -111,9 +111,10 @@
       "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

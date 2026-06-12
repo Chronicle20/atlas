@@ -10,6 +10,10 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `sub-op (deny/close)` | ✅ |  |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `sub-op=0xD` | ✅ |  |
+| 1 | string | string `grade1` | ✅ |  |
+| 2 | byte | string `grade2` | ❌ | atlas: short — missing trailing field |
+| 3 | byte | string `grade3` | ❌ | atlas: short — missing trailing field |
+| 4 | byte | string `grade4` | ❌ | atlas: short — missing trailing field |
+| 5 | byte | string `grade5` | ❌ | atlas: short — missing trailing field |
 

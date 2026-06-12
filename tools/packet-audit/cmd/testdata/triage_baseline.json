@@ -1,0 +1,81 @@
+{
+  "binary": "fake.dll",
+  "md5": "00000000000000000000000000000000",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "functions": {
+    "Foo::OnFlat": {
+      "address": "0x100",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Decode4", "comment": "an int" }
+      ]
+    },
+    "Foo::OnBranch": {
+      "address": "0x200",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "leave-type byte" }
+      ]
+    },
+    "Foo::OnRepr": {
+      "address": "0x300",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "DecodeBuf", "comment": "opaque blob" }
+      ]
+    },
+    "Foo::OnFail": {
+      "address": "0x400",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" }
+      ]
+    },
+    "Foo::OnDispatch#HashMode": {
+      "address": "0x500",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Decode4", "comment": "an int" }
+      ]
+    },
+    "Foo::OnRepeat": {
+      "address": "0x600",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode4", "comment": "x" },
+        { "op": "Decode2", "comment": "y" },
+        { "op": "Decode2", "comment": "z" },
+        { "op": "Decode4", "comment": "x" },
+        { "op": "Decode2", "comment": "y" },
+        { "op": "Decode2", "comment": "z" },
+        { "op": "Decode4", "comment": "x" },
+        { "op": "Decode2", "comment": "y" },
+        { "op": "Decode2", "comment": "z" }
+      ]
+    },
+    "Foo::OnBranchDepth": {
+      "address": "0x700",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Decode4", "comment": "an int" }
+      ]
+    },
+    "Foo::OnEmptyRead": {
+      "address": "0x800",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "Foo::OnUnresolved": {
+      "address": "0x900",
+      "direction": "clientbound",
+      "calls": [
+        { "op": "Decode1", "comment": "first byte" },
+        { "op": "Unresolved", "comment": "indirect dispatch" }
+      ]
+    }
+  }
+}

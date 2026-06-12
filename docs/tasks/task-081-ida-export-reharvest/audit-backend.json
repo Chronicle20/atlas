@@ -1,0 +1,50 @@
+{
+  "service": "task-081-net-go-changes",
+  "path": "diff 3ab5d1dc5..c12f30985 -- '*.go'",
+  "date": "2026-06-11",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "buckets": [
+    {
+      "name": "libs/atlas-packet/pet/serverbound/chat.go",
+      "type": "shared-wire-lib",
+      "checks": [
+        {"id": "GATE-01", "name": "Version gate symmetric Encode/Decode", "status": "pass", "evidence": "chat.go:56 (Encode) and chat.go:70 (Decode) both gate IsRegion(GMS)&&MajorAtLeast(95); WriteInt/ReadUint32 4-byte match (HEAD_SHA c12f30985)"},
+        {"id": "GATE-02", "name": "Gate value is correct boundary", "status": "pass", "evidence": "sibling updateTime field gates at v95 in chat/serverbound/multi.go:54,71"},
+        {"id": "GATE-03", "name": "Gate idiom matches repo convention", "status": "pass", "evidence": "helpers at HEAD_SHA libs/atlas-tenant/tenant.go:88,93; semantically equal to repo-wide Region()==GMS && MajorVersion()>=95"},
+        {"id": "GATE-04", "name": "Comment accurate", "status": "pass", "evidence": "chat.go:54-55,68-69 documents v95-only / CPet::DoAction 5-vs-4 / v84..94==v83"},
+        {"id": "GATE-05", "name": "Byte-level test backs boundary", "status": "warn", "evidence": "chat_test.go uses symmetric RoundTrip (test/roundtrip.go:12) over v83/v87/v95 variants; no absolute byte-length assertion per version"}
+      ]
+    },
+    {
+      "name": "tools/packet-audit",
+      "type": "standalone-cli",
+      "checks": [
+        {"id": "GO-01", "name": "Build clean", "status": "pass", "evidence": "GOWORK=off go build ./... exit 0"},
+        {"id": "GO-02", "name": "Tests pass", "status": "pass", "evidence": "GOWORK=off go test ./... -count=1 all ok"},
+        {"id": "GO-03", "name": "go vet clean", "status": "pass", "evidence": "go vet ./... no output exit 0"},
+        {"id": "GO-04", "name": "No swallowed errors", "status": "pass", "evidence": "all 12 _-discards reviewed; ValidateShape 2nd ret is diagnostic string (shapediff.go:45), dirRegexes 2nd ret is regexp (parse.go:168), mcphttp.go:202 best-effort error-path read, run.go:1795 walkdir callback never errs"},
+        {"id": "GO-05", "name": "Error wrapping %w", "status": "pass", "evidence": "mcphttp.go:208,216; baseline_write.go:69"},
+        {"id": "GO-06", "name": "No dead code", "status": "pass", "evidence": "vet+compiler clean; mcphttp.go:416 StructInfo documented intentional stub"},
+        {"id": "GO-07", "name": "No TODO/FIXME stubs", "status": "pass", "evidence": "zero code stubs in changed non-test code"},
+        {"id": "GO-08", "name": "Determinism holds", "status": "pass", "evidence": "bijection.go:44-45 sort.Slice both outputs; baseline_write.go map-range validation-only, splice walks entries file-order with positional cursor :59-76"},
+        {"id": "GO-09", "name": "Real behavioral tests", "status": "pass", "evidence": "infer_test.go:11-75 asserts confidence/ambiguity/wildcard; mcphttp_test.go:14 real http.RoundTripper stub"},
+        {"id": "GO-10", "name": "Idiomatic Go", "status": "pass", "evidence": "curried/pure helpers, no new global mutable state"}
+      ]
+    }
+  ],
+  "naItems": [
+    {"ids": "DOM-01..05", "reason": "No DDD model layer; CLI tool"},
+    {"ids": "DOM-06..09", "reason": "No HTTP handlers / processor Impl / JSON:API input handlers"},
+    {"ids": "DOM-10..11", "reason": "No GORM/DB/tenant/providers"},
+    {"ids": "DOM-12..17", "reason": "No HTTP/processor/administrator layering"},
+    {"ids": "DOM-18..19", "reason": "No JSON:API transport / REST models"},
+    {"ids": "DOM-22", "reason": "Not a deployed service; no per-service Dockerfile"},
+    {"ids": "DOM-23..24", "reason": "No Kafka producers/consumers"},
+    {"ids": "SUB-*, EXT-*, SCAFFOLD-*, SEC-*", "reason": "No sub-domains, atlas-service clients, new scaffold, or auth"}
+  ],
+  "blocking": [],
+  "nonBlocking": ["GATE-05: pet-chat v95 boundary covered only by symmetric round-trip; no absolute byte-length assertion per version (consistent with package convention)"]
+}

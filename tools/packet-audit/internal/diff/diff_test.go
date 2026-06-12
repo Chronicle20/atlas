@@ -213,3 +213,168 @@ func TestFlattenDropsInactiveGuards(t *testing.T) {
 		t.Errorf("flatten: v95=%d v83=%d", len(v95), len(v83))
 	}
 }
+
+func TestDiffUnresolvedRow(t *testing.T) {
+	atlas := []atlaspacket.Call{{Op: atlaspacket.Encode4}}
+	ida := idasrc.Fields{Calls: []idasrc.FieldCall{{Op: idasrc.Unresolved, Comment: "vtable"}}}
+	rows := Diff(atlas, ida)
+	if rows[0].Verdict != VerdictUnresolved {
+		t.Errorf("verdict = %v (%s), want VerdictUnresolved", rows[0].Verdict, rows[0].Verdict.Symbol())
+	}
+}
+
+func TestVerdictUnresolvedSymbol(t *testing.T) {
+	if VerdictUnresolved.Symbol() != "🚫" {
+		t.Errorf("symbol = %q, want 🚫", VerdictUnresolved.Symbol())
+	}
+}
+
+// TestWorstVerdictBlockerBeatsUnresolved verifies that WorstVerdict returns
+// VerdictBlocker when rows contain both a VerdictBlocker and a VerdictUnresolved
+// (or VerdictDeferred) — ordinal max would incorrectly pick VerdictUnresolved/
+// VerdictDeferred since their iota values exceed VerdictBlocker.
+func TestWorstVerdictBlockerBeatsUnresolved(t *testing.T) {
+	rows := []Row{
+		{Verdict: VerdictUnresolved},
+		{Verdict: VerdictBlocker},
+	}
+	got := WorstVerdict(rows)
+	if got != VerdictBlocker {
+		t.Errorf("WorstVerdict = %v (%s), want VerdictBlocker", got, got.Symbol())
+	}
+}
+
+func TestWorstVerdictBlockerBeatsDeferred(t *testing.T) {
+	rows := []Row{
+		{Verdict: VerdictDeferred},
+		{Verdict: VerdictBlocker},
+		{Verdict: VerdictMatch},
+	}
+	got := WorstVerdict(rows)
+	if got != VerdictBlocker {
+		t.Errorf("WorstVerdict = %v (%s), want VerdictBlocker", got, got.Symbol())
+	}
+}
+
+func TestWorstVerdictMinorBeatsUnresolved(t *testing.T) {
+	// Minor (⚠️) is more actionable than Unresolved (🚫) — an Unresolved row is an
+	// IDA export gap, not a wire bug, so a Minor finding wins the aggregate.
+	rows := []Row{
+		{Verdict: VerdictMinor},
+		{Verdict: VerdictUnresolved},
+	}
+	got := WorstVerdict(rows)
+	if got != VerdictMinor {
+		t.Errorf("WorstVerdict = %v (%s), want VerdictMinor", got, got.Symbol())
+	}
+}
+
+func TestWorstVerdictEmptyIsMatch(t *testing.T) {
+	got := WorstVerdict(nil)
+	if got != VerdictMatch {
+		t.Errorf("WorstVerdict(nil) = %v, want VerdictMatch", got)
+	}
+}
+
+// TestAbsorbBufferGroupsCollapsesSubstruct pins the sub-struct buffer-absorb:
+// an expanded sub-struct field group (GroupLen on its head) collapses into one
+// opaque buffer when the client reads it as a single DecodeBuf — but stays
+// expanded when the client reads the fields individually.
+func TestAbsorbBufferGroupsCollapsesSubstruct(t *testing.T) {
+	// Atlas: [byte, <group of 3: int32,bytes,byte>, byte] (e.g. mode + GW_* + flag)
+	atlas := []atlaspacket.Call{
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode4, GroupLen: 3},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.EncodeBuf},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},
+	}
+
+	// (a) client reads the group as ONE buffer → all rows match.
+	bufClient := idasrc.Fields{Calls: []idasrc.FieldCall{
+		{Op: idasrc.Decode1, Comment: "mode"},
+		{Op: idasrc.DecodeBuf, Comment: "GW_* struct"},
+		{Op: idasrc.Decode1, Comment: "flag"},
+	}}
+	for _, r := range Diff(atlas, bufClient) {
+		if r.Verdict != VerdictMatch {
+			t.Fatalf("buffer-client: row %d not match: %s %s", r.Index, r.Verdict.Symbol(), r.Note)
+		}
+	}
+
+	// (b) client reads the fields individually → group stays expanded, all match.
+	fieldClient := idasrc.Fields{Calls: []idasrc.FieldCall{
+		{Op: idasrc.Decode1}, {Op: idasrc.Decode4}, {Op: idasrc.DecodeBuf},
+		{Op: idasrc.Decode1}, {Op: idasrc.Decode1},
+	}}
+	rows := Diff(atlas, fieldClient)
+	if len(rows) != 5 {
+		t.Fatalf("field-client: expected 5 rows (group stays expanded), got %d", len(rows))
+	}
+	for _, r := range rows {
+		if r.Verdict != VerdictMatch {
+			t.Fatalf("field-client: row %d not match: %s %s", r.Index, r.Verdict.Symbol(), r.Note)
+		}
+	}
+}
+
+// TestExpandRepeatRuns pins the fixed-count loop expansion: a trailing Atlas loop
+// body (RepeatLen on its head) replicates to match the client's N-element run,
+// but a non-trailing loop is left untouched (no over-consumption).
+func TestExpandRepeatRuns(t *testing.T) {
+	// Trailing loop: Atlas [mode, <string body, RepeatLen=1>] vs client [mode, str×5].
+	atlas := []atlaspacket.Call{
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.EncodeStr, RepeatLen: 1},
+	}
+	client := idasrc.Fields{Calls: []idasrc.FieldCall{
+		{Op: idasrc.Decode1}, {Op: idasrc.DecodeStr}, {Op: idasrc.DecodeStr},
+		{Op: idasrc.DecodeStr}, {Op: idasrc.DecodeStr}, {Op: idasrc.DecodeStr},
+	}}
+	rows := Diff(atlas, client)
+	if len(rows) != 6 {
+		t.Fatalf("expected 6 rows (body replicated ×5), got %d", len(rows))
+	}
+	for _, r := range rows {
+		if r.Verdict != VerdictMatch {
+			t.Fatalf("row %d not match: %s %s", r.Index, r.Verdict.Symbol(), r.Note)
+		}
+	}
+}
+
+// TestTrailingPaddingByte pins the narrow trailing-padding rule: a single 1-byte
+// primitive write past the client's last read (e.g. OnSetTemporaryStat's unread
+// MovementAffectingStat=0) is a Minor over-write, not a Blocker — nothing follows
+// it, so it cannot desync the client.
+func TestTrailingPaddingByte(t *testing.T) {
+	// Atlas [int32, bytes, int16, byte] vs client [int32, bytes, int16].
+	atlas := []atlaspacket.Call{
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode4},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.EncodeBuf},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode2},
+		{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1},
+	}
+	client := idasrc.Fields{Calls: []idasrc.FieldCall{
+		{Op: idasrc.Decode4}, {Op: idasrc.DecodeBuf}, {Op: idasrc.Decode2},
+	}}
+	rows := Diff(atlas, client)
+	if len(rows) != 4 {
+		t.Fatalf("expected 4 rows, got %d", len(rows))
+	}
+	if rows[3].Verdict != VerdictMinor {
+		t.Fatalf("trailing padding byte: want Minor, got %s (%s)", rows[3].Verdict.Symbol(), rows[3].Note)
+	}
+	for _, r := range rows[:3] {
+		if r.Verdict != VerdictMatch {
+			t.Fatalf("row %d not match: %s %s", r.Index, r.Verdict.Symbol(), r.Note)
+		}
+	}
+
+	// Two trailing extra bytes must STAY a blocker (only one byte is padding).
+	atlas2 := append(atlas, atlaspacket.Call{Kind: atlaspacket.KindWrite, Op: atlaspacket.Encode1})
+	rows2 := Diff(atlas2, client)
+	if rows2[3].Verdict != VerdictBlocker && rows2[4].Verdict != VerdictBlocker {
+		t.Fatalf("two trailing extras should remain a blocker, got rows[3]=%s rows[4]=%s",
+			rows2[3].Verdict.Symbol(), rows2[4].Verdict.Symbol())
+	}
+}

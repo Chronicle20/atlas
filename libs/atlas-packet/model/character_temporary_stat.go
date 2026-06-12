@@ -102,7 +102,8 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeDragonBlood)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeHolySymbol)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMesoUp)(NoOpForeignValueWriter, NoOpForeignValueReader)
-	if t.Region() == "GMS" && t.MajorVersion() > 83 {
+	if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+		// v87+ ShadowPartner level-source field; v84..86 == v83 (off-by-one fix). delta §3.2
 		newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)(LevelSourceForeignValueWriter, LevelSourceForeignValueReader)
 	} else {
 		newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)(NoOpForeignValueWriter, NoOpForeignValueReader)

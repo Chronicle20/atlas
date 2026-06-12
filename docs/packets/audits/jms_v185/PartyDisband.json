@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (Disband)",
+      "IDAComment": "mode byte",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "isForced flag (0=leave/disband, 1=expelled)",
+      "IDAComment": "forced/disconnect flag",
       "Verdict": 0,
       "Note": ""
     },
@@ -46,11 +46,12 @@
       "Index": 4,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "partyId (repeated by atlas disband)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

@@ -346,10 +346,11 @@ func (a *AskSlideMenuConversationDetail) Encode(l logrus.FieldLogger, ctx contex
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		// The leading slideDlgType int is present for GMS major>83 and for
+		// The leading slideDlgType int is present for GMS v87+ and for
 		// JMS185 (CScriptMan::OnAskSlideMenu -> sub_7E2A97@0x7e2a97 reads two
-		// leading Decode4s unconditionally). GMS v83 omits it (single Decode4).
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		// leading Decode4s unconditionally). GMS v83..86 omit it (single Decode4);
+		// v84..86 == v83 (off-by-one fix). delta §3.2
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
 			if a.Unknown {
 				w.WriteInt(1)
 			} else {

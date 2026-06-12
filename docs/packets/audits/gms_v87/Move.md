@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/character/serverbound/move.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -18,8 +18,5 @@
 | 5 | int32 | int32 `crc (field CRC — get_field()+2084)` | ✅ |  |
 | 6 | int32 | int32 `dwKey (random seed for CRC32)` | ✅ |  |
 | 7 | int32 | int32 `crc32 (CRC32 of bDetect using dwKey)` | ✅ |  |
-| 8 | int16 | bytes `movement: CMovePath::Flush — tool cannot linearize loop` | ✅ |  |
-| 9 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 8 | bytes | bytes `movement: CMovePath::Flush — tool cannot linearize loop` | ✅ |  |
 

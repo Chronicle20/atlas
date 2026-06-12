@@ -1,0 +1,7 @@
+{
+ "binary":"x","md5":"x","generated_at":"t",
+ "functions":{
+  "Auth::OnCheckPasswordResult#NoSel":{"address":"0x200","direction":"clientbound",
+    "calls":[{"op":"Decode1","guard":""},{"op":"Decode4","guard":""}]}
+ }
+}

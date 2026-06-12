@@ -1,0 +1,13 @@
+{
+  "WriterName": "OnRepeat",
+  "IDAName": "Foo::OnRepeat",
+  "Address": "0x600",
+  "BranchDepth": 0,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 2, "IDAOp": 2, "Verdict": 0, "Note": "" },
+    { "Index": 1, "AtlasOp": 1, "IDAOp": 1, "Verdict": 0, "Note": "" },
+    { "Index": 2, "AtlasOp": 1, "IDAOp": 1, "Verdict": 0, "Note": "" },
+    { "Index": 3, "AtlasOp": 2, "IDAOp": 0, "Verdict": 2, "Note": "atlas Encode4 vs client Decode1 — apparent flat mismatch" }
+  ],
+  "Verdict": 2
+}

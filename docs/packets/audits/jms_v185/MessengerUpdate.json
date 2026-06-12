@@ -1,0 +1,39 @@
+{
+  "WriterName": "MessengerUpdate",
+  "IDAName": "CUIMessenger::OnPacket#Update",
+  "Address": "0x8e4bab",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/messenger/clientbound/update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "position",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "AvatarLook::Decode (opaque block)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

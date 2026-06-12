@@ -1,0 +1,11 @@
+{
+  "WriterName": "OnRepr",
+  "IDAName": "Foo::OnRepr",
+  "Address": "0x300",
+  "BranchDepth": 0,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 0, "IDAOp": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "AtlasOp": 0, "IDAOp": 5, "Verdict": 2, "Note": "atlas byte vs client opaque buffer — width-tolerable" }
+  ],
+  "Verdict": 2
+}

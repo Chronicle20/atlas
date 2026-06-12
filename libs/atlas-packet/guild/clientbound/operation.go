@@ -426,14 +426,14 @@ func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 	t := tenant.MustFromContext(ctx)
 	// v83 mode-5 reads guildId+inviterName only (IDA v83 OnGuildResult@0xa3b57a).
 	// v87 mode-5 reads guildId+inviterName+unknown+skillId (IDA v87 OnGuildResult@0xacf7d3@0xacf9c7).
-	// v95+ same as v87. Gate: GMS > 83 or JMS.
-	v84plus := (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS"
+	// v95+ same as v87. Gate: GMS >= 87 or JMS; v84..86 == v83 (off-by-one fix). delta §3.2
+	v87plus := (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS"
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteInt(m.guildId)
 		w.WriteAsciiString(m.originatorName)
-		if v84plus {
+		if v87plus {
 			w.WriteInt(m.unknown)
 			w.WriteInt(m.skillId)
 		}
@@ -443,13 +443,13 @@ func (m Invite) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 
 func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	// v84plus gate: see Encode comment above.
-	v84plus := (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS"
+	// v87plus gate: see Encode comment above.
+	v87plus := (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS"
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()
 		m.originatorName = r.ReadAsciiString()
-		if v84plus {
+		if v87plus {
 			m.unknown = r.ReadUint32()
 			m.skillId = r.ReadUint32()
 		}

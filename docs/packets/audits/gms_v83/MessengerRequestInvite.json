@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (3)",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -19,38 +19,39 @@
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "fromName",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "pad",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "messengerId",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "pad",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

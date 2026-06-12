@@ -3,20 +3,27 @@
 - **IDA:** 0xa3e31c
 - **Atlas file:** `../../libs/atlas-packet/party/clientbound/join.go`
 - **Variant:** GMS/v83
-- **Branch depth:** 0
-- **Verdict:** ❌
+- **Branch depth:** 1
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte (15)` | ✅ |  |
+| 0 | byte | byte `mode byte` | ✅ |  |
 | 1 | int32 | int32 `partyId` | ✅ |  |
 | 2 | string | string `joinedMemberName` | ✅ |  |
-| 3 | byte | int32 `PARTYDATA ids[6] × 6` | ❌ | atlas: short — missing trailing field |
-| 4 | byte | byte `PARTYDATA names[6] (padded 13 × 6)` | ❌ | atlas: short — missing trailing field |
-| 5 | byte | int32 `PARTYDATA jobs/levels/channels × 6 each` | ❌ | atlas: short — missing trailing field |
-| 6 | byte | int32 `PARTYDATA leaderId` | ❌ | atlas: short — missing trailing field |
-| 7 | byte | int32 `PARTYDATA maps[6]` | ❌ | atlas: short — missing trailing field |
-| 8 | byte | int32 `PARTYDATA portals[6] × 4 ints (v83 no skillId, no PQ)` | ❌ | atlas: short — missing trailing field |
+| 3 | int32 | bytes `PARTYDATA::Decode — fixed opaque block (read as one buffer)` | ✅ |  |
+| 4 | bytes | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 5 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 6 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 7 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 8 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 9 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 10 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 11 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 12 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 13 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 14 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 15 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
 

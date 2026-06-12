@@ -4,11 +4,11 @@
 - **Atlas file:** `../../libs/atlas-packet/messenger/serverbound/operation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ⚠️
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

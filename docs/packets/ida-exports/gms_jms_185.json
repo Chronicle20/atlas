@@ -10,6 +10,10 @@
       "direction": "serverbound",
       "calls": [
         {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
+        {
           "op": "Encode4",
           "comment": "update_time (get_update_time). JMS v185 PRESENT — same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS"
         },
@@ -60,6 +64,10 @@
       "direction": "serverbound",
       "calls": [
         {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
+        {
           "op": "Encode2",
           "comment": "count (m_asBlackList size). op-byte 0x1B consumed by dispatcher"
         },
@@ -87,6 +95,10 @@
       "address": "0x84e07d",
       "direction": "serverbound",
       "calls": [
+        {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
         {
           "op": "Encode2",
           "comment": "slot (v40[0]). op-byte 4 consumed by dispatcher"
@@ -182,6 +194,10 @@
       "direction": "serverbound",
       "calls": [
         {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
+        {
           "op": "Encode4",
           "comment": "nCommSN (serialNumber). op-byte 0x21 consumed by dispatcher. JMS body = serialNumber only"
         }
@@ -192,6 +208,10 @@
       "direction": "serverbound",
       "calls": [
         {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
+        {
           "op": "Encode4",
           "comment": "commSN (serialNumber). op-byte 0x2E (NOT GMS 0x04). JMS gift = serialNumber ONLY — no SPW/birthday, no recipient name, no message, no oneADay. NX-system divergence"
         }
@@ -201,6 +221,10 @@
       "address": "0x48085a",
       "direction": "serverbound",
       "calls": [
+        {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
         {
           "op": "EncodeStr",
           "comment": "s (secondary password / SPW). op-byte 0x1E (NOT GMS 0x1F)"
@@ -224,6 +248,10 @@
       "direction": "serverbound",
       "calls": [
         {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
+        {
           "op": "EncodeStr",
           "comment": "s (SPW). op-byte 0x24 (NOT GMS 0x25)"
         },
@@ -245,6 +273,10 @@
       "address": "0x47c059",
       "direction": "serverbound",
       "calls": [
+        {
+          "op": "Encode1",
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
         {
           "op": "EncodeStr",
           "comment": "spw (secondary password). op-byte 0x1B (NOT GMS 0x1C). JMS has SPW string (atlas else-branch has int birthday)"
@@ -1708,6 +1740,7 @@
       "address": "0x76abe0",
       "region": "JMS",
       "direction": "serverbound",
+      "notes": "COutPacket(0xAC)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live jms185 @0x76abe0). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends — the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
       "calls": [
         {
           "op": "EncodeBuf",
@@ -1715,15 +1748,11 @@
         },
         {
           "op": "Encode1",
-          "comment": "command mode"
+          "comment": "commandWithName (byName bool)"
         },
         {
           "op": "Encode1",
-          "comment": "reaction index"
-        },
-        {
-          "op": "Encode1",
-          "comment": "success flag"
+          "comment": "command"
         }
       ]
     },
@@ -2074,6 +2103,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 9 (Invite) in JMS OnFriendResult. Reads: Decode4(dwFriendID)+DecodeStr(name)+Decode4(jobId)+Decode4(level)+CFriend::Insert(). Identical wire layout to GMS v95 case 9.",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 9
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 9
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -2102,22 +2143,54 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 7/10/18 (ListUpdate/Reset) in JMS OnFriendResult. Calls CFriend::Reset(iPacket). Identical to GMS v95.",
-      "calls": [
+      "dispatch": [
         {
-          "op": "Decode1",
-          "comment": "mode byte = 7 or 10 (0xA) or 18 (0x12) — Reset/ListUpdate"
-        },
-        {
-          "op": "DecodeSub",
-          "comment": "CFriend::Reset body — reads full buddy list from packet"
+          "discriminator": "switch",
+          "case": 18
         }
-      ]
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 18
+        }
+      ],
+      "calls": [
+    {
+      "op": "Decode1",
+      "comment": "mode"
+    },
+    {
+      "op": "Decode1",
+      "comment": "count"
+    },
+    {
+      "op": "DecodeBuffer",
+      "comment": "GW_Friend \u00d7count"
+    },
+    {
+      "op": "DecodeBuffer",
+      "comment": "inShop flags \u00d7count"
+    }
+  ]
     },
     "CWvsContext::OnFriendResult#ChannelChange": {
       "address": "0xb2a873",
       "region": "JMS",
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 0x14 (20) in JMS OnFriendResult handles ChannelChange. Reads Decode4(friendId) + Decode1(channel) + Decode4(map). Identical to GMS v95.",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 20
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 20
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -2154,16 +2227,36 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "synthetic sub-mode entry: case 8 (Update) in JMS OnFriendResult. Calls CFriend::UpdateFriend(iPacket, 1). Identical to GMS v95.",
-      "calls": [
+      "dispatch": [
         {
-          "op": "Decode1",
-          "comment": "mode byte = 8 (Update)"
-        },
-        {
-          "op": "DecodeSub",
-          "comment": "CFriend::UpdateFriend body"
+          "discriminator": "switch",
+          "case": 8
         }
-      ]
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 8
+        }
+      ],
+      "calls": [
+    {
+      "op": "Decode1",
+      "comment": "mode"
+    },
+    {
+      "op": "Decode4",
+      "comment": "characterId"
+    },
+    {
+      "op": "DecodeBuffer",
+      "comment": "GW_Friend block"
+    },
+    {
+      "op": "Decode1",
+      "comment": "inShop"
+    }
+  ]
     },
     "CField::SendSetFriendMsg": {
       "address": "0x56e41d",
@@ -2171,23 +2264,19 @@
       "direction": "serverbound",
       "notes": "JMS v185 CField::SendSetFriendMsg@0x56e41d. Wire layout: Encode1(mode) + EncodeStr(name) + EncodeStr(group) + Encode1(flag). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode (sub-op: add/accept/delete)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "target name"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "group name"
-        },
-        {
-          "op": "Encode1",
-          "comment": "flag"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=1"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "name"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "group"
+    }
+  ]
     },
     "CField::SendAcceptFriendMsg": {
       "address": "0x56e66c",
@@ -2229,19 +2318,19 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 0 (Add/OnEnter)"
+          "comment": "mode"
         },
         {
           "op": "Decode1",
-          "comment": "position (slot 0–2)"
+          "comment": "position"
         },
         {
-          "op": "DecodeSub",
-          "comment": "AvatarLook::Decode"
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode (opaque block)"
         },
         {
           "op": "DecodeStr",
-          "comment": "character name"
+          "comment": "name"
         },
         {
           "op": "Decode1",
@@ -2249,7 +2338,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "pad byte"
+          "comment": "pad"
         }
       ]
     },
@@ -2261,11 +2350,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 1 (Join/OnSelfEnterResult)"
+          "comment": "mode"
         },
         {
           "op": "Decode1",
-          "comment": "position (slot 0–2)"
+          "comment": "position"
         }
       ]
     },
@@ -2277,11 +2366,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 2 (Remove/OnLeave)"
+          "comment": "mode"
         },
         {
           "op": "Decode1",
-          "comment": "position (slot 0–2)"
+          "comment": "position"
         }
       ]
     },
@@ -2293,15 +2382,15 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 3 (RequestInvite) — consumed by OnPacket before calling OnInvite"
+          "comment": "mode"
         },
         {
           "op": "DecodeStr",
-          "comment": "fromName (inviter)"
+          "comment": "fromName"
         },
         {
           "op": "Decode1",
-          "comment": "pad byte"
+          "comment": "pad"
         },
         {
           "op": "Decode4",
@@ -2309,7 +2398,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "pad byte"
+          "comment": "pad"
         }
       ]
     },
@@ -2321,15 +2410,15 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 4 (InviteSent/OnInviteResult)"
+          "comment": "mode"
         },
         {
           "op": "DecodeStr",
-          "comment": "msg"
+          "comment": "message"
         },
         {
           "op": "Decode1",
-          "comment": "success flag"
+          "comment": "success"
         }
       ]
     },
@@ -2341,11 +2430,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 5 (InviteDeclined/OnBlocked)"
+          "comment": "mode"
         },
         {
           "op": "DecodeStr",
-          "comment": "blocked user name"
+          "comment": "message"
         },
         {
           "op": "Decode1",
@@ -2361,11 +2450,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 6 (Chat)"
+          "comment": "mode"
         },
         {
           "op": "DecodeStr",
-          "comment": "chat line (format: 'name : msg')"
+          "comment": "message"
         }
       ]
     },
@@ -2377,15 +2466,15 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 7 (Update/OnAvatar)"
+          "comment": "mode"
         },
         {
           "op": "Decode1",
-          "comment": "position (slot 0–2)"
+          "comment": "position"
         },
         {
-          "op": "DecodeSub",
-          "comment": "AvatarLook::Decode (no name/channelId/pad — atlas writes those incorrectly)"
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode (opaque block)"
         }
       ]
     },
@@ -2522,38 +2611,56 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "JMS CWvsContext::OnPartyResult@0xb297e7 mode=1 (self-created). Wire: Decode1(mode)+Decode4(partyId)+Decode4(memberId)+Decode4(mapId)+Decode2(jobId)+Decode2(level). Same layout as GMS v83 OnPartyResult#Created@0xa3e31c. PARTYDATA (0x12A=298 bytes small) key finding: qmemcpy(v120, &this[1].m_Cookie.szReserved[584], 0x12Au). The v95plus gate in atlas member_data.go incorrectly included JMS — bug fixed in task-066 Task 10.",
-      "calls": [
+      "dispatch": [
         {
-          "op": "Decode1",
-          "comment": "mode byte = 1 (Created)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "partyId"
-        },
-        {
-          "op": "Decode4",
-          "comment": "memberId (zeros ok — atlas writes EmptyMapId as placeholder)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "mapId (zeros ok — atlas writes EmptyMapId as placeholder)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "jobId (zeros ok — atlas writes 0)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "level (zeros ok — atlas writes 0)"
+          "discriminator": "v5",
+          "case": 8
         }
-      ]
+      ],
+      "calls": [
+    {
+      "op": "Decode1",
+      "comment": "mode"
+    },
+    {
+      "op": "Decode4",
+      "comment": "partyId"
+    },
+    {
+      "op": "Decode4",
+      "comment": "mapId1"
+    },
+    {
+      "op": "Decode4",
+      "comment": "mapId2"
+    },
+    {
+      "op": "Decode2",
+      "comment": "short1"
+    },
+    {
+      "op": "Decode2",
+      "comment": "short2"
+    }
+  ]
     },
     "CWvsContext::OnPartyResult#Invite": {
       "address": "0xb297e7",
       "region": "JMS",
       "direction": "clientbound",
       "notes": "JMS case 4 (Invite): Decode4(partyId)+DecodeStr(name)+Decode4(jobId)+Decode4(level)+Decode1(autoJoin). JMS v185 DOES read jobId+level (same as GMS v87/v95). The v84plus gate in atlas invite.go (GMS > 83 || JMS) is correct.",
+      "dispatch": [
+        {
+          "discriminator": "v5",
+          "case": 71
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "v5",
+          "case": 4
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -2586,19 +2693,28 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "JMS case 7 (Join, mode=Join): Decode4(partyId)+PARTYDATA::Decode. PARTYDATA size = 0x12A=298 bytes. Case 8 (Join, mode=created): Decode4(partyId)+Decode4(charid)+Decode4(mapId)+Decode2(job)+Decode2(level)+memset(0x12A).",
+      "dispatch": [
+        {
+          "discriminator": "v5",
+          "case": 15
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte = 7 (Join with partydata) or 8 (Join newly created)"
+          "comment": "mode byte"
         },
         {
           "op": "Decode4",
           "comment": "partyId"
         },
         {
-          "op": "DecodeSub",
-          "comment": "PARTYDATA::Decode (298 bytes — small format; JMS uses 0x12A not 0x17A)",
-          "guard": "mode==7"
+          "op": "DecodeStr",
+          "comment": "joinedMemberName"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
         }
       ]
     },
@@ -2607,10 +2723,16 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "JMS cases for party leave (mode ~10/11): Decode4+PARTYDATA (small, 298 bytes). JMS PARTYDATA confirmed 0x12A.",
+      "dispatch": [
+        {
+          "discriminator": "v5",
+          "case": 12
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte (Left/Expelled)"
+          "comment": "mode byte"
         },
         {
           "op": "Decode4",
@@ -2622,19 +2744,19 @@
         },
         {
           "op": "Decode1",
-          "comment": "const 1"
+          "comment": "hasName flag"
         },
         {
           "op": "Decode1",
-          "comment": "forced flag"
+          "comment": "forced (expel/leave)"
         },
         {
           "op": "DecodeStr",
-          "comment": "target name"
+          "comment": "targetName"
         },
         {
-          "op": "DecodeSub",
-          "comment": "PARTYDATA::Decode (298 bytes small)"
+          "op": "DecodeBuffer",
+          "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
         }
       ]
     },
@@ -2646,15 +2768,15 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte (Update)"
+          "comment": "mode byte"
         },
         {
           "op": "Decode4",
           "comment": "partyId"
         },
         {
-          "op": "DecodeSub",
-          "comment": "PARTYDATA::Decode (298 bytes small — JMS uses 0x12A)"
+          "op": "DecodeBuffer",
+          "comment": "PARTYDATA::Decode \u2014 fixed opaque block (read as one buffer)"
         }
       ]
     },
@@ -2666,7 +2788,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode byte (Disband)"
+          "comment": "mode byte"
         },
         {
           "op": "Decode4",
@@ -2678,7 +2800,11 @@
         },
         {
           "op": "Decode1",
-          "comment": "isForced flag (0=leave/disband, 1=expelled)"
+          "comment": "forced/disconnect flag"
+        },
+        {
+          "op": "Decode4",
+          "comment": "partyId (repeated by atlas disband)"
         }
       ]
     },
@@ -2688,11 +2814,15 @@
       "direction": "clientbound",
       "notes": "JMS Error modes (mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36). No further reads — error code only. Atlas Error writes mode+string(name), which is atlas-only extra field. Pre-existing ❌ in GMS v83/v95 audits too.",
       "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte (error code — no further reads)"
-        }
-      ]
+    {
+      "op": "Decode1",
+      "comment": "mode (error code)"
+    },
+    {
+      "op": "DecodeStr",
+      "comment": "name"
+    }
+  ]
     },
     "CWvsContext::OnPartyResult#ChangeLeader": {
       "address": "0xb297e7",
@@ -2764,15 +2894,15 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendKickPartyMsg@0x56cf23. Wire: Encode1(sub-op=3)+EncodeStr(name). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "sub-op = 3 (KICK)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "target character name"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=5"
+    },
+    {
+      "op": "Encode4",
+      "comment": "charId"
+    }
+  ]
     },
     "CField::SendChangePartyBossMsg": {
       "address": "0x56d0cc",
@@ -2780,15 +2910,15 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendChangePartyBossMsg@0x56d0cc. Wire: Encode1(sub-op=5)+EncodeStr(name). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "sub-op = 5 (CHANGE_LEADER)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "target character name"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=6"
+    },
+    {
+      "op": "Encode4",
+      "comment": "charId"
+    }
+  ]
     },
     "CField::SendJoinPartyMsg": {
       "address": "0x56cce9",
@@ -2796,15 +2926,15 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendJoinPartyMsg@0x56cce9. Wire for Invite sub-op: Encode1(sub-op=4)+EncodeStr(targetName). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "sub-op = 4 (INVITE)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "target character name"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=4"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "name"
+    }
+  ]
     },
     "CField::SendJoinPartyMsg#OperationJoin": {
       "address": "0x56cce9",
@@ -2928,19 +3058,15 @@
       "direction": "clientbound",
       "notes": "JMS Disband: Decode4(guildId)+DecodeStr(msg). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (Disband)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "guildId"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "message"
-        }
-      ]
+    {
+      "op": "Decode1",
+      "comment": "mode"
+    },
+    {
+      "op": "Decode4",
+      "comment": "guildId"
+    }
+  ]
     },
     "CWvsContext::OnGuildResult#MemberJoined": {
       "address": "0xb22518",
@@ -2948,19 +3074,23 @@
       "direction": "clientbound",
       "notes": "JMS MemberJoined: Decode4(guildId) + full member entry decode. Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (MemberJoined)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "guildId"
-        },
-        {
-          "op": "DecodeSub",
-          "comment": "new member data (sub_510984)"
-        }
-      ]
+    {
+      "op": "Decode1",
+      "comment": "mode"
+    },
+    {
+      "op": "Decode4",
+      "comment": "guildId"
+    },
+    {
+      "op": "Decode4",
+      "comment": "charId"
+    },
+    {
+      "op": "DecodeBuffer",
+      "comment": "GUILDMEMBER::Decode (37-byte block)"
+    }
+  ]
     },
     "CWvsContext::OnGuildResult#MemberLeft": {
       "address": "0xb22518",
@@ -2992,31 +3122,23 @@
       "direction": "clientbound",
       "notes": "JMS MemberStatusUpdate: Decode4(guildId)+Decode4(charId)+Decode1(channel)+Decode4(job)+Decode2(level). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (MemberStatusUpdate)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "guildId"
-        },
-        {
-          "op": "Decode4",
-          "comment": "charId"
-        },
-        {
-          "op": "Decode1",
-          "comment": "channelId"
-        },
-        {
-          "op": "Decode4",
-          "comment": "job"
-        },
-        {
-          "op": "Decode2",
-          "comment": "level"
-        }
-      ]
+    {
+      "op": "Decode1",
+      "comment": "mode"
+    },
+    {
+      "op": "Decode4",
+      "comment": "guildId"
+    },
+    {
+      "op": "Decode4",
+      "comment": "charId"
+    },
+    {
+      "op": "Decode1",
+      "comment": "online"
+    }
+  ]
     },
     "CWvsContext::OnGuildResult#MemberTitleUpdate": {
       "address": "0xb22518",
@@ -3266,7 +3388,11 @@
       "calls": [
         {
           "op": "Encode1",
-          "comment": "sub-op = 3 (AGREE)"
+          "comment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "partyId (guild-creation party)"
         },
         {
           "op": "Encode1",
@@ -3324,11 +3450,19 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendWithdrawGuildMsg@0x56dcc7. Wire: Encode1(sub-op=7). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "sub-op = 7 (WITHDRAW)"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=7 WITHDRAW"
+    },
+    {
+      "op": "Encode4",
+      "comment": "charId"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "name"
+    }
+  ]
     },
     "CField::SendKickGuildMsg": {
       "address": "0x56ddf7",
@@ -3336,15 +3470,19 @@
       "direction": "serverbound",
       "notes": "JMS CField::SendKickGuildMsg@0x56ddf7. Wire: Encode1(sub-op=8)+EncodeStr(targetName). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "sub-op = 8 (KICK)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "target character name"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=8 KICK"
+    },
+    {
+      "op": "Encode4",
+      "comment": "charId"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "name"
+    }
+  ]
     },
     "CField::SendSetGuildNoticeMsg": {
       "address": "0x56e3a2",
@@ -3368,11 +3506,19 @@
       "direction": "clientbound",
       "notes": "JMS CTabGuildAlliance::OnGradeChange@0x9ce1c7. Present in JMS v185. Wire: Decode1(grade). Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Decode1",
-          "comment": "new grade / alliance tier"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=0xE"
+    },
+    {
+      "op": "Encode4",
+      "comment": "charId"
+    },
+    {
+      "op": "Encode1",
+      "comment": "grade"
+    }
+  ]
     },
     "CWvsContext::OnGuildBBSPacket": {
       "address": "ABSENT",
@@ -3446,11 +3592,31 @@
       "direction": "serverbound",
       "notes": "JMS CFadeWnd::SendCloseMessage@0x557267 handles DenyGuildRequest (sub-op). Wire: Encode1(sub-op)+mode-specific fields. Identical to GMS v95.",
       "calls": [
-        {
-          "op": "Encode1",
-          "comment": "sub-op (deny/close)"
-        }
-      ]
+    {
+      "op": "Encode1",
+      "comment": "sub-op=0xD"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "grade1"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "grade2"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "grade3"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "grade4"
+    },
+    {
+      "op": "EncodeStr",
+      "comment": "grade5"
+    }
+  ]
     },
     "CWvsContext::OnGuildResult#MemberExpel": {
       "address": "0xb22518",
@@ -3852,6 +4018,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "FIELD_EFFECT case 0 / summon (JMS v185 opcode 0x087 dispatcher case via CField::OnFieldEffect@0x570359). Decode1(mode=0 dispatcher) then case 0: Decode1(effect v4 @line44) + Decode4(result @line45) + Decode4(v5 @line46). Maps atlas EffectSummon (mode+effect+x+y).",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 0
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -3876,6 +4054,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "FIELD_EFFECT case 1 / tremble (JMS v185, CField::OnFieldEffect@0x570359). case 1: Decode1(v18 bHeavyNShortTremble @line73) + Decode4(v19 delay @line74). Maps atlas EffectTremble (mode + bool + int).",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 1
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -3912,6 +4102,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "FIELD_EFFECT case 5 / boss HP tag (JMS v185, CField::OnFieldEffect@0x570359). case 5: Decode4(v32 monsterId @line110) + Decode4(sName currentHp @line111) + Decode4(result maxHp @line112) + Decode1(v14 tagColor @line113) + Decode1(v15 tagBackgroundColor @line114). Maps atlas EffectBossHp.",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 5
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 5
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -3944,6 +4146,18 @@
       "region": "JMS",
       "direction": "clientbound",
       "notes": "FIELD_EFFECT case 7 / reward roulette (JMS v185, CField::OnFieldEffect@0x570359). case 7: Decode4(v20 @line137) + Decode4(v21 @line138) + Decode4(v22 @line139). Maps atlas EffectRewardRullet (job/part/lev).",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 7
+        }
+      ],
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 7
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4021,26 +4235,62 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "npcId (object id @0x7206a1)"
+          "comment": "npcId (object id)"
         },
         {
           "op": "Decode4",
-          "comment": "templateId (new-entry path @0x7206d8)"
+          "comment": "templateId"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "CNpc::Init(iPacket) \u2014 opaque npc position/appearance block"
         }
       ]
     },
     "CNpcPool::OnNpcChangeController": {
       "address": "0x720782",
       "direction": "clientbound",
-      "notes": "SPAWN_NPC_REQUEST_CONTROLLER (JMS185 opcode 0x118/280). CNpcPool::OnNpcChangeController@0x720782 reads Decode1(localFlag @0x720794) + Decode4(npcId @0x720797); when localFlag!=0 it calls SetLocalNpc (new-entry path reads templateId + CNpc::Init fields). SAME shape as GMS v95.",
+      "notes": "SPAWN_NPC_REQUEST_CONTROLLER (JMS185 opcode 0x118/280). Full spawn-branch read order traced live through the descent: OnNpcChangeController@0x720782 reads Decode1(localFlag @0x720794)+Decode4(npcId @0x720797); when localFlag!=0 -> SetLocalNpc@0x720242 reads Decode4(templateId @0x720294) -> CNpc::Init@0x716da2 reads Decode2(x @0x716dd6)+Decode2(cy @0x716de4)+Decode1(stance @0x716e0c)+Decode2(fh @0x716e1c)+Decode2(rx0 @0x716e3c)+Decode2(rx1 @0x716e4a)+Decode1(miniMap @0x716edf). Atlas SpawnRequestController hardcodes WriteByte(1) for localFlag, so it ALWAYS sends the spawn-with-control case and the client ALWAYS takes the if(localFlag) branch -> all 10 reads are unconditional for Atlas's packet. The prior baseline traced only the else (remove-control) branch [localFlag, npcId], producing 8 false 'atlas extra' rows. SAME shape as GMS v95.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "localFlag (@0x720794)"
+          "comment": "localFlag (@0x720794) -- atlas WriteByte(1)"
         },
         {
           "op": "Decode4",
-          "comment": "npcId (@0x720797)"
+          "comment": "npcId / id (@0x720797)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "templateId (SetLocalNpc @0x720294)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (CNpc::Init @0x716dd6)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "cy (CNpc::Init @0x716de4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance/moveAction (CNpc::Init @0x716e0c)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "fh foothold (CNpc::Init @0x716e1c)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "rx0 (CNpc::Init @0x716e3c)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "rx1 (CNpc::Init @0x716e4a)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "miniMap (CNpc::Init @0x716edf)"
         }
       ]
     },
@@ -4102,6 +4352,12 @@
       "address": "0x7cb04e",
       "direction": "clientbound",
       "notes": "Same CShopDlg::OnPacket@0x7cb04e (nType==0x14B). Cases 0xE (@0x7cb1c0) and 0xF (@0x7cb23d) read Decode4 (level/count value formatted into an over/under level-requirement Notice). Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). MATCH.",
+      "dispatch": [
+        {
+          "discriminator": "nType",
+          "case": 331
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4170,6 +4426,12 @@
       "address": "0x7b7496",
       "direction": "clientbound",
       "notes": "Dialog type 1 (SayImage). CScriptMan::OnSayImage@0x7b7496: Decode1(count @0x7b7524) + loop count x DecodeStr(image @0x7b753a). Count is a single byte (Decode1), matching atlas SayImageConversationDetail post-fix Byte(len)+loop AsciiString(image). FIX#2 re-check: SayImage byte-count MATCHES JMS185 -- no gate needed. Analyzer flattens the loop.",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "v10"
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4319,6 +4581,12 @@
       "address": "0x7b7e1d",
       "direction": "clientbound",
       "notes": "Dialog type 8/16 (AskAvatar). CScriptMan::OnAskAvatar@0x7b7e1d: DecodeStr(message @0x7b7e3e) + Decode1(count @0x7b7e52) + loop count x Decode4(style @0x7b7e6e). Atlas AskAvatarConversationDetail writes AsciiString(Message)+Byte(len)+loop Int(style). MATCH. Analyzer flattens the loop.",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "v5"
+        }
+      ],
       "calls": [
         {
           "op": "DecodeStr",
@@ -4338,6 +4606,12 @@
       "address": "0x7b7fc2",
       "direction": "clientbound",
       "notes": "Dialog type 9 (AskPet) -- NOTE: in GMS v95 case 9 was AskMembershopAvatar; JMS185 maps case 9 to AskPet (AskMembershopAvatar is ABSENT in JMS185). CScriptMan::OnAskPet@0x7b7fc2: DecodeStr(message @0x7b7fde) + Decode1(count @0x7b7ff8) + loop count x [DecodeBuffer(8) cashId @0x7b8046 + Decode1(unused @0x7b804e)]. Atlas AskPetConversationDetail writes AsciiString(Message)+Byte(len)+loop[Long(cashId)+Byte(0)]. MATCH. Analyzer flattens the loop.",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "v26 <= 0"
+        }
+      ],
       "calls": [
         {
           "op": "DecodeStr",
@@ -4361,6 +4635,12 @@
       "address": "0x7b8250",
       "direction": "clientbound",
       "notes": "Dialog type 10 (AskPetAll). CScriptMan::OnAskPetAll@0x7b8250: DecodeStr(message @0x7b826a) + Decode1(count @0x7b8281) + Decode1(exceptionExists @0x7b8290) + loop count x [DecodeBuffer(8) cashId @0x7b82d7 + Decode1(unused @0x7b82df)]. Atlas AskPetAllConversationDetail writes AsciiString(Message)+Byte(len)+Bool(ExceptionExists)+loop[Long(cashId)+Byte(0)]. MATCH. Analyzer flattens the loop.",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "v4 > 0"
+        }
+      ],
       "calls": [
         {
           "op": "DecodeStr",
@@ -4430,6 +4710,12 @@
       "address": "0xa2d342",
       "direction": "clientbound",
       "notes": "TALK_GUIDE / tutor message. CUserLocal::OnTutorMsg@0xa2d342 reads Decode1(bByMessage @0xa2d35f); the FALSE (==0) arm @0xa2d38d calls DecodeStr(message) + Decode4(width) + Decode4(duration) -> CTutor::OnMessage(ZXString,int,int). FIX#1 re-check: JMS185 has the SAME tutor split as GMS v95 -- leading bool FALSE selects the string/message arm. Atlas GuideTalkMessage encodes the leading bool as false. MATCH -- no gate needed.",
+      "dispatch": [
+        {
+          "case": 0,
+          "default": true
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4453,6 +4739,12 @@
       "address": "0xa2d342",
       "direction": "clientbound",
       "notes": "TALK_GUIDE / tutor hint-index. Same CUserLocal::OnTutorMsg@0xa2d342; the TRUE (!=0) arm @0xa2d371 calls Decode4(hintId) + Decode4(duration) -> CTutor::OnMessage(int,int), NO string. FIX#1 re-check: JMS185 matches GMS v95 -- leading bool TRUE selects the hint-index arm. Atlas GuideTalkIdx encodes the leading bool as true. MATCH -- no gate needed.",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "CInPacket::Decode1(iPacket"
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4582,6 +4874,12 @@
       "address": "0x7b7315",
       "direction": "serverbound",
       "notes": "NPC_TALK_MORE (JMS185 opcode 0x33/51) generic continue reply (Say). Built inside CScriptMan::OnSay@0x7b7315 after DoModal: COutPacket(0x34 @0x7b7418) + Encode1(0 = msgType SAY @0x7b7425) + Encode1(action @0x7b7447). No trailing body for SAY. Atlas ContinueConversation writes Byte(msgType)+Byte(action). MATCH.",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "v16 != 3"
+        }
+      ],
       "calls": [
         {
           "op": "Encode1",
@@ -4619,15 +4917,16 @@
       "calls": [
         {
           "op": "Encode1",
-          "comment": "msgType = 3 (AskText @0x7b78d4)"
+          "comment": "msgType = 3 (AskText reply)"
         },
         {
           "op": "Encode1",
-          "comment": "action (@0x7b78e2)"
+          "comment": "action (0=cancel, 1=text entered)"
         },
         {
           "op": "EncodeStr",
-          "comment": "answer text (only if action==1 @0x7b7900)"
+          "comment": "answer text",
+          "guard": "cond action==1"
         }
       ]
     },
@@ -4811,6 +5110,19 @@
     "CWvsContext::OnGivePopularityResult#GiveResponse": {
       "address": "0xb094aa",
       "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "v8",
+          "case": 1
+        }
+      ],
+      "notes": "inferred-high-confidence (0.67) @0xb094aa",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "!v4"
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4881,6 +5193,19 @@
     "CWvsContext::OnEntrustedShopCheckResult#ShopSearch": {
       "address": "0xb0ee59",
       "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 13
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0xb0ee59",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 13
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4895,6 +5220,19 @@
     "CWvsContext::OnEntrustedShopCheckResult#ShopRename": {
       "address": "0xb0ee59",
       "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 14
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0xb0ee59",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 14
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -4927,6 +5265,19 @@
     "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
       "address": "0xb0ee59",
       "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 17
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0xb0ee59",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 17
+        }
+      ],
       "calls": [
         {
           "op": "Decode1",
@@ -5029,6 +5380,13 @@
     "CWvsContext::ResignQuest#Action": {
       "address": "0xb0e6e9",
       "direction": "serverbound",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "!v5"
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0xb0e6e9",
       "calls": [
         {
           "op": "Encode1",
@@ -5094,6 +5452,12 @@
       "address": "0x4b0066",
       "direction": "serverbound",
       "note": "JMS v185 CClientSocket::OnConnect non-login branch (0x4b051f): sends Encode4(charId)+EncodeBuffer(machineId,16)+Encode2(dummy1)+Encode1(0)+EncodeBuffer(unknown2,8). The gm/dummy1 field is Encode2 (uint16) in JMS vs Encode1 (byte) in GMS. GATE WIDENED: ChannelConnect.Encode/Decode now uses ReadUint16/WriteShort for Region==JMS.",
+      "dispatch": [
+        {
+          "case": 0,
+          "default": true
+        }
+      ],
       "calls": [
         {
           "op": "Encode4",
@@ -5126,6 +5490,12 @@
       "address": "0x4b0066",
       "direction": "serverbound",
       "note": "JMS v185 login branch (0x4b03d1): COutPacket(v47, 15) + Encode2(v22, len) + EncodeBuffer(Src, len). Wire layout matches GMS v95 StartError: Encode2(length) + EncodeBuffer(bytes, length).",
+      "dispatch": [
+        {
+          "case": 0,
+          "guard": "this->m_ctxConnect.bLogin"
+        }
+      ],
       "calls": [
         {
           "op": "Encode2",

@@ -4,14 +4,14 @@
 - **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/update.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode byte (8)` | ✅ |  |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | int32 | int32 `characterId` | ✅ |  |
+| 2 | bytes | bytes `GW_Friend block` | ✅ |  |
+| 3 | byte | byte `inShop` | ✅ |  |
 

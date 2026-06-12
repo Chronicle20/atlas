@@ -1,0 +1,11 @@
+{
+  "WriterName": "OnUnresolved",
+  "IDAName": "Foo::OnUnresolved",
+  "Address": "0x900",
+  "BranchDepth": 0,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 0, "IDAOp": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "AtlasOp": 2, "IDAOp": 0, "Verdict": 2, "Note": "atlas Encode4 vs missing client read — length divergence" }
+  ],
+  "Verdict": 2
+}

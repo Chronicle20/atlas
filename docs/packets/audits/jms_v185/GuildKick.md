@@ -4,12 +4,13 @@
 - **Atlas file:** `../../libs/atlas-packet/guild/serverbound/operation_kick.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `sub-op = 8 (KICK)` | ❌ | width mismatch |
-| 1 | string | string `target character name` | ✅ |  |
+| 0 | byte | byte `sub-op=8 KICK` | ✅ |  |
+| 1 | int32 | int32 `charId` | ✅ |  |
+| 2 | string | string `name` | ✅ |  |
 

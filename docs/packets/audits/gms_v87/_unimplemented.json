@@ -1,0 +1,324 @@
+{
+ "entries": [
+  {
+   "fname": "CField::OnFieldEffect",
+   "case": 1,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CField::OnFieldEffect",
+   "case": 2,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CField::OnFieldEffect",
+   "case": 3,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CField::OnFieldEffect",
+   "case": 4,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CField::OnFieldEffect",
+   "case": 6,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CField::OnFieldEffect",
+   "case": 7,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 10,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 11,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 13,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 14,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 15,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 16,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 17,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 21,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 23,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 27,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 3,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 4,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 5,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 6,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 7,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 8,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnCheckPasswordResult",
+   "case": 9,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 2,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 3,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 4,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 5,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 6,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 7,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CShopDlg::OnPacket",
+   "case": 322,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 10,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 11,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 15,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 16,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 7,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 8,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnEntrustedShopCheckResult",
+   "case": 9,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 10,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 11,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 12,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 13,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 14,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 15,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 16,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 17,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 19,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 7,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 8,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnFriendResult",
+   "case": 9,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 13,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 29,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 32,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 33,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 34,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 36,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 37,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 38,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 39,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 41,
+   "reason": "partial implementation — sub-op not built (task-081 triage 2026-06-09)"
+  },
+  {
+   "fname": "CLogin::OnViewAllCharResult",
+   "case": 0,
+   "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  },
+  {
+   "fname": "CWvsContext::OnGuildResult",
+   "case": 28,
+   "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  },
+  {
+   "fname": "CWvsContext::OnGuildResult",
+   "case": 36,
+   "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  },
+  {
+   "fname": "CWvsContext::OnGuildResult",
+   "case": 47,
+   "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  },
+  {
+   "fname": "CWvsContext::OnPartyResult",
+   "case": 40,
+   "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  }
+ ]
+}

@@ -10,5 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | string `sTarget — target character name to invite; op byte (=3) stripped by atlas Operation dispatcher` | ✅ |  |
+| 0 | byte | byte `sub-op = 3 (INVITE) — messenger Operation mode byte` | ✅ |  |
+| 1 | string | string `sTarget — target character name to invite` | ✅ |  |
 

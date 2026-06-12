@@ -66,7 +66,8 @@ func (m DropPickUp) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 		w.WriteBool(m.bPickupOthers)
 		w.WriteBool(m.bSweepForDrop)
 		w.WriteBool(m.bLongRange)
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// v87+ owner-position validation block; v84..86 == v83 (off-by-one fix). delta §3.2
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			if m.dropId%13 != 0 {
 				w.WriteInt16(m.ownerX)
 				w.WriteInt16(m.ownerY)
@@ -91,7 +92,8 @@ func (m *DropPickUp) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		m.bPickupOthers = r.ReadBool()
 		m.bSweepForDrop = r.ReadBool()
 		m.bLongRange = r.ReadBool()
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+		// v87+ owner-position validation block; v84..86 == v83 (off-by-one fix). delta §3.2
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
 			if m.dropId%13 != 0 {
 				m.ownerX = r.ReadInt16()
 				m.ownerY = r.ReadInt16()

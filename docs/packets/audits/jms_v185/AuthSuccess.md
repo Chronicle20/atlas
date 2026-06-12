@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/login/clientbound/auth_success.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -25,5 +25,5 @@
 | 12 | byte | byte `flag byte 3` | ✅ |  |
 | 13 | byte | byte `lastByte` | ✅ |  |
 | 14 | int64 | bytes `chatUnblockDate FILETIME (8 bytes)` | ✅ |  |
-| 15 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 15 | string | byte `` | ✅ | absorbed by trailing opaque buffer |
 

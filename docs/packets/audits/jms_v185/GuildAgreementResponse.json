@@ -1,7 +1,7 @@
 {
   "WriterName": "GuildAgreementResponse",
-  "IDAName": "CWvsContext::OnGuildResult#AgreementResponse",
-  "Address": "0xb22518",
+  "IDAName": "CField::SendCreateGuildAgreeMsg",
+  "Address": "0x56da47",
   "Variant": "JMS/v185",
   "BranchDepth": 0,
   "AtlasFile": "../../libs/atlas-packet/guild/serverbound/operation_agreement_response.go",
@@ -10,38 +10,21 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "mode (AgreementResponse/RequestAgreement)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "partyId (guild-creation party)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "partyId/guildId",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "leaderName",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "guildName",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAOp": 0,
+      "IDAComment": "agreed flag (1=yes, 0=no)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

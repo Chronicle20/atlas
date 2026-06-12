@@ -4,15 +4,15 @@
 - **Atlas file:** `../../libs/atlas-packet/pet/serverbound/chat.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int64 | bytes `petLockerSN (8 bytes — _LARGE_INTEGER) from this->m_liPetLockerSN` | ✅ |  |
-| 1 | int32 | byte `action type` | ❌ | width mismatch |
-| 2 | byte | byte `action no` | ✅ |  |
-| 3 | byte | string `chat text (ZXString)` | ❌ | width mismatch |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int64 | bytes `petLockerSN (8 bytes _LARGE_INTEGER)` | ✅ |  |
+| 1 | int32 | int32 `updateTime/remote tick (v95+)` | ✅ |  |
+| 2 | byte | byte `nType (action type)` | ✅ |  |
+| 3 | byte | byte `nAction (action no)` | ✅ |  |
+| 4 | string | string `chat text (ZXString)` | ✅ |  |
 

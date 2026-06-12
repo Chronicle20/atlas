@@ -4,14 +4,13 @@
 - **Atlas file:** `../../libs/atlas-packet/buddy/serverbound/operation_add.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | byte `mode (sub-op: add/accept/delete)` | ❌ | width mismatch |
-| 1 | string | string `target name` | ✅ |  |
-| 2 | byte | string `group name` | ❌ | atlas: short — missing trailing field |
-| 3 | byte | byte `flag` | ❌ | atlas: short — missing trailing field |
+| 0 | byte | byte `sub-op=1` | ✅ |  |
+| 1 | string | string `name` | ✅ |  |
+| 2 | string | string `group` | ✅ |  |
 

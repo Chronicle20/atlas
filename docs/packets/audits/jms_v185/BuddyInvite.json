@@ -53,8 +53,8 @@
     },
     {
       "Index": 5,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -62,6 +62,42 @@
     },
     {
       "Index": 6,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 10,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -70,5 +106,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

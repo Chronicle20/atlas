@@ -8,13 +8,23 @@
   "Rows": [
     {
       "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sub-op = 0 (ENTER) — messenger Operation mode byte",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "messengerId — room id passed in pData (the invite's room id); op byte (=0) stripped by atlas Operation dispatcher",
+      "IDAComment": "messengerId — room id passed in pData (the invite's room id)",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

@@ -48,9 +48,10 @@
       "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

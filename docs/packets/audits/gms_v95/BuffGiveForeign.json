@@ -10,28 +10,28 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "characterId (read by CUserPool dispatcher before OnSetTemporaryStat)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "SecondaryStat::DecodeForRemote — opaque remote stat block",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 1,
+      "IDAComment": "tDelay",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
@@ -39,36 +39,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 6,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 2
+  "Verdict": 1,
+  "FlatInvalid": false
 }

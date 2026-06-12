@@ -8,22 +8,32 @@
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "sub-op = 7 (WITHDRAW)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAComment": "sub-op=7 WITHDRAW",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "charId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "name",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

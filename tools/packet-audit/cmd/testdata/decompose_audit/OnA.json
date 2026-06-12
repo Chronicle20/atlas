@@ -1,0 +1,10 @@
+{
+  "WriterName": "OnA",
+  "IDAName": "Foo::OnA",
+  "Address": "0x100",
+  "Rows": [
+    { "Index": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "Verdict": 2, "Note": "atlas extra — client never reads this field" }
+  ],
+  "Verdict": 2
+}

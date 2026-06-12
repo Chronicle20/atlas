@@ -10,47 +10,21 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "characterId (read by CUserPool::OnUserRemotePacket before dispatch)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 1,
+      "AtlasOp": 5,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 3,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 5,
+      "IDAComment": "CMovePath::OnMovePacket — opaque movement path block",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

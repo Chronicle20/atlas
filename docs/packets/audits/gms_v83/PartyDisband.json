@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (12)",
+      "IDAComment": "mode byte",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "forced (1=expel, 0=disband/leave)",
+      "IDAComment": "forced/disconnect flag",
       "Verdict": 0,
       "Note": ""
     },
@@ -46,83 +46,12 @@
       "Index": 4,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "targetName",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "PARTYDATA ids[6] × 6",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 6,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "PARTYDATA names[6] × 6 (padded 13)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 7,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "PARTYDATA jobs[6] × 6",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 8,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "PARTYDATA levels[6] × 6",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 9,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "PARTYDATA channels[6] × 6",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 10,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "PARTYDATA leaderId",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 11,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "PARTYDATA maps[6] × 6",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 12,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "PARTYDATA portals[6] × 4 ints (v83: no m_nSKillID, no PQ fields)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "IDAComment": "partyId (repeated by atlas disband)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

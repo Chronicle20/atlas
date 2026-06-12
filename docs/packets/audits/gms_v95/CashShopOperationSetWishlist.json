@@ -17,85 +17,86 @@
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[1]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[2]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[3]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[4]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[5]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[6]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[7]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[8]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "wishSN[9]",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

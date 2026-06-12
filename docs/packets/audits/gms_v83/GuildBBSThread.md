@@ -4,22 +4,22 @@
 - **Atlas file:** `../../libs/atlas-packet/guild/clientbound/bbs.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode (0x07 BBSThread sub-op, read by OnGuildBBSPacket dispatcher)` | ✅ |  |
+| 1 | int32 | int32 `threadId` | ✅ |  |
+| 2 | int32 | int32 `posterCharId` | ✅ |  |
+| 3 | int64 | bytes `createdAt FILETIME (8 bytes)` | ✅ |  |
+| 4 | string | string `title` | ✅ |  |
+| 5 | string | string `text` | ✅ |  |
+| 6 | int32 | int32 `emoticonId` | ✅ |  |
+| 7 | int32 | int32 `replyCount (loop count)` | ✅ |  |
+| 8 | int32 | int32 `reply.id` | ✅ |  |
+| 9 | int32 | int32 `reply.posterCharId` | ✅ |  |
+| 10 | int64 | bytes `reply.createdAt FILETIME (8 bytes)` | ✅ |  |
+| 11 | string | string `reply.message` | ✅ |  |
 

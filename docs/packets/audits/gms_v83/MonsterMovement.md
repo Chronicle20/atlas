@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/monster/clientbound/movement.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -16,10 +16,10 @@
 | 3 | byte | byte `bLeft (action+flags)` | ✅ |  |
 | 4 | int32 | int32 `sEffect.m_Data (skill effect id+level packed)` | ✅ |  |
 | 5 | int32 | bytes `Movement body via CMovePath::OnMovePacket — v83 lacks the multiTargetForBall / randTimeForAreaAttack loops present in v95+` | ✅ |  |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 6 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 7 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 8 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 9 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 10 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 11 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
 

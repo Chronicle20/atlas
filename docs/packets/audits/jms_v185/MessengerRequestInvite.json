@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte = 3 (RequestInvite) — consumed by OnPacket before calling OnInvite",
+      "IDAComment": "mode",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "fromName (inviter)",
+      "IDAComment": "fromName",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "pad byte",
+      "IDAComment": "pad",
       "Verdict": 0,
       "Note": ""
     },
@@ -47,10 +47,11 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "pad byte",
+      "IDAComment": "pad",
       "Verdict": 0,
       "Note": ""
     }
   ],
-  "Verdict": 0
+  "Verdict": 0,
+  "FlatInvalid": false
 }

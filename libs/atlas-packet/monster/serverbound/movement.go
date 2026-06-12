@@ -67,7 +67,7 @@ func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		w.WriteInt8(m.nActionAndDir)
 		w.WriteInt(m.skillData)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.Region() == "JMS" { // multiTarget/randTime are v84+ (CONFIRMED: v83 CMob::GenerateMovePath @0x66b6fc has neither; v84 sub_6818C3 inserts both between skillData and moveFlags)
 			w.WriteByteArray(m.multiTargetForBall.Encode(l, ctx)(options))
 			w.WriteByteArray(m.randTimeForAreaAttack.Encode(l, ctx)(options))
 		}
@@ -76,13 +76,13 @@ func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		w.WriteInt(m.hackedCode)
 		w.WriteInt(m.flyCtxTargetX)
 		w.WriteInt(m.flyCtxTargetY)
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			w.WriteInt(m.hackedCodeCRC)
 		}
 
 		w.WriteByteArray(m.movement.Encode(l, ctx)(options))
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			w.WriteByte(m.bChasing)
 			w.WriteByte(m.hasTarget)
 			w.WriteByte(m.bChasing2)
@@ -102,7 +102,7 @@ func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func
 		m.nActionAndDir = r.ReadInt8()
 		m.skillData = r.ReadUint32()
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.Region() == "JMS" { // multiTarget/randTime are v84+ (mirror of Encode; v83 CMob::GenerateMovePath has neither, v84 sub_6818C3 has both)
 			m.multiTargetForBall.Decode(l, ctx)(r, options)
 			m.randTimeForAreaAttack.Decode(l, ctx)(r, options)
 		}
@@ -111,13 +111,13 @@ func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func
 		m.hackedCode = r.ReadUint32()
 		m.flyCtxTargetX = r.ReadUint32()
 		m.flyCtxTargetY = r.ReadUint32()
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			m.hackedCodeCRC = r.ReadUint32()
 		}
 
 		m.movement.Decode(l, ctx)(r, options)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			m.bChasing = r.ReadByte()
 			m.hasTarget = r.ReadByte()
 			m.bChasing2 = r.ReadByte()

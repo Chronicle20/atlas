@@ -1,0 +1,3 @@
+# OnFlat (← `Foo::OnFlat`)
+
+- **Verdict:** ❌

@@ -1,0 +1,11 @@
+{
+  "WriterName": "OnBranch",
+  "IDAName": "Foo::OnBranch",
+  "Address": "0x200",
+  "BranchDepth": 0,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 0, "IDAOp": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "AtlasOp": 0, "IDAOp": 2, "Verdict": 2, "Note": "length: atlas short vs client extra field" }
+  ],
+  "Verdict": 2
+}

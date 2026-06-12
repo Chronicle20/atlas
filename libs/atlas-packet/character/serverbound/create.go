@@ -113,7 +113,8 @@ func (m CreateCharacter) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		if (t.Region() == "GMS" && t.MajorVersion() >= 73) || t.Region() == "JMS" {
 			w.WriteInt(m.JobIndex())
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
+			// v87+ subJobIndex short; v84..86 == v83 (off-by-one fix). delta §3.1.5 (MED)
 			w.WriteShort(m.SubJobIndex())
 		}
 		w.WriteInt(m.Face())
@@ -150,7 +151,10 @@ func (m *CreateCharacter) Decode(_ logrus.FieldLogger, ctx context.Context) func
 			m.jobIndex = 1
 		}
 
-		if t.Region() == "GMS" && t.MajorVersion() <= 83 {
+		// subJobIndex is v87+ (delta §3.1.5); v84..86 default to 0 like v83. The
+		// matching encode gates >=87||JMS, so this stays paired (GMS<87 → no short;
+		// GMS>=87 and JMS → read short).
+		if t.IsRegion("GMS") && !t.MajorAtLeast(87) {
 			m.subJobIndex = 0
 		} else {
 			m.subJobIndex = r.ReadUint16()

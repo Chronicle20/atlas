@@ -6,6 +6,28 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestMonsterMovementVersionBoundary pins the v84 mob-move structure against the
+// client. CONFIRMED via v83 CMob::GenerateMovePath (@0x66b6fc, opcode 0xBC) vs
+// v84 sub_6818C3 (opcode 0xC1): v84 inserts multiTargetForBall +
+// randTimeForAreaAttack between skillData and moveFlags, but (like v83) writes
+// neither hackedCodeCRC nor the trailing chase block (those remain v87+). So a
+// v84 encode must be longer than v83 (added skill fields) yet shorter than v87
+// (no CRC/chase).
+func TestMonsterMovementVersionBoundary(t *testing.T) {
+	p := MovementRequest{uniqueId: 1, moveId: 2, skillData: 0x0305, hackedCodeCRC: 9, tChaseDuration: 9}
+	enc := func(major uint16) []byte {
+		ctx := test.CreateContext("GMS", major, 1)
+		return test.Encode(t, ctx, p.Encode, nil)
+	}
+	v83, v84, v87 := enc(83), enc(84), enc(87)
+	if len(v84) <= len(v83) {
+		t.Errorf("v84 (%d) must be longer than v83 (%d): multiTarget/randTime added in v84", len(v84), len(v83))
+	}
+	if len(v84) >= len(v87) {
+		t.Errorf("v84 (%d) must be shorter than v87 (%d): hackedCodeCRC/chase block are v87+, not v84", len(v84), len(v87))
+	}
+}
+
 func TestMonsterMovement(t *testing.T) {
 	p := MovementRequest{}
 	p.uniqueId = 1001

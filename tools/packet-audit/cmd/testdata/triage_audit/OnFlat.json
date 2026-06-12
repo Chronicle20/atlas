@@ -1,0 +1,11 @@
+{
+  "WriterName": "OnFlat",
+  "IDAName": "Foo::OnFlat",
+  "Address": "0x100",
+  "BranchDepth": 0,
+  "Rows": [
+    { "Index": 0, "AtlasOp": 0, "IDAOp": 0, "Verdict": 0, "Note": "" },
+    { "Index": 1, "AtlasOp": 2, "IDAOp": 0, "Verdict": 2, "Note": "atlas Encode4 vs client Decode1 — flat wire divergence" }
+  ],
+  "Verdict": 2
+}

@@ -61,5 +61,6 @@
       "Note": "width mismatch"
     }
   ],
-  "Verdict": 2
+  "Verdict": 3,
+  "FlatInvalid": true
 }

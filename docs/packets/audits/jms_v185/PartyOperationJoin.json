@@ -8,21 +8,21 @@
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "sub-op = 0 (JOIN_RESPONSE)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "partyId",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
@@ -34,5 +34,6 @@
       "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2
+  "Verdict": 2,
+  "FlatInvalid": false
 }

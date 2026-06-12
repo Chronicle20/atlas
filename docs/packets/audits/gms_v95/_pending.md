@@ -12,6 +12,14 @@
 > Phase E — it is NOT parked here. See the master registry
 > `docs/packets/ida-exports/_pending.md` for the cross-domain four-version
 > registry; this file is the GMS-v95-domain subset retained for locality.
+>
+> **task-081 update (2026-06-11):** these exclusions were live-IDB-validated (not
+> re-exported — that regresses the audit). The v95 partial-implementation residue is
+> now machine-listed in `docs/packets/audits/gms_v95/_unimplemented.json` (123
+> intentionally-unimplemented client sub-ops; 0 extra-mode), the per-mode shapes are
+> backed by 72 persisted `dispatch` selectors in `gms_v95.json`, and the opaque
+> types below are catalogued in `docs/packets/audits/OPAQUE_LEDGER.md`. The audit ❌
+> for v95 fell 77 → 3. See master registry §12 + TOTAL.md §6.
 
 ---
 

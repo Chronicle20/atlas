@@ -121,12 +121,12 @@ func TestMemberJoinedRoundTrip(t *testing.T) {
 //   v83 OnGuildResult@0xa37490 invite path: Decode4(guildId)+DecodeStr(inviterName)
 //        — no unknown/skillId fields.
 //   v87 OnGuildResult@0xacf7d3@0xacf9c7: Decode4(guildId)+DecodeStr(inviterName)+Decode4(unknown)+Decode4(skillId)
-//        — v87 already reads unknown+skillId; gate widened from v95plus to v84plus (GMS > 83).
+//        — v87 reads unknown+skillId; gate is GMS >= 87 (v84..86 == v83, off-by-one fix, delta §3.2).
 //   v95 OnGuildResult: same as v87.
 // Wire layout: mode(1)+guildId(4)+name(2+len)+[unknown(4)+skillId(4)].
 // originatorName="InviterName" → 2+11=13 bytes.
-//   v83:  1+4+13 = 18 bytes
-//   v84+: 1+4+13+4+4 = 26 bytes
+//   v83..86: 1+4+13 = 18 bytes
+//   v87+:    1+4+13+4+4 = 26 bytes
 func TestInviteByteOutput(t *testing.T) {
 	cases := []struct {
 		variant   pt.TenantVariant

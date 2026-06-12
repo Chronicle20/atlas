@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode byte (1)",
+      "IDAComment": "mode (0x07 BBSThread sub-op, read by OnGuildBBSPacket dispatcher)",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "characterId",
+      "IDAComment": "posterCharId",
       "Verdict": 0,
       "Note": ""
     },
@@ -37,10 +37,10 @@
       "Index": 3,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "characterName",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 5,
+      "IDAComment": "createdAt FILETIME (8 bytes)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
@@ -56,7 +56,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "body",
+      "IDAComment": "text",
       "Verdict": 0,
       "Note": ""
     },
@@ -64,17 +64,17 @@
       "Index": 6,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "icon",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 2,
+      "IDAComment": "emoticonId",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "timestamp",
+      "IDAComment": "replyCount (loop count)",
       "Verdict": 0,
       "Note": ""
     },
@@ -83,7 +83,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "replyCount",
+      "IDAComment": "reply.id",
       "Verdict": 0,
       "Note": ""
     },
@@ -92,7 +92,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "reply.characterId (loop)",
+      "IDAComment": "reply.posterCharId",
       "Verdict": 0,
       "Note": ""
     },
@@ -100,38 +100,21 @@
       "Index": 10,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "reply.characterName (loop)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "IDAOp": 5,
+      "IDAComment": "reply.createdAt FILETIME (8 bytes)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "reply.replyId (loop)",
-      "Verdict": 2,
-      "Note": "width mismatch"
-    },
-    {
-      "Index": 12,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "reply.body (loop)",
-      "Verdict": 1,
-      "Note": "loop body — atlas emits zero iterations (count==0)"
-    },
-    {
-      "Index": 13,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "reply.timestamp (loop)",
-      "Verdict": 1,
-      "Note": "loop body — atlas emits zero iterations (count==0)"
+      "IDAComment": "reply.message",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2
+  "Verdict": 0,
+  "FlatInvalid": false
 }

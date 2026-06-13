@@ -34,6 +34,7 @@ const SummonAttackHandle = "SummonAttackHandle"
 //	v95  (GMS >= 95)  @0x751240, send block @0x75226b,  op 0xD0 — envelope + crc + repeatSkillPoint
 //
 // v83 header (lean):
+//
 //	Encode4 summonId        ; owner cid [obj+0xAC]  (0x7a57f1)
 //	Encode4 updateTime      ; get_update_time()     (0x7a57ff)
 //	Encode1 action|left     ; (left<<7)|action&0x7F (0x7a5814)
@@ -42,6 +43,7 @@ const SummonAttackHandle = "SummonAttackHandle"
 //
 // v87/v95 header (anti-hack envelope) — drInfo/dwKey/crc32 are read at exact
 // widths to keep the cursor aligned; the server does NOT validate them:
+//
 //	Encode4 summonId        ; v87 = cid [obj+0xAC] (0x7f8a..); v95 = m_dwSummonedID (0x752287)
 //	Encode4 ~drInfo[0]
 //	Encode4 ~drInfo[1]
@@ -56,6 +58,7 @@ const SummonAttackHandle = "SummonAttackHandle"
 //	Encode4 repeatSkillPoint  ; v95 ONLY (0x752450); absent in v87
 //
 // Per-target block (26 bytes, identical across versions):
+//
 //	Encode4 mobOid                                  (v83 @0x7a58aa)
 //	Encode4 templateId                              (v83 @0x7a58dc)
 //	Encode1 hitAction                               (v83 @0x7a58ea)
@@ -104,36 +107,55 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		// NOTE: every field below is written at its exact client-read width via an
+		// explicit zero-write rather than w.Skip(n). The bytes are byte-identical
+		// to the prior Skip(n) form (Skip zero-fills) — this is a wire-neutral
+		// rewrite whose only purpose is to make the per-field shape visible to the
+		// packet-audit flat-diff analyzer (which cannot model Skip). The
+		// anti-hack envelope fields (drInfo/dwKey/crc32/updateTime/positions) are
+		// consumed by the decoder at the same widths but never validated.
 		w.WriteInt(m.summonId)
 		if hasAntiHackEnvelope(t) {
-			w.Skip(4) // ~drInfo[0]
-			w.Skip(4) // ~drInfo[1]
-			w.Skip(4) // updateTime
-			w.Skip(4) // ~drInfo[2]
-			w.Skip(4) // ~drInfo[3]
+			w.WriteInt(0) // ~drInfo[0]   @0x75229b
+			w.WriteInt(0) // ~drInfo[1]   @0x7522af
+			w.WriteInt(0) // updateTime   @0x7522c0
+			w.WriteInt(0) // ~drInfo[2]   @0x7522d4
+			w.WriteInt(0) // ~drInfo[3]   @0x7522e8
 			w.WriteByte(m.direction)
-			w.Skip(4) // dwKey
-			w.Skip(4) // crc32
+			w.WriteInt(0) // dwKey        @0x752325
+			w.WriteInt(0) // crc32        @0x75234c
 			w.WriteByte(byte(len(m.targets)))
-			w.Skip(8) // user x,y + summon x,y
+			w.WriteInt16(0) // userX       @0x7523a5
+			w.WriteInt16(0) // userY       @0x7523dd
+			w.WriteInt16(0) // summonX     @0x75240a
+			w.WriteInt16(0) // summonY     @0x752438
 			if hasRepeatSkillPoint(t) {
-				w.Skip(4) // repeatSkillPoint (v95 only)
+				w.WriteInt(0) // repeatSkillPoint (v95 only) @0x752450
 			}
 		} else {
-			w.Skip(4) // updateTime
+			w.WriteInt(0) // updateTime
 			w.WriteByte(m.direction)
 			w.WriteByte(byte(len(m.targets)))
-			w.Skip(8) // user x,y + summon x,y
+			w.WriteInt16(0) // userX
+			w.WriteInt16(0) // userY
+			w.WriteInt16(0) // summonX
+			w.WriteInt16(0) // summonY
 		}
 		for _, tg := range m.targets {
-			w.WriteInt(tg.monsterOid)
-			w.WriteInt(tg.templateId)
-			w.Skip(4) // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
-			w.Skip(8) // curX, curY, hitX, hitY
-			w.WriteInt16(tg.delay)
-			w.WriteInt(tg.damage)
+			w.WriteInt(tg.monsterOid) // mob[i].mobId       @0x7524ac
+			w.WriteInt(tg.templateId) // mob[i].templateId  @0x7524cc
+			w.WriteByte(0)            // hitAction          @0x7524e2
+			w.WriteByte(0)            // foreAction|left    @0x75250c
+			w.WriteByte(0)            // frameIdx           @0x752522
+			w.WriteByte(0)            // calcDamageStatIdx  @0x75253b
+			w.WriteInt16(0)           // curX (hitX)        @0x75256c
+			w.WriteInt16(0)           // curY (hitY)        @0x7525a0
+			w.WriteInt16(0)           // hitX (posX)        @0x7525d3
+			w.WriteInt16(0)           // hitY (posY)        @0x752607
+			w.WriteInt16(tg.delay)    // tDelay             @0x75261d
+			w.WriteInt(tg.damage)     // damage             @0x752632
 		}
-		w.Skip(4) // skillCRC
+		w.WriteInt(0) // skillCRC @0x75266f
 		return w.Bytes()
 	}
 }

@@ -370,7 +370,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath |  |  | ⬜ |  | ⬜ | 0x111 | ❌ | 0x130 | ❌ |  | ⬜ |
 | SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x111 | ❌ | 0x111 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | IDA_0X112 | CMob::OnEscortStopSay; CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ | 0x112 | ❌ |
-| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | 🟡 | 0x112 | ❌ | 0x123 | 🟡 | 0x149 | 🟡 | 0x127 | 🟡 |
+| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x112 | ❌ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X113 | CMob::OnEscortReturnBefore; CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ | 0x113 | ❌ |
 | SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated |  | 0x113 | ❌ | 0x113 | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
 | IDA_0X114 | CMob::OnMobAttackedByMob |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ❌ |
@@ -910,11 +910,11 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 178 | 7 | 494 | 201 | 0 | 26.2% |
+| v83 | 179 | 6 | 494 | 201 | 0 | 26.4% |
 | v84 | 6 | 0 | 671 | 203 | 0 | 0.9% |
-| v87 | 179 | 7 | 530 | 164 | 0 | 25.0% |
-| v95 | 264 | 7 | 527 | 82 | 0 | 33.1% |
-| JMS185 | 162 | 2 | 546 | 170 | 0 | 22.8% |
+| v87 | 180 | 6 | 530 | 164 | 0 | 25.1% |
+| v95 | 265 | 6 | 527 | 82 | 0 | 33.2% |
+| JMS185 | 163 | 1 | 546 | 170 | 0 | 23.0% |
 
 ## Conflicts
 

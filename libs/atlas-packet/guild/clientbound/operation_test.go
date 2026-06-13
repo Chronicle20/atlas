@@ -33,6 +33,32 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=jms_v185 ida=0xb22518
 // packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=jms_v185 ida=0xb22518
 // packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v95 ida=0xa0dfe2
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v95 ida=0xa0dfcb
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v95 ida=0xa0e394
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v95 ida=0xa0d99e
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v95 ida=0xa0d7d2
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v95 ida=0xa0d664
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v95 ida=0xa0dd06
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v95 ida=0xa0dbc0
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v95 ida=0xa0dd06
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v95 ida=0xa0e563
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v95 ida=0xa0e0b5
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v95 ida=0xa0e44b
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v95 ida=0xa0e239
 func TestRequestAgreementRoundTrip(t *testing.T) {
 	input := NewRequestAgreement(0x01, 100, "LeaderName", "GuildName")
 	for _, v := range pt.Variants {

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskMenuConversationDetail
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskMenu#AskMenu
+    address: "0x746fad"
+    decompile_sha256: 4f2af84df6e1c8844df7b39780451c8cc34aa0706ea48c6ecca06035bf6f95dd

@@ -1,0 +1,8 @@
+packet: character/serverbound/Move
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlUser::EndUpdateActive
+    address: "0xaaa076"
+    decompile_sha256: 791340e29bed1a95d70dc8f1b5602e9d7df652e76208a1770cc2681cec018b79

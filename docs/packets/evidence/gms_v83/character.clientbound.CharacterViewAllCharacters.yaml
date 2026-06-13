@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterViewAllCharacters
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllCharacters
+    address: "0x5facca"
+    decompile_sha256: 66a890c559919af6c421d28e5cf4950ec2691d7403fdf6ea0a0ef0770a70c7ee

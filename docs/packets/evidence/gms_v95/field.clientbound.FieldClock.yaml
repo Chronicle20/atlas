@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldClock
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnClock
+    address: "0x531510"
+    decompile_sha256: acd697f23da6aca66fa296fa9f0aaf56f7db727213d15b51170d043c3aeb617e

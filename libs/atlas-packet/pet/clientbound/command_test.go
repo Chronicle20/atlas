@@ -6,6 +6,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=pet/clientbound/PetCommandResponse version=gms_v83 ida=0x7048ab
+// packet-audit:verify packet=pet/clientbound/PetCommandResponse version=gms_v87 ida=0x74858a
+// packet-audit:verify packet=pet/clientbound/PetCommandResponse version=gms_v95 ida=0x6a3930
+// packet-audit:verify packet=pet/clientbound/PetCommandResponse version=jms_v185 ida=0x76a6ab
 func TestPetCommandResponse(t *testing.T) {
 	input := NewPetCommandResponse(1234, 0, 3, true, false)
 	for _, v := range test.Variants {

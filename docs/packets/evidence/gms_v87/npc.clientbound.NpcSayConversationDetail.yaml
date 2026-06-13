@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcSayConversationDetail
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnSay#Say
+    address: "0x791828"
+    decompile_sha256: 8349de01d205c4e32daf7491faef085bc5d432c177b36ea1ea457f78b288fcd1

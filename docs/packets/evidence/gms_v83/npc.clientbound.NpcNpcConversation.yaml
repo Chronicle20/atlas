@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcNpcConversation
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnScriptMessage
+    address: "0x74660a"
+    decompile_sha256: 376306685fab23a1fa523f291bc3477a3aa50b5b3fa1b037a0c3bf6af305a90b

@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=party/serverbound/PartyOperationChangeLeader version=gms_v95 ida=0x530370
+// packet-audit:verify packet=party/serverbound/PartyOperationChangeLeader version=jms_v185 ida=0x56d0cc
 func TestOperationChangeLeaderRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

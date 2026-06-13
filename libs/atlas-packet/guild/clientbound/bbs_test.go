@@ -6,6 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=guild/clientbound/GuildBBSThread version=gms_v83 ida=0xa1233f
+// packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v83 ida=0xa1233f
+// packet-audit:verify packet=guild/clientbound/GuildBBSThread version=gms_v87 ida=0x87a5df
+// packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v87 ida=0x87a5df
+// packet-audit:verify packet=guild/clientbound/GuildBBSThread version=gms_v95 ida=0x7c6630
+// packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v95 ida=0x7c46c0
 func TestBBSThreadListEmpty(t *testing.T) {
 	input := NewBBSThreadList(nil, nil, 0)
 	for _, v := range test.Variants {

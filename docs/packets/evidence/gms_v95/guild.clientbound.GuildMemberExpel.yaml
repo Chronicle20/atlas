@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberExpel
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberExpel
+    address: "0xa0dd06"
+    decompile_sha256: 50029decb598bb8342936b5a9ca6f7f6d0495341cf43b8d9189d734b3e3bcc7f

@@ -6,6 +6,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/serverbound/Move version=gms_v87 ida=0xa5c937
+// packet-audit:verify packet=character/serverbound/Move version=gms_v95 ida=0x9a0d20
+// packet-audit:verify packet=character/serverbound/Move version=jms_v185 ida=0xaaa076
 func TestCharacterMove(t *testing.T) {
 	p := Move{}
 	p.dr0 = 100

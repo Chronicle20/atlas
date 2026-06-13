@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=party/clientbound/PartyCreated version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyCreated version=gms_v87 ida=0xad697a
 // packet-audit:verify packet=party/clientbound/PartyCreated version=gms_v95 ida=0xa10efc
+// packet-audit:verify packet=party/clientbound/PartyCreated version=jms_v185 ida=0xb297e7
 func TestCreatedRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskNumberConversationDetail
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskNumber#AskNumber
+    address: "0x6dcc00"
+    decompile_sha256: d234889041b416e0f14c385a62cb1182c4d84dfa17023a5b296ec490ddc738ea

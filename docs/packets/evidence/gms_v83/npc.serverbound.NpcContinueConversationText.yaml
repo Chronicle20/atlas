@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcContinueConversationText
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskText#Reply
+    address: "0x746a8b"
+    decompile_sha256: 46a93f443aefc365897b48f8c4ad2ed9b5c93837ec340a6a332ffbaa59809edb

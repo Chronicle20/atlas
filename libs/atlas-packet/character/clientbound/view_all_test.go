@@ -8,6 +8,15 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v95 ida=0x5de435
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v95 ida=0x5de17f
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v95 ida=0x5de284
 func TestCharacterViewAllCountRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

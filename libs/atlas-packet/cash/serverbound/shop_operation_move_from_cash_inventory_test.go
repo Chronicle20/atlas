@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=cash/serverbound/CashShopOperationMoveFromCashInventory version=gms_v95 ida=0x4828e0
 func TestShopOperationMoveFromCashInventoryRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

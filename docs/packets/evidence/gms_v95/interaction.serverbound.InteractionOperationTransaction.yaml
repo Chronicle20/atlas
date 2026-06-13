@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationTransaction
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashTradingRoomDlg::Trade
+    address: "0x49e180"
+    decompile_sha256: b239e4fef9a5c32c68047826d57d17ead9b7036a8d56e653d1b3ada7f7555e33

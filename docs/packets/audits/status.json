@@ -32,8 +32,7 @@
           "state": "verified"
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test"
+          "state": "verified"
         }
       }
     },
@@ -559,8 +558,8 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 8
         },
         "gms_v84": {
@@ -569,13 +568,13 @@
           "opcode": 8
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 8
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 8
         },
         "jms_v185": {
@@ -1004,23 +1003,20 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 14
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "note": "tier-1 without fixture; verdict 🚫",
           "opcode": 14
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 14
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 14
         },
         "jms_v185": {
@@ -2183,8 +2179,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 29
         },
         "gms_v84": {
@@ -2198,8 +2193,7 @@
           "opcode": 29
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 28
         },
         "jms_v185": {
@@ -2330,8 +2324,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 31
         },
         "gms_v84": {
@@ -2340,18 +2333,15 @@
           "opcode": 31
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 31
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 30
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 29
         }
       }
@@ -2401,8 +2391,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 32
         },
         "gms_v84": {
@@ -2470,8 +2459,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 33
         },
         "gms_v84": {
@@ -2480,13 +2468,11 @@
           "opcode": 33
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 33
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 32
         },
         "jms_v185": {
@@ -2956,8 +2942,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 39
         },
         "gms_v84": {
@@ -2966,13 +2951,11 @@
           "opcode": 39
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 39
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 38
         },
         "jms_v185": {
@@ -3153,8 +3136,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 41
         },
         "gms_v84": {
@@ -4539,8 +4521,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 61
         },
         "gms_v84": {
@@ -4549,13 +4530,11 @@
           "opcode": 61
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 61
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 61
         },
         "jms_v185": {
@@ -4632,8 +4611,7 @@
           "opcode": 62
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 54
         }
       }
@@ -4707,8 +4685,7 @@
           "opcode": 65
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 57
         }
       }
@@ -4872,8 +4849,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 65
         },
         "gms_v84": {
@@ -4886,8 +4862,8 @@
           "opcode": 67
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 67
         },
         "jms_v185": {
@@ -6839,8 +6815,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 87
         },
         "gms_v84": {
@@ -6857,8 +6832,7 @@
           "opcode": 98
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 82
         }
       }
@@ -6874,8 +6848,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 88
         },
         "gms_v84": {
@@ -6892,8 +6865,7 @@
           "opcode": 98
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 82
         }
       }
@@ -8604,8 +8576,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 108
         },
         "gms_v84": {
@@ -8614,13 +8585,11 @@
           "opcode": 108
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 111
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 120
         },
         "jms_v185": {
@@ -9812,8 +9781,7 @@
           "opcode": 143
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 123
         }
       }
@@ -10169,8 +10137,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 125
         },
         "gms_v84": {
@@ -10179,18 +10146,15 @@
           "opcode": 125
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 133
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 141
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 123
         }
       }
@@ -10375,8 +10339,7 @@
           "opcode": 150
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 130
         }
       }
@@ -10874,8 +10837,7 @@
           "opcode": 146
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 126
         }
       }
@@ -12148,8 +12110,7 @@
           "opcode": 168
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 146
         }
       }
@@ -12449,8 +12410,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 147
         },
         "gms_v84": {
@@ -12459,18 +12419,15 @@
           "opcode": 150
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 155
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 163
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 144
         }
       }
@@ -13476,8 +13433,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 160
         },
         "gms_v84": {
@@ -13486,13 +13442,11 @@
           "opcode": 163
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 171
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 179
         },
         "jms_v185": {
@@ -14398,8 +14352,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 170
         },
         "gms_v84": {
@@ -14416,8 +14369,7 @@
           "opcode": 202
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 173
         }
       }
@@ -14734,8 +14686,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 174
         },
         "gms_v84": {
@@ -14744,18 +14695,15 @@
           "opcode": 174
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 187
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 205
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 180
         }
       }
@@ -15683,8 +15631,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 186
         },
         "gms_v84": {
@@ -15693,13 +15640,11 @@
           "opcode": 190
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 199
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 211
         },
         "jms_v185": {
@@ -15720,8 +15665,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 187
         },
         "gms_v84": {
@@ -15730,13 +15674,11 @@
           "opcode": 191
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 200
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 212
         },
         "jms_v185": {
@@ -15757,8 +15699,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 188
         },
         "gms_v84": {
@@ -15767,13 +15708,11 @@
           "opcode": 192
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 201
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 213
         },
         "jms_v185": {
@@ -15895,8 +15834,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 189
         },
         "gms_v84": {
@@ -15905,13 +15843,11 @@
           "opcode": 189
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 202
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 214
         },
         "jms_v185": {
@@ -16206,8 +16142,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 192
         },
         "gms_v84": {
@@ -16216,13 +16151,11 @@
           "opcode": 192
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 205
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 218
         },
         "jms_v185": {
@@ -16809,8 +16742,7 @@
           "opcode": 241
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 208
         }
       }
@@ -16968,8 +16900,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 199
         },
         "gms_v84": {
@@ -16978,13 +16909,11 @@
           "opcode": 203
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 212
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 225
         },
         "jms_v185": {
@@ -19052,8 +18981,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 225
         },
         "gms_v84": {
@@ -19062,18 +18990,15 @@
           "opcode": 225
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 238
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 269
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 236
         }
       }
@@ -22544,8 +22469,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 269
         },
         "gms_v84": {
@@ -22554,18 +22478,15 @@
           "opcode": 276
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 286
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 324
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 290
         }
       }
@@ -24690,8 +24611,7 @@
           "opcode": 364
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 330
         }
       }
@@ -24753,8 +24673,7 @@
           "opcode": 365
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 331
         }
       }
@@ -24980,8 +24899,7 @@
           "opcode": 316
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 326
         },
         "gms_v95": {
@@ -25556,8 +25474,7 @@
           "opcode": 332
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 342
         },
         "gms_v95": {
@@ -27024,13 +26941,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27056,13 +26971,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27086,8 +26999,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27111,8 +27023,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27140,8 +27051,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27175,8 +27085,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27207,13 +27116,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27239,8 +27146,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27271,8 +27177,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27303,8 +27208,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27363,8 +27267,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27395,8 +27298,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27427,8 +27329,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27459,8 +27360,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27491,8 +27391,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27552,8 +27451,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27569,8 +27467,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -27579,13 +27476,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27600,8 +27495,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -27610,18 +27504,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27641,18 +27532,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27663,8 +27551,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -27673,8 +27560,35 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "guild/clientbound/GuildBBSThread",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -27690,44 +27604,11 @@
     },
     {
       "kind": "sub-struct",
-      "packet": "guild/clientbound/GuildBBSThread",
-      "tier1": true,
-      "cells": {
-        "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
       "packet": "guild/clientbound/GuildBBSThreadList",
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -27736,13 +27617,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27773,13 +27652,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -27800,13 +27677,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27832,13 +27707,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27864,13 +27737,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27896,13 +27767,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27928,13 +27797,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -27970,8 +27837,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28034,8 +27900,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28066,8 +27931,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28093,13 +27957,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28130,8 +27992,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28157,13 +28018,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28226,8 +28085,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28253,8 +28111,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28283,8 +28140,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28314,8 +28170,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28346,8 +28201,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28378,8 +28232,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28410,8 +28263,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28442,8 +28294,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28474,8 +28325,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28506,8 +28356,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28538,8 +28387,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28564,8 +28412,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -28573,8 +28420,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28600,8 +28446,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28632,8 +28477,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28664,8 +28508,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28696,8 +28539,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28722,18 +28564,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28759,8 +28598,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28791,8 +28629,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28817,8 +28654,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -28826,8 +28662,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -28838,8 +28673,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -28853,8 +28687,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28885,8 +28718,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28902,8 +28734,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -28917,8 +28748,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28949,8 +28779,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28981,8 +28810,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -28998,8 +28826,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29008,18 +28835,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29030,8 +28854,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29040,18 +28863,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29062,8 +28882,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29072,18 +28891,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29094,8 +28910,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29104,18 +28919,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29141,8 +28953,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -29173,8 +28984,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -29190,8 +29000,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29200,18 +29009,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29222,8 +29028,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29232,18 +29037,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29254,8 +29056,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29264,8 +29065,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -29285,8 +29085,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29295,18 +29094,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29317,8 +29113,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29327,18 +29122,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29349,8 +29141,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29359,18 +29150,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29381,8 +29169,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29391,18 +29178,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29413,8 +29197,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29423,18 +29206,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29445,8 +29225,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29455,18 +29234,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29477,8 +29253,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29487,18 +29262,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29509,8 +29281,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29519,18 +29290,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29541,8 +29309,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29551,18 +29318,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29573,8 +29337,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29583,18 +29346,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29605,8 +29365,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29615,8 +29374,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -29624,8 +29382,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29636,8 +29393,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29646,18 +29402,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29668,8 +29421,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29678,18 +29430,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29700,8 +29449,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29710,18 +29458,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29732,8 +29477,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29742,18 +29486,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29764,8 +29505,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29774,13 +29514,11 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -29795,8 +29533,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29805,18 +29542,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29827,8 +29561,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29837,18 +29570,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29859,8 +29589,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -29869,18 +29598,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29906,13 +29632,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29938,13 +29662,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -29970,13 +29692,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30002,13 +29722,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30019,8 +29737,7 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -30034,13 +29751,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30051,8 +29766,7 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -30061,18 +29775,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30083,8 +29794,7 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -30093,18 +29803,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30130,8 +29837,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
@@ -30162,13 +29868,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30194,13 +29898,11 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -30211,8 +29913,7 @@
       "tier1": false,
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
@@ -30221,8 +29922,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {
@@ -30231,8 +29931,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": -1
         }
       }

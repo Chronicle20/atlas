@@ -13,6 +13,7 @@ import (
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionInviteResult version=gms_v95 ida=0x637d70
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionInvite version=gms_v95 ida=0x637a40
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnterResultError version=gms_v95 ida=0x639500
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionUpdateMerchant version=gms_v95 ida=0x51cc30
 func TestInteractionInviteRoundTrip(t *testing.T) {
 	input := NewInteractionInvite(4, 1, "TestPlayer", 12345)
 	for _, v := range test.Variants {

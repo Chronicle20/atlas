@@ -9,6 +9,9 @@ import (
 
 // --- Attack round-trip tests ---
 
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v83 ida=0x9803ab
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v87 ida=0xa05a50
+// packet-audit:verify packet=character/clientbound/Attack version=gms_v95 ida=0x95a670
 func TestAttackMeleeNoSkillRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskMemberShopAvatarConversationDetail
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar
+    address: "0x7924cc"
+    decompile_sha256: 77fd5919ea20ad024643db8808d454321293863987052908be1f2b1faaea4552

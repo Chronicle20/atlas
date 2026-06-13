@@ -28,6 +28,7 @@ func etcAsset() model.Asset {
 // meso gated on flag&2). Wire bug present in both versions; fix unconditional.
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v83 ida=0x7c5dae
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v87 ida=0x819648
 func TestStorageShowSegmentation(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

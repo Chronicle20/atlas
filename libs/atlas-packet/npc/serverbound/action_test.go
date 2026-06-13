@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=npc/serverbound/NpcActionRequest version=gms_v95 ida=0x671590
+// packet-audit:verify packet=npc/serverbound/NpcActionRequest version=jms_v185 ida=0x7199ce
 func TestNPCActionWithoutMovement(t *testing.T) {
 	p := ActionRequest{}
 	p.objectId = 12345

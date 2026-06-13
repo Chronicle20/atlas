@@ -12,6 +12,9 @@ import (
 // packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v95 ida=0x9f9da0
 // packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v95 ida=0x9f9da0
 // packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v95 ida=0x9f9da0
+// packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v83 ida=0xa2508b
+// packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v83 ida=0xa2508b
+// packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v83 ida=0xa2508b
 func TestSendSuccessRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

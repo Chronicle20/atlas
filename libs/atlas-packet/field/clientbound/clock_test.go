@@ -6,6 +6,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldClock version=gms_v83 ida=0x5361bd
+// packet-audit:verify packet=field/clientbound/FieldClock version=gms_v87 ida=0x55DA5F
+// packet-audit:verify packet=field/clientbound/FieldClock version=gms_v95 ida=0x531510
+// packet-audit:verify packet=field/clientbound/FieldClock version=jms_v185 ida=0x56e849
 func TestEventClock(t *testing.T) {
 	input := NewEventClock(300)
 	for _, v := range test.Variants {

@@ -1,0 +1,8 @@
+packet: character/clientbound/AddCharacterEntry
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCreateNewCharacterResult
+    address: "0x5dab90"
+    decompile_sha256: 96a4d44c2cc39818ee05131e33f97b6701ef967e8f175b50c38d308507efa557

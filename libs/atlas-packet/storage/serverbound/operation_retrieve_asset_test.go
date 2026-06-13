@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=storage/serverbound/StorageOperationRetrieveAsset version=gms_v95 ida=0x769e00
+// packet-audit:verify packet=storage/serverbound/StorageOperationRetrieveAsset version=jms_v185 ida=0x84dea0
 func TestOperationRetrieveAssetRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

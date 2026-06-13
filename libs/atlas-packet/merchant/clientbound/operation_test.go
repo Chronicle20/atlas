@@ -29,6 +29,13 @@ import (
 // packet-audit:verify packet=merchant/clientbound/FreeFormNotice version=gms_v95 ida=0x9ffcb0
 // packet-audit:verify packet=merchant/clientbound/ShopRename version=gms_v95 ida=0x9ffcb0
 // packet-audit:verify packet=merchant/clientbound/ShopSearch version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/ConfirmManage version=jms_v185 ida=0xb0ee59
+// packet-audit:verify packet=merchant/clientbound/ErrorSimple version=jms_v185 ida=0xb0ee59
+// packet-audit:verify packet=merchant/clientbound/FreeFormNotice version=jms_v185 ida=0xb0ee59
+// packet-audit:verify packet=merchant/clientbound/OpenShop version=jms_v185 ida=0xb0ee59
+// packet-audit:verify packet=merchant/clientbound/RemoteShopWarp version=jms_v185 ida=0xb0ee59
+// packet-audit:verify packet=merchant/clientbound/ShopRename version=jms_v185 ida=0xb0ee59
+// packet-audit:verify packet=merchant/clientbound/ShopSearch version=jms_v185 ida=0xb0ee59
 func TestOpenShop(t *testing.T) {
 	input := NewOpenShop(7)
 	for _, v := range test.Variants {

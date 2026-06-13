@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcContinueConversationSelection
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskMenu#Selection
+    address: "0x6dce00"
+    decompile_sha256: 16f19b98587adaca39b962f16aa7cfd8f0dbe7dbf1f6e1eb0d1d57b02ade3559

@@ -1,0 +1,8 @@
+packet: character/serverbound/DistributeAp
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#DistributeAp
+    address: "0xb0ad8c"
+    decompile_sha256: 3d3587f9e305ffd571221b838e80c003b8b24d3ee5a0cd9216c1d1965a382c6b

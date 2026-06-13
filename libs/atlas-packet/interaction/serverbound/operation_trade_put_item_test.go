@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v83 ida=0x7c359f
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v95 ida=0x7641d0
 func TestOperationTradePutItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

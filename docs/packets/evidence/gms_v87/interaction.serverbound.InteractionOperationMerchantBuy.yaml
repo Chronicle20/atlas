@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMerchantBuy
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::BuyItem#Merchant
+    address: "0x74076b"
+    decompile_sha256: 4fc8f6013d02780ca3b7653339669bb2ccc9c7e9fb64819408bf5d580d8949ca

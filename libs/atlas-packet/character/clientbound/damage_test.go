@@ -7,6 +7,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterDamage version=gms_v83 ida=0x9832e3
+// packet-audit:verify packet=character/clientbound/CharacterDamage version=gms_v87 ida=0xa08d57
+// packet-audit:verify packet=character/clientbound/CharacterDamage version=gms_v95 ida=0x954c50
 func TestCharacterDamagePhysical(t *testing.T) {
 	input := NewCharacterDamage(1234, model.DamageTypePhysical, 500, 100100, true)
 	for _, v := range test.Variants {

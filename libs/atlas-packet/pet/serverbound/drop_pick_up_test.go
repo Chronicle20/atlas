@@ -8,6 +8,8 @@ import (
 
 // packet-audit:verify packet=pet/serverbound/PetDropPickUp version=gms_v87 ida=0x749be8
 // packet-audit:verify packet=pet/serverbound/PetDropPickUp version=gms_v95 ida=0x6a0820
+// packet-audit:verify packet=pet/serverbound/PetDropPickUp version=gms_v83 ida=0x705c7c
+// packet-audit:verify packet=pet/serverbound/PetDropPickUp version=jms_v185 ida=0x76bcc6
 func TestDropPickUpRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

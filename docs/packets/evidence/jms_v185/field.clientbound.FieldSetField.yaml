@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetField
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetField
+    address: "0x7eea69"
+    decompile_sha256: dea2877873b0b155731ac49356d322311647b63d2cb9318d8ff601e409cfb522

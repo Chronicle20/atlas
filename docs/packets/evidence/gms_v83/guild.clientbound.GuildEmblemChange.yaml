@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildEmblemChange
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#EmblemChange
+    address: "0xa37490"
+    decompile_sha256: 5addc9265960b1479a8af3392c1c2c3c0503f3574190ff46817a0127d5bb5549

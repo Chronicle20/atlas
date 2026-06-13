@@ -22,6 +22,7 @@ import (
 // packet-audit:verify packet=party/clientbound/PartyUpdate version=jms_v185 ida=0xb297e7
 // packet-audit:verify packet=party/clientbound/PartyUpdate version=gms_v87 ida=0xad697a
 // packet-audit:verify packet=party/clientbound/PartyUpdate version=gms_v95 ida=0xa10ea1
+// packet-audit:verify packet=party/clientbound/PartyUpdate version=gms_v84 ida=0xa89cf3
 func TestUpdateByteOutput(t *testing.T) {
 	members := []party.PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},

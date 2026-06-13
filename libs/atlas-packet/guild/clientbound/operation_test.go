@@ -63,6 +63,17 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v84 ida=0xa82e2b
 // packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v84 ida=0xa82e2b
 // packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v84 ida=0xa82e2b
 func TestRequestAgreementRoundTrip(t *testing.T) {
 	input := NewRequestAgreement(0x01, 100, "LeaderName", "GuildName")
 	for _, v := range pt.Variants {

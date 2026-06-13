@@ -8744,101 +8744,3143 @@
       ]
     },
     "CWvsContext::OnGuildResult#AgreementResponse": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 3
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#CapacityChange": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 72
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#Disband": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 28
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#EmblemChange": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 66
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#ErrorMessage": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 36
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 53
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#Info": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 1
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#Invite": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 5
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#MemberExpel": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 39
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
@@ -9192,35 +12234,1049 @@
       ]
     },
     "CWvsContext::OnGuildResult#MemberLeft": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 39
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#MemberStatusUpdate": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 61
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
     "CWvsContext::OnGuildResult#MemberTitleUpdate": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 64
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
@@ -9574,13 +13630,351 @@
       ]
     },
     "CWvsContext::OnGuildResult#RequestAgreement": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa82e2b",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 3
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50 && v116 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "alloca"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50",
+          "ref": "dword_C49AD0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 50"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 50 && CInPacket::Decode1(v2)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 50"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 36"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 28 && v36 && !v37",
+          "ref": "sub_4EB984"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && CInPacket::Decode4(v2) == *(_DWORD *)(this + 12068)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && v8 == 9"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v8 && v8 == 9",
+          "ref": "sub_4EB984"
         }
       ]
     },
@@ -10527,112 +14921,2072 @@
       ]
     },
     "CWvsContext::OnPartyResult#ChangeLeader": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 30
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Created": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 8
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Disband": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 12
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Error": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 39
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Invite": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 4
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#InviteReject": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 21
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Join": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 15
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Left": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 12
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#OperationBody": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 38
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CWvsContext::OnPartyResult#Update": {
-      "address": "",
+      "address": "0xa89cf3",
       "direction": "",
-      "unresolved": true,
+      "dispatch": [
+        {
+          "discriminator": "",
+          "case": 7
+        }
+      ],
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 > 0x44u && v5 == 69"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x27 && CInPacket::Decode1(v4)",
+          "ref": "sub_493BA9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 > 0x1Eu && v5 < 0x42u && v5 == 0x28"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 > 0x1Eu",
+          "ref": "sub_8A9ED4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && !v7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6 && v8 && v9 && v10 && v10 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default> && v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 != 30 && v5 <= 0xDu && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v5 != 30 && v44 && !v48",
+          "ref": "sub_9D389C"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v5 != 30"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },

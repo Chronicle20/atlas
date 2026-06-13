@@ -1,6 +1,6 @@
 # PartyInvite (← `CWvsContext::OnPartyResult#Invite`)
 
-- **IDA:** 
+- **IDA:** 0xa89cf3
 - **Atlas file:** `libs/atlas-packet/party/clientbound/invite.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
@@ -11,10 +11,40 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | string | string `` | ✅ |  |
+| 3 | int32 | int32 `` | ✅ |  |
+| 4 | int32 | int32 `` | ✅ |  |
+| 5 | byte | int32 `` | ❌ | width mismatch |
+| 6 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 7 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 8 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 9 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 10 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 11 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 12 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 13 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 14 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 15 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 16 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 17 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 18 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 19 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 20 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 21 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 22 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 23 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 24 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 25 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 26 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 27 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 28 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 29 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 30 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 31 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 32 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 33 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 34 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 35 | byte | byte `` | ❌ | atlas: short — missing trailing field |
 

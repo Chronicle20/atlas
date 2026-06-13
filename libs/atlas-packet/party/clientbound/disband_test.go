@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=party/clientbound/PartyDisband version=gms_v87 ida=0xad697a
 // packet-audit:verify packet=party/clientbound/PartyDisband version=gms_v95 ida=0xa11085
 // packet-audit:verify packet=party/clientbound/PartyDisband version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyDisband version=gms_v84 ida=0xa89cf3
 func TestDisbandRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

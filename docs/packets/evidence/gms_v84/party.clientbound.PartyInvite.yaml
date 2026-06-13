@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyInvite
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Invite
+    address: "0xa89cf3"
+    decompile_sha256: b15b1d8647cb230460210ca6df7c7242790bc7c476953b25cdf8b0ace5f63a62

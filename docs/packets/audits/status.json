@@ -2,7 +2,7 @@
   "toolSha": "a15e4d45ddd4021b4aa421e7549ee7db929c23d1",
   "exportHashes": {
     "gms_v83": "ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17",
-    "gms_v84": "15d615a74ff35045a57c7efa24a94914a9e71d67d47bcda5025e3a842656852c",
+    "gms_v84": "329544ebeda09e878725860ca6f50fdf34caf4087d9b5db64f3d6b487558da66",
     "gms_v87": "8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66",
     "gms_v95": "b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3",
     "jms_v185": "f91a7c12d00cd2cd0879508b85c5fd6ec15db4bd1f73ca14979021a989dc8b36"
@@ -4557,8 +4557,7 @@
           "opcode": 62
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 62
         },
         "gms_v87": {
@@ -4812,8 +4811,7 @@
           "opcode": 65
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 65
         },
         "gms_v87": {

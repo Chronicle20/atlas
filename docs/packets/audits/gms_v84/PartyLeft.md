@@ -1,6 +1,6 @@
 # PartyLeft (← `CWvsContext::OnPartyResult#Left`)
 
-- **IDA:** 
+- **IDA:** 0xa89cf3
 - **Atlas file:** `libs/atlas-packet/party/clientbound/left.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
@@ -11,23 +11,40 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | bytes | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | int32 | string `` | ❌ | width mismatch |
+| 3 | byte | int32 `` | ❌ | width mismatch |
+| 4 | byte | int32 `` | ❌ | width mismatch |
+| 5 | string | int32 `` | ❌ | width mismatch |
+| 6 | int32 | int32 `` | ✅ |  |
+| 7 | bytes | int32 `` | ✅ |  |
+| 8 | int32 | byte `` | ❌ | width mismatch |
+| 9 | int32 | string `` | ❌ | width mismatch |
+| 10 | int32 | byte `` | ❌ | width mismatch |
+| 11 | int32 | int32 `` | ✅ |  |
+| 12 | int32 | int32 `` | ✅ |  |
+| 13 | int32 | int16 `` | ❌ | width mismatch |
+| 14 | int32 | int16 `` | ❌ | width mismatch |
+| 15 | int32 | int32 `` | ✅ |  |
+| 16 | int32 | int32 `` | ✅ |  |
+| 17 | int32 | int32 `` | ✅ |  |
+| 18 | int32 | byte `` | ❌ | width mismatch |
+| 19 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 20 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 21 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 22 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 23 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 24 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 25 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 26 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 27 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 28 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 29 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 30 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 31 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 32 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 33 | byte | string `` | ❌ | atlas: short — missing trailing field |
+| 34 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 35 | byte | byte `` | ❌ | atlas: short — missing trailing field |
 

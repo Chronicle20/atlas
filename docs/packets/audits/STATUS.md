@@ -6,7 +6,7 @@
 Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 - export gms_v83: `ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17`
-- export gms_v84: `15d615a74ff35045a57c7efa24a94914a9e71d67d47bcda5025e3a842656852c`
+- export gms_v84: `329544ebeda09e878725860ca6f50fdf34caf4087d9b5db64f3d6b487558da66`
 - export gms_v87: `8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66`
 - export gms_v95: `b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3`
 - export jms_v185: `f91a7c12d00cd2cd0879508b85c5fd6ec15db4bd1f73ca14979021a989dc8b36`
@@ -79,10 +79,10 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | SET_GENDER | CWvsContext::OnSetGender |  | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
 | GUILD_BBS_PACKET | CWvsContext::OnGuildBBSPacket |  | 0x03B | ❌ | 0x03B | ❌ | 0x03B | ❌ | 0x03B | ❌ |  | ⬜ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ❌ |
-| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyChangeLeader (T1) | 0x03E | ✅ | 0x03E | ❌ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
+| PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyChangeLeader (T1) | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyCapacityUpdate (T1) | 0x03F | ✅ | 0x041 | ❌ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
-| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ✅ | 0x041 | ❌ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
+| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
@@ -911,7 +911,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 185 | 0 | 494 | 201 | 0 | 27.2% |
-| v84 | 142 | 1 | 534 | 203 | 0 | 21.0% |
+| v84 | 144 | 1 | 532 | 203 | 0 | 21.3% |
 | v87 | 186 | 0 | 530 | 164 | 0 | 26.0% |
 | v95 | 271 | 0 | 527 | 82 | 0 | 34.0% |
 | JMS185 | 164 | 0 | 546 | 170 | 0 | 23.1% |

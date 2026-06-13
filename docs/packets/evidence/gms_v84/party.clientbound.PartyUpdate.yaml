@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyUpdate
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Update
+    address: "0xa89cf3"
+    decompile_sha256: 949381b2be8b681f27a0112edb8c48d9f52048a0d75c27f70a4cd930cd8377bd

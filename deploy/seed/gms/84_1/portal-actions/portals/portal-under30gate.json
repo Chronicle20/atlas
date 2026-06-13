@@ -1,0 +1,53 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Guild Quest - Level 30 and under gate to Sharen III's Grave",
+      "mapId": 990000000,
+      "portalId": "under30gate",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "<=",
+              "type": "level",
+              "value": "30"
+            }
+          ],
+          "id": "level_check_pass",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "990000640",
+                  "portalId": "1"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [],
+          "id": "default_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": [
+              {
+                "params": {
+                  "message": "You cannot proceed past this point."
+                },
+                "type": "drop_message"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "under30gate",
+    "type": "portal-action"
+  }
+}

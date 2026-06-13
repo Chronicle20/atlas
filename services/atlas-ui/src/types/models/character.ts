@@ -31,7 +31,6 @@ export interface CharacterAttributes {
     face: number;
     ap: number;
     sp: string;
-    mapId: number;
     spawnPoint: number;
     gm: number;
     x: number;
@@ -41,6 +40,5 @@ export interface CharacterAttributes {
 
 // Character update request types
 export interface UpdateCharacterData {
-    mapId?: number;
     gm?: number;
 }

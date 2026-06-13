@@ -342,6 +342,14 @@ func (p *ProcessorImpl) CreateFromPreset(ctx context.Context, in PresetCreateRes
 	return transactionId.String(), nil
 }
 
+// presetSagaBaseTimeout and presetSagaPerStepTimeout define the step-count-scaled
+// timeout for preset character creation. The orchestrator processes saga steps
+// serially over Kafka, so the timeout budget grows with the number of steps.
+const (
+	presetSagaBaseTimeout    = 10 * time.Second
+	presetSagaPerStepTimeout = 1 * time.Second
+)
+
 // buildPresetCharacterCreationSaga constructs a CharacterCreation saga from a preset
 // configuration. Equipment goes through create_and_equip_asset steps; the legacy
 // top/bottom/shoes/weapon slots are set to 0.
@@ -355,8 +363,7 @@ func buildPresetCharacterCreationSaga(
 	builder := saga.NewBuilder().
 		SetTransactionId(transactionId).
 		SetSagaType(saga.CharacterCreation).
-		SetInitiatedBy(fmt.Sprintf("account_%d", in.AccountId)).
-		SetTimeout(10 * time.Second)
+		SetInitiatedBy(fmt.Sprintf("account_%d", in.AccountId))
 
 	// Step 1: create_character
 	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, saga.CharacterCreatePayload{
@@ -418,6 +425,17 @@ func buildPresetCharacterCreationSaga(
 			Expiration:  time.Time{},
 		})
 	}
+
+	// Unlike the login path (buildCharacterCreationSaga), preset creation is an
+	// admin web-UI operation with no client socket waiting on the login latency
+	// budget. A preset expands to one sequential saga step per inventory item,
+	// equipment piece, and skill — each a Kafka command round-trip the
+	// orchestrator processes serially. A flat 10s timeout therefore times out and
+	// rolls back (compensates) legitimate large presets. Scale the timeout with
+	// the step count instead. Steps: create_character + await_inventory_created +
+	// one per inventory/equipment/skill entry.
+	numSteps := 2 + len(a.Inventory) + len(a.Equipment) + len(a.Skills)
+	builder.SetTimeout(presetSagaBaseTimeout + time.Duration(numSteps)*presetSagaPerStepTimeout)
 
 	return builder.Build()
 }

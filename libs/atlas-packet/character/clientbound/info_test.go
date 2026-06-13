@@ -11,11 +11,31 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v87 ida=0xabb181
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v95 ida=0xa05750
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v84 ida=0xa6eda8
+
+// TestCharacterInfo_MountRoundTrip locks the tamed-mob block: when a mount is
+// active the writer emits flag=1 + level/exp/tiredness (3×int32), and the decoder
+// reads them back. Layout is version-uniform (v83/v87/v95/JMS).
+func TestCharacterInfo_MountRoundTrip(t *testing.T) {
+	for _, v := range []struct {
+		region   string
+		maj, min uint16
+	}{{"GMS", 83, 1}, {"GMS", 87, 1}, {"GMS", 95, 1}, {"JMS", 185, 1}} {
+		ctx := pt.CreateContext(v.region, v.maj, v.min)
+		in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, MonsterBookInfo{},
+			MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42})
+		out := CharacterInfo{}
+		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+		if got := out.Mount(); got != (MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}) {
+			t.Errorf("%s v%d mount round-trip: got %+v", v.region, v.maj, got)
+		}
+	}
+}
+
 func TestCharacterInfoEncode(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},
 	}
-	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{})
+	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{}, MountInfo{})
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -37,7 +57,7 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 				{Slot: 1, TemplateId: 5000001, Name: "MiniCat", Level: 10, Closeness: 100, Fullness: 50},
 			}
 			wishList := []uint32{1002000, 1002001, 1002002}
-			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000, MonsterBookInfo{})
+			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000, MonsterBookInfo{}, MountInfo{})
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
@@ -80,7 +100,7 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 func TestCharacterInfo_MonsterBookCover(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	want := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
-	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want)
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want, MountInfo{})
 	out := CharacterInfo{}
 	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 	if out.MonsterBook() != want {
@@ -94,7 +114,7 @@ func TestCharacterInfo_MonsterBookCover(t *testing.T) {
 func TestCharacterInfo_CoverCarriesArbitraryValue(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	want := MonsterBookInfo{Level: 1, NormalCards: 0, SpecialCards: 0, TotalCards: 0, Cover: 100100}
-	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want)
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want, MountInfo{})
 	out := CharacterInfo{}
 	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 	if out.MonsterBookCover() != 100100 {
@@ -106,7 +126,7 @@ func TestCharacterInfoEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0, MonsterBookInfo{})
+			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0, MonsterBookInfo{}, MountInfo{})
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if len(output.Pets()) != 0 {

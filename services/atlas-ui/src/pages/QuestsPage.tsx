@@ -2,7 +2,8 @@ import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns, hiddenColumns } from "@/pages/quests-columns";
 import { useMemo, useState } from "react";
-import { useQuests, useQuestCategories, useInvalidateQuests } from "@/lib/hooks/api/useQuests";
+import { useQuests, useQuestCategories } from "@/lib/hooks/api/useQuests";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { Toaster } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -38,7 +39,7 @@ export function QuestsPage() {
   const { activeTenant } = useTenant();
   const questsQuery = useQuests(activeTenant);
   const categoriesQuery = useQuestCategories(activeTenant);
-  const { invalidateAll } = useInvalidateQuests();
+  const { isRefreshing, onRefresh } = useGridRefresh([questsQuery, categoriesQuery]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
@@ -93,7 +94,8 @@ export function QuestsPage() {
           columns={columns}
           data={filteredQuests}
           error={error}
-          onRefresh={() => invalidateAll()}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No quests found",

@@ -1,0 +1,48 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Magic Library (1020200) - Explorer job advancement intro for Magician path",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "0"
+            }
+          ],
+          "id": "intro_male",
+          "operations": [
+            {
+              "params": {
+                "path": "Effect/Direction3.img/magician/Scene0"
+              },
+              "type": "show_intro"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "1"
+            }
+          ],
+          "id": "intro_female",
+          "operations": [
+            {
+              "params": {
+                "path": "Effect/Direction3.img/magician/Scene1"
+              },
+              "type": "show_intro"
+            }
+          ]
+        }
+      ],
+      "scriptName": "goMagician"
+    },
+    "id": "goMagician",
+    "type": "map-action"
+  }
+}

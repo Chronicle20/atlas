@@ -92,9 +92,8 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	}
 }
 
-// task-055: MapId/Instance are no longer model-owned; Transform pulls them
-// in-flight from atlas-maps. The dedicated Transform/Extract MapId test was
-// removed with the model fields. GM round-trip is exercised below.
+// task-087: MapId/Instance are not part of the GET projection — atlas-maps owns
+// location and Transform no longer emits it. GM round-trip is exercised below.
 func TestTransformExtractGmField(t *testing.T) {
 	rc := setupTestRedis(t)
 	character.InitTemporalRegistry(rc)
@@ -109,9 +108,8 @@ func TestTransformExtractGmField(t *testing.T) {
 		Build()
 
 	ctx := testTenantContext()
-	// Transform issues an atlas-maps lookup; in unit tests no such service
-	// exists, so it falls back to zero values for MapId/Instance — that's
-	// the expected D11 behavior.
+	// task-087: Transform no longer emits location; the GET projection has no
+	// MapId/Instance. This exercises a non-location field (GM) round-trip.
 	restModel, err := character.Transform(testLogger(), ctx)(im)
 	if err != nil {
 		t.Fatalf("Failed to transform model to rest model: %v", err)

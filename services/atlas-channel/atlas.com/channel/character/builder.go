@@ -11,7 +11,6 @@ import (
 	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -44,7 +43,6 @@ type modelBuilder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	x                  int16
@@ -92,7 +90,6 @@ func CloneModel(m Model) *modelBuilder {
 		experience:         m.experience,
 		fame:               m.fame,
 		gachaponExperience: m.gachaponExperience,
-		mapId:              m.mapId,
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		x:                  m.x,
@@ -136,7 +133,6 @@ func (b *modelBuilder) SetGachaponExperience(v uint32) *modelBuilder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *modelBuilder) SetMapId(v _map.Id) *modelBuilder             { b.mapId = v; return b }
 func (b *modelBuilder) SetSpawnPoint(v uint32) *modelBuilder         { b.spawnPoint = v; return b }
 func (b *modelBuilder) SetGm(v int) *modelBuilder                    { b.gm = v; return b }
 func (b *modelBuilder) SetMeso(v uint32) *modelBuilder               { b.meso = v; return b }
@@ -181,7 +177,6 @@ func (b *modelBuilder) Build() (Model, error) {
 		experience:         b.experience,
 		fame:               b.fame,
 		gachaponExperience: b.gachaponExperience,
-		mapId:              b.mapId,
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
 		x:                  b.x,

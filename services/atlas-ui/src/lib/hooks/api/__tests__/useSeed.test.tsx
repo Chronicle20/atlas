@@ -11,6 +11,8 @@ import {
   usePortalScriptsSeedStatus,
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
+  useWzInputStatus,
+  useDataStatus,
   useSeedDrops,
   useSeedGachapons,
   useSeedNpcConversations,
@@ -33,6 +35,8 @@ vi.mock('@/services/api/seed.service', () => ({
     getPortalScriptsSeedStatus: vi.fn(),
     getReactorScriptsSeedStatus: vi.fn(),
     getMapActionScriptsSeedStatus: vi.fn(),
+    getWzInputStatus: vi.fn(),
+    getDataStatus: vi.fn(),
     seedDrops: vi.fn(),
     seedGachapons: vi.fn(),
     seedNpcConversations: vi.fn(),
@@ -138,6 +142,49 @@ describe.each([
     expect(
       (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
     ).not.toHaveBeenCalled();
+  });
+});
+
+describe.each([
+  ['useWzInputStatus', useWzInputStatus, 'getWzInputStatus', 'wzInputStatus'],
+  ['useDataStatus', useDataStatus, 'getDataStatus', 'dataStatus'],
+] as const)('%s scope threading', (_, hook, method, keyRoot) => {
+  it('passes the selected scope to the service and keys the cache by scope', async () => {
+    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      activeTenant: fakeTenant,
+    });
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue({
+      updatedAt: null,
+    });
+
+    const { wrapper, qc } = makeWrapper();
+    const { result } = renderHook(() => hook('shared'), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(
+      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
+    ).toHaveBeenCalledWith(fakeTenant, 'shared');
+    // Scoped cache entry — distinct from the tenant-scope entry.
+    expect(qc.getQueryData([keyRoot, fakeTenant.id, 'shared'])).toBeDefined();
+    expect(qc.getQueryData([keyRoot, fakeTenant.id, 'tenant'])).toBeUndefined();
+  });
+
+  it('defaults to tenant scope when no scope is passed', async () => {
+    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      activeTenant: fakeTenant,
+    });
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue({
+      updatedAt: null,
+    });
+
+    const { wrapper, qc } = makeWrapper();
+    const { result } = renderHook(() => hook(), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(
+      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
+    ).toHaveBeenCalledWith(fakeTenant, 'tenant');
+    expect(qc.getQueryData([keyRoot, fakeTenant.id, 'tenant'])).toBeDefined();
   });
 });
 

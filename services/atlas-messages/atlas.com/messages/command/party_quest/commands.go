@@ -34,9 +34,9 @@ func PQRegisterCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
-					err := producer.ProviderImpl(l)(ctx)(pq.EnvCommandTopic)(pq.RegisterCommandProvider(ch.WorldId(), c.Id(), questId, ch.Id(), uint32(c.MapId())))
+					err := producer.ProviderImpl(l)(ctx)(pq.EnvCommandTopic)(pq.RegisterCommandProvider(ch.WorldId(), c.Id(), questId, ch.Id(), uint32(f.MapId())))
 					if err != nil {
 						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Failed to register for PQ [%s].", questId), []uint32{c.Id()})
 					}
@@ -65,7 +65,7 @@ func PQStageCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
 					inst, err := party_quest.NewProcessor(l, ctx).GetByCharacter(c.Id())
 					if err != nil {

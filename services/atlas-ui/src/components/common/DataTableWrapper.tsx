@@ -14,6 +14,7 @@ interface DataTableWrapperProps<TData, TValue> {
   error?: Error | { message: string } | string | null;
   initialVisibilityState?: string[];
   onRefresh?: () => void;
+  isRefreshing?: boolean;
   headerActions?: Array<{
     icon?: React.ReactNode;
     label: string;
@@ -38,6 +39,7 @@ export function DataTableWrapper<TData, TValue>({
   error,
   initialVisibilityState,
   onRefresh,
+  isRefreshing,
   headerActions,
   emptyState,
   className,
@@ -87,6 +89,7 @@ export function DataTableWrapper<TData, TValue>({
         data={data}
         {...(initialVisibilityState && { initialVisibilityState })}
         {...(onRefresh && { onRefresh })}
+        {...(typeof isRefreshing === "boolean" && { isRefreshing })}
         {...(headerActions && { headerActions })}
       />
     </div>

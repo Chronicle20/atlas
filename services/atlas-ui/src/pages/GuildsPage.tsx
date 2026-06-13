@@ -1,9 +1,10 @@
 import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns, hiddenColumns } from "@/pages/guilds-columns";
-import { useGuilds, useInvalidateGuilds } from "@/lib/hooks/api/useGuilds";
-import { useCharacters, useInvalidateCharacters } from "@/lib/hooks/api/useCharacters";
+import { useGuilds } from "@/lib/hooks/api/useGuilds";
+import { useCharacters } from "@/lib/hooks/api/useCharacters";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { Toaster } from "sonner";
 import { GuildPageSkeleton } from "@/components/common/skeletons/GuildPageSkeleton";
 
@@ -12,8 +13,11 @@ export function GuildsPage() {
   const guildsQuery = useGuilds(activeTenant);
   const charactersQuery = useCharacters(activeTenant!);
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
-  const { invalidateAll: invalidateGuilds } = useInvalidateGuilds();
-  const { invalidateAll: invalidateCharacters } = useInvalidateCharacters();
+  const { isRefreshing, onRefresh } = useGridRefresh([
+    guildsQuery,
+    charactersQuery,
+    tenantConfigQuery,
+  ]);
 
   const guilds = guildsQuery.data ?? [];
   const characters = charactersQuery.data ?? [];
@@ -21,11 +25,6 @@ export function GuildsPage() {
 
   const loading = guildsQuery.isLoading || charactersQuery.isLoading || tenantConfigQuery.isLoading;
   const error = guildsQuery.error?.message ?? charactersQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
-
-  const refresh = () => {
-    invalidateGuilds();
-    invalidateCharacters();
-  };
 
   const characterMap = new Map(characters.map(c => [c.id, c]));
   const columns = getColumns({ tenant: tenantConfig, characterMap });
@@ -46,7 +45,8 @@ export function GuildsPage() {
           columns={columns}
           data={guilds}
           error={error}
-          onRefresh={refresh}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No guilds found",

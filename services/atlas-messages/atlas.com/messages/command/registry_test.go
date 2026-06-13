@@ -20,7 +20,6 @@ func createTestCharacter(id uint32, name string, isGm bool) character.Model {
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
-		SetMapId(100000000).
 		Build()
 }
 

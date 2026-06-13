@@ -6,6 +6,7 @@ import (
 	character2 "atlas-channel/kafka/message/character"
 	mapconsumer "atlas-channel/kafka/consumer/map"
 	"atlas-channel/listener"
+	"atlas-channel/maps/location"
 	_map "atlas-channel/map"
 	"atlas-channel/party"
 	"atlas-channel/server"
@@ -13,6 +14,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
@@ -116,8 +118,15 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			if derr != nil || !cd.InParty() {
 				return
 			}
-			// TODO - field migration this seems like a bug not using instance
-			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, cd.MapId()).Build()
+			f, ferr := location.GetField(l, ctx, cd.Id())
+			if ferr != nil {
+				if errors.Is(ferr, location.ErrNotFound) {
+					l.Warnf("No atlas-maps location for character [%d]; skipping party member HP propagation.", cd.Id())
+				} else {
+					l.WithError(ferr).Errorf("Unable to resolve atlas-maps location for character [%d]; skipping party member HP propagation.", cd.Id())
+				}
+				return
+			}
 			imf := party.OtherMemberInMap(f, cd.Id())
 			pmp := model.FixedProvider(cd.Party())
 			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))

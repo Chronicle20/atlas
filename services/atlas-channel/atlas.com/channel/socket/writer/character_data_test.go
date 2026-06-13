@@ -8,6 +8,7 @@ import (
 	"atlas-channel/monsterbook"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestBuildCharacterData_MonsterBook(t *testing.T) {
@@ -22,7 +23,7 @@ func TestBuildCharacterData_MonsterBook(t *testing.T) {
 		SetMonsterBook(monsterbook.NewModel(col, cards)).
 		MustBuild()
 
-	cd := BuildCharacterData(c, buddylist.Model{})
+	cd := BuildCharacterData(c, buddylist.Model{}, _map.Id(0))
 
 	if cd.MonsterBook.CoverCardId != item.Id(2380001) {
 		t.Errorf("cover = %d, want 2380001", cd.MonsterBook.CoverCardId)

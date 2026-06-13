@@ -8,8 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "react-router-dom";
-import { MapCell } from "@/components/map-cell";
+import { CharacterMapCell } from "./CharacterMapCell";
 import { HpMpBar } from "./HpMpBar";
 import { useCharacterGuild } from "@/lib/hooks/api/useCharacterGuild";
 import { useCharacterEffectiveStats } from "@/lib/hooks/api/useCharacterEffectiveStats";
@@ -92,9 +91,7 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
           </div>
           <div className="flex items-center gap-1">
             <strong>Map:</strong>{" "}
-            <Link to={`/maps/${a.mapId}`}>
-              <MapCell mapId={String(a.mapId)} tenant={tenant} />
-            </Link>
+            <CharacterMapCell characterId={character.id} tenant={tenant} />
           </div>
         </div>
 

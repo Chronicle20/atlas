@@ -76,7 +76,7 @@ func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 				return func(l logrus.FieldLogger) func(ctx context.Context) error {
 					return func(ctx context.Context) error {
 						msgProc := message.NewProcessor(l, ctx)
-						f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+						f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 						_ = msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown disease: %s", diseaseType), []uint32{c.Id()})
 						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Valid: %s", strings.Join(names, ", ")), []uint32{c.Id()})
 					}
@@ -87,7 +87,7 @@ func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 			if target == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if target == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(target))
@@ -96,7 +96,7 @@ func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
 					ids, err := idProvider()
 					if err != nil {

@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
+	"atlas-channel/maps/location"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -20,7 +21,7 @@ func WarpToMapBody(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint
 func SetFieldBody(channelId channel.Id, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			cd := BuildCharacterData(c, bl)
+			cd := BuildCharacterData(c, bl, location.ResolveMapId(l, ctx, c.Id()))
 			return fieldcb.NewSetField(channelId, cd).Encode(l, ctx)(options)
 		}
 	}

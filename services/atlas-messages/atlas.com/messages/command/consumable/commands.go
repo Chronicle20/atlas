@@ -47,7 +47,7 @@ func ConsumeCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 			if target == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if target == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(target))
@@ -56,7 +56,7 @@ func ConsumeCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
 					cids, err := idProvider()
 					if err != nil {

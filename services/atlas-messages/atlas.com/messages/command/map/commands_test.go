@@ -11,19 +11,21 @@ import (
 	"golang.org/x/net/context"
 )
 
-// createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) character.Model {
+// createTestCharacter creates a character model for testing. The mapId is
+// returned as the field map at call sites; the character mirror no longer
+// stores a map (task-087 — map lives in atlas-maps).
+func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) (character.Model, _map.Id) {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().
+	c := character.NewModelBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
-		SetMapId(mapId).
 		SetAccountId(100).
 		Build()
+	return c, mapId
 }
 
 // TestWarpCommandProducer_RegexPatterns tests the warp command regex
@@ -174,8 +176,8 @@ func TestWarpCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
-			f := field.NewBuilder(1, 1, char.MapId()).Build()
+			char, mapId := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			f := field.NewBuilder(1, 1, mapId).Build()
 
 			producer := WarpCommandProducer(logger)
 			_, found := producer(ctx)(f, char, tc.message)
@@ -214,8 +216,8 @@ func TestWhereAmICommandProducer_NoGmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
-			f := field.NewBuilder(1, 1, char.MapId()).Build()
+			char, mapId := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			f := field.NewBuilder(1, 1, mapId).Build()
 
 			producer := WhereAmICommandProducer(logger)
 			_, found := producer(ctx)(f, char, tc.message)
@@ -231,8 +233,8 @@ func TestWhereAmICommandProducer_NoGmCheck(t *testing.T) {
 func TestWarpCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
-	f := field.NewBuilder(1, 1, gmChar.MapId()).Build()
+	gmChar, gmMapId := createTestCharacter(12345, "TestGM", true, 100000000)
+	f := field.NewBuilder(1, 1, gmMapId).Build()
 
 	testCases := []struct {
 		name    string

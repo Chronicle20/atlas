@@ -31,7 +31,6 @@ func TestBuilder_Build(t *testing.T) {
 		SetSp("0,0,0,0").
 		SetExperience(50000).
 		SetFame(10).
-		SetMapId(100000000).
 		SetMeso(1000000).
 		Build()
 
@@ -79,9 +78,6 @@ func TestBuilder_Build(t *testing.T) {
 	}
 	if m.Fame() != 10 {
 		t.Errorf("Fame() = %d, want 10", m.Fame())
-	}
-	if m.MapId() != 100000000 {
-		t.Errorf("MapId() = %d, want 100000000", m.MapId())
 	}
 }
 

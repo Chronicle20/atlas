@@ -55,7 +55,7 @@ func MobStatusCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 				return func(l logrus.FieldLogger) func(ctx context.Context) error {
 					return func(ctx context.Context) error {
 						msgProc := message.NewProcessor(l, ctx)
-						f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+						f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 						_ = msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown skill: %s", input), []uint32{c.Id()})
 						return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Valid: %s", strings.Join(monster2.SkillTypeNames(), ", ")), []uint32{c.Id()})
 					}
@@ -72,9 +72,9 @@ func MobStatusCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
-					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.UseSkillFieldCommandProvider(ch.WorldId(), ch.Id(), c.MapId(), f.Instance(), skillId, skillLevel))
+					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.UseSkillFieldCommandProvider(ch.WorldId(), ch.Id(), f.MapId(), f.Instance(), skillId, skillLevel))
 					if err != nil {
 						return msgProc.IssuePinkText(f, 0, "Failed to execute mob skill.", []uint32{c.Id()})
 					}
@@ -103,9 +103,9 @@ func MobKillAllCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
-					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.DestroyFieldCommandProvider(ch.WorldId(), ch.Id(), c.MapId(), f.Instance()))
+					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.DestroyFieldCommandProvider(ch.WorldId(), ch.Id(), f.MapId(), f.Instance()))
 					if err != nil {
 						return msgProc.IssuePinkText(f, 0, "Failed to kill all monsters.", []uint32{c.Id()})
 					}
@@ -138,7 +138,7 @@ func MobClearCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
 							msgProc := message.NewProcessor(l, ctx)
-							f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+							f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 							return msgProc.IssuePinkText(f, 0, fmt.Sprintf("Unknown status: %s", st), []uint32{c.Id()})
 						}
 					}, true
@@ -149,9 +149,9 @@ func MobClearCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					msgProc := message.NewProcessor(l, ctx)
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 
-					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.CancelStatusFieldCommandProvider(ch.WorldId(), ch.Id(), c.MapId(), f.Instance(), statusTypes))
+					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.CancelStatusFieldCommandProvider(ch.WorldId(), ch.Id(), f.MapId(), f.Instance(), statusTypes))
 					if err != nil {
 						return msgProc.IssuePinkText(f, 0, "Failed to clear monster statuses.", []uint32{c.Id()})
 					}

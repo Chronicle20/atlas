@@ -1,0 +1,878 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2081500,
+      "startState": "checkRequirements",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "120"
+                  }
+                ],
+                "nextState": "notQualifiedDialogue"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "jobId",
+                    "value": "500"
+                  }
+                ],
+                "nextState": "notQualifiedDialogue"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "jobId",
+                    "value": "600"
+                  }
+                ],
+                "nextState": "notQualifiedDialogue"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkQuestStatus"
+              }
+            ]
+          },
+          "id": "checkRequirements",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please don't bother me right now, I am trying to concentrate."
+          },
+          "id": "notQualifiedDialogue",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "6944",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "questNotCompleteDialogue"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkJobState"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You have not yet passed my trials. I can not advance you until you do so."
+          },
+          "id": "questNotCompleteDialogue",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "511"
+                  }
+                ],
+                "nextState": "readyToAdvanceDialogueMarauder"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "521"
+                  }
+                ],
+                "nextState": "readyToAdvanceDialogueOutlaw"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "512"
+                  }
+                ],
+                "nextState": "alreadyFourthJobMenu"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "522"
+                  }
+                ],
+                "nextState": "alreadyFourthJobMenu"
+              },
+              {
+                "conditions": [],
+                "nextState": "notQualifiedDialogue"
+              }
+            ]
+          },
+          "id": "checkJobState",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventoryMarauder",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?"
+          },
+          "id": "readyToAdvanceDialogueMarauder",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkInventoryOutlaw",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You did a marvellous job passing my test. Are you ready to advance to your 4th job?"
+          },
+          "id": "readyToAdvanceDialogueOutlaw",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "2280003",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performAdvancementMarauder"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientInventoryDialogue"
+              }
+            ]
+          },
+          "id": "checkInventoryMarauder",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "2280003",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performAdvancementOutlaw"
+              },
+              {
+                "conditions": [],
+                "nextState": "insufficientInventoryDialogue"
+              }
+            ]
+          },
+          "id": "checkInventoryOutlaw",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please have one slot available on #bUSE#k inventory to receive a skill book."
+          },
+          "id": "insufficientInventoryDialogue",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "jobId": "512"
+                },
+                "type": "change_job"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121001"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121002"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121007"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121009"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "itemId": "2280003",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performAdvancementMarauder",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "jobId": "522"
+                },
+                "type": "change_job"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5220001"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5220002"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5221004"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5220011"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "itemId": "2280003",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performAdvancementOutlaw",
+          "type": "genericAction"
+        },
+        {
+          "id": "alreadyFourthJobMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "checkWhichFourthJob",
+                "text": "Teach me the skills of my class."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "If I must, I can teach you the art of your class."
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "512"
+                  }
+                ],
+                "nextState": "checkBuccaneerSkill1"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "522"
+                  }
+                ],
+                "nextState": "checkCorsairSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkWhichFourthJob",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5121003",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachBuccaneerSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkBuccaneerSkill2"
+              }
+            ]
+          },
+          "id": "checkBuccaneerSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121003"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkBuccaneerSkill2"
+              }
+            ]
+          },
+          "id": "teachBuccaneerSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5121004",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachBuccaneerSkill2"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkBuccaneerSkill3"
+              }
+            ]
+          },
+          "id": "checkBuccaneerSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121004"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkBuccaneerSkill3"
+              }
+            ]
+          },
+          "id": "teachBuccaneerSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5121005",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachBuccaneerSkill3"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkBuccaneerSkill4"
+              }
+            ]
+          },
+          "id": "checkBuccaneerSkill3",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121005"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkBuccaneerSkill4"
+              }
+            ]
+          },
+          "id": "teachBuccaneerSkill3",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5121010",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachBuccaneerSkill4"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkBuccaneerSkill4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5121010"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "teachBuccaneerSkill4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5221006",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachCorsairSkill1"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill2"
+              }
+            ]
+          },
+          "id": "checkCorsairSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5221006"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill2"
+              }
+            ]
+          },
+          "id": "teachCorsairSkill1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5221007",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachCorsairSkill2"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill3"
+              }
+            ]
+          },
+          "id": "checkCorsairSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5221007"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill3"
+              }
+            ]
+          },
+          "id": "teachCorsairSkill2",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5221008",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachCorsairSkill3"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill4"
+              }
+            ]
+          },
+          "id": "checkCorsairSkill3",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5221008"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill4"
+              }
+            ]
+          },
+          "id": "teachCorsairSkill3",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5221009",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachCorsairSkill4"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill5"
+              }
+            ]
+          },
+          "id": "checkCorsairSkill4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5221009"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkCorsairSkill5"
+              }
+            ]
+          },
+          "id": "teachCorsairSkill4",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "5221003",
+                    "type": "skillLevel",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "teachCorsairSkill5"
+              },
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "checkCorsairSkill5",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "level": "0",
+                  "masterLevel": "10",
+                  "skillId": "5221003"
+                },
+                "type": "create_skill"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "completionDialogue"
+              }
+            ]
+          },
+          "id": "teachCorsairSkill5",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "It is done. Leave me now."
+          },
+          "id": "completionDialogue",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2081500",
+    "type": "npc-conversation"
+  }
+}

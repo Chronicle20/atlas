@@ -22,6 +22,9 @@ func SummonDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		_ = summoncmd.NewProcessor(l, ctx).Damage(s.Field(), p.Oid(), s.CharacterId(), int32(p.Damage()), p.MonsterIdFrom())
+		// p.SummonId() is the owner cid on v83/v87 and the server summon id on v95;
+		// atlas-summons reconciles via GetByOwner(senderCharacterId) when the id misses.
+		// MonsterIdFrom is a mob TEMPLATE id (the client sends dwTemplateID, not an oid).
+		_ = summoncmd.NewProcessor(l, ctx).Damage(s.Field(), p.SummonId(), s.CharacterId(), int32(p.Damage()), p.MonsterIdFrom())
 	}
 }

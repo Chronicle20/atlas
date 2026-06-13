@@ -199,19 +199,45 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 	return m, nil
 }
 
+// resolveOwned maps a wire summon identity to a concrete owned summon. The
+// client send identifies the summon differently per version: v83/v87 carry the
+// owner charId (cid) — the client has no oid, the summon pool is cid-keyed —
+// while v95+ carries the server-allocated summon id. We first try the id as a
+// real summon id (the v95 path / any future exact match); if that misses or the
+// owner does not match the sender, we fall back to the sender's owned summons
+// (the v83/v87 path, where the wire id is the cid). preferPuppet biases the
+// owner fallback toward the puppet summon (used by Damage, which only puppets
+// receive) vs. the first non-puppet (used by Move/Attack). senderCharacterId is
+// authoritative (the session owner), so owner-based resolution is safe. Returns
+// (model, true) on success or (zero, false) when nothing resolves.
+func (p *ProcessorImpl) resolveOwned(id uint32, senderCharacterId uint32, preferPuppet bool) (Model, bool) {
+	if m, err := GetRegistry().Get(p.ctx, p.t, id); err == nil && m.OwnerCharacterId() == senderCharacterId {
+		return m, true
+	}
+	owned, err := GetRegistry().GetByOwner(p.ctx, p.t, senderCharacterId)
+	if err != nil || len(owned) == 0 {
+		return Model{}, false
+	}
+	// Prefer the puppet (Damage) or the first non-puppet (Move/Attack); fall back
+	// to the first owned summon if no preferred match exists.
+	for _, m := range owned {
+		if m.IsPuppet() == preferPuppet {
+			return m, true
+		}
+	}
+	return owned[0], true
+}
+
 // Move relays an owner's summon-move packet: it verifies ownership (a character
 // may only move a summon it owns — §11), updates the persisted position, and
 // emits MOVED carrying the raw movement blob for byte-faithful rebroadcast. A
 // missing summon or a non-owner sender is a graceful no-op (returns nil).
 func (p *ProcessorImpl) Move(id uint32, senderCharacterId uint32, x int16, y int16, stance byte, rawMovement []byte) error {
-	m, err := GetRegistry().Get(p.ctx, p.t, id)
-	if err != nil {
+	m, ok := p.resolveOwned(id, senderCharacterId, false)
+	if !ok {
 		return nil
 	}
-	if m.OwnerCharacterId() != senderCharacterId {
-		p.l.Infof("Character [%d] moved summon [%d] it does not own; dropping.", senderCharacterId, id) // §11 ownership
-		return nil
-	}
+	id = m.Id()
 	updated, err := GetRegistry().Update(p.ctx, p.t, id, func(cur Model) Model {
 		return cur.Move(x, y, stance)
 	})
@@ -229,14 +255,11 @@ func (p *ProcessorImpl) Move(id uint32, senderCharacterId uint32, x int16, y int
 // Gaviota self-cancels after a single attack (FR-4.5). A missing summon or a
 // non-owner sender is a graceful no-op (returns nil).
 func (p *ProcessorImpl) Attack(id uint32, senderCharacterId uint32, direction byte, targets []AttackTarget) error {
-	m, err := GetRegistry().Get(p.ctx, p.t, id)
-	if err != nil {
-		return nil // already gone
+	m, ok := p.resolveOwned(id, senderCharacterId, false)
+	if !ok {
+		return nil // already gone / no owned summon
 	}
-	if m.OwnerCharacterId() != senderCharacterId {
-		p.l.Infof("Character [%d] attacked with summon [%d] it does not own; dropping.", senderCharacterId, id) // §11 ownership
-		return nil
-	}
+	id = m.Id()
 
 	eff, err := p.effects.GetEffect(m.SkillId(), m.SkillLevel())
 	if err != nil {
@@ -347,14 +370,11 @@ func rollProc(prop float64) bool {
 // (which emits DESTROYED + REMOVE_PUPPET and releases the oid). A missing summon
 // or a non-owner sender is a graceful no-op (returns nil).
 func (p *ProcessorImpl) Damage(id uint32, senderCharacterId uint32, amount int32, monsterIdFrom uint32) error {
-	m, err := GetRegistry().Get(p.ctx, p.t, id)
-	if err != nil {
-		return nil // already gone
+	m, ok := p.resolveOwned(id, senderCharacterId, true)
+	if !ok {
+		return nil // already gone / no owned summon
 	}
-	if m.OwnerCharacterId() != senderCharacterId {
-		p.l.Infof("Character [%d] damaged summon [%d] it does not own; dropping.", senderCharacterId, id) // §11 ownership
-		return nil
-	}
+	id = m.Id()
 	updated, err := GetRegistry().Update(p.ctx, p.t, id, func(cur Model) Model {
 		return cur.AddHP(-amount)
 	})

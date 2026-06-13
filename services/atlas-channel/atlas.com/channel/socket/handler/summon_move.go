@@ -22,6 +22,9 @@ func SummonMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		_ = summoncmd.NewProcessor(l, ctx).Move(s.Field(), p.Oid(), s.CharacterId(), p.StartX(), p.StartY(), 0, p.RawMovement())
+		// p.SummonId() is the owner cid on v83/v87 (the client has no oid; the
+		// summon pool is cid-keyed) and the server summon id on v95. atlas-summons
+		// reconciles: it tries the id, then falls back to GetByOwner(senderCharacterId).
+		_ = summoncmd.NewProcessor(l, ctx).Move(s.Field(), p.SummonId(), s.CharacterId(), p.StartX(), p.StartY(), 0, p.RawMovement())
 	}
 }

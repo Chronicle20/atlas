@@ -27,6 +27,8 @@ func SummonAttackHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 			targets = append(targets, summon2.AttackTargetEntry{MonsterId: t.MonsterOid(), Damage: t.Damage()})
 		}
 
-		_ = summoncmd.NewProcessor(l, ctx).Attack(s.Field(), p.Oid(), s.CharacterId(), p.Direction(), targets)
+		// p.SummonId() is the owner cid on v83/v87 and the server summon id on v95;
+		// atlas-summons reconciles via GetByOwner(senderCharacterId) when the id misses.
+		_ = summoncmd.NewProcessor(l, ctx).Attack(s.Field(), p.SummonId(), s.CharacterId(), p.Direction(), targets)
 	}
 }

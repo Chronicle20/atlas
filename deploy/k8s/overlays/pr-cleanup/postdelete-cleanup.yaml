@@ -2,7 +2,7 @@
 # atlas-env, atlas-env-tokens, and atlas-db-names ConfigMaps this Job used to
 # `envFrom` are gone by the time the hook fires, and the pod would wedge in
 # CreateContainerConfigError. All ConfigMap-sourced values are now inlined
-# below, with the bot-substituted PLACEHOLDER_PR_NUMBER token
+# below, with the bot-substituted 743 token
 # (resolved by pr-validation.yml's update-pr-overlay).
 #
 # Secrets (db-credentials, pihole-credentials, ghcr-pat) are namespace-replicas
@@ -28,7 +28,7 @@ metadata:
   # stays put) this caused Argo to refuse the next PR's hook with
   # `SharedResourceWarning: Job/atlas-pr-cleanup is part of applications
   # argocd/atlas-pr-<this> and atlas-pr-<that>`.
-  name: atlas-pr-cleanup-PLACEHOLDER_PR_NUMBER
+  name: atlas-pr-cleanup-743
   # Long-lived namespace. Until task-070, this Job ran in atlas-pr-<N> —
   # the same namespace Argo CD's resources-finalizer prunes during
   # Application deletion. The PostDelete hook fires AFTER prune, so by
@@ -75,4 +75,4 @@ spec:
             # any drift on the Application's atlas.env annotation is
             # harmless (bug #4 defensive fix; see task-070/design.md §3.4).
             - name: PR_NUMBER
-              value: "PLACEHOLDER_PR_NUMBER"
+              value: "743"

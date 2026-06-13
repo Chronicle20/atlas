@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: seed-catalog-config
 data:
-  GITSYNC_REF: "PLACEHOLDER_FULL_SHA"
+  GITSYNC_REF: "7c31a53faefd422ae28cee180c2872e83ed7333f"

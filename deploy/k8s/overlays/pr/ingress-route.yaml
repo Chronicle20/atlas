@@ -6,7 +6,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`PLACEHOLDER_PR_NUMBER.atlas.home`)
+    - match: Host(`743.atlas.home`)
       kind: Rule
       services:
         - name: atlas-ingress

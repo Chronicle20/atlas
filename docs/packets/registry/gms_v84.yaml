@@ -3243,34 +3243,34 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOVE_PET
   direction: serverbound
-  opcode: 167
+  opcode: 172
   fname: CVecCtrlPet::EndUpdateActive
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: PET_CHAT
   direction: serverbound
-  opcode: 168
+  opcode: 173
   fname: CPet::DoAction
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: PET_COMMAND
   direction: serverbound
-  opcode: 169
+  opcode: 174
   fname: CPet::ParseCommand
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: PET_LOOT
   direction: serverbound
-  opcode: 170
+  opcode: 175
   fname: CPet::SendDropPickUpRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: PET_AUTO_POT
   direction: serverbound
-  opcode: 171
+  opcode: 176
   fname: CWvsContext::SendStatChangeItemUseRequestByPetQ
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: PET_EXCLUDE_ITEMS
   direction: serverbound
   opcode: 172
@@ -3352,10 +3352,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOVE_LIFE
   direction: serverbound
-  opcode: 188
+  opcode: 193
   fname: CMob::GenerateMovePath
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: AUTO_AGGRO
   direction: serverbound
   opcode: 189
@@ -3436,10 +3436,10 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 346: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: ITEM_PICKUP
   direction: serverbound
-  opcode: 202
+  opcode: 208
   fname: CWvsContext::SendDropPickUpRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: UNNAMED_R348
   direction: serverbound
   opcode: 203
@@ -3454,12 +3454,12 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 349: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: DAMAGE_REACTOR
   direction: serverbound
-  opcode: 205
+  opcode: 211
   fname: CReactorPool::FindHitReactor
   fname_alts:
     - CReactorPool::FindSkillReactor
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: TOUCHING_REACTOR
   direction: serverbound
   opcode: 206

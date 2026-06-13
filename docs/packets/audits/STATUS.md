@@ -676,13 +676,13 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | JMS_CONSUME_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ |
 | MOB_CRC_KEY_CHANGED_REPLY | CMobPool::OnMobCrcKeyChanged |  | 0x0A4 | ❌ | 0x0A4 | ❌ | 0x0AE | ❌ | 0x0BE | ❌ | 0x09E | ❌ |
 | FIND_FRIEND | CUIFindFriend::SendMyInfoRequest; CUIFindFriend::SendSearchRequest; CUIFindFriendDetail::SetDetailInfo |  | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0C2 | ❌ |  | ⬜ |
-| MOVE_PET | CVecCtrlPet::EndUpdateActive | pet/serverbound/PetMovementRequest (T1) | 0x0A7 | 🟡 | 0x0A7 | 🟥 | 0x0B3 | 🟡 | 0x0C7 | 🟡 | 0x0AA | 🟡 |
-| PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x0A8 | 🟡 | 0x0A8 | 🟥 | 0x0B4 | 🟡 | 0x0C8 | 🟡 | 0x0AB | 🟡 |
-| PET_COMMAND | CPet::ParseCommand | pet/serverbound/PetCommand (T1) | 0x0A9 | 🟡 | 0x0A9 | 🟥 | 0x0B5 | 🟡 | 0x0C9 | 🟡 | 0x0AC | 🟡 |
+| MOVE_PET | CVecCtrlPet::EndUpdateActive | pet/serverbound/PetMovementRequest (T1) | 0x0A7 | 🟡 | 0x0AC | ❌ | 0x0B3 | 🟡 | 0x0C7 | 🟡 | 0x0AA | 🟡 |
+| PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x0A8 | 🟡 | 0x0AD | ❌ | 0x0B4 | 🟡 | 0x0C8 | 🟡 | 0x0AB | 🟡 |
+| PET_COMMAND | CPet::ParseCommand | pet/serverbound/PetCommand (T1) | 0x0A9 | 🟡 | 0x0AE | ❌ | 0x0B5 | 🟡 | 0x0C9 | 🟡 | 0x0AC | 🟡 |
 | CASH_GACHAPON_BUTTON | CUICashGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ | 0x0AA | ❌ | 0x0BA | ❌ |  | ⬜ |
-| PET_LOOT | CPet::SendDropPickUpRequest | pet/serverbound/PetDropPickUp (T1) | 0x0AA | ❌ | 0x0AA | 🟥 | 0x0B6 | 🟡 | 0x0CA | 🟡 | 0x0AD | ❌ |
+| PET_LOOT | CPet::SendDropPickUpRequest | pet/serverbound/PetDropPickUp (T1) | 0x0AA | ❌ | 0x0AF | ❌ | 0x0B6 | 🟡 | 0x0CA | 🟡 | 0x0AD | ❌ |
 | CASHSHOP_SURPRISE | CCashShop::SendChangeMaplePoint |  |  | ⬜ |  | ⬜ | 0x0AB | ❌ | 0x0BB | ❌ | 0x0A7 | ❌ |
-| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x0AB | 🟡 | 0x0AB | 🟥 | 0x0B7 | 🟡 | 0x0CB | 🟡 | 0x0AE | 🟡 |
+| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x0AB | 🟡 | 0x0B0 | ❌ | 0x0B7 | 🟡 | 0x0CB | 🟡 | 0x0AE | 🟡 |
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) | 0x0AC | 🟡 | 0x0AC | ❌ | 0x0B8 | 🟡 | 0x0CC | 🟡 | 0x0AF | 🟡 |
 | UNNAMED_R288 |  |  | 0x0AD | ❌ | 0x0AD | ❌ | 0x0B9 | ❌ | 0x0CD | ❌ | 0x0B0 | ❌ |
 | UNNAMED_R289 |  |  | 0x0AE | ❌ | 0x0AE | ❌ | 0x0BA | ❌ | 0x0CE | ❌ | 0x0B1 | ❌ |
@@ -698,7 +698,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive |  | 0x0B5 | ❌ | 0x0B5 | ❌ | 0x0C1 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
 | UNNAMED_R299 |  |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap |  | 0x0B7 | ❌ | 0x0B7 | ❌ | 0x0C3 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
-| MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x0BC | ✅ | 0x0BC | 🟥 | 0x0C8 | 🟡 | 0x0E3 | 🟡 | 0x0C2 | 🟡 |
+| MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x0BC | ✅ | 0x0C1 | ❌ | 0x0C8 | 🟡 | 0x0E3 | 🟡 | 0x0C2 | 🟡 |
 | AUTO_AGGRO | CMob::ApplyControl |  | 0x0BD | ❌ | 0x0BD | ❌ | 0x0C9 | ❌ | 0x0E4 | ❌ | 0x0C3 | ❌ |
 | MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest |  | 0x0BE | ❌ | 0x0BE | ❌ | 0x0CA | ❌ | 0x0E5 | ❌ | 0x0C4 | ❌ |
 | FIELD_DAMAGE_MOB | CMob::Update |  | 0x0BF | ❌ | 0x0BF | ❌ | 0x0CB | ❌ | 0x0E6 | ❌ | 0x0C5 | ❌ |
@@ -716,10 +716,10 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | UNNAMED_R344 |  |  | 0x0C7 | ❌ | 0x0C7 | ❌ | 0x0D4 | ❌ | 0x0F3 | ❌ | 0x0D2 | ❌ |
 | UNNAMED_R345 |  |  | 0x0C8 | ❌ | 0x0C8 | ❌ | 0x0D5 | ❌ | 0x0F4 | ❌ | 0x0D3 | ❌ |
 | UNNAMED_R346 |  |  | 0x0C9 | ❌ | 0x0C9 | ❌ | 0x0D6 | ❌ | 0x0F5 | ❌ | 0x0D4 | ❌ |
-| ITEM_PICKUP | CWvsContext::SendDropPickUpRequest | drop/serverbound/DropPickUp | 0x0CA | 🟡 | 0x0CA | 🟥 | 0x0D7 | 🟡 | 0x0F6 | 🟡 | 0x0D5 | 🟡 |
+| ITEM_PICKUP | CWvsContext::SendDropPickUpRequest | drop/serverbound/DropPickUp | 0x0CA | 🟡 | 0x0D0 | ❌ | 0x0D7 | 🟡 | 0x0F6 | 🟡 | 0x0D5 | 🟡 |
 | UNNAMED_R348 |  |  | 0x0CB | ❌ | 0x0CB | ❌ | 0x0D8 | ❌ | 0x0F7 | ❌ | 0x0D6 | ❌ |
 | UNNAMED_R349 |  |  | 0x0CC | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
-| DAMAGE_REACTOR | CReactorPool::FindHitReactor; CReactorPool::FindSkillReactor | reactor/serverbound/ReactorHitRequest | 0x0CD | 🟡 | 0x0CD | 🟥 | 0x0DA | 🟡 | 0x0F9 | 🟡 | 0x0D8 | 🟡 |
+| DAMAGE_REACTOR | CReactorPool::FindHitReactor; CReactorPool::FindSkillReactor | reactor/serverbound/ReactorHitRequest | 0x0CD | 🟡 | 0x0D3 | ❌ | 0x0DA | 🟡 | 0x0F9 | 🟡 | 0x0D8 | 🟡 |
 | TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
 | PLAYER_MAP_TRANSFER | CUserLocal::ResetNLCPQ |  | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0FB | ❌ | 0x0DA | ❌ |
 | UNNAMED_R355 |  |  | 0x0D0 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0FC | ❌ | 0x0DB | ❌ |
@@ -911,7 +911,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 15 | 134 | 530 | 201 | 0 | 2.2% |
-| v84 | 0 | 6 | 663 | 203 | 8 | 0.0% |
+| v84 | 0 | 6 | 671 | 203 | 0 | 0.0% |
 | v87 | 3 | 147 | 553 | 164 | 13 | 0.4% |
 | v95 | 10 | 225 | 549 | 82 | 14 | 1.3% |
 | JMS185 | 12 | 112 | 574 | 170 | 12 | 1.7% |
@@ -936,22 +936,14 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 - 🟥 **BBS_OPERATION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CHATTEXT1** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CHATTEXT1** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MOVE_PET** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_CHAT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_COMMAND** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_LOOT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **PET_AUTO_POT** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **MOVE_LIFE** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **FACIAL_EXPRESSION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **SHOW_CHAIR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **CANCEL_FOREIGN_BUFF** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **UPDATE_PARTYMEMBER_HP** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_NAME_CHANGED** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_NAME_CHANGED** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **ITEM_PICKUP** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_MARK_CHANGED** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_MARK_CHANGED** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DAMAGE_REACTOR** × v84 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **LOCK_UI** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)

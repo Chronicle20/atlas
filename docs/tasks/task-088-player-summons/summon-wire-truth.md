@@ -47,7 +47,92 @@ Only ONE int between cid and the two bytes → v83 has NO oid. v95's OnCreated i
 - Damage has a trailing `dir<0` byte present **since v87** (gate the trailing byte `>=87`, not `>=95`).
 - SKILL=0x11A, DAMAGE=0x11B (skill lower) — correct.
 
-## Serverbound (client→server send sites) — TBD
-- Move: CVecCtrlSummoned::EndUpdateActive
-- Attack: CSummoned::TryDoingAttackManual (anti-hack envelope: drInfo/CRC/positions — our Cosmic-derived decoder does NOT match; needs faithful per-version port)
-- Damage: CSummoned::SetDamaged
+## Serverbound (client→server SEND sites) — CONFIRMED at asm (task-088)
+
+> Authority = the COutPacket SEND sites in each IDB. Identity field = the int
+> right after the opcode. **v83/v87 identify the summon by the owner charId
+> (cid, CSummoned [obj+0xAC], set from ctor arg_0 = cid). v95 identifies it by
+> the server-allocated m_dwSummonedID.** The v83 client has NO oid concept (the
+> pool is cid-keyed — see clientbound section), so the channel handler passes
+> the wire id through and atlas-summons reconciles via
+> `GetByOwner(senderCharacterId)` when the id misses (resolveOwned).
+
+### Identity / opcode matrix
+
+| packet | v83 op | v87 op | v95 op | v83/v87 identity | v95 identity |
+|---|---|---|---|---|---|
+| Move   | 0xAF | 0xBB | 0xCF (207) | owner cid | m_dwSummonedID |
+| Attack | 0xB0 | 0xBC | 0xD0 (208) | owner cid | m_dwSummonedID |
+| Damage | 0xB1 | 0xBD | 0xD1 (209) | owner cid | m_dwSummonedID |
+
+(Opcodes are routed by the socket layer to the registered handler; the decoders
+consume the body only.)
+
+### Move send — CVecCtrlSummoned::EndUpdateActive (v83 sub_9C84E9, v87 @0xa591da, v95 @0x9a0700)
+```
+COutPacket(op)
+Encode4 summonId        ; v83 ctrl[0x248]=cid (sub_9C84E9 @0x9c853d); v87 ctrl[188]; v95 m_dwSummonedID
+CMovePath::Flush(...)    ; opaque move blob (CMovePath::Encode @0x68a563):
+                         ;   Encode2 startX, Encode2 startY, Encode1 count,
+                         ;   count×{cmd...}, Encode1 keypadLen, keypad..., Encode2 minX/minY/maxX/maxY
+```
+Identical shape across all versions (only identity semantics + opcode differ).
+**Decoder**: `summonId` then `rawMovement = rest`; startX/startY = first 4 bytes
+of the blob (for position seeding); rawMovement is rebroadcast byte-faithfully.
+
+### Damage send — CSummoned::SetDamaged (v83 @0x7a607a, v87 @0x7f879a, v95 @0x74b730)
+**Byte-identical body across all three versions** (only identity + opcode differ):
+```
+Encode4 summonId
+if (source mob present):
+  Encode1 attackIdx                 ; mob attack index
+  Encode4 damage
+  Encode4 monsterTemplateId         ; mob dwTemplateID (NOT an oid)
+  Encode1 (dir < 0)                 ; impact-dir flag — PRESENT in v83 too (@0x7a62f4)
+else:
+  Encode1 0xFE                      ; sentinel "-2" (no source mob) (@0x7a62a8)
+  Encode4 damage
+```
+**Correction to prior doc**: the trailing dir byte is NOT v95-only — it is in
+v83/v87 as well; and the 0xFE no-mob branch exists in all versions. The old
+Cosmic-derived decoder (oid + skip1 + dmg + monsterIdFrom, no dir byte, no
+0xFE branch) was wrong.
+
+### Attack send — CSummoned::TryDoingAttackManual (v83 sub_7A4D42 @0x7a57dc, v87 @0x7f6666, v95 @0x751240)
+**Three structurally distinct layouts** (per-target block identical):
+```
+v83 header (LEAN — no anti-hack envelope):
+  Encode4 summonId(cid), Encode4 updateTime, Encode1 action|left, Encode1 count,
+  Encode2 userX,userY, Encode2 summonX,summonY
+
+v87 header (anti-hack envelope, NO repeatSkillPoint):
+  Encode4 summonId(cid), Encode4 ~drInfo0, Encode4 ~drInfo1, Encode4 updateTime,
+  Encode4 ~drInfo2, Encode4 ~drInfo3, Encode1 action|left, Encode4 dwKey,
+  Encode4 crc32, Encode1 count, Encode2 userX,userY,summonX,summonY
+
+v95 header (envelope + repeatSkillPoint):
+  ...as v87... then Encode4 repeatSkillPoint (@0x752450)
+
+per target (26 bytes, all versions):
+  Encode4 mobOid, Encode4 templateId, Encode1 hitAction, Encode1 foreAction|left,
+  Encode1 frameIdx, Encode1 calcDamageStatIndex, Encode2 curX, Encode2 curY,
+  Encode2 hitX, Encode2 hitY, Encode2 tDelay, Encode4 damage
+
+trailer: Encode4 skillCRC
+```
+**Decoder** gates: `IsRegion("GMS") && MajorAtLeast(87)` → envelope present;
+`MajorAtLeast(95)` → also repeatSkillPoint. v84 == v83 (lean). drInfo/dwKey/crc32
+are read at exact widths (skipped, not validated) so the cursor stays aligned and
+the target mobOid/damage fields decode correctly. Server consumes summon
+identity + per-target mobOid + damage + delay (+ templateId, surfaced but unused).
+
+### Go reconciliation (channel → summons)
+- Decoders expose `SummonId()` (= wire identity), `Targets()` (mobOid/templateId/
+  damage/delay), `Damage`/`MonsterIdFrom` (= mob template id).
+- Channel handlers pass `p.SummonId()` + `s.CharacterId()` (= owner cid) into the
+  SUMMON command bodies unchanged.
+- `summon.ProcessorImpl.resolveOwned(id, senderCharacterId, preferPuppet)`:
+  tries `Get(id)` (owner-matched, the v95/exact path); else
+  `GetByOwner(senderCharacterId)` (the v83/v87 path where the wire id IS the cid).
+  preferPuppet=true for Damage, false for Move/Attack. `senderCharacterId` is the
+  authoritative session owner, so owner-based resolution is safe.

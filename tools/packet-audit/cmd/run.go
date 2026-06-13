@@ -654,6 +654,15 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Damage", pkg: "monster", dir: csvpkg.DirClientbound}}
 	case "CMob::OnHPIndicator":
 		return []candidate{{name: "Health", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMobPool::OnMobCrcKeyChanged":
+		// One IDA function backs BOTH directions: it reads the clientbound
+		// MOB_CRC_KEY_CHANGED (Decode4 crcKey) and emits the serverbound
+		// MOB_CRC_KEY_CHANGED_REPLY (empty payload) acknowledgement. task-092
+		// Cluster-D models them as two structs.
+		return []candidate{
+			{name: "MobCrcKeyChanged", pkg: "monster", dir: csvpkg.DirClientbound},
+			{name: "MobCrcKeyChangedReply", pkg: "monster", dir: csvpkg.DirServerbound},
+		}
 
 	// --- Combat: drop (clientbound) ---
 	case "CDropPool::OnDropEnterField":
@@ -694,6 +703,15 @@ func candidatesFromFName(fname string) []candidate {
 	case "CMob::GenerateMovePath":
 		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
 		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::SendDropPickUpRequest":
+		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
+		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).
+		return []candidate{{name: "MobDropPickupRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::SendBanMapByMobRequest":
+		// task-092 Cluster-D: MOB_BANISH_PLAYER — atlas MobBanishPlayer
+		// (handle = "MobBanishPlayer"), in character/serverbound. One Encode4
+		// (mobTemplateId). v83/v84 senders are inlined into CUserLocal::Update.
+		return []candidate{{name: "MobBanishPlayer", pkg: "character", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: drop (serverbound) ---
 	case "CWvsContext::SendDropPickUpRequest":

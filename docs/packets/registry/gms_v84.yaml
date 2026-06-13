@@ -1418,10 +1418,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_CRC_KEY_CHANGED
   direction: clientbound
-  opcode: 249
+  opcode: 255
   fname: CMobPool::OnMobCrcKeyChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6882132
+  note: 'task-092 Cluster-D: v84 opcode RE-DERIVED from the IDB dispatcher CMobPool::OnPacket @0x68fe98 — case 255 (0xFF) calls OnMobCrcKeyChanged @0x690354. The csv-import seed value 249/0xF9 was the v83-inherited opcode and is WRONG for v84 (0xF9 is MonsterStatReset in v84); the +6 mob-range shift documented in this file header applies. Byte layout identical to v83 (1x Decode4).'
 - op: SHOW_MONSTER_HP
   direction: clientbound
   opcode: 256
@@ -3228,10 +3230,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_CRC_KEY_CHANGED_REPLY
   direction: serverbound
-  opcode: 164
+  opcode: 170
   fname: CMobPool::OnMobCrcKeyChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6882132
+  note: 'task-092 Cluster-D: v84 reply opcode RE-DERIVED from CMobPool::OnMobCrcKeyChanged @0x690354 — the reply COutPacket is constructed with opcode 170 (0xAA), not the v83-inherited 164/0xA4. Empty payload (no Encode* calls).'
 - op: FIND_FRIEND
   direction: serverbound
   opcode: 166

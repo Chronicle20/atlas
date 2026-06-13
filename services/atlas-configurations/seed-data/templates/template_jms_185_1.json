@@ -6,6 +6,11 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
         "opCode": "0x45",
         "validator": "LoggedInValidator",
         "handler": "MountFoodHandle"
@@ -389,6 +394,11 @@
         "handler": "NoteOperationHandle"
       },
       {
+        "opCode": "0x9E",
+        "validator": "LoggedInValidator",
+        "handler": "MobCrcKeyChangedReply"
+      },
+      {
         "opCode": "0xAA",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle"
@@ -558,6 +568,11 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0xC4",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
       },
       {
         "opCode": "0xD0",
@@ -1403,6 +1418,10 @@
       {
         "opCode": "0x107",
         "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "MobCrcKeyChanged"
       },
       {
         "opCode": "0x10B",

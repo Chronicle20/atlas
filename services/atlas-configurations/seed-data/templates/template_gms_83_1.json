@@ -297,6 +297,11 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x38",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
         "opCode": "0x39",
         "validator": "LoggedInValidator",
         "handler": "MonsterBookCover"
@@ -650,6 +655,11 @@
         }
       },
       {
+        "opCode": "0xA4",
+        "validator": "LoggedInValidator",
+        "handler": "MobCrcKeyChangedReply"
+      },
+      {
         "opCode": "0xA7",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
@@ -875,6 +885,11 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0xBE",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
       },
       {
         "opCode": "0xC0",
@@ -2135,6 +2150,10 @@
       {
         "opCode": "0xF6",
         "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0xF9",
+        "writer": "MobCrcKeyChanged"
       },
       {
         "opCode": "0xFA",

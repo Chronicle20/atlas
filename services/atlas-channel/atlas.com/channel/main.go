@@ -605,6 +605,7 @@ func produceWriters() []string {
 		monstercb.MonsterControlWriter,
 		monstercb.MonsterMovementWriter,
 		monstercb.MonsterMovementAckWriter,
+		monstercb.MobCrcKeyChangedWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -703,6 +704,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cashsb.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
+	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc

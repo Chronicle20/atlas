@@ -1,7 +1,7 @@
 # Disable (← `CUserLocal::OnSetStandAloneMode`)
 
 - **IDA:** 0x9e3172
-- **Atlas file:** `../../libs/atlas-packet/ui/clientbound/disable.go`
+- **Atlas file:** `libs/atlas-packet/ui/clientbound/disable.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

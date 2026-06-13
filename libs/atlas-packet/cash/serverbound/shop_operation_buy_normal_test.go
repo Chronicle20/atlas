@@ -8,6 +8,7 @@ import (
 
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuyNormal version=gms_v95 ida=0x48f580
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuyNormal version=jms_v185 ida=0x47f5ba
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyNormal version=gms_v87 ida=0x478cdd
 func TestShopOperationBuyNormalRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

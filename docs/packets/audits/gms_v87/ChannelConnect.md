@@ -1,7 +1,7 @@
 # ChannelConnect (← `CClientSocket::OnConnect#ChannelConnect`)
 
 - **IDA:** 0x4a6e5a
-- **Atlas file:** `../../libs/atlas-packet/socket/serverbound/channel_connect.go`
+- **Atlas file:** `libs/atlas-packet/socket/serverbound/channel_connect.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ✅

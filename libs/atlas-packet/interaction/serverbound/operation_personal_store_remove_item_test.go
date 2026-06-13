@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreRemoveItem version=gms_v95 ida=0x6987a0
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreRemoveItem version=gms_v87 ida=0x741271
 func TestOperationPersonalStoreRemoveItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

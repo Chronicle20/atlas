@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashShopOperationMoveToCashInventory",
+  "IDAName": "CCashShop::OnMoveCashItemStoL",
+  "Address": "0x47d146",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_move_to_cash_inventory.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

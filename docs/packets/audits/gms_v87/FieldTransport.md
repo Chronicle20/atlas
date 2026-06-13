@@ -1,7 +1,7 @@
 # FieldTransport (← `CField_ContiMove::OnContiState`)
 
 - **IDA:** 0x577c21
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/transport.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/transport.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationFieldRemoveFromBlackList version=gms_v95 ida=0x5397d0
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationFieldRemoveFromBlackList version=gms_v87 ida=0x55f31e
 func TestOperationFieldRemoveFromBlackListRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 
 // packet-audit:verify packet=buddy/serverbound/BuddyOperationAdd version=gms_v95 ida=0x535240
 // packet-audit:verify packet=buddy/serverbound/BuddyOperationAdd version=jms_v185 ida=0x56e41d
+// packet-audit:verify packet=buddy/serverbound/BuddyOperationAdd version=gms_v87 ida=0x558844
 func TestOperationAddRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

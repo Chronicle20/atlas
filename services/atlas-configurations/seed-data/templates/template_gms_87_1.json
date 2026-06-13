@@ -275,9 +275,21 @@
         "handler": "NPCContinueConversationHandle"
       },
       {
+        "opCode": "0x48",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x49",
+        "handler": "CompartmentSortHandle"
+      },
+      {
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x4B",
+        "handler": "CharacterItemUseHandle"
       },
       {
         "opCode": "0x4C",
@@ -286,6 +298,10 @@
       {
         "opCode": "0x4F",
         "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x59",
+        "handler": "CharacterItemUseScrollHandle"
       },
       {
         "opCode": "0x5B",
@@ -328,6 +344,26 @@
       {
         "opCode": "0x6E",
         "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0x80",
+        "handler": "MessengerOperationHandle"
+      },
+      {
+        "opCode": "0x82",
+        "handler": "PartyOperationHandle"
+      },
+      {
+        "opCode": "0x87",
+        "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x8A",
+        "handler": "BuddyOperationHandle"
+      },
+      {
+        "opCode": "0x8B",
+        "handler": "NoteOperationHandle"
       },
       {
         "opCode": "0xA3",
@@ -582,6 +618,14 @@
       {
         "opCode": "0xDA",
         "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xF1",
+        "handler": "CashShopCheckWalletHandle"
+      },
+      {
+        "opCode": "0xF2",
+        "handler": "CashShopOperationHandle"
       }
     ],
     "writers": [
@@ -809,6 +853,14 @@
       {
         "opCode": "0x32",
         "writer": "HiredMerchantOperation"
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x35",
+        "writer": "CompartmentSort"
       },
       {
         "opCode": "0x3D",
@@ -1045,6 +1097,10 @@
       {
         "opCode": "0xD5",
         "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xD6",
+        "writer": "PartyMemberHP"
       },
       {
         "opCode": "0xDA",

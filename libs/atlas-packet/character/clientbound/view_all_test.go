@@ -17,6 +17,13 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v95 ida=0x5de435
 // packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v95 ida=0x5de17f
 // packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v95 ida=0x5de284
+// CharacterViewAllError is the error/notice case of the same CLogin::OnViewAllCharResult
+// dispatcher (addr identical to the SearchFailed slice per version); the decompose
+// emitted no distinct #CharacterViewAllError export slice, so its evidence is pinned
+// against the same-function #CharacterViewAllSearchFailed slice (same address/hash).
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v95 ida=0x5de284
 func TestCharacterViewAllCountRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -99,13 +106,13 @@ func TestCharacterViewAllSearchFailedRoundTrip(t *testing.T) {
 // dispatcher selector). The single-byte fixture below is the exact, faithful
 // wire for the mode-2 error path the struct represents.
 //
-// NO packet-audit:verify marker is attached: the IDA exports
-// (docs/packets/ida-exports/*.json) harvested a `#CharacterViewAllSearchFailed`
-// slice at this address but NOT a distinct `#CharacterViewAllError` slice, so
-// `evidence pin --ida CLogin::OnViewAllCharResult#CharacterViewAllError` is
-// unresolvable (exit 3). A tier-1 cell cannot verify without fresh evidence;
-// adding a marker-only would regress this sibling from partial→incomplete.
-// This test stands as regression protection until the export is re-harvested.
+// EVIDENCE: the IDA exports harvested a `#CharacterViewAllSearchFailed` slice at
+// this address but NOT a distinct `#CharacterViewAllError` slice. Since the two
+// cases share one CLogin::OnViewAllCharResult function (identical address/hash
+// per version), CharacterViewAllError's evidence is pinned against the
+// same-function SearchFailed slice — see the packet-audit:verify markers at the
+// top of this file (v83 0x5facca / v87 0x6328eb / v95 0x5de284). This test
+// provides the fresh byte-fixture backing those tier-1 cells.
 func TestCharacterViewAllErrorByteOutput(t *testing.T) {
 	for _, v := range []struct {
 		Name         string

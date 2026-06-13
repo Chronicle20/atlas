@@ -23,7 +23,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | CONFIRM_EULA_RESULT | CLogin::OnConfirmEULAResult |  | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ | 0x005 | ❌ |  | ⬜ |
 | CHECK_PINCODE | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x006 | ✅ | 0x006 | ❌ | 0x006 | ✅ | 0x006 | ✅ |  | ⬜ |
 | UPDATE_PINCODE | CLogin::OnUpdatePinCodeResult | login/clientbound/PinUpdate | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | 🟡 | 0x008 | ❌ | 0x008 | 🟡 | 0x008 | 🟡 | 0x014 | ❌ |
+| VIEW_ALL_CHAR | CLogin::OnViewAllCharResult | character/clientbound/CharacterViewAllCharacters (T1) | 0x008 | ✅ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ | 0x014 | ❌ |
 | SELECT_CHARACTER_BY_VAC | CLogin::OnSelectCharacterByVACResult |  | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ | 0x009 | ❌ |  | ⬜ |
 | IDA_0X00A | CClientSocket::OnAuthenCodeChanged |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x00A | ❌ |
 | WORLD_INFORMATION | CLogin::OnWorldInformation | login/clientbound/ServerListEnd | 0x00A | ✅ | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ | 0x002 | ❌ |
@@ -910,10 +910,10 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 184 | 1 | 494 | 201 | 0 | 27.1% |
+| v83 | 185 | 0 | 494 | 201 | 0 | 27.2% |
 | v84 | 6 | 0 | 671 | 203 | 0 | 0.9% |
-| v87 | 185 | 1 | 530 | 164 | 0 | 25.8% |
-| v95 | 270 | 1 | 527 | 82 | 0 | 33.8% |
+| v87 | 186 | 0 | 530 | 164 | 0 | 26.0% |
+| v95 | 271 | 0 | 527 | 82 | 0 | 34.0% |
 | JMS185 | 164 | 0 | 546 | 170 | 0 | 23.1% |
 
 ## Conflicts

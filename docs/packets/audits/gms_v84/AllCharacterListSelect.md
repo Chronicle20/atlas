@@ -1,7 +1,7 @@
 # AllCharacterListSelect (← `CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/login/serverbound/all_character_list_select.go`
+- **Atlas file:** `libs/atlas-packet/login/serverbound/all_character_list_select.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

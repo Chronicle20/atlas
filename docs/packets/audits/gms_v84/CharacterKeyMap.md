@@ -1,7 +1,7 @@
 # CharacterKeyMap (← `CFuncKeyMappedMan::OnInit`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/keymap.go`
+- **IDA:** 0x59dda7
+- **Atlas file:** `libs/atlas-packet/character/clientbound/keymap.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ✅ |  |
 | 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

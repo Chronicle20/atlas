@@ -1,7 +1,7 @@
 # GuildCapacityChange (← `CWvsContext::OnGuildResult#CapacityChange`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/guild/clientbound/operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

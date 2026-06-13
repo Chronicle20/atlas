@@ -1,7 +1,7 @@
 # GuildInfo (← `CWvsContext::OnGuildResult#Info`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/info.go`
+- **Atlas file:** `libs/atlas-packet/guild/clientbound/info.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍

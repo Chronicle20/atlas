@@ -1,7 +1,7 @@
 # Attack (← `CUserRemote::OnAttack`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/attack.go`
+- **IDA:** 0x9c0572
+- **Atlas file:** `libs/atlas-packet/character/clientbound/attack.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 3
 - **Verdict:** 🔍
@@ -11,22 +11,21 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | byte `` | ❌ | width mismatch |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
+| 3 | byte | int32 `` | ❌ | width mismatch |
+| 4 | int32 | byte `` | ❌ | width mismatch |
+| 5 | int16 | int16 `` | ✅ |  |
+| 6 | int16 | byte `` | ❌ | width mismatch |
+| 7 | byte | byte `` | ✅ |  |
+| 8 | byte | int32 `` | ❌ | width mismatch |
+| 9 | int32 | int32 `` | ✅ |  |
+| 10 | int32 | byte `` | ❌ | width mismatch |
+| 11 | byte | byte `` | ✅ |  |
+| 12 | byte | int32 `` | ❌ | width mismatch |
+| 13 | int32 | int32 `` | ✅ |  |
+| 14 | int16 | int16 `` | ✅ |  |
+| 15 | int16 | int16 `` | ✅ |  |
+| 16 | int32 | int32 `` | ✅ |  |
 

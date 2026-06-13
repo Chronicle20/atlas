@@ -1,7 +1,7 @@
 # ServerListEnd (← `CLogin::OnWorldInformation#ServerListEnd`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_list_end.go`
+- **Atlas file:** `libs/atlas-packet/login/clientbound/server_list_end.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** 🚫

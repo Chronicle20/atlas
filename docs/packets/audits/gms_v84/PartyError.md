@@ -1,7 +1,7 @@
 # PartyError (← `CWvsContext::OnPartyResult#Error`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/party/clientbound/error.go`
+- **Atlas file:** `libs/atlas-packet/party/clientbound/error.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

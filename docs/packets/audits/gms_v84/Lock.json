@@ -1,21 +1,21 @@
 {
   "WriterName": "Lock",
   "IDAName": "CUserLocal::OnSetDirectionMode",
-  "Address": "",
+  "Address": "0x99ed12",
   "Variant": "GMS/v84",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/ui/clientbound/lock.go",
+  "AtlasFile": "libs/atlas-packet/ui/clientbound/lock.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

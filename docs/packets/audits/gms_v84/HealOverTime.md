@@ -1,18 +1,18 @@
 # HealOverTime (← `CWvsContext::SendStatChangeRequest`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/serverbound/heal_over_time.go`
+- **IDA:** 0xa69c4d
+- **Atlas file:** `libs/atlas-packet/character/serverbound/heal_over_time.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | int16 | int16 `` | ✅ |  |
+| 3 | int16 | int16 `` | ✅ |  |
+| 4 | byte | byte `` | ✅ |  |
 

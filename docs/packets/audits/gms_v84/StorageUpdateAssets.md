@@ -1,7 +1,7 @@
 # StorageUpdateAssets (← `CTrunkDlg::OnPacket#UpdateAssets`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/storage/clientbound/update_assets.go`
+- **Atlas file:** `libs/atlas-packet/storage/clientbound/update_assets.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

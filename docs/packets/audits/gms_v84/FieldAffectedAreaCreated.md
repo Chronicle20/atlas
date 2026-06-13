@@ -1,7 +1,7 @@
 # FieldAffectedAreaCreated (← `CAffectedAreaPool::OnAffectedAreaCreated`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/affected_area_created.go`
+- **IDA:** 0x4326ca
+- **Atlas file:** `libs/atlas-packet/field/clientbound/affected_area_created.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,14 +11,14 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int32 | int32 `` | ✅ |  |
+| 4 | byte | byte `` | ✅ |  |
+| 5 | int16 | int16 `` | ✅ |  |
+| 6 | int32 | bytes `` | ✅ |  |
+| 7 | int32 | int32 `` | ✅ |  |
 | 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 10 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

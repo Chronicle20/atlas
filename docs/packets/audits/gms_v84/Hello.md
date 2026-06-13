@@ -1,7 +1,7 @@
 # Hello (← `CClientSocket::OnConnect#Hello`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/socket/clientbound/hello.go`
+- **Atlas file:** `libs/atlas-packet/socket/clientbound/hello.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

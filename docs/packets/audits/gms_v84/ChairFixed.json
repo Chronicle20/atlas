@@ -1,21 +1,21 @@
 {
   "WriterName": "ChairFixed",
   "IDAName": "CUserLocal::HandleXKeyDown",
-  "Address": "",
+  "Address": "0x986138",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/character/serverbound/chair_fixed.go",
+  "AtlasFile": "libs/atlas-packet/character/serverbound/chair_fixed.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

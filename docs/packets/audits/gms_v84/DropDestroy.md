@@ -1,7 +1,7 @@
 # DropDestroy (← `CDropPool::OnDropLeaveField`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/drop/clientbound/destroy.go`
+- **IDA:** 0x50f409
+- **Atlas file:** `libs/atlas-packet/drop/clientbound/destroy.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,10 +11,10 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int16 | int16 `` | ✅ |  |
+| 4 | int32 | byte `` | ❌ | width mismatch |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

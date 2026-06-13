@@ -1,19 +1,19 @@
 {
   "WriterName": "MonsterHealth",
   "IDAName": "CMob::OnHPIndicator",
-  "Address": "",
+  "Address": "0x68393b",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/monster/clientbound/health.go",
+  "AtlasFile": "libs/atlas-packet/monster/clientbound/health.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
@@ -25,6 +25,6 @@
       "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 1,
+  "Verdict": 2,
   "FlatInvalid": false
 }

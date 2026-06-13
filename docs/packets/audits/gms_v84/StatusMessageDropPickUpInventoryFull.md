@@ -1,7 +1,7 @@
 # StatusMessageDropPickUpInventoryFull (← `CWvsContext::OnMessage`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/status_message.go`
+- **IDA:** 0xa6bdd9
+- **Atlas file:** `libs/atlas-packet/character/clientbound/status_message.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ⚠️
@@ -10,6 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ✅ |  |
 | 1 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

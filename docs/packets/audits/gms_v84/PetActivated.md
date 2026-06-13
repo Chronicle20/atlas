@@ -1,7 +1,7 @@
 # PetActivated (← `CUserRemote::OnPetActivated`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/pet/clientbound/activated.go`
+- **IDA:** 0x9c3e9d
+- **Atlas file:** `libs/atlas-packet/pet/clientbound/activated.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,18 +11,18 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | byte `` | ❌ | width mismatch |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
+| 3 | byte | int32 `` | ❌ | width mismatch |
+| 4 | int32 | string `` | ❌ | width mismatch |
+| 5 | string | bytes `` | ❌ | width mismatch |
+| 6 | int64 | int16 `` | ❌ | width mismatch |
+| 7 | int16 | int16 `` | ✅ |  |
+| 8 | int16 | byte `` | ❌ | width mismatch |
+| 9 | byte | int16 `` | ❌ | width mismatch |
+| 10 | int16 | byte `` | ❌ | width mismatch |
+| 11 | byte | byte `` | ✅ |  |
 | 12 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 13 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

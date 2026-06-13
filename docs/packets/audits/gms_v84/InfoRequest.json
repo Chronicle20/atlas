@@ -1,28 +1,28 @@
 {
   "WriterName": "InfoRequest",
   "IDAName": "CWvsContext::SendCharacterInfoRequest",
-  "Address": "",
+  "Address": "0xa6f657",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/character/serverbound/info_request.go",
+  "AtlasFile": "libs/atlas-packet/character/serverbound/info_request.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
@@ -30,10 +30,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

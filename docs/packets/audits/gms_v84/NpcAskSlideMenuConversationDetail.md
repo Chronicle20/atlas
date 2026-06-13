@@ -1,7 +1,7 @@
 # NpcAskSlideMenuConversationDetail (← `CScriptMan::OnAskSlideMenu#AskSlideMenu`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
 - **Verdict:** 🔍

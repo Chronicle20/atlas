@@ -1,7 +1,7 @@
 # MonsterDestroy (← `CMobPool::OnMobLeaveField`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/destroy.go`
+- **IDA:** 0x6901b3
+- **Atlas file:** `libs/atlas-packet/monster/clientbound/destroy.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
 | 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

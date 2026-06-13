@@ -1,7 +1,7 @@
 # CharacterDamage (← `CUserRemote::OnHit`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/damage.go`
+- **IDA:** 0x9c3681
+- **Atlas file:** `libs/atlas-packet/character/clientbound/damage.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 3
 - **Verdict:** 🔍
@@ -11,13 +11,20 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | byte `` | ❌ | width mismatch |
+| 1 | byte | int32 `` | ❌ | width mismatch |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int32 | byte `` | ❌ | width mismatch |
+| 4 | byte | byte `` | ✅ |  |
+| 5 | byte | byte `` | ✅ |  |
+| 6 | byte | int32 `` | ❌ | width mismatch |
+| 7 | int32 | byte `` | ❌ | width mismatch |
+| 8 | int32 | int16 `` | ❌ | width mismatch |
+| 9 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 10 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 11 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 12 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 13 | byte | byte `` | ❌ | atlas: short — missing trailing field |
+| 14 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 15 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
 

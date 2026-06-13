@@ -1,7 +1,7 @@
 # InteractionOperationChat (← `CMiniRoomBaseDlg::CheckAndSendChat`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_chat.go`
+- **IDA:** 0x6752d8
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_chat.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,6 +11,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | byte `` | ❌ | width mismatch |
+| 1 | string | string `` | ✅ |  |
 

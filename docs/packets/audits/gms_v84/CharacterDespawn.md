@@ -1,14 +1,14 @@
 # CharacterDespawn (← `CUserPool::OnUserLeaveField`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/despawn.go`
+- **IDA:** 0x9b2299
+- **Atlas file:** `libs/atlas-packet/character/clientbound/despawn.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | int32 | int32 `` | ✅ |  |
 

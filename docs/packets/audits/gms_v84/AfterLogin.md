@@ -1,7 +1,7 @@
 # AfterLogin (← `CLogin::OnSetAccountResult#AfterLogin`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/login/serverbound/after_login.go`
+- **Atlas file:** `libs/atlas-packet/login/serverbound/after_login.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍

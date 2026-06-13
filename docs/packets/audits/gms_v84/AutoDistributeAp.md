@@ -1,7 +1,7 @@
 # AutoDistributeAp (← `CWvsContext::SendAbilityUpRequest#AutoDistributeAp`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/serverbound/auto_distribute_ap.go`
+- **Atlas file:** `libs/atlas-packet/character/serverbound/auto_distribute_ap.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

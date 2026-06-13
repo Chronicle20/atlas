@@ -1,7 +1,7 @@
 # InventoryQuantityUpdate (← `CWvsContext::OnInventoryOperation#QuantityUpdate`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/inventory/clientbound/change.go`
+- **Atlas file:** `libs/atlas-packet/inventory/clientbound/change.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

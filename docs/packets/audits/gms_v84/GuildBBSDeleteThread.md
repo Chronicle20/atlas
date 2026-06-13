@@ -1,7 +1,7 @@
 # GuildBBSDeleteThread (← `CUIGuildBBS::OnDelete`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_delete_thread.go`
+- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_delete_thread.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** 🚫

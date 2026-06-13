@@ -1,7 +1,7 @@
 # NpcShopOperationLevelRequirement (← `CShopDlg::OnPacket#LevelRequirement`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/shop_operation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

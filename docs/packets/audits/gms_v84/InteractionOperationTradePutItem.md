@@ -1,7 +1,7 @@
 # InteractionOperationTradePutItem (← `CTradingRoomDlg::PutItem`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go`
+- **IDA:** 0x7e96e5
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌
@@ -10,8 +10,9 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int16 | byte `` | ❌ | width mismatch |
+| 2 | int16 | int16 `` | ✅ |  |
+| 3 | byte | int16 `` | ❌ | width mismatch |
+| 4 | byte | byte `` | ❌ | atlas: short — missing trailing field |
 

@@ -1,7 +1,7 @@
 # GuildBBSDisplayThread (← `CUIGuildBBS::SendViewEntryRequest`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/guild/serverbound/bbs_display_thread.go`
+- **Atlas file:** `libs/atlas-packet/guild/serverbound/bbs_display_thread.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** 🚫

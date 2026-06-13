@@ -1,7 +1,7 @@
 # ItemUpgrade (← `CUser::ShowItemUpgradeEffect`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/item_upgrade.go`
+- **IDA:** 0x96a87f
+- **Atlas file:** `libs/atlas-packet/character/clientbound/item_upgrade.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
 - **Verdict:** ❌
@@ -10,9 +10,9 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | byte `` | ❌ | width mismatch |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
+| 3 | byte | byte `` | ✅ |  |
+| 4 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
 

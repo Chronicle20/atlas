@@ -1,21 +1,21 @@
 {
   "WriterName": "CharacterKeyMapAutoHp",
   "IDAName": "CFuncKeyMappedMan::OnPetConsumeItemInit",
-  "Address": "",
+  "Address": "0x59de20",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/keymap_auto_hp.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/keymap_auto_hp.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

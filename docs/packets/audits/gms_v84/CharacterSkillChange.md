@@ -1,20 +1,20 @@
 # CharacterSkillChange (← `CWvsContext::OnChangeSkillRecordResult`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/skill_change.go`
+- **IDA:** 0xa6972b
+- **Atlas file:** `libs/atlas-packet/character/clientbound/skill_change.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int16 | int16 `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int32 | int32 `` | ✅ |  |
+| 4 | int32 | int32 `` | ✅ |  |
+| 5 | int64 | bytes `` | ✅ |  |
+| 6 | byte | byte `` | ✅ |  |
 

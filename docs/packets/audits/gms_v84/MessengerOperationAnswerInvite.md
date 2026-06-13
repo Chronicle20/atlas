@@ -1,7 +1,7 @@
 # MessengerOperationAnswerInvite (← `CUIMessenger::OnCreate`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/messenger/serverbound/operation_answer_invite.go`
+- **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_answer_invite.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** 🚫

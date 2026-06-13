@@ -1,7 +1,7 @@
 # BuddyCapacityUpdate (← `CWvsContext::OnFriendResult#CapacityUpdate`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/buddy/clientbound/capacity_update.go`
+- **Atlas file:** `libs/atlas-packet/buddy/clientbound/capacity_update.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ⚠️

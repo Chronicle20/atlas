@@ -1,21 +1,11 @@
 {
   "WriterName": "FieldKiteError",
   "IDAName": "CMessageBoxPool::OnCreateFailed",
-  "Address": "",
+  "Address": "0x670a95",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/field/clientbound/kite_error.go",
-  "Rows": [
-    {
-      "Index": 0,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    }
-  ],
-  "Verdict": 2,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/kite_error.go",
+  "Rows": null,
+  "Verdict": 0,
   "FlatInvalid": false
 }

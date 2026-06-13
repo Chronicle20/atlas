@@ -1,7 +1,7 @@
 # PartyInviteReject (← `CWvsContext::OnPartyResult#InviteReject`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/party/serverbound/invite_reject.go`
+- **Atlas file:** `libs/atlas-packet/party/serverbound/invite_reject.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

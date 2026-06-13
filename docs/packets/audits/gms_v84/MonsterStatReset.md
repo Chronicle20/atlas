@@ -1,7 +1,7 @@
 # MonsterStatReset (← `CMob::OnStatReset`)
 
-- **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/monster/clientbound/stat.go`
+- **IDA:** 0x682726
+- **Atlas file:** `libs/atlas-packet/monster/clientbound/stat.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍
@@ -11,11 +11,11 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | bytes `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | int32 | byte `` | ❌ | width mismatch |
+| 4 | int32 | byte `` | ❌ | width mismatch |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |

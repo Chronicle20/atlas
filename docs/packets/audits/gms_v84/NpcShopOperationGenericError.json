@@ -4,7 +4,7 @@
   "Address": "",
   "Variant": "GMS/v84",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/shop_operation.go",
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_operation.go",
   "Rows": [
     {
       "Index": 0,

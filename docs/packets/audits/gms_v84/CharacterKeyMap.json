@@ -1,19 +1,19 @@
 {
   "WriterName": "CharacterKeyMap",
   "IDAName": "CFuncKeyMappedMan::OnInit",
-  "Address": "",
+  "Address": "0x59dda7",
   "Variant": "GMS/v84",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/keymap.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/keymap.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,

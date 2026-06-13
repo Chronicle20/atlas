@@ -1,7 +1,7 @@
 # FieldEffectBossHp (← `CField::OnFieldEffect#BossHp`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ❌

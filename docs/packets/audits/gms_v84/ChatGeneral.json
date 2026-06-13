@@ -1,19 +1,19 @@
 {
   "WriterName": "ChatGeneral",
   "IDAName": "CField::SendChatMsg",
-  "Address": "",
+  "Address": "0x5382d7",
   "Variant": "GMS/v84",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/chat/serverbound/general.go",
+  "AtlasFile": "libs/atlas-packet/chat/serverbound/general.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
@@ -22,7 +22,7 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 2,
@@ -30,8 +30,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
   "Verdict": 3,

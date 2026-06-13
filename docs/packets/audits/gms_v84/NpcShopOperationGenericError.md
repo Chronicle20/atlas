@@ -1,7 +1,7 @@
 # NpcShopOperationGenericError (← `CShopDlg::OnPacket#GenericError`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/shop_operation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** 🔍

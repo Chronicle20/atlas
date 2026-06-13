@@ -1,7 +1,7 @@
 # ServerListEntry (← `CLogin::OnWorldInformation`)
 
 - **IDA:** 0x60e5b3
-- **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_list_entry.go`
+- **Atlas file:** `libs/atlas-packet/login/clientbound/server_list_entry.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
 - **Verdict:** ✅

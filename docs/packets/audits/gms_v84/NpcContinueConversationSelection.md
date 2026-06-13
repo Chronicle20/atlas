@@ -1,7 +1,7 @@
 # NpcContinueConversationSelection (← `CScriptMan::OnAskMenu#Selection`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/continue_conversation_selection.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/continue_conversation_selection.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
 - **Verdict:** ⚠️

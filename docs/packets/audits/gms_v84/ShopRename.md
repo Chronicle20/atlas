@@ -1,7 +1,7 @@
 # ShopRename (← `CWvsContext::OnEntrustedShopCheckResult#ShopRename`)
 
 - **IDA:** 
-- **Atlas file:** `../../libs/atlas-packet/merchant/clientbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/merchant/clientbound/operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
 - **Verdict:** ⚠️

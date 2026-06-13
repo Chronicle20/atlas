@@ -1,21 +1,21 @@
 {
   "WriterName": "FieldAffectedAreaRemoved",
   "IDAName": "CAffectedAreaPool::OnAffectedAreaRemoved",
-  "Address": "",
+  "Address": "0x432fb4",
   "Variant": "GMS/v84",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/field/clientbound/affected_area_removed.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/affected_area_removed.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

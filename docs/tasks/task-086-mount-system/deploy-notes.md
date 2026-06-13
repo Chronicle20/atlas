@@ -137,20 +137,32 @@ Fixes:
 - **Other versions (v87/v95/JMS/12/92): opcode NOT yet verified** — the serverbound table shifts
   across versions; do not copy 0x4D blindly. Verify per client before adding to those templates.
 
-### SET_TAMING_MOB_INFO (outbound writer) — NO standalone opcode on v83
-The mount level/exp/tiredness is **not** broadcast as its own packet on v83. It is delivered
-**inside `LP_CharacterInfo`** (`CWvsContext::OnCharacterInfo`): after the avatar/pet block,
-`Decode1(hasTamingMob)`, then `Decode4(level), Decode4(exp), Decode4(tiredness)` →
-`CUIUserInfo::SetTamingMobInfo(level, exp, tiredness)` (3 ints, **no characterId, no levelUp**).
-The atlas `SetTamingMobInfo` writer (`characterId,level,exp,tiredness,levelUp`) is a *later-version*
-`LP_SetTamingMobInfo` shape and has **no v83 opcode to map to** — the SET/TICK/FEED broadcast from
-the mount-status consumer is a dead no-op on v83 (writer name resolves to no opcode).
-Implication / open work:
-- To surface mount stats on v83, atlas must inject the `hasTamingMob + level/exp/tiredness` block
-  into its **character-info response** (query atlas-mounts for the active mount), not broadcast a
-  standalone packet. This is a char-info-integration feature, not an opcode registration.
-- The standalone writer (Task 5/26/27) should be guarded/disabled for GMS<87 (and verified to be a
-  real opcode on v87/v95/JMS before enabling there).
+### SET_TAMING_MOB_INFO (outbound writer) — CORRECTION: it IS a real standalone packet
+**An earlier note here wrongly claimed there is no standalone SET_TAMING_MOB_INFO opcode. That was
+a miss** — I had only looked at `OnCharacterInfo` and never found `CWvsContext::OnSetTamingMobInfo`.
+It exists in every supported client and its body is exactly `Decode4 characterId, Decode4 level,
+Decode4 exp, Decode4 tiredness, Decode1 levelUp` — i.e. **identical to the atlas
+`SetTamingMobInfoBody(characterId, level, exp, tiredness, levelUp)`**. `levelUp` also drives the
+client's level-up effect + sound. So the original writer was correct; it only ever lacked a
+registered opcode. Dispatch case (= writer opcode), verified per IDB via `CWvsContext::OnPacket`:
+
+| Version | OnSetTamingMobInfo opcode | source |
+|---|---|---|
+| GMS v83 | 0x30 | v83 IDB (OnPacket case 0x30) |
+| GMS v84 | 0x30 | == v83 |
+| GMS v87 | 0x30 | v87 IDB (case 0x30) |
+| GMS v92 | 0x31 | user IDA (no local IDB) — unverified by me |
+| GMS v95 | 0x2F | v95 IDB (case 47) |
+| GMS v111 | 0x36 | user IDA (no template) |
+| JMS v185 | 0x2D | jms IDB (case 0x2D) |
+
+Registered the `SetTamingMobInfo` writer at these opcodes in all 6 templates; live-patched the v83
+PR tenant writers (0x30) + restarted channel. The broadcast guard added earlier was **removed** —
+the SET/TICK/FEED broadcast now fires unconditionally (every supported client has the opcode).
+NOTE: the info-WINDOW display (`OnCharacterInfo` → `CUIUserInfo::SetTamingMobInfo`) is a *separate*
+path populated by the char-info embed below; the standalone packet updates `CUser` state + level-up
+effect. The display gate `if (v11) ...` in `OnCharacterInfo` is ~always true (`SetAvatarInfo` returns
+1 except on a mount-equip lookup failure), so it does not block the embed.
 
 ## Multi-version mount food opcodes + char-info injection (2026-06-13)
 
@@ -171,13 +183,13 @@ Existing non-v83 tenants need the same live PATCH the v83 tenant got (seed templ
 only apply at tenant creation). The PR env has only the v83 tenant, so no extra live
 patch was needed here.
 
-### Char-info mount block — injected (no standalone opcode this era)
-v83/v87/v95 all read the tamed-mob stats inside `LP_CharacterInfo`, right after the pet
-block: `Decode1(present)` then `level, exp, tiredness` (3×int32), uniform layout. The
-`SET_TAMING_MOB_INFO` standalone broadcast does not exist pre-v8x-late; the writer's old
-`WriteByte(0)` always said "no mount". Now `libs/atlas-packet` CharacterInfo carries a
-`MountInfo` block; the channel char-info handler fetches the mount from atlas-mounts (new
-`atlas-channel/mount` REST client) and emits it. nginx route added:
-`/api/characters/{id}/mount -> atlas-mounts`. The standalone SET/TICK/FEED broadcast writer
-(Task 5/26/27) remains a no-op on these versions and should be guarded off for GMS<87 (or
-verified to be a real opcode on the version it targets).
+### Char-info mount block — injected (the info-window path)
+Separately from the standalone packet, v83/v87/v95 also read the tamed-mob stats inside
+`LP_CharacterInfo`, right after the pet block: `Decode1(present)` then `level, exp, tiredness`
+(3×int32), uniform layout — this is what populates the double-click info window. The writer's old
+`WriteByte(0)` always said "no mount". Now `libs/atlas-packet` CharacterInfo carries a `MountInfo`
+block; the char-info handler emits it when the character has a tamed-mob equipped (slot `tamingMob`
+-18, tested via `Equipable != nil` since the slot map is pre-populated), fetching level/exp/tiredness
+from atlas-mounts (new `atlas-channel/mount` REST client). nginx route added:
+`/api/characters/{id}/mount -> atlas-mounts`. Both paths (standalone OnSetTamingMobInfo + char-info
+embed) are now active.

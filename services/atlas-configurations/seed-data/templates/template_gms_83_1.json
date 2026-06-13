@@ -1028,6 +1028,10 @@
     ],
     "writers": [
       {
+        "opCode": "0x30",
+        "writer": "SetTamingMobInfo"
+      },
+      {
         "opCode": "0x00",
         "writer": "AuthSuccess"
       },

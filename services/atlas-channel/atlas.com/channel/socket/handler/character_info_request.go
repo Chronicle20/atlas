@@ -69,7 +69,9 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		// default-creates, so 404 is unreachable) and is logged, not silently dropped.
 		mountInfo := charcb.MountInfo{}
 		if tms, sErr := slot.GetSlotByType("tamingMob"); sErr == nil {
-			if _, equipped := c.Equipment().Get(tms.Type); equipped {
+			// Equipment().Get returns ok for every defined slot (the map is
+			// pre-populated), so test the actual equipped item, not just ok.
+			if em, ok := c.Equipment().Get(tms.Type); ok && em.Equipable != nil {
 				if mm, mErr := mount.NewProcessor(l, ctx).GetByCharacterId(p.CharacterId()); mErr != nil {
 					l.WithError(mErr).Warnf("Unable to retrieve mount for character [%d]; omitting mount block from character info.", p.CharacterId())
 				} else {

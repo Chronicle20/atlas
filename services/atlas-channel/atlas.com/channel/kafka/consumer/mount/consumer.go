@@ -52,16 +52,6 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-// clientHasStandaloneTamingMobInfo reports whether the tenant's client renders a
-// standalone SET_TAMING_MOB_INFO field packet. No currently-supported client does:
-// v83/v87/v95 (IDA-verified — docs/.../deploy-notes.md Task 41b) carry the mount's
-// level/exp/tiredness only inside the character-info window, with no standalone
-// opcode. The real-time SET/TICK/FEED broadcast therefore resolves no writer opcode
-// and would only log errors, so it is suppressed; the stats surface via the
-// char-info handler instead. Held as a package var so a future client that exposes
-// LP_SetTamingMobInfo (or a test) can flip it.
-var clientHasStandaloneTamingMobInfo = func(_ tenant.Model) bool { return false }
-
 // tamingMobInfoBroadcaster is the channel-side broadcast seam for the
 // MOUNT_STATUS -> SetTamingMobInfo translation. Held as a package-level var so
 // tests can swap in a recording stub without standing up a REST mock for
@@ -100,13 +90,13 @@ func handleStatusEvent(sc server.Model, wp writer.Producer) message.Handler[moun
 			return
 		}
 
-		// Only broadcast the standalone SetTamingMobInfo on clients that actually
-		// render it; otherwise mount stats are delivered via the character-info
-		// window (see clientHasStandaloneTamingMobInfo).
-		if clientHasStandaloneTamingMobInfo(tenant.MustFromContext(ctx)) {
-			tamingMobInfoBroadcaster(l, ctx, wp, sc, e.CharacterId,
-				uint32(e.Body.Level), uint32(e.Body.Exp), uint32(e.Body.Tiredness), e.Body.LevelUp)
-		}
+		// Broadcast the standalone CWvsContext::OnSetTamingMobInfo packet to the
+		// rider's map (self + observers). The writer opcode is registered per version
+		// (v83/v84/v87=0x30, v92=0x31, v95=0x2F, jms=0x2D — IDA-verified); body is
+		// characterId/level/exp/tiredness/levelUp. levelUp also drives the client's
+		// level-up effect + sound.
+		tamingMobInfoBroadcaster(l, ctx, wp, sc, e.CharacterId,
+			uint32(e.Body.Level), uint32(e.Body.Exp), uint32(e.Body.Tiredness), e.Body.LevelUp)
 
 		if e.Body.TooTired {
 			tooTiredNoticer(l, ctx, wp, sc, e.CharacterId, tooTiredMessage)

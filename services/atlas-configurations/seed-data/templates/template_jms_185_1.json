@@ -557,6 +557,10 @@
       }
     ],
     "writers": [{
+        "opCode": "0x2D",
+        "writer": "SetTamingMobInfo"
+      },
+      {
         "opCode": "0x00",
         "writer": "AuthSuccess"
       },

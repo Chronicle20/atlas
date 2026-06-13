@@ -15,6 +15,10 @@ func testAvatar() model.Avatar {
 	return model.NewAvatar(0, 1, 20000, false, 30000, equip, masked, pets)
 }
 
+// packet-audit:verify packet=messenger/clientbound/MessengerAdd version=gms_v83 ida=0x8511fc
+// packet-audit:verify packet=messenger/clientbound/MessengerAdd version=gms_v87 ida=0x8b978f
+// packet-audit:verify packet=messenger/clientbound/MessengerAdd version=gms_v95 ida=0x7f5e40
+// packet-audit:verify packet=messenger/clientbound/MessengerAdd version=jms_v185 ida=0x8e447e
 func TestMessengerAddRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -13,6 +13,9 @@ import (
 //   v83/JMS: 1+4+9+298 = 312 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
 //   v95 (GMS only): 1+4+9+378 = 392 bytes
 // packet-audit:verify packet=party/clientbound/PartyJoin version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v95 ida=0xa11405
 func TestJoinByteOutput(t *testing.T) {
 	members := []party.PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},

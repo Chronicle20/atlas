@@ -6,6 +6,9 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=buddy/clientbound/BuddyError version=gms_v83 ida=0xa3f2e8
+// packet-audit:verify packet=buddy/clientbound/BuddyError version=gms_v87 ida=0xad7ae5
+// packet-audit:verify packet=buddy/clientbound/BuddyError version=gms_v95 ida=0xa12630
 func TestBuddyErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

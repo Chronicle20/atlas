@@ -8,6 +8,10 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=fame/serverbound/Change version=gms_v83 ida=0xa23eb5
+// packet-audit:verify packet=fame/serverbound/Change version=gms_v87 ida=0xabb983
+// packet-audit:verify packet=fame/serverbound/Change version=gms_v95 ida=0x9f67e0
+// packet-audit:verify packet=fame/serverbound/Change version=jms_v185 ida=0xb0b21e
 func TestChangeRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

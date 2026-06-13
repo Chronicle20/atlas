@@ -6,6 +6,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=gms_v83 ida=0x58ddb4
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=gms_v87 ida=0x5bd279
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=gms_v95 ida=0x568c30
+// packet-audit:verify packet=character/clientbound/CharacterKeyMap version=jms_v185 ida=0x5e79aa
 func TestCharacterKeyMap(t *testing.T) {
 	keys := map[int32]KeyBinding{
 		2:  {KeyType: 4, KeyAction: 10},

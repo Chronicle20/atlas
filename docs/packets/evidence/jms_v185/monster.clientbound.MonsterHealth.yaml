@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterHealth
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnHPIndicator
+    address: "0x6eaddf"
+    decompile_sha256: fe025a0be92d79be1083a06b9c1043aab742aef4789814f3faf2f7f8d61fd2ae

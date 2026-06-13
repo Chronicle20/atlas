@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerAdd
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Add
+    address: "0x8e447e"
+    decompile_sha256: f22d040232a6c3817402dc58327623d831d07418c6646c9eea628915bd59f3d8

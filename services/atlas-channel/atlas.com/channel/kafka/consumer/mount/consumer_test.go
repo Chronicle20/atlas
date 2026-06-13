@@ -28,6 +28,10 @@ type tooTiredNotice struct {
 	message     string
 }
 
+// recordedTooTiredDismounts captures characterIds passed to the auto-dismount
+// seam; reset by withRecordingSeams.
+var recordedTooTiredDismounts []uint32
+
 // withRecordingSeams swaps the package-level broadcast + notice seams for
 // recording stubs so tests can assert the wire effect of the mount status
 // consumer without standing up REST mocks for session resolution or
@@ -39,15 +43,21 @@ func withRecordingSeams(t *testing.T) (restore func(), broadcasts *[]tamingMobIn
 	var ns []tooTiredNotice
 	origBroadcast := tamingMobInfoBroadcaster
 	origNotice := tooTiredNoticer
+	origDismount := tooTiredDismounter
+	recordedTooTiredDismounts = nil
 	tamingMobInfoBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ server.Model, characterId, level, exp, tiredness uint32, levelUp bool) {
 		bs = append(bs, tamingMobInfoBroadcast{characterId, level, exp, tiredness, levelUp})
 	}
 	tooTiredNoticer = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ server.Model, characterId uint32, message string) {
 		ns = append(ns, tooTiredNotice{characterId, message})
 	}
+	tooTiredDismounter = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, characterId uint32) {
+		recordedTooTiredDismounts = append(recordedTooTiredDismounts, characterId)
+	}
 	return func() {
 		tamingMobInfoBroadcaster = origBroadcast
 		tooTiredNoticer = origNotice
+		tooTiredDismounter = origDismount
 	}, &bs, &ns
 }
 
@@ -177,6 +187,9 @@ func TestStatusEvent_TooTiredNoticesRider(t *testing.T) {
 	}
 	if len(*notices) != 1 {
 		t.Fatalf("too-tired TICK: want 1 notice, got %d", len(*notices))
+	}
+	if len(recordedTooTiredDismounts) != 1 || recordedTooTiredDismounts[0] != 1004 {
+		t.Fatalf("too-tired TICK: want auto-dismount of character 1004, got %v", recordedTooTiredDismounts)
 	}
 	n := (*notices)[0]
 	if n.characterId != 1004 {

@@ -1,6 +1,7 @@
 package mount
 
 import (
+	"atlas-channel/character/buff"
 	consumer2 "atlas-channel/kafka/consumer"
 	mount2 "atlas-channel/kafka/message/mount"
 	"atlas-channel/listener"
@@ -68,6 +69,29 @@ var tamingMobInfoBroadcaster = func(l logrus.FieldLogger, ctx context.Context, w
 	}
 }
 
+// tooTiredDismounter auto-dismounts a rider whose mount grew too tired (FR-6.3;
+// mirrors Cosmic runTirednessSchedule's dispelSkill). It resolves the rider's
+// session for the field, finds the active MONSTER_RIDING buff, and cancels it —
+// which both visually dismounts the player and (via the buff-EXPIRED event)
+// drops the active-mount registry entry so ticking stops.
+var tooTiredDismounter = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, characterId uint32) {
+	err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
+		bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(characterId)
+		if err != nil {
+			return err
+		}
+		for _, b := range bs {
+			if buff.IsMount(b) {
+				return buff.NewProcessor(l, ctx).Cancel(s.Field(), characterId, b.SourceId())
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to auto-dismount too-tired character [%d].", characterId)
+	}
+}
+
 // tooTiredNoticer is the channel-side seam for the FR-6.3 too-tired notice. Sent
 // to the rider only via the world-message NOTICE writer.
 var tooTiredNoticer = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, sc server.Model, characterId uint32, message string) {
@@ -99,6 +123,9 @@ func handleStatusEvent(sc server.Model, wp writer.Producer) message.Handler[moun
 			uint32(e.Body.Level), uint32(e.Body.Exp), uint32(e.Body.Tiredness), e.Body.LevelUp)
 
 		if e.Body.TooTired {
+			// Cosmic dispels the mount skill when tiredness maxes; do the same so the
+			// rider is actually dismounted, then send the notice.
+			tooTiredDismounter(l, ctx, sc, e.CharacterId)
 			tooTiredNoticer(l, ctx, wp, sc, e.CharacterId, tooTiredMessage)
 		}
 	}

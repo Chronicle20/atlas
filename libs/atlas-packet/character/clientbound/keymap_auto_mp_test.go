@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterKeyMapAutoMp version=gms_v87 ida=0x5bd318
 // packet-audit:verify packet=character/clientbound/CharacterKeyMapAutoMp version=gms_v95 ida=0x5688f0
 // packet-audit:verify packet=character/clientbound/CharacterKeyMapAutoMp version=jms_v185 ida=0x5e7a49
+// packet-audit:verify packet=character/clientbound/CharacterKeyMapAutoMp version=gms_v84 ida=0x59de46
 func TestCharacterKeyMapAutoMp(t *testing.T) {
 	input := NewCharacterKeyMapAutoMp(2000002)
 	for _, v := range test.Variants {

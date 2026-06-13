@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=reactor/serverbound/ReactorHitRequest version=gms_v87 ida=0x77b5eb
 // packet-audit:verify packet=reactor/serverbound/ReactorHitRequest version=gms_v95 ida=0x6cd4e0
 // packet-audit:verify packet=reactor/serverbound/ReactorHitRequest version=jms_v185 ida=0x79ea6a
+// packet-audit:verify packet=reactor/serverbound/ReactorHitRequest version=gms_v84 ida=0x752cbc
 func TestHitRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v87 ida=0x74a35f
 // packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v95 ida=0x6a0dd0
 // packet-audit:verify packet=pet/serverbound/PetExcludeItem version=jms_v185 ida=0x76c05e
+// packet-audit:verify packet=pet/serverbound/PetExcludeItem version=gms_v84 ida=0x722df2
 func TestExcludeItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=character/serverbound/DropMeso version=gms_v83 ida=0xa23de5
 // packet-audit:verify packet=character/serverbound/DropMeso version=gms_v87 ida=0xabb8b3
 // packet-audit:verify packet=character/serverbound/DropMeso version=gms_v95 ida=0x9f6650
+// packet-audit:verify packet=character/serverbound/DropMeso version=gms_v84 ida=0xa6f482
 func TestDropMesoRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

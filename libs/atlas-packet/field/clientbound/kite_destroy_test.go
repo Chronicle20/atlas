@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldKiteDestroy version=gms_v87 ida=0x69544f
 // packet-audit:verify packet=field/clientbound/FieldKiteDestroy version=gms_v95 ida=0x635d60
 // packet-audit:verify packet=field/clientbound/FieldKiteDestroy version=jms_v185 ida=0x6d5f7f
+// packet-audit:verify packet=field/clientbound/FieldKiteDestroy version=gms_v84 ida=0x6710ab
 func TestKiteDestroy(t *testing.T) {
 	input := NewKiteDestroy(1, KiteDestroyAnimationType2)
 	for _, v := range test.Variants {

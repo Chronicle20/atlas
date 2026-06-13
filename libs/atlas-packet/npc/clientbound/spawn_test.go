@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=npc/clientbound/NpcSpawn version=gms_v87 ida=0x716fd5
 // packet-audit:verify packet=npc/clientbound/NpcSpawn version=gms_v95 ida=0x679680
 // packet-audit:verify packet=npc/clientbound/NpcSpawn version=jms_v185 ida=0x72068f
+// packet-audit:verify packet=npc/clientbound/NpcSpawn version=gms_v84 ida=0x6f0b33
 func TestNpcSpawn(t *testing.T) {
 	input := NewNpcSpawn(100, 9010000, 150, -300, 0, 500, -50, 250)
 	for _, v := range test.Variants {

@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterHint version=gms_v87 ida=0x9dff6a
 // packet-audit:verify packet=character/clientbound/CharacterHint version=gms_v95 ida=0x91d780
 // packet-audit:verify packet=character/clientbound/CharacterHint version=jms_v185 ida=0xa292df
+// packet-audit:verify packet=character/clientbound/CharacterHint version=gms_v84 ida=0x99bb74
 func TestCharacterHintRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

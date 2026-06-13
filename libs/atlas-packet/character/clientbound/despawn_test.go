@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterDespawn version=gms_v83 ida=0x9722f9
 // packet-audit:verify packet=character/clientbound/CharacterDespawn version=gms_v87 ida=0x9f727f
 // packet-audit:verify packet=character/clientbound/CharacterDespawn version=gms_v95 ida=0x94d4c0
+// packet-audit:verify packet=character/clientbound/CharacterDespawn version=gms_v84 ida=0x9b2299
 func TestCharacterDespawnRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

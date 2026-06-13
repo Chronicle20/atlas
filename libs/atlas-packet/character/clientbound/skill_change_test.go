@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v87 ida=0xab57c5
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v95 ida=0x9f5f30
 // packet-audit:verify packet=character/clientbound/CharacterSkillChange version=jms_v185 ida=0xb04ff3
+// packet-audit:verify packet=character/clientbound/CharacterSkillChange version=gms_v84 ida=0xa6972b
 func TestCharacterSkillChange(t *testing.T) {
 	input := NewCharacterSkillChange(true, 1001003, 10, 0, time.Time{}, false)
 	for _, v := range test.Variants {

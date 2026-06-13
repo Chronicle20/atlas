@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=reactor/clientbound/ReactorDestroy version=gms_v87 ida=0x77b415
 // packet-audit:verify packet=reactor/clientbound/ReactorDestroy version=gms_v95 ida=0x6ccea0
 // packet-audit:verify packet=reactor/clientbound/ReactorDestroy version=jms_v185 ida=0x79e894
+// packet-audit:verify packet=reactor/clientbound/ReactorDestroy version=gms_v84 ida=0x752b14
 func TestReactorDestroy(t *testing.T) {
 	input := NewReactorDestroy(100, 3, 150, -300)
 	for _, v := range test.Variants {

@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterSkillCooldown version=gms_v87 ida=0x9de54b
 // packet-audit:verify packet=character/clientbound/CharacterSkillCooldown version=gms_v95 ida=0x908b90
 // packet-audit:verify packet=character/clientbound/CharacterSkillCooldown version=jms_v185 ida=0xa2747f
+// packet-audit:verify packet=character/clientbound/CharacterSkillCooldown version=gms_v84 ida=0x99a14f
 func TestCharacterSkillCooldown(t *testing.T) {
 	input := NewCharacterSkillCooldown(1001003, 30)
 	for _, v := range test.Variants {

@@ -12,6 +12,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldEffectWeather version=gms_v87 ida=0x55c953
 // packet-audit:verify packet=field/clientbound/FieldEffectWeather version=gms_v95 ida=0x5468f0
 // packet-audit:verify packet=field/clientbound/FieldEffectWeather version=jms_v185 ida=0x5723E6
+// packet-audit:verify packet=field/clientbound/FieldEffectWeather version=gms_v84 ida=0x5413ff
 func TestFieldEffectWeatherStart(t *testing.T) {
 	input := NewFieldEffectWeatherStart(5010000, "It's raining!")
 	for _, v := range pt.Variants {

@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldKiteSpawn version=gms_v87 ida=0x694e48
 // packet-audit:verify packet=field/clientbound/FieldKiteSpawn version=gms_v95 ida=0x6369c0
 // packet-audit:verify packet=field/clientbound/FieldKiteSpawn version=jms_v185 ida=0x6d5978
+// packet-audit:verify packet=field/clientbound/FieldKiteSpawn version=gms_v84 ida=0x670ac0
 func TestKiteSpawn(t *testing.T) {
 	input := NewKiteSpawn(1, 5010000, "Hello World!", "Player1", 100, 3)
 	for _, v := range test.Variants {

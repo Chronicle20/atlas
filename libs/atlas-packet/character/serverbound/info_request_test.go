@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=character/serverbound/InfoRequest version=gms_v87 ida=0xabba88
 // packet-audit:verify packet=character/serverbound/InfoRequest version=gms_v95 ida=0x9f2f70
 // packet-audit:verify packet=character/serverbound/InfoRequest version=jms_v185 ida=0xb0b323
+// packet-audit:verify packet=character/serverbound/InfoRequest version=gms_v84 ida=0xa6f657
 func TestInfoRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

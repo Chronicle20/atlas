@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterSkillChange
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnChangeSkillRecordResult
+    address: "0xa6972b"
+    decompile_sha256: fd4a316a7e9f86295d3ddc818c72cebfc507ef2178bc7a922f8a7dead72fac35

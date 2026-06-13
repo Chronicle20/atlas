@@ -30,7 +30,7 @@ spec:
           value: character-factory
         readinessProbe:
           httpGet:
-            path: /readyz
+            path: /api/readyz
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10

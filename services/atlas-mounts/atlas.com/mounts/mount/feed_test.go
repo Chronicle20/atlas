@@ -31,9 +31,9 @@ func TestApplyFeedHealsAndGainsExp(t *testing.T) {
 
 func TestApplyFeedLevelsUp(t *testing.T) {
 	// level 1, exp 22, tiredness 30, healMax 30 → gain=ceil((30/30)*(2+6))=8
-	// → exp 30 >= need(1)=24 → level 2, exp 6, LevelUp
+	// → exp 30 >= need(1)=24 → level 2. Cosmic does NOT reset exp, so exp stays 30.
 	res := ApplyFeed(FeedInput{Level: 1, Exp: 22, Tiredness: 30, HealMax: 30})
-	if res.Level != 2 || res.Exp != 6 || !res.LevelUp {
+	if res.Level != 2 || res.Exp != 30 || !res.LevelUp {
 		t.Fatalf("got %+v", res)
 	}
 }
@@ -45,29 +45,26 @@ func TestApplyFeedAtCapDoesNotLevel(t *testing.T) {
 	}
 }
 
-func TestApplyFeedMultiLevelAndTableEnd(t *testing.T) {
+func TestApplyFeedSingleLevelPerFeedAndTableEnd(t *testing.T) {
 	cases := []struct {
 		name string
 		in   FeedInput
 		want FeedResult
 	}{
 		{
-			// Single feed crossing multiple levels from the bottom of the table.
-			// heal=min(30,30)=30, tiredness→0, gain=ceil((30/30)*(2*0+6))=6 → exp 106.
-			// loop: need(0)=1 → exp 105 L1; need(1)=24 → exp 81 L2; need(2)=50 → exp 31 L3;
-			// need(3)=105 → 31<105 stop. → L3, exp 31.
-			name: "low-level multi-level jump",
+			// One level per feed even when exp is already far past several thresholds
+			// (Cosmic uses a single `if`, not a loop). heal=30, gain=ceil((30/30)*(2*0+6))=6
+			// → exp 106; level 0 < CAP and 106 >= need(0)=1 → level 1 only; exp NOT reset.
+			name: "single level per feed, exp not reset",
 			in:   FeedInput{Level: 0, Exp: 100, Tiredness: 30, HealMax: 30},
-			want: FeedResult{Level: 3, Exp: 31, Tiredness: 0, LevelUp: true},
+			want: FeedResult{Level: 1, Exp: 106, Tiredness: 0, LevelUp: true},
 		},
 		{
-			// Table-end boundary: levelling from 28 lands on 29, the first level past the
-			// 29-entry table. heal=30, gain=ceil((30/30)*(2*28+6))=62 → exp 5062.
-			// loop: need(28)=4550 → exp 512 L29; need(29)=sentinel → 512<that stop.
-			// Confirms the loop stops cleanly at the table end without OOB.
+			// Table-end boundary: 28→29 using the cumulative threshold mount[28]=4550.
+			// gain=ceil((30/30)*(2*28+6))=62 → exp 5062 >= 4550 → level 29, exp 5062 (kept).
 			name: "table-end boundary 28→29",
 			in:   FeedInput{Level: 28, Exp: 5000, Tiredness: 30, HealMax: 30},
-			want: FeedResult{Level: 29, Exp: 512, Tiredness: 0, LevelUp: true},
+			want: FeedResult{Level: 29, Exp: 5062, Tiredness: 0, LevelUp: true},
 		},
 	}
 	for _, tc := range cases {

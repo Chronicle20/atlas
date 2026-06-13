@@ -50,15 +50,19 @@ type FeedResult struct {
 }
 
 // ApplyFeed computes the heal → exp → level-up progression for a single feed,
-// per HeavenMS UseMountFoodHandler (context.md §8.3):
+// matching Cosmic's UseMountFoodHandler exactly:
 //
 //	heal      = min(tiredness, healMax)
 //	tiredness = tiredness - heal
-//	exp      += ceil((heal / healMax) * (2*level + 6))   // float division
-//	while exp >= ExpNeededForLevel(level) && level < CAP:
-//	    exp -= ExpNeededForLevel(level); level++; LevelUp = true
+//	exp      += ceil((heal / healMax) * (2*level + 6))    // float division
+//	if level < CAP && exp >= ExpNeededForLevel(level):     // cumulative threshold
+//	    level++; LevelUp = true                             // exp is NOT reset
 //
-// It is pure: no I/O, no mutation of inputs.
+// Exp is a cumulative running total (never decremented) and the mount gains at
+// most ONE level per feed — Cosmic levels via a single `if`, not a loop, and does
+// not subtract the threshold. The earlier subtract-and-loop form diverged: it
+// required the SUM of thresholds to reach a level instead of the cumulative
+// threshold mount[level], so leveling was far too slow. Pure: no I/O, no input mutation.
 func ApplyFeed(in FeedInput) FeedResult {
 	level := in.Level
 	exp := in.Exp
@@ -76,12 +80,7 @@ func ApplyFeed(in FeedInput) FeedResult {
 	}
 
 	levelUp := false
-	for level < CAP {
-		need := int(ExpNeededForLevel(level))
-		if exp < need {
-			break
-		}
-		exp -= need
+	if level < CAP && exp >= int(ExpNeededForLevel(level)) {
 		level++
 		levelUp = true
 	}

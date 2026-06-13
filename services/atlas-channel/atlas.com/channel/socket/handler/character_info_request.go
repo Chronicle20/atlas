@@ -30,6 +30,10 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if p.PetInfo() {
 			decorators = append(decorators, cp.PetAssetEnrichmentDecorator)
 		}
+		// Load equipment so the writer can read the equipped medal and the tamed-mob
+		// (slot tamingMob) that gates the mount block. Without this the character's
+		// equipment is empty and neither medal nor mount info appears in the window.
+		decorators = append(decorators, cp.InventoryDecorator)
 		decorators = append(decorators, cp.MonsterBookDecorator)
 		c, err := cp.GetById(decorators...)(p.CharacterId())
 		if err != nil {

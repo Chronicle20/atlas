@@ -97,7 +97,7 @@ spec:
           command: ["/atlas/bootstrap.sh"]
           env:
             - name: ATLAS_UI_BASE
-              value: http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local
+              value: http://atlas-ingress.atlas-pr-743.svc.cluster.local
             - name: TENANT_ID
               valueFrom:
                 configMapKeyRef:

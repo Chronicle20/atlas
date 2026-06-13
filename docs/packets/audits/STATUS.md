@@ -188,14 +188,14 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff |  | 0x08B | ❌ | 0x08B | ❌ | 0x093 | ❌ | 0x09B | ❌ | 0x088 | ❌ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus |  | 0x08C | ❌ | 0x08C | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x089 | ❌ |
 | FIELD_OBSTACLE_ALL_RESET | CField::OnFieldObstacleAllRese; CField::OnFieldObstacleAllReset |  | 0x08D | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x08A | ❌ |
-| BLOW_WEATHER | CField::OnBlowWeather; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x08E | 🟡 | 0x091 | ❌ | 0x096 | 🟡 | 0x09E | 🟡 | 0x08B | 🟥 |
+| BLOW_WEATHER | CField::OnBlowWeather; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x08E | 🟡 | 0x091 | ❌ | 0x096 | 🟡 | 0x09E | 🟡 | 0x08B | 🟡 |
 | PLAY_JUKEBOX | CField::OnPlayJukeBox |  | 0x08F | ❌ | 0x08F | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x08C | ❌ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F |  | 0x090 | ❌ | 0x090 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x08D | ❌ |
 | OX_QUIZ | CField::OnQuiz |  | 0x091 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x08E | ❌ |
 | GMEVENT_INSTRUCTIONS | CField::OnDesc |  | 0x092 | ❌ | 0x092 | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x08F | ❌ |
-| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x093 | ❌ | 0x096 | ❌ | 0x09B | 🟥 | 0x0A3 | 🟥 | 0x090 | 🟥 |
+| CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x093 | ❌ | 0x096 | ❌ | 0x09B | ❌ | 0x0A3 | ❌ | 0x090 | ❌ |
 | CONTI_MOVE | CField_ContiMove::OnContiMove |  | 0x094 | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x0A4 | ❌ | 0x091 | ❌ |
-| CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) | 0x095 | 🟡 | 0x098 | ❌ | 0x09D | 🟥 | 0x0A5 | 🟥 | 0x092 | 🟥 |
+| CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) | 0x095 | 🟡 | 0x098 | ❌ | 0x09D | 🟡 | 0x0A5 | 🟡 | 0x092 | 🟡 |
 | SET_QUEST_CLEAR | CField::OnSetQuestClear |  | 0x096 | ❌ | 0x096 | ❌ | 0x09E | ❌ | 0x0A6 | ❌ | 0x093 | ❌ |
 | SET_QUEST_TIME | CField::OnSetQuestTime |  | 0x097 | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x094 | ❌ |
 | ARIANT_RESULT | CField::OnWarnMessage |  | 0x098 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x0A8 | ❌ |  | ⬜ |
@@ -211,7 +211,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x0A0 | ❌ | 0x0A3 | ❌ | 0x0AB | ❌ | 0x0B3 | ❌ | 0x09E | ❌ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField | character/clientbound/CharacterDespawn (T1) | 0x0A1 | 🟡 | 0x0A4 | ❌ | 0x0AC | 🟡 | 0x0B4 | 🟡 | 0x09F | ❌ |
 | CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A2 | ❌ | 0x0A2 | ❌ | 0x0AD | ❌ | 0x0B5 | 🟡 | 0x0A0 | 🟡 |
-| CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A3 | ❌ | 0x0A3 | ❌ | 0x0AE | ❌ | 0x0B6 | 🟥 | 0x0A1 | 🟥 |
+| CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A3 | ❌ | 0x0A3 | ❌ | 0x0AE | ❌ | 0x0B6 | 🟡 | 0x0A1 | 🟡 |
 | CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x0A4 | 🟡 | 0x0A4 | ❌ | 0x0AF | 🟡 | 0x0B7 | 🟡 | 0x0A2 | 🟡 |
 | IDA_0X0A4 | CField::OnStalkResult |  |  | ⬜ |  | ⬜ | 0x0A4 | ❌ |  | ⬜ |  | ⬜ |
 | UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  | 0x0A5 | ❌ | 0x0A5 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
@@ -256,21 +256,21 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ |  | ⬜ |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0C0 | ❌ | 0x0C0 | ❌ | 0x0CD | ❌ | 0x0DA | ❌ | 0x0C6 | ❌ |
 | TESLA_TRIANGLE | CUser::OnTeslaTriangle |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C0 | ❌ |  | ⬜ |
-| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0C1 | ❌ | 0x0C1 | ❌ | 0x0CE | 🟥 | 0x0DB | 🟡 | 0x0C7 | ✅ |
+| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0C1 | ❌ | 0x0C1 | ❌ | 0x0CE | 🟡 | 0x0DB | 🟡 | 0x0C7 | ✅ |
 | FOLLOW_CHARACTER | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C1 | ❌ |  | ⬜ |
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x0C2 | ❌ | 0x0C2 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | ⬜ |
 | SET_PHASE | CUser::OnSetPhase |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C3 | ❌ |  | ⬜ |
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  | 0x0C3 | ❌ | 0x0C3 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
-| SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ❌ | 0x0C4 | ❌ | 0x0D1 | 🟥 | 0x0DE | 🟡 | 0x0CA | ❌ |
+| SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ❌ | 0x0C4 | ❌ | 0x0D1 | 🟡 | 0x0DE | 🟡 | 0x0CA | ❌ |
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0C5 | ❌ | 0x0C5 | ❌ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0CB | ❌ |
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0C6 | ❌ | 0x0CA | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0CC | ❌ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0C7 | ❌ | 0x0CB | ❌ | 0x0D4 | ❌ | 0x0E1 | ❌ | 0x0CD | ❌ |
-| CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | 🟡 | 0x0C8 | ❌ | 0x0D5 | 🟥 | 0x0E2 | 🟡 | 0x0CE | ❌ |
-| UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ❌ | 0x0C9 | ❌ | 0x0D6 | ❌ | 0x0E3 | 🟥 | 0x0CF | ❌ |
-| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ❌ | 0x0CA | ❌ | 0x0D7 | ❌ | 0x0E4 | 🟥 | 0x0D0 | 🟥 |
-| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ❌ | 0x0CB | ❌ | 0x0D8 | ❌ | 0x0E5 | 🟥 | 0x0D1 | 🟥 |
+| CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | 🟡 | 0x0C8 | ❌ | 0x0D5 | 🟡 | 0x0E2 | 🟡 | 0x0CE | ❌ |
+| UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ❌ | 0x0C9 | ❌ | 0x0D6 | ❌ | 0x0E3 | ✅ | 0x0CF | ❌ |
+| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ❌ | 0x0CA | ❌ | 0x0D7 | ❌ | 0x0E4 | 🟡 | 0x0D0 | 🟡 |
+| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ❌ | 0x0CB | ❌ | 0x0D8 | ❌ | 0x0E5 | 🟡 | 0x0D1 | 🟡 |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0CC | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
 | CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0CD | ✅ | 0x0CD | ❌ | 0x0DA | 🟡 | 0x0E7 | 🟡 | 0x0D3 | 🟡 |
 | SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0E9 | ❌ | 0x0D5 | ❌ |
@@ -290,7 +290,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  | 0x0DB | ❌ | 0x0DB | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open | 0x0DC | 🟡 | 0x0E0 | ❌ | 0x0E9 | 🟡 | 0x0FB | 🟡 | 0x0E5 | 🟡 |
 | IDA_0X0DD | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DD | ❌ |
-| LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock | 0x0DD | ❌ | 0x0DD | ❌ | 0x0EB | ❌ | 0x0FD | 🟥 | 0x0E7 | ❌ |
+| LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock | 0x0DD | ❌ | 0x0DD | ❌ | 0x0EB | ❌ | 0x0FD | 🟡 | 0x0E7 | ❌ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode | ui/clientbound/Disable | 0x0DE | ✅ | 0x0E2 | ❌ | 0x0EC | 🟡 | 0x0FE | 🟡 | 0x0E8 | 🟡 |
 | IDA_0X0DE | sub_A26957 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DE | ❌ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor |  | 0x0DF | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
@@ -356,10 +356,10 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | IDA_0X10A | CUserLocal::OnGoToCommoditySN |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ |  | ⬜ |
 | IDA_0X10B | CUserLocal::OnDamageMeter |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10B | ❌ |  | ⬜ |
 | UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  | 0x10B | ❌ | 0x10B | ❌ | 0x11C | ❌ | 0x141 | ❌ | 0x120 | ❌ |
-| DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn | 0x10C | 🟡 | 0x113 | ❌ | 0x11D | 🟥 | 0x142 | 🟥 | 0x121 | 🟥 |
+| DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn | 0x10C | 🟡 | 0x113 | ❌ | 0x11D | 🟡 | 0x142 | 🟡 | 0x121 | 🟡 |
 | IDA_0X10C | CUserLocal::OnTimeBombAttack |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ |  | ⬜ |
 | IDA_0X10D | CUser::OnPassiveMove |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ |  | ⬜ |
-| REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) | 0x10D | ❌ | 0x114 | ❌ | 0x11E | 🟥 | 0x144 | 🟥 | 0x122 | 🟥 |
+| REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) | 0x10D | ❌ | 0x114 | ❌ | 0x11E | ❌ | 0x144 | ❌ | 0x122 | ❌ |
 | CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) | 0x10E | 🟡 | 0x10E | ❌ | 0x11F | 🟡 | 0x145 | 🟡 | 0x123 | 🟡 |
 | FOLLOW_CHARACTER_FAILED | CUserLocal::OnFollowCharacterFailed |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ❌ |  | ⬜ |
 | IDA_0X10F | CMob::OnMobSkillDelay; CUserLocal::OnVengeanceSkillApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ | 0x10F | ❌ |
@@ -408,8 +408,8 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | ZAKUM_SHRINE | CField::OnZakumTimer |  | 0x12F | ❌ | 0x12F | ❌ | 0x140 | ❌ | 0x16A | ❌ | 0x148 | ❌ |
 | NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x130 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | MOB_ESCORT_STOP | CMob::OnEscortStopEndPermmision |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x131 | ❌ |  | ⬜ |
-| OPEN_NPC_SHOP | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x131 | 🟡 | 0x138 | ❌ | 0x142 | 🟥 | 0x16C | 🟥 | 0x14A | 🟥 |
-| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | 🟡 | 0x139 | ❌ | 0x143 | 🟥 | 0x16D | 🟥 | 0x14B | 🟥 |
+| OPEN_NPC_SHOP | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x131 | 🟡 | 0x138 | ❌ | 0x142 | 🟡 | 0x16C | 🟡 | 0x14A | ❌ |
+| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | 🟡 | 0x139 | ❌ | 0x143 | 🟡 | 0x16D | 🟡 | 0x14B | ❌ |
 | MOB_ESCORT_STOP_SAY | CMob::OnEscortStopSay |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ❌ |  | ⬜ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x133 | ❌ | 0x133 | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ❌ |  | ⬜ |
@@ -586,7 +586,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare |  | 0x05D | ❌ | 0x05D | ❌ | 0x060 | ❌ | 0x069 | ❌ | 0x058 | ❌ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest | character/serverbound/DropMeso (T1) | 0x05E | 🟡 | 0x05E | ❌ | 0x061 | 🟡 | 0x06A | 🟡 | 0x059 | ❌ |
-| GIVE_FAME | CWvsContext::SendGivePopularityRequest | fame/serverbound/Change | 0x05F | 🟡 | 0x05F | ❌ | 0x062 | 🟡 | 0x06B | 🟥 | 0x05A | 🟡 |
+| GIVE_FAME | CWvsContext::SendGivePopularityRequest | fame/serverbound/Change | 0x05F | 🟡 | 0x05F | ❌ | 0x062 | 🟡 | 0x06B | 🟡 | 0x05A | 🟡 |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
 | UI_OPEN_ITEM_USE_REQUEST | CWvsContext::SendUIOpenItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x060 | ❌ |  | ⬜ |
 | UNNAMED_R149 |  |  | 0x060 | ❌ | 0x060 | ❌ | 0x063 | ❌ | 0x06C | ❌ | 0x05B | ❌ |
@@ -626,7 +626,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperation (T1) | 0x07C | ❌ | 0x07C | ❌ | 0x082 | ❌ | 0x091 | 🟡 | 0x07D | 🟡 |
 | DENY_PARTY_REQUEST |  |  | 0x07D | ❌ | 0x07D | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
-| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x07E | ❌ | 0x07E | ❌ | 0x086 | ❌ | 0x095 | 🟥 | 0x081 | ❌ |
+| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x07E | ❌ | 0x07E | ❌ | 0x086 | ❌ | 0x095 | 🟡 | 0x081 | ❌ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | guild/serverbound/GuildInviteReject (T1) | 0x07F | ❌ | 0x07F | ❌ | 0x087 | ❌ | 0x096 | 🟡 | 0x082 | ❌ |
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey |  | 0x080 | ❌ | 0x080 | ❌ | 0x088 | ❌ | 0x097 | ❌ | 0x083 | ❌ |
 | ADMIN_LOG | CField::SendChatMsgSlash |  | 0x081 | ❌ | 0x081 | ❌ | 0x089 | ❌ | 0x098 | ❌ | 0x084 | ❌ |
@@ -663,7 +663,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  | 0x098 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  | 0x099 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
 | UNNAMED_R245 |  |  | 0x09A | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
-| BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ❌ | 0x09B | ❌ | 0x0A3 | 🟥 | 0x0B3 | 🟡 |  | ⬜ |
+| BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ❌ | 0x09B | ❌ | 0x0A3 | 🟡 | 0x0B3 | 🟡 |  | ⬜ |
 | ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  | 0x09C | ❌ | 0x09C | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
 | USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  | 0x09D | ❌ | 0x09D | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ❌ | 0x089 | ❌ |
@@ -912,43 +912,11 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 |---------|----|----|----|----|----|-----------|
 | v83 | 15 | 134 | 530 | 201 | 0 | 2.2% |
 | v84 | 0 | 6 | 671 | 203 | 0 | 0.0% |
-| v87 | 3 | 150 | 553 | 164 | 10 | 0.4% |
-| v95 | 10 | 226 | 549 | 82 | 13 | 1.3% |
-| JMS185 | 12 | 114 | 574 | 170 | 10 | 1.7% |
+| v87 | 3 | 158 | 555 | 164 | 0 | 0.4% |
+| v95 | 11 | 236 | 551 | 82 | 0 | 1.4% |
+| JMS185 | 12 | 120 | 578 | 170 | 0 | 1.7% |
 
 ## Conflicts
 
-- 🟥 **GIVE_FAME** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **BLOW_WEATHER** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CLOCK** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CLOCK** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CLOCK** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CONTI_STATE** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CONTI_STATE** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CONTI_STATE** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **BBS_OPERATION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CHATTEXT1** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CHATTEXT1** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **FACIAL_EXPRESSION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **SHOW_CHAIR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CANCEL_FOREIGN_BUFF** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **UPDATE_PARTYMEMBER_HP** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_NAME_CHANGED** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_NAME_CHANGED** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_MARK_CHANGED** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **GUILD_MARK_CHANGED** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **LOCK_UI** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DROP_ITEM_FROM_MAPOBJECT** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DROP_ITEM_FROM_MAPOBJECT** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REMOVE_ITEM_FROM_MAP** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REMOVE_ITEM_FROM_MAP** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **REMOVE_ITEM_FROM_MAP** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **OPEN_NPC_SHOP** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **OPEN_NPC_SHOP** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **OPEN_NPC_SHOP** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CONFIRM_SHOP_TRANSACTION** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CONFIRM_SHOP_TRANSACTION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CONFIRM_SHOP_TRANSACTION** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
+None.
 

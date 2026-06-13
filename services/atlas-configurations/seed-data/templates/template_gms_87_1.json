@@ -330,6 +330,10 @@
         "handler": "QuestActionHandle"
       },
       {
+        "opCode": "0xA3",
+        "handler": "GuildBBSHandle"
+      },
+      {
         "opCode": "0xB3",
         "handler": "PetMovementHandle"
       },
@@ -847,6 +851,14 @@
         "writer": "FieldEffectWeather"
       },
       {
+        "opCode": "0x9B",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0x9D",
+        "writer": "FieldTransportState"
+      },
+      {
         "opCode": "0xAB",
         "writer": "CharacterSpawn"
       },
@@ -1011,6 +1023,14 @@
         "writer": "CharacterDamage"
       },
       {
+        "opCode": "0xCE",
+        "writer": "CharacterExpression"
+      },
+      {
+        "opCode": "0xD1",
+        "writer": "CharacterShowChair"
+      },
+      {
         "opCode": "0xD2",
         "writer": "CharacterAppearanceUpdate"
       },
@@ -1021,6 +1041,10 @@
       {
         "opCode": "0xD4",
         "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterBuffCancelForeign"
       },
       {
         "opCode": "0xDA",
@@ -1307,6 +1331,14 @@
         }
       },
       {
+        "opCode": "0x11D",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x11E",
+        "writer": "DropDestroy"
+      },
+      {
         "opCode": "0x126",
         "writer": "ReactorHit"
       },
@@ -1317,6 +1349,14 @@
       {
         "opCode": "0x129",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x142",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x143",
+        "writer": "NPCShopOperation"
       },
       {
         "opCode": "0x146",

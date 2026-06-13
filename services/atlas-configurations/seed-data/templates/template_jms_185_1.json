@@ -854,6 +854,18 @@
         "writer": "FieldEffect"
       },
       {
+        "opCode": "0x8B",
+        "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0x90",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0x92",
+        "writer": "FieldTransportState"
+      },
+      {
         "opCode": "0x9E",
         "writer": "CharacterSpawn"
       },
@@ -864,6 +876,10 @@
       {
         "opCode": "0xA0",
         "writer": "CharacterChatGeneral"
+      },
+      {
+        "opCode": "0xA1",
+        "writer": "ChatGeneralChat"
       },
       {
         "opCode": "0xA2",
@@ -1060,6 +1076,14 @@
       {
         "opCode": "0xCD",
         "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xD0",
+        "writer": "GuildNameChanged"
+      },
+      {
+        "opCode": "0xD1",
+        "writer": "GuildEmblemChanged"
       },
       {
         "opCode": "0xD3",
@@ -1406,6 +1430,14 @@
         }
       },
       {
+        "opCode": "0x121",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x122",
+        "writer": "DropDestroy"
+      },
+      {
         "opCode": "0x12D",
         "writer": "ReactorHit"
       },
@@ -1416,6 +1448,14 @@
       {
         "opCode": "0x130",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x14A",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x14B",
+        "writer": "NPCShopOperation"
       },
       {
         "opCode": "0x152",

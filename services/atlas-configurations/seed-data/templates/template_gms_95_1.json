@@ -220,6 +220,10 @@
         "handler": "CharacterDropMesoHandle"
       },
       {
+        "opCode": "0x6B",
+        "handler": "FameChangeHandle"
+      },
+      {
         "opCode": "0x6D",
         "handler": "CharacterInfoRequestHandle"
       },
@@ -238,6 +242,10 @@
       {
         "opCode": "0x91",
         "handler": "PartyOperationHandle"
+      },
+      {
+        "opCode": "0x95",
+        "handler": "GuildOperationHandle"
       },
       {
         "opCode": "0x96",
@@ -576,6 +584,14 @@
         "writer": "FieldEffectWeather"
       },
       {
+        "opCode": "0xA3",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0xA5",
+        "writer": "FieldTransportState"
+      },
+      {
         "opCode": "0xB3",
         "writer": "CharacterSpawn"
       },
@@ -586,6 +602,10 @@
       {
         "opCode": "0xB5",
         "writer": "CharacterChatGeneral"
+      },
+      {
+        "opCode": "0xB6",
+        "writer": "ChatGeneralChat"
       },
       {
         "opCode": "0xB7",
@@ -660,6 +680,18 @@
         "writer": "CharacterBuffCancelForeign"
       },
       {
+        "opCode": "0xE3",
+        "writer": "PartyMemberHP"
+      },
+      {
+        "opCode": "0xE4",
+        "writer": "GuildNameChanged"
+      },
+      {
+        "opCode": "0xE5",
+        "writer": "GuildEmblemChanged"
+      },
+      {
         "opCode": "0xE7",
         "writer": "CharacterSitResult"
       },
@@ -674,6 +706,10 @@
       {
         "opCode": "0xFB",
         "writer": "UiOpen"
+      },
+      {
+        "opCode": "0xFD",
+        "writer": "UiLock"
       },
       {
         "opCode": "0xFE",
@@ -736,6 +772,14 @@
         "writer": "NPCAction"
       },
       {
+        "opCode": "0x142",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x144",
+        "writer": "DropDestroy"
+      },
+      {
         "opCode": "0x14E",
         "writer": "ReactorHit"
       },
@@ -746,6 +790,14 @@
       {
         "opCode": "0x151",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x16C",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x16D",
+        "writer": "NPCShopOperation"
       },
       {
         "opCode": "0x170",

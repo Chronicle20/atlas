@@ -1,7 +1,7 @@
 # FieldEffectTremble (← `CField::OnFieldEffect#Tremble`)
 
 - **IDA:** 0x55abbb
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

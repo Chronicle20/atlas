@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldTransport
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField_ContiMove::OnContiState
+    address: "0x58e280"
+    decompile_sha256: 1452b1813983e38beac480ecd6f1c767c8c1fb964f3cda2e3298c549eca60df0

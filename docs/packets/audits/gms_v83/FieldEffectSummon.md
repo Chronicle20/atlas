@@ -1,7 +1,7 @@
 # FieldEffectSummon (← `CField::OnFieldEffect#Summon`)
 
 - **IDA:** 0x5330f7
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

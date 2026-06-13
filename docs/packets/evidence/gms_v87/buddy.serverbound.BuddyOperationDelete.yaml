@@ -1,0 +1,8 @@
+packet: buddy/serverbound/BuddyOperationDelete
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendDeleteFriendMsg
+    address: "0x5589e4"
+    decompile_sha256: 655fb5fe85b47eb597ec5e020bbd71fb684d3999e84fb6e6c630002b900a4509

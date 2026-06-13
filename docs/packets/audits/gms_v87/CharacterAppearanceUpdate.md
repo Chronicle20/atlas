@@ -1,7 +1,7 @@
 # CharacterAppearanceUpdate (← `CUserRemote::OnAvatarModified`)
 
 - **IDA:** 0xa090f4
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/appearance_update.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/appearance_update.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** 🔍

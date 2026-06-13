@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyDisband
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Disband
+    address: "0xb297e7"
+    decompile_sha256: 36d32fb7e55290d3efdb763721f44eb0e8df82bb2e19eb6c82e88ef450c8fd89

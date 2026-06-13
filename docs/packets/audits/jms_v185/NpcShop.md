@@ -1,7 +1,7 @@
 # NpcShop (← `CShopDlg::OnPacket#ShopDispatch`)
 
 - **IDA:** 0x7ca2c9
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/shop.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/shop.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

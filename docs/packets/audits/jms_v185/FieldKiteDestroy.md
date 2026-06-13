@@ -1,7 +1,7 @@
 # FieldKiteDestroy (← `CMessageBoxPool::OnMessageBoxLeaveField`)
 
 - **IDA:** 0x6d5f7f
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/kite_destroy.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/kite_destroy.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

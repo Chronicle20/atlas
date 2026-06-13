@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterMovementAck
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnCtrlAck
+    address: "0x6e99c8"
+    decompile_sha256: a1ea16cfb27f089008a55d43c3f03d7793d9468b417e20fbf3372a0b84c0cf65

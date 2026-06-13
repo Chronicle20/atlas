@@ -1,0 +1,8 @@
+packet: buddy/clientbound/BuddyListUpdate
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#ListUpdate
+    address: "0xa3f2e8"
+    decompile_sha256: a7ffeee3e9645aa1c44d6689e7b07ad184f102b3d68b855033812b445b6ed853

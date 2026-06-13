@@ -1,0 +1,8 @@
+packet: character/clientbound/EffectSimple
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnEffect
+    address: "0x9f6395"
+    decompile_sha256: 699a02d735fa5b68fb10134cba89546442afee888b696a5e687b3ebcd71ff8ca

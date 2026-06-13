@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskSlideMenuConversationDetail
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskSlideMenu#AskSlideMenu
+    address: "0x7b8513"
+    decompile_sha256: bd0179ae30b3b4550e2b42790f3a7c373ccef18bd62bd0505735f9dd1794f0d4
+verifies:
+    - libs/atlas-packet/npc/clientbound/conversation_test.go#TestAskSlideMenuConversationDetailEncode

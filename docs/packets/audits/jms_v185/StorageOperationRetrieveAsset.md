@@ -1,7 +1,7 @@
 # StorageOperationRetrieveAsset (← `CTrunkDlg::SendGetItemRequest`)
 
 - **IDA:** 0x84dea0
-- **Atlas file:** `../../libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go`
+- **Atlas file:** `libs/atlas-packet/storage/serverbound/operation_retrieve_asset.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

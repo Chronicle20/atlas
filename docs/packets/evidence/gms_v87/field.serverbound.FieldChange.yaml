@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldChange
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendTransferFieldRequest
+    address: "0x557b5a"
+    decompile_sha256: 99fa456a9072057732b1eeec7b7b1b15de6fe8a4365e18252fe95ca59c3e0f6a

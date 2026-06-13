@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetExcludeResponse
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnLoadExceptionList
+    address: "0x7061a5"
+    decompile_sha256: 3847bca9ae7f33dd119d128497868802abf037b055b14819cfa0f0b55c49e974

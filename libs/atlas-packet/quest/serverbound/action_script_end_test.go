@@ -8,6 +8,10 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=quest/serverbound/ActionScriptEnd version=gms_v83 ida=0x716fe1
+// packet-audit:verify packet=quest/serverbound/ActionScriptEnd version=gms_v87 ida=0x75bf04
+// packet-audit:verify packet=quest/serverbound/ActionScriptEnd version=gms_v95 ida=0x6b40a0
+// packet-audit:verify packet=quest/serverbound/ActionScriptEnd version=jms_v185 ida=0x77d065
 func TestActionScriptEndRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

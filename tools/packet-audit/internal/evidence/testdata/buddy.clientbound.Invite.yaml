@@ -1,0 +1,12 @@
+packet: buddy/clientbound/Invite
+direction: clientbound
+version: gms_v83
+category: OPAQUE
+ida:
+  function: "CWvsContext::OnFriendResult"
+  address: 0xa3f2e8
+  decompile_sha256: "ab12cd34"
+verifies:
+  - libs/atlas-packet/buddy/clientbound/invite_test.go#TestInviteByteOutput
+notes: >
+  Optional human context. Never consulted by grading.

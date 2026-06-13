@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerRequestInvite
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#RequestInvite
+    address: "0x8511fc"
+    decompile_sha256: 714f336948e860a524bdbfd2f9120218d06c46727e6422f635808f9699b2e581

@@ -2017,19 +2017,19 @@
         }
       },
       {
-        "opCode": "0xE1",
+        "opCode": "0xE2",
         "writer": "UiLock"
       },
       {
-        "opCode": "0xE2",
+        "opCode": "0xE3",
         "writer": "UiDisable"
       },
       {
-        "opCode": "0xE4",
+        "opCode": "0xE5",
         "writer": "GuideTalk"
       },
       {
-        "opCode": "0xEE",
+        "opCode": "0xF0",
         "writer": "CharacterSkillCooldown"
       },
       {

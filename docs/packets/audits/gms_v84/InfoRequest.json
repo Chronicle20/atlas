@@ -1,0 +1,39 @@
+{
+  "WriterName": "InfoRequest",
+  "IDAName": "CWvsContext::SendCharacterInfoRequest",
+  "Address": "0xa6f657",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/info_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

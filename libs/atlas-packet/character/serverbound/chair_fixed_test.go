@@ -6,6 +6,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v83 ida=0x94e45f
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v87 ida=0x9c9270
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v95 ida=0x90f6d0
+// packet-audit:verify packet=character/serverbound/ChairFixed version=gms_v84 ida=0x986138
+// packet-audit:verify packet=character/serverbound/ChairFixed version=jms_v185 ida=0xa0e95a
 func TestChairFixedRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

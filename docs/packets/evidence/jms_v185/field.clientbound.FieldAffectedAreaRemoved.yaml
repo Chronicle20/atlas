@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldAffectedAreaRemoved
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CAffectedAreaPool::OnAffectedAreaRemoved
+    address: "0x436eda"
+    decompile_sha256: 894f760800c0f6cbdb137761618602facf9b83c1959a0b22c00c2a5b543c0700
+verifies:
+    - libs/atlas-packet/field/clientbound/affected_area_test.go#TestAffectedAreaRemovedByteOutput

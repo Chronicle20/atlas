@@ -1,7 +1,7 @@
 # FieldClock (← `CField::OnClock`)
 
 - **IDA:** 0x5361bd
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/clock.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/clock.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** 🔍

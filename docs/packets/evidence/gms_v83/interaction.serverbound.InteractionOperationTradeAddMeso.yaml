@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationTradeAddMeso
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::PutMoney
+    address: "0x7c37ca"
+    decompile_sha256: f8eaa3e175eaec395d218c0c20159fa4686839f279ec6bb4887f9dfd4fcb2725

@@ -86,6 +86,53 @@ func TestAffectedAreaCreatedFields(t *testing.T) {
 	require.Equal(t, int32(10000), int32(binary.LittleEndian.Uint32(b95[39:43])), "tEnd (v95)")
 }
 
+// TestAffectedAreaRemovedByteOutput pins the full wire body of
+// CAffectedAreaPool::OnAffectedAreaRemoved (REMOVE_MIST). The client handler
+// reads exactly one CInPacket::Decode4 (dwId, the mist object id) and then does
+// only local rendering/cleanup — no further packet reads in any version:
+//
+//	v83  @0x43234d: v39 = CInPacket::Decode4(a2)        [0x43236f]
+//	v87  @0x43388c: v37 = CInPacket::Decode4(a2)        [0x4338ae]
+//	v95  @0x4360a0: pos = CInPacket::Decode4(iPacket)   [0x4360e1]
+//	jms  @0x436eda: v40 = CInPacket::Decode4(iPacket)   [0x436efc]
+//
+// Wire layout is identical across all versions: dwId(4) little-endian = 4 bytes.
+// Atlas encodes WriteInt(mistKey(mistId)) — a single LE uint32 — matching exactly.
+//
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v83 ida=0x43234d
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v84 ida=0x432fb4
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v87 ida=0x43388c
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v95 ida=0x4360a0
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=jms_v185 ida=0x436eda
+func TestAffectedAreaRemovedByteOutput(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	// mistId chosen so its uuid.ID() (time_low = first 4 bytes of the UUID,
+	// big-endian) is a known value: bytes 00 01 02 03 → 0x00010203.
+	mistId := uuid.MustParse("00010203-0000-0000-0000-000000000000")
+	wantKey := mistKey(mistId) // == 0x00010203
+	want := []byte{
+		byte(wantKey), byte(wantKey >> 8), byte(wantKey >> 16), byte(wantKey >> 24), // dwId LE uint32
+	}
+
+	for _, v := range []struct {
+		Name, Region string
+		Major, Minor uint16
+	}{
+		{"GMS v83", "GMS", 83, 1},
+		{"GMS v84", "GMS", 84, 1},
+		{"GMS v87", "GMS", 87, 1},
+		{"GMS v95", "GMS", 95, 1},
+		{"JMS v185", "JMS", 185, 1},
+	} {
+		t.Run(v.Name, func(t *testing.T) {
+			in := NewAffectedAreaRemoved(mistId, 0xCAFE)
+			got := in.Encode(l, pt.CreateContext(v.Region, v.Major, v.Minor))(nil)
+			require.Equal(t, want, got, "%s wire bytes", v.Name)
+			require.Len(t, got, 4, "%s body is a single uint32", v.Name)
+		})
+	}
+}
+
 func TestAffectedAreaRemoved_EncodeShape(t *testing.T) {
 	mistId := uuid.MustParse("00000000-0000-0000-0000-00000000000b")
 	w := NewAffectedAreaRemoved(mistId, 0xCAFE)

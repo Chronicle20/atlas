@@ -1,343 +1,527 @@
 # Starting a new packet-audit version pass
 
-> Reusable playbook for auditing `libs/atlas-packet/` against a (new or existing)
-> client version. It captures the FINAL, corrected mechanics after task-080:
-> the enhanced analyzer (A1–A5), the curated accepted-exclusions registry, the
-> verify-against-IDA discipline, and the exact `packet-audit` invocation (the old
-> task plans 027–069 documented an invocation that omitted the now-required
-> `-template` flag — use the commands below verbatim).
+> Orchestration playbook for adding a new client version column to the coverage
+> matrix (`docs/packets/audits/STATUS.md`). Written against the task-085
+> workflow; replaces the pre-matrix invocations. The old §2–§8 content has been
+> subsumed by `VERIFYING_A_PACKET.md` (single-cell procedure) and by the matrix
+> subcommand itself.
 
----
+Baseline versions (existing columns):
 
-## 1. The four-version baseline & where things live
-
-The audit baseline spans **four client versions**:
-
-| Version slug | Region / major.minor | Template | IDA export |
+| Version key | Region / major.minor | Template | IDA export |
 |---|---|---|---|
-| `gms_v83`  | GMS 83.1  | `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`  | `docs/packets/ida-exports/gms_v83.json` |
-| `gms_v87`  | GMS 87.1  | `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`  | `docs/packets/ida-exports/gms_v87.json` |
-| `gms_v95`  | GMS 95.1  | `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`  | `docs/packets/ida-exports/gms_v95.json` |
+| `gms_v83`  | GMS 83.1  | `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`  | `docs/packets/ida-exports/gms_v83.json`  |
+| `gms_v84`  | GMS 84.1  | `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`  | `docs/packets/ida-exports/gms_v84.json`  |
+| `gms_v87`  | GMS 87.1  | `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`  | `docs/packets/ida-exports/gms_v87.json`  |
+| `gms_v95`  | GMS 95.1  | `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`  | `docs/packets/ida-exports/gms_v95.json`  |
 | `jms_v185` | JMS 185.1 | `services/atlas-configurations/seed-data/templates/template_jms_185_1.json` | `docs/packets/ida-exports/gms_jms_185.json` |
 
-Directory map:
-
-- **IDBs (the IDA databases themselves)** live outside the repo — one IDB per
-  version, driven through IDA-MCP (`mcp__ida-pro__*`). They are the live oracle for
-  `decompile_function` / `disassemble_function` / `get_function_by_name`. Open the
-  IDB for the version you are verifying.
-- **IDA exports** (`docs/packets/ida-exports/*.json`) are the static, checked-in
-  harvest of each IDB's `Encode`/`Decode` read-order. These feed the analyzer when
-  you don't want a live-MCP run. One JSON per version (note the JMS file is named
-  `gms_jms_185.json`).
-- **Accepted-exclusions registry**: `docs/packets/ida-exports/_pending.md`. A
-  registry, NOT a deferral ledger — every entry is a blessed permanent exclusion or
-  a pointer to a surfaced follow-up. Zero actionable items.
-- **Per-version audit output**: `docs/packets/audits/<version>/` — one `SUMMARY.md`
-  verdict table plus a per-packet `.md` detail page each.
-- **Cross-task ledger**: `docs/packets/audits/gms_v95/TOTAL.md` (the roll-up lives
-  under the v95 dir for historical reasons; it covers all four versions).
-- **The analyzer**: `tools/packet-audit/` (module
-  `github.com/Chronicle20/atlas/tools/packet-audit`).
-
-Adding a NEW version means: produce its template, harvest its IDA export JSON, then
-run the audit pointing at both. The output slug is derived from the template's
-region + major version (`<region-lower>_v<major>`), e.g. a GMS 100.1 template emits
-`docs/packets/audits/gms_v100/`.
+Adding a new version (e.g. `gms_v92`) means running through §1 once, then
+iterating on §3 until the declared scope is satisfied.
 
 ---
 
-## 2. Running `packet-audit` (the EXACT corrected invocation)
+## 1. Set up the column
 
-`packet-audit` is a cobra CLI (`tools/packet-audit/cmd/root.go`). It **requires
-three flags**: `--csv-clientbound`, `--csv-serverbound`, and **`--template`** (the
-old plans omitted `--template`; the tool errors without it — see root.go's
-"missing required flags" guard). Both `--template` and `--ida-source` take **FILE**
-paths. `--output` is a parent directory; the tool appends `<region>_v<major>/`
-derived from the template and writes `SUMMARY.md` + per-packet `.md` there.
+Four artefacts must exist before `matrix` can emit cells for the new version:
+a registry file, a tenant template, an IDA export, and at least one completed
+audit pass.
 
-Build, then run one command per version (from the worktree root):
+### 1.1 Registry file — `discover-ops`
+
+The operation registry (`docs/packets/registry/<version>.yaml`) is the
+authoritative list of opcodes the client handles for that version. It determines
+applicability for every cell: present → applicable; absent → `⬜`. Without it
+every cell is `incomplete` with an "applicability unknown" note.
+
+**Step A: seed from CSVs**
 
 ```bash
-cd tools/packet-audit && go build ./...
+go run ./tools/packet-audit registry seed \
+  --clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
+  --serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
+  --out docs/packets/registry
 ```
+
+This writes one YAML per version key it finds column headers for. For a version
+the CSVs have no column for (e.g. `gms_v84`), copy the nearest version's YAML
+manually and annotate with a note explaining the provenance.
+
+**Step B: run `discover-ops` against the IDB**
+
+`CClientSocket::ProcessPacket` is a shim, not the primary dispatcher — it is
+the correct entry point for IDA but it routes internally to ~40 `*::OnPacket`
+dispatcher functions. The v87 run identified 40 dispatchers; expect a similar
+count for any GMS version (see `docs/packets/registry/discover_gms_v87.md` as
+the reference worklist).
 
 ```bash
-# GMS v83
-cd tools/packet-audit && go run . \
-  --csv-clientbound "../../docs/packets/MapleStory Ops - ClientBound.csv" \
-  --csv-serverbound "../../docs/packets/MapleStory Ops - ServerBound.csv" \
-  --atlas-packet    ../../libs/atlas-packet \
-  --template        ../../services/atlas-configurations/seed-data/templates/template_gms_83_1.json \
-  --ida-source      ../../docs/packets/ida-exports/gms_v83.json \
-  --output          ../../docs/packets/audits
-
-# GMS v87
-cd tools/packet-audit && go run . \
-  --csv-clientbound "../../docs/packets/MapleStory Ops - ClientBound.csv" \
-  --csv-serverbound "../../docs/packets/MapleStory Ops - ServerBound.csv" \
-  --atlas-packet    ../../libs/atlas-packet \
-  --template        ../../services/atlas-configurations/seed-data/templates/template_gms_87_1.json \
-  --ida-source      ../../docs/packets/ida-exports/gms_v87.json \
-  --output          ../../docs/packets/audits
-
-# GMS v95
-cd tools/packet-audit && go run . \
-  --csv-clientbound "../../docs/packets/MapleStory Ops - ClientBound.csv" \
-  --csv-serverbound "../../docs/packets/MapleStory Ops - ServerBound.csv" \
-  --atlas-packet    ../../libs/atlas-packet \
-  --template        ../../services/atlas-configurations/seed-data/templates/template_gms_95_1.json \
-  --ida-source      ../../docs/packets/ida-exports/gms_v95.json \
-  --output          ../../docs/packets/audits
-
-# JMS v185
-cd tools/packet-audit && go run . \
-  --csv-clientbound "../../docs/packets/MapleStory Ops - ClientBound.csv" \
-  --csv-serverbound "../../docs/packets/MapleStory Ops - ServerBound.csv" \
-  --atlas-packet    ../../libs/atlas-packet \
-  --template        ../../services/atlas-configurations/seed-data/templates/template_jms_185_1.json \
-  --ida-source      ../../docs/packets/ida-exports/gms_jms_185.json \
-  --output          ../../docs/packets/audits
+go run ./tools/packet-audit discover-ops \
+  --version <version-key> \
+  --ida-port <port> \
+  --ida-url http://192.168.20.3:13337/mcp \
+  --out /tmp/<version>_discover.md
 ```
 
-Notes:
-- `--ida-source` accepts either a **file path** (static export, as above) or the
-  literal `mcp` to drive a live IDA-MCP session against the open IDB.
-- `--atlas-packet` defaults to `libs/atlas-packet`; pass the relative path when
-  running from inside `tools/packet-audit`.
-- Run all four versions before reading verdicts — a wire change is judged across the
-  whole baseline, not one version.
-- To capture a before/after `❌`/`🔍` inventory (e.g. when changing the analyzer),
-  diff: `grep -rE '\| (❌|🔍) \|' docs/packets/audits/*/SUMMARY.md | sort`.
+Flags:
 
----
-
-## 3. How SUMMARY / TOTAL / `_pending` relate
-
-| Artifact | Scope | Who writes it |
-|---|---|---|
-| `docs/packets/audits/<version>/SUMMARY.md` | One version's per-packet verdict table (✅ / ❌ / 🔍) + detail `.md` pages | **Auto-generated** by `packet-audit`. Never hand-edit. |
-| `docs/packets/audits/gms_v95/TOTAL.md` | Cross-task, cross-version roll-up: contributing tasks, coverage matrix, the four-version verdict totals, the audit-tool limitations, the completeness statement | Hand-maintained per pass. |
-| `docs/packets/ida-exports/_pending.md` | Accepted-exclusions registry: every residual `❌`/`🔍` classified into a blessed permanent-exclusion category with IDA evidence; plus pointers to surfaced follow-up tasks | Hand-curated. **Zero actionable items** by invariant. |
-
-Each verdict row in a SUMMARY carries exactly one glyph, so
-`✅ = total rows − ❌ − 🔍`. The TOTAL §2a roll-up is just the SUMMARYs' glyph
-counts summed across the four versions.
-
----
-
-## 4. Version-gating conventions
-
-### 4.1 Two-version divergence → inline tenant-context gate
-
-When a field/shape differs across **≤2** version boundaries, gate it inline on the
-tenant context. The canonical spelling is:
-
-```go
-t := tenant.MustFromContext(ctx)
-v95Plus := t.Region() == "GMS" && t.MajorVersion() >= N
+```
+  -apply
+        when true, append discovered ops to the registry YAML
+  -dispatcher string
+        comma-separated list of dispatcher function names and/or hex addresses
+        (default "CClientSocket::ProcessPacket")
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -out string
+        worklist markdown output path (default: docs/packets/registry/discover_<version>.md)
+  -registry-dir string
+        directory containing <version>.yaml registry files (default "docs/packets/registry")
+  -version string
+        target version key, e.g. gms_v83 (required)
 ```
 
-Exemplars in the tree:
-- `libs/atlas-packet/stat/clientbound/changed.go` — `t.Region() == "GMS" && t.MajorVersion() >= 95`
-- `libs/atlas-packet/login/serverbound/request.go` — `t.Region() == "GMS"` region gate
-- `libs/atlas-packet/chat/serverbound/multi.go` — `hasUpdateTime := t.Region() == "GMS" && t.MajorVersion() >= 95`
+**Dispatcher curation (mandatory before `--apply`)**
 
-Hard cap: **no encoder/decoder may exceed two levels of nested `if` guards** (a
-review/`awk` policy). Where a guard composes GMS-and-JMS presence
-(`(t.Region()=="GMS" && t.MajorVersion()>83) || t.Region()=="JMS"`, see
-`field/clientbound/set_field.go`), that counts as one guard.
+`CClientSocket::ProcessPacket` IS a shim; its internal routing fans to the real
+dispatcher set. The v87 run found ~40 dispatcher addresses this way. Before
+`--apply`, review the discover worklist against this curation checklist:
 
-### 4.2 >2-version divergence → region-dispatched body (design §3.2)
+- **Include**: every `*::OnPacket` function whose switch branches on the
+  top-level game opcode (e.g. `CWvsContext::OnPacket`, `CField::OnPacket`,
+  `CLogin::OnPacket`, all `CField_*` subclass overrides, `CCashShop::OnPacket`,
+  all pool dispatchers `CMobPool::OnPacket`, `CNpcPool::OnPacket`, etc.).
+- **Exclude** (body-mode demuxers whose internal switch is NOT the top-level
+  opcode): `CScriptMan::OnPacket`, `CShopDlg::OnPacket`, `CAdminShopDlg::OnPacket`,
+  `CStoreBankDlg::OnPacket`, `CMiniRoomBaseDlg::OnPacketBase`, `CTrunkDlg`,
+  `CRPSGameDlg`, `CUIMessenger`, and similar single-opcode family handlers.
+- **Per-dispatcher decompile-check**: decompile each candidate address and
+  confirm the switch scrutinee is the opcode integer, not a secondary mode byte.
+- **Collision resolution**: if two dispatchers claim the same opcode with
+  different handlers, `discover-ops` refuses `--apply` until the collision is
+  manually resolved and recorded with `provenance: manual`.
 
-When a divergence spans more than two versions, do NOT stack a third nested guard.
-Dispatch at the **top** of the encode/decode closure to a **per-region helper
-method**, each of which may carry ≤2 of its own guards:
+Once curation is done, re-run with `--apply`:
 
-```go
-func (m EffectWeather) Encode(l logrus.FieldLogger, ctx context.Context) func(w *response.Writer) {
-    t := tenant.MustFromContext(ctx)
-    return func(w *response.Writer) {
-        if t.Region() == "JMS" {
-            m.encodeJMS(w)
-        } else {
-            m.encodeGMS(w)
-        }
-    }
-}
-
-func (m EffectWeather) encodeGMS(w *response.Writer) { /* ≤2 guards */ }
-func (m EffectWeather) encodeJMS(w *response.Writer) { /* ≤2 guards */ }
+```bash
+go run ./tools/packet-audit discover-ops \
+  --version <version-key> \
+  --ida-port <port> \
+  --dispatcher 0xADDR1,0xADDR2,...   \
+  --apply \
+  --out docs/packets/registry/discover_<version>.md
 ```
 
-Exemplars: `field/clientbound/effect_weather.go` (B1.5) and the JMS cash-shop
-serverbound bodies (B5.1). **The analyzer now descends into these same-receiver
-helpers** (task-080 region-dispatch helper descent, `tools/packet-audit/internal/
-atlaspacket/analyzer.go` same-receiver HELPER descent, §4.7), so region-dispatched
-packets analyze correctly instead of reporting an empty top-level body.
+This appends new ops with `provenance: ida-discovered` and their handler
+address. Registry entries not found by discovery are flagged in the worklist
+under "Missing at discovery" — resolve each as a CSV transcription error
+(correct the entry) or a discovery blind spot (record as `provenance: manual`
+with an IDA citation). See `discover_gms_v87.md` for a completed example.
+
+**Instance selection**: multiple IDBs can be loaded simultaneously; never
+hardcode port numbers. Use `mcp__ida-pro__list_instances` to enumerate loaded
+IDBs, then pass the matching port as `--ida-port`. The current four-version
+convention assigns ports 13337–13340 by convention but port assignment depends
+on IDA launch order — always confirm via `list_instances`.
+
+### 1.2 Tenant template
+
+Add a seed template at
+`services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`.
+The version key derives from the template's `region` + `major` fields (e.g.
+region `"GMS"`, major `84` → version key `gms_v84`).
+
+Template opcodes must match the registry: ops the registry marks present should
+be routed; ops the registry marks absent should not appear. Disagreement becomes
+a 🟥 conflict cell. Resolve via §5.1 (three-way arbiter: IDB first, then fix
+whichever leg is wrong).
+
+**Live-tenant warning**: seed templates apply only at tenant creation. Fixing a
+template opcode does NOT automatically update existing tenants — you must patch
+the live tenant's config and restart the channel (handler/writer projections
+don't hot-reload).
+
+### 1.3 IDA export
+
+The export is a machine-harvested JSON of the IDB's `Encode`/`Decode` read-order
+per handler function. It feeds the static audit pass and the evidence freshness
+checks.
+
+**Roster bootstrap**: the exporter builds its function roster from
+`candidatesFromFName` (derived from the template opcodes). A first export for a
+new version needs a seeded roster — copy the nearest version's export JSON as
+the starting point and purge any cross-IDB coincidentals (functions that appear
+in both versions only because the nearest version shared a binary segment, not
+because the target version actually has them). Then run:
+
+```bash
+go run ./tools/packet-audit export \
+  --version <version-key> \
+  --ida-port <port> \
+  --ida-url http://192.168.20.3:13337/mcp \
+  --output docs/packets/ida-exports/<version>.json
+```
+
+Flags:
+
+```
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -generated-at string
+        fixed provenance timestamp (default: now / $PACKET_AUDIT_GENERATED_AT)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -output string
+        output JSON path (required)
+  -version string
+        target version key, e.g. gms_v95 (required)
+```
+
+Run a small smoke-test roster first (a handful of known-good FNames) before
+committing to the full run. The exporter tolerates decompile failures
+(they become `Unresolved` entries and BFS continues); a genuine transport error
+aborts loudly.
+
+### 1.4 Static audit pass
+
+After the registry, template, and export exist, run the static audit for the new
+version. From the worktree root:
+
+```bash
+go run ./tools/packet-audit \
+  --csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
+  --csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
+  --atlas-packet    libs/atlas-packet \
+  --template        services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json \
+  --ida-source      docs/packets/ida-exports/<version>.json \
+  --output          docs/packets/audits
+```
+
+Run from the worktree root. This writes `docs/packets/audits/<version>/SUMMARY.md`
+plus per-packet `.md` detail files; `--output` is the parent directory, not the
+versioned subdirectory.
+
+**Live IDB validation pass** (optional but strongly recommended): after the
+static pass, run `validate` to cross-check the hand-authored baseline against
+the open IDB:
+
+```bash
+go run ./tools/packet-audit validate \
+  --version <version-key> \
+  --ida-port <port> \
+  --report /tmp/<version>_validate.md
+```
+
+Flags:
+
+```
+  -allowlist string
+        unimplemented-case allowlist (default: docs/packets/audits/<auditdir>/_unimplemented.json)
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -report string
+        output markdown report path (required)
+  -version string
+        target version key, e.g. gms_v95 (required)
+```
+
+Triage `divergent` entries with `diff-shape`; allowlist genuine `missing-mode`
+cases into `docs/packets/audits/<version>/_unimplemented.json`.
+
+**`decompose` — extend the baseline with live IDA reads for every exported entry**
+
+```bash
+go run ./tools/packet-audit decompose \
+  --version   <version-key> \
+  --ida-port  <port> \
+  --out       /tmp/<version>_extended.json \
+  --report    /tmp/<version>_decompose.md
+```
+
+Flags:
+
+```
+  -audit-dir string
+        committed audit dir (default: docs/packets/audits/<version>)
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -out string
+        output extended baseline JSON path (required)
+  -report string
+        output markdown report path (required)
+  -version string
+        target version key, e.g. gms_v83 (required)
+```
+
+> **JMS quirk**: `--version gms_jms_185` defaults `--audit-dir` to
+> `docs/packets/audits/gms_jms_185`, which does not exist; the actual audit dir
+> is `docs/packets/audits/jms_v185`. Always pass `--audit-dir
+> docs/packets/audits/jms_v185` explicitly for JMS passes.
+
+**`triage` — produce a divergent-entry worklist from the extended baseline**
+
+```bash
+go run ./tools/packet-audit triage \
+  --version   <version-key> \
+  --ida-port  <port> \
+  --report    /tmp/<version>_triage.md
+```
+
+Flags:
+
+```
+  -audit-dir string
+        committed audit dir (default: docs/packets/audits/<version>)
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -report string
+        output markdown worklist path (required)
+  -version string
+        target version key, e.g. gms_v95 (required)
+```
+
+> **JMS quirk**: same as `decompose` — pass `--audit-dir
+> docs/packets/audits/jms_v185` explicitly for `--version gms_jms_185`.
+
+**`resolve-dispatch` — auto-write high-confidence selectors into the baseline**
+
+```bash
+go run ./tools/packet-audit resolve-dispatch \
+  --version   <version-key> \
+  --ida-port  <port> \
+  --worklist  /tmp/<version>_resolve.md
+```
+
+Flags:
+
+```
+  -baseline string
+        baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
+  -descent-depth int
+        max helper-descent recursion depth (default 6)
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-timeout duration
+        per-call IDA-MCP timeout (default 1m0s)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -min-confidence float
+        auto-accept threshold (default 0.6)
+  -version string
+        target version key, e.g. gms_v95 (required)
+  -worklist string
+        output confirmation worklist markdown path (required)
+```
+
+Review the worklist for low-confidence picks before committing the mutated baseline.
 
 ---
 
-## 5. The analyzer as the de-noising baseline (A1–A5)
+## 2. Regenerate the matrix
 
-task-080 added five enhancements to `tools/packet-audit` so a clean re-run reads a
-trustworthy signal. Know these so you can tell an analyzer artifact from a real
-finding:
+Once all four artefacts are in place, regenerate:
 
-| # | Enhancement | What it suppresses |
-|---|---|---|
-| **A1** | Width-equivalence (`internal/diff/diff.go`, `widthEquivalent`) | `WriteByteArray(N)`/`WriteLong`/`WriteInt16+WriteShort(0)` vs a same-width `DecodeBuf`/`EncodeBuffer` — byte-equal, label-different. |
-| **A2** | Name-qualification (`cmd/run.go`, `candidatesFromFName`) | `locateAtlasFile` struct-name collisions (e.g. `ChannelChange` audited against a buddy file). |
-| **A3** | Sub-struct / opaque descent (`internal/atlaspacket`) | Self-describing sub-structs are descended; only genuinely-opaque residue is flagged. |
-| **A4** | Early-return modeling | Mutually-exclusive `if/else` and early-`return` guards no longer double-counted (verified; covered by A1–A3). |
-| **A5** | Region-dispatch helper descent (`analyzer.go` same-receiver HELPER descent) | `m.encodeJMS(w)` / `m.encodeGMS(t,w)` dispatch — walks the helper body instead of seeing an empty top-level closure. |
+```bash
+go run ./tools/packet-audit matrix
+```
 
-**What the analyzer still cannot resolve (expected residue, not bugs):**
-- **Export read-order truncation** — the IDA-export JSON ends before a real Atlas
-  trailing field, so the analyzer emits phantom `atlas: extra` / `atlas: short`
-  rows. The wire is correct; the export simply didn't capture the full read-order.
-- **Genuinely-opaque IDA types** — a single `DecodeBuf`/`EncodeBuf` token, or a
-  struct with no decomposable layout (mob body, AvatarLook, `model.Asset`,
-  `GW_ItemSlotBase`). The analyzer stops at the register boundary.
+Flags:
 
-Both are expected and enumerated in `_pending.md` — when you see them in a fresh
-pass, that is residue, not work.
+```
+  -audits-dir string
+        audit reports parent dir (default "docs/packets/audits")
+  -check
+        CI mode: verify committed outputs are current; fail on conflicts/drift
+  -evidence-dir string
+        evidence ledger dir (default "docs/packets/evidence")
+  -exports-dir string
+        IDA export JSON dir (default "docs/packets/ida-exports")
+  -out-dir string
+        output dir for STATUS.md/status.json (default "docs/packets/audits")
+  -packet-lib string
+        atlas-packet root for marker scanning (default "libs/atlas-packet")
+  -registry-dir string
+        registry YAML dir (default "docs/packets/registry")
+  -templates-dir string
+        tenant seed templates dir (default "services/atlas-configurations/seed-data/templates")
+  -tiers string
+        tier-1 membership YAML (default "docs/packets/evidence/tiers.yaml")
+  -versions string
+        comma-separated version keys (default "gms_v83,gms_v84,gms_v87,gms_v95,jms_v185")
+```
 
----
+The new version column appears automatically, pre-filled from applicability: ⬜
+for ops the registry marks absent, ❌ for ops marked present but unverified. Any
+applicability disagreement between the registry and the template prints as a 🟥
+conflict and is listed in STATUS.md's conflicts section.
 
-## 6. Telling expected residue from a NEW real finding
+Run `--check` immediately after to capture the baseline conflict and freshness
+state:
 
-A new pass will reproduce most of the four-version residue. Every residual
-`❌`/`🔍` should fall into one of **four accepted-exclusion buckets** (full
-definitions + the per-packet evidence tables are in `_pending.md`):
+```bash
+go run ./tools/packet-audit matrix --check 2>/tmp/matrix_check.txt; echo "exit=$?"
+grep -c '' /tmp/matrix_check.txt   # total findings
+grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt
+```
 
-1. **TRUNCATION** — export read-order ended before a real Atlas trailing field
-   (`extra`/`short` phantom rows). Wire verified by byte test / prior per-struct ✅.
-2. **OPAQUE** — register-boundary IDA type with no decomposable layout.
-3. **VERSION-ABSENT** — the FName/mode/feature is absent from this version's client
-   (KMS-only, GMS-only, JMS-only, BBS-absent-in-JMS, unwired template seed). No
-   counterpart to audit.
-4. **REPRESENTATION-EQUIVALENCE** — identical wire bytes, different field
-   decomposition (`WriteLong`≡`EncodeBuffer(8)`, `WriteInt64`≡FILETIME `DecodeBuf(8)`,
-   4×`WriteInt32`≡`DecodeBuffer(16)` RECT, etc.).
+The second grep must be 0 before committing. Pre-existing 🟥 conflicts (from the
+registry-seed backlog) cause a non-zero exit that is grandfathered via
+`continue-on-error` in CI; new conflicts you introduced must be resolved before
+landing.
 
-(`_pending.md` also tracks two dispatcher-artifact classes — OP/MODE-PREFIX and
-LOOP/EXCLUSIVE-BRANCH — which the analyzer largely suppresses post-A1–A5 but which
-survive on a few mask/mode-driven packets.)
-
-**Procedure for a fresh `❌`/`🔍`:**
-1. Cross-reference the packet against the `_pending.md` evidence tables. If it's
-   already classified there → expected residue, no action.
-2. If it is NOT in `_pending.md` and not covered by a bucket above, it is either a
-   **real wire bug** (→ open a new task, fix with a byte test) or a **new analyzer
-   artifact** (→ extend `tools/packet-audit` §4.7 with a fixture + test). Never
-   silently re-defer it.
-
----
-
-## 7. Verify-against-IDA discipline (the non-negotiable)
-
-**No wire change ships on the analyzer verdict alone.** The byte-level test is the
-oracle, the IDA decompilation is the evidence, and the analyzer ✅/❌ is only a
-triage signal. Concretely:
-
-- Every wire change gets a `*_test.go` beside the packet that asserts the exact byte
-  slice for **each** version it targets (use the model's own Builder /
-  `pt.CreateContext("GMS", 95, 1)` / `pt.Variants` = GMS v28/v83/v87/v95 + JMS v185;
-  no `*_testhelpers.go`).
-- Each fix records the IDA `FName@address` and the read-order it was verified
-  against (e.g. `CCashShop::OnBuy@0x47eaa7 → Encode1 isMaplePoint, Encode4 dwOption,
-  Encode4 nCommSN`) in its audit entry / the registry.
-
-This discipline caught **false plan premises** in task-080:
-- **B1.3 `nItemPos`** — the plan asserted `ActionStart`/`ActionComplete` were missing
-  an `Encode4(nItemPos)`. IDA across all of v83/v87/v95/JMS185 showed no such field;
-  the existing decode was byte-correct. **Premise disproven, no change.**
-- **B1.2 gate boundary** — the chat `Multi` `update_time` gate boundary asserted by
-  the plan was corrected against IDA to `GMS >= 95` (not the wider boundary the plan
-  assumed), pinned by `TestRequestTrailerShape`-style per-version byte tests.
-
-If the analyzer and a byte-level IDA trace disagree, the IDA trace wins.
+Commit registry + template + export + audit output + STATUS.md/status.json in a
+single PR. The PR description should call out any conflict cells the pass
+introduces and their diagnosis.
 
 ---
 
-## 8. Live per-branch validation (task-081)
+## 3. Promote cells
 
-§2's `packet-audit` run is a **static** audit: Atlas encoder vs the checked-in IDA
-export JSON. task-081 added a complementary **live** layer that verifies the
-hand-authored baseline read-orders directly against the open IDB, per dispatch
-branch. Use it to *gain confidence* in a baseline (and to surface real
-divergences); it is **read-only over the baselines except `resolve-dispatch`**,
-which writes only the `dispatch` selector field.
+The pass's job is turning ❌ cells into ✅ or 🟡. Apply
+`docs/packets/audits/VERIFYING_A_PACKET.md` per cell, working hottest-tier cells
+first (tier-1 packets in `docs/packets/evidence/tiers.yaml` require a byte-fixture
+test; tier-0 cells can reach 🟡 from a tool ✅ alone).
 
-> **Why validate, never re-export.** A fully-automated re-export of the baselines
-> was measured to **regress** the audit (it flattens switch dispatchers that the
-> hand-authored baseline decomposes per-mode): 26 packets ✅→❌ vs 3 ❌→✅. The
-> exporter is therefore a *validator*, not a replacement. Full rationale:
-> `docs/tasks/task-081-ida-export-reharvest/design-validation-pivot.md`.
+**Fan-out with the packet-verifier agent**: for campaign-scale verification
+(verifying a whole version's scope), dispatch the `packet-verifier` agent per
+cell family. Each agent invocation follows the `VERIFYING_A_PACKET.md` steps
+1–8; the results are committed as test + evidence + STATUS.md in that agent's
+sub-task. Coordinate via a per-version worklist (the `discover-ops` worklist
+markdown is a convenient starting point).
 
-### 8.1 Multi-IDB MCP setup
+After each batch of verifications, regenerate:
 
-The validation subcommands drive the IDB over the **ida-pro-mcp HTTP API**
-(`--ida-url`, default `http://<host>:13337/mcp`). Multiple IDBs can be loaded at
-once and addressed by port via `--ida-port` (`select_instance`). The four-version
-convention:
+```bash
+go run ./tools/packet-audit matrix
+go run ./tools/packet-audit matrix --check
+```
 
-| Version key (`--version`) | Baseline JSON | Audit dir | MCP port |
-|---|---|---|---|
-| `gms_v83`     | `docs/packets/ida-exports/gms_v83.json`     | `gms_v83`  | 13337 |
-| `gms_v87`     | `docs/packets/ida-exports/gms_v87.json`     | `gms_v87`  | 13338 |
-| `gms_v95`     | `docs/packets/ida-exports/gms_v95.json`     | `gms_v95`  | 13339 |
-| `gms_jms_185` | `docs/packets/ida-exports/gms_jms_185.json` | `jms_v185` | 13340 |
+The cell must now be ✅. Commit test + evidence record + STATUS.md/status.json
+together. Never hand-edit STATUS.md.
 
-Note the JMS quirk: the `--version` key is `gms_jms_185` (matches the baseline
-filename), but its audit dir / allowlist live under **`jms_v185/`** — pass
-`--allowlist docs/packets/audits/jms_v185/_unimplemented.json` explicitly for JMS.
+---
 
-### 8.2 The subcommands
+## 4. Task-close gate
 
-All are `go run . <sub> --version <key> [--ida-port <p>] …` from `tools/packet-audit`.
-Shared flags: `--baseline` (defaults to `docs/packets/ida-exports/<version>.json`),
-`--ida-url`, `--ida-port` (0 = active instance), `--descent-depth` (6).
+An audit or version-pass task is done when **every cell in its declared scope**
+is ✅, 🟡-with-evidence, or ⬜.
 
-| Subcommand | Required flags | What it does |
-|---|---|---|
-| `validate` | `--version`, `--report` | Per dispatch branch: decompile the base ONCE via `ResolveLive`, extract the per-case wire shape, diff vs the hand-authored reads. Emits verified / divergent / missing-mode / extra-mode / unverifiable / allowlisted. Honors `--allowlist`. **Never mutates the baseline.** |
-| `resolve-dispatch` | `--version`, `--worklist` | Infer the `#Mode → client case` selector for each per-mode entry; **auto-accept ≥ `--min-confidence` (0.6)** and write the `dispatch` field into the baseline (lossless surgical write — only `dispatch` is added, every other byte verbatim); emit the lower-confidence to-confirm worklist. |
-| `infer` | `--version`, `--out` | Confidence-scored dispatch proposals (no write); the roll-up uses `--min-confidence`. |
-| `diff-shape` | `--version`, `--report` | Read-only diagnostic: for every divergent entry, the hand-vs-live read lists with the divergence position classified (leading / interior / trailing). The engine for representation triage. |
+Rules:
+- The scope declaration is a list of matrix cells in the task PRD (operation ×
+  direction × version). No prose acceptance.
+- A cell that remains ❌ in scope at close time blocks the task. Either fix it
+  or carve it into a follow-up with its own PRD scope declaration.
+- Cell regressions in a PR (any cell degrading from a better state) fail
+  `matrix --check` unless the regenerated STATUS.md is committed in the same PR
+  and the PR description explicitly owns the regressions with a diagnosis.
+- 🟡 cells count as done if and only if they have an evidence record in
+  `docs/packets/evidence/<version>/<packet>.yaml` whose `decompile_sha256` still
+  matches the current IDA export (no hash drift).
 
-### 8.3 The verdict vocabulary (distinct from SUMMARY ✅/❌/🔍)
+---
 
-`validate` reports against the **live IDB**, so its buckets are not the static
-SUMMARY glyphs:
+## 5. Degradation remediation paths
 
-- **verified** — the hand shape matches the live per-case read-order. The strongest
-  evidence a baseline entry can carry.
-- **divergent** — hand vs live differ. Triage with `diff-shape`: a leading single-byte
-  omission is a baseline gap (fix with `PrependCall`); a length-close loop/opaque/mask
-  difference is a representation diff (honest divergent, the modeling lever); a genuine
-  field difference is a real wire bug (→ byte-test fix). **task-081 isolated 0 real wire
-  bugs** this way — but that is the path if one surfaces.
-- **missing-mode** — a client dispatch case with no Atlas `#Mode` writer. Expected for
-  a partial reimplementation; allowlist it in `<auditdir>/_unimplemented.json`. A NEW
-  un-allowlisted missing-mode is a real signal.
-- **extra-mode** — an Atlas writer targeting a non-existent client case. Should be **0**
-  (a dead writer is a bug).
-- **unverifiable** — extraction failed (indirect/vtable dispatch, decompile failure,
-  Unresolved demangled-helper span). Honest "couldn't check," never a pass.
-- **allowlisted** — a missing-mode blessed in `_unimplemented.json`.
+### 5.1 Conflict cells (🟥)
 
-### 8.4 Workflow for a new version's live pass
+A 🟥 means three-way disagreement between the operation registry, the version's
+template, and Atlas code gates. The IDB is the only neutral arbiter — always
+diagnose against it before touching any of the three legs.
 
-1. Load the IDB; note its MCP port.
-2. `resolve-dispatch --version <key> --ida-port <p> --worklist /tmp/<v>_worklist.md`
-   to infer + auto-accept dispatch selectors (writes the `dispatch` field).
-3. `validate --version <key> --ida-port <p> --report /tmp/<v>_validate.md`.
-4. Triage `divergent` with `diff-shape`; allowlist `missing-mode` into
-   `<auditdir>/_unimplemented.json`; fix any real wire bug with a byte test (§7).
-5. Re-run the static §2 audit so the SUMMARY/TOTAL reflect any baseline corrections.
+**Leg 1 — Registry wrong** (seed transcription error or discovery blind spot):
+correct the registry entry. Set `provenance: manual` and add an `ida.address`
+citation. This is a doc-only change; the cell re-grades on regeneration.
 
-The task-081 artifacts (`docs/tasks/task-081-ida-export-reharvest/*-results.md`) are
-the worked examples; `OPAQUE_LEDGER.md` records the opaque types that `validate`
-cannot decompose and how each is verified instead.
+**Leg 2 — Template wrong** (op unrouted in a version whose client has it, or
+routed where the client lacks it):
+1. Fix the seed template in `services/atlas-configurations/seed-data/templates/`.
+2. **Patch live tenant configs** — seed templates apply only at tenant creation;
+   a template-only fix silently does nothing for existing tenants ("unhandled
+   message op" bug class).
+3. Restart the channel after patching — handler/writer opcode projections don't
+   hot-reload.
+
+**Leg 3 — Atlas code wrong** (version gate includes a version whose client lacks
+the packet, or excludes one that has it): wire fix through the normal playbook
+(code change + byte-test + evidence record via `VERIFYING_A_PACKET.md`).
+
+Conflicts are blockers in `matrix --check`; they cannot be allowlisted or
+silently deferred because every conflict is a place where the server can emit
+something a client cannot parse, or vice versa.
+
+### 5.2 Degraded verified cells (✅ → ❌)
+
+Three degradation paths, each with its own remediation:
+
+**1. Evidence hash drift** (re-export changed the decompile text):
+- Inspect whether the change is material. Cosmetic churn (Hex-Rays variable or
+  label renaming with no read-order change) → re-pin via `evidence pin` after
+  confirming the read order is unchanged:
+
+  ```bash
+  go run ./tools/packet-audit evidence pin \
+    --packet  <pkg/dir/Struct> \
+    --version <version-key> \
+    --ida     "<FName as it appears in the export>" \
+    --category <TIER1-FIXTURE|OPAQUE|TRUNCATION|...>
+  ```
+
+- Material change (the actual read order differs) → full playbook re-verification
+  (`VERIFYING_A_PACKET.md` §3–8). A changed read order is a finding to
+  investigate, not a re-pin.
+
+**2. Broken test linkage** (linked test deleted or renamed):
+- `matrix --check` emits an `orphan` line. Restore or re-point the
+  `packet-audit:verify` marker:
+
+  ```go
+  // packet-audit:verify packet=<pkg/dir/Struct> version=<key> ida=<0xaddr>
+  ```
+
+  If the test was deleted because the encoder changed, the cell needs full
+  re-verification before the marker is re-added.
+
+**3. Tool verdict flip** (tier-0 cells after an analyzer or exporter change):
+- Delta triage: diff before/after `grep -rE '\| (❌|🔍) \|' docs/packets/audits/*/SUMMARY.md`.
+- Hand-confirm against the IDB which side is right (the IDA trace always wins
+  over the analyzer verdict — use `triage` / `decompose` from §1.4 above to
+  re-run the live decompile and compare against the committed baseline).
+- Outcome is either an Atlas wire fix or a tool/export correction — never a
+  silent re-accept of the old verdict.
+
+**Live-tenant warning (applies to all legs)**: any wire fix or template fix that
+changes what Atlas emits or accepts for an existing tenant requires a live-config
+patch **and** a channel restart. Template-only or code-only fixes silently do
+nothing for tenants that were already provisioned. After the patch + restart,
+confirm the previously-"unhandled op" log lines are gone before declaring the
+conflict resolved.

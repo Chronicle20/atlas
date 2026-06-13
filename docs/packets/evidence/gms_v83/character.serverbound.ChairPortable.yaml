@@ -1,0 +1,8 @@
+packet: character/serverbound/ChairPortable
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSitOnPortableChairRequest
+    address: "0xa0f9e2"
+    decompile_sha256: 80a993ee14f4d9b6c60e38b99b71d8245d7ec7f2c341083a8f8b1cb8d138a29a

@@ -6,6 +6,9 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentSortRequest version=gms_v95 ida=0x9d5c60
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentSortRequest version=gms_v87 ida=0xa9e756
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentSortRequest version=jms_v185 ida=0xaed96f
 func TestCompartmentSortRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

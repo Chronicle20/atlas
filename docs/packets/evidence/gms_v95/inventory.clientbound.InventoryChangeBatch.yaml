@@ -1,0 +1,8 @@
+packet: inventory/clientbound/InventoryChangeBatch
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#ChangeBatch
+    address: "0xa08a70"
+    decompile_sha256: 279d011bdb8b3abdb86f2da874391e51341a50a3c0fa00b3413e3b6ecad34df2

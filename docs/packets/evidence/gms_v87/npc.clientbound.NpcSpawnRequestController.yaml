@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcSpawnRequestController
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CNpcPool::OnNpcChangeController
+    address: "0x7170c8"
+    decompile_sha256: b23ff65b9d0ca6889c61a83efa921db2c6dce6a8ae9be134c90d5ff3228bb156

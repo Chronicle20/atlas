@@ -1,0 +1,8 @@
+packet: drop/clientbound/DropDestroy
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CDropPool::OnDropLeaveField
+    address: "0x511e20"
+    decompile_sha256: 46b72a1f409a7968a5e08c261117609fd15ca0377251d13869d16922b528a0a8

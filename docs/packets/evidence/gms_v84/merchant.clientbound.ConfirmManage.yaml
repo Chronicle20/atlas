@@ -1,0 +1,8 @@
+packet: merchant/clientbound/ConfirmManage
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnEntrustedShopCheckResult#ConfirmManage
+    address: "0xa73538"
+    decompile_sha256: 05fc9f8850b2d30d4104a3f971528f7af748a53add3999acea2cc877b9e0257d

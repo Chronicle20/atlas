@@ -1,0 +1,9 @@
+packet: npc/clientbound/NpcShopList
+direction: clientbound
+version: jms_v185
+category: LOOP-EXCLUSIVE-BRANCH
+ida:
+    function: CShopDlg::SetShopDlg
+    address: "0x7c6536"
+    decompile_sha256: ce308852c18205b471a2b4ed1633a65f859e82702be0be171a74806ab03637ac
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (NPC row): CShopDlg::SetShopDlg per-commodity loop + ammo/non-ammo exclusive branch; wire correct per per-item IDA trace."

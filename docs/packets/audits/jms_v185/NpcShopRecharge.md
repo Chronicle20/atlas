@@ -1,7 +1,7 @@
 # NpcShopRecharge (← `CShopDlg::SendRechargeRequest`)
 
 - **IDA:** 0x7caecf
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/shop_recharge.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/shop_recharge.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

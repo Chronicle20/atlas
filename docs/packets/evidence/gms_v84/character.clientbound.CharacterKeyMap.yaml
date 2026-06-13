@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterKeyMap
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CFuncKeyMappedMan::OnInit
+    address: "0x59dda7"
+    decompile_sha256: 6050933704c636e8342103fcf84197cc6db5a9507d173065c069999344de9d20

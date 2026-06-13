@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashCashShopInventory
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CashShopInventory
+    address: "0x484c1d"
+    decompile_sha256: a406962c902061a12b1472f8c2ac6112a540b41461b93c4f91d1fc7023ee7b21

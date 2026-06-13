@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterControl
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobChangeController
+    address: "0x69030d"
+    decompile_sha256: e38336473d4d13f40bb3178bd7407b062b9b935da875804437066005c7126958

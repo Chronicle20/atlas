@@ -1,0 +1,8 @@
+packet: character/clientbound/BuffCancelForeign
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnResetTemporaryStat
+    address: "0xa093ab"
+    decompile_sha256: 34ca1866dbc2e1712818c7763df9430e54397c6672a30d370ab4e8613c96e64a

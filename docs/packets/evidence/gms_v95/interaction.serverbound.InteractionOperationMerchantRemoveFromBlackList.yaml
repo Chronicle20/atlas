@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CEntrustedShopDlg::DeleteBlackList
+    address: "0x51ee20"
+    decompile_sha256: 11169a418fa44f5d059bbe26c09e6d63c6e0dafbb650a57c660ecd0a31df7bda

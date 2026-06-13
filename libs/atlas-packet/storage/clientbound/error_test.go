@@ -6,6 +6,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=storage/clientbound/StorageErrorMessage version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageErrorSimple version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageUpdateMeso version=gms_v95 ida=0x76a990
 func TestStorageErrorSimple(t *testing.T) {
 	input := NewStorageErrorSimple(10)
 	for _, v := range test.Variants {

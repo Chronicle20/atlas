@@ -1,0 +1,21 @@
+package fixture
+
+import "context"
+
+// Direct-literal Operation(): serverbound handler pattern where Operation()
+// returns a string literal directly (no const indirection).
+type DirectLiteral struct {
+	n uint32
+}
+
+func (m DirectLiteral) Operation() string {
+	return "DirectLiteralHandle"
+}
+
+func (m DirectLiteral) Encode(_ interface{}, _ context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteInt(m.n)
+		return w.Bytes()
+	}
+}

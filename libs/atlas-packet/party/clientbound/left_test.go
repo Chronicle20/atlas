@@ -12,6 +12,11 @@ import (
 // targetName="Player1" → 2+7=9. Fixed prefix: 1+4+4+1+1+9 = 20. Total:
 //   v83/JMS: 20+298 = 318 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
 //   v95 (GMS only): 20+378 = 398 bytes
+// packet-audit:verify packet=party/clientbound/PartyLeft version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v95 ida=0xa11085
+// packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v84 ida=0xa89cf3
 func TestLeftByteOutput(t *testing.T) {
 	members := []party.PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},

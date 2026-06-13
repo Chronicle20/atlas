@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldTransport
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_ContiMove::OnContiState
+    address: "0x54dd08"
+    decompile_sha256: 45a77d768e2101f94c424198ba1c0d05923481c9968fdc0fa292695a18a51ded

@@ -1,0 +1,21 @@
+{
+  "WriterName": "ChairFixed",
+  "IDAName": "CUserLocal::HandleXKeyDown",
+  "Address": "0xa0e95a",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/chair_fixed.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

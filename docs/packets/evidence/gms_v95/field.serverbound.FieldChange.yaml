@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldChange
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendTransferFieldRequest
+    address: "0x5345c0"
+    decompile_sha256: dd4fd85c5ca4cab543d32773f1da2115f49609a3238effe620b6b1dc92e86d18
+verifies:
+    - libs/atlas-packet/field/serverbound/change_test.go#TestChangeWithPortalRoundTrip

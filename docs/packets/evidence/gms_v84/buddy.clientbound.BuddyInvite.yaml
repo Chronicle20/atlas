@@ -1,0 +1,8 @@
+packet: buddy/clientbound/BuddyInvite
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#Invite
+    address: "0xa8ada2"
+    decompile_sha256: 72518ee449712d27d2daf3f8ac539c0d599d94c864ca575a74fa7106705cf009

@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetMovement
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnMove
+    address: "0x76a534"
+    decompile_sha256: fc3cf7583a44f6d739fd462cb14fe13b3f8e39668322728984b5fd6493a5ee62

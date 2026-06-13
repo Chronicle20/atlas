@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetEmblem
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetGuildMarkMsg
+    address: "0x56e325"
+    decompile_sha256: 1b31cc7103658195f7f15db0ba0fd3422b80b59378caa1399c210a74efec2e1c

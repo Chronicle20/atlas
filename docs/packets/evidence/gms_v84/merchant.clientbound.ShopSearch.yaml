@@ -1,0 +1,8 @@
+packet: merchant/clientbound/ShopSearch
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnEntrustedShopCheckResult#ShopSearch
+    address: "0xa73538"
+    decompile_sha256: 52b1a000dc7743ef51a2432f460d0370bacc2a233300c4651653410841232faf

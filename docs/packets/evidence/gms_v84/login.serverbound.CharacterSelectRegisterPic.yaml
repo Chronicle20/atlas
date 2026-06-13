@@ -1,0 +1,8 @@
+packet: login/serverbound/CharacterSelectRegisterPic
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendSelectCharPacket#CharacterSelectRegisterPic
+    address: "0x60c1e3"
+    decompile_sha256: 77e5d8121553b72e3177b89fc1381e750e13682bd99562d70739acddf8793bdb

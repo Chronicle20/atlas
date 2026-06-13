@@ -1,0 +1,8 @@
+packet: character/serverbound/AutoDistributeAp
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#AutoDistributeAp
+    address: "0x9f63b0"
+    decompile_sha256: fbfbf11865c49e18a66eff026571dd9b36a197b099e31c64f0d796e379ebe946

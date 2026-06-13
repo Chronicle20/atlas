@@ -1,0 +1,8 @@
+packet: character/clientbound/DeleteCharacterResponse
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnDeleteCharacterResult
+    address: "0x66f9fe"
+    decompile_sha256: bd607aedaa4d4d8783c4a3d7c7478ba4e8e091196b2e27d816b768ef6bed8522

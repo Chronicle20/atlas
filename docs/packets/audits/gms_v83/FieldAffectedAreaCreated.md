@@ -1,7 +1,7 @@
 # FieldAffectedAreaCreated (← `CAffectedAreaPool::OnAffectedAreaCreated`)
 
 - **IDA:** 0x431a63
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/affected_area_created.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/affected_area_created.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** 🔍

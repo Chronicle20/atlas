@@ -1,3 +1,10 @@
+> **FROZEN (task-085).** This file is historical reference only. Machine-graded
+> acceptance now lives in `docs/packets/evidence/` (one YAML per packet ×
+> version, hash-pinned to the IDA exports) and renders in
+> `docs/packets/audits/STATUS.md`. Entries here were migrated only where their
+> IDA citation was recoverable; everything else grades ❌ in the matrix until
+> verified through `docs/packets/audits/VERIFYING_A_PACKET.md`.
+
 # Accepted permanent exclusions — packet audit (four-version registry)
 
 > **Closeout of record: task-080 (packet-audit-closeout), validated by task-081.**

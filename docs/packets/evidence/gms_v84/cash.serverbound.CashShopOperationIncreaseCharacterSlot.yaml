@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationIncreaseCharacterSlot
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnIncCharacterSlotCount
+    address: "0x46edcd"
+    decompile_sha256: 29253326c35ba782cbd9627ff46afbd6114c4b55db7e14050bd4905ad3f4b43d

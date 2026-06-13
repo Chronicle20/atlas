@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterDamage
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnDamaged
+    address: "0x6a758d"
+    decompile_sha256: 9a6515e4044ab7a3bfc08eea7f094a1f2ddfd596745f829ae01da001dd6fe4e8

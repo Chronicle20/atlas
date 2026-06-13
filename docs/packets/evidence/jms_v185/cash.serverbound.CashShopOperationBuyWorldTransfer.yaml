@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationBuyWorldTransfer
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendBuyTransferWorldItemPacket
+    address: "0x485038"
+    decompile_sha256: 932cb7435f9d33a4d90ca720ef388a40d026e8a9d6f8a61bd39e66315186247b

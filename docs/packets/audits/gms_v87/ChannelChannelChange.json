@@ -4,7 +4,7 @@
   "Address": "0x4a874b",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/channel/clientbound/change.go",
+  "AtlasFile": "libs/atlas-packet/channel/clientbound/change.go",
   "Rows": [
     {
       "Index": 0,

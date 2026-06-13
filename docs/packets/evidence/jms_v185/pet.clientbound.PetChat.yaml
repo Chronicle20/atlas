@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetChat
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnAction
+    address: "0x76a557"
+    decompile_sha256: 20e05d5d77eef9946ce527288123cc16a0bfcc8c4139e4054a7cecc135f80758

@@ -1,7 +1,7 @@
 # NpcShopOperationSimple (← `CShopDlg::OnPacket#Simple`)
 
 - **IDA:** 0x7cb04e
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/shop_operation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

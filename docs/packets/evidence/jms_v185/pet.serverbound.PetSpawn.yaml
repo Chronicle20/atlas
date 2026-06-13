@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetSpawn
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendActivatePetRequest
+    address: "0xb0b40b"
+    decompile_sha256: 3306cf36f49cee9bdacdcc227bba34e8d52b16892f9f06d43f01a269c991bb9d

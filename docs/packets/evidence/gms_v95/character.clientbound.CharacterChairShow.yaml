@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterChairShow
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetActivePortableChair
+    address: "0x949240"
+    decompile_sha256: 07f9e60b68dc1ad34f319ef266d30bcbe36f69998caf73530300d4d2440cca8c

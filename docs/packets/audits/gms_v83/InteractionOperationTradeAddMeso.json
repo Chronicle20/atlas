@@ -4,18 +4,27 @@
   "Address": "0x7c37ca",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go",
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "meso amount",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 0,
+  "Verdict": 2,
   "FlatInvalid": false
 }

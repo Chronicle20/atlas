@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetTitleNames
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSetGuildTitleNames
+    address: ABSENT
+    decompile_sha256: a2dcc5c09495c1522dc80b744ed7d0468fa63a28a49e8f9a053bdb6e475a42c7

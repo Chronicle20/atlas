@@ -1,0 +1,50 @@
+// --- single-packet decimal constructor ---
+void __thiscall CLogin::SendCheckPasswordPacket(CLogin *this, const wchar_t *pID, const wchar_t *pPasswd)
+{
+  COutPacket oPacket;
+
+  COutPacket::COutPacket(&oPacket, 54);
+  COutPacket::EncodeStr(&oPacket, pID);
+  COutPacket::EncodeStr(&oPacket, pPasswd);
+  CClientSocket::SendPacket(TSingleton<CClientSocket>::GetInstance(), &oPacket);
+  COutPacket::~COutPacket(&oPacket);
+}
+
+// --- two-packet function (opcodes 20 and 26) ---
+void __thiscall CLogin::OnConnect(CLogin *this, BOOL bSuccess)
+{
+  COutPacket oPacket;
+  COutPacket oPacket2;
+
+  COutPacket::COutPacket(&oPacket, 20);
+  COutPacket::Encode4(&oPacket, 8u);
+  CClientSocket::SendPacket(TSingleton<CClientSocket>::GetInstance(), &oPacket);
+  COutPacket::~COutPacket(&oPacket);
+
+  COutPacket::COutPacket(&oPacket2, 26);
+  COutPacket::Encode2(&oPacket2, 1337);
+  CClientSocket::SendPacket(TSingleton<CClientSocket>::GetInstance(), &oPacket2);
+  COutPacket::~COutPacket(&oPacket2);
+}
+
+// --- hex-literal constructor with 'u' suffix ---
+void __thiscall CLogin::SendSetGenderPacket(CLogin *this, int nGender)
+{
+  COutPacket oPacket;
+
+  COutPacket::COutPacket(&oPacket, 0x3Au);
+  COutPacket::Encode1(&oPacket, nGender);
+  CClientSocket::SendPacket(TSingleton<CClientSocket>::GetInstance(), &oPacket);
+  COutPacket::~COutPacket(&oPacket);
+}
+
+// --- variable-opcode constructor — must be skipped ---
+void __thiscall CField::SendVariableOpPacket(CField *this, int nType)
+{
+  COutPacket oPacket;
+
+  COutPacket::COutPacket(&oPacket, nType);
+  COutPacket::Encode4(&oPacket, 42u);
+  CClientSocket::SendPacket(TSingleton<CClientSocket>::GetInstance(), &oPacket);
+  COutPacket::~COutPacket(&oPacket);
+}

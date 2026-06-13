@@ -6,6 +6,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=gms_v83 ida=0x756a04
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=gms_v87 ida=0x7a256b
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=gms_v95 ida=0x6e7260
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=jms_v185 ida=0x7cacab
+// packet-audit:verify packet=npc/serverbound/NpcShopSell version=gms_v84 ida=0x778cb8
 func TestShopSellRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/EffectSimple version=jms_v185 ida=0x9f6395
 func TestEffectSimpleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

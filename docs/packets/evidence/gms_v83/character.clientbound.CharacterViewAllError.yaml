@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterViewAllError
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed
+    address: "0x5facca"
+    decompile_sha256: a01dcb16868d12be0103512ae4bf8a788fd6fe2bc2157e4dd7af6f227bbe9f5c

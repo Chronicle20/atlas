@@ -9,6 +9,8 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v87 ida=0x47a820
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v84 ida=0x472add
 func TestShopOperationBuyCoupleRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -61,6 +63,8 @@ func TestShopOperationBuyCoupleRoundTrip(t *testing.T) {
 // TestShopOperationBuyCoupleLeadingFieldGate pins the leading-field gate. IDA v83
 // CCashShop::OnBuyCouple@0x46ffe7 sends Encode4 ask_SPW (int); v95 @0x490d80 sends
 // EncodeStr sSPW. Gate GMS && MajorVersion>=95.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v83 ida=0x46ffe7
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v95 ida=0x490d80
 func TestShopOperationBuyCoupleLeadingFieldGate(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationBuyCouple{birthday: 0x01020304, spw: "x", option: 0, serialNumber: 0, name: "", message: ""}
@@ -82,6 +86,7 @@ func TestShopOperationBuyCoupleLeadingFieldGate(t *testing.T) {
 // CCashShop::OnBuyCouple@0x48085a (sub-op 0x1E consumed by routing): EncodeStr(SPW),
 // Encode4(nCommSN), EncodeStr(sGiveTo recipient), EncodeStr(sText message). JMS has
 // NO option int and NO birthday; SPW leads (empty = 1-byte length 0).
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=jms_v185 ida=0x48085a
 func TestShopOperationBuyCoupleJMS(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	in := ShopOperationBuyCouple{spw: "", serialNumber: 0xAABBCCDD, name: "Bob", message: "Hi"}

@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWarpToMap
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetField#WarpToMap
+    address: "0x776020"
+    decompile_sha256: fe12028ca9f728b1b623f516b8f072fb11931e864be3232aa82565b0839dc897

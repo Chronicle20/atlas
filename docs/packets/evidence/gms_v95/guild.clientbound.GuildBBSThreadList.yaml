@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildBBSThreadList
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnGuildBBSPacket#BBSThreadList
+    address: "0x7c46c0"
+    decompile_sha256: 29376c260a9d3fe8e0c2c4043d41e66f837b9fb39ddedce9c392792799d587ac

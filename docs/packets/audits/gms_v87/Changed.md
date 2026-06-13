@@ -1,7 +1,7 @@
 # Changed (← `CWvsContext::OnStatChanged`)
 
 - **IDA:** 0xab6e77
-- **Atlas file:** `../../libs/atlas-packet/stat/clientbound/changed.go`
+- **Atlas file:** `libs/atlas-packet/stat/clientbound/changed.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** 🔍

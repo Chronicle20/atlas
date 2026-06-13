@@ -1,0 +1,8 @@
+packet: messenger/serverbound/MessengerOperation
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnDestroy
+    address: "0x7f03f0"
+    decompile_sha256: d4e5e40f22d8aa662e5f6817931df987eecdf93e3856c27780bd9e65b9851a28

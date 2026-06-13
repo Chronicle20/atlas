@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashQueryResult
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnQueryCashResult
+    address: "0x47c0b3"
+    decompile_sha256: b31c57f72e940790136a3296e8d30acae165e86fc4cf802b8684c20b618f85d9

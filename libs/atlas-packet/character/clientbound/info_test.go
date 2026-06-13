@@ -7,6 +7,11 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v83 ida=0xa2370b
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v87 ida=0xabb181
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v95 ida=0xa05750
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v84 ida=0xa6eda8
+
 // TestCharacterInfo_MountRoundTrip locks the tamed-mob block: when a mount is
 // active the writer emits flag=1 + level/exp/tiredness (3×int32), and the decoder
 // reads them back. Layout is version-uniform (v83/v87/v95/JMS).

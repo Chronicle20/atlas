@@ -1,0 +1,8 @@
+packet: character/serverbound/Move
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlUser::EndUpdateActive
+    address: "0xa1334e"
+    decompile_sha256: 943b20345b33562f3c1c6f887dd73ce9693c1cd68d83843002ec8b807ff64f03

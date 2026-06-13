@@ -1,7 +1,7 @@
 # NpcAskTextConversationDetail (← `CScriptMan::OnAskText#AskText`)
 
 - **IDA:** 0x7b77bd
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

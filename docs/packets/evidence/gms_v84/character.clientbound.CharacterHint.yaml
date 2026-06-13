@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterHint
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnBalloonMsg
+    address: "0x99bb74"
+    decompile_sha256: 4dbab8d4afbf85f38e72a9e0442fc0136c6668e0da1311969223eb27ef87f3cb

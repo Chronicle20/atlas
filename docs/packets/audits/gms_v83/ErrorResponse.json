@@ -4,7 +4,7 @@
   "Address": "0xa223dc",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/fame/clientbound/response.go",
+  "AtlasFile": "libs/atlas-packet/fame/clientbound/response.go",
   "Rows": [
     {
       "Index": 0,

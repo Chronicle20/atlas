@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationChat
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::CheckAndSendChat
+    address: "0x69973e"
+    decompile_sha256: 6becda5509265ec8decf0a845a647d71a5b279e87fc0dade673bca21a4bece67
+verifies:
+    - libs/atlas-packet/interaction/serverbound/operation_chat_test.go#TestOperationChatBytes

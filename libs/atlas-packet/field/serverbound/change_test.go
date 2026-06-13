@@ -9,6 +9,11 @@ import (
 // TestChangeWithPortalRoundTrip covers a portal-named transfer. Per the v95
 // client (CField::SendTransferFieldRequest @0x5345c0) a non-empty portal name
 // carries the target x/y pair, so x/y participate in the round-trip here.
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v95 ida=0x5345c0
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v83 ida=0x53035d
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v87 ida=0x557b5a
+// packet-audit:verify packet=field/serverbound/FieldChange version=jms_v185 ida=0x56d75a
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v84 ida=0x53c5b9
 func TestChangeWithPortalRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildBBSListThreads
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::SendLoadListRequest
+    address: "0x7c3680"
+    decompile_sha256: f6aca25a0bfdd5e9453aa932bb1f11e203c8d97bb5f799e10682189be0a630e5

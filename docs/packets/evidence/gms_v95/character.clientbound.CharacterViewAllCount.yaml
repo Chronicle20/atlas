@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterViewAllCount
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllCount
+    address: "0x5de17f"
+    decompile_sha256: 5040c0863bca8d4be2d36dcecf1b0db8a789125771479ac8c1559b794b400c9d

@@ -1,0 +1,21 @@
+{
+  "WriterName": "ScriptProgress",
+  "IDAName": "CWvsContext::OnScriptProgressMessage",
+  "Address": "0xa5e47e",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/quest/clientbound/script_progress.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

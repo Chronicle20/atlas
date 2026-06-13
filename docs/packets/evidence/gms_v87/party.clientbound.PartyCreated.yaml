@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyCreated
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Created
+    address: "0xad697a"
+    decompile_sha256: 1bb920bcda158d0b6d74f4e492b4836f0d4f4711c0c6cd6792e03881c1028473

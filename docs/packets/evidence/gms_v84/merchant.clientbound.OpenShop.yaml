@@ -1,0 +1,8 @@
+packet: merchant/clientbound/OpenShop
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnEntrustedShopCheckResult#OpenShop
+    address: "0xa73538"
+    decompile_sha256: 86ca8948dcbd1de764e2c83a44278fe9d1456f098d7b7d4c9727bbc87e96ada9

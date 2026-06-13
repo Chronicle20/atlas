@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectString
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#String
+    address: "0x5330f7"
+    decompile_sha256: 0859cb5a89f6df00e84bb431dc8b563e37d7eecb88db3b8b7650733511e62322

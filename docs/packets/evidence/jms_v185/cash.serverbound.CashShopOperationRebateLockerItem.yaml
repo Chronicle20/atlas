@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationRebateLockerItem
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnRebateLockerItem
+    address: "0x47c059"
+    decompile_sha256: 80f5a4411882509d8d07974bbb59a59b5b236c7350d4f19e9952f6cf7c7f2be1
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item_test.go#TestShopOperationRebateLockerItemJMSBody

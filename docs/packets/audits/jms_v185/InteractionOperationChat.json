@@ -4,27 +4,36 @@
   "Address": "0x6db3ce",
   "Variant": "JMS/v185",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_chat.go",
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_chat.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "update_time (get_update_time). JMS v185 PRESENT — same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS",
-      "Verdict": 0,
-      "Note": ""
+      "IDAOp": 0,
+      "IDAComment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time). JMS v185 PRESENT — same as GMS v95; atlas else-branch (no updateTime) is WRONG for JMS",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "message (s)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 0,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

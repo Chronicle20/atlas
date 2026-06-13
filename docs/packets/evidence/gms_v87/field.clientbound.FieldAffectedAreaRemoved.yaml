@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldAffectedAreaRemoved
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CAffectedAreaPool::OnAffectedAreaRemoved
+    address: "0x43388c"
+    decompile_sha256: 2debdf1861ab218cc08fb20c26f1376325d8164f7eaf28ef060b8275e4e00827
+verifies:
+    - libs/atlas-packet/field/clientbound/affected_area_test.go#TestAffectedAreaRemovedByteOutput

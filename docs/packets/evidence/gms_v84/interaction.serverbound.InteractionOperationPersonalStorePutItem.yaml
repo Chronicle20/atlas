@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationPersonalStorePutItem
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::PutItem
+    address: "0x719c8a"
+    decompile_sha256: 20c1f8939a06baa912343b5b25713059178c26a01a9c7da8a18b70dd51d98d27

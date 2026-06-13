@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetExcludeResponse
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnLoadExceptionList
+    address: "0x76be76"
+    decompile_sha256: 82807d0e67be65fd670ca6a74f60009c7a48e5d9e25157f6e603ee516640b68e

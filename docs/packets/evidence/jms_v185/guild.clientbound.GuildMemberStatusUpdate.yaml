@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberStatusUpdate
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberStatusUpdate
+    address: "0xb22518"
+    decompile_sha256: d788cbcde96a707565bd3a4cf1e3b9277a50e3eeb26a575169a02f7b89f0b338

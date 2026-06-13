@@ -4,7 +4,7 @@
   "Address": "0x5723E6",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/field/clientbound/effect_weather.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/effect_weather.go",
   "Rows": [
     {
       "Index": 0,

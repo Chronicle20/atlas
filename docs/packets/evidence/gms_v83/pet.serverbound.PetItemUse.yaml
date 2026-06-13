@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetItemUse
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemUseRequestByPetQ
+    address: "0xa0955c"
+    decompile_sha256: 604ea0002fd7bbf979f0e8a24c7368ddf4d2e9bd704b19cbe934d17808c9301e

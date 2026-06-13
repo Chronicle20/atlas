@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterSpawn
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobEnterField
+    address: "0x6589e0"
+    decompile_sha256: 096eb3b19ca56846b4314a60987ca68d10521363c6522952997af9e214938210

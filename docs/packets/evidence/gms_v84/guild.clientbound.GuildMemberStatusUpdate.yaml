@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberStatusUpdate
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberStatusUpdate
+    address: "0xa82e2b"
+    decompile_sha256: 087dcd3e0b00f7769a3ed92267487152f6592c42f4ff8ad0e99fe82ba54787a0

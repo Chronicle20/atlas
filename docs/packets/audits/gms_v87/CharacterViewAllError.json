@@ -1,10 +1,10 @@
 {
   "WriterName": "CharacterViewAllError",
-  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed",
+  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllError",
   "Address": "0x6328eb",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/view_all.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/view_all.go",
   "Rows": [
     {
       "Index": 0,

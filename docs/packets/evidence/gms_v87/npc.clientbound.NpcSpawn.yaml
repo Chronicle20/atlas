@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcSpawn
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CNpcPool::OnNpcEnterField
+    address: "0x716fd5"
+    decompile_sha256: 640807bf7299cdba6d2a861145a006b9676777cad65f21f3096e5486f55ec35b

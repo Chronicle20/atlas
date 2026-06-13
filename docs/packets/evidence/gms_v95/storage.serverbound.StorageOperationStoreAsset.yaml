@@ -1,0 +1,8 @@
+packet: storage/serverbound/StorageOperationStoreAsset
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::SendPutItemRequest
+    address: "0x768570"
+    decompile_sha256: 8897e838774be2d287c35fe557669fe5172e9bf982435fdc14afb5c7b208c535

@@ -1,0 +1,8 @@
+packet: character/serverbound/DistributeAp
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#DistributeAp
+    address: "0xabb60b"
+    decompile_sha256: d43b1846df10acf04687310c29f9abd99592a62c6acfa9385838e7aac3892726

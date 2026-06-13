@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildOperation
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUIFadeYesNo::OnButtonClicked
+    address: "0x5599d6"
+    decompile_sha256: 466603ec515df33340f0d35b43b425bc49908f869b67662f9cb058b18fe006ed

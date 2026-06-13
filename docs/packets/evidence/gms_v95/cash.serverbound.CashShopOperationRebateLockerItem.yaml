@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationRebateLockerItem
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnRebateLockerItem
+    address: "0x485840"
+    decompile_sha256: 5cf25ccb9f4d433748f88bea1a10d678dfc18125c3f5591e7c3ed9f3472dff53
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item_test.go#TestShopOperationRebateLockerItemLeadingFieldGate

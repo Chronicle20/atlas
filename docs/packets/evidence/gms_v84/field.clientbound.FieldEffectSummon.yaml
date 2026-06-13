@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectSummon
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#Summon
+    address: "0x53f37d"
+    decompile_sha256: 0f352befd3fd72910ad8808fe307e36c36c1c87feb0ad429033fb7397f99fb8a

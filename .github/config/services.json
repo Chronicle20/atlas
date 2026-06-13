@@ -118,6 +118,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-doors",
+      "type": "go-service",
+      "path": "services/atlas-doors",
+      "module_path": "services/atlas-doors/atlas.com/doors",
+      "docker_image": "ghcr.io/chronicle20/atlas-doors/atlas-doors",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-drop-information",
       "type": "go-service",
       "path": "services/atlas-drop-information",

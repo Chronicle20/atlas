@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=ui/clientbound/Open version=gms_v87 ida=0x9e32c0
 // packet-audit:verify packet=ui/clientbound/Open version=gms_v95 ida=0x9055f0
 // packet-audit:verify packet=ui/clientbound/Open version=jms_v185 ida=0xa2cf38
+// packet-audit:verify packet=ui/clientbound/Open version=gms_v84 ida=0x99eea8
 func TestUiOpen(t *testing.T) {
 	input := NewUiOpen(5)
 	for _, v := range pt.Variants {

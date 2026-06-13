@@ -6,7 +6,7 @@
 Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 - export gms_v83: `ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17`
-- export gms_v84: `55d089a6e14531337bce39cf82be61c78359e5a4f7945500bd7258f668471f73`
+- export gms_v84: `a4301e7b5bed6e955ecabe531bc8160e29b34e1e5539205cbd8ba0d5625aa595`
 - export gms_v87: `8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66`
 - export gms_v95: `b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3`
 - export jms_v185: `f91a7c12d00cd2cd0879508b85c5fd6ec15db4bd1f73ca14979021a989dc8b36`
@@ -95,7 +95,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | WEDDING_GIFT_RESULT | CWvsContext::OnWeddingGiftResult |  | 0x04A | ❌ | 0x04A | ❌ | 0x04C | ❌ | 0x04D | ❌ | 0x044 | ❌ |
 | MINIGAME_PACHINKO_UPDATE_DAMA | sub_B06318 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04B | ❌ |
 | NOTIFY_MARRIED_PARTNER_MAP_TRANSFER | CWvsContext::OnNotifyMarriedPartnerMapTransfer |  | 0x04B | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04E | ❌ | 0x045 | ❌ |
-| CASH_PET_FOOD_RESULT | CWvsContext::OnCashPetFoodResult | pet/clientbound/PetCashFoodResult (T1) | 0x04C | ✅ | 0x04E | ❌ | 0x04E | ✅ | 0x04F | ✅ | 0x046 | ✅ |
+| CASH_PET_FOOD_RESULT | CWvsContext::OnCashPetFoodResult | pet/clientbound/PetCashFoodResult (T1) | 0x04C | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x04F | ✅ | 0x046 | ✅ |
 | IDA_0X04C | sub_AF8F08 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04C | ❌ |
 | IDA_0X04D | sub_AECC23 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04D | ❌ |
 | SET_WEEK_EVENT_MESSAGE | CWvsContext::OnSetWeekEventMessage |  | 0x04D | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x050 | ❌ | 0x047 | ❌ |
@@ -288,7 +288,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | IDA_0X0DA | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DA | ❌ |
 | IDA_0X0DB | CUserLocal::OnRandomMesobag_Failed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DB | ❌ |
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  | 0x0DB | ❌ | 0x0DB | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
-| OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open | 0x0DC | ✅ | 0x0E0 | ❌ | 0x0E9 | ✅ | 0x0FB | ✅ | 0x0E5 | ✅ |
+| OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open | 0x0DC | ✅ | 0x0E0 | ✅ | 0x0E9 | ✅ | 0x0FB | ✅ | 0x0E5 | ✅ |
 | IDA_0X0DD | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DD | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock | 0x0DD | ❌ | 0x0DD | ❌ | 0x0EB | ❌ | 0x0FD | ✅ | 0x0E7 | ❌ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode | ui/clientbound/Disable | 0x0DE | ✅ | 0x0E2 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
@@ -486,14 +486,14 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | ACCOUNT_INFO_REQUEST |  |  | 0x003 | ❌ | 0x003 | ❌ | 0x003 | ❌ | 0x003 | ❌ |  | ⬜ |
 | SERVERLIST_REREQUEST | CLogin::ChangeStepImmediate; CLogin::Init |  | 0x004 | ❌ | 0x004 | ❌ | 0x004 | ❌ | 0x004 | ❌ | 0x003 | ❌ |
 | CHARLIST_REQUEST | CLogin::SendLoginPacket | login/serverbound/WorldCharacterListRequest | 0x005 | ✅ | 0x005 | ❌ | 0x005 | ✅ | 0x005 | ✅ | 0x004 | ❌ |
-| SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket | login/serverbound/ServerStatusRequest | 0x006 | ✅ | 0x006 | ❌ | 0x006 | ✅ | 0x006 | ✅ | 0x005 | ❌ |
+| SERVERSTATUS_REQUEST | CLogin::SendCheckUserLimitPacket | login/serverbound/ServerStatusRequest | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x006 | ✅ | 0x005 | ❌ |
 | ACCEPT_TOS | CLogin::OnAcceptLicense; CLogin::OnDenyLicense | account/serverbound/AcceptTos | 0x007 | ❌ | 0x007 | ❌ | 0x007 | ✅ | 0x007 | ✅ |  | ⬜ |
 | SET_GENDER | CLogin::SendCancelGenderPacket; CLogin::SendSetGenderPacket | account/serverbound/SetGender | 0x008 | ❌ | 0x008 | ❌ | 0x008 | ✅ | 0x008 | ✅ |  | ⬜ |
 | AFTER_LOGIN | CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult; CLogin::OnSelectWorldResult; CLogin::OnSetAccountResult | login/serverbound/AfterLogin | 0x009 | ✅ | 0x009 | ❌ | 0x009 | ✅ | 0x009 | ✅ |  | ⬜ |
 | REGISTER_PIN | CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00A | ✅ | 0x00A | ❌ | 0x00A | ✅ | 0x00A | ✅ |  | ⬜ |
 | SERVERLIST_REQUEST | CLicenseDlg::OnButtonClicked; CLogin::OnCheckPasswordResult; CLogin::OnCheckPinCodeResult | login/clientbound/PinOperation | 0x00B | ✅ | 0x00B | ❌ | 0x00B | ✅ | 0x00B | ✅ |  | ⬜ |
 | PLAYER_DC | CLogin::GotoWorldSelect; CLogin::SendViewAllCharPacket |  | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ | 0x00C | ❌ |  | ⬜ |
-| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest | 0x00D | ✅ | 0x00D | ❌ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ❌ |
+| VIEW_ALL_CHAR | CLogin::SendViewAllCharPacket | login/serverbound/AllCharacterListRequest | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00D | ✅ | 0x00A | ❌ |
 | PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect | 0x00E | ✅ | 0x00E | ❌ | 0x00E | ❌ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC | login/serverbound/AllCharacterListPong | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ |  | ⬜ |
 | NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
@@ -582,7 +582,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest | character/serverbound/DistributeSp (T1) | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb |  | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x067 | ❌ | 0x056 | ❌ |
-| CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x05C | ✅ | 0x05C | ❌ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ❌ |
+| CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x068 | ✅ | 0x057 | ❌ |
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare |  | 0x05D | ❌ | 0x05D | ❌ | 0x060 | ❌ | 0x069 | ❌ | 0x058 | ❌ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest | character/serverbound/DropMeso (T1) | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ❌ |
@@ -911,7 +911,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 185 | 0 | 494 | 201 | 0 | 27.2% |
-| v84 | 49 | 9 | 619 | 203 | 0 | 7.2% |
+| v84 | 54 | 9 | 614 | 203 | 0 | 8.0% |
 | v87 | 186 | 0 | 530 | 164 | 0 | 26.0% |
 | v95 | 271 | 0 | 527 | 82 | 0 | 34.0% |
 | JMS185 | 164 | 0 | 546 | 170 | 0 | 23.1% |

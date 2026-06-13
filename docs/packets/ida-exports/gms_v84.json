@@ -1,7 +1,7 @@
 {
   "binary": "",
   "md5": "",
-  "generated_at": "2026-06-13T11:56:22Z",
+  "generated_at": "2026-06-13T12:18:22Z",
   "functions": {
     "AvatarLook::Decode": {
       "address": "",
@@ -1278,13 +1278,13 @@
       ]
     },
     "CLogin::SendCheckUserLimitPacket": {
-      "address": "",
+      "address": "0x60cfee",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!this[97] \u0026\u0026 result \u0026\u0026 a2 \u003c *(result - 1)"
         }
       ]
     },
@@ -1311,13 +1311,48 @@
       ]
     },
     "CLogin::SendLoginPacket": {
-      "address": "",
+      "address": "0x60bca3",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1 \u0026\u0026 v16 == 1"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1 \u0026\u0026 v16 == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1 \u0026\u0026 v16 == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1 \u0026\u0026 v16 == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 \u0026\u0026 v16 != 1"
         }
       ]
     },
@@ -1475,13 +1510,33 @@
       ]
     },
     "CLogin::SendViewAllCharPacket": {
-      "address": "",
+      "address": "0x60fc30",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v4 \u0026\u0026 v2 == 1"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "!v4 \u0026\u0026 v2 == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v4 \u0026\u0026 v2 == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v4 \u0026\u0026 v2 == 1"
         }
       ]
     },
@@ -1562,13 +1617,66 @@
       ]
     },
     "CMob::GenerateMovePath": {
-      "address": "",
+      "address": "0x6818c3",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "loop v47 \u0026\u0026 \u003cdefault\u003e"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "loop v47 \u0026\u0026 \u003cdefault\u003e"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -1631,13 +1739,47 @@
       ]
     },
     "CMob::OnMove": {
-      "address": "",
+      "address": "0x6820ea",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v12 \u003e 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v12 \u003e 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v15 \u003e 0"
         }
       ]
     },
@@ -3768,13 +3910,12 @@
       ]
     },
     "CUserLocal::OnOpenUI": {
-      "address": "",
+      "address": "0x99eea8",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -3856,13 +3997,12 @@
       ]
     },
     "CUserLocal::SendSkillCancelRequest": {
-      "address": "",
+      "address": "0x9ad694",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -4338,24 +4478,75 @@
       ]
     },
     "CVecCtrlUser::EndUpdateActive": {
-      "address": "",
+      "address": "0xa1334e",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
         }
       ]
     },
     "CWvsContext::OnCashPetFoodResult": {
-      "address": "",
+      "address": "0xa7480c",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "\u003cdefault\u003e"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "\u003cdefault\u003e \u0026\u0026 v3",
+          "ref": "sub_40634C"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "\u003cdefault\u003e \u0026\u0026 v3",
+          "ref": "sub_40265E"
         }
       ]
     },
@@ -4398,13 +4589,98 @@
       ]
     },
     "CWvsContext::OnCharacterInfo": {
-      "address": "",
+      "address": "0xa6eda8",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "dword_C472D4",
+          "ref": "sub_93A635"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "dword_C472D4",
+          "ref": "sub_93A796"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "dword_C472D4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "dword_C472D4 \u0026\u0026 CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "dword_C472D4 \u0026\u0026 CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "dword_C472D4 \u0026\u0026 CInPacket::Decode1(v4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "dword_C472D4"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "dword_C472D4 \u0026\u0026 v11"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "dword_C472D4",
+          "ref": "sub_69B3B4"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "dword_C472D4",
+          "ref": "sub_93B79F"
         }
       ]
     },
@@ -5636,13 +5912,17 @@
       ]
     },
     "CWvsContext::OnStatChanged": {
-      "address": "",
+      "address": "0xa6ae08",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v66 \u0026 0x180008) != 0"
         }
       ]
     },
@@ -6410,6 +6690,11 @@
         }
       ]
     },
+    "sub_40265E": {
+      "address": "0x40265e",
+      "direction": "",
+      "calls": null
+    },
     "sub_40634C": {
       "address": "0x40634c",
       "direction": "",
@@ -6853,6 +7138,32 @@
           "comment": "",
           "guard": "\u003cdefault\u003e",
           "ref": "sub_678774"
+        }
+      ]
+    },
+    "sub_69B3B4": {
+      "address": "0x69b3b4",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -7711,6 +8022,76 @@
       "address": "0x8a9ed4",
       "direction": "",
       "calls": null
+    },
+    "sub_93A635": {
+      "address": "0x93a635",
+      "direction": "",
+      "calls": null
+    },
+    "sub_93A796": {
+      "address": "0x93a796",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a1"
+        }
+      ]
+    },
+    "sub_93B79F": {
+      "address": "0x93b79f",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(_WORD)result"
+        }
+      ]
     },
     "sub_99BC69": {
       "address": "0x99bc69",

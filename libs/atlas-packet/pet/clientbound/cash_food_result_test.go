@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=pet/clientbound/PetCashFoodResult version=gms_v87 ida=0xac0cbf
 // packet-audit:verify packet=pet/clientbound/PetCashFoodResult version=gms_v95 ida=0x9f7180
 // packet-audit:verify packet=pet/clientbound/PetCashFoodResult version=jms_v185 ida=0xb102d5
+// packet-audit:verify packet=pet/clientbound/PetCashFoodResult version=gms_v84 ida=0xa7480c
 func TestPetCashFoodResult(t *testing.T) {
 	input := NewPetCashFoodResult(2)
 	for _, v := range test.Variants {

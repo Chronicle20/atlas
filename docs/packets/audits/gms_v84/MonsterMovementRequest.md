@@ -1,6 +1,6 @@
 # MonsterMovementRequest (← `CMob::GenerateMovePath`)
 
-- **IDA:** 
+- **IDA:** 0x6818c3
 - **Atlas file:** `libs/atlas-packet/monster/serverbound/movement.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
@@ -11,20 +11,20 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `` | ✅ |  |
+| 1 | int16 | int16 `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
+| 3 | byte | byte `` | ✅ |  |
+| 4 | int32 | int32 `` | ✅ |  |
+| 5 | int32 | int32 `` | ✅ |  |
+| 6 | int32 | int32 `` | ✅ |  |
+| 7 | int32 | int32 `` | ✅ |  |
+| 8 | int32 | int32 `` | ✅ |  |
+| 9 | int32 | int32 `` | ✅ |  |
+| 10 | byte | byte `` | ✅ |  |
+| 11 | int32 | int32 `` | ✅ |  |
+| 12 | int32 | int32 `` | ✅ |  |
+| 13 | int32 | int32 `` | ✅ |  |
 | 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 15 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 16 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |

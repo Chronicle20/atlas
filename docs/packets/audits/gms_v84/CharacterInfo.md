@@ -1,6 +1,6 @@
 # CharacterInfo (← `CWvsContext::OnCharacterInfo`)
 
-- **IDA:** 
+- **IDA:** 0xa6eda8
 - **Atlas file:** `libs/atlas-packet/character/clientbound/info.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 2
@@ -11,32 +11,35 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 21 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 24 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 25 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 26 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 27 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | int16 | int16 `` | ✅ |  |
+| 3 | int16 | int16 `` | ✅ |  |
+| 4 | byte | byte `` | ✅ |  |
+| 5 | string | string `` | ✅ |  |
+| 6 | string | string `` | ✅ |  |
+| 7 | byte | byte `` | ✅ |  |
+| 8 | byte | byte `` | ✅ |  |
+| 9 | int32 | int32 `` | ✅ |  |
+| 10 | string | string `` | ✅ |  |
+| 11 | byte | byte `` | ✅ |  |
+| 12 | int16 | int16 `` | ✅ |  |
+| 13 | byte | byte `` | ✅ |  |
+| 14 | int16 | int16 `` | ✅ |  |
+| 15 | int32 | int32 `` | ✅ |  |
+| 16 | byte | byte `` | ✅ |  |
+| 17 | byte | byte `` | ✅ |  |
+| 18 | byte | int32 `` | ❌ | width mismatch |
+| 19 | int32 | int32 `` | ✅ |  |
+| 20 | int32 | int32 `` | ✅ |  |
+| 21 | int32 | byte `` | ❌ | width mismatch |
+| 22 | int32 | bytes `` | ✅ |  |
+| 23 | int32 | int32 `` | ✅ |  |
+| 24 | int32 | int32 `` | ✅ |  |
+| 25 | int32 | int32 `` | ✅ |  |
+| 26 | int16 | int32 `` | ❌ | width mismatch |
+| 27 | int32 | int32 `` | ✅ |  |
+| 28 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 29 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 30 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
 

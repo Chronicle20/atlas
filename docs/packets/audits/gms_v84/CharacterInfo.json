@@ -1,7 +1,7 @@
 {
   "WriterName": "CharacterInfo",
   "IDAName": "CWvsContext::OnCharacterInfo",
-  "Address": "",
+  "Address": "0xa6eda8",
   "Variant": "GMS/v84",
   "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/character/clientbound/info.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -21,26 +21,26 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
@@ -48,26 +48,26 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 5,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 4,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 6,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 4,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 7,
@@ -75,8 +75,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 8,
@@ -84,26 +84,26 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 4,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
@@ -111,17 +111,17 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 13,
@@ -129,26 +129,26 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 14,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 15,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 16,
@@ -156,8 +156,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 17,
@@ -165,35 +165,35 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 18,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 19,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 20,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 21,
@@ -202,61 +202,88 @@
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 22,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 5,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 23,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 24,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 25,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 26,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 27,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 30,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
   "Verdict": 3,

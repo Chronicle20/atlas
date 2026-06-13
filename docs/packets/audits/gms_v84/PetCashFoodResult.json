@@ -1,7 +1,7 @@
 {
   "WriterName": "PetCashFoodResult",
   "IDAName": "CWvsContext::OnCashPetFoodResult",
-  "Address": "",
+  "Address": "0xa7480c",
   "Variant": "GMS/v84",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/pet/clientbound/cash_food_result.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
@@ -21,10 +21,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 1,
-      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 1,
+  "Verdict": 0,
   "FlatInvalid": false
 }

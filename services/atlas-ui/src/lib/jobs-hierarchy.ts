@@ -21,13 +21,23 @@ export function jobNodeName(node: JobNode): string {
 }
 
 // minMajorVersion basis:
-//  - 83: v83 baseline — all Adventurer jobs, GM/Super GM, and Maple Leaf
-//        Brigadier exist in v83 data (confirmed by Task 7 probe).
-//  - Evan (2001/22xx) = 84  — reference_maplestory_version_timeline (Evan ≈ v84).
-//  - Aran (2000/21xx) = 88  — timeline floor (Aran predates Dual Blade ≈ v88);
-//        confirm/adjust via Task 7 probe.
-//  - Cygnus (1000–1512) = 92 — Knights of Cygnus; floor only needs to exceed 83
-//        so it hides on the v83 baseline. Confirm via Task 7 probe.
+//  IMPORTANT — atlas-data does NOT version-gate job→skill lists. A live probe of
+//  GET /api/data/jobs/{id}/skills (atlas-main, 2026-06-13) returned IDENTICAL,
+//  fully-populated skill lists for Cygnus (job 1000 → 13), Aran (2112 → 11) and
+//  Evan (2001 → 12, 2218 → 4) under v83, v92, AND v95 tenant headers. The endpoint
+//  serves every job id regardless of the tenant's MAJOR_VERSION.
+//  These floors are therefore a UI display-curation choice (hide job classes that
+//  did not exist in the live game at that version), NOT a data-availability gate.
+//  Values are derived from the GMS job-introduction timeline
+//  (reference_maplestory_version_timeline), best-effort:
+//   - 83: v83 baseline — Adventurer jobs + GM/Super GM (probe: 112→10, 800→2,
+//         900→4, 910→9 skills on v83; job 0 Beginner returns 0, handled as empty).
+//   - Evan (2001/22xx) = 84  — Evan ≈ v84.
+//   - Aran (2000/21xx) = 88  — Aran ≈ v88 GMS floor.
+//   - Cygnus (1000–1512) = 92 — Knights of Cygnus ≈ v92.
+//  The v83 baseline (only Adventurer + Admin visible) is correct for any floor > 83.
+//  The exact integers only affect intermediate tenants (v84/v87/v92) and are a
+//  candidate for product review; the filter mechanism itself is unit-tested.
 const ADV = 83;
 const ADMIN = 83;
 const CYGNUS = 92;

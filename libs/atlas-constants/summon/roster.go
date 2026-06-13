@@ -10,6 +10,12 @@ const (
 	TypeBuffAura Type = "BUFF_AURA"
 )
 
+// Movement is the on-the-wire summon movement type byte written into the
+// SummonSpawn packet (Cosmic server/maps/SummonMovementType: STATIONARY(0),
+// FOLLOW(1), CIRCLE_FOLLOW(3), classified by skill id). Do NOT conflate it with
+// skill.SummonMovementType, which is a separate WZ-data classification with a
+// DIFFERENT numbering (None=-1, …, CircleFollow=2) used by atlas-data's reader —
+// the two are not interchangeable.
 type Movement byte
 
 const (

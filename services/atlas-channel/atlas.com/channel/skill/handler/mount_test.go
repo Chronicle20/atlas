@@ -26,12 +26,13 @@ type recordingDeps struct {
 	mountedErr  error
 	equip       map[int16]int32 // slot position -> taming-mob/saddle item id
 	equipErr    map[int16]error
-	applyCalled bool
-	applyAmount int32
-	applySource int32
-	applyDur    int32
-	cancelCount int
-	cancelSrc   int32
+	applyCalled  bool
+	applyAmount  int32
+	applyStatups []statup.Model
+	applySource  int32
+	applyDur     int32
+	cancelCount  int
+	cancelSrc    int32
 }
 
 func (d *recordingDeps) mountDeps() mountDeps {
@@ -54,6 +55,7 @@ func (d *recordingDeps) mountDeps() mountDeps {
 			d.applyCalled = true
 			d.applySource = sourceId
 			d.applyDur = duration
+			d.applyStatups = statups
 			if len(statups) > 0 {
 				d.applyAmount = statups[0].Amount()
 			}
@@ -81,6 +83,17 @@ func mountEffect(statups []statup.RestModel) effect.Model {
 
 func vehicleStatup(amount int32) []statup.RestModel {
 	return []statup.RestModel{{Type: string(charconst.TemporaryStatTypeMonsterRiding), Amount: amount}}
+}
+
+// findStatupAmount returns the amount of the statup of the given type, or
+// (0, false) when absent.
+func findStatupAmount(sus []statup.Model, typ string) (int32, bool) {
+	for _, su := range sus {
+		if su.Mask() == typ {
+			return su.Amount(), true
+		}
+	}
+	return 0, false
 }
 
 func TestMountToggleCancelsWhenAlreadyMounted(t *testing.T) {
@@ -185,6 +198,89 @@ func TestMountSkillOnlyNoSlotCheck(t *testing.T) {
 	}
 	if d.applyDur != int32(math.MaxInt32) {
 		t.Errorf("Apply duration = %d, want MaxInt32 %d", d.applyDur, int32(math.MaxInt32))
+	}
+}
+
+// TestMountSkillOnlyAppliesAllStatups verifies that a skill-only mount applies
+// the full effect statup set — the vehicle id AND the skill's other granted
+// stats (e.g. +10 weapon/magic defense for the Yeti Rider). Regression for
+// mounts dropping every statup except MONSTER_RIDING.
+func TestMountSkillOnlyAppliesAllStatups(t *testing.T) {
+	const vehicleId = int32(1932005)
+	statups := []statup.RestModel{
+		{Type: string(charconst.TemporaryStatTypeWeaponDefense), Amount: 10},
+		{Type: string(charconst.TemporaryStatTypeMagicDefense), Amount: 10},
+		{Type: string(charconst.TemporaryStatTypeMonsterRiding), Amount: vehicleId},
+	}
+	d := &recordingDeps{
+		mounted:  false,
+		equipErr: map[int16]error{-18: errStub, -19: errStub},
+	}
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(skillOnlyMountSkillId), mountEffect(statups), d.mountDeps())
+	if err != nil {
+		t.Fatalf("HandleMount returned error: %v", err)
+	}
+	if !d.applyCalled {
+		t.Fatalf("expected Apply called for skill-only mount")
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeMonsterRiding)); !ok || amt != vehicleId {
+		t.Errorf("MONSTER_RIDING amount = %d (present=%v), want vehicle id %d", amt, ok, vehicleId)
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeWeaponDefense)); !ok || amt != 10 {
+		t.Errorf("WEAPON_DEFENSE amount = %d (present=%v), want 10", amt, ok)
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeMagicDefense)); !ok || amt != 10 {
+		t.Errorf("MAGIC_DEFENSE amount = %d (present=%v), want 10", amt, ok)
+	}
+}
+
+// TestMountTamedPreservesStatupsAndOverridesVehicle verifies that a tamed mount
+// keeps the skill's non-riding statups while overriding the MONSTER_RIDING
+// amount with the equipped taming-mob id (slot -18).
+func TestMountTamedPreservesStatupsAndOverridesVehicle(t *testing.T) {
+	statups := []statup.RestModel{
+		{Type: string(charconst.TemporaryStatTypeWeaponDefense), Amount: 15},
+		{Type: string(charconst.TemporaryStatTypeMonsterRiding), Amount: int32(tamedMountSkillId)}, // atlas-data placeholder = skill id
+	}
+	d := &recordingDeps{
+		mounted: false,
+		equip:   map[int16]int32{-18: tamingMobItemId, -19: 1902020},
+	}
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(statups), d.mountDeps())
+	if err != nil {
+		t.Fatalf("HandleMount returned error: %v", err)
+	}
+	if !d.applyCalled {
+		t.Fatalf("expected Apply called with both slots present")
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeMonsterRiding)); !ok || amt != tamingMobItemId {
+		t.Errorf("MONSTER_RIDING amount = %d (present=%v), want taming-mob id %d", amt, ok, tamingMobItemId)
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeWeaponDefense)); !ok || amt != 15 {
+		t.Errorf("WEAPON_DEFENSE amount = %d (present=%v), want 15", amt, ok)
+	}
+}
+
+// TestMountTamedAppendsRidingWhenEffectLacksIt verifies the case-2 append branch:
+// when the tamed mount's effect carries no MONSTER_RIDING statup, one is appended
+// with the equipped taming-mob id while any other granted stats are preserved.
+func TestMountTamedAppendsRidingWhenEffectLacksIt(t *testing.T) {
+	statups := []statup.RestModel{
+		{Type: string(charconst.TemporaryStatTypeWeaponDefense), Amount: 12}, // no MONSTER_RIDING entry
+	}
+	d := &recordingDeps{
+		mounted: false,
+		equip:   map[int16]int32{-18: tamingMobItemId, -19: 1902020},
+	}
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(statups), d.mountDeps())
+	if err != nil {
+		t.Fatalf("HandleMount returned error: %v", err)
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeMonsterRiding)); !ok || amt != tamingMobItemId {
+		t.Errorf("MONSTER_RIDING amount = %d (present=%v), want appended taming-mob id %d", amt, ok, tamingMobItemId)
+	}
+	if amt, ok := findStatupAmount(d.applyStatups, string(charconst.TemporaryStatTypeWeaponDefense)); !ok || amt != 12 {
+		t.Errorf("WEAPON_DEFENSE amount = %d (present=%v), want 12", amt, ok)
 	}
 }
 

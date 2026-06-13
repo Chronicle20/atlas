@@ -151,3 +151,33 @@ Implication / open work:
   standalone packet. This is a char-info-integration feature, not an opcode registration.
 - The standalone writer (Task 5/26/27) should be guarded/disabled for GMS<87 (and verified to be a
   real opcode on v87/v95/JMS before enabling there).
+
+## Multi-version mount food opcodes + char-info injection (2026-06-13)
+
+### Food (SendTamingMobFoodItemUseRequest) — inbound opcode per version (IDA-verified)
+`COutPacket(opcode); Encode4(ts); Encode2(slot); Encode4(itemId)` — body identical
+across versions; only the opcode differs.
+
+| Version | opcode | source | status |
+|---|---|---|---|
+| GMS v83 | 0x4D | v83 IDB | template + live PR tenant patched |
+| GMS v87 | 0x50 | v87 IDB | template (`MountFoodHandle`) |
+| GMS v95 | 0x53 | v95 IDB | template |
+| JMS v185 | 0x45 | jms IDB | template |
+| GMS v84 | ? | IDB unresponsive | **NOT added — verify before enabling** |
+| GMS v12 / v92 | ? | no IDB loaded | **NOT added — load IDB + verify** |
+
+Existing non-v83 tenants need the same live PATCH the v83 tenant got (seed templates
+only apply at tenant creation). The PR env has only the v83 tenant, so no extra live
+patch was needed here.
+
+### Char-info mount block — injected (no standalone opcode this era)
+v83/v87/v95 all read the tamed-mob stats inside `LP_CharacterInfo`, right after the pet
+block: `Decode1(present)` then `level, exp, tiredness` (3×int32), uniform layout. The
+`SET_TAMING_MOB_INFO` standalone broadcast does not exist pre-v8x-late; the writer's old
+`WriteByte(0)` always said "no mount". Now `libs/atlas-packet` CharacterInfo carries a
+`MountInfo` block; the channel char-info handler fetches the mount from atlas-mounts (new
+`atlas-channel/mount` REST client) and emits it. nginx route added:
+`/api/characters/{id}/mount -> atlas-mounts`. The standalone SET/TICK/FEED broadcast writer
+(Task 5/26/27) remains a no-op on these versions and should be guarded off for GMS<87 (or
+verified to be a real opcode on the version it targets).

@@ -29,9 +29,20 @@ const SummonAttackHandle = "SummonAttackHandle"
 // client SEND site CSummoned::TryDoingAttackManual. Three structurally distinct
 // layouts exist; all were confirmed at ASM level:
 //
-//	v83  (GMS < 87)   sub_7A4D42, send block @0x7a57dc, op 0xB0 — LEAN, no anti-hack envelope
+//	v83  (GMS == 83)  sub_7A4D42, send block @0x7a57dc, op 0xB0 — LEAN, no anti-hack envelope
+//	v84  (GMS 84..86) sub_7C99CF, send block @0x7cafcd, op 0xB5 — envelope + crc, NO repeatSkillPoint
 //	v87  (GMS 87..94) @0x7f6666, send block @0x7f8a..,  op 0xBC — envelope + crc, NO repeatSkillPoint
 //	v95  (GMS >= 95)  @0x751240, send block @0x75226b,  op 0xD0 — envelope + crc + repeatSkillPoint
+//
+// IMPORTANT (task-088, v84 IDA audit): the anti-hack envelope is NOT v87+ only —
+// v84 ALSO sends drInfo/dwKey/crc32 (GMS_v84.1 CSummoned::TryDoingAttackManual
+// send block @0x7cafcd: COutPacket(181) + Encode4 cid + Encode4 ~drInfo0
+// @0x7caffc + Encode4 ~drInfo1 @0x7cb010 + Encode4 updateTime @0x7cb021 +
+// Encode4 ~drInfo2 @0x7cb035 + Encode4 ~drInfo3 @0x7cb049 + Encode1 action
+// @0x7cb069 + Encode4 dwKey @0x7cb0c5 + Encode4 crc32 @0x7cb0ec + Encode1 count
+// @0x7cb0fd + Encode2 positions + per-target + Encode4 skillCRC @0x7cb485; NO
+// repeatSkillPoint). Only v83 is lean. The envelope gate is therefore
+// MajorAtLeast(84), not MajorAtLeast(87).
 //
 // v83 header (lean):
 //
@@ -92,9 +103,10 @@ func (m Attack) String() string {
 }
 
 // hasAntiHackEnvelope reports whether the version emits the drInfo/dwKey/crc32
-// anti-hack envelope (GMS >= 87). v83/v84 send the lean layout.
+// anti-hack envelope (GMS >= 84). Only v83 sends the lean layout; v84 already
+// carries the envelope (IDA-confirmed, GMS_v84.1 send block @0x7cafcd).
 func hasAntiHackEnvelope(t tenant.Model) bool {
-	return t.IsRegion("GMS") && t.MajorAtLeast(87)
+	return t.IsRegion("GMS") && t.MajorAtLeast(84)
 }
 
 // hasRepeatSkillPoint reports whether the version emits the trailing

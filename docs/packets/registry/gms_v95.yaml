@@ -2385,6 +2385,8 @@
   opcode: 62
   fname: CUserLocal::SetMonsterBookCover
   provenance: ida-discovered
+  ida:
+    address: 9473488
   note: 'task-092 Stage 1: send-site derived from v95 IDB. CUserLocal::SetMonsterBookCover @ 0x908DD0.'
 - op: NPC_TALK
   direction: serverbound

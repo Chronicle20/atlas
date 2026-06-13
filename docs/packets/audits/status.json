@@ -1,11 +1,11 @@
 {
-  "toolSha": "5d241239e5f7ed5d7a124ffafbedff672e6a920f",
+  "toolSha": "ffd4ea5bf319c3e1bf2f8449624518338ac12a0c",
   "exportHashes": {
-    "gms_v83": "359495963d99164fb331ed7c1c1a9a7920a85126122821fdb8bfebfad3f3df5b",
-    "gms_v84": "e94fde3eb9bec89d4abd84cce666b7a64e4780c9ac9235d14e25383a9793a3ef",
-    "gms_v87": "04665aba8142ba592fa97e5e312b513ed3f252c061f33c6a067d10233a126b49",
-    "gms_v95": "b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3",
-    "jms_v185": "bfc651ad5f107ae48635d475f944e3e8a6f985d0a8c33d67f3ac2cb9f99fcb5b"
+    "gms_v83": "4efd58e192ddd8539fbfa49f451b22d45eda99895381783089b9ad0398b0d13b",
+    "gms_v84": "2845574082ac0e3cc8ca4e2d881e5a2061f8a11bcf7fbb0c2a108dc9d49c2cd2",
+    "gms_v87": "b3bcb92ec8620771bf2d4ca7db2d1ae67cb2d118b8724d84b21ab57996668212",
+    "gms_v95": "1be366684667962546435b18359a6ba45de28a1e77a24920e113ddf65910f76f",
+    "jms_v185": "1046687891314275a8cf2975fbc3e97eb3d3619625c524951b9880b1a1ca018c"
   },
   "rows": [
     {
@@ -4205,6 +4205,9 @@
       "op": "MONSTER_BOOK_COVER",
       "direction": "serverbound",
       "tier1": false,
+      "fnames": [
+        "CUserLocal::SetMonsterBookCover"
+      ],
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -21555,7 +21558,6 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CMob::OnIncMobChargeCount",
         "CMob::OnMobSpeaking"
       ],
       "cells": {
@@ -21591,9 +21593,7 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CMob::OnIncMobChargeCount",
-        "CMob::OnMobAttackedByMob",
-        "CMob::OnMobSkillDelay"
+        "CMob::OnIncMobChargeCount"
       ],
       "cells": {
         "gms_v83": {
@@ -21628,7 +21628,6 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CMob::OnMobAttackedByMob",
         "CMob::OnMobSkillDelay"
       ],
       "cells": {

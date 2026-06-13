@@ -287,6 +287,8 @@ images:
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
     newTag: main-2a9acd7
+  - name: ghcr.io/chronicle20/atlas-summons/atlas-summons
+    newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports

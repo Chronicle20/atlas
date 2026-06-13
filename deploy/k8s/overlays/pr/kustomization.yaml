@@ -380,6 +380,8 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
     newTag: latest
+  - name: ghcr.io/chronicle20/atlas-summons/atlas-summons
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports

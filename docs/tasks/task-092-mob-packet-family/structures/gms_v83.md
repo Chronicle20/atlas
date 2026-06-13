@@ -210,6 +210,19 @@ MOB_CRC_KEY_CHANGED_REPLY (sb).
 - **calls (0):**
   - (no Decode/Encode calls captured — handler reads nothing, or all reads via descended helper)
 
+### CUserLocal::TryDoingBodyAttack
+- **address:** 0x9581a9
+- **direction:** sb (TOUCH_MONSTER_ATTACK)
+- **calls (0):**
+  - (no Encode calls captured at top level — the COutPacket send is inside a nested
+    conditional below the harvester's descent boundary. IDA-confirmed send site @0x9581A9:
+    `COutPacket(&oPacket, 0x30)` → `Encode4(get_update_time())`, `Encode1(nAttackIdx)`,
+    `Encode1(action)`, `Encode4(nDamage)`, `Encode4(mobID)`, `Encode4(mobCrc)`, then the
+    hit-detail block. Renamed from `sub_9581A9` this session — layout-matched to v95
+    `CUserLocal::TryDoingBodyAttack` by callee fingerprint: GetAttackInfo@CMobTemplate +
+    GetHitPoint@CMob + GetRandomHitAction@CMob + AddDamageInfo@CMob + MakeIncDecHPEffect +
+    TryConsumePetHP/MP, in the TryDoing* address cluster right after TryDoingMagicAttack.)
+
 ### CWvsContext::OnBridleMobCatchFail
 - **address:** 0xa0800e
 - **direction:** 
@@ -254,11 +267,16 @@ export cannot carry them and `evidence pin` will fail until the real send-site i
 
 | op | dir | opcode | registry fname | status |
 |---|---|---|---|---|
-| TOUCH_MONSTER_ATTACK | sb | 47 | CUserLocal::TryDoingBodyAttack | UNRESOLVED — no `TryDoingBodyAttack`/`BodyAttack@CUserLocal` symbol in IDB |
-| MOB_BANISH_PLAYER | sb | 56 | CUserLocal::SendBanMapByMobRequest | UNRESOLVED — no `SendBanMap*`/`BanMapByMob` symbol in IDB |
-| MOB_TIME_BOMB_END | sb | 196 | CMob::UpdateTimeBomb | UNRESOLVED — no `UpdateTimeBomb`/`TimeBomb@CMob` symbol in IDB |
-| MOB_SKILL_DELAY | cb | 256 | CMob::OnMobSkillDelay | UNRESOLVED — symbol absent; dispatcher named cases stop at 0xFF |
+| TOUCH_MONSTER_ATTACK | sb | 47 | CUserLocal::TryDoingBodyAttack | **RESOLVED 2026-06-13** — was `sub_9581A9` @0x9581A9; renamed + harvested (1 resolved, 0 unresolved). See byte-layout entry above. |
+| MOB_BANISH_PLAYER | sb | 56 | CUserLocal::SendBanMapByMobRequest | UNRESOLVED — not a standalone function in v83. v95 `SendBanMapByMobRequest` is a 0x77-byte one-Encode4 wrapper called only from `Update@CUserLocal`; v83 `Update@CUserLocal` (0x94A144) builds its COutPacket inline (no matching tiny sub among its callees). Send is inlined or feature-absent. Left unnamed (no guess). |
+| MOB_TIME_BOMB_END | sb | 196 | CMob::UpdateTimeBomb | UNRESOLVED — not a standalone function in v83. v95 `UpdateTimeBomb` is a 0x155-byte private `CMob` method called only from `Update@CMob`; v83 `Update@CMob` (0x6675A8) builds COutPacket inline (checked every unnamed CMob sub it calls — none match the time-bomb Encode4-mobID layout). Inlined into Update@CMob. Left unnamed (no guess). |
+| MOB_SKILL_DELAY | cb | 256 | CMob::OnMobSkillDelay | **VERSION-ABSENT** — the v83 `CMobPool::OnMobPacket` dispatcher (@0x67936D) switch ends at case 0xFF (OnMobAttackedByMob). The OnMobSkillDelay/Escort/OnNextAttack cases first appear in the v95 dispatcher (cases 303–308). The v83 client has NO clientbound MOB_SKILL_DELAY handler — it's a later-version feature, not an IDB-naming gap. |
 
-These are NOT version-absent (the ops exist); they are IDB-naming gaps. Stage 2 must
-derive the real send/handler sites (likely unnamed `sub_XXXX` reachable from the CP-enum
-encode sites) before pinning. Flagged, not fabricated.
+Disposition after the 2026-06-13 naming pass:
+- **TryDoingBodyAttack: RESOLVED** (renamed + exported).
+- **MOB_SKILL_DELAY (cb): VERSION-ABSENT** — confirmed by the v83 dispatcher having no such
+  case; the registry's `CMob::OnMobSkillDelay` fname has no v83 client counterpart.
+- **SendBanMapByMobRequest / UpdateTimeBomb (sb): inlined** into their respective `Update`
+  methods in v83 (the standalone helpers were introduced in a later build). Not nameable as
+  discrete functions without splitting the inlined send out of `Update@CUserLocal` /
+  `Update@CMob`, which the recipe's no-guess rule forbids. Left for manual disposition.

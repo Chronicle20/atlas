@@ -7932,6 +7932,11 @@
       "address": "0x402c9b",
       "direction": "",
       "calls": null
+    },
+    "CUserLocal::TryDoingBodyAttack": {
+      "address": "0x9581a9",
+      "direction": "",
+      "calls": null
     }
   }
 }

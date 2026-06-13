@@ -141,7 +141,7 @@ RUN set -e; \
       fi; \
     done
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 EXPOSE 8080
 

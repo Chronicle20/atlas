@@ -46,7 +46,7 @@ describe("TenantProvider tenant-switch invariants", () => {
     localStorage.clear();
   });
 
-  it("invokes api.setTenant and queryClient.clear on tenant switch (not on initial null mount)", async () => {
+  it("sets api.setTenant synchronously and clears the cache once per distinct-id switch", async () => {
     const tenantA = makeTenant("aaa");
     const tenantB = makeTenant("bbb");
     getAllTenantsMock.mockResolvedValueOnce([]);
@@ -67,26 +67,28 @@ describe("TenantProvider tenant-switch invariants", () => {
       expect(ctxRef).toBeDefined();
     });
 
-    // Initial mount with activeTenant === null must not fire either hook.
+    // Initial mount with activeTenant === null (empty tenant list) fires neither hook.
     expect(setTenantMock).not.toHaveBeenCalled();
     expect(clearSpy).not.toHaveBeenCalled();
 
-    // Switch to tenant A
+    // Switch to tenant A. Asserting INSIDE the act callback (before React commits
+    // and the catch-all effect runs) proves headers are set + cache cleared
+    // SYNCHRONOUSLY, ahead of the re-render that recomputes child query keys
+    // (FR-2.1 / FR-2.4 — closes task-004 R6).
     act(() => {
       ctxRef!.setActiveTenant(tenantA);
+      expect(setTenantMock).toHaveBeenCalledWith(tenantA);
+      expect(clearSpy).toHaveBeenCalledTimes(1);
     });
-    await waitFor(() => {
-      expect(setTenantMock).toHaveBeenCalledTimes(1);
-    });
+    // After commit, the catch-all effect re-applies the same id (no extra clear).
     expect(setTenantMock).toHaveBeenLastCalledWith(tenantA);
     expect(clearSpy).toHaveBeenCalledTimes(1);
 
-    // Switch to tenant B
+    // Switch to tenant B — second distinct id → second clear.
     act(() => {
       ctxRef!.setActiveTenant(tenantB);
-    });
-    await waitFor(() => {
-      expect(setTenantMock).toHaveBeenCalledTimes(2);
+      expect(setTenantMock).toHaveBeenLastCalledWith(tenantB);
+      expect(clearSpy).toHaveBeenCalledTimes(2);
     });
     expect(setTenantMock).toHaveBeenLastCalledWith(tenantB);
     expect(clearSpy).toHaveBeenCalledTimes(2);

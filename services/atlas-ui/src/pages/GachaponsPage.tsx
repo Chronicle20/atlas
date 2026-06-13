@@ -3,9 +3,12 @@ import { useGachapons } from "@/lib/hooks/api/useGachapons";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns } from "./gachapons-columns";
 import { PageLoader } from "@/components/common/PageLoader";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 
 export function GachaponsPage() {
-  const { data: gachapons, isLoading, error, refetch } = useGachapons();
+  const gachaponsQuery = useGachapons();
+  const { data: gachapons, isLoading, error } = gachaponsQuery;
+  const { isRefreshing, onRefresh } = useGridRefresh([gachaponsQuery]);
 
   if (isLoading) {
     return <PageLoader />;
@@ -21,7 +24,8 @@ export function GachaponsPage() {
           columns={columns}
           data={gachapons ?? []}
           error={error}
-          onRefresh={() => refetch()}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
           emptyState={{
             title: "No gachapons found",
             description: "Gachapon data may not have been seeded yet. Go to Setup to seed gachapons.",

@@ -5,6 +5,7 @@ import React from "react";
 import {Button} from "./ui/button";
 import {RefreshCw, MoreVertical} from "lucide-react";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {cn} from "@/lib/utils";
 
 interface DataTableHeaderAction {
     icon?: React.ReactNode
@@ -17,6 +18,7 @@ interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
     onRefresh?: () => void
+    isRefreshing?: boolean
     headerActions?: DataTableHeaderAction[]
 }
 
@@ -25,6 +27,7 @@ export function DataTable<TData, TValue>({
                                              columns,
                                              data,
                                              onRefresh,
+                                             isRefreshing,
                                              headerActions,
                                          }: DataTableProps<TData, TValue>) {
     const state = Object.fromEntries((initialVisibilityState || []).map((col) => [col.replace(/\./g, "_"), false]));
@@ -49,10 +52,12 @@ export function DataTable<TData, TValue>({
                             variant="outline"
                             size="icon"
                             onClick={onRefresh}
+                            disabled={isRefreshing}
                             className="hover:bg-accent cursor-pointer"
                             title="Refresh"
+                            aria-busy={isRefreshing}
                         >
-                            <RefreshCw className="h-4 w-4"/>
+                            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")}/>
                         </Button>
                     )}
                 </div>

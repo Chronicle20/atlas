@@ -11,11 +11,14 @@ import {
 } from "@/components/features/services";
 
 import { useServices, useInvalidateServices } from "@/lib/hooks/api/useServices";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { getColumns } from "./services-columns";
 import type { Service } from "@/types/models/service";
 
 export function ServicesPage() {
-  const { data: services, isLoading, error, refetch } = useServices();
+  const servicesQuery = useServices();
+  const { data: services, isLoading, error } = servicesQuery;
+  const { isRefreshing, onRefresh } = useGridRefresh([servicesQuery]);
   const { invalidateAll } = useInvalidateServices();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -60,7 +63,8 @@ export function ServicesPage() {
         columns={columns}
         data={services || []}
         error={error}
-        onRefresh={refetch}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
         emptyState={{
           title: "No services configured",
           description:

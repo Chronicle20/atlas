@@ -2,7 +2,8 @@
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns } from "@/pages/templates-columns";
 import { useState } from "react";
-import { useTemplates, useInvalidateTemplates, useCreateTemplate, useDeleteTemplate } from "@/lib/hooks/api/useTemplates";
+import { useTemplates, useCreateTemplate, useDeleteTemplate } from "@/lib/hooks/api/useTemplates";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { templatesService, onboardingService, ConfigurationCreationError } from "@/services/api";
 import type { Template } from "@/types/models/template";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -48,7 +49,7 @@ export function TemplatesPage() {
     const templatesQuery = useTemplates();
     const createTemplate = useCreateTemplate();
     const deleteTemplate = useDeleteTemplate();
-    const { invalidateAll } = useInvalidateTemplates();
+    const { isRefreshing, onRefresh } = useGridRefresh([templatesQuery]);
 
     const templates = templatesQuery.data ?? [];
     const loading = templatesQuery.isLoading;
@@ -85,8 +86,6 @@ export function TemplatesPage() {
         mode: "onChange",
     });
 
-
-    const fetchDataAgain = () => invalidateAll();
 
     const openDeleteDialog = (id: string) => {
         setTemplateToDelete(id);
@@ -214,7 +213,8 @@ export function TemplatesPage() {
                     columns={columns} 
                     data={templates} 
                     error={error}
-                    onRefresh={fetchDataAgain}
+                    onRefresh={onRefresh}
+                    isRefreshing={isRefreshing}
                     emptyState={{
                         title: "No templates found",
                         description: "There are no templates to display at this time."

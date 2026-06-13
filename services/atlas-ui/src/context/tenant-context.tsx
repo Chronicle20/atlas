@@ -1,4 +1,4 @@
-import {createContext, type ReactNode, useContext, useEffect, useRef, useState} from "react";
+import {createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {tenantsService} from "@/services/api";
 import {api} from "@/lib/api/client";
@@ -28,21 +28,36 @@ export function TenantProvider({children}: { children: ReactNode }) {
 
     const LOCAL_STORAGE_KEY = "activeTenantId";
 
-    // Centralise tenant wiring: push the active tenant into the API client and
-    // clear the React Query cache whenever the tenant changes. Skipped on the
-    // initial mount (activeTenant === null) so we don't clear a fresh cache.
+    // Centralise tenant wiring. `applyTenant` updates the API client tenant and
+    // clears the React Query cache exactly once per distinct tenant id. Called
+    // synchronously from the user-action handler (so headers are set BEFORE any
+    // tenant-keyed query can fetch) AND from the catch-all effect below (which
+    // covers programmatic switches: initial hydration, refreshTenants,
+    // refreshAndSelectTenant). Double calls per switch are idempotent — the
+    // same-id branch re-sets headers cheaply without a second cache clear.
     const previousTenantRef = useRef<Tenant | null>(null);
-    useEffect(() => {
-        if (activeTenant === null && previousTenantRef.current === null) {
+
+    const applyTenant = useCallback((tenant: Tenant | null) => {
+        // Initial null→null mount: nothing to wire, nothing to clear.
+        if (tenant === null && previousTenantRef.current === null) {
             return;
         }
-        if (previousTenantRef.current?.id === activeTenant?.id) {
+        // Same id (e.g. rename rehydrate): wire the fresh object, DO NOT clear.
+        if (previousTenantRef.current?.id === tenant?.id) {
+            previousTenantRef.current = tenant;
+            api.setTenant(tenant);
             return;
         }
-        previousTenantRef.current = activeTenant;
-        api.setTenant(activeTenant);
+        previousTenantRef.current = tenant;
+        api.setTenant(tenant);
         queryClient.clear();
-    }, [activeTenant, queryClient]);
+    }, [queryClient]);
+
+    // Catch-all for programmatic tenant changes that bypass setActiveTenant
+    // (initial hydration, refreshTenants, refreshAndSelectTenant).
+    useEffect(() => {
+        applyTenant(activeTenant);
+    }, [activeTenant, applyTenant]);
 
     // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
@@ -63,8 +78,11 @@ export function TenantProvider({children}: { children: ReactNode }) {
             .finally(() => setLoading(false));
     }, []);
 
-    // Store tenant in localStorage on change
+    // User-action handler: wire the API client + clear the cache SYNCHRONOUSLY,
+    // before the state update re-renders the grids — eliminating the
+    // parent-effect-vs-child-fetch header race.
     const setActiveTenant = (tenant: Tenant) => {
+        applyTenant(tenant);
         setActiveTenantState(tenant);
         localStorage.setItem(LOCAL_STORAGE_KEY, tenant.id);
     };

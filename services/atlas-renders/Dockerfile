@@ -40,7 +40,7 @@ RUN cd services/atlas-renders/atlas.com/renders && \
 
 RUN go build -C services/atlas-renders/atlas.com/renders -o /server
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 EXPOSE 8080
 

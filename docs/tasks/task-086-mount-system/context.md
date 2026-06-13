@@ -36,6 +36,35 @@ broadcasts mount info. A questline (Riding Mimiana) awards the skill + starter e
 > building on the v83 baseline now (most remaining tasks are version-neutral service/Kafka
 > logic); run the cross-version IDA pass before deploy.
 
+> **MONSTER_RIDING render bug — root cause was a per-stat double-encode, NOT mask placement
+> (IDA-verified 2026-06-12; corrects an earlier wrong table).** The mount not appearing on v83 was
+> caused by `Encode` writing a bogus 10-byte per-stat value block for MONSTER_RIDING in addition to
+> its base-stat block. RideVehicle is a *base/TwoState* stat: the v83 client reads it in its
+> 7-iteration base-stat loop (`SecondaryStat::DecodeForLocal` @0x781D0E, flag `1<<(i+82)` from
+> `sub_78D977`), never as a per-stat block. The extra 10 bytes desynced the entire packet tail, so
+> the base stats — including the mount — were read as garbage. Fix: skip all `baseStatNames` in the
+> per-stat value loop (and its symmetric decode), **version-independent** (`character_temporary_stat.go`).
+>
+> **The mask placement was always correct — no per-version override needed.** The client's `UINT128`
+> is a 4-dword array stored big-endian (`setValue` puts the integer in `dword[3]`), AND'd against the
+> decoded mask in wire order (`DecodeBuffer` fills `dword[0]`=wire bytes 0-3 … `dword[3]`=12-15). The
+> client flag for RideVehicle is `1<<85` → set in array index 1 → **wire bytes 4-7**. Atlas's encoder
+> writes logical bit 85 via `uint32(H&0xFFFFFFFF)` to the *same* wire bytes 4-7. They match because the
+> registry's **version gates** already assign MonsterRiding the shift that equals the client's `i+N`
+> gate:
+>
+> | Version | client gate `i+N` (RideVehicle bit) | registry MonsterRiding shift | aligned? |
+> |---|---|---|---|
+> | GMS v83/v84 | i+82 → 85 | 85 (no post-SoulStone blocks) | ✅ |
+> | JMS v185 | i+110 → 113 | 113 (both post-SoulStone blocks, +28) | ✅ |
+> | GMS v87 | i+86 → 89 | 89 (Flying block, +4) | ✅ expected |
+> | GMS v95 | i+122 → 125 (prior table; re-verify) | 113 (+28) | ⚠️ re-verify in Task 41b |
+>
+> So mounts render on any version where the registry's CTS enumeration matches the client's bit
+> order. v83/v84 verified. **v87/v92/v95 must be re-confirmed in Task 41b** — if a client has CTS
+> entries the registry doesn't model (the prior v95 i+122 vs registry-113 gap hints at this), the fix
+> is to complete the registry enumeration for that version, *not* to hand-place mask bits.
+
 From `design.md` §1.1. These are authoritative; build against them:
 
 | Fact | Value |

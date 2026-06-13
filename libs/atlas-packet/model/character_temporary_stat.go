@@ -521,38 +521,27 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		mask := tool.Uint128{}
-		if twoStateInThirdDword(t) {
-			// v83/v84 (GMS < 87): the client reads the 7 TwoState stats (EnergyCharge,
-			// DashSpeed, DashJump, RideVehicle/MonsterRiding, SpeedInfusion, GuidedBullet,
-			// Undead) from the 3rd mask dword (wire bytes 8-11), gated by bits 82-88
-			// (1<<(i+82)) — see IDA v83 SecondaryStat::DecodeForLocal @0x781D0E. The
-			// per-stat registry assigns these stats shifts that land in the 2nd dword
-			// (wire bytes 4-7) for this version, which the client ignores, so a non-zero
-			// RideVehicle (a mount) never renders. Place the group where the client reads
-			// it: 0x01fc0000 in dword[2] = (0x01fc0000 << 32) in the low 64 bits.
-			mask.L |= twoStateDword2Bits << 32
-		} else {
-			applyMask := func(name character.TemporaryStatType) {
-				if val, err := CharacterTemporaryStatTypeByName(t)(name); err == nil {
-					mask = mask.Or(val.mask)
-				}
+		// The 7 TwoState/base stats (EnergyCharge, DashSpeed, DashJump, RideVehicle/
+		// MonsterRiding, SpeedInfusion, GuidedBullet, Undead) are always present and
+		// always encoded as base-stat blocks (see getBaseTemporaryStats), so their mask
+		// bits are set unconditionally. The registry's per-version shift assignment
+		// already places them where the client reads them: on v83 RideVehicle is shift
+		// 85 -> wire bytes 4-7, matching SecondaryStat::DecodeForLocal's flag 1<<(i+82)
+		// (IDA @0x781D0E). No version-specific mask placement is needed.
+		applyMask := func(name character.TemporaryStatType) {
+			if val, err := CharacterTemporaryStatTypeByName(t)(name); err == nil {
+				mask = mask.Or(val.mask)
 			}
-			applyMask(character.TemporaryStatTypeEnergyCharge)
-			applyMask(character.TemporaryStatTypeDashSpeed)
-			applyMask(character.TemporaryStatTypeDashJump)
-			applyMask(character.TemporaryStatTypeMonsterRiding)
-			applyMask(character.TemporaryStatTypeSpeedInfusion)
-			applyMask(character.TemporaryStatTypeHomingBeacon)
-			applyMask(character.TemporaryStatTypeUndead)
 		}
+		applyMask(character.TemporaryStatTypeEnergyCharge)
+		applyMask(character.TemporaryStatTypeDashSpeed)
+		applyMask(character.TemporaryStatTypeDashJump)
+		applyMask(character.TemporaryStatTypeMonsterRiding)
+		applyMask(character.TemporaryStatTypeSpeedInfusion)
+		applyMask(character.TemporaryStatTypeHomingBeacon)
+		applyMask(character.TemporaryStatTypeUndead)
 
-		twoStateFixed := twoStateInThirdDword(t)
 		for _, v := range m.stats {
-			if twoStateFixed && baseStatNames[v.statType.name] {
-				// Encoded only as a TwoState base stat; its group mask bit is set above.
-				// Do not also OR its (wrong-dword) per-stat registry bit.
-				continue
-			}
 			mask = mask.Or(v.statType.mask)
 		}
 
@@ -563,31 +552,20 @@ func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model
 	}
 }
 
-// twoStateDword2Bits is the v83 mask value for the 7 TwoState stats in mask
-// dword[2] (wire bytes 8-11): bits 18..24 set = EnergyCharge..Undead, RideVehicle
-// at 0x00200000 (bit 21). All 7 are always present; their base-stat value blocks
-// follow in getBaseTemporaryStats order.
-const twoStateDword2Bits uint64 = 0x01fc0000
-
-// twoStateInThirdDword reports whether this tenant's client reads the TwoState
-// stat group from mask dword[2] (wire bytes 8-11). True for v83/v84 (GMS < 87);
-// v84 is byte-identical to v83. v87+/JMS are not yet verified (Task 41b) and keep
-// the existing per-stat-registry behaviour.
-func twoStateInThirdDword(t tenant.Model) bool {
-	return t.Region() == "GMS" && t.MajorVersion() < 87
-}
-
 func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		m.EncodeMask(l, t, options)(w)
 
-		twoStateFixed := twoStateInThirdDword(t)
 		keys := make([]CharacterTemporaryStatType, 0)
 		for _, v := range m.stats {
-			if twoStateFixed && baseStatNames[v.statType.name] {
-				continue // TwoState stats are encoded only as base stats below
+			if baseStatNames[v.statType.name] {
+				// Base/TwoState stats (e.g. MonsterRiding) are encoded only as
+				// base-stat blocks below — never as a per-stat value block. The v83
+				// client reads them in its 7-iteration base loop, so a per-stat block
+				// here would desync the entire tail. Version-independent.
+				continue
 			}
 			keys = append(keys, v.statType)
 		}
@@ -633,11 +611,10 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 	return func(options map[string]interface{}) []byte {
 		m.EncodeMask(l, t, options)(w)
 
-		twoStateFixed := twoStateInThirdDword(t)
 		keys := make([]CharacterTemporaryStatType, 0)
 		for _, v := range m.stats {
-			if twoStateFixed && baseStatNames[v.statType.name] {
-				continue // TwoState stats are encoded only as base stats below
+			if baseStatNames[v.statType.name] {
+				continue // TwoState/base stats are encoded only as base stats below
 			}
 			keys = append(keys, v.statType)
 		}
@@ -688,13 +665,6 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		mask := m.DecodeMask(r)
-		if twoStateInThirdDword(t) {
-			// Symmetric with EncodeMask: on v83/v84 the TwoState group occupies
-			// dword[2] bits 18-24, which the per-stat registry maps to unrelated
-			// stats. Clear them so they aren't decoded as per-stat; the TwoState
-			// base stats are read unconditionally by decodeBaseTemporaryStats below.
-			mask.L &^= twoStateDword2Bits << 32
-		}
 		reg := buildCharacterTemporaryStatRegistry(t)
 
 		for _, st := range reg.inOrder {
@@ -702,6 +672,8 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 				continue
 			}
 			if baseStatNames[st.name] {
+				// Base/TwoState stats carry no per-stat block; they are read by
+				// decodeBaseTemporaryStats below. Skip regardless of version.
 				continue
 			}
 			value := r.ReadInt16()
@@ -733,9 +705,6 @@ func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		mask := m.DecodeMask(r)
-		if twoStateInThirdDword(t) {
-			mask.L &^= twoStateDword2Bits << 32 // see Decode: TwoState group lives in dword[2] on v83/v84
-		}
 		reg := buildCharacterTemporaryStatRegistry(t)
 
 		for _, st := range reg.inOrder {

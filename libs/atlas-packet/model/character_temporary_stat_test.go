@@ -71,15 +71,16 @@ func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
 	mask, stat := got[:16], got[16:26]
 
 	// Mask: SLOW plus the always-present TwoState base stat bits
-	// (EnergyCharge..Undead). On v83/v84 the client reads the TwoState group from
-	// mask dword[2] (wire bytes 8-11), bits 82-88 -> 0x01FC0000, with RideVehicle at
-	// 0x00200000 (IDA v83 SecondaryStat::DecodeForLocal @0x781D0E, gate 1<<(i+82)).
-	// SLOW also lands in dword[2] at 0x00000001 (no collision with bits 18-24), so
-	// int[2] = 0x01FC0001 -> little-endian bytes 01 00 FC 01. int[1] is now empty.
+	// (EnergyCharge..Undead). The registry assigns the TwoState group shifts 82-88 on
+	// v83 -> all land in the high 64 bits, so uint32(H&0xFFFFFFFF)=0x01FC0000 is written
+	// to mask dword[1] (wire bytes 4-7), with RideVehicle at 0x00200000. This matches the
+	// v83 client's flag 1<<(i+82) read from wire bytes 4-7 (IDA SecondaryStat::
+	// DecodeForLocal @0x781D0E; UINT128 dword array is big-endian, AND'd in wire order).
+	// SLOW (shift 32) lands in dword[2] (wire bytes 8-11) at 0x00000001 -> LE 01 00 00 00.
 	wantMask := []byte{
 		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x01, 0x00, 0xFC, 0x01,
+		0x00, 0x00, 0xFC, 0x01,
+		0x01, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00,
 	}
 	if !bytes.Equal(mask, wantMask) {
@@ -172,10 +173,11 @@ func TestCTSMonsterRidingForeignEncodesVehicleAndSkill(t *testing.T) {
 }
 
 // TestCTSMonsterRidingV83MaskAndNoDoubleEncode verifies the v83 mount GIVE_BUFF
-// layout: the TwoState/RideVehicle mask bit lands in mask dword[2] (wire bytes
-// 8-11) where the v83 client reads it, NOT dword[1]; and the stat is encoded only
-// as a TwoState base stat (no truncated per-stat block). Regression for the mount
-// not rendering on the v83 client.
+// layout: the TwoState/RideVehicle mask bit lands in mask dword[1] (wire bytes 4-7)
+// where the v83 client reads it (registry shift 85 -> uint32(H&0xFFFFFFFF); client
+// flag 1<<(i+82) AND'd against wire bytes 4-7), and the stat is encoded only as a
+// base stat (no truncated per-stat block). Regression for the mount not rendering:
+// the real bug was the per-stat double-encode, not the mask placement.
 func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
@@ -184,13 +186,13 @@ func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// Mask dword[1] (bytes 4-7) must be empty; the TwoState group lives in dword[2].
-	if !bytes.Equal(got[4:8], []byte{0, 0, 0, 0}) {
-		t.Fatalf("mask dword[1] should be empty (TwoState moved to dword[2]); got % x", got[4:8])
+	// Mask dword[1] (bytes 4-7) = 0x01FC0000 -> LE 00 00 FC 01, includes RideVehicle 0x00200000.
+	if !bytes.Equal(got[4:8], []byte{0x00, 0x00, 0xFC, 0x01}) {
+		t.Fatalf("mask dword[1] should carry TwoState 0x01FC0000 (RideVehicle bit set); got % x", got[4:8])
 	}
-	// Mask dword[2] (bytes 8-11) = 0x01FC0000 -> LE 00 00 FC 01, includes RideVehicle 0x00200000.
-	if !bytes.Equal(got[8:12], []byte{0x00, 0x00, 0xFC, 0x01}) {
-		t.Fatalf("mask dword[2] should carry TwoState 0x01FC0000 (RideVehicle bit set); got % x", got[8:12])
+	// Mask dword[2] (bytes 8-11) must be empty for a lone MonsterRiding stat.
+	if !bytes.Equal(got[8:12], []byte{0, 0, 0, 0}) {
+		t.Fatalf("mask dword[2] should be empty; got % x", got[8:12])
 	}
 	// No truncated per-stat block: byte 16+ should be the 2 leading bytes (00 00),
 	// not the old int16(1902000)=0x05B0 per-stat value.

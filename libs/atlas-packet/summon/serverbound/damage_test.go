@@ -5,9 +5,11 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
-func TestDamage(t *testing.T) {
+func TestDamageRoundTrip(t *testing.T) {
 	in := NewDamage(1000001, 1234, 9300018)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -17,44 +19,110 @@ func TestDamage(t *testing.T) {
 	}
 }
 
-// summonDamageHandleV83Body is the Cosmic-baseline (pre-95) serverbound summon
-// DAMAGE layout: oid + attackIdx(0-fill) + damage + monsterIdFrom.
+// summonDamageMobBody is the real client SEND (CSummoned::SetDamaged, mob-present
+// branch) — identical across v83/v87/v95: summonId + attackIdx + damage +
+// monsterTemplateId + dir<0 flag.
 //
-//	oid=1000001=0x000F4241, attackIdx=0, damage=1234=0x000004D2,
-//	monsterIdFrom=9300018=0x008DE832.
-var summonDamageHandleV83Body = []byte{
-	0x41, 0x42, 0x0F, 0x00, // oid
-	0x00,                   // attackIdx (0-fill)
+//	summonId=1000001=0x000F4241, attackIdx=2, damage=1234=0x000004D2,
+//	monsterIdFrom(template)=9300018=0x008DE832, dir flag=0.
+var summonDamageMobBody = []byte{
+	0x41, 0x42, 0x0F, 0x00, // summonId
+	0x02,                   // attackIdx
 	0xD2, 0x04, 0x00, 0x00, // damage
-	0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom
+	0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom (mob template id)
+	0x00, // dir<0 flag
 }
 
-// TestDamageBytesV83 pins the classic (pre-95) serverbound DAMAGE layout — no
-// trailing dir byte (summon-packet-delta.md §3.5).
-func TestDamageBytesV83(t *testing.T) {
+// TestDamageDecodeMob decodes the real mob-present send and asserts the cursor
+// ends clean across every version (the body shape is version-independent).
+// packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v95 ida=0x74b730
+func TestDamageDecodeMob(t *testing.T) {
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			req := request.Request(append([]byte{}, summonDamageMobBody...))
+			reader := request.NewRequestReader(&req, 0)
+			var m Damage
+			m.Decode(l, ctx)(&reader, nil)
+
+			if m.SummonId() != 1000001 {
+				t.Errorf("summonId = %d, want 1000001", m.SummonId())
+			}
+			if m.AttackIdx() != 2 {
+				t.Errorf("attackIdx = %d, want 2", m.AttackIdx())
+			}
+			if m.Damage() != 1234 {
+				t.Errorf("damage = %d, want 1234", m.Damage())
+			}
+			if m.MonsterIdFrom() != 9300018 {
+				t.Errorf("monsterIdFrom = %d, want 9300018", m.MonsterIdFrom())
+			}
+			if reader.Available() > 0 {
+				t.Errorf("reader has %d unconsumed bytes", reader.Available())
+			}
+		})
+	}
+}
+
+// summonDamageNoMobBody is the real client SEND (CSummoned::SetDamaged,
+// no-source-mob branch): summonId + 0xFE sentinel + damage (no template, no dir).
+//
+//	summonId=1000001=0x000F4241, sentinel=0xFE, damage=1234=0x000004D2.
+var summonDamageNoMobBody = []byte{
+	0x41, 0x42, 0x0F, 0x00, // summonId
+	0xFE,                   // 0xFE sentinel (no source mob)
+	0xD2, 0x04, 0x00, 0x00, // damage
+}
+
+// TestDamageDecodeNoMob decodes the 0xFE no-source-mob branch and asserts the
+// cursor ends clean (monsterIdFrom stays 0).
+func TestDamageDecodeNoMob(t *testing.T) {
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			req := request.Request(append([]byte{}, summonDamageNoMobBody...))
+			reader := request.NewRequestReader(&req, 0)
+			var m Damage
+			m.Decode(l, ctx)(&reader, nil)
+
+			if m.SummonId() != 1000001 {
+				t.Errorf("summonId = %d, want 1000001", m.SummonId())
+			}
+			if m.AttackIdx() != 0xFE {
+				t.Errorf("attackIdx = %d, want 0xFE", m.AttackIdx())
+			}
+			if m.Damage() != 1234 {
+				t.Errorf("damage = %d, want 1234", m.Damage())
+			}
+			if m.MonsterIdFrom() != 0 {
+				t.Errorf("monsterIdFrom = %d, want 0", m.MonsterIdFrom())
+			}
+			if reader.Available() > 0 {
+				t.Errorf("reader has %d unconsumed bytes", reader.Available())
+			}
+		})
+	}
+}
+
+// TestDamageBytesMob pins the encoded mob-present body (NewDamage defaults
+// attackIdx=0; the byte fixture below uses attackIdx=0 to match).
+func TestDamageBytesMob(t *testing.T) {
 	in := NewDamage(1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
-	if !bytes.Equal(got, summonDamageHandleV83Body) {
-		t.Fatalf("v83 bytes = % X, want % X", got, summonDamageHandleV83Body)
+
+	want := []byte{
+		0x41, 0x42, 0x0F, 0x00, // summonId
+		0x00,                   // attackIdx (NewDamage default)
+		0xD2, 0x04, 0x00, 0x00, // damage
+		0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom
+		0x00, // dir<0 flag
 	}
-}
-
-// TestDamageBytesV95 pins the v95+ DELTA (gated >= 95, GMS only): the v83 body
-// plus a trailing dir<0 flag byte = 0, matching the v95 client send site
-// CSummoned::SetDamaged@0x74b730 (Encode1 nDir<0 @0x74bbed; v87's
-// SetDamaged@0x7f879a is byte-identical).
-// packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v95 ida=0x74b730
-func TestDamageBytesV95(t *testing.T) {
-	in := NewDamage(1000001, 1234, 9300018)
-	ctx := test.CreateContext("GMS", 95, 1)
-	got := test.Encode(t, ctx, in.Encode, nil)
-
-	want := append(append([]byte{}, summonDamageHandleV83Body...), 0x00) // + trailing dir flag = 0
 	if !bytes.Equal(got, want) {
-		t.Fatalf("v95 bytes = % X, want % X", got, want)
-	}
-	if len(got) != len(summonDamageHandleV83Body)+1 {
-		t.Fatalf("v95 len = %d, want v83 len + 1 = %d", len(got), len(summonDamageHandleV83Body)+1)
+		t.Fatalf("bytes = % X, want % X", got, want)
 	}
 }

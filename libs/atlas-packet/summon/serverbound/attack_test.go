@@ -8,13 +8,150 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// mobBlock builds one 26-byte per-target block as the client SEND emits it:
+// mobOid(4) templateId(4) hitAction(1) foreAction|left(1) frameIdx(1)
+// calcDamageStatIndex(1) curX(2) curY(2) hitX(2) hitY(2) tDelay(2) damage(4).
+func mobBlock(mobOid, templateId uint32, tDelay int16, damage uint32) []byte {
+	b := make([]byte, 0, 26)
+	b = append(b, le32(mobOid)...)
+	b = append(b, le32(templateId)...)
+	b = append(b, 0x01, 0x02, 0x03, 0x04) // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
+	b = append(b, le16(11)...)            // curX
+	b = append(b, le16(22)...)            // curY
+	b = append(b, le16(33)...)            // hitX
+	b = append(b, le16(44)...)            // hitY
+	b = append(b, le16(uint16(tDelay))...) // tDelay
+	b = append(b, le32(damage)...)         // damage
+	return b
+}
+
+func le16(v uint16) []byte { return []byte{byte(v), byte(v >> 8)} }
+func le32(v uint32) []byte {
+	return []byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)}
+}
+
+// TestSummonAttackDecodeV83 decodes a real-shaped 2-target LEAN v83 attack send
+// (no anti-hack envelope) and asserts the cursor ends clean with the right
+// target mob oids + damages. Confirmed against CSummoned::TryDoingAttackManual
+// send block @0x7a57dc.
+func TestSummonAttackDecodeV83(t *testing.T) {
+	body := []byte{}
+	body = append(body, le32(1000005)...) // summonId (= owner cid on v83)
+	body = append(body, le32(123456)...)   // updateTime
+	body = append(body, 0x83)              // action|left (left bit set, action 3)
+	body = append(body, 0x02)              // count = 2
+	body = append(body, le16(500)...)      // userX
+	body = append(body, le16(600)...)      // userY
+	body = append(body, le16(510)...)      // summonX
+	body = append(body, le16(590)...)      // summonY
+	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)
+	body = append(body, mobBlock(2000002, 9300166, -50, 5678)...)
+	body = append(body, le32(0xABCD)...)   // skillCRC
+
+	ctx := test.CreateContext("GMS", 83, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	assertAttack(t, &m, &reader, 1000005)
+}
+
+// TestSummonAttackDecodeV87 decodes a real-shaped 2-target v87 attack send: the
+// anti-hack envelope (drInfo/dwKey/crc32) is present but there is NO trailing
+// repeatSkillPoint. Confirmed against CSummoned::TryDoingAttackManual @0x7f6666.
+func TestSummonAttackDecodeV87(t *testing.T) {
+	body := envelopeHeader(1000005, false)
+	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)
+	body = append(body, mobBlock(2000002, 9300166, -50, 5678)...)
+	body = append(body, le32(0xABCD)...) // skillCRC
+
+	ctx := test.CreateContext("GMS", 87, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	assertAttack(t, &m, &reader, 1000005)
+}
+
+// TestSummonAttackDecodeV95 decodes a real-shaped 2-target v95 attack send: the
+// anti-hack envelope PLUS the trailing repeatSkillPoint int. Confirmed against
+// CSummoned::TryDoingAttackManual @0x751240.
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v95 ida=0x751240
+func TestSummonAttackDecodeV95(t *testing.T) {
+	body := envelopeHeader(1000005, true)
+	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)
+	body = append(body, mobBlock(2000002, 9300166, -50, 5678)...)
+	body = append(body, le32(0xABCD)...) // skillCRC
+
+	ctx := test.CreateContext("GMS", 95, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	assertAttack(t, &m, &reader, 1000005)
+}
+
+// envelopeHeader builds the v87/v95 anti-hack envelope header for 2 targets.
+// withRepeatSkillPoint appends the v95-only trailing int after the positions.
+func envelopeHeader(summonId uint32, withRepeatSkillPoint bool) []byte {
+	b := []byte{}
+	b = append(b, le32(summonId)...)
+	b = append(b, le32(0x11111111)...) // ~drInfo[0]
+	b = append(b, le32(0x22222222)...) // ~drInfo[1]
+	b = append(b, le32(123456)...)     // updateTime
+	b = append(b, le32(0x33333333)...) // ~drInfo[2]
+	b = append(b, le32(0x44444444)...) // ~drInfo[3]
+	b = append(b, 0x83)                // action|left
+	b = append(b, le32(0xDEADBEEF)...) // dwKey
+	b = append(b, le32(0xCAFEBABE)...) // crc32
+	b = append(b, 0x02)                // count = 2
+	b = append(b, le16(500)...)        // userX
+	b = append(b, le16(600)...)        // userY
+	b = append(b, le16(510)...)        // summonX
+	b = append(b, le16(590)...)        // summonY
+	if withRepeatSkillPoint {
+		b = append(b, le32(75)...) // repeatSkillPoint (v95 only)
+	}
+	return b
+}
+
+func assertAttack(t *testing.T, m *Attack, reader *request.Reader, wantSummonId uint32) {
+	t.Helper()
+	if m.SummonId() != wantSummonId {
+		t.Errorf("summonId = %d, want %d", m.SummonId(), wantSummonId)
+	}
+	if m.Direction() != 0x83 {
+		t.Errorf("direction = %#x, want 0x83", m.Direction())
+	}
+	if len(m.Targets()) != 2 {
+		t.Fatalf("targets len = %d, want 2", len(m.Targets()))
+	}
+	t0 := m.Targets()[0]
+	if t0.MonsterOid() != 2000001 || t0.TemplateId() != 9300018 || t0.Damage() != 1234 || t0.Delay() != 100 {
+		t.Errorf("target[0] = %+v, want oid=2000001 tmpl=9300018 dmg=1234 delay=100", t0)
+	}
+	t1 := m.Targets()[1]
+	if t1.MonsterOid() != 2000002 || t1.TemplateId() != 9300166 || t1.Damage() != 5678 || t1.Delay() != -50 {
+		t.Errorf("target[1] = %+v, want oid=2000002 tmpl=9300166 dmg=5678 delay=-50", t1)
+	}
+	if reader.Available() > 0 {
+		t.Errorf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+}
+
 func TestSummonAttackRoundTrip(t *testing.T) {
 	in := Attack{
-		oid:       2000001,
+		summonId:  2000001,
 		direction: 3,
 		targets: []AttackTarget{
-			{monsterOid: 1000001, damage: 1234, delay: 100},
-			{monsterOid: 1000002, damage: 5678, delay: -50},
+			{monsterOid: 1000001, templateId: 9300018, damage: 1234, delay: 100},
+			{monsterOid: 1000002, templateId: 9300166, damage: 5678, delay: -50},
 		},
 	}
 
@@ -29,8 +166,8 @@ func TestSummonAttackRoundTrip(t *testing.T) {
 			var out Attack
 			out.Decode(l, ctx)(&reader, nil)
 
-			if out.Oid() != in.oid {
-				t.Errorf("oid = %d, want %d", out.Oid(), in.oid)
+			if out.SummonId() != in.summonId {
+				t.Errorf("summonId = %d, want %d", out.SummonId(), in.summonId)
 			}
 			if out.Direction() != in.direction {
 				t.Errorf("direction = %d, want %d", out.Direction(), in.direction)

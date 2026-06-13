@@ -12,68 +12,83 @@ import (
 
 const SummonDamageHandle = "SummonDamageHandle"
 
-// Damage is the client -> server summon DAMAGE packet, decoded per Cosmic
-// DamageSummonHandler.handlePacket (DamageSummonHandler.java:35-38):
+// Damage is the client -> server summon DAMAGE packet (a puppet reporting that a
+// mob hit it), decoded from the real client SEND site CSummoned::SetDamaged.
+// The v83 (@0x7a607a), v87 (@0x7f879a) and v95 (@0x74b730) sends are
+// byte-for-byte identical in body shape — the only per-version difference is the
+// summon identity semantics (cid vs summon id) and the opcode (routed by the
+// socket layer, not consumed here).
 //
-//	int oid
-//	skip(1)              // -1, unused
-//	int damage
-//	int monsterIdFrom
+//	Encode4 summonId                       ; v83/v87 = owner cid [obj+0xAC]; v95 = m_dwSummonedID
+//	if (mob present):
+//	  Encode1 attackIdx                    ; mob attack index
+//	  Encode4 damage
+//	  Encode4 monsterIdFrom                ; mob TEMPLATE id (fused dwTemplateID), not an oid
+//	  Encode1 (dir < 0)                    ; impact direction flag — present in v83 too
+//	else:
+//	  Encode1 0xFE                         ; sentinel "-2" (no source mob)
+//	  Encode4 damage
+//
+// The trailing dir byte and the 0xFE no-mob branch were both missing from the
+// prior Cosmic-derived decoder; the ASM (v83 Encode1@0x7a62f4 / 0x7a62a8) proves
+// both exist on v83. The dir byte is consumed but not surfaced (the server does
+// not need it).
 type Damage struct {
-	oid           uint32
+	summonId      uint32
+	attackIdx     byte
 	damage        uint32
 	monsterIdFrom uint32
 }
 
-func NewDamage(oid, damage, monsterIdFrom uint32) Damage {
+func NewDamage(summonId, damage, monsterIdFrom uint32) Damage {
 	return Damage{
-		oid:           oid,
+		summonId:      summonId,
+		attackIdx:     0,
 		damage:        damage,
 		monsterIdFrom: monsterIdFrom,
 	}
 }
 
-func (m Damage) Oid() uint32           { return m.oid }
+func (m Damage) SummonId() uint32      { return m.summonId }
+func (m Damage) AttackIdx() byte       { return m.attackIdx }
 func (m Damage) Damage() uint32        { return m.damage }
 func (m Damage) MonsterIdFrom() uint32 { return m.monsterIdFrom }
 func (m Damage) Operation() string     { return SummonDamageHandle }
 
 func (m Damage) String() string {
-	return fmt.Sprintf("oid [%d], damage [%d], monsterIdFrom [%d]", m.oid, m.damage, m.monsterIdFrom)
+	return fmt.Sprintf("summonId [%d], attackIdx [%d], damage [%d], monsterIdFrom [%d]", m.summonId, m.attackIdx, m.damage, m.monsterIdFrom)
 }
 
 func (m Damage) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	t := tenant.MustFromContext(ctx)
+	_ = tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteInt(m.oid)
-		w.WriteByte(0) // attackIdx (-1/unused in Cosmic baseline; 0-fill, was Skip(1))
+		w.WriteInt(m.summonId)
+		if m.attackIdx == 0xFE {
+			w.WriteByte(0xFE)
+			w.WriteInt(m.damage)
+			return w.Bytes()
+		}
+		w.WriteByte(m.attackIdx)
 		w.WriteInt(m.damage)
 		w.WriteInt(m.monsterIdFrom)
-		// v95+ DELTA (gated >= 95, GMS only): the v95 client send site
-		// CSummoned::SetDamaged@0x74b730 emits a trailing Encode1(nDir<0) after
-		// the mob-template id (Encode1@0x74bbed). v87's SetDamaged@0x7f879a is
-		// byte-identical (also has the trailing dir byte), but the Cosmic v83
-		// baseline reads only oid+skip1+damage+monsterIdFrom, so the trailing
-		// byte is gated >=95 to avoid touching the v83/v87 decode path. See
-		// summon-packet-delta.md §3.5.
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			w.WriteByte(0) // dir<0 flag (0-fill)
-		}
+		w.WriteByte(0) // dir<0 flag (0-fill)
 		return w.Bytes()
 	}
 }
 
 func (m *Damage) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
+	_ = tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.oid = r.ReadUint32()
-		_ = r.ReadByte() // attackIdx (-1/unused in Cosmic baseline; was Skip(1))
+		m.summonId = r.ReadUint32()
+		m.attackIdx = r.ReadByte()
+		if m.attackIdx == 0xFE {
+			// No source mob: only the damage follows. monsterIdFrom stays 0.
+			m.damage = r.ReadUint32()
+			return
+		}
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()
-		// v95+ DELTA (mirror of Encode): consume the trailing dir<0 flag byte.
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			_ = r.ReadByte() // dir<0 flag
-		}
+		_ = r.ReadByte() // dir<0 flag (v83 Encode1@0x7a62f4) — consumed, not surfaced
 	}
 }

@@ -14,6 +14,7 @@ import (
 // startX/startY). Confirmed against CVecCtrlSummoned::EndUpdateActive
 // (v83 sub_9C84E9, v95 @0x9a0700).
 // packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v95 ida=0x9a0700
+// packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v83 ida=0x9c84e9
 func TestSummonMoveDecode(t *testing.T) {
 	// summonId=1000001 (LE 41 42 0F 00), then the move blob: startX=100 (LE 64 00),
 	// startY=-50 (LE CE FF), then the remaining (opaque) move-path bytes.

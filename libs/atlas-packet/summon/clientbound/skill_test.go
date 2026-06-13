@@ -46,6 +46,9 @@ func TestSummonSkill(t *testing.T) {
 // TestSummonSkillBytes pins the classic (pre-95) wire: cid + a single stance
 // byte. There is NO summonSkillId int and NO oid on v83/v87 — OnHit@0x7a6e5a
 // reads one Decode1, masks 0x7F (IDB-confirmed, summon-wire-truth.md).
+// v83 SKILL behavior lives at OnHit@0x7a6e5a (the LOWER of the swapped
+// skill/damage opcodes); the export key CSummonedPool::OnSkill records this addr.
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
 func TestSummonSkillBytes(t *testing.T) {
 	in := NewSummonSkill(42, 1000001, 6)
 	ctx := test.CreateContext("GMS", 83, 1)

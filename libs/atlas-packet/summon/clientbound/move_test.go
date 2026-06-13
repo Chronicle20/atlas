@@ -52,6 +52,7 @@ func TestSummonMove(t *testing.T) {
 
 // TestSummonMoveBytes pins the classic (pre-95) wire: NO oid (the summon pool is
 // cid-keyed on v83/v87; oid is a v95+ addition — IDB-confirmed, summon-wire-truth.md).
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v83 ida=0x7a6861
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, 100, -50, raw)

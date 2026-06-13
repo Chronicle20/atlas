@@ -68,6 +68,7 @@ var summonSpawnV83Body = []byte{
 
 // TestSummonSpawnBytesV83 pins the classic (pre-95) layout. v83/v84/v87/JMS185
 // all share this exact byte sequence (no oid).
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v83 ida=0x938f61
 func TestSummonSpawnBytesV83(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 83, 1)

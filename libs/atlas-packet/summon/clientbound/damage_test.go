@@ -33,6 +33,9 @@ var summonDamageV83Body = []byte{
 }
 
 // TestSummonDamageBytes pins the classic v83 layout (no oid, no trailing byte).
+// v83 DAMAGE behavior lives at OnSkill@0x7a6ebe (the HIGHER of the swapped
+// skill/damage opcodes); the export key CSummonedPool::OnHit records this addr.
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x7a6ebe
 func TestSummonDamageBytes(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 83, 1)

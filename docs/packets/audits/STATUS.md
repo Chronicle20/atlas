@@ -420,7 +420,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x136 | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x137 | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x138 | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | 🟡 | 0x139 | ❌ | 0x14A | 🟡 | 0x174 | 🟡 | 0x152 | 🟡 |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x139 | ❌ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x13A | ❌ | 0x14B | ❌ | 0x175 | ✅ | 0x153 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament |  | 0x13B | ❌ | 0x13B | ❌ | 0x14C | ❌ | 0x176 | ❌ | 0x154 | ❌ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable |  | 0x13C | ❌ | 0x13C | ❌ | 0x14D | ❌ | 0x177 | ❌ | 0x155 | ❌ |
@@ -910,11 +910,11 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 182 | 3 | 494 | 201 | 0 | 26.8% |
+| v83 | 183 | 2 | 494 | 201 | 0 | 27.0% |
 | v84 | 6 | 0 | 671 | 203 | 0 | 0.9% |
-| v87 | 183 | 3 | 530 | 164 | 0 | 25.6% |
-| v95 | 268 | 3 | 527 | 82 | 0 | 33.6% |
-| JMS185 | 163 | 1 | 546 | 170 | 0 | 23.0% |
+| v87 | 184 | 2 | 530 | 164 | 0 | 25.7% |
+| v95 | 269 | 2 | 527 | 82 | 0 | 33.7% |
+| JMS185 | 164 | 0 | 546 | 170 | 0 | 23.1% |
 
 ## Conflicts
 

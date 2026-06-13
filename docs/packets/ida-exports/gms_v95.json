@@ -8736,7 +8736,7 @@
     "CSummonedPool::OnSkill": {
       "address": "0x759890",
       "direction": "clientbound",
-      "note": "SUMMON_SKILL (0x11A/282). CSummonedPool::OnPacket@0x75ac70 reads Decode4(charId), case 0x11A -> OnSkill@0x759890 -> CUser::OnSummonedSkill@0x8e3980 reads Decode4(oid)@0x8e39b2 -> CSummoned::OnSkill@0x74a940 reads a single Decode1(action&0x7F)@0x74a9ae. NOTE: the v95 client reader consumes only charId+oid+1 action byte. Atlas SummonSkill writes cid + summonSkillId(int) + newStance(byte) (Cosmic-derived); the int summonSkillId has no client read here. v95 reference (PDB build); Skill is dispatched at 0x11A BEFORE Hit(0x11B).",
+      "note": "SUMMON_SKILL (0x11A/282). CSummonedPool::OnPacket@0x75ac70 reads Decode4(charId), case 0x11A -> OnSkill@0x759890 -> CUser::OnSummonedSkill@0x8e3980 reads Decode4(oid)@0x8e39b2 -> CSummoned::OnSkill@0x74a940 reads a single Decode1(action&0x7F)@0x74a9ae. NOTE: the v95 client reader consumes only charId+oid+1 action byte. Atlas SummonSkill (corrected wire) writes cid + oid(v95+ only) + newStance(byte); the prior Cosmic-derived summonSkillId int was removed — there is NO summonSkillId on the wire in any version. v95 reference (PDB build); Skill is dispatched at 0x11A BEFORE Hit(0x11B).",
       "calls": [
         {
           "op": "Decode4",
@@ -8788,30 +8788,22 @@
     "CVecCtrlSummoned::EndUpdateActive": {
       "address": "0x9a0700",
       "direction": "serverbound",
-      "note": "MOVE_SUMMON send (CMSG 207/0xCF). CVecCtrlSummoned::EndUpdateActive@0x9a0700: COutPacket(207)@0x9a075d + Encode4(m_dwSummonedID)@0x9a0775 + CMovePath::Flush(movement blob)@0x9a0785. Atlas serverbound Move decodes oid+startX+startY+rawMovement (startX/startY+blob = the flushed movement path). v95 reference (PDB build).",
+      "note": "MOVE_SUMMON send (CMSG 207/0xCF). CVecCtrlSummoned::EndUpdateActive@0x9a0700: COutPacket(207)@0x9a075d + Encode4(m_dwSummonedID)@0x9a0775 + CMovePath::Flush(movement blob)@0x9a0785. The movement blob is opaque (head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box); Atlas serverbound Move writes summonId + the whole post-identity remainder byte-faithfully (rawMovement) and extracts startX/startY from the first 4 bytes for position seeding. Matches the v83 shape. v95 reference (PDB build).",
       "calls": [
         {
           "op": "Encode4",
           "comment": "oid (m_dwSummonedID) — CVecCtrlSummoned::EndUpdateActive@0x9a0775"
         },
         {
-          "op": "Encode2",
-          "comment": "startX — CMovePath::Flush movement-blob head"
-        },
-        {
-          "op": "Encode2",
-          "comment": "startY — CMovePath::Flush movement-blob head"
-        },
-        {
           "op": "EncodeBuf",
-          "comment": "rawMovement blob — CMovePath::Flush@0x668160 (variable-length movement path)"
+          "comment": "movement blob — CMovePath::Flush@0x668160 (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
         }
       ]
     },
     "CSummoned::TryDoingAttackManual": {
       "address": "0x751240",
       "direction": "serverbound",
-      "note": "SUMMON_ATTACK send (CMSG 208/0xD0). CSummoned::TryDoingAttackManual@0x751240: COutPacket(208)@0x75226b + Encode4(summonId)@0x752287 + Encode4(~drInfo0)@0x75229b + Encode4(~drInfo1)@0x7522af + Encode4(updateTime)@0x7522c0 + Encode4(~drInfo2)@0x7522d4 + Encode4(~drInfo3)@0x7522e8 + Encode1(action&0x7F|bLeft<<7)@0x752302 + Encode4(dwKey)@0x752325 + Encode4(crc32)@0x75234c + Encode1(nMobCount)@0x75235c + Encode2(userX)@0x7523a5 + Encode2(userY)@0x7523dd + Encode2(summonX)@0x75240a + Encode2(summonY)@0x752438 + Encode4(repeatSkillPoint)@0x752450 + per-mob loop{Encode4(mobId)@0x7524ac + Encode4(templateId)@0x7524cc + Encode1(hitAction)@0x7524e2 + Encode1(foreAction|left<<7)@0x75250c + Encode1(frameIdx)@0x752522 + Encode1(calcDmgStatIdx)@0x75253b + Encode2(x)@0x75256c + Encode2(y)@0x7525a0 + Encode2(x)@0x7525d3 + Encode2(y)@0x752607 + Encode2(tDelay)@0x75261d + Encode4(damage)@0x752632} + Encode4(skillCRC)@0x75266f. Atlas serverbound Attack is Cosmic-derived (SummonDamageHandler) and reads a DIFFERENT layout (oid, skip4, direction, count, skip8, per{mobOid, skip8, curPos, nextPos, delay, damage}); the v95 send layout above is the IDA reference — significant wire divergence between Atlas decoder and v95 client send. v95 reference (PDB build).",
+      "note": "SUMMON_ATTACK send (CMSG 208/0xD0). CSummoned::TryDoingAttackManual@0x751240: COutPacket(208)@0x75226b + Encode4(summonId)@0x752287 + Encode4(~drInfo0)@0x75229b + Encode4(~drInfo1)@0x7522af + Encode4(updateTime)@0x7522c0 + Encode4(~drInfo2)@0x7522d4 + Encode4(~drInfo3)@0x7522e8 + Encode1(action&0x7F|bLeft<<7)@0x752302 + Encode4(dwKey)@0x752325 + Encode4(crc32)@0x75234c + Encode1(nMobCount)@0x75235c + Encode2(userX)@0x7523a5 + Encode2(userY)@0x7523dd + Encode2(summonX)@0x75240a + Encode2(summonY)@0x752438 + Encode4(repeatSkillPoint)@0x752450 + per-mob loop{Encode4(mobId)@0x7524ac + Encode4(templateId)@0x7524cc + Encode1(hitAction)@0x7524e2 + Encode1(foreAction|left<<7)@0x75250c + Encode1(frameIdx)@0x752522 + Encode1(calcDmgStatIdx)@0x75253b + Encode2(x)@0x75256c + Encode2(y)@0x7525a0 + Encode2(x)@0x7525d3 + Encode2(y)@0x752607 + Encode2(tDelay)@0x75261d + Encode4(damage)@0x752632} + Encode4(skillCRC)@0x75266f. Atlas serverbound Attack (corrected wire) decodes this exact layout: summonId + (GMS>=87) anti-hack envelope (drInfo/updateTime/dwKey/crc32) + action + count + positions + (GMS>=95) repeatSkillPoint, then the per-target loop and skillCRC trailer. The envelope/position fields are consumed at their exact widths but not validated. The body shape depends on a runtime mob count + a per-target loop a flat positional diff cannot fully model, so the cell is flat-diff-invalid (tier-1) and is verified by byte-level round-trip + decode tests. v95 reference (PDB build).",
       "calls": [
         {
           "op": "Encode4",
@@ -8942,7 +8934,7 @@
     "CSummoned::SetDamaged": {
       "address": "0x74b730",
       "direction": "serverbound",
-      "note": "DAMAGE_SUMMON send (CMSG 209/0xD1). CSummoned::SetDamaged@0x74b730: COutPacket(209)@0x74bb6a + Encode4(summonId)@0x74bb82, then (mob-present path) Encode1(nAttackIdx)@0x74bbae + Encode4(damage)@0x74bbb8 + Encode4(mobTemplateId)@0x74bbd8 + Encode1(nDir<0)@0x74bbed. (No-mob path sends Encode1(0xFE)+Encode4(damage).) v87 SetDamaged@0x7f879a is byte-identical. Atlas serverbound Damage (gated >=95 GMS) decodes oid+skip1(attackIdx)+damage+monsterIdFrom(templateId)+skip1(dir). v95 reference (PDB build).",
+      "note": "DAMAGE_SUMMON send (CMSG 209/0xD1). CSummoned::SetDamaged@0x74b730: COutPacket(209)@0x74bb6a + Encode4(summonId)@0x74bb82, then (mob-present path) Encode1(nAttackIdx)@0x74bbae + Encode4(damage)@0x74bbb8 + Encode4(mobTemplateId)@0x74bbd8 + Encode1(nDir<0)@0x74bbed. (No-mob path sends Encode1(0xFE)+Encode4(damage).) v87 SetDamaged@0x7f879a is byte-identical (the dir<0 byte and the 0xFE no-mob branch are present in v83/v87 too, not v95-only). Atlas serverbound Damage (corrected wire) decodes summonId+attackIdx+damage, then on the mob-present branch monsterIdFrom(templateId)+dir<0 byte (consumed, not surfaced); the 0xFE sentinel selects the no-mob branch (damage only). The mob/no-mob branch is a data-dependent discriminator a flat positional diff cannot model, so the cell is flat-diff-invalid (tier-1), verified by byte-level mob/no-mob decode tests. v95 reference (PDB build).",
       "calls": [
         {
           "op": "Encode4",

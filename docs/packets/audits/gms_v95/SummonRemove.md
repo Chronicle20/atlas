@@ -1,9 +1,9 @@
 # SummonRemove (← `CSummonedPool::OnRemoved`)
 
 - **IDA:** 0x75a470
-- **Atlas file:** `../../libs/atlas-packet/summon/clientbound/remove.go`
+- **Atlas file:** `libs/atlas-packet/summon/clientbound/remove.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 2
 - **Verdict:** ✅
 
 ## Wire-level diff

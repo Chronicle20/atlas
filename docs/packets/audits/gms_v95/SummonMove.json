@@ -3,8 +3,8 @@
   "IDAName": "CSummonedPool::OnMove",
   "Address": "0x759830",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/move.go",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/clientbound/move.go",
   "Rows": [
     {
       "Index": 0,

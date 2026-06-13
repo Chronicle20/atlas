@@ -1,9 +1,9 @@
 # SummonDamage (← `CSummonedPool::OnHit`)
 
 - **IDA:** 0x7598c0
-- **Atlas file:** `../../libs/atlas-packet/summon/clientbound/damage.go`
+- **Atlas file:** `libs/atlas-packet/summon/clientbound/damage.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 2
 - **Verdict:** ✅
 
 ## Wire-level diff

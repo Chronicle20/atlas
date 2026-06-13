@@ -1,0 +1,10 @@
+packet: summon/serverbound/SummonAttackHandle
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CSummoned::TryDoingAttackManual
+    address: "0x751240"
+    decompile_sha256: 7d2a61c3246760cd55c46a914171c8f27d7b9c2b0156f44330cce94d7da86924
+verifies:
+    - libs/atlas-packet/summon/serverbound/attack_test.go#TestSummonAttackDecodeV95

@@ -1,9 +1,9 @@
 # SummonMove (← `CSummonedPool::OnMove`)
 
 - **IDA:** 0x759830
-- **Atlas file:** `../../libs/atlas-packet/summon/clientbound/move.go`
+- **Atlas file:** `libs/atlas-packet/summon/clientbound/move.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 2
 - **Verdict:** ✅
 
 ## Wire-level diff

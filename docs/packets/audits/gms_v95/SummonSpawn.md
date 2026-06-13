@@ -1,7 +1,7 @@
 # SummonSpawn (← `CSummonedPool::OnCreated`)
 
 - **IDA:** 0x75a9a0
-- **Atlas file:** `../../libs/atlas-packet/summon/clientbound/spawn.go`
+- **Atlas file:** `libs/atlas-packet/summon/clientbound/spawn.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

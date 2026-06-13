@@ -4,7 +4,7 @@
   "Address": "0x9a0700",
   "Variant": "GMS/v95",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/summon/serverbound/move.go",
+  "AtlasFile": "libs/atlas-packet/summon/serverbound/move.go",
   "Rows": [
     {
       "Index": 0,
@@ -17,28 +17,10 @@
     },
     {
       "Index": 1,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "startX — CMovePath::Flush movement-blob head",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 2,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "startY — CMovePath::Flush movement-blob head",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 3,
       "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "rawMovement blob — CMovePath::Flush@0x668160 (variable-length movement path)",
+      "IDAComment": "movement blob — CMovePath::Flush@0x668160 (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding.",
       "Verdict": 0,
       "Note": ""
     }

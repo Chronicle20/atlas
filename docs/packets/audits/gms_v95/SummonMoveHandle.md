@@ -1,7 +1,7 @@
 # SummonMoveHandle (← `CVecCtrlSummoned::EndUpdateActive`)
 
 - **IDA:** 0x9a0700
-- **Atlas file:** `../../libs/atlas-packet/summon/serverbound/move.go`
+- **Atlas file:** `libs/atlas-packet/summon/serverbound/move.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -11,7 +11,5 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | int32 | int32 `oid (m_dwSummonedID) — CVecCtrlSummoned::EndUpdateActive@0x9a0775` | ✅ |  |
-| 1 | int16 | int16 `startX — CMovePath::Flush movement-blob head` | ✅ |  |
-| 2 | int16 | int16 `startY — CMovePath::Flush movement-blob head` | ✅ |  |
-| 3 | bytes | bytes `rawMovement blob — CMovePath::Flush@0x668160 (variable-length movement path)` | ✅ |  |
+| 1 | bytes | bytes `movement blob — CMovePath::Flush@0x668160 (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding.` | ✅ |  |
 

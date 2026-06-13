@@ -3,8 +3,8 @@
   "IDAName": "CSummonedPool::OnSkill",
   "Address": "0x759890",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/skill.go",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/clientbound/skill.go",
   "Rows": [
     {
       "Index": 0,

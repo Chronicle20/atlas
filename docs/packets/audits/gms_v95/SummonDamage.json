@@ -3,8 +3,8 @@
   "IDAName": "CSummonedPool::OnHit",
   "Address": "0x7598c0",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/damage.go",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/clientbound/damage.go",
   "Rows": [
     {
       "Index": 0,

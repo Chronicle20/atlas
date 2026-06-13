@@ -1,9 +1,9 @@
 # SummonSkill (← `CSummonedPool::OnSkill`)
 
 - **IDA:** 0x759890
-- **Atlas file:** `../../libs/atlas-packet/summon/clientbound/skill.go`
+- **Atlas file:** `libs/atlas-packet/summon/clientbound/skill.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 2
 - **Verdict:** ✅
 
 ## Wire-level diff

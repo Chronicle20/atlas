@@ -3,8 +3,8 @@
   "IDAName": "CSummoned::SetDamaged",
   "Address": "0x74b730",
   "Variant": "GMS/v95",
-  "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/summon/serverbound/damage.go",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/summon/serverbound/damage.go",
   "Rows": [
     {
       "Index": 0,
@@ -35,23 +35,41 @@
     },
     {
       "Index": 3,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "mobTemplateId (monsterIdFrom) — SetDamaged@0x74bbd8",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 4,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "dir\u003c0 flag — SetDamaged@0x74bbed; atlas skip1 (v95+ DELTA)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 0,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

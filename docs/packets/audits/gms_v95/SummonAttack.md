@@ -1,7 +1,7 @@
 # SummonAttack (← `CSummonedPool::OnAttack`)
 
 - **IDA:** 0x759860
-- **Atlas file:** `../../libs/atlas-packet/summon/clientbound/attack.go`
+- **Atlas file:** `libs/atlas-packet/summon/clientbound/attack.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

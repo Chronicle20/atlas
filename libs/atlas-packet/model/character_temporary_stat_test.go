@@ -158,6 +158,45 @@ func TestCTSMonsterRidingBaseStatEncodesVehicleAndSkill(t *testing.T) {
 	}
 }
 
+// TestCTSMonsterRidingV95MaskAndLayout pins the GMS v95 mount GIVE_BUFF layout.
+// On v95 the registry enumerates 122 stats before EnergyCharge, so the two-state
+// group is bits 122-128 and RideVehicle/MonsterRiding is bit 125 (IDA-verified from
+// the v95 client flag initializers; see v95_secondarystat_table.md). Bits 122-125
+// live in logical range 96-127 -> wire dword[0] (bytes 0-3): EnergyCharge(122)|
+// DashSpeed(123)|DashJump(124)|RideVehicle(125) = 0x3C000000, RideVehicle = 0x20000000.
+// The remaining mask dwords are empty, and MonsterRiding is encoded only as a base
+// stat (no per-stat block). Total = 16 mask + 2 leading + 4 base blocks (15+15+15+13).
+func TestCTSMonsterRidingV95MaskAndLayout(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeMonsterRiding), 1004, 1902000, 1, time.Now().Add(time.Hour))
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// Mask dword[0] (bytes 0-3) = 0x3C000000 -> LE 00 00 00 3C (RideVehicle bit 0x20000000 set).
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x3C}) {
+		t.Fatalf("v95 mask dword[0] should be 0x3C000000 (RideVehicle@125 set); got % x", got[0:4])
+	}
+	// dwords [1],[2],[3] (bytes 4-15) empty.
+	if !bytes.Equal(got[4:16], make([]byte, 12)) {
+		t.Fatalf("v95 mask dwords[1..3] should be empty; got % x", got[4:16])
+	}
+	// No truncated per-stat block: the 2 leading bytes (00 00) follow the mask.
+	if got[16] != 0 || got[17] != 0 {
+		t.Fatalf("expected 2 leading bytes (00 00) after mask, not a per-stat block; got % x", got[16:20])
+	}
+	// MonsterRiding base stat carries nOption=1902000, rOption=1004.
+	want := []byte{0xb0, 0x05, 0x1d, 0x00, 0xec, 0x03, 0x00, 0x00}
+	if !bytes.Contains(got, want) {
+		t.Fatalf("v95 RideVehicle base stat (1902000,1004) missing; got % x", got)
+	}
+	// 16 mask + 2 leading + base blocks (EnergyCharge15+DashSpeed15+DashJump15+MonsterRiding13 = 58).
+	if len(got) != 16+2+58 {
+		t.Fatalf("v95 mount packet length: got %d want %d", len(got), 16+2+58)
+	}
+}
+
 func TestCTSMonsterRidingForeignEncodesVehicleAndSkill(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)

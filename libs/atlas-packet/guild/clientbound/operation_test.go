@@ -59,6 +59,7 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v95 ida=0xa0e0b5
 // packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v95 ida=0xa0e44b
 // packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v95 ida=0xa0e239
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v95 ida=0x0
 func TestRequestAgreementRoundTrip(t *testing.T) {
 	input := NewRequestAgreement(0x01, 100, "LeaderName", "GuildName")
 	for _, v := range pt.Variants {

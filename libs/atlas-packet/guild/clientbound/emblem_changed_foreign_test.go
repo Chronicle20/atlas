@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=jms_v185 ida=0xa57689
+// packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v95 ida=0x0
 func TestForeignEmblemChangedRoundTrip(t *testing.T) {
 	input := NewForeignEmblemChanged(1001, 3, 2, 5, 4)
 	for _, v := range pt.Variants {

@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=jms_v185 ida=0xa5763e
+// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=gms_v95 ida=0x0
 func TestForeignNameChangedRoundTrip(t *testing.T) {
 	input := NewForeignNameChanged(1001, "NewGuildName")
 	for _, v := range pt.Variants {

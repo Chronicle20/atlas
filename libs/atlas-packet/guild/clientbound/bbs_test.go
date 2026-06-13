@@ -12,6 +12,8 @@ import (
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/clientbound/GuildBBSThread version=gms_v95 ida=0x7c6630
 // packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=gms_v95 ida=0x7c46c0
+// packet-audit:verify packet=guild/clientbound/GuildBBSThread version=jms_v185 ida=ABSENT
+// packet-audit:verify packet=guild/clientbound/GuildBBSThreadList version=jms_v185 ida=ABSENT
 func TestBBSThreadListEmpty(t *testing.T) {
 	input := NewBBSThreadList(nil, nil, 0)
 	for _, v := range test.Variants {

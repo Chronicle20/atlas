@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetTitleNames
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSetGuildTitleNames
+    address: "0x0"
+    decompile_sha256: b6cd3b268886da9280c0ac71ebe5b5e477557fde2dacc44a1ade35fe55e407d4

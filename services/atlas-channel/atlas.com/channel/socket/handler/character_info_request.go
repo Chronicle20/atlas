@@ -4,6 +4,7 @@ import (
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/guild"
+	"atlas-channel/mount"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -59,7 +60,19 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(charcb.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl))(s)
+		// Tamed-mob (mount) block: surface the requested character's mount
+		// progression in the info window. No mount record -> inactive (single 0 byte).
+		mountInfo := charcb.MountInfo{}
+		if mm, mErr := mount.NewProcessor(l, ctx).GetByCharacterId(p.CharacterId()); mErr == nil {
+			mountInfo = charcb.MountInfo{
+				Active:    true,
+				Level:     uint32(mm.Level()),
+				Exp:       uint32(mm.Exp()),
+				Tiredness: uint32(mm.Tiredness()),
+			}
+		}
+
+		err = session.Announce(l)(ctx)(wp)(charcb.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl, mountInfo))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

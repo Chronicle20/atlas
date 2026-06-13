@@ -164,7 +164,7 @@ across versions; only the opcode differs.
 | GMS v87 | 0x50 | v87 IDB | template (`MountFoodHandle`) |
 | GMS v95 | 0x53 | v95 IDB | template |
 | JMS v185 | 0x45 | jms IDB | template |
-| GMS v84 | ? | IDB unresponsive | **NOT added — verify before enabling** |
+| GMS v84 | 0x4D | v84 IDB (sub_A53E46, stripped — located via /10000==190 && ==226 gate) | template (== v83) |
 | GMS v12 / v92 | ? | no IDB loaded | **NOT added — load IDB + verify** |
 
 Existing non-v83 tenants need the same live PATCH the v83 tenant got (seed templates

@@ -39,6 +39,11 @@ func withRecordingSeams(t *testing.T) (restore func(), broadcasts *[]tamingMobIn
 	var ns []tooTiredNotice
 	origBroadcast := tamingMobInfoBroadcaster
 	origNotice := tooTiredNoticer
+	origCap := clientHasStandaloneTamingMobInfo
+	// Force the standalone-opcode capability on so these tests exercise the
+	// broadcast wiring; suppression with the real (false) default is covered by
+	// TestStatusEvent_SuppressedWhenNoStandaloneOpcode.
+	clientHasStandaloneTamingMobInfo = func(_ tenant.Model) bool { return true }
 	tamingMobInfoBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ server.Model, characterId, level, exp, tiredness uint32, levelUp bool) {
 		bs = append(bs, tamingMobInfoBroadcast{characterId, level, exp, tiredness, levelUp})
 	}
@@ -48,6 +53,7 @@ func withRecordingSeams(t *testing.T) (restore func(), broadcasts *[]tamingMobIn
 	return func() {
 		tamingMobInfoBroadcaster = origBroadcast
 		tooTiredNoticer = origNotice
+		clientHasStandaloneTamingMobInfo = origCap
 	}, &bs, &ns
 }
 
@@ -184,6 +190,44 @@ func TestStatusEvent_TooTiredNoticesRider(t *testing.T) {
 	}
 	if n.message != tooTiredMessage {
 		t.Fatalf("notice message: want %q, got %q", tooTiredMessage, n.message)
+	}
+}
+
+// TestStatusEvent_SuppressedWhenNoStandaloneOpcode asserts that with the real
+// default capability (no supported client has a standalone SET_TAMING_MOB_INFO
+// opcode) the SET/TICK/FEED broadcast is suppressed, while the too-tired notice
+// still fires. Mount stats surface via character-info instead.
+func TestStatusEvent_SuppressedWhenNoStandaloneOpcode(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	var bs []tamingMobInfoBroadcast
+	var ns []tooTiredNotice
+	origBroadcast := tamingMobInfoBroadcaster
+	origNotice := tooTiredNoticer
+	// Note: clientHasStandaloneTamingMobInfo left at its real default (false).
+	tamingMobInfoBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ server.Model, characterId, level, exp, tiredness uint32, levelUp bool) {
+		bs = append(bs, tamingMobInfoBroadcast{characterId, level, exp, tiredness, levelUp})
+	}
+	tooTiredNoticer = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ server.Model, characterId uint32, message string) {
+		ns = append(ns, tooTiredNotice{characterId, message})
+	}
+	defer func() { tamingMobInfoBroadcaster = origBroadcast; tooTiredNoticer = origNotice }()
+
+	h := handleStatusEvent(sc, nil)
+	h(logrus.New(), ctx, mount2.StatusEvent[mount2.StatusEventBody]{
+		WorldId:     sc.WorldId(),
+		CharacterId: 1007,
+		Type:        mount2.StatusEventTypeTick,
+		Body:        mount2.StatusEventBody{Level: 5, Tiredness: 99, TooTired: true},
+	})
+
+	if len(bs) != 0 {
+		t.Fatalf("suppressed: want 0 broadcasts, got %d", len(bs))
+	}
+	if len(ns) != 1 {
+		t.Fatalf("suppressed: too-tired notice should still fire, got %d", len(ns))
 	}
 }
 

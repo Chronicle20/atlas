@@ -654,6 +654,19 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Damage", pkg: "monster", dir: csvpkg.DirClientbound}}
 	case "CMob::OnHPIndicator":
 		return []candidate{{name: "Health", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnAffected":
+		// task-092 Cluster-A: MOB_AFFECTED — atlas MobAffected (writer =
+		// "MobAffected"). Decode4 skillId + Decode2 delay.
+		return []candidate{{name: "MobAffected", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnSpecialEffectBySkill":
+		// task-092 Cluster-A: MONSTER_SPECIAL_EFFECT_BY_SKILL — atlas
+		// MonsterSpecialEffectBySkill (writer = "MonsterSpecialEffectBySkill").
+		// Decode4 skillId (v83/v84/v87/jms); +Decode4 characterId +Decode2 delay (v95).
+		return []candidate{{name: "MonsterSpecialEffectBySkill", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnSuspendReset":
+		// task-092 Cluster-A: RESET_MONSTER_ANIMATION — atlas
+		// ResetMonsterAnimation (writer = "ResetMonsterAnimation"). Single Decode1 bool.
+		return []candidate{{name: "ResetMonsterAnimation", pkg: "monster", dir: csvpkg.DirClientbound}}
 	case "CMobPool::OnMobCrcKeyChanged":
 		// One IDA function backs BOTH directions: it reads the clientbound
 		// MOB_CRC_KEY_CHANGED (Decode4 crcKey) and emits the serverbound

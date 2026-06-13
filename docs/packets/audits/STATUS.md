@@ -6,7 +6,7 @@
 Tool: `070b45ac11468c53f464a01e3e987f9d1e00c237`
 
 - export gms_v83: `23ee5897a83d273ce6d2697322d0da547ad8a3d6debaa4d35350b3a1c9c1dcde`
-- export gms_v84: `a692874571998f257643e94824694ce09a1c8d25951a4fbd220fc49002670caa`
+- export gms_v84: `e94f48f613f3b25ba827394627184c550cd3c5c51fc87aaf5a69c8eaab38aa3a`
 - export gms_v87: `b3bcb92ec8620771bf2d4ca7db2d1ae67cb2d118b8724d84b21ab57996668212`
 - export gms_v95: `1be366684667962546435b18359a6ba45de28a1e77a24920e113ddf65910f76f`
 - export jms_v185: `1046687891314275a8cf2975fbc3e97eb3d3619625c524951b9880b1a1ca018c`
@@ -326,13 +326,13 @@ Tool: `070b45ac11468c53f464a01e3e987f9d1e00c237`
 | CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x123 | ✅ | 0x104 | ✅ |
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |
-| RESET_MONSTER_ANIMATION | CMob::OnSuspendReset |  | 0x0F4 | ❌ | 0x0FA | ❌ | 0x104 | ❌ | 0x124 | ❌ | 0x105 | ❌ |
+| RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x124 | ✅ | 0x105 | ✅ |
 | IDA_0X0F5 | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F5 | ❌ |
-| MOB_AFFECTED | CMob::OnAffected |  | 0x0F5 | ❌ | 0x0F5 | ❌ | 0x105 | ❌ | 0x125 | ❌ | 0x106 | ❌ |
+| MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
 | DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0F6 | ✅ | 0x0F6 | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
 | IDA_0X0F6 | CUserLocal::OnChatMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F6 | ❌ |
 | IDA_0X0F7 | CUserLocal::OnBuffzoneEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ |
-| MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill |  | 0x0F7 | ❌ | 0x0F7 | ❌ | 0x107 | ❌ | 0x127 | ❌ | 0x108 | ❌ |
+| MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
 | IDA_0X0F8 | CUserLocal::OnDamageMeter; CUserLocal::OnGoToCommoditySN |  |  | ⬜ |  | ⬜ | 0x0F8 | ❌ |  | ⬜ | 0x0F8 | ❌ |
 | IDA_0X0F9 | CUserLocal::OnDamageMeter; CUserLocal::OnTimeBombAttack |  |  | ⬜ |  | ⬜ | 0x0F9 | ❌ |  | ⬜ | 0x0F9 | ❌ |
 | MOB_CRC_KEY_CHANGED | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0F9 | ✅ | 0x0FF | ✅ | 0x109 | ✅ | 0x129 | ✅ | 0x10A | ✅ |
@@ -910,11 +910,11 @@ Tool: `070b45ac11468c53f464a01e3e987f9d1e00c237`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 232 | 0 | 447 | 201 | 0 | 34.2% |
-| v84 | 187 | 0 | 490 | 203 | 0 | 27.6% |
-| v87 | 248 | 0 | 468 | 164 | 0 | 34.6% |
-| v95 | 275 | 0 | 523 | 82 | 0 | 34.5% |
-| JMS185 | 229 | 0 | 481 | 170 | 0 | 32.3% |
+| v83 | 235 | 0 | 444 | 201 | 0 | 34.6% |
+| v84 | 190 | 0 | 487 | 203 | 0 | 28.1% |
+| v87 | 251 | 0 | 465 | 164 | 0 | 35.1% |
+| v95 | 278 | 0 | 520 | 82 | 0 | 34.8% |
+| JMS185 | 232 | 0 | 478 | 170 | 0 | 32.7% |
 
 ## Conflicts
 

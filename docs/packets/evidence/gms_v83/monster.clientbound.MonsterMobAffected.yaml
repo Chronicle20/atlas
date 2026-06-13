@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobAffected
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnAffected
+    address: "0x66c675"
+    decompile_sha256: b65efd9f396b262941fd75aa8606cc88eaa84fc77bb58487f46ff14a844d93ac
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_affected_test.go#TestMobAffected

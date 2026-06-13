@@ -1322,8 +1322,20 @@
         "writer": "MonsterStatReset"
       },
       {
+        "opCode": "0x104",
+        "writer": "ResetMonsterAnimation"
+      },
+      {
+        "opCode": "0x105",
+        "writer": "MobAffected"
+      },
+      {
         "opCode": "0x106",
         "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x107",
+        "writer": "MonsterSpecialEffectBySkill"
       },
       {
         "opCode": "0x109",

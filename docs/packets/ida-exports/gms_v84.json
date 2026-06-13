@@ -21418,6 +21418,16 @@
       "address": "0x411344",
       "direction": "",
       "calls": null
+    },
+    "CMob::OnSuspendReset": {
+      "address": "0x682802",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

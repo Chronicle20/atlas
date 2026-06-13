@@ -1400,10 +1400,10 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CMobPool::OnMobPacket (0x68fef7) case 250 -> sub_682802 (animation/movie playback, v83-order slot after OnStatReset 249). Earlier 244 collided with the true SPAWN_MONSTER_CONTROL slot.'
 - op: MOB_AFFECTED
   direction: clientbound
-  opcode: 245
+  opcode: 251
   fname: CMob::OnAffected
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-092 Cluster-A): CMobPool::OnMobPacket (0x68fef7) case 251 -> sub_682977 = OnAffected @0x682977. The csv-import seed (245, copied from the v83 column) was stale — the v84 mob-cluster opcode table is shifted vs v83 (see header VERDICT + bug_v84_opcode_table_shifted_vs_v83). Layout Decode4+Decode2, identical to v83.'
 - op: DAMAGE_MONSTER
   direction: clientbound
   opcode: 246
@@ -1412,10 +1412,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MONSTER_SPECIAL_EFFECT_BY_SKILL
   direction: clientbound
-  opcode: 247
+  opcode: 253
   fname: CMob::OnSpecialEffectBySkill
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-092 Cluster-A): CMobPool::OnMobPacket (0x68fef7) case 253 -> sub_683BE9 = OnSpecialEffectBySkill @0x683be9. The csv-import seed (247, copied from the v83 column) was stale — the v84 mob-cluster opcode table is shifted vs v83 (see header VERDICT + bug_v84_opcode_table_shifted_vs_v83). Layout single Decode4 (skillId), the v95 user-id/delay additions are GMS-95+ only.'
 - op: MOB_CRC_KEY_CHANGED
   direction: clientbound
   opcode: 255

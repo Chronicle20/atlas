@@ -2,7 +2,7 @@
   "toolSha": "070b45ac11468c53f464a01e3e987f9d1e00c237",
   "exportHashes": {
     "gms_v83": "23ee5897a83d273ce6d2697322d0da547ad8a3d6debaa4d35350b3a1c9c1dcde",
-    "gms_v84": "a692874571998f257643e94824694ce09a1c8d25951a4fbd220fc49002670caa",
+    "gms_v84": "e94f48f613f3b25ba827394627184c550cd3c5c51fc87aaf5a69c8eaab38aa3a",
     "gms_v87": "b3bcb92ec8620771bf2d4ca7db2d1ae67cb2d118b8724d84b21ab57996668212",
     "gms_v95": "1be366684667962546435b18359a6ba45de28a1e77a24920e113ddf65910f76f",
     "jms_v185": "1046687891314275a8cf2975fbc3e97eb3d3619625c524951b9880b1a1ca018c"
@@ -20743,35 +20743,31 @@
     {
       "kind": "op",
       "op": "RESET_MONSTER_ANIMATION",
+      "packet": "monster/clientbound/MonsterResetMonsterAnimation",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMob::OnSuspendReset"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 244
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 250
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 260
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 292
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 261
         }
       }
@@ -20811,35 +20807,31 @@
     {
       "kind": "op",
       "op": "MOB_AFFECTED",
+      "packet": "monster/clientbound/MonsterMobAffected",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMob::OnAffected"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 245
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 245
+          "state": "verified",
+          "opcode": 251
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 261
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 293
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 262
         }
       }
@@ -21012,35 +21004,31 @@
     {
       "kind": "op",
       "op": "MONSTER_SPECIAL_EFFECT_BY_SKILL",
+      "packet": "monster/clientbound/MonsterMonsterSpecialEffectBySkill",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMob::OnSpecialEffectBySkill"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 247
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 247
+          "state": "verified",
+          "opcode": 253
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 263
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 295
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 264
         }
       }

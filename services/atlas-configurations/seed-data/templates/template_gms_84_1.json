@@ -2176,8 +2176,20 @@
         "writer": "MonsterStatReset"
       },
       {
+        "opCode": "0xFA",
+        "writer": "ResetMonsterAnimation"
+      },
+      {
+        "opCode": "0xFB",
+        "writer": "MobAffected"
+      },
+      {
         "opCode": "0xFC",
         "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0xFD",
+        "writer": "MonsterSpecialEffectBySkill"
       },
       {
         "opCode": "0xFF",

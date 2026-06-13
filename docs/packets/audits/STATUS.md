@@ -506,7 +506,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | 🟡 |  | ⬜ |
 | DELETE_CHAR | CLogin::SendDeleteCharPacket | character/serverbound/DeleteCharacter (T1) | 0x017 | 🟡 | 0x017 | ❌ | 0x017 | 🟡 | 0x018 | 🟡 | 0x00D | ❌ |
 | PONG | CClientSocket::OnAliveReq | socket/clientbound/Ping | 0x018 | 🟡 | 0x018 | ❌ | 0x018 | 🟡 | 0x019 | 🟡 | 0x00E | 🟡 |
-| CLIENT_START_ERROR | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x019 | 🟡 | 0x019 | ❌ | 0x019 | 🟡 | 0x01A | 🟡 | 0x015 | 🟥 |
+| CLIENT_START_ERROR | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x019 | 🟡 | 0x019 | ❌ | 0x019 | 🟡 | 0x01A | 🟡 | 0x00F | 🟡 |
 | SECURE_PASSWORD |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
 | CLIENT_ERROR | CSecurityClient::OnCheckClientIntegrityRequest |  | 0x01A | ❌ | 0x01A | ❌ | 0x01A | ❌ | 0x01B | ❌ | 0x010 | ❌ |
 | JMS_CLOGIN_CLOGIN |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ❌ |
@@ -519,7 +519,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | UNNAMED_R38 |  |  | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | UNNAMED_R39 |  |  | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
 | CLIENT_START | CLogin::Init |  | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x018 | ❌ |
-| NEXON_PASSPORT | CLogin::SendCheckPasswordPacket; CLogin::SendLoginPacket; CLogin::SendViewAllCharPacket | login/serverbound/Request | 0x024 | 🟡 | 0x024 | ❌ | 0x024 | 🟡 | 0x023 | 🟡 |  | ⬜ |
+| NEXON_PASSPORT | CLogin::SendCheckPasswordPacket; CLogin::SendLoginPacket; CLogin::SendViewAllCharPacket | login/serverbound/Request | 0x024 | 🟡 | 0x024 | ❌ | 0x001 | 🟡 | 0x001 | 🟡 |  | ⬜ |
 | PACKET_ERROR | CWvsApp::SendBackupPacket; CWvsApp::SendClearStackLog |  | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ |  | ⬜ |
 | CHANGE_MAP | CCashShop::SendTransferFieldPacket; CField::SendTransferFieldRequest; CITC::SendTransferFieldPacket |  | 0x026 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x01D | ❌ |
 | UNNAMED_R45 |  |  |  | ⬜ |  | ⬜ | 0x026 | ❌ | 0x025 | ❌ | 0x01B | ❌ |
@@ -530,14 +530,14 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | UNNAMED_R48 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x028 | ❌ |  | ⬜ |
 | MOVE_PLAYER | CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive |  | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x02A | 🟡 | 0x02A | ❌ | 0x02C | 🟡 | 0x02D | 🟡 | 0x021 | ❌ |
-| USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest | character/serverbound/ChairPortable (T1) | 0x02B | 🟡 | 0x02B | ❌ | 0x02D | 🟥 | 0x02E | 🟡 | 0x022 | ❌ |
+| USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest | character/serverbound/ChairPortable (T1) | 0x02B | 🟡 | 0x02B | ❌ | 0x02D | 🟡 | 0x02E | 🟡 | 0x022 | ❌ |
 | CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack |  | 0x02C | ❌ | 0x02C | ❌ | 0x02E | ❌ | 0x02F | ❌ | 0x023 | ❌ |
 | RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack |  | 0x02D | ❌ | 0x02D | ❌ | 0x02F | ❌ | 0x030 | ❌ | 0x024 | ❌ |
 | MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack |  | 0x02E | ❌ | 0x02E | ❌ | 0x030 | ❌ | 0x031 | ❌ | 0x025 | ❌ |
 | TOUCH_MONSTER_ATTACK | CUserLocal::TryDoingBodyAttack |  | 0x02F | ❌ | 0x02F | ❌ | 0x031 | ❌ | 0x032 | ❌ | 0x026 | ❌ |
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash | chat/serverbound/ChatGeneral | 0x031 | 🟡 | 0x031 | ❌ | 0x034 | 🟡 | 0x036 | 🟡 | 0x029 | 🟡 |
-| CLOSE_CHALKBOARD | CUserLocal::HandleLButtonClk | character/serverbound/ChalkboardClose (T1) | 0x032 | 🟡 | 0x032 | ❌ | 0x035 | 🟥 | 0x037 | 🟡 | 0x02A | ❌ |
+| CLOSE_CHALKBOARD | CUserLocal::HandleLButtonClk | character/serverbound/ChalkboardClose (T1) | 0x032 | 🟡 | 0x032 | ❌ | 0x035 | 🟡 | 0x037 | 🟡 | 0x02A | ❌ |
 | FACE_EXPRESSION | CUserLocal::Update; CWvsContext::SendEmotionChange |  | 0x033 | ❌ | 0x033 | ❌ | 0x036 | ❌ | 0x038 | ❌ | 0x02B | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x039 | ❌ | 0x02C | ❌ |
@@ -576,8 +576,8 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest |  | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest | inventory/serverbound/InventoryScrollUse (T1) | 0x056 | ❌ | 0x056 | ❌ | 0x059 | ❌ | 0x05D | 🟡 | 0x04E | ❌ |
-| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x057 | ❌ | 0x057 | ❌ | 0x05A | 🟥 | 0x062 | 🟡 | 0x052 | 🟡 |
-| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x058 | ❌ | 0x058 | ❌ | 0x05B | 🟡 | 0x063 | 🟥 | 0x053 | 🟥 |
+| DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x057 | ❌ | 0x057 | ❌ | 0x05B | 🟡 | 0x062 | 🟡 | 0x052 | 🟡 |
+| AUTO_DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest | character/serverbound/AutoDistributeAp (T1) | 0x058 | ❌ | 0x058 | ❌ | 0x05B | 🟡 | 0x062 | 🟡 | 0x052 | 🟡 |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x059 | 🟡 | 0x059 | ❌ | 0x05C | 🟡 | 0x064 | 🟡 | 0x054 | ❌ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest | character/serverbound/DistributeSp (T1) | 0x05A | 🟡 | 0x05A | ❌ | 0x05D | 🟡 | 0x066 | 🟡 | 0x055 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ |  | ⬜ |
@@ -912,18 +912,12 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 |---------|----|----|----|----|----|-----------|
 | v83 | 15 | 134 | 530 | 201 | 0 | 2.2% |
 | v84 | 0 | 6 | 671 | 203 | 0 | 0.0% |
-| v87 | 3 | 147 | 553 | 164 | 13 | 0.4% |
-| v95 | 10 | 225 | 549 | 82 | 14 | 1.3% |
-| JMS185 | 12 | 112 | 574 | 170 | 12 | 1.7% |
+| v87 | 3 | 150 | 553 | 164 | 10 | 0.4% |
+| v95 | 10 | 226 | 549 | 82 | 13 | 1.3% |
+| JMS185 | 12 | 114 | 574 | 170 | 10 | 1.7% |
 
 ## Conflicts
 
-- 🟥 **CLIENT_START_ERROR** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **USE_CHAIR** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **CLOSE_CHALKBOARD** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **DISTRIBUTE_AP** × v87 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **AUTO_DISTRIBUTE_AP** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
-- 🟥 **AUTO_DISTRIBUTE_AP** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GIVE_FAME** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **GUILD_OPERATION** × v95 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)
 - 🟥 **BLOW_WEATHER** × JMS185 — Atlas implements this op (audit report present) but this version's template does not route its opcode, though another version's does (template-wiring gap)

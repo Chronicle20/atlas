@@ -55,6 +55,10 @@
         "handler": "PongHandle"
       },
       {
+        "opCode": "0x0F",
+        "handler": "StartErrorHandle"
+      },
+      {
         "opCode": "0x13",
         "validator": "LoggedInValidator",
         "handler": "RegisterPicHandle"

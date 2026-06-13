@@ -2017,9 +2017,10 @@
   provenance: csv-import
 - op: CLIENT_START_ERROR
   direction: serverbound
-  opcode: 21
+  opcode: 15
   fname: CClientSocket::OnConnect
-  provenance: csv-import
+  provenance: manual
+  note: 'serverbound opcode IDB-verified from COutPacket send-site (task-085)'
 - op: UNNAMED_R38
   direction: serverbound
   opcode: 22
@@ -2391,9 +2392,10 @@
   provenance: csv-import
 - op: AUTO_DISTRIBUTE_AP
   direction: serverbound
-  opcode: 83
+  opcode: 82
   fname: CWvsContext::SendAbilityUpRequest
-  provenance: csv-import
+  provenance: manual
+  note: 'serverbound opcode IDB-verified from COutPacket send-site (task-085)'
 - op: HEAL_OVER_TIME
   direction: serverbound
   opcode: 84

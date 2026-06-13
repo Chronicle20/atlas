@@ -2222,12 +2222,13 @@
   provenance: csv-import
 - op: NEXON_PASSPORT
   direction: serverbound
-  opcode: 35
+  opcode: 1
   fname: CLogin::SendCheckPasswordPacket
   fname_alts:
     - CLogin::SendLoginPacket
     - CLogin::SendViewAllCharPacket
-  provenance: csv-import
+  provenance: manual
+  note: 'serverbound opcode IDB-verified from COutPacket send-site (task-085)'
 - op: PACKET_ERROR
   direction: serverbound
   opcode: 36
@@ -2611,9 +2612,10 @@
   provenance: csv-import
 - op: AUTO_DISTRIBUTE_AP
   direction: serverbound
-  opcode: 99
+  opcode: 98
   fname: CWvsContext::SendAbilityUpRequest
-  provenance: csv-import
+  provenance: manual
+  note: 'serverbound opcode IDB-verified from COutPacket send-site (task-085)'
 - op: HEAL_OVER_TIME
   direction: serverbound
   opcode: 100

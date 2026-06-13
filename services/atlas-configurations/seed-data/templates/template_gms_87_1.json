@@ -258,9 +258,17 @@
         "handler": "CharacterChairInteractionHandle"
       },
       {
+        "opCode": "0x2D",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
         "opCode": "0x34",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle"
+      },
+      {
+        "opCode": "0x35",
+        "handler": "ChalkboardCloseHandle"
       },
       {
         "opCode": "0x3F",

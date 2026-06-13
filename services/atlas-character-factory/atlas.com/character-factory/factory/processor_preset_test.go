@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -254,5 +255,46 @@ func TestBuildPresetCharacterCreationSaga_StepShape(t *testing.T) {
 		if sg.Steps[i].StepId != stepId {
 			t.Errorf("step[%d]: expected StepId %q, got %q", i, stepId, sg.Steps[i].StepId)
 		}
+	}
+}
+
+// TestBuildPresetCharacterCreationSaga_TimeoutScalesWithStepCount guards against
+// the preset-creation rollback bug: a preset with many skills expands to one
+// sequential saga step per skill (plus per-item/per-equip steps), each a Kafka
+// command round-trip processed serially by the orchestrator. The preset path is
+// the admin web UI — unlike the login path it is NOT bound by the client socket
+// budget — so a flat 10s timeout caused the orchestrator to time out mid-creation
+// and compensate (delete) a legitimate large preset. The timeout must scale with
+// the step count.
+func TestBuildPresetCharacterCreationSaga_TimeoutScalesWithStepCount(t *testing.T) {
+	const skillCount = 40
+	skills := make([]preset.SkillEntry, skillCount)
+	skillsById := map[uint32]data.SkillInfo{}
+	for i := range skills {
+		id := uint32(1000000 + i)
+		skills[i] = preset.SkillEntry{SkillId: id, Level: 1}
+		skillsById[id] = data.SkillInfo{Id: id, MaxLevel: 1}
+	}
+	pr := preset.RestModel{
+		Attributes: preset.Attributes{
+			Stats:  preset.StatBlock{Hp: 50, Mp: 5},
+			MapId:  100000000,
+			Skills: skills,
+		},
+	}
+
+	sg := buildPresetCharacterCreationSaga(
+		uuid.New(),
+		PresetCreateRestModel{AccountId: 1, WorldId: 0, Name: "AdminHero"},
+		pr,
+		skillsById,
+	)
+
+	// 2 base steps (create_character + await_inventory_created) + 40 skills = 42
+	// sequential steps. Each is a Kafka round-trip; under a stressed broker this
+	// approaches ~1s/step, so the saga needs well more than the old flat 10s.
+	got := time.Duration(sg.Timeout) * time.Millisecond
+	if got <= 10*time.Second {
+		t.Fatalf("expected preset saga timeout to scale above the flat 10s for %d steps, got %s", len(sg.Steps), got)
 	}
 }

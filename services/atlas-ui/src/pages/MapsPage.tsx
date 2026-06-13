@@ -10,6 +10,7 @@ import { columns, hiddenColumns } from "./maps-columns";
 import { Map, Loader2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "@/lib/utils/debounce";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
@@ -47,6 +48,8 @@ function MapsPageContent() {
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
   });
+
+  const { isRefreshing, onRefresh } = useGridRefresh([mapsQuery]);
 
   const maps = mapsQuery.data ?? [];
   const fetching = mapsQuery.isFetching;
@@ -96,7 +99,8 @@ function MapsPageContent() {
             columns={columns}
             data={maps}
             error={mapsQuery.error?.message ?? null}
-            onRefresh={() => mapsQuery.refetch()}
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
             initialVisibilityState={hiddenColumns}
             emptyState={{
               title: "No maps found",

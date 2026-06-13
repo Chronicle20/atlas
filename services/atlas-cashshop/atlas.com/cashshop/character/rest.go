@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -35,7 +34,6 @@ type RestModel struct {
 	Face               uint32   `json:"face"`
 	Ap                 uint16   `json:"ap"`
 	Sp                 string   `json:"sp"`
-	MapId              _map.Id  `json:"mapId"`
 	SpawnPoint         uint32   `json:"spawnPoint"`
 	Gm                 int      `json:"gm"`
 	X                  int16    `json:"x"`
@@ -113,7 +111,6 @@ func Extract(m RestModel) (Model, error) {
 		face:               m.Face,
 		ap:                 m.Ap,
 		sp:                 m.Sp,
-		mapId:              m.MapId,
 		gm:                 m.Gm,
 		x:                  m.X,
 		y:                  m.Y,

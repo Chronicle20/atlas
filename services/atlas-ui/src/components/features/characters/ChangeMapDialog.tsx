@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { charactersService } from "@/services/api/characters.service";
 import { type Character } from "@/types/models/character";
 import { useTenant } from "@/context/tenant-context";
+import { useCharacterLocation, characterLocationKeys } from "@/lib/hooks/api/useCharacterLocation";
+import { locationsService } from "@/services/api/locations.service";
 import { toast } from "sonner";
 
 interface ChangeMapDialogProps {
@@ -16,10 +18,23 @@ interface ChangeMapDialogProps {
 }
 
 export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: ChangeMapDialogProps) {
-  const [mapId, setMapId] = useState<string>(character.attributes.mapId.toString());
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  const { data: location } = useCharacterLocation(activeTenant, character.id);
+  const currentMapId = location?.attributes.mapId;
+
+  const [mapId, setMapId] = useState<string>(currentMapId != null ? String(currentMapId) : "");
+  const [syncedMapId, setSyncedMapId] = useState<number | undefined>(currentMapId);
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string>("");
-  const { activeTenant } = useTenant();
+
+  // Adjust the field when the location query resolves to a new map id (React's
+  // "adjust state during render" pattern — avoids a set-state-in-effect and won't
+  // clobber in-progress edits on a same-value refetch).
+  if (currentMapId != null && currentMapId !== syncedMapId) {
+    setSyncedMapId(currentMapId);
+    setMapId(String(currentMapId));
+  }
 
   const validateMapId = (value: string): string => {
     // Clear any existing validation error
@@ -48,7 +63,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     }
     
     // Check if same as current map
-    if (numValue === character.attributes.mapId) {
+    if (currentMapId != null && numValue === currentMapId) {
       return "Character is already on this map";
     }
     
@@ -87,13 +102,18 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     setIsLoading(true);
     
     try {
-      await charactersService.update( character.id, { mapId: mapIdNumber });
+      await locationsService.changeMap(character.id, { mapId: mapIdNumber });
       toast.success(`Successfully changed ${character.attributes.name}'s map to ${mapIdNumber}`);
-      
+
+      // Refresh the character's location so the dialog/table reflect the new map.
+      queryClient.invalidateQueries({
+        queryKey: characterLocationKeys.detail(activeTenant.id, character.id),
+      });
+
       // Reset form state on success
-      setMapId(character.attributes.mapId.toString());
+      setMapId(String(mapIdNumber));
       setValidationError("");
-      
+
       onOpenChange(false);
       onSuccess?.();
     } catch (error: unknown) {
@@ -138,7 +158,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
       onOpenChange(newOpen);
       if (!newOpen) {
         // Reset form when dialog closes
-        setMapId(character.attributes.mapId.toString());
+        setMapId(currentMapId != null ? String(currentMapId) : "");
         setValidationError("");
       }
     }
@@ -153,7 +173,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
             <DialogDescription>
               Change the map location for character <strong>{character.attributes.name}</strong>.
               <br />
-              Current map: <strong>{character.attributes.mapId}</strong>
+              Current map: <strong>{currentMapId != null ? currentMapId : "—"}</strong>
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

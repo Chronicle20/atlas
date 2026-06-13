@@ -32,6 +32,7 @@ import (
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
+	mountConsumer "atlas-channel/kafka/consumer/mount"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
@@ -104,6 +105,7 @@ import (
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
+	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	petcb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	petsb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/serverbound"
@@ -206,6 +208,7 @@ func main() {
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	// Boot the configuration projection: subscribe to the two config-status
 	// topics, gate on caught-up so we don't drive the listener registry
@@ -536,6 +539,9 @@ func buildListener(
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
@@ -695,6 +701,7 @@ func produceWriters() []string {
 		interaction2.MiniRoomWriter,
 		mbcb.MonsterBookSetCardWriter,
 		mbcb.MonsterBookSetCoverWriter,
+		charcb.SetTamingMobInfoWriter,
 	}
 }
 
@@ -752,6 +759,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[petsb.PetChatHandle] = handler.PetChatHandleFunc
 	handlerMap[petsb.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
 	handlerMap[petsb.PetFoodHandle] = handler.PetFoodHandleFunc
+	handlerMap[mountsb.MountFoodHandle] = handler.MountFoodHandleFunc
 	handlerMap[invsb.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
 	handlerMap[charsb.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
 	handlerMap[invsb.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc

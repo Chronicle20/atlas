@@ -1,0 +1,355 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "completionMessage",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkCompletion",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Hm... Your expression tells me that the exercise didn't jog any memories. But don't you worry. They'll come back, eventually. Here, drink this potion and power up!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#\r\n#v2000022# 10 #t2000022#\r\n#v2000023# 10 #t2000023#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 57 exp"
+            },
+            "id": "completionMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "21012",
+                      "type": "questStatus",
+                      "value": "3"
+                    }
+                  ],
+                  "nextState": "alreadyCompleted"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2000022",
+                      "type": "inventorySpace",
+                      "value": "10"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "2000023",
+                      "type": "inventorySpace",
+                      "value": "10"
+                    }
+                  ],
+                  "nextState": "giveRewards"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "inventoryFull"
+                }
+              ]
+            },
+            "id": "checkCompletion",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "message": "Unknown Error",
+                    "messageType": "POP_UP"
+                  },
+                  "type": "send_message"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "alreadyCompleted",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "message": "Your inventory is full",
+                    "messageType": "POP_UP"
+                  },
+                  "type": "send_message"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "inventoryFull",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "57"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "itemId": "2000022",
+                    "quantity": "10"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "2000023",
+                    "quantity": "10"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "finalMessage"
+                }
+              ]
+            },
+            "id": "giveRewards",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "#b(Even if you're really the hero everyone says you are... What good are you without any skills?)"
+            },
+            "id": "finalMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What? You don't want the potion?"
+            },
+            "id": "declineReward",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 21012,
+      "questName": "Back to Battle",
+      "startStateMachine": {
+        "startState": "welcome",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "trySword",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Welcome, hero! What's that? You want to know how I knew who you were? That's easy. I eavesdropped on some people talking loudly next to me. I'm sure the rumor has spread through the entire island already. Everyone knows that you've returned!"
+            },
+            "id": "welcome",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "welcome",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askFavor",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Hm, how about trying out that sword? Wouldn't that bring back some memories? How about #bfighthing some monsters#k?"
+            },
+            "id": "trySword",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Ah, I'm so sorry. I was so happy to have finally met you that I guess I got a little carried away. Whew, deep breaths. Deep breaths. Okay, I feel better now. But um...can I ask you a favor? Please?"
+            },
+            "id": "askFavor",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Hm... You don't think that would help? Think about it. It could help, you know..."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "huntMurus"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "skillsExplanation",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "It just so happens that there are a lot of #rTutorial Murus #knear here. How about defeating just #r3 #kof them? It could help you remember a thing or two."
+            },
+            "id": "huntMurus",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "huntMurus",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "showGuideHint",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Ah, you've also forgotten how to use your skills? #bPlace skills in the quick slots for easy access. #kYou can also place consumable items in the slots, so use the slots to your advantage."
+            },
+            "id": "skillsExplanation",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "hintId": "17"
+                  },
+                  "type": "show_guide_hint"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "showGuideHint",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21012",
+    "type": "quest-conversation"
+  }
+}

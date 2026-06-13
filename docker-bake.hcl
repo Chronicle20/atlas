@@ -68,6 +68,7 @@ go_services = [
   "atlas-monster-book",
   "atlas-monster-death",
   "atlas-monsters",
+  "atlas-mounts",
   "atlas-notes",
   "atlas-npc-conversations",
   "atlas-npc-shops",

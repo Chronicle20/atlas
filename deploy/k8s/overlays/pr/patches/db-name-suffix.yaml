@@ -226,6 +226,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-mounts
+spec:
+  template:
+    spec:
+      containers:
+        - name: mounts
+          env:
+            - name: DB_NAME
+              value: "atlas-mounts-PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-notes
 spec:
   template:

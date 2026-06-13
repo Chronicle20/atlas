@@ -6,6 +6,11 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
+      },
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -177,6 +182,10 @@
       }
     ],
     "writers": [
+      {
+        "opCode": "0x2F",
+        "writer": "SetTamingMobInfo"
+      },
       {
         "opCode": "0x00",
         "writer": "AuthSuccess"

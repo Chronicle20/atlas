@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) character.Model {
+func createTestCharacter(id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
@@ -21,7 +20,6 @@ func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) chara
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
-		SetMapId(mapId).
 		SetAccountId(100).
 		Build()
 }
@@ -145,7 +143,7 @@ func TestResetSkillCommandProducer_RegexPatterns(t *testing.T) {
 func TestMaxSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar := createTestCharacter(12345, "TestGM", true)
 	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {
@@ -190,7 +188,7 @@ func TestMaxSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 func TestResetSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar := createTestCharacter(12345, "TestGM", true)
 	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {

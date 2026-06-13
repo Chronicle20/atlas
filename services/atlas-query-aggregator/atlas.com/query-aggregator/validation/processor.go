@@ -118,7 +118,7 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 
 		// Evaluate each condition
 		for _, condition := range conditions {
-			conditionResult := condition.Evaluate(characterData)
+			conditionResult := condition.Evaluate(p.l, p.ctx, characterData)
 			result.AddConditionResult(conditionResult)
 		}
 

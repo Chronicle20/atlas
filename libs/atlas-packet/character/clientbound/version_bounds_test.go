@@ -51,7 +51,7 @@ func TestCharacterInfoVersionBoundary(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},
 	}
-	m := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{})
+	m := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{}, MountInfo{})
 	encode := func(major uint16) []byte {
 		ctx := pt.CreateContext("GMS", major, 1)
 		return pt.Encode(t, ctx, m.Encode, nil)

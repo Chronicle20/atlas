@@ -1,9 +1,10 @@
 import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns, hiddenColumns } from "@/pages/characters-columns";
-import { useCharacters, useInvalidateCharacters } from "@/lib/hooks/api/useCharacters";
-import { useAccounts, useInvalidateAccounts } from "@/lib/hooks/api/useAccounts";
+import { useCharacters } from "@/lib/hooks/api/useCharacters";
+import { useAccounts } from "@/lib/hooks/api/useAccounts";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { CharacterPageSkeleton } from "@/components/common/skeletons/CharacterPageSkeleton";
 
 export function CharactersPage() {
@@ -11,8 +12,11 @@ export function CharactersPage() {
   const charactersQuery = useCharacters(activeTenant!);
   const accountsQuery = useAccounts(activeTenant!);
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
-  const { invalidateAll: invalidateCharacters } = useInvalidateCharacters();
-  const { invalidateAll: invalidateAccounts } = useInvalidateAccounts();
+  const { isRefreshing, onRefresh } = useGridRefresh([
+    charactersQuery,
+    accountsQuery,
+    tenantConfigQuery,
+  ]);
 
   const characters = charactersQuery.data ?? [];
   const accounts = accountsQuery.data ?? [];
@@ -21,13 +25,8 @@ export function CharactersPage() {
   const loading = charactersQuery.isLoading || accountsQuery.isLoading || tenantConfigQuery.isLoading;
   const error = charactersQuery.error?.message ?? accountsQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
 
-  const refresh = () => {
-    invalidateCharacters();
-    invalidateAccounts();
-  };
-
   const accountMap = new Map(accounts.map(a => [a.id, a]));
-  const columns = getColumns({ tenant: activeTenant, tenantConfig, accountMap, onRefresh: refresh });
+  const columns = getColumns({ tenant: activeTenant, tenantConfig, accountMap, onRefresh });
 
   if (loading) {
     return <CharacterPageSkeleton />;
@@ -45,7 +44,8 @@ export function CharactersPage() {
           columns={columns}
           data={characters}
           error={error}
-          onRefresh={refresh}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No characters found",

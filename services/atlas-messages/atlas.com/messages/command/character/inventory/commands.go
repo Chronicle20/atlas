@@ -55,7 +55,7 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+				f := field.NewBuilder(ch.WorldId(), ch.Id(), f.MapId()).Build()
 				idProvider = mp.CharacterIdsInFieldProvider(f)
 			} else {
 				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))

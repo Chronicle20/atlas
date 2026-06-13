@@ -88,6 +88,11 @@ location ~ ^/api/characters/[^/]+/pets(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/characters/[^/]+/mount(/.*)?$ {
+  set $u "atlas-mounts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/characters/[^/]+/quests(/.*)?$ {
   set $u "atlas-quest.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

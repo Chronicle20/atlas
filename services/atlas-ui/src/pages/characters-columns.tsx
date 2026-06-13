@@ -6,7 +6,7 @@ import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {type Character} from "@/types/models/character";
 import {type Account} from "@/types/models/account";
-import {MapCell} from "@/components/map-cell";
+import {CharacterMapCell} from "@/components/features/characters/CharacterMapCell";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
@@ -148,16 +148,11 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
             }
         },
         {
-            accessorKey: "attributes.mapId",
+            id: "map",
             header: "Map",
-            cell: ({row}) => {
-                const mapId = String(row.getValue("attributes_mapId"))
-                return (
-                    <Link to={"/maps/" + mapId}>
-                        <MapCell mapId={mapId} tenant={tenant}/>
-                    </Link>
-                )
-            }
+            cell: ({row}) => (
+                <CharacterMapCell characterId={row.original.id} tenant={tenant}/>
+            )
         },
         {
             accessorKey: "attributes.gm",

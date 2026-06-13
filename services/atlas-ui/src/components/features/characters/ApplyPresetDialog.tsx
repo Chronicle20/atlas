@@ -86,7 +86,6 @@ function presetToCharacter(preset: PresetWithId): Character {
       face: preset.attributes.face,
       ap: 0,
       sp: "",
-      mapId: preset.attributes.mapId,
       spawnPoint: 0,
       gm: 0,
       x: 0,

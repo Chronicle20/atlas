@@ -223,9 +223,12 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeRecovery, int32(e.X()))
 	} else if skill.Is(skillId, skill.BeginnerEchoOfHeroId, skill.NoblesseEchoOfHeroId, skill.LegendEchoOfHeroId, skill.EvanEchoOfHeroId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeEchoOfHero, int32(e.X()))
-	} else if skill.Is(skillId, skill.BeginnerMonsterRidingId, skill.NoblesseMonsterRidingId, skill.LegendMonsterRidingId, skill.EvanMonsterRidingId, skill.CorsairBattleshipId) {
-		//TODO others SpaceShip, YetiMount1, YetiMount2, Broomstick, BalrogMount
-		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeMonsterRiding, int32(skillId))
+	} else if mountStatups := mountStatupsForSkill(skillId, levelFromNode(node)); len(mountStatups) > 0 {
+		// Mount skills. Tamed mounts (and Battleship) emit the skill id as a
+		// placeholder (the channel overrides it with the equipped taming-mob
+		// item id); skill-only mounts (Broomstick/Yeti/Balrog/SpaceShip) emit
+		// their fixed vehicle item id, SpaceShip per-level (1932000+level).
+		statups = append(statups, mountStatups...)
 	} else if skill.Is(skillId, skill.BeginnerInvincibleId, skill.NoblesseInvincibleId, skill.LegendInvincibleId, skill.EvanInvincibleId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeDivineBody, 1)
 	} else if skill.Is(skillId, skill.FighterPowerGuardId, skill.PagePowerGuardId) {
@@ -442,6 +445,44 @@ func produceBuffStatAmount(existing []statup.RestModel, buff character.Temporary
 		})
 	}
 	return existing
+}
+
+// levelFromNode parses the per-level effect node's name (e.g. "1", "2") to its
+// integer level. Each child of the WZ "level" imgdir is named by its level
+// number; SkillOnlyMountVehicleId needs this for the per-level SpaceShip id.
+// Returns 0 when the name is not a number (level-independent mounts ignore it).
+func levelFromNode(node xml.Node) int {
+	level, err := strconv.Atoi(node.Name)
+	if err != nil {
+		return 0
+	}
+	return level
+}
+
+// mountStatupsForSkill returns the MONSTER_RIDING statups produced for a mount
+// skill at the given level. Tamed mounts (and Battleship) emit the skill id as
+// a placeholder (the channel overrides it with the equipped taming-mob id);
+// skill-only mounts emit their fixed vehicle item id (SpaceShip per-level).
+// Non-mount skills produce no statups.
+func mountStatupsForSkill(skillId skill.Id, level int) []statup.RestModel {
+	statups := make([]statup.RestModel, 0)
+	if skill.Is(skillId, skill.BeginnerMonsterRidingId, skill.NoblesseMonsterRidingId, skill.LegendMonsterRidingId, skill.EvanMonsterRidingId, skill.CorsairBattleshipId) {
+		return produceBuffStatAmount(statups, character.TemporaryStatTypeMonsterRiding, int32(skillId))
+	}
+	if vid, ok := skill.SkillOnlyMountVehicleId(skillId, level); ok {
+		return produceBuffStatAmount(statups, character.TemporaryStatTypeMonsterRiding, vid)
+	}
+	return statups
+}
+
+// findStatup returns the first statup matching the given type.
+func findStatup(statups []statup.RestModel, statType string) (statup.RestModel, bool) {
+	for _, s := range statups {
+		if s.Type == statType {
+			return s, true
+		}
+	}
+	return statup.RestModel{}, false
 }
 
 // TODO find better name for this

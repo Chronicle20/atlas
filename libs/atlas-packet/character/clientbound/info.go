@@ -33,6 +33,19 @@ type MonsterBookInfo struct {
 	Cover        uint32
 }
 
+// MountInfo is the tamed-mob (mount) block shown in the CharacterInfo window:
+// the active mount's level, exp, and tiredness/fatigue. The v83/v87/v95/JMS clients
+// all read it identically right after the pet block — a 1-byte present flag, then
+// (if set) three int32s (IDA: CWvsContext::OnCharacterInfo -> CUIUserInfo::
+// SetTamingMobInfo(level, exp, tiredness)). There is no standalone broadcast opcode
+// in this era; mount stats surface only here.
+type MountInfo struct {
+	Active    bool
+	Level     uint32
+	Exp       uint32
+	Tiredness uint32
+}
+
 type CharacterInfo struct {
 	characterId uint32
 	level       byte
@@ -43,14 +56,15 @@ type CharacterInfo struct {
 	wishList    []uint32
 	medalId     uint32
 	monsterBook MonsterBookInfo
+	mount       MountInfo
 }
 
 func NewCharacterInfo(characterId uint32, level byte, jobId uint16, fame int16, guildName string,
-	pets []InfoPet, wishList []uint32, medalId uint32, monsterBook MonsterBookInfo) CharacterInfo {
+	pets []InfoPet, wishList []uint32, medalId uint32, monsterBook MonsterBookInfo, mount MountInfo) CharacterInfo {
 	return CharacterInfo{
 		characterId: characterId, level: level, jobId: jobId, fame: fame,
 		guildName: guildName, pets: pets, wishList: wishList, medalId: medalId,
-		monsterBook: monsterBook,
+		monsterBook: monsterBook, mount: mount,
 	}
 }
 
@@ -94,7 +108,16 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		}
 		w.WriteBool(false) // more pets?
 
-		w.WriteByte(0) // mount
+		// Tamed-mob (mount) block: present flag + (level, exp, tiredness). Same layout
+		// across v83/v87/v95/JMS (IDA-verified). When no active mount, a single 0 byte.
+		if m.mount.Active {
+			w.WriteBool(true)
+			w.WriteInt(m.mount.Level)
+			w.WriteInt(m.mount.Exp)
+			w.WriteInt(m.mount.Tiredness)
+		} else {
+			w.WriteByte(0)
+		}
 
 		w.WriteByte(byte(len(m.wishList)))
 		for _, sn := range m.wishList {
@@ -131,6 +154,7 @@ func (m CharacterInfo) WishList() []uint32           { return m.wishList }
 func (m CharacterInfo) MedalId() uint32              { return m.medalId }
 func (m CharacterInfo) MonsterBook() MonsterBookInfo { return m.monsterBook }
 func (m CharacterInfo) MonsterBookCover() uint32     { return m.monsterBook.Cover }
+func (m CharacterInfo) Mount() MountInfo             { return m.mount }
 
 func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -162,7 +186,12 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 			slot++
 		}
 
-		_ = r.ReadByte() // mount
+		if r.ReadBool() { // tamed-mob (mount) present flag
+			m.mount.Active = true
+			m.mount.Level = r.ReadUint32()
+			m.mount.Exp = r.ReadUint32()
+			m.mount.Tiredness = r.ReadUint32()
+		}
 
 		wishCount := r.ReadByte()
 		m.wishList = make([]uint32, wishCount)

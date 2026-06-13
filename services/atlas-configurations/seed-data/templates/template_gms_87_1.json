@@ -1518,11 +1518,11 @@
         "writer": "SummonAttack"
       },
       {
-        "opCode": "0xC0",
+        "opCode": "0xC1",
         "writer": "SummonDamage"
       },
       {
-        "opCode": "0xC1",
+        "opCode": "0xC0",
         "writer": "SummonSkill"
       }
     ]

@@ -2487,11 +2487,11 @@
         "writer": "SummonAttack"
       },
       {
-        "opCode": "0xB7",
+        "opCode": "0xB8",
         "writer": "SummonDamage"
       },
       {
-        "opCode": "0xB8",
+        "opCode": "0xB7",
         "writer": "SummonSkill"
       }
     ]

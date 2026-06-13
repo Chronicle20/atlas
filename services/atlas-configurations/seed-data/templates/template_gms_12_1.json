@@ -622,11 +622,11 @@
         "writer": "SummonAttack"
       },
       {
-        "opCode": "0xB3",
+        "opCode": "0xB4",
         "writer": "SummonDamage"
       },
       {
-        "opCode": "0xB4",
+        "opCode": "0xB3",
         "writer": "SummonSkill"
       }
     ]

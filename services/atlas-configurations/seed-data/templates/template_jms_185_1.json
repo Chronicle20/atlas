@@ -1640,11 +1640,11 @@
         "writer": "SummonAttack"
       },
       {
-        "opCode": "0xB9",
+        "opCode": "0xBA",
         "writer": "SummonDamage"
       },
       {
-        "opCode": "0xBA",
+        "opCode": "0xB9",
         "writer": "SummonSkill"
       }
     ]

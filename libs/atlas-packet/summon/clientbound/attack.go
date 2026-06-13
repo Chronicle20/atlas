@@ -57,7 +57,7 @@ func (m SummonAttack) String() string {
 
 func (m SummonAttack) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
 		w.WriteInt(m.oid)
@@ -69,12 +69,21 @@ func (m SummonAttack) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 			w.WriteByte(6) // per Cosmic "who knows"
 			w.WriteInt(t.damage)
 		}
+		// v95+ DELTA (gated >= 95, GMS only): the v95 client summon-attack
+		// reader CSummoned::OnAttack@0x753340 decodes one trailing byte after
+		// the target loop (Decode1@0x7534e1, value discarded). v87's reader
+		// CSummonedPool::OnAttack@0x7f904c has NO trailing read, so this is a
+		// v95-specific addition — gated >=95 like the SummonSpawn avatar-look
+		// byte. See summon-packet-delta.md §3.4 / CLAUDE.md v84-off-by-one note.
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			w.WriteByte(0) // trailing flag byte (consumed/discarded by client)
+		}
 		return w.Bytes()
 	}
 }
 
 func (m *SummonAttack) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.oid = r.ReadUint32()
@@ -87,6 +96,10 @@ func (m *SummonAttack) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 			_ = r.ReadByte() // per Cosmic "who knows" = 6
 			damage := r.ReadUint32()
 			m.targets = append(m.targets, SummonAttackTarget{monsterOid: monsterOid, damage: damage})
+		}
+		// v95+ DELTA (mirror of Encode): consume the trailing flag byte.
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			_ = r.ReadByte() // trailing flag byte
 		}
 	}
 }

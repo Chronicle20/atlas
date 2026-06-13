@@ -44,22 +44,36 @@ func (m Damage) String() string {
 
 func (m Damage) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.oid)
-		w.Skip(1) // -1, unused
+		w.WriteByte(0) // attackIdx (-1/unused in Cosmic baseline; 0-fill, was Skip(1))
 		w.WriteInt(m.damage)
 		w.WriteInt(m.monsterIdFrom)
+		// v95+ DELTA (gated >= 95, GMS only): the v95 client send site
+		// CSummoned::SetDamaged@0x74b730 emits a trailing Encode1(nDir<0) after
+		// the mob-template id (Encode1@0x74bbed). v87's SetDamaged@0x7f879a is
+		// byte-identical (also has the trailing dir byte), but the Cosmic v83
+		// baseline reads only oid+skip1+damage+monsterIdFrom, so the trailing
+		// byte is gated >=95 to avoid touching the v83/v87 decode path. See
+		// summon-packet-delta.md §3.5.
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			w.WriteByte(0) // dir<0 flag (0-fill)
+		}
 		return w.Bytes()
 	}
 }
 
 func (m *Damage) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.oid = r.ReadUint32()
-		r.Skip(1) // -1, unused
+		_ = r.ReadByte() // attackIdx (-1/unused in Cosmic baseline; was Skip(1))
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()
+		// v95+ DELTA (mirror of Encode): consume the trailing dir<0 flag byte.
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			_ = r.ReadByte() // dir<0 flag
+		}
 	}
 }

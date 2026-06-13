@@ -100,6 +100,7 @@ func TestAffectedAreaCreatedFields(t *testing.T) {
 // Atlas encodes WriteInt(mistKey(mistId)) — a single LE uint32 — matching exactly.
 //
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v83 ida=0x43234d
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v84 ida=0x432fb4
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v87 ida=0x43388c
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v95 ida=0x4360a0
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=jms_v185 ida=0x436eda

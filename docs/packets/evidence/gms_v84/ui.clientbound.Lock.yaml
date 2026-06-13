@@ -1,0 +1,8 @@
+packet: ui/clientbound/Lock
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnSetDirectionMode
+    address: "0x99ed12"
+    decompile_sha256: de80f4e0bfc510b272d4f8ceabcf479ed780612df107e7756cd530d18b1b2fab

@@ -23,6 +23,7 @@ type (
 	AwardCurrencyPayload      = sharedsaga.AwardCurrencyPayload
 	DestroyAssetPayload       = sharedsaga.DestroyAssetPayload
 	ChangeJobPayload          = sharedsaga.ChangeJobPayload
+	CancelAllBuffsPayload     = sharedsaga.CancelAllBuffsPayload
 	CreateSkillPayload        = sharedsaga.CreateSkillPayload
 	UpdateSkillPayload        = sharedsaga.UpdateSkillPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
@@ -51,6 +52,7 @@ const (
 	WarpToPortal          = sharedsaga.WarpToPortal
 	DestroyAsset          = sharedsaga.DestroyAsset
 	ChangeJob             = sharedsaga.ChangeJob
+	CancelAllBuffs        = sharedsaga.CancelAllBuffs
 	CreateSkill           = sharedsaga.CreateSkill
 	UpdateSkill           = sharedsaga.UpdateSkill
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect

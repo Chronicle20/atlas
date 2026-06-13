@@ -3,10 +3,14 @@ package character
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
+	"atlas-messages/saga"
 	"regexp"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )
@@ -233,6 +237,57 @@ func TestChangeJobCommandProducer_RegexPatterns(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestBuildChangeJobSaga_AppendsCancelAllBuffs verifies the GM job-change saga
+// emits a cancel_all_buffs step alongside the change_job step, so a job change
+// clears all active buffs (and dismounts any MONSTER_RIDING mount, FR-4.2).
+func TestBuildChangeJobSaga_AppendsCancelAllBuffs(t *testing.T) {
+	characterId := uint32(12345)
+	worldId := world.Id(1)
+	channelId := channel.Id(2)
+	jobId := job.Id(200)
+
+	s, err := buildChangeJobSaga(characterId, worldId, channelId, jobId)
+	if err != nil {
+		t.Fatalf("buildChangeJobSaga returned error: %v", err)
+	}
+
+	if len(s.Steps) != 2 {
+		t.Fatalf("expected 2 steps (change_job + cancel_all_buffs), got %d", len(s.Steps))
+	}
+
+	if s.Steps[0].Action != saga.ChangeJob {
+		t.Errorf("step 0 action = %v, want ChangeJob", s.Steps[0].Action)
+	}
+	if s.Steps[1].Action != saga.CancelAllBuffs {
+		t.Errorf("step 1 action = %v, want CancelAllBuffs", s.Steps[1].Action)
+	}
+	if s.Steps[1].StepId != "cancel_all_buffs" {
+		t.Errorf("step 1 stepId = %q, want %q", s.Steps[1].StepId, "cancel_all_buffs")
+	}
+
+	cjp, ok := s.Steps[0].Payload.(saga.ChangeJobPayload)
+	if !ok {
+		t.Fatalf("change_job payload type = %T, want ChangeJobPayload", s.Steps[0].Payload)
+	}
+	if cjp.JobId != jobId {
+		t.Errorf("change_job JobId = %d, want %d", cjp.JobId, jobId)
+	}
+
+	cbp, ok := s.Steps[1].Payload.(saga.CancelAllBuffsPayload)
+	if !ok {
+		t.Fatalf("cancel_all_buffs payload type = %T, want CancelAllBuffsPayload", s.Steps[1].Payload)
+	}
+	if cbp.CharacterId != characterId {
+		t.Errorf("cancel_all_buffs CharacterId = %d, want %d", cbp.CharacterId, characterId)
+	}
+	if cbp.WorldId != worldId {
+		t.Errorf("cancel_all_buffs WorldId = %d, want %d", cbp.WorldId, worldId)
+	}
+	if cbp.ChannelId != channelId {
+		t.Errorf("cancel_all_buffs ChannelId = %d, want %d", cbp.ChannelId, channelId)
 	}
 }
 

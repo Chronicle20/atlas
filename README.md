@@ -224,6 +224,7 @@ graph LR
 | atlas-cashshop | Cash shop browsing and purchases |
 | atlas-gachapons | Gacha/random reward machines |
 | atlas-pets | Pet summoning and behavior |
+| atlas-mounts | Tamed-monster mount progression (level/exp/tiredness), tiredness ticker, and revitalizer feeding |
 
 ### World & Maps
 

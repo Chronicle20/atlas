@@ -3,7 +3,21 @@ package buff
 import (
 	"atlas-channel/character/buff/stat"
 	"time"
+
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
+
+// IsMount reports whether this buff is a tamed/skill mount (carries a
+// MONSTER_RIDING stat change). The mount is transient state: it is cancelled
+// (not re-rendered) on login and auto-cancelled when the mount grows too tired.
+func IsMount(m Model) bool {
+	for _, c := range m.changes {
+		if c.Type() == string(charconst.TemporaryStatTypeMonsterRiding) {
+			return true
+		}
+	}
+	return false
+}
 
 type Model struct {
 	sourceId  int32

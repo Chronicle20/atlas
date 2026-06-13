@@ -4,6 +4,7 @@ import (
 	"atlas-consumables/kafka/consumer/character"
 	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
+	"atlas-consumables/kafka/consumer/food"
 	pickupconsumer "atlas-consumables/kafka/consumer/pickup"
 	"atlas-consumables/logger"
 	mapCharacter "atlas-consumables/map/character"
@@ -40,12 +41,16 @@ func main() {
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	food.InitConsumers(l)(cmf)(consumerGroupId)
 	pickupconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := food.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register taming-mob food handlers.")
 	}
 	if err := pickupconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register pickup handlers.")

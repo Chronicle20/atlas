@@ -70,7 +70,7 @@ func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.
 			l.WithError(err).Warnf("decompress world icon %s", worldId)
 			continue
 		}
-		key := fmt.Sprintf("%s/world/%s/icon.png", prefix, worldId)
+		key := fmt.Sprintf("%s/world-icon/%s/icon.png", prefix, worldId)
 		if err := putPNG(ctx, mc, key, img); err != nil {
 			l.WithError(err).Warnf("upload world icon %s", worldId)
 		}

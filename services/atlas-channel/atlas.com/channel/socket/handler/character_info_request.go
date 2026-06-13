@@ -4,11 +4,13 @@ import (
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/guild"
+	"atlas-channel/mount"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
@@ -28,6 +30,10 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if p.PetInfo() {
 			decorators = append(decorators, cp.PetAssetEnrichmentDecorator)
 		}
+		// Load equipment so the writer can read the equipped medal and the tamed-mob
+		// (slot tamingMob) that gates the mount block. Without this the character's
+		// equipment is empty and neither medal nor mount info appears in the window.
+		decorators = append(decorators, cp.InventoryDecorator)
 		decorators = append(decorators, cp.MonsterBookDecorator)
 		c, err := cp.GetById(decorators...)(p.CharacterId())
 		if err != nil {
@@ -59,7 +65,31 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(charcb.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl))(s)
+		// Tamed-mob (mount) block: shown only for characters with a tamed-mob
+		// equipped (slot tamingMob), mirroring the v83/v87/v95 client's own gate.
+		// Gating here also avoids atlas-mounts' default-on-read creating a mount row
+		// for every character whose info is viewed. When no mount: inactive (single 0
+		// byte). A non-nil fetch error is a real transport/5xx failure (atlas-mounts
+		// default-creates, so 404 is unreachable) and is logged, not silently dropped.
+		mountInfo := charcb.MountInfo{}
+		if tms, sErr := slot.GetSlotByType("tamingMob"); sErr == nil {
+			// Equipment().Get returns ok for every defined slot (the map is
+			// pre-populated), so test the actual equipped item, not just ok.
+			if em, ok := c.Equipment().Get(tms.Type); ok && em.Equipable != nil {
+				if mm, mErr := mount.NewProcessor(l, ctx).GetByCharacterId(p.CharacterId()); mErr != nil {
+					l.WithError(mErr).Warnf("Unable to retrieve mount for character [%d]; omitting mount block from character info.", p.CharacterId())
+				} else {
+					mountInfo = charcb.MountInfo{
+						Active:    true,
+						Level:     uint32(mm.Level()),
+						Exp:       uint32(mm.Exp()),
+						Tiredness: uint32(mm.Tiredness()),
+					}
+				}
+			}
+		}
+
+		err = session.Announce(l)(ctx)(wp)(charcb.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl, mountInfo))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

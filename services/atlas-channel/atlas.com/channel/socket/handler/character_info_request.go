@@ -10,6 +10,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
@@ -60,15 +61,25 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 
-		// Tamed-mob (mount) block: surface the requested character's mount
-		// progression in the info window. No mount record -> inactive (single 0 byte).
+		// Tamed-mob (mount) block: shown only for characters with a tamed-mob
+		// equipped (slot tamingMob), mirroring the v83/v87/v95 client's own gate.
+		// Gating here also avoids atlas-mounts' default-on-read creating a mount row
+		// for every character whose info is viewed. When no mount: inactive (single 0
+		// byte). A non-nil fetch error is a real transport/5xx failure (atlas-mounts
+		// default-creates, so 404 is unreachable) and is logged, not silently dropped.
 		mountInfo := charcb.MountInfo{}
-		if mm, mErr := mount.NewProcessor(l, ctx).GetByCharacterId(p.CharacterId()); mErr == nil {
-			mountInfo = charcb.MountInfo{
-				Active:    true,
-				Level:     uint32(mm.Level()),
-				Exp:       uint32(mm.Exp()),
-				Tiredness: uint32(mm.Tiredness()),
+		if tms, sErr := slot.GetSlotByType("tamingMob"); sErr == nil {
+			if _, equipped := c.Equipment().Get(tms.Type); equipped {
+				if mm, mErr := mount.NewProcessor(l, ctx).GetByCharacterId(p.CharacterId()); mErr != nil {
+					l.WithError(mErr).Warnf("Unable to retrieve mount for character [%d]; omitting mount block from character info.", p.CharacterId())
+				} else {
+					mountInfo = charcb.MountInfo{
+						Active:    true,
+						Level:     uint32(mm.Level()),
+						Exp:       uint32(mm.Exp()),
+						Tiredness: uint32(mm.Tiredness()),
+					}
+				}
 			}
 		}
 

@@ -32,7 +32,7 @@ type exportOpts struct {
 
 // fnameToken matches an FName-looking Class::Method token (used to scrape
 // candidate roster entries out of _pending.md prose).
-var fnameToken = regexp.MustCompile(`[A-Z][A-Za-z0-9]+::[A-Za-z0-9_]+`)
+var fnameToken = regexp.MustCompile(`[A-Z][A-Za-z0-9_]+::[A-Za-z0-9_]+`)
 
 // exportRun is the injectable core: it builds the roster, harvests via the given
 // client, backfills direction, marshals deterministically, writes Output, and

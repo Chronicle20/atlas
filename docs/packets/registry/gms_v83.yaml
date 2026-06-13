@@ -1222,15 +1222,15 @@
 - op: MOB_SPEAKING
   direction: clientbound
   opcode: 254
-  fname: CMob::OnIncMobChargeCount
+  fname: CMob::OnMobSpeaking
   provenance: manual
-  note: 'IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFE -> CMob::OnIncMobChargeCount (0x6710FC). CSV had OnMobSpeaking here (off-by-one); realigned to IDB. See SHOW_MAGNET (0xFD) note re: op-name offset.'
+  note: 'task-092 Stage 1: fname assigned by op-name. IDA v83 CMob::OnMobSpeaking (0x6711EA), dispatched from CMobPool::OnMobPacket (0x67936D) case 0xFD. Atlas op enum sits +1 vs the client case label for the 0xFD-0xFF cluster (known off-by-one, see SHOW_MAGNET note); fname tracks the op name, not the raw case.'
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
   opcode: 255
-  fname: CMob::OnMobAttackedByMob
+  fname: CMob::OnIncMobChargeCount
   provenance: manual
-  note: 'IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFF -> CMob::OnMobAttackedByMob (0x670F41). CSV had OnIncMobChargeCount here (off-by-one); realigned to IDB. See SHOW_MAGNET (0xFD) note re: op-name offset.'
+  note: 'task-092 Stage 1: fname assigned by op-name. IDA v83 CMob::OnIncMobChargeCount (0x6710FC), dispatched from CMobPool::OnMobPacket (0x67936D) case 0xFE. See MOB_SPEAKING note re: cluster off-by-one.'
 - op: MOB_SKILL_DELAY
   direction: clientbound
   opcode: 256
@@ -2015,8 +2015,9 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 57
-  fname: ""
-  provenance: csv-import
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  note: 'task-092 Stage 1: send-site derived from v83 IDB. CUserLocal::SetMonsterBookCover @ 0x95FB3E.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 58

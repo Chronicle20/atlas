@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=pet/clientbound/PetExcludeResponse version=gms_v87 ida=0x74a17a
 // packet-audit:verify packet=pet/clientbound/PetExcludeResponse version=gms_v95 ida=0x6a1510
 // packet-audit:verify packet=pet/clientbound/PetExcludeResponse version=jms_v185 ida=0x76be76
+// packet-audit:verify packet=pet/clientbound/PetExcludeResponse version=gms_v84 ida=0x722c04
 func TestPetExcludeResponse(t *testing.T) {
 	input := NewPetExcludeResponse(1234, 0, 999888777, []uint32{2000000, 2000001, 2000002})
 	for _, v := range test.Variants {

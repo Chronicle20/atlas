@@ -24,6 +24,7 @@ func testStatOptions() map[string]interface{} {
 // packet-audit:verify packet=stat/clientbound/Changed version=gms_v87 ida=0xab6e77
 // packet-audit:verify packet=stat/clientbound/Changed version=gms_v95 ida=0x9fd5d0
 // packet-audit:verify packet=stat/clientbound/Changed version=jms_v185 ida=0xb06632
+// packet-audit:verify packet=stat/clientbound/Changed version=gms_v84 ida=0xa6ae08
 func TestStatChangedSingleRoundTrip(t *testing.T) {
 	opts := testStatOptions()
 	for _, v := range pt.Variants {

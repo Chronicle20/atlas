@@ -75,6 +75,7 @@ func asciiBytes(s string) []byte {
 // packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=jms_v185 ida=0x7b7160
 // packet-audit:verify packet=npc/clientbound/NpcSayConversationDetail version=jms_v185 ida=0x7b7315
 // packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=jms_v185 ida=0x7b7496
+// packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=gms_v84 ida=0x76850a
 func TestNpcConversationSay(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	detail := &SayConversationDetail{Message: "Hello adventurer!", Next: true, Previous: false}

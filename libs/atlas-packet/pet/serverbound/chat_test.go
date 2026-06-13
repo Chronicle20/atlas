@@ -12,6 +12,7 @@ import (
 // packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v87 ida=0x7492a2
 // packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v95 ida=0x6a2340
 // packet-audit:verify packet=pet/serverbound/PetChatRequest version=jms_v185 ida=0x76b3a0
+// packet-audit:verify packet=pet/serverbound/PetChatRequest version=gms_v84 ida=0x721d2c
 func TestChatRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

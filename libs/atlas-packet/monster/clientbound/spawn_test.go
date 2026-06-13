@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=monster/clientbound/MonsterSpawn version=gms_v87 ida=0x6b4fa6
 // packet-audit:verify packet=monster/clientbound/MonsterSpawn version=gms_v95 ida=0x6589e0
 // packet-audit:verify packet=monster/clientbound/MonsterSpawn version=jms_v185 ida=0x6f885c
+// packet-audit:verify packet=monster/clientbound/MonsterSpawn version=gms_v84 ida=0x68fff0
 func TestMonsterSpawnControlled(t *testing.T) {
 	m := model.NewMonster(100, 200, 5, 300, model.MonsterAppearTypeRegen, 0)
 	input := NewMonsterSpawn(5001, true, 100100, m)

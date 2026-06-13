@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=monster/clientbound/MonsterMovementAck version=gms_v87 ida=0x6a7106
 // packet-audit:verify packet=monster/clientbound/MonsterMovementAck version=gms_v95 ida=0x640c50
 // packet-audit:verify packet=monster/clientbound/MonsterMovementAck version=jms_v185 ida=0x6e99c8
+// packet-audit:verify packet=monster/clientbound/MonsterMovementAck version=gms_v84 ida=0x68253d
 func TestMonsterMovementAck(t *testing.T) {
 	input := NewMonsterMovementAck(5001, 42, 300, true, 10, 3)
 	for _, v := range test.Variants {

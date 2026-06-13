@@ -14,6 +14,7 @@ import (
 // packet-audit:verify packet=character/clientbound/BuffCancel version=gms_v87 ida=0xab7dc1
 // packet-audit:verify packet=character/clientbound/BuffCancel version=gms_v95 ida=0x9f2ab0
 // packet-audit:verify packet=character/clientbound/BuffCancelForeign version=gms_v84 ida=0x9c3cbf
+// packet-audit:verify packet=character/clientbound/BuffCancel version=gms_v84 ida=0xa6bb24
 func TestBuffCancelRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

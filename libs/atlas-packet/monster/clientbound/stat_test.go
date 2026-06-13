@@ -53,6 +53,7 @@ import (
 // packet-audit:verify packet=monster/clientbound/MonsterStatReset version=gms_v95 ida=0x652780
 // packet-audit:verify packet=monster/clientbound/MonsterStatReset version=jms_v185 ida=0x6e9bb1
 // packet-audit:verify packet=monster/clientbound/MonsterStatSet version=gms_v84 ida=0x682603
+// packet-audit:verify packet=monster/clientbound/MonsterStatReset version=gms_v84 ida=0x682726
 func TestMonsterStatSetByteOutputV83(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	v := test.Variants[1] // GMS v83

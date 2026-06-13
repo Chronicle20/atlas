@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=drop/clientbound/DropDestroy version=gms_v87 ida=0x5287e3
 // packet-audit:verify packet=drop/clientbound/DropDestroy version=gms_v95 ida=0x511e20
 // packet-audit:verify packet=drop/clientbound/DropDestroy version=jms_v185 ida=0x537726
+// packet-audit:verify packet=drop/clientbound/DropDestroy version=gms_v84 ida=0x50f409
 func TestDropDestroyPickUp(t *testing.T) {
 	input := NewDropDestroy(9001, DropDestroyTypePickUp, 1234, 2)
 	for _, v := range test.Variants {

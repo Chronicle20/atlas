@@ -9,6 +9,7 @@ import (
 )
 
 // packet-audit:verify packet=cash/serverbound/CashShopOperationRebateLockerItem version=gms_v87 ida=0x0
+// packet-audit:verify packet=cash/serverbound/CashShopOperationRebateLockerItem version=gms_v84 ida=0x46e3d3
 func TestShopOperationRebateLockerItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

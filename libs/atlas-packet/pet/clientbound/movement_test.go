@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=pet/clientbound/PetMovement version=gms_v87 ida=0x74842a
 // packet-audit:verify packet=pet/clientbound/PetMovement version=gms_v95 ida=0x69fb60
 // packet-audit:verify packet=pet/clientbound/PetMovement version=jms_v185 ida=0x76a534
+// packet-audit:verify packet=pet/clientbound/PetMovement version=gms_v84 ida=0x720e70
 func TestPetMovementRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

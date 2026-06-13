@@ -1,0 +1,8 @@
+packet: stat/clientbound/Changed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnStatChanged
+    address: "0xa6ae08"
+    decompile_sha256: fe7a1443d9697a54d83053a4a643e7666ae93a78ba1730aae6b6d85afa2d49d3

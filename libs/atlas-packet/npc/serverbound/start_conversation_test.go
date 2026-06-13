@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=npc/serverbound/NpcStartConversation version=gms_v87 ida=0x9e3066
 // packet-audit:verify packet=npc/serverbound/NpcStartConversation version=gms_v95 ida=0x9321f0
 // packet-audit:verify packet=npc/serverbound/NpcStartConversation version=jms_v185 ida=0xa2cc90
+// packet-audit:verify packet=npc/serverbound/NpcStartConversation version=gms_v84 ida=0x99ec4e
 func TestStartConversationRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

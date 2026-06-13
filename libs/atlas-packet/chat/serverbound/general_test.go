@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=chat/serverbound/ChatGeneral version=gms_v87 ida=0x552b67
 // packet-audit:verify packet=chat/serverbound/ChatGeneral version=gms_v95 ida=0x534000
 // packet-audit:verify packet=chat/serverbound/ChatGeneral version=jms_v185 ida=0x564a0a
+// packet-audit:verify packet=chat/serverbound/ChatGeneral version=gms_v84 ida=0x5382d7
 func TestGeneralRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 )
 
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v95 ida=0x6382a0
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationChat version=gms_v84 ida=0x6752d8
 func TestOperationChatRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

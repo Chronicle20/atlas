@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=monster/clientbound/MonsterHealth version=gms_v87 ida=0x6a8505
 // packet-audit:verify packet=monster/clientbound/MonsterHealth version=gms_v95 ida=0x642ef0
 // packet-audit:verify packet=monster/clientbound/MonsterHealth version=jms_v185 ida=0x6eaddf
+// packet-audit:verify packet=monster/clientbound/MonsterHealth version=gms_v84 ida=0x68393b
 func TestMonsterHealth(t *testing.T) {
 	input := NewMonsterHealth(5001, 85)
 	for _, v := range test.Variants {

@@ -10,6 +10,7 @@ import (
 )
 
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v95 ida=0x48e530
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v84 ida=0x47036b
 func TestShopOperationBuyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

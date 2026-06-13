@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=monster/clientbound/MonsterMovement version=gms_v87 ida=0x6a6cb3
 // packet-audit:verify packet=monster/clientbound/MonsterMovement version=gms_v95 ida=0x6521e0
 // packet-audit:verify packet=monster/clientbound/MonsterMovement version=jms_v185 ida=0x6e955a
+// packet-audit:verify packet=monster/clientbound/MonsterMovement version=gms_v84 ida=0x6820ea
 func TestMonsterMovementRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

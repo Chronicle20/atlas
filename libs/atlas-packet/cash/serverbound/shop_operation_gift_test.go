@@ -9,6 +9,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v84 ida=0x472436
 func TestShopOperationGiftRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

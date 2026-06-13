@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v83 ida=0xa2370b
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v87 ida=0xabb181
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v95 ida=0xa05750
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v84 ida=0xa6eda8
 func TestCharacterInfoEncode(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},

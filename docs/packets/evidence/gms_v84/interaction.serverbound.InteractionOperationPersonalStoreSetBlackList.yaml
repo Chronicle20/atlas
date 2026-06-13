@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreSetBlackList
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::DeliverBlackList
+    address: "0x71a1f8"
+    decompile_sha256: d744f0cebd7514653edda1109863ea6ee66fafe4ac115ef60dff7af873c9990b

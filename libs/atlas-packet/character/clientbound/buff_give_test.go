@@ -17,6 +17,8 @@ import (
 // packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v83 ida=0x98385d
 // packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v87 ida=0xa092e7
 // packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v95 ida=0xb13200
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v84 ida=0xa6b6c3
+// packet-audit:verify packet=character/clientbound/BuffGiveForeign version=gms_v84 ida=0x9c3bfb
 func TestBuffGiveEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

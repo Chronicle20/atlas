@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=npc/clientbound/NpcShopList version=gms_v87 ida=0x79e4d0
 // packet-audit:verify packet=npc/clientbound/NpcShopList version=gms_v95 ida=0x6eab00
 // packet-audit:verify packet=npc/clientbound/NpcShopList version=jms_v185 ida=0x7c6536
+// packet-audit:verify packet=npc/clientbound/NpcShopList version=gms_v84 ida=0x774c61
 func TestNPCShop(t *testing.T) {
 	commodities := []ShopCommodity{
 		{TemplateId: 2000000, MesoPrice: 50, DiscountRate: 0, TokenTemplateId: 0, TokenPrice: 0, Period: 0, LevelLimit: 0, IsAmmo: false, Quantity: 100, SlotMax: 200},

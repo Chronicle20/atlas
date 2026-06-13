@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=portal/serverbound/PortalScript version=gms_v87 ida=0x9c8832
 // packet-audit:verify packet=portal/serverbound/PortalScript version=gms_v95 ida=0x919a10
 // packet-audit:verify packet=portal/serverbound/PortalScript version=jms_v185 ida=0xa0dde7
+// packet-audit:verify packet=portal/serverbound/PortalScript version=gms_v84 ida=0x985767
 func TestScriptRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

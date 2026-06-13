@@ -28,15 +28,15 @@ jobs:
         run: cd tools/packet-audit && go test ./...
 
       - name: Coverage matrix check
-        # ~1090 conflict rows remain after Phase-5 discovery (915 cross-version
-        # template-coverage gaps + 163 absent-but-routed + 12 genuine Atlas
-        # findings); exit 1 is grandfathered until the conflict burn-down follow-up
-        # task clears them.  Exit 0 (clean) and exit 1 (conflicts only) both let
-        # step 2 pass; exit 3 (runtime failure) is a hard stop.
-        # Follow-up: task-085 follow-up: conflict burn-down
-        #   — per-version template coverage + D3 cross-version rule refinement.
-        #   Remove the exit-1 exception in step 2 when `matrix --check` exits 0
-        #   on main.
+        # The conflict backlog was burned down to ZERO in task-085 (registry
+        # re-derivation + template wiring across all five versions), so
+        # `matrix --check` now exits 0 on a clean tree. The gate is fully
+        # blocking: ANY non-zero exit fails CI — a 🟥 conflict (exit 1, a
+        # genuine registry/template/Atlas discrepancy), a stale committed
+        # STATUS.md/status.json (exit 1, regenerate and commit), a fatal-class
+        # finding (orphan/dangling/stale/drift/unresolvable/malformed/no-export),
+        # or a runtime error (exit 3). The capture-then-report shape below only
+        # exists to print a helpful, categorized message before failing.
         run: |
           set +e
           go run ./tools/packet-audit matrix --check 2>/tmp/matrix_check.txt
@@ -45,23 +45,23 @@ jobs:
           exit 0
         id: matrix_check
 
-      - name: Fatal-class guard
-        # Fail on runtime errors (exit 3: corrupt registry, unreadable template,
-        # etc.) — these are not grandfathered conflicts.
-        # Fail unconditionally on any line that mentions orphan markers, dangling
-        # linkage, stale evidence, hash drift, unresolvable references, malformed
-        # records, or missing IDA exports — these must never be grandfathered.
+      - name: Matrix check gate
         run: |
-          recorded_code=$(cat /tmp/matrix_check_code)
-          if [ "$recorded_code" -ne 0 ] && [ "$recorded_code" -ne 1 ]; then
-            echo "::error::matrix --check exited $recorded_code (runtime failure); output follows:"
-            cat /tmp/matrix_check.txt
-            exit 1
+          rc=$(cat /tmp/matrix_check_code)
+          if [ "$rc" -eq 0 ]; then
+            echo "matrix --check passed (exit 0): no conflicts, no fatal findings, outputs fresh."
+            exit 0
           fi
-          count=$(grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true)
-          if [ "$count" -gt 0 ]; then
-            echo "::error::matrix --check reported $count fatal-class finding(s); see step output"
+          # Highlight the most actionable class first.
+          fatal=$(grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true)
+          if [ "$fatal" -gt 0 ]; then
+            echo "::error::matrix --check reported $fatal fatal-class finding(s) (orphan/dangling/stale/drift/unresolvable/malformed/no-export):"
             grep -iE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true
-            exit 1
           fi
-          echo "Fatal-class check passed (exit=$recorded_code, 0 fatal hits)."
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::matrix --check exited 3 (runtime failure — corrupt registry/template, unreadable export, etc.):"
+          else
+            echo "::error::matrix --check exited $rc — a 🟥 conflict or stale committed STATUS.md/status.json. Regenerate with 'go run ./tools/packet-audit matrix' and commit, or resolve the conflict:"
+          fi
+          cat /tmp/matrix_check.txt
+          exit 1

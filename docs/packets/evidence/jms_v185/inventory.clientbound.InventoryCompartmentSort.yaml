@@ -1,0 +1,8 @@
+packet: inventory/clientbound/InventoryCompartmentSort
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSortItemResult
+    address: "0xb054ac"
+    decompile_sha256: 58182883c83c8198e76c8f0af4aaeb3010d18d4281b263b8383e0c51254805ad

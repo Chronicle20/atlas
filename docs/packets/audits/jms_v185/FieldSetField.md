@@ -1,10 +1,11 @@
 # FieldSetField (← `CStage::OnSetField`)
 
 - **IDA:** 0x7eea69
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/set_field.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/set_field.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
-- **Verdict:** ❌
+- **Verdict:** 🔍
+- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
 
 ## Wire-level diff
 
@@ -38,36 +39,36 @@
 | 25 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 26 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 27 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 28 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 29 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 30 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 31 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 28 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 29 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 30 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 31 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 32 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 33 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 34 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 35 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 36 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 33 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 34 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 35 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 36 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 37 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 38 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 39 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 39 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 40 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 41 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 41 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 42 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 43 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 44 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 45 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 45 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 46 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 47 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 48 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 49 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 50 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 51 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 52 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 53 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 54 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 55 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 56 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 57 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 50 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 51 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 52 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 53 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 54 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 55 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 56 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 57 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 58 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 59 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 60 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
@@ -75,38 +76,39 @@
 | 62 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 63 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 64 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 65 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 66 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 65 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 66 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 67 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 68 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 69 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 70 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 71 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 72 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 68 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 69 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 70 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 71 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 72 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 73 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 74 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 75 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 76 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 75 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 76 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 | 77 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 78 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 79 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 80 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 79 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 80 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 81 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 82 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 83 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 84 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 84 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 85 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 86 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 87 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 88 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 89 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 86 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 87 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 88 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 89 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 90 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 91 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 92 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 91 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 92 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 93 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 94 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 94 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 95 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 96 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 97 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 98 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 98 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 99 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
 

@@ -1,7 +1,7 @@
 # FieldEffectString (← `CField::OnFieldEffect#String`)
 
 - **IDA:** 0x570359
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/effect.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

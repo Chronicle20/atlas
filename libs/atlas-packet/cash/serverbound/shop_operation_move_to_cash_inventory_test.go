@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=cash/serverbound/CashShopOperationMoveToCashInventory version=gms_v95 ida=0x482b50
 // packet-audit:verify packet=cash/serverbound/CashShopOperationMoveToCashInventory version=gms_v87 ida=0x47d146
 // packet-audit:verify packet=cash/serverbound/CashShopOperationMoveToCashInventory version=gms_v83 ida=0x472820
+// packet-audit:verify packet=cash/serverbound/CashShopOperationMoveToCashInventory version=jms_v185 ida=0x4842f9
 func TestShopOperationMoveToCashInventoryRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

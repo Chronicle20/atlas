@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyMemberHP
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnReceiveHP
+    address: "0xa575be"
+    decompile_sha256: 1d9f1f0c65ee104c40d15416eaa7479d051c4edb162aea6cff64c3c7e8082b25

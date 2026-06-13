@@ -1,7 +1,7 @@
 # NpcAskMenuConversationDetail (← `CScriptMan::OnAskMenu#AskMenu`)
 
 - **IDA:** 0x7b7c95
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

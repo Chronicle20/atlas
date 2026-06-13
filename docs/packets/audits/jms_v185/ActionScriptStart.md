@@ -1,7 +1,7 @@
 # ActionScriptStart (← `CQuest::StartQuest#ActionScriptStart`)
 
 - **IDA:** 0x77d065
-- **Atlas file:** `../../libs/atlas-packet/quest/serverbound/action_script_start.go`
+- **Atlas file:** `libs/atlas-packet/quest/serverbound/action_script_start.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

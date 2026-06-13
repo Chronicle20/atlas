@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=character/serverbound/BuffCancelRequest version=gms_v87 ida=0x9f22b8
 // packet-audit:verify packet=character/serverbound/BuffCancelRequest version=gms_v95 ida=0x93d730
 // packet-audit:verify packet=character/serverbound/BuffCancelRequest version=gms_v84 ida=0x9ad694
+// packet-audit:verify packet=character/serverbound/BuffCancelRequest version=jms_v185 ida=0xa3e3ec
 func TestBuffCancelRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,7 +1,7 @@
 # NpcActionRequest (← `CNpc::GenerateMovePath`)
 
 - **IDA:** 0x7199ce
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/action.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/action.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** 🔍

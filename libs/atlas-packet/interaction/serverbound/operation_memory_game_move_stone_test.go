@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameMoveStone version=gms_v95 ida=0x6801e0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameMoveStone version=gms_v87 ida=0x726570
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameMoveStone version=gms_v83 ida=0x6e8a19
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameMoveStone version=jms_v185 ida=0x72fedf
 func TestOperationMemoryGameMoveStoneRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

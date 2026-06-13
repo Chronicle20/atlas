@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameTieAnswer
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMemoryGameDlg::OnTieRequest
+    address: "0x6c815e"
+    decompile_sha256: 38bf7cbca577e8917b6404e6d34e048c1bd85518267f04370cccdd7fa88dba3c

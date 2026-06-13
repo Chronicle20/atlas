@@ -7,6 +7,7 @@ import (
 )
 
 // packet-audit:verify packet=guild/serverbound/GuildOperation version=gms_v95 ida=0x0
+// packet-audit:verify packet=guild/serverbound/GuildOperation version=jms_v185 ida=0x5599d6
 func TestOperationRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

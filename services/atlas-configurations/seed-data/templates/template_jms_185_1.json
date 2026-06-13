@@ -235,13 +235,36 @@
         }
       },
       {
+        "opCode": "0x21",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x22",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
         "opCode": "0x29",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle"
       },
       {
+        "opCode": "0x2A",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
         "opCode": "0x34",
         "handler": "NPCContinueConversationHandle"
+      },
+      {
+        "opCode": "0x3D",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x3E",
+        "handler": "CompartmentSortHandle"
       },
       {
         "opCode": "0x3F",
@@ -249,12 +272,37 @@
         "handler": "CharacterInventoryMoveHandle"
       },
       {
+        "opCode": "0x40",
+        "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x41",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
         "opCode": "0x44",
         "handler": "PetFoodHandle"
       },
       {
+        "opCode": "0x4E",
+        "handler": "CharacterItemUseScrollHandle"
+      },
+      {
         "opCode": "0x52",
         "handler": "CharacterDistributeApHandle"
+      },
+      {
+        "opCode": "0x55",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x57",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
       },
       {
         "opCode": "0x5A",
@@ -299,12 +347,20 @@
         "handler": "PartyOperationHandle"
       },
       {
+        "opCode": "0x81",
+        "handler": "GuildOperationHandle"
+      },
+      {
         "opCode": "0x82",
         "handler": "GuildInviteRejectHandle"
       },
       {
         "opCode": "0x85",
         "handler": "BuddyOperationHandle"
+      },
+      {
+        "opCode": "0x86",
+        "handler": "NoteOperationHandle"
       },
       {
         "opCode": "0xAA",
@@ -621,6 +677,10 @@
         "handler": "ReactorHitHandle"
       },
       {
+        "opCode": "0xF4",
+        "handler": "CashShopCheckWalletHandle"
+      },
+      {
         "opCode": "0xF5",
         "validator": "LoggedInValidator",
         "handler": "CashShopOperationHandle",
@@ -806,6 +866,10 @@
         "writer": "CharacterBuffGive"
       },
       {
+        "opCode": "0x1F",
+        "writer": "CharacterBuffCancel"
+      },
+      {
         "opCode": "0x22",
         "writer": "CharacterSkillChange"
       },
@@ -816,6 +880,14 @@
       {
         "opCode": "0x2F",
         "writer": "HiredMerchantOperation"
+      },
+      {
+        "opCode": "0x31",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x32",
+        "writer": "CompartmentSort"
       },
       {
         "opCode": "0x35",
@@ -1074,8 +1146,20 @@
         "writer": "CharacterAppearanceUpdate"
       },
       {
+        "opCode": "0xCC",
+        "writer": "CharacterEffect"
+      },
+      {
         "opCode": "0xCD",
         "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xCF",
+        "writer": "PartyMemberHP"
       },
       {
         "opCode": "0xD0",
@@ -1088,6 +1172,10 @@
       {
         "opCode": "0xD3",
         "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterEffect"
       },
       {
         "opCode": "0xDF",

@@ -1,7 +1,7 @@
 # NpcStartConversation (← `CUserLocal::TalkToNpc`)
 
 - **IDA:** 0xa2cc90
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/start_conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/start_conversation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

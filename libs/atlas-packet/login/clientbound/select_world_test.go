@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=login/clientbound/SelectWorld version=gms_v84 ida=0x60d26e
 // packet-audit:verify packet=login/clientbound/SelectWorld version=gms_v87 ida=0x62fa8a
 // packet-audit:verify packet=login/clientbound/SelectWorld version=gms_v95 ida=0x5d2200
+// packet-audit:verify packet=login/clientbound/SelectWorld version=jms_v185 ida=0x66e6a5
 func TestSelectWorldRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

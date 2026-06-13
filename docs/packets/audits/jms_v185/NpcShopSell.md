@@ -1,7 +1,7 @@
 # NpcShopSell (← `CShopDlg::SendSellRequest`)
 
 - **IDA:** 0x7cacab
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/shop_sell.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/shop_sell.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

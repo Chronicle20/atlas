@@ -21026,6 +21026,398 @@
           "comment": ""
         }
       ]
+    },
+    "CField_MonsterCarnival::OnEnter": {
+      "address": "0x57209e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_MonsterCarnival::OnPersonalCP": {
+      "address": "0x572215",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_MonsterCarnival::OnProcessForDeath": {
+      "address": "0x5724ee",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 <= 0",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_447019"
+        }
+      ]
+    },
+    "CField_MonsterCarnival::OnRequestResult": {
+      "address": "0x572284",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!a1"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_MonsterCarnival::OnShowGameResult": {
+      "address": "0x5727e4",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_MonsterCarnival::OnShowMemberOutMsg": {
+      "address": "0x572669",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_447019"
+        }
+      ]
+    },
+    "CField_MonsterCarnival::OnTeamCP": {
+      "address": "0x572245",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnAffected": {
+      "address": "0x682977",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnCatchEffect": {
+      "address": "0x6839bb",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnEffectByItem": {
+      "address": "0x683c9f",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnIncMobChargeCount": {
+      "address": "0x687655",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnMobAttackedByMob": {
+      "address": "0x68749a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 > -2"
+        }
+      ]
+    },
+    "CMob::OnMobSkillDelay": {
+      "address": "0x688524",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnMobSpeaking": {
+      "address": "0x687743",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnSpecialEffectBySkill": {
+      "address": "0x683be9",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_411344"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result",
+          "ref": "sub_402C9B"
+        }
+      ]
+    },
+    "CMob::SetDamagedByMob": {
+      "address": "0x6871bc",
+      "direction": "",
+      "calls": null
+    },
+    "CMob::Update": {
+      "address": "0x67d4ea",
+      "direction": "",
+      "calls": null
+    },
+    "CUIMonsterCarnival::RequestSend": {
+      "address": "0x89bdda",
+      "direction": "",
+      "calls": null
+    },
+    "CWvsContext::OnBridleMobCatchFail": {
+      "address": "0xa522fc",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnMonsterBookSetCard": {
+      "address": "0xa524a6",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a1)"
+        }
+      ]
+    },
+    "CWvsContext::OnMonsterBookSetCover": {
+      "address": "0xa525c3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnSetTamingMobInfo": {
+      "address": "0xa748d8",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v28"
+        }
+      ]
+    },
+    "sub_402C9B": {
+      "address": "0x402c9b",
+      "direction": "",
+      "calls": null
+    },
+    "sub_411344": {
+      "address": "0x411344",
+      "direction": "",
+      "calls": null
     }
   }
 }

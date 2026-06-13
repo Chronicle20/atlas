@@ -15576,8 +15576,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 185
         },
         "gms_v84": {
@@ -15586,13 +15585,11 @@
           "opcode": 189
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 198
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 210
         },
         "jms_v185": {

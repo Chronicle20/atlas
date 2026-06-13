@@ -243,7 +243,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B5 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0B7 | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
-| MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0B9 | 🟡 | 0x0BD | ❌ | 0x0C6 | 🟡 | 0x0D2 | 🟡 | 0x0BF | ❌ |
+| MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0B9 | ✅ | 0x0BD | ❌ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ❌ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BA | ✅ | 0x0BE | ❌ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ❌ |
 | RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BB | ✅ | 0x0BF | ❌ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ❌ |
 | MAGIC_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BC | ✅ | 0x0C0 | ❌ | 0x0C9 | ✅ | 0x0D5 | ✅ | 0x0C2 | ❌ |
@@ -910,10 +910,10 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 183 | 2 | 494 | 201 | 0 | 27.0% |
+| v83 | 184 | 1 | 494 | 201 | 0 | 27.1% |
 | v84 | 6 | 0 | 671 | 203 | 0 | 0.9% |
-| v87 | 184 | 2 | 530 | 164 | 0 | 25.7% |
-| v95 | 269 | 2 | 527 | 82 | 0 | 33.7% |
+| v87 | 185 | 1 | 530 | 164 | 0 | 25.8% |
+| v95 | 270 | 1 | 527 | 82 | 0 | 33.8% |
 | JMS185 | 164 | 0 | 546 | 170 | 0 | 23.1% |
 
 ## Conflicts

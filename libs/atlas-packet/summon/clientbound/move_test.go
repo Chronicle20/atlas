@@ -46,6 +46,7 @@ func TestSummonMove(t *testing.T) {
 // TestSummonMoveBytes pins the exact wire layout. SummonMove is byte-identical
 // across all versions (summon-packet-delta.md §3.3), so a single v83 assertion
 // guards against an accidental version branch.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v95 ida=0x759830
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, 100, -50, raw)

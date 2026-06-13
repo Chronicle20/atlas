@@ -1,0 +1,39 @@
+{
+  "WriterName": "SummonSkill",
+  "IDAName": "CSummonedPool::OnSkill",
+  "Address": "0x759890",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/skill.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "charId — read by CSummonedPool::OnPacket@0x75ac70 before dispatch",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "oid (dwSummonedID) — CUser::OnSummonedSkill@0x8e39b2",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "action/newStance (v4 \u0026 0x7F -\u003e SetAttackAction) — CSummoned::OnSkill@0x74a9ae",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

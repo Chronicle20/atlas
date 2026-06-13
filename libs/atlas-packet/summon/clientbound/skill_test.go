@@ -39,6 +39,7 @@ func TestSummonSkill(t *testing.T) {
 // TestSummonSkillBytes pins the exact wire layout. SummonSkill is
 // byte-identical across all versions (summon-packet-delta.md §3.6), so a single
 // v83 assertion guards against an accidental version branch.
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v95 ida=0x759890
 func TestSummonSkillBytes(t *testing.T) {
 	in := NewSummonSkill(42, 1320009, 6)
 	ctx := test.CreateContext("GMS", 83, 1)

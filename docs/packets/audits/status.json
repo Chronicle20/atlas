@@ -4,7 +4,7 @@
     "gms_v83": "359495963d99164fb331ed7c1c1a9a7920a85126122821fdb8bfebfad3f3df5b",
     "gms_v84": "e94fde3eb9bec89d4abd84cce666b7a64e4780c9ac9235d14e25383a9793a3ef",
     "gms_v87": "04665aba8142ba592fa97e5e312b513ed3f252c061f33c6a067d10233a126b49",
-    "gms_v95": "b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3",
+    "gms_v95": "0742692f651f8416fbfb151a67661740d05669c5270029cd1f0227ea409c2ad0",
     "jms_v185": "bfc651ad5f107ae48635d475f944e3e8a6f985d0a8c33d67f3ac2cb9f99fcb5b"
   },
   "rows": [
@@ -14607,6 +14607,7 @@
     {
       "kind": "op",
       "op": "MOVE_SUMMON",
+      "packet": "summon/serverbound/SummonMoveHandle",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
@@ -14629,8 +14630,7 @@
           "opcode": 187
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 207
         },
         "jms_v185": {
@@ -14677,6 +14677,7 @@
     {
       "kind": "op",
       "op": "SPAWN_SPECIAL_MAPOBJECT",
+      "packet": "summon/clientbound/SummonSpawn",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -14700,8 +14701,7 @@
           "opcode": 188
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 278
         },
         "jms_v185": {
@@ -14780,6 +14780,7 @@
     {
       "kind": "op",
       "op": "REMOVE_SPECIAL_MAPOBJECT",
+      "packet": "summon/clientbound/SummonRemove",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -14803,8 +14804,7 @@
           "opcode": 189
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 279
         },
         "jms_v185": {
@@ -14855,6 +14855,7 @@
     {
       "kind": "op",
       "op": "DAMAGE_SUMMON",
+      "packet": "summon/serverbound/SummonDamageHandle",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
@@ -14877,8 +14878,7 @@
           "opcode": 189
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 209
         },
         "jms_v185": {
@@ -14923,6 +14923,7 @@
     {
       "kind": "op",
       "op": "MOVE_SUMMON",
+      "packet": "summon/clientbound/SummonMove",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -14945,8 +14946,7 @@
           "opcode": 190
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 280
         },
         "jms_v185": {
@@ -14998,6 +14998,7 @@
     {
       "kind": "op",
       "op": "SUMMON_ATTACK",
+      "packet": "summon/clientbound/SummonAttack",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -15020,8 +15021,7 @@
           "opcode": 191
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 281
         },
         "jms_v185": {
@@ -15064,6 +15064,7 @@
     {
       "kind": "op",
       "op": "DAMAGE_SUMMON",
+      "packet": "summon/clientbound/SummonDamage",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -15086,8 +15087,7 @@
           "opcode": 192
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 283
         },
         "jms_v185": {
@@ -15167,6 +15167,7 @@
     {
       "kind": "op",
       "op": "SUMMON_SKILL",
+      "packet": "summon/clientbound/SummonSkill",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -15189,8 +15190,7 @@
           "opcode": 193
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 282
         },
         "jms_v185": {
@@ -29506,6 +29506,38 @@
         },
         "jms_v185": {
           "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "summon/serverbound/SummonAttackHandle",
+      "tier1": false,
+      "cells": {
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         }
       }

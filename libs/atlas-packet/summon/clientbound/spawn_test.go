@@ -54,6 +54,7 @@ func TestSummonSpawnBytesV83(t *testing.T) {
 // v83 roster no avatar look is carried and Tesla Coil is out of roster, so no
 // AvatarLook blob / triangle tail follows (summon-packet-delta.md §3.1,
 // CSummoned::Init@0x755740).
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v95 ida=0x75a9a0
 func TestSummonSpawnBytesV95(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 95, 1)

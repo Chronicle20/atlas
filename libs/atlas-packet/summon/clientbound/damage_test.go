@@ -20,6 +20,7 @@ func TestSummonDamage(t *testing.T) {
 // TestSummonDamageBytes pins the exact wire layout. SummonDamage is
 // byte-identical across all versions (summon-packet-delta.md §3.5), so a single
 // v83 assertion guards against an accidental version branch.
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v95 ida=0x7598c0
 func TestSummonDamageBytes(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 83, 1)

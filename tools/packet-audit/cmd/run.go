@@ -133,6 +133,9 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			flatInvalid = true
 		}
 		writerName := qualifiedWriterName(pkg, name)
+		if c.reportName != "" {
+			writerName = c.reportName
+		}
 		pkt := report.Packet{
 			WriterName:  writerName,
 			IDAName:     fname,
@@ -202,6 +205,14 @@ type candidate struct {
 	// channel handler rather than a packet-lib Operation struct. Mutually
 	// exclusive with prefixName.
 	prefixSubOps int
+	// reportName, when set, overrides the derived qualifiedWriterName(pkg,name)
+	// for the report file / matrix WriterName WITHOUT changing locateAtlasFile's
+	// pkg-scoped struct resolution. Needed when the derived name would collide
+	// across directions on the flat (writerName-keyed) audit dir — e.g. summon
+	// clientbound SummonMove and serverbound Move both derive "SummonMove";
+	// the serverbound side overrides to "SummonMoveHandle" so its report and
+	// matrix cell (summon/serverbound/SummonMoveHandle) stay distinct.
+	reportName string
 }
 
 // qualifiedWriterName returns the report/file name for a candidate. When pkg
@@ -689,6 +700,39 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ExcludeResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnCashPetFoodResult":
 		return []candidate{{name: "CashFoodResult", pkg: "pet", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: summon (clientbound, writers) ---
+	// All six summon writers dispatch through CSummonedPool::OnPacket@0x75ac70
+	// (v95 PDB build), which reads Decode4(charId) then routes the per-op leaf.
+	// The export entries (CSummonedPool::On*) bake in the charId + oid prefix
+	// (same pattern as CMob::OnMove baking dwMobId). The atlas clientbound structs
+	// carry the Summon prefix in their names (SummonSpawn, …) and are globally
+	// unique among clientbound files, so pkg is left empty (writerName == struct
+	// name → PacketID summon/clientbound/SummonSpawn). v95 reference (PDB build).
+	case "CSummonedPool::OnCreated":
+		return []candidate{{name: "SummonSpawn", dir: csvpkg.DirClientbound}}
+	case "CSummonedPool::OnRemoved":
+		return []candidate{{name: "SummonRemove", dir: csvpkg.DirClientbound}}
+	case "CSummonedPool::OnMove":
+		return []candidate{{name: "SummonMove", dir: csvpkg.DirClientbound}}
+	case "CSummonedPool::OnAttack":
+		return []candidate{{name: "SummonAttack", dir: csvpkg.DirClientbound}}
+	case "CSummonedPool::OnSkill":
+		return []candidate{{name: "SummonSkill", dir: csvpkg.DirClientbound}}
+	case "CSummonedPool::OnHit":
+		return []candidate{{name: "SummonDamage", dir: csvpkg.DirClientbound}}
+
+	// --- Combat: summon (serverbound, handlers) ---
+	// Client send sites (COutPacket). Atlas serverbound structs are generically
+	// named (Move/Attack/Damage) and collide with character/inventory serverbound
+	// structs, so pkg="summon" restricts locateAtlasFile to summon/serverbound/
+	// (writerName → SummonMove/SummonAttack/SummonDamage). v95 reference (PDB build).
+	case "CVecCtrlSummoned::EndUpdateActive":
+		return []candidate{{name: "Move", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonMoveHandle"}}
+	case "CSummoned::TryDoingAttackManual":
+		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
+	case "CSummoned::SetDamaged":
+		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
 
 	// --- Combat: monster (serverbound) ---
 	case "CMob::GenerateMovePath":

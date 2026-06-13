@@ -20,6 +20,7 @@ func TestSummonRemove(t *testing.T) {
 // TestSummonRemoveBytes pins the exact wire layout. SummonRemove is
 // byte-identical across all versions (summon-packet-delta.md §3.2), so a single
 // v83 assertion guards against an accidental version branch.
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v95 ida=0x75a470
 func TestSummonRemoveBytes(t *testing.T) {
 	in := NewSummonRemove(42, 1000001, true)
 	ctx := test.CreateContext("GMS", 83, 1)

@@ -9,6 +9,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v95 ida=0x9a0700
 func TestSummonMoveDecode(t *testing.T) {
 	// oid=1000001 (LE 41 42 0F 00), startX=100 (LE 64 00),
 	// startY=-50 (LE CE FF), then raw movement blob.

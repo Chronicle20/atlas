@@ -7,6 +7,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=monster/clientbound/MonsterControl version=gms_v83 ida=0x679777
+// packet-audit:verify packet=monster/clientbound/MonsterControl version=gms_v87 ida=0x6b52c3
+// packet-audit:verify packet=monster/clientbound/MonsterControl version=gms_v95 ida=0x658d10
+// packet-audit:verify packet=monster/clientbound/MonsterControl version=jms_v185 ida=0x6f8b84
 func TestMonsterControlActiveInit(t *testing.T) {
 	m := model.NewMonster(100, 200, 5, 300, model.MonsterAppearTypeRegen, 0)
 	// ActiveInit is the "passive controller" assignment — no aggro responsibility.

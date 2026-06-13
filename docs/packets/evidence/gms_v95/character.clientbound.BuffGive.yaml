@@ -1,0 +1,8 @@
+packet: character/clientbound/BuffGive
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTemporaryStatSet
+    address: "0xa02fc0"
+    decompile_sha256: 51c0c0a5a7cd8719a49678ac3e973c2db3fab776909243bd5b94d14788d125c3

@@ -8,6 +8,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=note/clientbound/NoteDisplay version=gms_v87 ida=0xabccc2
+// packet-audit:verify packet=note/clientbound/NoteDisplay version=gms_v95 ida=0x9f9da0
 func TestNoteDisplayRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

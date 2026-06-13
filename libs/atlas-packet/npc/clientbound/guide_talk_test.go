@@ -13,6 +13,12 @@ import (
 // @0x916f60) the string/message arm is bByMessage==0, so the first wire byte
 // MUST be 0x00.
 // packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=gms_v95 ida=0x916f60
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkIdx version=gms_v83 ida=0x960239
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkIdx version=gms_v87 ida=0x9e36c9
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkIdx version=jms_v185 ida=0xa2d342
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=gms_v83 ida=0x960239
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=gms_v87 ida=0x9e36c9
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=jms_v185 ida=0xa2d342
 func TestGuideTalkMessage(t *testing.T) {
 	input := NewGuideTalkMessage("Hello adventurer!", 200, 4000)
 	for _, v := range test.Variants {

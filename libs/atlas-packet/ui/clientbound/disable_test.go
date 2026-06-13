@@ -7,6 +7,9 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=ui/clientbound/Disable version=gms_v87 ida=0x9e3172
+// packet-audit:verify packet=ui/clientbound/Disable version=gms_v95 ida=0x905550
+// packet-audit:verify packet=ui/clientbound/Disable version=jms_v185 ida=0xa2cdcb
 func TestUiDisable(t *testing.T) {
 	input := NewUiDisable(true)
 	for _, v := range pt.Variants {

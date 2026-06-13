@@ -6,6 +6,9 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v83 ida=0x5fac34
+// packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v87 ida=0x6324e3
+// packet-audit:verify packet=login/serverbound/AllCharacterListRequest version=gms_v95 ida=0x5dfb40
 func TestAllCharacterListRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

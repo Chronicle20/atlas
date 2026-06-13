@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=npc/serverbound/NpcActionRequest version=gms_v95 ida=0x671590
 func TestNPCActionWithoutMovement(t *testing.T) {
 	p := ActionRequest{}
 	p.objectId = 12345

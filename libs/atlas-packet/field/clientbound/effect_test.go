@@ -6,6 +6,26 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldEffectBossHp version=gms_v83 ida=0x5330f7
+// packet-audit:verify packet=field/clientbound/FieldEffectBossHp version=gms_v87 ida=0x55aac5
+// packet-audit:verify packet=field/clientbound/FieldEffectBossHp version=gms_v95 ida=0x53b9c1
+// packet-audit:verify packet=field/clientbound/FieldEffectBossHp version=jms_v185 ida=0x570359
+// packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v83 ida=0x5330f7
+// packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v83 ida=0x5330f7
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v83 ida=0x5330f7
+// packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=gms_v83 ida=0x5330f7
+// packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v87 ida=0x55a948
+// packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v87 ida=0x55abbb
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v87 ida=0x55a9fb
+// packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=gms_v87 ida=0x55abea
+// packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v95 ida=0x53b790
+// packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v95 ida=0x53bb74
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v95 ida=0x53b8b3
+// packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=gms_v95 ida=0x53bba4
+// packet-audit:verify packet=field/clientbound/FieldEffectSummon version=jms_v185 ida=0x570359
+// packet-audit:verify packet=field/clientbound/FieldEffectTremble version=jms_v185 ida=0x570359
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=jms_v185 ida=0x570359
+// packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=jms_v185 ida=0x570359
 func TestFieldEffectSummon(t *testing.T) {
 	input := NewFieldEffectSummon(0, 3, 100, 200)
 	for _, v := range test.Variants {

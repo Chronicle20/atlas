@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetMovementRequest
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlPet::EndUpdateActive
+    address: "0x99f5a0"
+    decompile_sha256: 0a4683a3f63b128fc96355d4da405f56c660e90edb1937c6467589da81c069e2

@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=inventory/clientbound/InventoryCompartmentMerge version=gms_v95 ida=0x9f1280
 func TestCompartmentMerge(t *testing.T) {
 	input := NewCompartmentMerge(3)
 	for _, v := range test.Variants {

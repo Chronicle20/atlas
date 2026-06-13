@@ -8,6 +8,27 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=merchant/clientbound/ConfirmManage version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/ConfirmManage version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/ConfirmManage version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/OpenShop version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/ErrorSimple version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/RemoteShopWarp version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/FreeFormNotice version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/ShopRename version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/ShopSearch version=gms_v83 ida=0xa27d75
+// packet-audit:verify packet=merchant/clientbound/OpenShop version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/ErrorSimple version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/RemoteShopWarp version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/FreeFormNotice version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/ShopRename version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/ShopSearch version=gms_v87 ida=0xabf9ea
+// packet-audit:verify packet=merchant/clientbound/OpenShop version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/ErrorSimple version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/RemoteShopWarp version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/FreeFormNotice version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/ShopRename version=gms_v95 ida=0x9ffcb0
+// packet-audit:verify packet=merchant/clientbound/ShopSearch version=gms_v95 ida=0x9ffcb0
 func TestOpenShop(t *testing.T) {
 	input := NewOpenShop(7)
 	for _, v := range test.Variants {

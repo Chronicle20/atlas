@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterSkillCooldown
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnSkillCooltimeSet
+    address: "0x908b90"
+    decompile_sha256: de3f9592387991f9d566c887fc16f6056b38dcf48d50b1c17307a05fce964c7a

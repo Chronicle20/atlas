@@ -1,0 +1,8 @@
+packet: character/serverbound/DeleteCharacter
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendDeleteCharPacket
+    address: "0x5d53a0"
+    decompile_sha256: 5e6f96032f96524b982349cd666832e789028839cd218f2222e5b788af8a2fc7

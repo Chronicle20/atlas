@@ -24,6 +24,9 @@ import (
 // CharacterSitResult.Encode), so the fixture is asserted across all variants.
 //
 // packet-audit:verify packet=character/clientbound/CharacterSitResult version=gms_v83 ida=0x959797
+// packet-audit:verify packet=character/clientbound/CharacterSitResult version=gms_v87 ida=0x9dbd69
+// packet-audit:verify packet=character/clientbound/CharacterSitResult version=gms_v95 ida=0x905e70
+// packet-audit:verify packet=character/clientbound/CharacterSitResult version=jms_v185 ida=0xa244fd
 func TestCharacterSitResultByteOutput(t *testing.T) {
 	cases := []struct {
 		name  string

@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildDisband
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#Disband
+    address: "0xb22518"
+    decompile_sha256: de9f8d699e187093ed7bf2fed7ee60b4bb1221e717b1862cc4c2995d00e1219a

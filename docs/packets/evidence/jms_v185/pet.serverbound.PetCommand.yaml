@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetCommand
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::ParseCommand
+    address: "0x76abe0"
+    decompile_sha256: 56db0a005908534da135b5820553948bd848f3cd99fc515936fb557f1628f1d7

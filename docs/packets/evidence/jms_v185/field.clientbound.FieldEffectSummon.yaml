@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectSummon
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#Summon
+    address: "0x570359"
+    decompile_sha256: 5c6466e3c92a0a5d08b8a7c3ecc6287b79de3ada98cf4f85c35c8ac938a45f82

@@ -6,6 +6,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=login/clientbound/ServerIP version=gms_v83 ida=0x5fb541
+// packet-audit:verify packet=login/clientbound/ServerIP version=gms_v84 ida=0x61085f
+// packet-audit:verify packet=login/clientbound/ServerIP version=gms_v87 ida=0x63319a
+// packet-audit:verify packet=login/clientbound/ServerIP version=gms_v95 ida=0x5dea80
+// packet-audit:verify packet=login/clientbound/ServerIP version=jms_v185 ida=0x6712b1
 func TestServerIPRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -11,6 +11,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v87 ida=0xab77ff
+// packet-audit:verify packet=character/clientbound/BuffGive version=gms_v95 ida=0xa02fc0
 func TestBuffGiveEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -6,6 +6,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionChat version=gms_v95 ida=0x639ad0
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionLeave version=gms_v95 ida=0x637510
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnterResultSuccess version=gms_v95 ida=0x639500
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnter version=gms_v95 ida=0x638f80
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionInviteResult version=gms_v95 ida=0x637d70
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionInvite version=gms_v95 ida=0x637a40
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnterResultError version=gms_v95 ida=0x639500
 func TestInteractionInviteRoundTrip(t *testing.T) {
 	input := NewInteractionInvite(4, 1, "TestPlayer", 12345)
 	for _, v := range test.Variants {

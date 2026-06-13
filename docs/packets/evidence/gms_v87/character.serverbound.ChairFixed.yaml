@@ -1,0 +1,8 @@
+packet: character/serverbound/ChairFixed
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::HandleXKeyDown
+    address: "0x9c9270"
+    decompile_sha256: 3f3f237e409ad63cb40f37f7d16fc397fa6be202bdeb6c4149cd90825c779c90

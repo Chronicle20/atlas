@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildTitleChange
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#TitleChange
+    address: "0xb22518"
+    decompile_sha256: 1778fb0602fdf332b923bd4866d24dedd2dbbbf7389564df338e80c052a95785

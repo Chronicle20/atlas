@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=note/serverbound/NoteOperationSend version=gms_v95 ida=0x496520
 func TestOperationSendRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -19,6 +19,9 @@ func asciiBytes(s string) []byte {
 	return out
 }
 
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v83 ida=0x76b5c8
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v87 ida=0x792bb4
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v95 ida=0x6dbe50
 func TestNpcConversationSay(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	detail := &SayConversationDetail{Message: "Hello adventurer!", Next: true, Previous: false}

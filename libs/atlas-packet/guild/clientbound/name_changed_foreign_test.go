@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=guild/clientbound/GuildForeignNameChanged version=jms_v185 ida=0xa5763e
 func TestForeignNameChangedRoundTrip(t *testing.T) {
 	input := NewForeignNameChanged(1001, "NewGuildName")
 	for _, v := range pt.Variants {

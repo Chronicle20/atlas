@@ -8,6 +8,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=ui/clientbound/Lock version=gms_v95 ida=0x9054f0
 func TestUiLock(t *testing.T) {
 	input := NewUiLock(true, 5000)
 	for _, v := range pt.Variants {

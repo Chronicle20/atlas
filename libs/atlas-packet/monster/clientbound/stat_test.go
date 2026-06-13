@@ -45,6 +45,13 @@ import (
 //	00                      bStat byte (Speed is a movement-affecting stat)
 //
 // packet-audit:verify packet=monster/clientbound/MonsterStatSet version=gms_v83 ida=0x66c301
+// packet-audit:verify packet=monster/clientbound/MonsterStatSet version=gms_v87 ida=0x6a71cc
+// packet-audit:verify packet=monster/clientbound/MonsterStatSet version=gms_v95 ida=0x652660
+// packet-audit:verify packet=monster/clientbound/MonsterStatSet version=jms_v185 ida=0x6e9a8e
+// packet-audit:verify packet=monster/clientbound/MonsterStatReset version=gms_v83 ida=0x66c424
+// packet-audit:verify packet=monster/clientbound/MonsterStatReset version=gms_v87 ida=0x6a72ef
+// packet-audit:verify packet=monster/clientbound/MonsterStatReset version=gms_v95 ida=0x652780
+// packet-audit:verify packet=monster/clientbound/MonsterStatReset version=jms_v185 ida=0x6e9bb1
 func TestMonsterStatSetByteOutputV83(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	v := test.Variants[1] // GMS v83

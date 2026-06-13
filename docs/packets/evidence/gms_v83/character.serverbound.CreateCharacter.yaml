@@ -1,0 +1,8 @@
+packet: character/serverbound/CreateCharacter
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendNewCharPacket
+    address: "0x5f7e7a"
+    decompile_sha256: 4cfa43ff7f87d08cb3369c71ec8caed9aa91123e9073dc11dda5dee1638604d5

@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterExpression
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnEmotion
+    address: "0x9f7492"
+    decompile_sha256: e50a09d6ad53a93c42ac4f337f279dc4a2ea24b62f9824d15cbfa54c89c5e3bf

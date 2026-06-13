@@ -6,6 +6,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/ChalkboardUse version=gms_v83 ida=0x937607
+// packet-audit:verify packet=character/clientbound/ChalkboardUse version=gms_v87 ida=0x9b1d1e
+// packet-audit:verify packet=character/clientbound/ChalkboardUse version=gms_v95 ida=0x8ed310
+// packet-audit:verify packet=character/clientbound/ChalkboardUse version=jms_v185 ida=0x9f6199
 func TestChalkboardUse(t *testing.T) {
 	input := NewChalkboardUse(1234, "Selling scrolls!")
 	for _, v := range test.Variants {

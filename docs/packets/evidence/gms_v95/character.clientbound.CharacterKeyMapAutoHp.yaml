@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterKeyMapAutoHp
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CFuncKeyMappedMan::OnPetConsumeItemInit
+    address: "0x5688c0"
+    decompile_sha256: f5424a6b64b6875c349c01b84f46a1d01e1b689a6b3a17eb7cf3167ea5a9b441

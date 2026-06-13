@@ -7,6 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:verify packet=login/serverbound/Request version=gms_v83 ida=0x5f6952
+// packet-audit:verify packet=login/serverbound/Request version=gms_v87 ida=0x62dfb4
+// packet-audit:verify packet=login/serverbound/Request version=gms_v95 ida=0x5db9d0
 func TestRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

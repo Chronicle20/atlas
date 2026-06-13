@@ -72,3 +72,39 @@ No `services/**` package changed. There are no domain packages (`model.go` + GOR
 ### Verdict
 
 **NEEDS-WORK** — build, tests, vet, and race are clean in both changed modules; every applicable guideline check passes except the one dead-code FAIL above. All service-oriented checklist items (DOM REST/GORM/Kafka, SUB, EXT, SCAFFOLD, SEC) are N/A for this CLI-tool + test-only change and are recorded as such, not failed.
+
+---
+
+## Re-audit — 2026-06-13 (HEAD 2f0073af)
+
+Second pass over the same branch after additional commits. Build (`go build ./...`) and tests (`go test ./... -count=1`, 13 packages) PASS; `go vet ./tools/packet-audit/...` clean.
+
+**Scope correction.** The two-dot `origin/main..HEAD` diff surfaces Go changes in `services/atlas-pets`, `services/atlas-query-aggregator`, and `services/atlas-parties`. These are NOT on this branch — the merge-base is `3d5e40626` but `origin/main` (afb6224e) is ahead of it, so those edits belong to main, not task-085. The three-dot diff `origin/main...HEAD -- services/` shows only `atlas-configurations/seed-data/templates/*.json` (data, not Go). The reviewable Go surface is exactly `tools/packet-audit/**` + `libs/atlas-packet/**` test files, as the brief stated. The `libs/atlas-packet` test-only claim re-verified with three-dot diff: zero non-`_test.go` files changed.
+
+### Resolved since first pass
+
+- **Blocking dead-code FAIL — RESOLVED.** `operationReturnLiteral` no longer exists. The only related symbol is `operationReturnLiteralWithIdent` (registry.go:620), which has a live production caller at registry.go:214. The blocking item is cleared.
+- **`AllOps` comment placement — RESOLVED.** Comment now sits directly above the function (opregistry.go:153 → func at :155).
+- **`filepath.Rel` discarded error — RESOLVED.** marker.go:44-47 now captures the error and falls back to the absolute path with a comment.
+- **`matrix.go` swallowed `regErr` — RESOLVED.** matrix.go:165-172 now logs a stderr warning when `NewTypeRegistry` fails ("opaque-type tier expansion skipped").
+- **`discover_ops.go` no-directive `Sprintf` — RESOLVED.** No longer present.
+
+### Still open (non-blocking)
+
+- `tools/packet-audit/internal/opregistry/opregistry.go:92` — `VersionFile.ByFName` still has no production caller (only `opregistry_test.go`). Either the seam for deferred serverbound work (document why) or dead — `verify-serverbound` resolves via the IDA send-site path, not `ByFName`.
+- `tools/packet-audit/internal/marker/marker.go:114` (`scanString`) and `tools/packet-audit/internal/seedcsv/seedcsv.go:41` (`LoadFromString`) — still test-only helpers living in production source; each has a single caller in the sibling `_test.go`. Inline them.
+- `tools/packet-audit/internal/matrix/grade_test.go` — still sixteen single-scenario `TestGrade*` functions rather than one table (testing-guide.md preference, not a MUST).
+
+### New files reviewed (not itemized in first pass)
+
+- `cmd/verify_serverbound.go` — clean: injectable `idasrc.MCPClient` for tests, all errors checked, exit-3 on failure, pure core (`verifyServerboundRun`) split from flag parsing. Hardcoded `192.168.20.3:13337` is an overridable flag default matching pre-existing convention.
+- `internal/discover/sendparse.go` — clean and deterministic: opcodes sorted + deduped, `strconv.ParseInt` errors handled, regex documented, integer-literal-only (non-literal args correctly skipped as unverifiable).
+
+### Config glance (data, not Go)
+
+- `docs/packets/registry/gms_v84.yaml` (new, generated) carries an explicit UNVERIFIED banner for clientbound opcodes ≥0x3F, consistent with the known v84 opcode-table shift. No false confidence asserted.
+- `template_{gms_87,jms_185}_1.json` opcode wiring is config data validated by the tool's own `matrix --check` gate, which the passing test suite exercises.
+
+### Re-audit verdict
+
+**NEEDS-WORK → effectively PASS-with-nits.** The sole blocking item from the first pass is resolved and four of the non-blocking items were fixed. What remains is three minor non-blocking cleanups (one dead exported method, two test-helpers-in-prod-source, one table-test preference) — none block merge. Build, tests, and vet are clean.

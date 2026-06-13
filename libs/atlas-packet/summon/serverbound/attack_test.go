@@ -81,6 +81,31 @@ func TestSummonAttackDecodeV87(t *testing.T) {
 	assertAttack(t, &m, &reader, 1000005)
 }
 
+// TestSummonAttackDecodeV84 decodes a real-shaped 2-target v84 attack send. Unlike
+// v83 (lean), v84 ALREADY carries the anti-hack envelope (drInfo/dwKey/crc32) with
+// NO repeatSkillPoint — byte-for-byte the v87 layout. Confirmed against the
+// GMS_v84.1 client SEND site CSummoned::TryDoingAttackManual sub_7C99CF, send
+// block @0x7cafcd: COutPacket(181)@0x7cafcd + Encode4 cid@0x7cafe8 + 4×drInfo +
+// updateTime@0x7cb021 + action@0x7cb069 + dwKey@0x7cb0c5 + crc32@0x7cb0ec +
+// count@0x7cb0fd + 4×pos, then the per-target loop @0x7cb256 (NO repeatSkillPoint),
+// then skillCRC@0x7cb485. This is why the Atlas envelope gate is MajorAtLeast(84).
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v84 ida=0x7c99cf
+func TestSummonAttackDecodeV84(t *testing.T) {
+	body := envelopeHeader(1000005, false)
+	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)
+	body = append(body, mobBlock(2000002, 9300166, -50, 5678)...)
+	body = append(body, le32(0xABCD)...) // skillCRC
+
+	ctx := test.CreateContext("GMS", 84, 1)
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m Attack
+	m.Decode(l, ctx)(&reader, nil)
+
+	assertAttack(t, &m, &reader, 1000005)
+}
+
 // TestSummonAttackDecodeV95 decodes a real-shaped 2-target v95 attack send: the
 // anti-hack envelope PLUS the trailing repeatSkillPoint int. Confirmed against
 // CSummoned::TryDoingAttackManual @0x751240.

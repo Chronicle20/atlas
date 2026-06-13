@@ -6,7 +6,7 @@
 Tool: `1fdbfd3f24130fcd6e10310affca7054a5c3e6dd`
 
 - export gms_v83: `e47b7490de229fab1d8a4ba19fc50fae4915e68ed029fe38fe8fe94d6581927e`
-- export gms_v84: `e94fde3eb9bec89d4abd84cce666b7a64e4780c9ac9235d14e25383a9793a3ef`
+- export gms_v84: `73e5d0bddeb6d5e98a322c90c4dc2b43dbf79c4ecb998ca4ef574ef44ae66433`
 - export gms_v87: `e25ddf567564d0e3a1ed4cccd8585ce8e478988943e2b470b12f026c0f1a48f3`
 - export gms_v95: `eec79c5d5834b5a975608ac50f2d4f7eb702f827ac810306665f1e05136a0e12`
 - export jms_v185: `bfc651ad5f107ae48635d475f944e3e8a6f985d0a8c33d67f3ac2cb9f99fcb5b`
@@ -231,15 +231,15 @@ Tool: `1fdbfd3f24130fcd6e10310affca7054a5c3e6dd`
 | PET_NAMECHANGE | CPet::OnNameChanged |  | 0x0AC | ❌ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0AD | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0AE | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0AF | ❌ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ❌ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0BC | ✅ | 0x116 | ✅ | 0x0B5 | ❌ |
 | IDA_0X0B0 | CField::OnFootHoldInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B0 | ❌ |  | ⬜ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B0 | ❌ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ❌ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x117 | ✅ | 0x0B6 | ❌ |
 | IDA_0X0B1 | CField::OnRequestFootHoldInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B1 | ❌ |  | ⬜ |
-| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B1 | ❌ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B2 | ❌ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ❌ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ✅ | 0x0B3 | ❌ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ❌ |
+| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0BE | ✅ | 0x118 | ✅ | 0x0B7 | ❌ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0BF | ✅ | 0x119 | ✅ | 0x0B8 | ❌ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ❌ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ✅ | 0x0B4 | ❌ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ✅ | 0x0B7 | ✅ | 0x0C1 | ✅ | 0x11A | ✅ | 0x0BA | ❌ |
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B5 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0B7 | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
@@ -686,11 +686,11 @@ Tool: `1fdbfd3f24130fcd6e10310affca7054a5c3e6dd`
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | UNNAMED_R288 |  |  | 0x0AD | ❌ | 0x0AD | ❌ | 0x0B9 | ❌ | 0x0CD | ❌ | 0x0B0 | ❌ |
 | UNNAMED_R289 |  |  | 0x0AE | ❌ | 0x0AE | ❌ | 0x0BA | ❌ | 0x0CE | ❌ | 0x0B1 | ❌ |
-| MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive | summon/serverbound/SummonMoveHandle | 0x0AF | ✅ | 0x0AF | ❌ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ❌ |
+| MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive | summon/serverbound/SummonMoveHandle | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ❌ |
 | OP_BOARD_HAS_NEW | CWvsContext::CheckOpBoardHasNew |  |  | ⬜ |  | ⬜ | 0x0AF | ❌ | 0x0C0 | ❌ | 0x0A8 | ❌ |
 | ACCOUNT_MORE_INFO | CUIAccountMoreInfo::SendLoadAccountMoreInfoRequest; CUIAccountMoreInfo::SendSaveAccountMoreInfoRequest |  |  | ⬜ |  | ⬜ | 0x0B0 | ❌ | 0x0C1 | ❌ |  | ⬜ |
-| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack |  | 0x0B0 | ❌ | 0x0B0 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
-| DAMAGE_SUMMON | CSummoned::SetDamaged | summon/serverbound/SummonDamageHandle (T1) | 0x0B1 | ✅ | 0x0B1 | ❌ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ❌ |
+| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack |  | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
+| DAMAGE_SUMMON | CSummoned::SetDamaged | summon/serverbound/SummonDamageHandle (T1) | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ❌ |
 | BEHOLDER | CSummoned::TryDoingGiveBuff; CSummoned::TryDoingHeal; CSummoned::TryDoingHealingRobot; CSummoned::TryDoingSummon |  | 0x0B2 | ❌ | 0x0B2 | ❌ | 0x0BE | ❌ | 0x0D2 | ❌ | 0x0B5 | ❌ |
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  | 0x0B3 | ❌ | 0x0B3 | ❌ | 0x0BF | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
@@ -904,7 +904,7 @@ Tool: `1fdbfd3f24130fcd6e10310affca7054a5c3e6dd`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ❌ |
+| summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | ui/clientbound/Lock |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
 
 ## Totals
@@ -912,7 +912,7 @@ Tool: `1fdbfd3f24130fcd6e10310affca7054a5c3e6dd`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 237 | 0 | 443 | 201 | 0 | 34.9% |
-| v84 | 185 | 0 | 493 | 203 | 0 | 27.3% |
+| v84 | 194 | 0 | 484 | 203 | 0 | 28.6% |
 | v87 | 253 | 0 | 464 | 164 | 0 | 35.3% |
 | v95 | 280 | 0 | 519 | 82 | 0 | 35.0% |
 | JMS185 | 225 | 0 | 486 | 170 | 0 | 31.6% |

@@ -50,8 +50,12 @@ func TestSummonSkill(t *testing.T) {
 // skill/damage opcodes); the export key CSummonedPool::OnSkill records this addr.
 // v87 SKILL behavior lives at OnHit@0x7f963b (op 0xC1): one Decode1, &0x7F,
 // SetAttackAction@0x7f9695 — same single-byte shape, no oid.
+// v84 SKILL behavior lives at sub_7CC920@0x7cc920 (field op 0xB7): one Decode1,
+// &0x7F, SetAttackAction sub_7CBAD3 — byte-identical single-byte shape, no oid
+// (GMS_v84.1 IDB-confirmed).
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v87 ida=0x7f963b
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v84 ida=0x7cc920
 func TestSummonSkillBytes(t *testing.T) {
 	in := NewSummonSkill(42, 1000001, 6)
 	ctx := test.CreateContext("GMS", 83, 1)

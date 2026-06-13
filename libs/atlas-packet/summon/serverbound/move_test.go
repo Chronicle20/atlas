@@ -13,10 +13,14 @@ import (
 // followed by the opaque CMovePath::Flush blob (whose first 4 bytes are
 // startX/startY). Confirmed against CVecCtrlSummoned::EndUpdateActive
 // (v83 sub_9C84E9, v87 @0xa591da, v95 @0x9a0700). v87 body is byte-identical to
-// v83 (Encode4 summonId=ctrl[188]=cid + opaque CMovePath::Flush blob).
+// v83 (Encode4 summonId=ctrl[188]=cid + opaque CMovePath::Flush blob). v84 body
+// is byte-identical too: CVecCtrlSummoned::EndUpdateActive @0xa0fd89 (op 0xB4)
+// Encode4 summonId=this[146]=ctrl[0x248]=cid + CMovePath__Flush blob
+// (GMS_v84.1 IDB-confirmed).
 // packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v95 ida=0x9a0700
 // packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v83 ida=0x9c84e9
 // packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v87 ida=0xa591da
+// packet-audit:verify packet=summon/serverbound/SummonMoveHandle version=gms_v84 ida=0xa0fd89
 func TestSummonMoveDecode(t *testing.T) {
 	// summonId=1000001 (LE 41 42 0F 00), then the move blob: startX=100 (LE 64 00),
 	// startY=-50 (LE CE FF), then the remaining (opaque) move-path bytes.

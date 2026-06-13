@@ -21,9 +21,12 @@ func TestSummonRemove(t *testing.T) {
 // NO oid (the remove path sub_7A64EB keys off the dispatcher-consumed cid; oid
 // is a v95+ addition — IDB-confirmed, summon-wire-truth.md). v87 is byte-identical:
 // the op 0xBD remove path sub_7F8CB0@0x7f8cb0 reads one Decode1 (animated flag),
-// no oid.
+// no oid. v84 is byte-identical: the field op 0xB4 remove path sub_7CBFA1@0x7cbfa1
+// reads one Decode1 (leave/animated flag) after the dispatcher-consumed cid, no
+// oid (GMS_v84.1 IDB-confirmed).
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x7a64eb
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v87 ida=0x7f8cb0
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v84 ida=0x7cbfa1
 func TestSummonRemoveBytes(t *testing.T) {
 	in := NewSummonRemove(42, 1000001, true)
 	ctx := test.CreateContext("GMS", 83, 1)

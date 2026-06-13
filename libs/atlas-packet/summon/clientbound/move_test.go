@@ -54,8 +54,11 @@ func TestSummonMove(t *testing.T) {
 // cid-keyed on v83/v87; oid is a v95+ addition — IDB-confirmed, summon-wire-truth.md).
 // v87 (CSummonedPool::OnMove@0x7f902b -> CMovePath::OnMovePacket@0x6c802d) reads
 // the same cid + movement-blob shape as v83 — byte-identical, no oid.
+// v84 (CSummonedPool::OnMove sub_7CC317@0x7cc317 -> CMovePath__OnMovePacket@0x6a203f)
+// reads the same cid + movement-blob shape — GMS_v84.1 IDB-confirmed, no oid.
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v83 ida=0x7a6861
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v87 ida=0x7f902b
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v84 ida=0x7cc317
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, 100, -50, raw)

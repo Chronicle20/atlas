@@ -84,9 +84,13 @@ var summonAttackV83Body = []byte{
 
 // TestSummonAttackBytes pins the classic (pre-95) layout. v83/v84/v87 share this
 // exact sequence with NO oid and NO trailing byte (v87 reader
-// CSummonedPool::OnAttack@0x7f904c has no trailing Decode1).
+// CSummonedPool::OnAttack@0x7f904c has no trailing Decode1; v84 reader
+// CSummonedPool::OnAttack sub_7CC338@0x7cc338 reads charLevel+action+count+
+// per{mobOid; if!=0: byte+damage} with no trailing byte — GMS_v84.1
+// IDB-confirmed byte-identical to v83).
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x7a6882
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v87 ida=0x7f904c
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v84 ida=0x7cc338
 func TestSummonAttackBytes(t *testing.T) {
 	targets := []SummonAttackTarget{
 		NewSummonAttackTarget(1000001, 1234),

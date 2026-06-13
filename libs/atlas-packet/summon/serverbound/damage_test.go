@@ -37,9 +37,13 @@ var summonDamageMobBody = []byte{
 // ends clean across every version (the body shape is version-independent). v87
 // SetDamaged@0x7f879a emits a byte-identical body to v83/v95 (summonId + attackIdx
 // + damage + mobTemplateId + dir<0 byte; 0xFE no-mob sentinel branch present).
+// v84 SetDamaged sub_7CBAF6@0x7cbaf6 (op 0xB6) emits the byte-identical body too
+// (GMS_v84.1 IDB-confirmed: COutPacket(182)+Encode4 cid + mob-path{attackIdx,
+// damage,templateId,dir<0} or no-mob{0xFE,damage}).
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v95 ida=0x74b730
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v83 ida=0x7a607a
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v87 ida=0x7f879a
+// packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v84 ida=0x7cbaf6
 func TestDamageDecodeMob(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

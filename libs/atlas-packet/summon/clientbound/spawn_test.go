@@ -71,8 +71,13 @@ var summonSpawnV83Body = []byte{
 // target sub_9B3749, which reads cid + skillId + charLevel + SLV (only ONE int
 // between cid and the two bytes → no oid) then the Init blob sub_7F504A —
 // IDB-confirmed identical to v83.
+// v84 spawn = the field op 0xB3 vtable+0x30 target sub_97038B@0x97038b, which
+// reads cid + skillId + charLevel + SLV (only ONE int between cid and the two
+// bytes → no oid) then the Init blob sub_7C83D7 — GMS_v84.1 IDB-confirmed
+// byte-identical to v83.
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v83 ida=0x938f61
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v87 ida=0x9b3749
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v84 ida=0x97038b
 func TestSummonSpawnBytesV83(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 83, 1)

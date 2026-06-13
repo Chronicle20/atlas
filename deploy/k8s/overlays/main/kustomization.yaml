@@ -249,6 +249,8 @@ images:
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
     newTag: main-2a9acd7
+  - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
+    newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations

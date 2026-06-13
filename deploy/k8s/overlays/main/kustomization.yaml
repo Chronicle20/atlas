@@ -200,7 +200,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
-    newTag: main-2a9acd7
+    newTag: main-ebb87bc
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
@@ -290,7 +290,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
     newTag: main-2a9acd7
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
-    newTag: main-2a9acd7
+    newTag: main-ebb87bc
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
     newTag: main-2a9acd7
 commonLabels:

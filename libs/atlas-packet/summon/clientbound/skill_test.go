@@ -48,7 +48,10 @@ func TestSummonSkill(t *testing.T) {
 // reads one Decode1, masks 0x7F (IDB-confirmed, summon-wire-truth.md).
 // v83 SKILL behavior lives at OnHit@0x7a6e5a (the LOWER of the swapped
 // skill/damage opcodes); the export key CSummonedPool::OnSkill records this addr.
+// v87 SKILL behavior lives at OnHit@0x7f963b (op 0xC1): one Decode1, &0x7F,
+// SetAttackAction@0x7f9695 — same single-byte shape, no oid.
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v87 ida=0x7f963b
 func TestSummonSkillBytes(t *testing.T) {
 	in := NewSummonSkill(42, 1000001, 6)
 	ctx := test.CreateContext("GMS", 83, 1)

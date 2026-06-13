@@ -86,6 +86,7 @@ var summonAttackV83Body = []byte{
 // exact sequence with NO oid and NO trailing byte (v87 reader
 // CSummonedPool::OnAttack@0x7f904c has no trailing Decode1).
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x7a6882
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v87 ida=0x7f904c
 func TestSummonAttackBytes(t *testing.T) {
 	targets := []SummonAttackTarget{
 		NewSummonAttackTarget(1000001, 1234),

@@ -67,8 +67,12 @@ var summonSpawnV83Body = []byte{
 }
 
 // TestSummonSpawnBytesV83 pins the classic (pre-95) layout. v83/v84/v87/JMS185
-// all share this exact byte sequence (no oid).
+// all share this exact byte sequence (no oid). v87 spawn = the op 0xBC vtable+0x30
+// target sub_9B3749, which reads cid + skillId + charLevel + SLV (only ONE int
+// between cid and the two bytes → no oid) then the Init blob sub_7F504A —
+// IDB-confirmed identical to v83.
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v83 ida=0x938f61
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v87 ida=0x9b3749
 func TestSummonSpawnBytesV83(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 83, 1)

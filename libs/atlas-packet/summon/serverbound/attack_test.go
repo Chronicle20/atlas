@@ -60,7 +60,11 @@ func TestSummonAttackDecodeV83(t *testing.T) {
 
 // TestSummonAttackDecodeV87 decodes a real-shaped 2-target v87 attack send: the
 // anti-hack envelope (drInfo/dwKey/crc32) is present but there is NO trailing
-// repeatSkillPoint. Confirmed against CSummoned::TryDoingAttackManual @0x7f6666.
+// repeatSkillPoint. Confirmed against CSummoned::TryDoingAttackManual @0x7f6666
+// (send block: COutPacket(0xBC) + summonId@0x7f7c7f + 4×drInfo + updateTime +
+// action + dwKey + crc32 + count + 4×pos, then the per-target loop @0x7f7e6d with
+// NO repeatSkillPoint, then skillCRC@0x7f811c).
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v87 ida=0x7f6666
 func TestSummonAttackDecodeV87(t *testing.T) {
 	body := envelopeHeader(1000005, false)
 	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)

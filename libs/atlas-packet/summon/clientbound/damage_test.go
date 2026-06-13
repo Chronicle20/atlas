@@ -47,7 +47,10 @@ func TestSummonDamageBytes(t *testing.T) {
 
 // TestSummonDamageBytesV87 pins that v87 is byte-identical to v83: NO oid (oid is
 // v95+) and NO trailing dir byte (v87 OnSkill@0x7f969f reads nothing after bLeft,
-// same as v83 and v95 — IDB-confirmed).
+// same as v83 and v95 — IDB-confirmed). v87 DAMAGE behavior lives at OnSkill@0x7f969f
+// (op 0xC0, the higher of the swapped skill/damage handlers); the export key
+// CSummonedPool::OnHit records this addr.
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v87 ida=0x7f969f
 func TestSummonDamageBytesV87(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 87, 1)

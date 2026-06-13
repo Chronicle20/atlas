@@ -4,7 +4,7 @@
   "Address": "0x7c429c",
   "Variant": "GMS/v87",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/field/clientbound/set_field.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/set_field.go",
   "Rows": [
     {
       "Index": 0,
@@ -242,7 +242,7 @@
     },
     {
       "Index": 26,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -251,15 +251,6 @@
     },
     {
       "Index": 27,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 28,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -268,8 +259,17 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 29,
+      "Index": 28,
       "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -287,15 +287,6 @@
     },
     {
       "Index": 31,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 32,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -304,8 +295,17 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
+      "Index": 32,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
       "Index": 33,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -314,7 +314,7 @@
     },
     {
       "Index": 34,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -332,7 +332,7 @@
     },
     {
       "Index": 36,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -341,7 +341,7 @@
     },
     {
       "Index": 37,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -386,7 +386,7 @@
     },
     {
       "Index": 42,
-      "AtlasOp": 3,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -395,8 +395,8 @@
     },
     {
       "Index": 43,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -404,8 +404,8 @@
     },
     {
       "Index": 44,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -413,15 +413,6 @@
     },
     {
       "Index": 45,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 46,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -430,7 +421,7 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 47,
+      "Index": 46,
       "AtlasOp": 0,
       "AtlasKind": 1,
       "IDAOp": 0,
@@ -439,8 +430,8 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 48,
-      "AtlasOp": 2,
+      "Index": 47,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -448,9 +439,18 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 49,
+      "Index": 48,
       "AtlasOp": 0,
       "AtlasKind": 1,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 49,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -459,7 +459,7 @@
     {
       "Index": 50,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -468,7 +468,7 @@
     {
       "Index": 51,
       "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -477,7 +477,7 @@
     {
       "Index": 52,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -486,7 +486,7 @@
     {
       "Index": 53,
       "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -495,7 +495,7 @@
     {
       "Index": 54,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -504,7 +504,7 @@
     {
       "Index": 55,
       "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -513,7 +513,7 @@
     {
       "Index": 56,
       "AtlasOp": 0,
-      "AtlasKind": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -521,7 +521,7 @@
     },
     {
       "Index": 57,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -530,7 +530,7 @@
     },
     {
       "Index": 58,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -548,7 +548,7 @@
     },
     {
       "Index": 60,
-      "AtlasOp": 3,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -557,7 +557,7 @@
     },
     {
       "Index": 61,
-      "AtlasOp": 2,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -566,15 +566,6 @@
     },
     {
       "Index": 62,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
-    },
-    {
-      "Index": 63,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -583,8 +574,17 @@
       "Note": "atlas: extra — client never reads this field"
     },
     {
-      "Index": 64,
+      "Index": 63,
       "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 64,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -611,7 +611,7 @@
     },
     {
       "Index": 67,
-      "AtlasOp": 4,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -620,7 +620,7 @@
     },
     {
       "Index": 68,
-      "AtlasOp": 1,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -638,7 +638,7 @@
     },
     {
       "Index": 70,
-      "AtlasOp": 3,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -647,7 +647,7 @@
     },
     {
       "Index": 71,
-      "AtlasOp": 1,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -683,7 +683,7 @@
     },
     {
       "Index": 75,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -710,7 +710,7 @@
     },
     {
       "Index": 78,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -719,7 +719,7 @@
     },
     {
       "Index": 79,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -737,7 +737,7 @@
     },
     {
       "Index": 81,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -746,7 +746,7 @@
     },
     {
       "Index": 82,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -773,7 +773,7 @@
     },
     {
       "Index": 85,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -809,6 +809,15 @@
     },
     {
       "Index": 89,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 90,
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -817,6 +826,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

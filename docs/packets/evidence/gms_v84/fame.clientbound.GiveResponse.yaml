@@ -1,0 +1,8 @@
+packet: fame/clientbound/GiveResponse
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGivePopularityResult#GiveResponse
+    address: "0xa6d8ee"
+    decompile_sha256: e9c9fe224cc1614ae924cd5192775241cf78a34dada6cc5437e3740feb6f5c76

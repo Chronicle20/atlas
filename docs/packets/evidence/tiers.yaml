@@ -1,0 +1,60 @@
+# Tier-1 membership (task-085 design §8): these packets can only reach
+# `verified` through a linked byte-fixture test; the flat-diff verdict is
+# advisory. Moving a packet between tiers is a reviewed edit to this file.
+
+# The 8 opaque families from OPAQUE_LEDGER.md. Exact Go type names as they
+# appear in libs/atlas-packet/model/ and libs/atlas-packet/interaction/.
+#
+# TypeRegistry recursion (Task 3.2) now resolves opaque_types entries to their
+# consumer packets via TypeForWriter + transitiveRecurseTypes. This covers the
+# full WriterName→StructName→KindRecurse chain for packets that directly call
+# subStruct.Encode (e.g. monster stat packets reach MonsterTemporaryStat).
+#
+# Remaining limitations (verified during review — note WriteByteArray itself IS
+# modeled as KindRecurse by the analyzer; the real gaps are different):
+#   1. Short-name misresolution: the analyzer drops the `model.` qualifier on
+#      field-type hints, so e.g. monster/clientbound.Movement's `model.Movement`
+#      field resolves to the consumer package's own Movement struct
+#      (self-recursion) instead of the opaque model.Movement.
+#   2. WriterName mismatches: some reports' WriterNames match neither the
+#      Operation() const value nor its suffix-stripped alt key (e.g.
+#      InventoryAdd), so TypeForWriter misses.
+# Until those are fixed (follow-up task), the packet_prefixes entries below
+# retain coverage for the affected families (D4 — must not narrow silently).
+opaque_types:
+  - MonsterTemporaryStat    # CMob::SetTemporaryStat — mask-driven ~25-field blob
+  - Movement                # model.Movement — element-loop move-path (monster, pet, char, npc)
+  - Pet                     # CPet body — prefix decomposed, body opaque
+  - Avatar                  # AvatarLook byte-blob in messenger/clientbound/{add,update}
+  - Asset                   # model.Asset / GW_ItemSlotBase — per-tab item-slot loop
+  - GuildMember             # GUILDMEMBER — packed fixed-stride 37-byte array
+  - Visitor                 # interaction.Visitor / Room — mini-room sub-structs
+  - CharacterStatistics     # GW_CharacterStat — mask-driven variable stat block
+
+# Packet-prefix coverage. Two categories:
+#   1. Social/lobby dispatcher families (design §8 baseline): these are inherently
+#      complex shared-struct consumers; kept unconditionally.
+#   2. Opaque-type consumer families: retained because of the recursion gaps
+#      documented above (short-name misresolution + WriterName mismatches).
+#      Removing these prefixes would silently drop T1 for MonsterMovement,
+#      PetMovement, InventoryAdd, CharacterSpawn etc.
+# Every entry here is a directory that exists under libs/atlas-packet/.
+packet_prefixes:
+  # Social/lobby dispatcher families (design §8 baseline — complex shared structs)
+  - party/
+  - guild/          # also covers GuildMember opaque type
+  - buddy/
+  - messenger/      # also covers Avatar (AvatarLook) opaque type
+  - note/           # atlas-packet dir: note/ (not memo/)
+  # Opaque-type consumer families (WriteByteArray pattern — recursion can't trace these)
+  - npc/            # clientbound/serverbound action packets use Movement; no conversation/ subdir
+  - interaction/    # Visitor + Room + Asset opaque types
+  - storage/        # Asset opaque type
+  - cash/           # Asset opaque type
+  - inventory/      # Asset opaque type (InventoryAdd, InventoryChangeBatch)
+  - monster/        # MonsterTemporaryStat + Movement opaque types
+  - pet/            # Pet + Movement opaque types
+  - character/      # CharacterStatistics + Pet + Avatar consumers
+  - field/          # SET_FIELD encodes charpkt.CharacterData → CharacterStatistics/Asset/Pet
+
+packets: []

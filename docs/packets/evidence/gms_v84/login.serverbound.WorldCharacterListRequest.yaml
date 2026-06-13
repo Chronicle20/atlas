@@ -1,0 +1,8 @@
+packet: login/serverbound/WorldCharacterListRequest
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendLoginPacket
+    address: "0x60bca3"
+    decompile_sha256: 066ef3c250029a0a2be412fe255c41642d0f8608df8ba12ce8f68804f8eae814

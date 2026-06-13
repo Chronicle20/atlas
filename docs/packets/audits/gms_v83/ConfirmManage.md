@@ -1,7 +1,7 @@
 # ConfirmManage (← `CWvsContext::OnEntrustedShopCheckResult#ConfirmManage`)
 
 - **IDA:** 0xa27d75
-- **Atlas file:** `../../libs/atlas-packet/merchant/clientbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/merchant/clientbound/operation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -1,0 +1,8 @@
+packet: buddy/clientbound/BuddyChannelChange
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#ChannelChange
+    address: "0xb2a873"
+    decompile_sha256: fed4f16d94fd56b2c2aca6f539565cf066e18c463430cef5c94a9971433a2261

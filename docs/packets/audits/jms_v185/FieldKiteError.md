@@ -1,7 +1,7 @@
 # FieldKiteError (← `CMessageBoxPool::OnCreateFailed`)
 
 - **IDA:** 0x6d594d
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/kite_error.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/kite_error.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

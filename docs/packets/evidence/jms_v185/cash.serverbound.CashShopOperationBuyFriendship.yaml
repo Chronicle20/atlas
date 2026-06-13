@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationBuyFriendship
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuyFriendship
+    address: "0x481184"
+    decompile_sha256: 263fc2c3bc7959be80b871388ad5f33497ec67831bc0a8526747debb91a941cc
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_operation_buy_friendship_test.go#TestShopOperationBuyFriendshipJMS

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskTextConversationDetail
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskText#AskText
+    address: "0x791cd0"
+    decompile_sha256: 9501d74dfd26f6d98d91f763062275cf0e7e4c37a044e3eed5941fb4bcd1a57e

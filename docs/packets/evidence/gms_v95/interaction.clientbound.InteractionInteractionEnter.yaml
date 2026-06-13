@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionEnter
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Enter
+    address: "0x638f80"
+    decompile_sha256: 221e472982db37ab1da764c27df61c2a1138633ab4ad00faf3dc26648bd365b4

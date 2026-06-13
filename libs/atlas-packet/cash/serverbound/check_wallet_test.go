@@ -6,6 +6,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=cash/serverbound/CashCheckWallet version=gms_v95 ida=0x481bc0
+// packet-audit:verify packet=cash/serverbound/CashCheckWallet version=gms_v87 ida=0x47d27e
+// packet-audit:verify packet=cash/serverbound/CashCheckWallet version=gms_v83 ida=0x472958
+// packet-audit:verify packet=cash/serverbound/CashCheckWallet version=jms_v185 ida=0x48441d
+// packet-audit:verify packet=cash/serverbound/CashCheckWallet version=gms_v84 ida=0x47544e
 func TestCheckWalletRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

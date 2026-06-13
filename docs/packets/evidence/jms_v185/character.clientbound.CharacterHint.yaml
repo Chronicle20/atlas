@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterHint
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnBalloonMsg
+    address: "0xa292df"
+    decompile_sha256: c9259caf03ce47233ba64b172a65064b45e1d7a0d57e1aae1cef969e2fbbc1b5

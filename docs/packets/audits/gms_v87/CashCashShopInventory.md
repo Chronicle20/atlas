@@ -1,7 +1,7 @@
 # CashCashShopInventory (← `CCashShop::OnCashItemResult#CashShopInventory`)
 
 - **IDA:** 0x484c1d
-- **Atlas file:** `../../libs/atlas-packet/cash/clientbound/shop_inventory.go`
+- **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_inventory.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** 🔍

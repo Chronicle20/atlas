@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerChat
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Chat
+    address: "0x8e4851"
+    decompile_sha256: d5bd32031b02ce7c21c94ee47234d128289b1bd55615284253bfbd99e3e7b296

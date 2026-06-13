@@ -55,6 +55,7 @@ func TestCreateCharacterVersionBoundary(t *testing.T) {
 // Encode4(dwKey,crc32) before CMovePath::Flush, while v83 EndUpdateActive
 // (@0x9cb992) writes only fieldKey+crc. So the dr-block is present v84+, NOT
 // v87+. v84..86 must therefore match the v87 dr-block layout and differ from v83.
+// packet-audit:verify packet=character/serverbound/Move version=gms_v83 ida=0x9cb992
 func TestMoveVersionBoundary(t *testing.T) {
 	m := Move{dr0: 100, dr1: 200, fieldKey: 42, dr2: 300, dr3: 400, crc: 500, dwKey: 600, crc32: 700}
 	encode := func(major uint16) []byte {

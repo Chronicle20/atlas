@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetCashFoodResult
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCashPetFoodResult
+    address: "0xa7480c"
+    decompile_sha256: eaac8bc7bff0b6fd320cb82619e60190d77c21fceb177a039f4839861a1f9726

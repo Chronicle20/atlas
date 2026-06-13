@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildTitleChange
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#TitleChange
+    address: "0xa0e239"
+    decompile_sha256: 989bd1c45d64bca8ece46f7e9c093aaf3e587653faad1a44b0625d8fd6c1d1f7

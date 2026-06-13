@@ -1,7 +1,7 @@
 # NpcAskQuizConversationDetail (← `CScriptMan::OnAskQuiz#AskQuiz`)
 
 - **IDA:** 0x7b84ef
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ✅

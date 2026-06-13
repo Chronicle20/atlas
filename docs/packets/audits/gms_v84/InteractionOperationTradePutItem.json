@@ -1,0 +1,57 @@
+{
+  "WriterName": "InteractionOperationTradePutItem",
+  "IDAName": "CTradingRoomDlg::PutItem",
+  "Address": "0x7e96e5",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

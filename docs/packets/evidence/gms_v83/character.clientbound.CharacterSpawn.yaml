@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterSpawn
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserPool::OnUserEnterField
+    address: "0x972100"
+    decompile_sha256: c0f03376536d743c40d9c5abceed6df913229aca622e6d106138a58f79816afd

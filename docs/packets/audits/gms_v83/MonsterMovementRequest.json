@@ -4,7 +4,7 @@
   "Address": "0x66b6fc",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/monster/serverbound/movement.go",
+  "AtlasFile": "libs/atlas-packet/monster/serverbound/movement.go",
   "Rows": [
     {
       "Index": 0,
@@ -53,12 +53,12 @@
     },
     {
       "Index": 5,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "state byte (atlas moveFlags — packed `(v42 == 0) | (16 * v43)`)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 6,
@@ -89,14 +89,140 @@
     },
     {
       "Index": 9,
-      "AtlasOp": 5,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CMovePath::Flush body (Movement elements). v83 lacks the post-Flush bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration tail that v87+ carry.",
       "Verdict": 0,
       "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
     }
   ],
-  "Verdict": 0,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

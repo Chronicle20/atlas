@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildForeignEmblemChanged
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnGuildMarkChanged
+    address: "0xa57689"
+    decompile_sha256: d16dc993fd7d2be138892abe8ced4dc8cbd9110986dc4ab8bbdd9a5160877e09

@@ -1,7 +1,7 @@
 # Move (← `CVecCtrlUser::EndUpdateActive`)
 
 - **IDA:** 0xaaa076
-- **Atlas file:** `../../libs/atlas-packet/character/serverbound/move.go`
+- **Atlas file:** `libs/atlas-packet/character/serverbound/move.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** 🔍
@@ -11,9 +11,15 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `detectFlag (v26 = a1[151])` | ✅ |  |
-| 1 | int16 | byte `fieldKey (CField+328, only if detectFlag)` | ❌ | width mismatch |
-| 2 | int16 | int32 `crc (CField+756, only if detectFlag)` | ❌ | width mismatch |
-| 3 | byte | bytes `CMovePath::Flush — movement data (only if detectFlag)` | ✅ |  |
-| 4 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 0 | int32 | byte `detectFlag (v26 = a1[151])` | ❌ | width mismatch |
+| 1 | int32 | byte `fieldKey (CField+328, only if detectFlag)` | ❌ | width mismatch |
+| 2 | byte | int32 `crc (CField+756, only if detectFlag)` | ❌ | width mismatch |
+| 3 | int32 | bytes `CMovePath::Flush — movement data (only if detectFlag)` | ✅ |  |
+| 4 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 5 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 6 | int32 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 7 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 8 | int16 | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 9 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
+| 10 | byte | byte `` | ✅ | absorbed by trailing opaque buffer |
 

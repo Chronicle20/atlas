@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationChat
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::CheckAndSendChat
+    address: "0x6382a0"
+    decompile_sha256: 0840d3785d30b6a3eae0333200164598afd78a84bc80e13ef4b6613ef0567be0

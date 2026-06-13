@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationBuyFriendship
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuyFriendship
+    address: "0x473550"
+    decompile_sha256: f8d47f41ec9fb4be0efd8625b023cb3be4a892638f492dfd796611af24995d72

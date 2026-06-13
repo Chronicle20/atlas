@@ -1,7 +1,7 @@
 # NpcSayImageConversationDetail (← `CScriptMan::OnSayImage#SayImage`)
 
 - **IDA:** 0x7919a9
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

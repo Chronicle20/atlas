@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyChangeLeader
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#ChangeLeader
+    address: "0xad697a"
+    decompile_sha256: 2a75ef3c745de94e18edda2e3af1273b3ea27ec01d833aac68c6ece366c6e83a

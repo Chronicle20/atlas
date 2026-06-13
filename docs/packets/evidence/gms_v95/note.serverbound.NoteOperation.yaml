@@ -1,0 +1,8 @@
+packet: note/serverbound/NoteOperation
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoNotify_Receive
+    address: "0x9f3830"
+    decompile_sha256: 3a98e2149c6f98fa253f6ef2980559bb309e35020b16d5cdfa07f095762b65d5

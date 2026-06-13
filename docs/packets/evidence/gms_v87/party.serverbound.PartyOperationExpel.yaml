@@ -1,0 +1,8 @@
+packet: party/serverbound/PartyOperationExpel
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendKickPartyMsg
+    address: "0x55731d"
+    decompile_sha256: 078f77fa23ed616f0909ed5ef8ba01ad5c2e73ab9226153299913b363bb61b77

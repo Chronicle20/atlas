@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcGuideTalkMessage
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnTutorMsg#Message
+    address: "0xa2d342"
+    decompile_sha256: 7ab8c8f11487bb54e28ee3dc217f681e04d91372116dd1e16e3978f1d766e41d

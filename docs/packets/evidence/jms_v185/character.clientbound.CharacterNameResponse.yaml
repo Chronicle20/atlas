@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterNameResponse
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckDuplicatedIDResult
+    address: "0x66f957"
+    decompile_sha256: c72b31815565fa8fdaf2cafd861ec959a73dfe3c992248b59bce2f71ab9271f5

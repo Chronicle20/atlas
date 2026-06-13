@@ -1,0 +1,8 @@
+packet: login/clientbound/AuthPermanentBan
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckPasswordResult#AuthPermanentBan
+    address: "0x60d368"
+    decompile_sha256: e91bf69e31176e6b67a7f9fb4a679f792c05ef4f331af142b7e8a45c4ef58f12

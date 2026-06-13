@@ -1,0 +1,9 @@
+packet: guild/clientbound/GuildInvite
+direction: clientbound
+version: gms_v83
+category: OP-MODE-PREFIX
+ida:
+    function: CWvsContext::OnGuildResult#Invite
+    address: "0xa37490"
+    decompile_sha256: 824f420b1998b439989e055cca4363843340bc82ddc83531ce5f1214b023fa7b
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (guild clientbound row): OnGuildResult mode-byte prefix; bodies verified after 29a248285."

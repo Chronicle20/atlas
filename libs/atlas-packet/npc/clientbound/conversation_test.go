@@ -19,6 +19,74 @@ func asciiBytes(s string) []byte {
 	return out
 }
 
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v83 ida=0x76b5c8
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v87 ida=0x792bb4
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v95 ida=0x6dbe50
+// packet-audit:verify packet=npc/clientbound/NpcAskAvatarConversationDetail version=gms_v83 ida=0x74713d
+// packet-audit:verify packet=npc/clientbound/NpcAskBoxTextConversationDetail version=gms_v83 ida=0x746c46
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v83 ida=0x74730b
+// packet-audit:verify packet=npc/clientbound/NpcAskMenuConversationDetail version=gms_v83 ida=0x746fad
+// packet-audit:verify packet=npc/clientbound/NpcAskNumberConversationDetail version=gms_v83 ida=0x746dff
+// packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=gms_v83 ida=0x74775c
+// packet-audit:verify packet=npc/clientbound/NpcAskPetConversationDetail version=gms_v83 ida=0x7474a2
+// packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=gms_v83 ida=0xa26b09
+// packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=gms_v83 ida=0xa26c66
+// packet-audit:verify packet=npc/clientbound/NpcAskTextConversationDetail version=gms_v83 ida=0x746a8b
+// packet-audit:verify packet=npc/clientbound/NpcAskYesNoConversationDetail version=gms_v83 ida=0x74692c
+// packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=gms_v83 ida=0x74660a
+// packet-audit:verify packet=npc/clientbound/NpcSayConversationDetail version=gms_v83 ida=0x7467ab
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=gms_v83 ida=0x961275
+// packet-audit:verify packet=npc/clientbound/NpcAskAvatarConversationDetail version=gms_v87 ida=0x792330
+// packet-audit:verify packet=npc/clientbound/NpcAskBoxTextConversationDetail version=gms_v87 ida=0x791e79
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v87 ida=0x7924cc
+// packet-audit:verify packet=npc/clientbound/NpcAskMenuConversationDetail version=gms_v87 ida=0x7921a8
+// packet-audit:verify packet=npc/clientbound/NpcAskNumberConversationDetail version=gms_v87 ida=0x792020
+// packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=gms_v87 ida=0x7928f1
+// packet-audit:verify packet=npc/clientbound/NpcAskPetConversationDetail version=gms_v87 ida=0x792663
+// packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=gms_v87 ida=0x792b90
+// packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=gms_v87 ida=0x792ba2
+// packet-audit:verify packet=npc/clientbound/NpcAskTextConversationDetail version=gms_v87 ida=0x791cd0
+// packet-audit:verify packet=npc/clientbound/NpcAskYesNoConversationDetail version=gms_v87 ida=0x791b70
+// packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=gms_v87 ida=0x791666
+// packet-audit:verify packet=npc/clientbound/NpcSayConversationDetail version=gms_v87 ida=0x791828
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=gms_v87 ida=0x7919a9
+// packet-audit:verify packet=npc/clientbound/NpcAskAvatarConversationDetail version=gms_v95 ida=0x6dcff0
+// packet-audit:verify packet=npc/clientbound/NpcAskBoxTextConversationDetail version=gms_v95 ida=0x6dc9c0
+// packet-audit:verify packet=npc/clientbound/NpcAskMenuConversationDetail version=gms_v95 ida=0x6dce00
+// packet-audit:verify packet=npc/clientbound/NpcAskNumberConversationDetail version=gms_v95 ida=0x6dcc00
+// packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=gms_v95 ida=0x6ddbe0
+// packet-audit:verify packet=npc/clientbound/NpcAskPetConversationDetail version=gms_v95 ida=0x6dd6e0
+// packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=gms_v95 ida=0x9ffad0
+// packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=gms_v95 ida=0x9f1d50
+// packet-audit:verify packet=npc/clientbound/NpcAskTextConversationDetail version=gms_v95 ida=0x6dc790
+// packet-audit:verify packet=npc/clientbound/NpcAskYesNoConversationDetail version=gms_v95 ida=0x6dc5a0
+// packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=gms_v95 ida=0x6de0f0
+// packet-audit:verify packet=npc/clientbound/NpcSayConversationDetail version=gms_v95 ida=0x6dc110
+// packet-audit:verify packet=npc/clientbound/NpcAskAvatarConversationDetail version=jms_v185 ida=0x7b7e1d
+// packet-audit:verify packet=npc/clientbound/NpcAskBoxTextConversationDetail version=jms_v185 ida=0x7b7966
+// packet-audit:verify packet=npc/clientbound/NpcAskMenuConversationDetail version=jms_v185 ida=0x7b7c95
+// packet-audit:verify packet=npc/clientbound/NpcAskNumberConversationDetail version=jms_v185 ida=0x7b7b0d
+// packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=jms_v185 ida=0x7b8250
+// packet-audit:verify packet=npc/clientbound/NpcAskPetConversationDetail version=jms_v185 ida=0x7b7fc2
+// packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=jms_v185 ida=0x7b84ef
+// packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=jms_v185 ida=0x7b8501
+// packet-audit:verify packet=npc/clientbound/NpcAskTextConversationDetail version=jms_v185 ida=0x7b77bd
+// packet-audit:verify packet=npc/clientbound/NpcAskYesNoConversationDetail version=jms_v185 ida=0x7b765d
+// packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=jms_v185 ida=0x7b7160
+// packet-audit:verify packet=npc/clientbound/NpcSayConversationDetail version=jms_v185 ida=0x7b7315
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=jms_v185 ida=0x7b7496
+// packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=gms_v84 ida=0x76850a
+// packet-audit:verify packet=npc/clientbound/NpcAskAvatarConversationDetail version=gms_v84 ida=0x76921d
+// packet-audit:verify packet=npc/clientbound/NpcAskBoxTextConversationDetail version=gms_v84 ida=0x768d26
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v84 ida=0x7693eb
+// packet-audit:verify packet=npc/clientbound/NpcAskNumberConversationDetail version=gms_v84 ida=0x768edf
+// packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=gms_v84 ida=0x76983c
+// packet-audit:verify packet=npc/clientbound/NpcAskPetConversationDetail version=gms_v84 ida=0x769582
+// packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=gms_v84 ida=0xa722bf
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v84 ida=0x769b26
+// packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=gms_v84 ida=0xa7241c
+// packet-audit:verify packet=npc/clientbound/NpcAskYesNoConversationDetail version=gms_v84 ida=0x768a0b
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=gms_v84 ida=0x768844
 func TestNpcConversationSay(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	detail := &SayConversationDetail{Message: "Hello adventurer!", Next: true, Previous: false}
@@ -65,6 +133,7 @@ func TestNpcConversationAskMenu(t *testing.T) {
 // TestSayImageConversationDetailEncode verifies the image-count prefix is a
 // single byte, matching CScriptMan::OnSayImage@0x6dc310 which reads the count
 // via CInPacket::Decode1 (line 61, 0x6dc3d9) before looping DecodeStr.
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=gms_v95 ida=0x6dc310
 func TestSayImageConversationDetailEncode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range test.Variants {
@@ -87,6 +156,7 @@ func TestSayImageConversationDetailEncode(t *testing.T) {
 // prefix is a single byte, matching CScriptMan::OnAskMembershopAvatar@0x6dd340
 // (case 9) which reads the count via CInPacket::Decode1 (line 55, 0x6dd394)
 // before looping Decode4 per candidate.
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v95 ida=0x6dd340
 func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range test.Variants {
@@ -111,6 +181,7 @@ func TestAskMemberShopAvatarConversationDetailEncode(t *testing.T) {
 // (v84..86 == v83, off-by-one fix, delta §3.2).
 // JMS185 sub_7E2A97@0x7e2a97 reads two leading Decode4s (slideDlgType + menuType)
 // then DecodeStr(message) unconditionally; GMS v83 reads a single Decode4.
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=jms_v185 ida=0x7b8513
 func TestAskSlideMenuConversationDetailEncode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	intBytes := func(v uint32) []byte {

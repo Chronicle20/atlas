@@ -2020,19 +2020,19 @@
         "writer": "GuideTalk"
       },
       {
-        "opCode": "0xEE",
+        "opCode": "0xF0",
         "writer": "CharacterSkillCooldown"
       },
       {
-        "opCode": "0xF2",
+        "opCode": "0xEC",
         "writer": "SpawnMonster"
       },
       {
-        "opCode": "0xF3",
+        "opCode": "0xED",
         "writer": "DestroyMonster"
       },
       {
-        "opCode": "0xF4",
+        "opCode": "0xEE",
         "writer": "ControlMonster"
       },
       {

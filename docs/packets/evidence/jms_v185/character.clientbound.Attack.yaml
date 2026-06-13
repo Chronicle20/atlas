@@ -1,0 +1,8 @@
+packet: character/clientbound/Attack
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnAttack
+    address: "0xa537ef"
+    decompile_sha256: 2d1d087b26a10348521561fb1b9ac2d3364e47bd38ca485bbb0c000769ef4106

@@ -1,7 +1,7 @@
 # InventoryChangeMove (← `CWvsContext::OnInventoryOperation#ChangeMove`)
 
 - **IDA:** 0xa1ead9
-- **Atlas file:** `../../libs/atlas-packet/inventory/clientbound/change.go`
+- **Atlas file:** `libs/atlas-packet/inventory/clientbound/change.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

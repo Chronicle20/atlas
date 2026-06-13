@@ -1,0 +1,8 @@
+packet: monster/serverbound/MonsterMovementRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::GenerateMovePath
+    address: "0x6e8892"
+    decompile_sha256: 3d525921254100b92f6f981c79fe32d373a04e23ade4466d3b5b5fffb1e2465d

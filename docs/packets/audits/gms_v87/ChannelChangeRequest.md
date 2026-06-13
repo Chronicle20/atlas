@@ -1,7 +1,7 @@
 # ChannelChangeRequest (← `CField::SendTransferChannelRequest`)
 
 - **IDA:** 0x557cb4
-- **Atlas file:** `../../libs/atlas-packet/channel/serverbound/channel_change.go`
+- **Atlas file:** `libs/atlas-packet/channel/serverbound/channel_change.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

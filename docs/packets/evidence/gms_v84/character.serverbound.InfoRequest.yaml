@@ -1,0 +1,8 @@
+packet: character/serverbound/InfoRequest
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendCharacterInfoRequest
+    address: "0xa6f657"
+    decompile_sha256: 2f396f6e4a1d8aa7b0ff7810e7fa4f67e121a4cfaafa804f0d6c12a227b907f9

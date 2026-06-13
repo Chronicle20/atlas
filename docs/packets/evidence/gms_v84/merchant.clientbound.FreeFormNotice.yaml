@@ -1,0 +1,8 @@
+packet: merchant/clientbound/FreeFormNotice
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice
+    address: "0xa73538"
+    decompile_sha256: 5e8aacfadc40780966c10081ab17efa9ea7d976d80ee0c02a3758b75d66a26e2

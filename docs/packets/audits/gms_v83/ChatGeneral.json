@@ -4,27 +4,36 @@
   "Address": "0x52c315",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/chat/serverbound/general.go",
+  "AtlasFile": "libs/atlas-packet/chat/serverbound/general.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "text",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "balloon (bShowBalloon)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 0,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

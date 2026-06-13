@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildCapacityChange
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#CapacityChange
+    address: "0xa37490"
+    decompile_sha256: 36462e98636ace5f2e3ea5292bbca33860e9cc1556c8075c3433f76284cd6f98

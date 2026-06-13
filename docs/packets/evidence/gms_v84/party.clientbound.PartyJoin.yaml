@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyJoin
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Join
+    address: "0xa89cf3"
+    decompile_sha256: 4d283689b2f0605faeb773228ea6fb188dbce7e9c4ed29fb86bfe3cd3bc9ee9c

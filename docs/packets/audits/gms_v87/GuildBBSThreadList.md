@@ -1,7 +1,7 @@
 # GuildBBSThreadList (← `CUIGuildBBS::OnGuildBBSPacket#BBSThreadList`)
 
 - **IDA:** 0x87a5df
-- **Atlas file:** `../../libs/atlas-packet/guild/clientbound/bbs.go`
+- **Atlas file:** `libs/atlas-packet/guild/clientbound/bbs.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 2
 - **Verdict:** 🔍

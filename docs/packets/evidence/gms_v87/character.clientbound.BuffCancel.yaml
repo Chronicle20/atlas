@@ -1,0 +1,8 @@
+packet: character/clientbound/BuffCancel
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTemporaryStatReset
+    address: "0xab7dc1"
+    decompile_sha256: d249c334424bf8069c1f177522b701ae254731b600874f0def53f63d7729dab3

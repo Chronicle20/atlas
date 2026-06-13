@@ -1,0 +1,5 @@
+- op: SPAWN_MONSTER
+  direction: clientbound
+  opcode: 0x0EC
+  fname: "CMobPool::OnMobEnterField"
+  provenance: ida-discovered

@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildBBSReplyThread
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnComment
+    address: "0x7c4530"
+    decompile_sha256: 59b0fae61e3c2e04df35f9e78b466da7505da10695f975bf7360d81b609c1597

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskSlideMenuConversationDetail
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskSlideMenu#AskSlideMenu
+    address: "0x76b5c8"
+    decompile_sha256: 0b210a927c9cef97236b531ac40a9d62365794a8f764bd3d883db9e921b61973

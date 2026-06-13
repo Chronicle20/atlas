@@ -1,0 +1,8 @@
+packet: character/serverbound/DistributeSp
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSkillUpRequest
+    address: "0xabb7c1"
+    decompile_sha256: 9075251f8140420d124311847bc91f29098e4fc95450a89890f91b3b324fe9dc

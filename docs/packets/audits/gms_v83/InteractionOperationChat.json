@@ -4,14 +4,14 @@
   "Address": "0x65f438",
   "Variant": "GMS/v83",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_chat.go",
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_chat.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "message (chat text). NOTE: v83 has NO leading update_time (v95-only addition)",
+      "IDAOp": 0,
+      "IDAComment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -19,10 +19,10 @@
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "message (chat text). NOTE: v83 has NO leading update_time (v95-only addition)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
   "Verdict": 3,

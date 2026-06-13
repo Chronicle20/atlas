@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskPetConversationDetail
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskPet#AskPet
+    address: "0x769582"
+    decompile_sha256: 34c7e6ea266952820fdd23db3a8433129feebc863c86bd9d9ea2d7a0d4023be4

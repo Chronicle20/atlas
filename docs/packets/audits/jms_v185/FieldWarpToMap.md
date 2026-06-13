@@ -1,7 +1,7 @@
 # FieldWarpToMap (← `CStage::OnSetField#WarpToMap`)
 
 - **IDA:** 0x7eea69
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/warp_to_map.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/warp_to_map.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** ✅

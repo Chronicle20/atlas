@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberJoined
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberJoined
+    address: "0xa82e2b"
+    decompile_sha256: e4d48aa5078ca0851cf4be1729f79c39162e274e4dfddd4f0b5f4278f5dcd83d

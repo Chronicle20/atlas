@@ -1,0 +1,8 @@
+packet: merchant/clientbound/RemoteShopWarp
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp
+    address: "0xa73538"
+    decompile_sha256: cfed8080089740ba1e5fdabccffb95b30c3735056c0b4e4165280c9438578408

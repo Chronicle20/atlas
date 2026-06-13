@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopList
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SetShopDlg
+    address: "0x774c61"
+    decompile_sha256: c33878c75c46c1347a38b6d58e8970ba0491932ba80c87abfbbebef18cfbf3df

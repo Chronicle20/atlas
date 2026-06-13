@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryItemUse
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemUseRequest
+    address: "0xa092fb"
+    decompile_sha256: ff50a91b8bb155197135cc4a889ff4ec6b3ba69f1e2965604394c1e3eaeb4f65

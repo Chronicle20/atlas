@@ -10,6 +10,8 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v83 ida=0xa1ead9
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v95 ida=0xa08a70
 func TestChangeBatchQuantityUpdateRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

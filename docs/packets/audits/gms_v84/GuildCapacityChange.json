@@ -1,0 +1,804 @@
+{
+  "WriterName": "GuildCapacityChange",
+  "IDAName": "CWvsContext::OnGuildResult#CapacityChange",
+  "Address": "0xa82e2b",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 26,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 30,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 31,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 32,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 33,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 34,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 35,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 36,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 37,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 38,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 39,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 40,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 41,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 42,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 43,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 44,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 45,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 46,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 47,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 48,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 49,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 50,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 51,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 52,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 53,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 54,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 55,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 56,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 57,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 58,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 59,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 60,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 61,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 62,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 63,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 64,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 65,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 66,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 67,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 68,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 69,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 70,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 71,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 72,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 73,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 74,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 75,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 76,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 77,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 78,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 79,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 80,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 81,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 82,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 83,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 84,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 85,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 86,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 87,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationBuyCouple
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuyCouple
+    address: "0x48085a"
+    decompile_sha256: 69208bb8227596430d641faa3fb4a79599e0532b1c42a29237dde04ca7346c7f
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_operation_buy_couple_test.go#TestShopOperationBuyCoupleJMS

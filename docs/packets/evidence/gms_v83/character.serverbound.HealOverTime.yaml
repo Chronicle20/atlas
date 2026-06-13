@@ -1,0 +1,8 @@
+packet: character/serverbound/HealOverTime
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeRequest
+    address: "0xa1e997"
+    decompile_sha256: 69b4b6af893c5f843c9b62dc41d6e5288a14ba3ad8ba71cf100922bdaacf2eb5

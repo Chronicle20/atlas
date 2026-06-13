@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcShop
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#ShopDispatch
+    address: "0x7ca2c9"
+    decompile_sha256: 030931419121a1ce763e31677287ee1f95ebf7b60f0e844364f3545145f288b7

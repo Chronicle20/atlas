@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryScrollUse
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendUpgradeItemUseRequest
+    address: "0xa53535"
+    decompile_sha256: b6663bdb3fb2f11667c26cb069f8c1d201836e70cb597c6b62ac0ce67eb544be

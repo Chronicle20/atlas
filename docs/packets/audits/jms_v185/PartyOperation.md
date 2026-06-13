@@ -1,7 +1,7 @@
 # PartyOperation (← `CField::SendCreateNewPartyMsg`)
 
 - **IDA:** 0x56ca8b
-- **Atlas file:** `../../libs/atlas-packet/party/serverbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/party/serverbound/operation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

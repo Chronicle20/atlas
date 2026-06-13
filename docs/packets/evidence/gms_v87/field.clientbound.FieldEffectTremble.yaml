@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectTremble
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#Tremble
+    address: "0x55abbb"
+    decompile_sha256: daeaef9c0d2d17c113374af62bee0901737d6192175e259dabb36e7257137bb5

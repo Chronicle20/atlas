@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldKiteSpawn
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMessageBoxPool::OnMessageBoxEnterField
+    address: "0x6d5978"
+    decompile_sha256: a3b1061424eca2f2e544784ab0edea58ffe7a39edef464be7195e905bfcd861c

@@ -1,7 +1,7 @@
 # ChannelChannelChange (← `CClientSocket::OnMigrateCommand`)
 
 - **IDA:** 0x496701
-- **Atlas file:** `../../libs/atlas-packet/channel/clientbound/change.go`
+- **Atlas file:** `libs/atlas-packet/channel/clientbound/change.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

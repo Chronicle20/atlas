@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldAffectedAreaRemoved
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CAffectedAreaPool::OnAffectedAreaRemoved
+    address: "0x432fb4"
+    decompile_sha256: 32491c5d357da369b2cd1a6bc11a7a42702e17a42a6f62a91cfc7f2d131b2022

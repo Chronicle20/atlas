@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskPetAllConversationDetail
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskPetAll#AskPetAll
+    address: "0x7b8250"
+    decompile_sha256: 8f7d3362ea22e9d4ef6a658435ef297f6dbb39d039e39050776a0733dd2ae52b

@@ -1,0 +1,8 @@
+packet: login/clientbound/ServerListEnd
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnWorldInformation#ServerListEnd
+    address: "0x60e5b3"
+    decompile_sha256: 278f68a60a839bf897e2070e9f8386059f950bb1fb693538cf6c8368666a2b90

@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerAdd
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Add
+    address: "0x8b978f"
+    decompile_sha256: 42e47488336f422aa28f406b916b0c2cabf58dead3dd08ff5417f35aa4134e73

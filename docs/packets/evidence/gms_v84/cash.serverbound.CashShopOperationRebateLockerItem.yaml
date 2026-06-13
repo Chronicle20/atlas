@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationRebateLockerItem
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnRebateLockerItem
+    address: "0x46e3d3"
+    decompile_sha256: 40a32a25ad91775ef0e6a9f58ae36a32cc618fb9a045a632bc0b0cdcc7bb5842

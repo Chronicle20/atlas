@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMerchantAddToBlackList
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CEntrustedShopDlg::AddBlackList
+    address: "0x54bb75"
+    decompile_sha256: f1b447658b891d859b894f07fe6d4fc23835eff25a331b3fd8d8041b42931d85

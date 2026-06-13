@@ -1,7 +1,7 @@
 # FieldEffectWeather (← `CField::OnBlowWeather`)
 
 - **IDA:** 0x5723E6
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/effect_weather.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/effect_weather.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 2
 - **Verdict:** ✅

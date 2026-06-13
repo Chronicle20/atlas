@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerRemove
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Remove
+    address: "0x87cbd8"
+    decompile_sha256: c65f0d788612a145e731662364bd43d32379b1da991b18a77b2e87e51d3a47a0

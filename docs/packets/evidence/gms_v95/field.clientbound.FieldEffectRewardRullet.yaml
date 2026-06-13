@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectRewardRullet
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#RewardRullet
+    address: "0x53bba4"
+    decompile_sha256: 0d777cc56ae94b8f08e91ddff8ffc35e90d068da8fae064e22beb406b32500ac

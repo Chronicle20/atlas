@@ -7,6 +7,11 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=channel/clientbound/ChannelChannelChange version=gms_v83 ida=0x496701
+// packet-audit:verify packet=channel/clientbound/ChannelChannelChange version=gms_v87 ida=0x4a874b
+// packet-audit:verify packet=channel/clientbound/ChannelChannelChange version=gms_v95 ida=0x4add50
+// packet-audit:verify packet=channel/clientbound/ChannelChannelChange version=jms_v185 ida=0x4b1924
+// packet-audit:verify packet=channel/clientbound/ChannelChannelChange version=gms_v84 ida=0x49b616
 func TestChannelChangeRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionChat
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Chat
+    address: "0x639ad0"
+    decompile_sha256: f931a232d29c11d31a0b6044c518db577a620ee8d63342b3c751c33f631a48ee

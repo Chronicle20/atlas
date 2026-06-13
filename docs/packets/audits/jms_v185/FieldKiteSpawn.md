@@ -1,7 +1,7 @@
 # FieldKiteSpawn (← `CMessageBoxPool::OnMessageBoxEnterField`)
 
 - **IDA:** 0x6d5978
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/kite_spawn.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/kite_spawn.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

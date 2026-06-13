@@ -4,7 +4,7 @@
   "Address": "0x7ca2c9",
   "Variant": "JMS/v185",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/npc/serverbound/shop_buy.go",
+  "AtlasFile": "libs/atlas-packet/npc/serverbound/shop_buy.go",
   "Rows": [
     {
       "Index": 0,

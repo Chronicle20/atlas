@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationFieldAddToBlackList
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::AddBlackList
+    address: "0x543c2c"
+    decompile_sha256: e96c3f8e361534ef7d267ea36bc3cb21ba82028adccbdfc434708e2f077a094e

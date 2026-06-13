@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcActionRequest
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CNpc::GenerateMovePath
+    address: "0x6ea340"
+    decompile_sha256: 68576fabb0c57a714366600265332b8d4ed7e2c5e577d818206c26ed3b9b16e3

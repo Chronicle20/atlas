@@ -1,0 +1,408 @@
+{
+  "WriterName": "EffectQuest",
+  "IDAName": "CUser::OnEffect#EffectQuest",
+  "Address": "0x96ea92",
+  "Variant": "GMS/v84",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/effect_quest.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 26,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 30,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 31,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 32,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 33,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 34,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 35,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 36,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 37,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 38,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 39,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 40,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 41,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 42,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    },
+    {
+      "Index": 43,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short \u2014 missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

@@ -9,6 +9,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v84 ida=0x472436
 func TestShopOperationGiftRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -73,6 +74,9 @@ func TestShopOperationGiftRoundTrip(t *testing.T) {
 // leading Encode4 int (NOT SPW string), but inserts Encode1 oneADay before name.
 // v95 @0x487b60: leading int replaced by EncodeStr sSPW, oneADay still present.
 // Split gate: oneADay byte GMS && MajorVersion>=87; spw string GMS && MajorVersion>=95.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v83 ida=0x46f940
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v87 ida=0x47a168
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v95 ida=0x487b60
 func TestShopOperationGiftBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationGift{birthday: 0x01020304, spw: "x", serialNumber: 0x05060708, oneADay: 1, name: "", message: ""}
@@ -101,6 +105,7 @@ func TestShopOperationGiftBytes(t *testing.T) {
 // op byte, NOT part of the body) then Encode4(commSN). The body after the sub-op
 // is exactly serialNumber(4); no SPW/birthday, no recipient name, no message, no
 // oneADay (NX-system divergence). Cross-checked against the JSON export read-order.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=jms_v185 ida=0x47bced
 func TestShopOperationGiftJMS(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	in := ShopOperationGift{birthday: 0x01020304, spw: "x", serialNumber: 0xAABBCCDD, oneADay: 1, name: "Player1", message: "Happy birthday!"}

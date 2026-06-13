@@ -1,0 +1,8 @@
+packet: character/serverbound/ChalkboardClose
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::HandleLButtonClk
+    address: "0xa10f9c"
+    decompile_sha256: e79f4cba50a9a88ffd617e0c1294af96b8b33ae0ccc34a9ae8fe62c77be1fee4

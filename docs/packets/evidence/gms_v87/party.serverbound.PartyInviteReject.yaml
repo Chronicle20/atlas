@@ -1,0 +1,8 @@
+packet: party/serverbound/PartyInviteReject
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#InviteReject
+    address: "0xad697a"
+    decompile_sha256: 13ecd20c3a043826d8101b37e549a26d8e9473ff61e843b25e4a0478f1978527

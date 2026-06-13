@@ -4,10 +4,19 @@
   "Address": "0x7a256b",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/npc/serverbound/shop_sell.go",
+  "AtlasFile": "libs/atlas-packet/npc/serverbound/shop_sell.go",
   "Rows": [
     {
       "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "leading sub-action byte (task-081 off-by-one remediation 2026-06-10)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
@@ -16,7 +25,7 @@
       "Note": ""
     },
     {
-      "Index": 1,
+      "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
@@ -25,7 +34,7 @@
       "Note": ""
     },
     {
-      "Index": 2,
+      "Index": 3,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,

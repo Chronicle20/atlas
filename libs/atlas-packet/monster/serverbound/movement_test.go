@@ -13,6 +13,11 @@ import (
 // neither hackedCodeCRC nor the trailing chase block (those remain v87+). So a
 // v84 encode must be longer than v83 (added skill fields) yet shorter than v87
 // (no CRC/chase).
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v83 ida=0x66b6fc
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v87 ida=0x6a6381
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v95 ida=0x651100
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=jms_v185 ida=0x6e8892
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v84 ida=0x6818c3
 func TestMonsterMovementVersionBoundary(t *testing.T) {
 	p := MovementRequest{uniqueId: 1, moveId: 2, skillData: 0x0305, hackedCodeCRC: 9, tChaseDuration: 9}
 	enc := func(major uint16) []byte {

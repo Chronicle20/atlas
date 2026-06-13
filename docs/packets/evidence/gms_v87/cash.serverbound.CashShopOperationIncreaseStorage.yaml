@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationIncreaseStorage
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnIncTrunkCount
+    address: "0x4763e0"
+    decompile_sha256: 9002d6a3f4e495008a6a4956adb6de039b63649be591242c56977a6f4116101f

@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterStatReset
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnStatReset
+    address: "0x6e9bb1"
+    decompile_sha256: da747928b98e220e604c72c8b5f4245f203a046e07f0b7e25cbe421b1acce345

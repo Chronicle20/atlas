@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterNameResponse
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckDuplicatedIDResult
+    address: "0x63153b"
+    decompile_sha256: 324f4ca76538682337d649295383c54f454a51f5256cac934c7f23fc94db662d

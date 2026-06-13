@@ -1,0 +1,8 @@
+packet: character/serverbound/ExpressionRequest
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendEmotionChange
+    address: "0xabbfbb"
+    decompile_sha256: 82cf568f111be900c5daf8f1266c1b211f73ed18e70e30cdeaf539e0dc7a2dc3

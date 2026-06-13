@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyMemberHP
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnReceiveHP
+    address: "0x9839ea"
+    decompile_sha256: a3acf9c871c42d609f91b08ebb6e563d8662c8a3891d2506e7a76aa1777d3197

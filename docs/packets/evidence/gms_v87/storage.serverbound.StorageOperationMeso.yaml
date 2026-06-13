@@ -1,0 +1,8 @@
+packet: storage/serverbound/StorageOperationMeso
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::SendGetMoneyRequest
+    address: "0x81c15c"
+    decompile_sha256: 889d7813370645408da8173332c2248900b34557dde44f0ac21d9d79f379c85d

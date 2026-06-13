@@ -17,6 +17,11 @@ import (
 // GMS v95 adds DecodeOpt(2) + oldDriverID(4) and widens hp 2→4 => 25+2+4+2 = 33.
 // JMS adds DecodeOpt(2) + JMS pair(5) but has NO chase byte (gated GMS only) and
 // hp stays 2 (JMS185 @0x7eec9d Decode2) => 25 - chase(1) + 2 + 5 = 31.
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=jms_v185 ida=0x7eea69
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v83 ida=0x776020
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v87 ida=0x7c429c
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v95 ida=0x71a0a0
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v84 ida=0x798987
 func TestWarpToMapWireLength(t *testing.T) {
 	cases := map[string]int{
 		// DecodeOpt is gated >83 (present v87+); oldDriverID is gated GMS>=95; hp is 4 bytes only for GMS>=95, else 2 (incl. JMS).

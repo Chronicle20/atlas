@@ -1,0 +1,11 @@
+{
+  "WriterName": "CashCheckWallet",
+  "IDAName": "CCashShop::TrySendQueryCashRequest",
+  "Address": "0x48441d",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/check_wallet.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetChatRequest
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CPet::DoAction
+    address: "0x6a2340"
+    decompile_sha256: 58f386d621ffbcdd70bb3d20755bf30433821cdda8b28afdc676d5b79f79720e

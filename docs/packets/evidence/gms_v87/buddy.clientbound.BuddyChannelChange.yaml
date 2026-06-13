@@ -1,0 +1,8 @@
+packet: buddy/clientbound/BuddyChannelChange
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#ChannelChange
+    address: "0xad7ae5"
+    decompile_sha256: 6f35a567325170f60df0b75173247e09deb3dbea696f3971aef995de495f2b7a

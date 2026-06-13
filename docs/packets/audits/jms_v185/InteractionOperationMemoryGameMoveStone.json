@@ -1,0 +1,39 @@
+{
+  "WriterName": "InteractionOperationMemoryGameMoveStone",
+  "IDAName": "COmokDlg::PutStoneChecker",
+  "Address": "0x72fedf",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_memory_game_move_stone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

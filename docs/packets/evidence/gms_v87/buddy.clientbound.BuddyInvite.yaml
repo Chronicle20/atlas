@@ -1,0 +1,9 @@
+packet: buddy/clientbound/BuddyInvite
+direction: clientbound
+version: gms_v87
+category: TRUNCATION
+ida:
+    function: CWvsContext::OnFriendResult#Invite
+    address: "0xad7ae5"
+    decompile_sha256: 687b493693744c6ac6f5a4bf4eb2297560fef273e93ec079e91c5be8245ae036
+notes: "Migrated from docs/packets/ida-exports/_pending.md S9: export mistrace/truncation (v83/v87 export a count+buddy[i] loop; JMS truncates after level). Atlas wire is IDA-correct per all four OnFriendResult case-9 decompiles (fix b39329ecb); v95's correctly-traced export grades clean."

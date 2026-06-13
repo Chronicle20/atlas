@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldKiteDestroy
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMessageBoxPool::OnMessageBoxLeaveField
+    address: "0x635d60"
+    decompile_sha256: 97133684d2bf03d228360a868016cab02dc96a90c9d6d5b0e59683e01ebddfb5

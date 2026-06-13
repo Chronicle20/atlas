@@ -1,7 +1,7 @@
 # NpcShopRecharge (← `CShopDlg::SendRechargeRequest`)
 
 - **IDA:** 0x756c28
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/shop_recharge.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/shop_recharge.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅
@@ -10,5 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int16 | int16 `slot / nPos (v7)` | ✅ |  |
+| 0 | byte | byte `leading sub-action byte (task-081 off-by-one remediation 2026-06-10)` | ✅ |  |
+| 1 | int16 | int16 `slot / nPos (v7)` | ✅ |  |
 

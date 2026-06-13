@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetCommandResponse
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnActionCommand
+    address: "0x7048ab"
+    decompile_sha256: 80d7f9a5671e5e57d8b28c2e8dd3769ba087bf055bb00fd99aff724caa22ad99

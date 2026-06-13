@@ -1,0 +1,8 @@
+packet: character/serverbound/DropMeso
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendDropMoneyRequest
+    address: "0xb0b14e"
+    decompile_sha256: 9a041b70a2d32b74f38c78fc6625cda4efc632e6add812478e9eba0bcd738d73

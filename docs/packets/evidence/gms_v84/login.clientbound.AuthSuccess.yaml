@@ -1,0 +1,8 @@
+packet: login/clientbound/AuthSuccess
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckPasswordResult
+    address: "0x60d368"
+    decompile_sha256: 9bd8bc7aa6a23945c46679b4362820d832efe97d815d3e26382be2fc3b49ebf0

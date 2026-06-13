@@ -1,0 +1,8 @@
+packet: inventory/clientbound/InventoryRemove
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#Remove
+    address: "0xa69d8f"
+    decompile_sha256: 412e5e409114d97dfe474aaf8a80f0cf10f9a1f1a80f2c49987a339f15366a19

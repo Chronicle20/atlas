@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=chat/clientbound/ChatGeneralChat version=gms_v95 ida=0x8e86c0
+// packet-audit:verify packet=chat/clientbound/ChatGeneralChat version=jms_v185 ida=0x9f5c74
 func TestGeneralChatRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

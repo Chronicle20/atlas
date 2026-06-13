@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildNoticeChange
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#NoticeChange
+    address: "0xa0e44b"
+    decompile_sha256: c10609f56f7ef4e7777f6a1f4c327b896513a90a41b474419f3ef5bb6387bc21

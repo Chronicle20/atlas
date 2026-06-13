@@ -1,0 +1,10 @@
+packet: messenger/clientbound/MessengerUpdate
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Update
+    address: "0x8511fc"
+    decompile_sha256: 8efe755d212bfacd108875aaecf7c1139d23e802d1111c9ee0da5b600d4c8dd7
+verifies:
+    - libs/atlas-packet/messenger/clientbound/update_test.go#TestMessengerUpdateByteOutput

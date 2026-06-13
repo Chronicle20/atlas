@@ -1,0 +1,8 @@
+packet: inventory/clientbound/InventoryCompartmentMerge
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGatherItemResult
+    address: "0xa69bf9"
+    decompile_sha256: de93bf7a873252c7cf1386e4ea2c1e288831d697ab69ca2125ba45bf20906b58

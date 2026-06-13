@@ -9,7 +9,7 @@ export function formatDurationMs(ms: number): string {
   return ` for ${s}s`;
 }
 
-const LABELS: Record<string, string> = {
+export const STATUP_LABELS: Record<string, string> = {
   WeaponAttack: "Weapon Attack",
   WeaponDefense: "Weapon Defense",
   MagicAttack: "Magic Attack",
@@ -25,7 +25,7 @@ const LABELS: Record<string, string> = {
 };
 
 export function formatStatup(s: Statup, durationMs: number): string {
-  const label = LABELS[s.type];
+  const label = STATUP_LABELS[s.type];
   if (label) return `+${s.amount} ${label}${formatDurationMs(durationMs)}`;
   return `${s.type}: +${s.amount}`;
 }

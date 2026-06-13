@@ -191,11 +191,13 @@ func handleStatusEventSkill(sc server.Model, wp writer.Producer) message.Handler
 
 		// Broadcast map-wide INCLUDING the owner: unlike move/attack/damage, the
 		// Beholder aura skill pulse is a server-driven visual the owner's client did
-		// not render locally, so everyone in the map must receive it. summonSkillId
-		// is the summon's source skill id (e.SkillId).
+		// not render locally, so everyone in the map must receive it. The wire is
+		// cid [+ oid on v95+] + a stance byte — there is no skill-id field (the
+		// OnHit client reader replays the summon's own animation), so we pass the
+		// summon object id (e.SummonId) as the v95+ oid, not e.SkillId.
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
 			session.Announce(l)(ctx)(wp)(summonpkt.SummonSkillWriter)(
-				writer.SummonSkillBody(e.OwnerCharacterId, e.SkillId, e.Body.NewStance)))
+				writer.SummonSkillBody(e.OwnerCharacterId, e.SummonId, e.Body.NewStance)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast summon [%d] skill effect for characters in map [%d].", e.SummonId, e.MapId)
 		}

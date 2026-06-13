@@ -39,7 +39,9 @@ func SummonDamageBody(ownerCharacterId uint32, summonId uint32, damage int32, mo
 
 // SummonSkillBody builds the SummonSkill clientbound packet for a Beholder aura
 // skill pulse, broadcast map-wide (including the owner) so every client renders
-// the heal/buff visual. summonSkillId is the summon's source skill id.
-func SummonSkillBody(ownerCharacterId uint32, summonSkillId uint32, newStance byte) packet.Encode {
-	return summoncb.NewSummonSkill(ownerCharacterId, summonSkillId, newStance).Encode
+// the heal/buff visual. The wire is cid [+ oid on v95+] + a single stance byte;
+// there is no skill-id field (IDB-confirmed). summonId is the summon object id,
+// only emitted on v95+.
+func SummonSkillBody(ownerCharacterId uint32, summonId uint32, newStance byte) packet.Encode {
+	return summoncb.NewSummonSkill(ownerCharacterId, summonId, newStance).Encode
 }

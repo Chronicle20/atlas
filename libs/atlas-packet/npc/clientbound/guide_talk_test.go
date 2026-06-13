@@ -19,6 +19,7 @@ import (
 // packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=gms_v83 ida=0x960239
 // packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=gms_v87 ida=0x9e36c9
 // packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=jms_v185 ida=0xa2d342
+// packet-audit:verify packet=npc/clientbound/NpcGuideTalkMessage version=gms_v84 ida=0x99f28c
 func TestGuideTalkMessage(t *testing.T) {
 	input := NewGuideTalkMessage("Hello adventurer!", 200, 4000)
 	for _, v := range test.Variants {

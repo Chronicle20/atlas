@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v83 ida=0x5fc89d
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v87 ida=0x6342b0
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v95 ida=0x5db000
+// packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v84 ida=0x611975
 func TestRegisterPinRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name+"/with_pin", func(t *testing.T) {

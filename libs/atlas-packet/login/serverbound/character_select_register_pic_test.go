@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=login/serverbound/CharacterSelectRegisterPic version=gms_v83 ida=0x5f726d
 // packet-audit:verify packet=login/serverbound/CharacterSelectRegisterPic version=gms_v87 ida=0x62e9f6
 // packet-audit:verify packet=login/serverbound/CharacterSelectRegisterPic version=gms_v95 ida=0x5da2a0
+// packet-audit:verify packet=login/serverbound/CharacterSelectRegisterPic version=gms_v84 ida=0x60c1e3
 func TestCharacterSelectRegisterPicRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

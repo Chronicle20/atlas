@@ -12,6 +12,7 @@ import (
 // packet-audit:verify packet=quest/serverbound/Action version=gms_v87 ida=0xabeb10
 // packet-audit:verify packet=quest/serverbound/Action version=gms_v95 ida=0x9f3cf0
 // packet-audit:verify packet=quest/serverbound/Action version=jms_v185 ida=0xb0e6e9
+// packet-audit:verify packet=quest/serverbound/Action version=gms_v84 ida=0xa7265e
 func TestActionRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

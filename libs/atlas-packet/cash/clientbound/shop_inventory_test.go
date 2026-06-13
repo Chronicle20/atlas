@@ -23,6 +23,7 @@ func testItem() CashInventoryItem {
 // packet-audit:verify packet=cash/clientbound/CashCashShopPurchaseSuccess version=gms_v95 ida=0x494dd0
 // packet-audit:verify packet=cash/clientbound/CashCashShopPurchaseSuccess version=jms_v185 ida=0x48c0f0
 // packet-audit:verify packet=cash/clientbound/CashCashShopInventory version=gms_v87 ida=0x484c1d
+// packet-audit:verify packet=cash/clientbound/CashCashShopInventory version=gms_v84 ida=0x47c694
 func TestCashShopInventoryRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

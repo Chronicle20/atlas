@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=login/serverbound/AfterLogin version=gms_v83 ida=0x5fc731
 // packet-audit:verify packet=login/serverbound/AfterLogin version=gms_v87 ida=0x634144
 // packet-audit:verify packet=login/serverbound/AfterLogin version=gms_v95 ida=0x5d5e80
+// packet-audit:verify packet=login/serverbound/AfterLogin version=gms_v84 ida=0x611809
 func TestAfterLoginRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name+"/with_pin", func(t *testing.T) {

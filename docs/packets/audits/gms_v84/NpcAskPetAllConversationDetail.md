@@ -1,18 +1,18 @@
 # NpcAskPetAllConversationDetail (← `CScriptMan::OnAskPetAll#AskPetAll`)
 
-- **IDA:** 
+- **IDA:** 0x76983c
 - **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | string | string `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
+| 3 | int64 | bytes `` | ✅ |  |
+| 4 | byte | byte `` | ✅ |  |
 

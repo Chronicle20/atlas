@@ -1,6 +1,6 @@
 # InteractionOperationMerchantBuy (← `CPersonalShopDlg::BuyItem#Merchant`)
 
-- **IDA:** 
+- **IDA:** 0x71951e
 - **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_merchant_buy.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
@@ -10,7 +10,8 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int16 | byte `` | ❌ | width mismatch |
+| 2 | int32 | int16 `` | ❌ | width mismatch |
+| 3 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
 

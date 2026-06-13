@@ -1,6 +1,6 @@
 # RegisterPin (← `CLogin::OnCheckPinCodeResult#RegisterPin`)
 
-- **IDA:** 
+- **IDA:** 0x611975
 - **Atlas file:** `libs/atlas-packet/account/serverbound/register_pin.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
@@ -11,6 +11,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ✅ |  |
 | 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

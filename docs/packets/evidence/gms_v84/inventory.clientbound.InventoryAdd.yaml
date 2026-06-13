@@ -1,0 +1,8 @@
+packet: inventory/clientbound/InventoryAdd
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#Add
+    address: "0xa69d8f"
+    decompile_sha256: 36ed0138adecd08d42662748232acf73730ffbf3752232d508b4315a5563deb2

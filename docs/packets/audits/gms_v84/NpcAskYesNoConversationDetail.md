@@ -1,14 +1,14 @@
 # NpcAskYesNoConversationDetail (← `CScriptMan::OnAskYesNo#AskYesNo`)
 
-- **IDA:** 
+- **IDA:** 0x768a0b
 - **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | string | string `` | ✅ |  |
 

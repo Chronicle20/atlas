@@ -76,6 +76,17 @@ func asciiBytes(s string) []byte {
 // packet-audit:verify packet=npc/clientbound/NpcSayConversationDetail version=jms_v185 ida=0x7b7315
 // packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=jms_v185 ida=0x7b7496
 // packet-audit:verify packet=npc/clientbound/NpcNpcConversation version=gms_v84 ida=0x76850a
+// packet-audit:verify packet=npc/clientbound/NpcAskAvatarConversationDetail version=gms_v84 ida=0x76921d
+// packet-audit:verify packet=npc/clientbound/NpcAskBoxTextConversationDetail version=gms_v84 ida=0x768d26
+// packet-audit:verify packet=npc/clientbound/NpcAskMemberShopAvatarConversationDetail version=gms_v84 ida=0x7693eb
+// packet-audit:verify packet=npc/clientbound/NpcAskNumberConversationDetail version=gms_v84 ida=0x768edf
+// packet-audit:verify packet=npc/clientbound/NpcAskPetAllConversationDetail version=gms_v84 ida=0x76983c
+// packet-audit:verify packet=npc/clientbound/NpcAskPetConversationDetail version=gms_v84 ida=0x769582
+// packet-audit:verify packet=npc/clientbound/NpcAskQuizConversationDetail version=gms_v84 ida=0xa722bf
+// packet-audit:verify packet=npc/clientbound/NpcAskSlideMenuConversationDetail version=gms_v84 ida=0x769b26
+// packet-audit:verify packet=npc/clientbound/NpcAskSpeedQuizConversationDetail version=gms_v84 ida=0xa7241c
+// packet-audit:verify packet=npc/clientbound/NpcAskYesNoConversationDetail version=gms_v84 ida=0x768a0b
+// packet-audit:verify packet=npc/clientbound/NpcSayImageConversationDetail version=gms_v84 ida=0x768844
 func TestNpcConversationSay(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	detail := &SayConversationDetail{Message: "Hello adventurer!", Next: true, Previous: false}

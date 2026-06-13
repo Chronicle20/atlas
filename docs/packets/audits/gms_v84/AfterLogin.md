@@ -1,6 +1,6 @@
 # AfterLogin (← `CLogin::OnSetAccountResult#AfterLogin`)
 
-- **IDA:** 
+- **IDA:** 0x611809
 - **Atlas file:** `libs/atlas-packet/login/serverbound/after_login.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
 | 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

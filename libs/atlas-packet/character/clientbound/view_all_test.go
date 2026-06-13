@@ -24,6 +24,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v83 ida=0x5facca
 // packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v87 ida=0x6328eb
 // packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v95 ida=0x5de284
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v84 ida=0x60ffe8
 func TestCharacterViewAllCountRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

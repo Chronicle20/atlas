@@ -1,0 +1,8 @@
+packet: login/serverbound/AfterLogin
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnSetAccountResult#AfterLogin
+    address: "0x611809"
+    decompile_sha256: 113c265ac91e89a4580d5a7081a884656f86d02a6de7548f6be6b9d251c95f6b

@@ -21,6 +21,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v83 ida=0x776020
 // packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v87 ida=0x7c429c
 // packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v95 ida=0x71a0a0
+// packet-audit:verify packet=field/clientbound/FieldWarpToMap version=gms_v84 ida=0x798987
 func TestWarpToMapWireLength(t *testing.T) {
 	cases := map[string]int{
 		// DecodeOpt is gated >83 (present v87+); oldDriverID is gated GMS>=95; hp is 4 bytes only for GMS>=95, else 2 (incl. JMS).

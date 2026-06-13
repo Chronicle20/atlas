@@ -1,7 +1,7 @@
 # CharacterInfo (← `CWvsContext::OnCharacterInfo`)
 
 - **IDA:** 0xa2370b
-- **Atlas file:** `../../libs/atlas-packet/character/clientbound/info.go`
+- **Atlas file:** `libs/atlas-packet/character/clientbound/info.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** 🔍
@@ -36,4 +36,5 @@
 | 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 24 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 25 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

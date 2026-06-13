@@ -8,6 +8,7 @@ import (
 
 // packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v95 ida=0x4837d0
 // packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v87 ida=0x47b5b6
+// packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v83 ida=0x470d7d
 func TestShopOperationSetWishlistRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

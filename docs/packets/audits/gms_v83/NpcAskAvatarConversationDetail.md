@@ -1,7 +1,7 @@
 # NpcAskAvatarConversationDetail (← `CScriptMan::OnAskAvatar#AskAvatar`)
 
 - **IDA:** 0x74713d
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

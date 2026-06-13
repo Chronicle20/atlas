@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=party/serverbound/PartyOperationChangeLeader version=gms_v95 ida=0x530370
 // packet-audit:verify packet=party/serverbound/PartyOperationChangeLeader version=jms_v185 ida=0x56d0cc
 // packet-audit:verify packet=party/serverbound/PartyOperationChangeLeader version=gms_v87 ida=0x5574c9
+// packet-audit:verify packet=party/serverbound/PartyOperationChangeLeader version=gms_v83 ida=0x530226
 func TestOperationChangeLeaderRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

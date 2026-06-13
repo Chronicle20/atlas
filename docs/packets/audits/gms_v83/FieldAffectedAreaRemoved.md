@@ -1,7 +1,7 @@
 # FieldAffectedAreaRemoved (← `CAffectedAreaPool::OnAffectedAreaRemoved`)
 
 - **IDA:** 0x43234d
-- **Atlas file:** `../../libs/atlas-packet/field/clientbound/affected_area_removed.go`
+- **Atlas file:** `libs/atlas-packet/field/clientbound/affected_area_removed.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

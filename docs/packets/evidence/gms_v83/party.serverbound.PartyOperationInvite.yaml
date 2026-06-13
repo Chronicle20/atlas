@@ -1,0 +1,8 @@
+packet: party/serverbound/PartyOperationInvite
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendJoinPartyMsg
+    address: "0x52fecf"
+    decompile_sha256: f7fbeb5e3260301106737f8a865309cd365ae4f78b415a01bda7d49117c2ea0e

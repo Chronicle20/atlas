@@ -8,6 +8,7 @@ import (
 
 // packet-audit:verify packet=inventory/clientbound/InventoryCompartmentMerge version=gms_v95 ida=0x9f1280
 // packet-audit:verify packet=inventory/clientbound/InventoryCompartmentMerge version=gms_v87 ida=0xab5c54
+// packet-audit:verify packet=inventory/clientbound/InventoryCompartmentMerge version=gms_v83 ida=0xa1e943
 func TestCompartmentMerge(t *testing.T) {
 	input := NewCompartmentMerge(3)
 	for _, v := range test.Variants {

@@ -1,14 +1,15 @@
 # InteractionOperationTradeAddMeso (← `CTradingRoomDlg::PutMoney`)
 
 - **IDA:** 0x7c37ca
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
-- **Verdict:** ✅
+- **Verdict:** ❌
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | int32 `meso amount` | ✅ |  |
+| 0 | int32 | byte `leading sub-action byte (task-081 off-by-one remediation 2026-06-10)` | ❌ | width mismatch |
+| 1 | byte | int32 `meso amount` | ❌ | atlas: short — missing trailing field |
 

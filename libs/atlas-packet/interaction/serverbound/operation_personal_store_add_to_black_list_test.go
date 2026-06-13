@@ -8,6 +8,7 @@ import (
 
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList version=gms_v95 ida=0x69b1c0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList version=gms_v87 ida=0x741526
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList version=gms_v83 ida=0x6fdf8e
 func TestOperationPersonalStoreAddToBlackListRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

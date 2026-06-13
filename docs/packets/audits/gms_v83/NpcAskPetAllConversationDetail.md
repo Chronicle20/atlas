@@ -1,7 +1,7 @@
 # NpcAskPetAllConversationDetail (← `CScriptMan::OnAskPetAll#AskPetAll`)
 
 - **IDA:** 0x74775c
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

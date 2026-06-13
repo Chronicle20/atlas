@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryCompartmentMergeRequest
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendGatherItemRequest
+    address: "0xa08ee6"
+    decompile_sha256: f8ebeba2c334d2f11d63aa98abc22cce87b778089f553d4bd16eb8cf8d5fd9d0

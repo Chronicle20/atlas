@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameMoveStone
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: COmokDlg::PutStoneChecker
+    address: "0x6e8a19"
+    decompile_sha256: b69a5b142481c968fec9b9417abf23a41e44f98528eb26ca94b3a6afdb3019f8

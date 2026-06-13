@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -3168,5 +3170,52 @@ func TestReader_FreezeDoublesDuration(t *testing.T) {
 	}
 	if got := rm.Effects[0].Duration; got != 8000 {
 		t.Fatalf("Duration = %d, want 8000 (FREEZE doubles 4000 ms)", got)
+	}
+}
+
+func TestSkillReaderBroomstickVehicleId(t *testing.T) {
+	statups := mountStatupsForSkill(skill.BeginnerBroomstickId, 1)
+	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))
+	if !ok || got.Amount != 1932005 {
+		t.Fatalf("Broomstick expected 1932005, got %+v ok=%v", got, ok)
+	}
+}
+
+func TestSkillReaderSpaceShipPerLevelVehicleId(t *testing.T) {
+	statups := mountStatupsForSkill(skill.BeginnerSpaceShipId, 3)
+	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))
+	if !ok || got.Amount != 1932000+3 {
+		t.Fatalf("SpaceShip L3 expected %d, got %d (ok=%v)", 1932000+3, got.Amount, ok)
+	}
+}
+
+func TestSkillReaderYetiMount1VehicleId(t *testing.T) {
+	statups := mountStatupsForSkill(skill.BeginnerYetiMount1Id, 1)
+	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))
+	if !ok || got.Amount != 1932003 {
+		t.Fatalf("YetiMount1 expected 1932003, got %+v ok=%v", got, ok)
+	}
+}
+
+func TestSkillReaderBalrogMountVehicleId(t *testing.T) {
+	statups := mountStatupsForSkill(skill.BeginnerBalrogMountId, 1)
+	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))
+	if !ok || got.Amount != 1932010 {
+		t.Fatalf("BalrogMount expected 1932010, got %+v ok=%v", got, ok)
+	}
+}
+
+func TestSkillReaderTamedMountEmitsSkillId(t *testing.T) {
+	statups := mountStatupsForSkill(skill.BeginnerMonsterRidingId, 1)
+	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))
+	if !ok || got.Amount != int32(skill.BeginnerMonsterRidingId) {
+		t.Fatalf("tamed MonsterRiding expected amount %d (skill id), got %+v ok=%v", int32(skill.BeginnerMonsterRidingId), got, ok)
+	}
+}
+
+func TestSkillReaderNonMountEmitsNoMonsterRiding(t *testing.T) {
+	statups := mountStatupsForSkill(skill.ClericHealId, 1)
+	if got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding)); ok {
+		t.Fatalf("non-mount skill should emit no MONSTER_RIDING statup, got %+v", got)
 	}
 }

@@ -122,4 +122,26 @@ const (
 	TemporaryStatTypeUndead                 TemporaryStatType = "UNDEAD"
 	TemporaryStatTypeSummon                 TemporaryStatType = "SUMMON"
 	TemporaryStatTypePuppet                 TemporaryStatType = "PUPPET"
+
+	// GMS v95 SecondaryStat additions. These occupy the post-SoulStone region
+	// (bits 82-121) and the two-state group on the v95 client; see
+	// docs/tasks/task-086-mount-system/v95_secondarystat_table.md (IDA-verified
+	// from the v95 flag initializers). Most are placeholders that reserve a mask
+	// bit so the enumeration aligns with the client — atlas does not currently
+	// originate these buffs.
+	TemporaryStatTypeEnrage          TemporaryStatType = "ENRAGE"
+	TemporaryStatTypeMechanic        TemporaryStatType = "MECHANIC"
+	TemporaryStatTypeAura            TemporaryStatType = "AURA"
+	TemporaryStatTypeDarkAura        TemporaryStatType = "DARK_AURA"
+	TemporaryStatTypeBlueAura        TemporaryStatType = "BLUE_AURA"
+	TemporaryStatTypeYellowAura      TemporaryStatType = "YELLOW_AURA"
+	TemporaryStatTypeSuperBody       TemporaryStatType = "SUPER_BODY"
+	TemporaryStatTypeWildMaxHpUp     TemporaryStatType = "WILD_MAX_HP_UP"
+	TemporaryStatTypeDice            TemporaryStatType = "DICE"
+	TemporaryStatTypeBlessingArmor   TemporaryStatType = "BLESSING_ARMOR"
+	TemporaryStatTypeDamageReduce    TemporaryStatType = "DAMAGE_REDUCE"
+	TemporaryStatTypeTeleportMastery TemporaryStatType = "TELEPORT_MASTERY"
+	TemporaryStatTypeCombatOrders    TemporaryStatType = "COMBAT_ORDERS"
+	TemporaryStatTypeBeholder        TemporaryStatType = "BEHOLDER"
+	TemporaryStatTypePartyBooster    TemporaryStatType = "PARTY_BOOSTER"
 )

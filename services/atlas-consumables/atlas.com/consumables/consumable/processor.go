@@ -15,6 +15,7 @@ import (
 	"atlas-consumables/location"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
+	foodmsg "atlas-consumables/kafka/message/food"
 	once "atlas-consumables/kafka/once/compartment"
 	"atlas-consumables/kafka/producer"
 	"atlas-consumables/map"
@@ -34,6 +35,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
@@ -221,6 +223,58 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 		return err
 	}
 	return nil
+}
+
+// RequestFeed handles a taming-mob food (revitalizer, classification 226)
+// consume request. It validates the classification, reserves the item, and on
+// successful consume emits the TamingMobFed event (Task 33) carrying the pinned
+// server tiredness heal. The heal -> exp -> level math lives in atlas-mounts;
+// consumables only validates, consumes, and emits the heal value.
+func (p *Processor) RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error {
+	if item2.GetClassification(itemId) != item2.ClassificationRevitalizer {
+		p.l.Warnf("Character [%d] requested taming-mob feed with non-revitalizer item [%d] (classification [%d]). Rejecting.", characterId, itemId, item2.GetClassification(itemId))
+		return errors.New("item is not a revitalizer")
+	}
+
+	transactionId := uuid.New()
+	p.l.Debugf("Creating OneTime topic consumer to await taming-mob feed transaction [%s] completion or cancellation.", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	validator := once.ReservationValidator(transactionId, uint32(itemId))
+
+	it, ok := inventory2.TypeFromItemId(itemId)
+	if !ok {
+		return errors.New("invalid item id")
+	}
+
+	handler := compartment.Consume(ConsumeFeed(transactionId, worldId, characterId, slot, itemId, it))
+
+	if _, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
+		return err
+	}
+
+	return p.cpp.RequestReserve(transactionId, characterId, it, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}})
+}
+
+// ConsumeFeed commits the reserved revitalizer and, on success, emits the
+// TamingMobFed event with the pinned server tiredness heal. The feed math
+// (heal -> exp -> level) is applied downstream in atlas-mounts.
+func ConsumeFeed(transactionId uuid.UUID, worldId world.Id, characterId uint32, slot int16, itemId item2.Id, inventoryType inventory2.Type) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx)
+			if err := compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventoryType, transactionId, slot); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventoryType, slot, err)
+			}
+			l.Debugf("Character [%d] consumed revitalizer [%d] from slot [%d] (transaction [%s]).", characterId, itemId, slot, transactionId.String())
+
+			err := producer.ProviderImpl(l)(ctx)(foodmsg.EnvEventTopic)(TamingMobFedEventProvider(worldId, characterId, uint32(itemId), foodmsg.RevitalizerTirednessHeal))
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] consumed revitalizer [%d] but TamingMobFed event emission failed; mount tiredness will not heal.", characterId, itemId)
+				return err
+			}
+			return nil
+		}
+	}
 }
 
 func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {

@@ -163,6 +163,70 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeMagicShield)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMagicResist)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeSoulStone)(NoOpForeignValueWriter, NoOpForeignValueReader)
+
+	// GMS v95 has a wholly different post-SoulStone region (bits 82-121) and
+	// two-state group from v83/v87 — IDA-verified from the v95 client's CTS flag
+	// initializers (1<<N per stat); see
+	// docs/tasks/task-086-mount-system/v95_secondarystat_table.md. The 40 stats
+	// below put MonsterRiding/RideVehicle at bit 125 exactly where the v95 client
+	// reads it. Early-return so the v83/v87/JMS appends below don't also run.
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		// bits 82-121. Foreign shapes mirror the existing registry where a stat is
+		// already known; the v95-only additions use NoOp (atlas never originates
+		// them — the entry exists to reserve the client's mask bit).
+		newAndIncNonDiseased(character.TemporaryStatTypeFlying)(NoOpForeignValueWriter, NoOpForeignValueReader)               // 82
+		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)(ValueAsIntForeignValueWriter, IntForeignValueReader)         // 83
+		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 84
+		newAndIncNonDiseased(character.TemporaryStatTypeEnrage)(NoOpForeignValueWriter, NoOpForeignValueReader)              // 85
+		newAndIncNonDiseased(character.TemporaryStatTypeSuddenDeath)(ValueAsIntForeignValueWriter, IntForeignValueReader)    // 86
+		newAndIncNonDiseased(character.TemporaryStatTypeNotDamaged)(NoOpForeignValueWriter, NoOpForeignValueReader)          // 87
+		newAndIncNonDiseased(character.TemporaryStatTypeFinalCut)(ValueAsIntForeignValueWriter, IntForeignValueReader)       // 88
+		newAndIncNonDiseased(character.TemporaryStatTypeThornsEffect)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 89
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowAttackDamage)(NoOpForeignValueWriter, NoOpForeignValueReader) // 90
+		newAndIncNonDiseased(character.TemporaryStatTypeWildDamageUp)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 91
+		newAndIncNonDiseased(character.TemporaryStatTypeMine)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 92
+		newAndIncNonDiseased(character.TemporaryStatTypeEMHP)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 93
+		newAndIncNonDiseased(character.TemporaryStatTypeEMMP)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 94
+		newAndIncNonDiseased(character.TemporaryStatTypeEPAD)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 95
+		newAndIncNonDiseased(character.TemporaryStatTypeEPPD)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 96
+		newAndIncNonDiseased(character.TemporaryStatTypeEMDD)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 97
+		newAndIncNonDiseased(character.TemporaryStatTypeGuard)(NoOpForeignValueWriter, NoOpForeignValueReader)               // 98
+		newAndIncNonDiseased(character.TemporaryStatTypeSafetyDamage)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 99
+		newAndIncNonDiseased(character.TemporaryStatTypeSafetyAbsorb)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 100
+		newAndIncNonDiseased(character.TemporaryStatTypeCyclone)(ValueAsByteForeignValueWriter, ByteForeignValueReader)      // 101
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowCritical)(NoOpForeignValueWriter, NoOpForeignValueReader)     // 102
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowMaxMP)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 103
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowDefense)(NoOpForeignValueWriter, NoOpForeignValueReader)      // 104
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowEvasion)(NoOpForeignValueWriter, NoOpForeignValueReader)      // 105
+		newAndIncNonDiseased(character.TemporaryStatTypeConversion)(NoOpForeignValueWriter, NoOpForeignValueReader)          // 106
+		newAndIncNonDiseased(character.TemporaryStatTypeRevive)(NoOpForeignValueWriter, NoOpForeignValueReader)              // 107
+		newAndIncNonDiseased(character.TemporaryStatTypeSneak)(NoOpForeignValueWriter, NoOpForeignValueReader)               // 108
+		newAndIncNonDiseased(character.TemporaryStatTypeMechanic)(NoOpForeignValueWriter, NoOpForeignValueReader)            // 109
+		newAndIncNonDiseased(character.TemporaryStatTypeAura)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 110
+		newAndIncNonDiseased(character.TemporaryStatTypeDarkAura)(NoOpForeignValueWriter, NoOpForeignValueReader)            // 111
+		newAndIncNonDiseased(character.TemporaryStatTypeBlueAura)(NoOpForeignValueWriter, NoOpForeignValueReader)            // 112
+		newAndIncNonDiseased(character.TemporaryStatTypeYellowAura)(NoOpForeignValueWriter, NoOpForeignValueReader)          // 113
+		newAndIncNonDiseased(character.TemporaryStatTypeSuperBody)(NoOpForeignValueWriter, NoOpForeignValueReader)           // 114
+		newAndIncNonDiseased(character.TemporaryStatTypeWildMaxHpUp)(NoOpForeignValueWriter, NoOpForeignValueReader)         // 115
+		newAndIncNonDiseased(character.TemporaryStatTypeDice)(NoOpForeignValueWriter, NoOpForeignValueReader)                // 116
+		newAndIncNonDiseased(character.TemporaryStatTypeBlessingArmor)(NoOpForeignValueWriter, NoOpForeignValueReader)       // 117
+		newAndIncNonDiseased(character.TemporaryStatTypeDamageReduce)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 118
+		newAndIncNonDiseased(character.TemporaryStatTypeTeleportMastery)(NoOpForeignValueWriter, NoOpForeignValueReader)     // 119
+		newAndIncNonDiseased(character.TemporaryStatTypeCombatOrders)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 120
+		newAndIncNonDiseased(character.TemporaryStatTypeBeholder)(NoOpForeignValueWriter, NoOpForeignValueReader)            // 121
+		// two-state group, bits 122-128. PartyBooster (126) replaces v83's
+		// SpeedInfusion; Undead (128) overflows the 128-bit mask on v95 and is not
+		// receivable, but the entry preserves ordering parity with the client.
+		newAndIncNonDiseased(character.TemporaryStatTypeEnergyCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)  // 122
+		newAndIncNonDiseased(character.TemporaryStatTypeDashSpeed)(NoOpForeignValueWriter, NoOpForeignValueReader)     // 123
+		newAndIncNonDiseased(character.TemporaryStatTypeDashJump)(NoOpForeignValueWriter, NoOpForeignValueReader)      // 124
+		newAndIncNonDiseased(character.TemporaryStatTypeMonsterRiding)(NoOpForeignValueWriter, NoOpForeignValueReader) // 125
+		newAndIncNonDiseased(character.TemporaryStatTypePartyBooster)(NoOpForeignValueWriter, NoOpForeignValueReader)  // 126
+		newAndIncNonDiseased(character.TemporaryStatTypeHomingBeacon)(NoOpForeignValueWriter, NoOpForeignValueReader)  // 127
+		newAndIncDiseased(character.TemporaryStatTypeUndead)(NoOpForeignValueWriter, NoOpForeignValueReader)           // 128
+		return characterTemporaryStatRegistry{byName: set, inOrder: ordered}
+	}
+
 	// v87+ GMS and JMS have the first 4 stats of the post-SoulStone block.
 	// Verified for v87 against the client SecondaryStat::Reset disassembly
 	// (86 UINT128 mask groups covering Atlas bits 0..85 — see
@@ -173,10 +237,11 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeMirrorImage)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	}
-	// v95+ GMS and JMS have the remaining 24 stats (SuddenDeath through Unknown).
-	// v87 lacks these (CTS_SuddenDeath etc. absent from the v87 client; including them
-	// on a v87 tenant shifts the bitmask wire layout by 24 bits and breaks GIVE_BUFF).
-	if (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS" {
+	// JMS has the remaining 24 stats (SuddenDeath through Unknown). GMS v95 is handled
+	// by its own dedicated enumeration above (early return); v87 lacks these (CTS_SuddenDeath
+	// etc. absent from the v87 client; including them shifts the bitmask layout and breaks
+	// GIVE_BUFF). This branch is now JMS-only.
+	if t.Region() == "JMS" {
 		newAndIncNonDiseased(character.TemporaryStatTypeSuddenDeath)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeNotDamaged)(NoOpForeignValueWriter, NoOpForeignValueReader)
 		newAndIncNonDiseased(character.TemporaryStatTypeFinalCut)(ValueAsIntForeignValueWriter, IntForeignValueReader)
@@ -335,6 +400,15 @@ func NewCharacterTemporaryStatBase(bDynamicTermSet bool) CharacterTemporaryStatB
 	return CharacterTemporaryStatBase{
 		tLastUpdated:    time.Now().Unix(),
 		bDynamicTermSet: bDynamicTermSet,
+	}
+}
+
+func NewCharacterTemporaryStatBaseWithOptions(bDynamicTermSet bool, nOption int32, rOption int32) CharacterTemporaryStatBase {
+	return CharacterTemporaryStatBase{
+		tLastUpdated:    time.Now().Unix(),
+		bDynamicTermSet: bDynamicTermSet,
+		nOption:         nOption,
+		rOption:         rOption,
 	}
 }
 
@@ -512,18 +586,21 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		mask := tool.Uint128{}
+		// The 7 TwoState/base stats (EnergyCharge, DashSpeed, DashJump, RideVehicle/
+		// MonsterRiding, SpeedInfusion, GuidedBullet, Undead) are always present and
+		// always encoded as base-stat blocks (see getBaseTemporaryStats), so their mask
+		// bits are set unconditionally. The registry's per-version shift assignment
+		// already places them where the client reads them: on v83 RideVehicle is shift
+		// 85 -> wire bytes 4-7, matching SecondaryStat::DecodeForLocal's flag 1<<(i+82)
+		// (IDA @0x781D0E). No version-specific mask placement is needed.
 		applyMask := func(name character.TemporaryStatType) {
 			if val, err := CharacterTemporaryStatTypeByName(t)(name); err == nil {
 				mask = mask.Or(val.mask)
 			}
 		}
-		applyMask(character.TemporaryStatTypeEnergyCharge)
-		applyMask(character.TemporaryStatTypeDashSpeed)
-		applyMask(character.TemporaryStatTypeDashJump)
-		applyMask(character.TemporaryStatTypeMonsterRiding)
-		applyMask(character.TemporaryStatTypeSpeedInfusion)
-		applyMask(character.TemporaryStatTypeHomingBeacon)
-		applyMask(character.TemporaryStatTypeUndead)
+		for _, name := range twoStateBaseStats(t) {
+			applyMask(name)
+		}
 
 		for _, v := range m.stats {
 			mask = mask.Or(v.statType.mask)
@@ -544,6 +621,13 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 
 		keys := make([]CharacterTemporaryStatType, 0)
 		for _, v := range m.stats {
+			if baseStatNames[v.statType.name] {
+				// Base/TwoState stats (e.g. MonsterRiding) are encoded only as
+				// base-stat blocks below — never as a per-stat value block. The v83
+				// client reads them in its 7-iteration base loop, so a per-stat block
+				// here would desync the entire tail. Version-independent.
+				continue
+			}
 			keys = append(keys, v.statType)
 		}
 
@@ -574,7 +658,7 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState
 
-		var baseTemporaryStats = m.getBaseTemporaryStats()
+		var baseTemporaryStats = m.getBaseTemporaryStats(t)
 		for _, bts := range baseTemporaryStats {
 			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
@@ -590,6 +674,9 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 
 		keys := make([]CharacterTemporaryStatType, 0)
 		for _, v := range m.stats {
+			if baseStatNames[v.statType.name] {
+				continue // TwoState/base stats are encoded only as base stats below
+			}
 			keys = append(keys, v.statType)
 		}
 
@@ -609,7 +696,7 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState
 
-		var baseTemporaryStats = m.getBaseTemporaryStats()
+		var baseTemporaryStats = m.getBaseTemporaryStats(t)
 		for _, bts := range baseTemporaryStats {
 			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
@@ -618,13 +705,45 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 }
 
 var baseStatNames = map[character.TemporaryStatType]bool{
-	character.TemporaryStatTypeEnergyCharge: true,
-	character.TemporaryStatTypeDashSpeed:    true,
-	character.TemporaryStatTypeDashJump:     true,
+	character.TemporaryStatTypeEnergyCharge:  true,
+	character.TemporaryStatTypeDashSpeed:     true,
+	character.TemporaryStatTypeDashJump:      true,
 	character.TemporaryStatTypeMonsterRiding: true,
 	character.TemporaryStatTypeSpeedInfusion: true,
 	character.TemporaryStatTypeHomingBeacon:  true,
 	character.TemporaryStatTypeUndead:        true,
+	character.TemporaryStatTypePartyBooster:  true, // v95 two-state member (replaces SpeedInfusion)
+}
+
+// twoStateBaseStats returns the two-state/base stat group for this tenant, in the
+// exact order the client reads their trailing base-stat blocks. These stats are
+// always encoded as base-stat blocks (never per-stat value blocks) and their mask
+// bits are set unconditionally. v83/v84/v87/JMS use the classic 7-member group.
+//
+// GMS v95 differs: its two-state group is EnergyCharge, DashSpeed, DashJump,
+// RideVehicle(125), PartyBooster(126), GuidedBullet(127), Undead(128) — but Undead
+// overflows the 128-bit mask and PartyBooster/GuidedBullet base-stat wire sizes are
+// not yet IDA-verified (Task 41b). The client reads base blocks per set mask bit,
+// sequentially, so we emit only the verified leading four (EnergyCharge..RideVehicle);
+// RideVehicle/MonsterRiding is the mount payload and renders correctly as slot 3.
+func twoStateBaseStats(t tenant.Model) []character.TemporaryStatType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return []character.TemporaryStatType{
+			character.TemporaryStatTypeEnergyCharge,
+			character.TemporaryStatTypeDashSpeed,
+			character.TemporaryStatTypeDashJump,
+			character.TemporaryStatTypeMonsterRiding,
+		}
+	}
+	return []character.TemporaryStatType{
+		character.TemporaryStatTypeEnergyCharge,
+		character.TemporaryStatTypeDashSpeed,
+		character.TemporaryStatTypeDashJump,
+		character.TemporaryStatTypeMonsterRiding,
+		character.TemporaryStatTypeSpeedInfusion,
+		character.TemporaryStatTypeHomingBeacon,
+		character.TemporaryStatTypeUndead,
+	}
 }
 
 func (m *CharacterTemporaryStat) DecodeMask(r *request.Reader) tool.Uint128 {
@@ -646,6 +765,8 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 				continue
 			}
 			if baseStatNames[st.name] {
+				// Base/TwoState stats carry no per-stat block; they are read by
+				// decodeBaseTemporaryStats below. Skip regardless of version.
 				continue
 			}
 			value := r.ReadInt16()
@@ -698,29 +819,48 @@ func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context
 }
 
 func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		for i := 0; i < 4; i++ {
-			base := CharacterTemporaryStatBase{bDynamicTermSet: true}
-			base.Decode(l, ctx)(r, options)
+		// Mirror getBaseTemporaryStats exactly (same version-specific group + order)
+		// so the bytes consumed match the bytes emitted, boundary-for-boundary.
+		for _, name := range twoStateBaseStats(t) {
+			switch name {
+			case character.TemporaryStatTypeSpeedInfusion:
+				si := SpeedInfusionTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
+				si.Decode(l, ctx)(r, options)
+			case character.TemporaryStatTypeHomingBeacon:
+				gb := GuidedBulletTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
+				gb.Decode(l, ctx)(r, options)
+			case character.TemporaryStatTypeMonsterRiding:
+				base := CharacterTemporaryStatBase{bDynamicTermSet: false}
+				base.Decode(l, ctx)(r, options)
+			default:
+				base := CharacterTemporaryStatBase{bDynamicTermSet: true}
+				base.Decode(l, ctx)(r, options)
+			}
 		}
-		base := CharacterTemporaryStatBase{bDynamicTermSet: false}
-		base.Decode(l, ctx)(r, options)
-		si := SpeedInfusionTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
-		si.Decode(l, ctx)(r, options)
-		gb := GuidedBulletTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
-		gb.Decode(l, ctx)(r, options)
 	}
 }
 
-func (m *CharacterTemporaryStat) getBaseTemporaryStats() []packet.Encoder {
+func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.Encoder {
 	var list = make([]packet.Encoder, 0)
-	list = append(list, NewCharacterTemporaryStatBase(true)) // Energy Charge 15
-	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Speed 15
-	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Jump 15
-	// TODO look up actual buff values if riding mount.
-	list = append(list, NewCharacterTemporaryStatBase(false)) // Monster Riding 13
-	list = append(list, NewSpeedInfusionTemporaryStat())      // 17
-	list = append(list, NewGuidedBulletTemporaryStat())       // 17
-	list = append(list, NewCharacterTemporaryStatBase(true))  // Undead 15
+	for _, name := range twoStateBaseStats(t) {
+		switch name {
+		case character.TemporaryStatTypeMonsterRiding:
+			// Monster Riding: nOption = vehicle/taming-mob item id, rOption = source
+			// skill id. Wire contract IDA-confirmed — context.md §2, design.md §1.1.
+			if s, ok := m.stats[name]; ok {
+				list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId()))
+			} else {
+				list = append(list, NewCharacterTemporaryStatBase(false)) // 13
+			}
+		case character.TemporaryStatTypeSpeedInfusion:
+			list = append(list, NewSpeedInfusionTemporaryStat()) // 20
+		case character.TemporaryStatTypeHomingBeacon:
+			list = append(list, NewGuidedBulletTemporaryStat()) // 17
+		default:
+			list = append(list, NewCharacterTemporaryStatBase(true)) // dynamic, 15
+		}
+	}
 	return list
 }

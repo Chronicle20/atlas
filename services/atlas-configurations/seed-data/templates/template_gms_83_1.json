@@ -397,6 +397,11 @@
         "handler": "PetFoodHandle"
       },
       {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
+      },
+      {
         "opCode": "0x4F",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle"
@@ -1022,6 +1027,10 @@
       }
     ],
     "writers": [
+      {
+        "opCode": "0x30",
+        "writer": "SetTamingMobInfo"
+      },
       {
         "opCode": "0x00",
         "writer": "AuthSuccess"

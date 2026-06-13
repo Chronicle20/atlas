@@ -287,7 +287,21 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							l.WithError(err).Debugf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(charcb.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
+						// Mounts are transient (Cosmic loads them inactive). Don't re-render a
+						// persisted MONSTER_RIDING buff on login — cancel it so the player isn't
+						// auto-remounted and the stale buff is cleared from atlas-buffs. The mount
+						// progression (level/exp/tiredness) lives in atlas-mounts and is unaffected.
+						rendered := make([]buff.Model, 0, len(bs))
+						for _, b := range bs {
+							if buff.IsMount(b) {
+								if cerr := buff.NewProcessor(l, ctx).Cancel(s.Field(), s.CharacterId(), b.SourceId()); cerr != nil {
+									l.WithError(cerr).Warnf("Unable to clear persisted mount buff for character [%d] on login.", s.CharacterId())
+								}
+								continue
+							}
+							rendered = append(rendered, b)
+						}
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(rendered))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}

@@ -2,9 +2,11 @@ package consumable
 
 import (
 	"atlas-consumables/kafka/message/consumable"
+	foodmsg "atlas-consumables/kafka/message/food"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -38,6 +40,21 @@ func ScrollEventProvider(characterId character.Id) func(success bool, cursed boo
 		}
 		return producer.SingleMessageProvider(key, value)
 	}
+}
+
+// TamingMobFedEventProvider builds the TamingMobFed event emitted after a
+// revitalizer (classification 226) is consumed. Keyed by characterId so
+// atlas-mounts processes a character's feeds in order. tirednessHeal is the
+// pinned server constant foodmsg.RevitalizerTirednessHeal.
+func TamingMobFedEventProvider(worldId world.Id, characterId uint32, itemId uint32, tirednessHeal int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &foodmsg.Event{
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		ItemId:        itemId,
+		TirednessHeal: tirednessHeal,
+	}
+	return producer.SingleMessageProvider(key, value)
 }
 
 func EffectAppliedEventProvider(characterId character.Id, itemId item.Id, transactionId uuid.UUID) model.Provider[[]kafka.Message] {

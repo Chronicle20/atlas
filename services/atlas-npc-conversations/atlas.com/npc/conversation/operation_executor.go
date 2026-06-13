@@ -815,8 +815,30 @@ func (e *OperationExecutorImpl) createSagaForOperation(field field.Model, charac
 	}
 	builder.AddStep(stepId, status, action, payload)
 
+	// A job change cancels all active buffs (MapleStory job-advancement
+	// behavior), which also dismounts any MONSTER_RIDING mount (FR-4.2).
+	if action == saga.ChangeJob {
+		appendCancelAllBuffsStep(builder, field, characterId)
+	}
+
 	// Build the saga
 	return builder.Build(), nil
+}
+
+// appendCancelAllBuffsStep adds a cancel_all_buffs step for the given character.
+// It is emitted alongside a change_job step so a job change clears all active
+// buffs (and dismounts any MONSTER_RIDING mount, FR-4.2).
+func appendCancelAllBuffsStep(builder *saga.Builder, f field.Model, characterId uint32) {
+	builder.AddStep(
+		fmt.Sprintf("cancel_all_buffs-%d", characterId),
+		saga.Pending,
+		saga.CancelAllBuffs,
+		saga.CancelAllBuffsPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+		},
+	)
 }
 
 // createSagaForOperations creates a saga for multiple operations
@@ -895,8 +917,19 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 	suppressAwardAssetByCompleteQuest(built)
 	suppressAwardAssetByStartQuest(built)
 
+	hasChangeJob := false
 	for _, st := range built {
 		builder.AddStep(st.stepId, st.status, st.action, st.payload)
+		if st.action == saga.ChangeJob {
+			hasChangeJob = true
+		}
+	}
+
+	// A job change cancels all active buffs (MapleStory job-advancement
+	// behavior), which also dismounts any MONSTER_RIDING mount (FR-4.2). A
+	// single cancel covers any number of change_job steps in the batch.
+	if hasChangeJob {
+		appendCancelAllBuffsStep(builder, field, characterId)
 	}
 
 	// Build the saga

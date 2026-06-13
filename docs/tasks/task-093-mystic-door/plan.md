@@ -2,1526 +2,2581 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement Mystic Door (skill `2311002`) as a new version-agnostic engine service `atlas-doors` plus an `atlas-channel` packet edge, so a Priest can deploy a party-shared two-map town portal on every supported tenant version.
+**Goal:** Ship the Priest Mystic Door skill (`2311002`) as a new version-agnostic `atlas-doors` engine service plus an `atlas-channel` packet edge, so a Priest can cast a party-shared two-map town portal that works on every supported tenant version.
 
-**Architecture:** A new Redis-backed, per-tenant `atlas-doors` service owns door lifecycle (registry, shared object-id allocation, per-party town-slot allocation, leader-elected expiry, Kafka command/event topics, REST) — modeled one-for-one on the in-flight `atlas-summons`. `atlas-channel` stays the thin per-version packet edge: it routes the cast to a SPAWN command, decodes the enter-door packet and warps via the existing portal path, and consumes door status events to broadcast spawn/remove/party-minimap packets to eligible (same-channel party) sessions. All version variance lives in a new `libs/atlas-packet/door` package plus per-version tenant socket-template opcodes.
+**Architecture:** `atlas-doors` (new, mirrored on in-tree `atlas-monsters`) owns door state in Redis: paired area+town door records, a shared object-id allocator, a leader-elected expiry sweep, per-party town-slot allocation, and Kafka command/event topics. `atlas-channel` routes the cast through the existing per-skill `Lookup` seam, decodes the enter-door packet, warps via the existing `portal.Warp` path, and broadcasts spawn/remove/party-minimap packets to party-scoped, same-channel viewers. All version variance lives in a new `libs/atlas-packet/door` package plus per-tenant socket-template opcodes (opcodes are config, not Go).
 
-**Tech Stack:** Go 1.22+, libs/atlas-redis (Registry/KeyedSet), libs/atlas-object-id, libs/atlas-lock (leader election), libs/atlas-kafka, libs/atlas-model, libs/atlas-rest (JSON:API via api2go), libs/atlas-tenant, libs/atlas-constants, libs/atlas-packet, libs/atlas-socket.
+**Tech Stack:** Go (DDD immutable models + Builder, functional composition), `libs/atlas-redis`/`atlas-object-id`/`atlas-lock`/`atlas-kafka`/`atlas-tenant`/`atlas-constants`/`atlas-packet`, JSON:API (api2go), Kafka, Redis, multi-tenant context propagation, Docker buildx bake, k8s/kustomize.
 
-**Read first:** `context.md` (in this folder) — it maps the atlas-summons template location, the channel seams, the atlas-data portal facts, and the locked-in decisions. Every "copy from atlas-summons" instruction below refers to `.worktrees/task-088-player-summons/services/atlas-summons/atlas.com/summons/`.
-
----
-
-## Phase ordering & rationale
-
-- **Phase 0** — de-risk the one open data question (town door portals) and stand up the empty service so later phases compile.
-- **Phase 1** — the version-agnostic engine domain (model, registry, slot, id allocation, data clients, processor). Pure logic, fully TDD-able offline.
-- **Phase 2** — wire the engine into Kafka consumers + REST + leader task + `main.go`.
-- **Phase 3** — `libs/atlas-packet/door` encoders/decoder (v83 from Cosmic; golden-byte tests).
-- **Phase 4** — the `atlas-channel` edge (cast handler, enter-door handler, broadcast consumer, map-enter spawn, partyPortal).
-- **Phase 5** — per-version opcode resolution + tenant template/live-config wiring (the OQ-5 matrix).
-- **Phase 6** — full verification + service registration completeness.
-
-Commit after every task. Run `go test -race ./...` in the changed module after each implementation step that the task says to.
+> **Read `context.md` first.** It lists 12 load-bearing corrections to `design.md`
+> discovered during planning (chief among them: **mirror `atlas-monsters`, not the
+> non-present `atlas-summons`**; **opcodes are tenant config, not Go**; **`PlayPortalSound`
+> already exists — don't add a packet**; **per-version door bytes are IDA-verify-or-escalate**).
 
 ---
 
-## Phase 0 — De-risk & scaffold
+## Conventions used in this plan
 
-### Task 0: Verify town door-portal data (OQ-3)
-
-**No code.** This is the highest-priority pre-implementation data check (design §6.3, §12). Findings drive the slot→portal fallback in Task 9.
-
-**Files:**
-- Modify: `docs/tasks/task-093-mystic-door/context.md` (append a "## Town portal verification (Task 0)" section with the findings table)
-
-- [ ] **Step 1: Inspect the door portals for the canonical return towns.** Use the verified inspection method (memory `reference_atlas_data_wz_inspection`). Either query a live tenant or read local WZ dumps. For each of these town map ids, count portals with `pt == 6` (door type):
-
-  Towns to check: `100000000` Henesys, `101000000` Ellinia, `102000000` Perion, `103000000` Kerning City, `104000000` Lith Harbor, `105040300` Sleepywood, `120000000` Nautilus, `200000000` Orbis, `220000000` Ludibrium, `230000000` Aquarium.
-
-  Live-tenant method (throwaway curl pod per `reference_atlas_data_wz_inspection`), example:
-  ```
-  GET /api/data/maps/100000000/portals
-  Headers: TENANT_ID, REGION=GMS, MAJOR_VERSION=83, MINOR_VERSION=1
-  ```
-  Count entries where `attributes.type == 6`.
-
-- [ ] **Step 2: Record the count per town per version** (`gms_v83`, and spot-check `gms_v95` + `jms_v185`) in a table in context.md.
-
-- [ ] **Step 3: Decide the fallback.** If every checked town exposes ≥6 door portals, the §6.3 happy path always applies and the fallback (Task 9) is defensive only. If any town has <6, document which, and confirm the Task 9 fallback (default door position near the town's spawn portal) is acceptable. Note the conclusion in context.md.
-
-- [ ] **Step 4: Commit**
-  ```bash
-  git add docs/tasks/task-093-mystic-door/context.md
-  git commit -m "docs(task-093): record town door-portal verification (OQ-3)"
-  ```
+- All paths are relative to the worktree root `<repo-root>/.worktrees/task-093-mystic-door/`.
+- New service module: `services/atlas-doors/atlas.com/doors/` (go.mod module name
+  **`atlas-doors`**, short form).
+- "Mirror `monsters/<file>`" means: open the named `atlas-monsters` file, copy its
+  structure, and apply the substitutions called out in the step. Monster code is the
+  in-tree source of truth for the registry/allocator/leader/kafka boilerplate; do not
+  invent boilerplate that diverges from it.
+- Each TDD task: write failing test → run (FAIL) → implement → run (PASS) → commit.
+- Commit messages use the `feat(atlas-doors): …` / `feat(atlas-channel): …` /
+  `feat(atlas-packet): …` form. Commit on the `task-093-mystic-door` branch only.
+- After every commit, the executor verifies `git branch --show-current` is
+  `task-093-mystic-door` and `git rev-parse --show-toplevel` ends with
+  `/.worktrees/task-093-mystic-door`.
 
 ---
 
-### Task 1: Service registration + empty `atlas-doors` module
+# PART A — Service scaffold & registration
 
-Stand up a compiling, empty module so subsequent tasks have a home. No domain logic yet.
+Goal: a buildable, registered, empty `atlas-doors` service that boots, elects a leader,
+serves `/api/`, and is wired into go.work / services.json / docker-bake / k8s. No door
+logic yet.
+
+### Task A1: Create the Go module
 
 **Files:**
 - Create: `services/atlas-doors/atlas.com/doors/go.mod`
-- Create: `services/atlas-doors/atlas.com/doors/main.go`
-- Create: `services/atlas-doors/atlas.com/doors/logger/logger.go` (copy from atlas-summons `logger/`)
+- Create: `services/atlas-doors/atlas.com/doors/logger/init.go`
 - Modify: `go.work`
+
+- [ ] **Step 1: Create the module file** by copying the monsters go.mod header.
+
+Run: `cat services/atlas-monsters/atlas.com/monsters/go.mod | head -40` and create
+`services/atlas-doors/atlas.com/doors/go.mod` with module name `atlas-doors`, the same
+`go` version line, and the same `require`/`replace` blocks (the workspace `replace`s for
+`libs/atlas-*` are inherited from `go.work`, but copy any explicit `require`s monsters
+lists for: `atlas-redis`, `atlas-object-id`, `atlas-lock`, `atlas-kafka`, `atlas-tenant`,
+`atlas-constants`, `atlas-rest`, `atlas-model`, `atlas-service`, `atlas-tracing`,
+`github.com/sirupsen/logrus`, `github.com/google/uuid`, `github.com/gorilla/mux`,
+`github.com/redis/go-redis/v9`, `github.com/segmentio/kafka-go`, api2go/jsonapi).
+
+- [ ] **Step 2: Add the module to the workspace.**
+
+Edit `go.work` — add this line in the services block (after `./services/atlas-data/...`):
+
+```
+	./services/atlas-doors/atlas.com/doors
+```
+
+- [ ] **Step 3: Create the logger** by mirroring `monsters/logger/init.go` verbatim
+(package `logger`, logrus + ECS hook, `func New(serviceName string) *logrus.Logger`).
+
+- [ ] **Step 4: Verify the module resolves.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && GOFLAGS=-mod=mod go mod tidy && go build ./... ; cd -`
+Expected: builds (only the logger package exists; no errors).
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add go.work services/atlas-doors/atlas.com/doors/go.mod services/atlas-doors/atlas.com/doors/go.sum services/atlas-doors/atlas.com/doors/logger
+git commit -m "feat(atlas-doors): scaffold module, workspace entry, logger"
+```
+
+### Task A2: Generic task runner + leader config
+
+**Files:**
+- Create: `services/atlas-doors/atlas.com/doors/tasks/task.go`
+- Create: `services/atlas-doors/atlas.com/doors/leaderconfig.go`
+- Create: `services/atlas-doors/atlas.com/doors/leaderconfig_test.go`
+
+- [ ] **Step 1: Mirror `monsters/tasks/task.go` verbatim** — the `Task` interface and
+`Register` goroutine loop:
+
+```go
+package tasks
+
+import (
+	"context"
+	"time"
+
+	"github.com/sirupsen/logrus"
+)
+
+type Task interface {
+	Run()
+	SleepTime() time.Duration
+}
+
+func Register(l logrus.FieldLogger, ctx context.Context) func(t Task) {
+	return func(t Task) {
+		go func(t Task) {
+			for {
+				select {
+				case <-ctx.Done():
+					l.Infof("Stopping task execution.")
+					return
+				case <-time.After(t.SleepTime()):
+					t.Run()
+				}
+			}
+		}(t)
+	}
+}
+```
+
+- [ ] **Step 2: Write the failing leaderconfig test.** Mirror
+`monsters/leaderconfig_test.go`, renaming env vars to the `DOOR_LEADER_*` prefix.
+
+```go
+package main
+
+import (
+	"os"
+	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
+)
+
+func TestLeaderTTLDefault(t *testing.T) {
+	os.Unsetenv("DOOR_LEADER_TTL")
+	if got := leaderTTL(logrus.New()); got != defaultLeaderTTL {
+		t.Fatalf("expected default %v, got %v", defaultLeaderTTL, got)
+	}
+}
+
+func TestLeaderTTLClampLow(t *testing.T) {
+	os.Setenv("DOOR_LEADER_TTL", "1s")
+	defer os.Unsetenv("DOOR_LEADER_TTL")
+	if got := leaderTTL(logrus.New()); got < 5*time.Second {
+		t.Fatalf("expected clamp to >=5s, got %v", got)
+	}
+}
+```
+
+- [ ] **Step 3: Run the test to verify it fails.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./... ; cd -`
+Expected: FAIL (`leaderTTL`/`defaultLeaderTTL` undefined).
+
+- [ ] **Step 4: Create `leaderconfig.go`** by mirroring `monsters/leaderconfig.go`,
+substituting the env prefix `MONSTER_`→`DOOR_`:
+
+```go
+package main
+
+import (
+	"os"
+	"strconv"
+	"time"
+
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	envLeaderEnabled = "DOOR_LEADER_ELECTION_ENABLED"
+	envLeaderTTL     = "DOOR_LEADER_TTL"
+	envLeaderRefresh = "DOOR_LEADER_REFRESH"
+	envLeaderBackoff = "DOOR_LEADER_BACKOFF"
+
+	defaultLeaderTTL     = 30 * time.Second
+	defaultLeaderRefresh = 10 * time.Second
+	defaultLeaderBackoff = 5 * time.Second
+)
+
+// leaderEnabled, leaderTTL, leaderRefresh, leaderBackoff, parseDurationInRange:
+// copy the bodies from monsters/leaderconfig.go unchanged (only the const names above
+// differ). leaderEnabled defaults true; leaderTTL clamps to [5s,5m]; leaderRefresh
+// defaults ttl/3 clamped to [1s, ttl/2]; leaderBackoff clamps to [1s,1m].
+```
+
+(Reproduce the function bodies exactly from `monsters/leaderconfig.go`.)
+
+- [ ] **Step 5: Run the test to verify it passes.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./... ; cd -`
+Expected: PASS.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/tasks services/atlas-doors/atlas.com/doors/leaderconfig.go services/atlas-doors/atlas.com/doors/leaderconfig_test.go
+git commit -m "feat(atlas-doors): task runner + leader election config"
+```
+
+### Task A3: Shared Kafka consumer/producer plumbing
+
+**Files:**
+- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/consumer.go`
+- Create: `services/atlas-doors/atlas.com/doors/kafka/producer/producer.go`
+- Create: `services/atlas-doors/atlas.com/doors/rest/handler.go`
+
+- [ ] **Step 1: Mirror `monsters/kafka/consumer/consumer.go` verbatim** — the `NewConfig`
+factory and `LookupBrokers`:
+
+```go
+package consumer
+
+// NewConfig(l)(name)(token)(groupId) consumer.Config + LookupBrokers() []string
+// reading BOOTSTRAP_SERVERS. Copy from monsters unchanged.
+```
+
+- [ ] **Step 2: Mirror `monsters/kafka/producer/producer.go` verbatim** — the
+`ProviderImpl(l)(ctx)(token)` wrapper around `libs/atlas-kafka/producer`.
+
+- [ ] **Step 3: Mirror `monsters/rest/handler.go` verbatim** — the `server.*` type
+aliases (`HandlerDependency`, `HandlerContext`, `RegisterHandler`,
+`RegisterInputHandler`) and the typed path parsers. Add a `ParseDoorId` parser
+(`server.ParseIntId[uint32]`) and keep `ParseWorldId/ParseChannelId/ParseMapId/
+ParseInstanceId`.
+
+- [ ] **Step 4: Verify it builds.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go build ./... ; cd -`
+Expected: builds.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/kafka services/atlas-doors/atlas.com/doors/rest
+git commit -m "feat(atlas-doors): kafka consumer/producer + rest handler plumbing"
+```
+
+### Task A4: Register the service (build system)
+
+**Files:**
 - Modify: `.github/config/services.json`
 - Modify: `docker-bake.hcl`
 
-- [ ] **Step 1: Copy the module skeleton from atlas-summons.** Copy `go.mod`, `main.go`, and `logger/` from `.worktrees/task-088-player-summons/services/atlas-summons/atlas.com/summons/` into `services/atlas-doors/atlas.com/doors/`. Then:
-  - In `go.mod`, change `module atlas-summons` → `module atlas-doors`. Keep the same `require` block (atlas-redis, atlas-object-id, atlas-lock, atlas-kafka, atlas-model, atlas-rest, atlas-service, atlas-tenant, atlas-constants, atlas-tracing, gorilla/mux, api2go, go-redis, kafka-go, logrus, ecslogrus, uuid). Remove any require atlas-summons does not actually share with doors only if `go mod tidy` later flags it — do not prune by hand now.
-  - In `main.go`, strip the body down to a minimal bootstrap that compiles: logger init, redis connect, tracing init, an empty REST server on base path `/api/` with `/metrics` + readiness, and a `select{}`/signal wait. Remove all summon-specific init (InitIdAllocator/InitRegistry/consumers/tasks) — they're re-added in Task 12. Replace the `serviceName` string with `"atlas-doors"`.
+- [ ] **Step 1: Add the services.json entry.** Insert this object into the `.services[]`
+array (after the `atlas-data` entry, mirroring `atlas-monsters`):
 
-- [ ] **Step 2: Register the service path in `go.work`.** Add the line (keep the list sorted near the other services):
-  ```
-  	./services/atlas-doors/atlas.com/doors
-  ```
+```json
+{
+  "name": "atlas-doors",
+  "type": "go-service",
+  "path": "services/atlas-doors",
+  "module_path": "services/atlas-doors/atlas.com/doors",
+  "docker_image": "ghcr.io/chronicle20/atlas-doors/atlas-doors",
+  "docker_context": "."
+}
+```
 
-- [ ] **Step 3: Add the services.json entry.** In `.github/config/services.json`, add (mirroring the atlas-mounts entry shape):
-  ```json
-  {
-    "name": "atlas-doors",
-    "type": "go-service",
-    "path": "services/atlas-doors",
-    "module_path": "services/atlas-doors/atlas.com/doors",
-    "docker_image": "ghcr.io/chronicle20/atlas-doors/atlas-doors",
-    "docker_context": "."
-  }
-  ```
+- [ ] **Step 2: Add to docker-bake.hcl `go_services`.** Insert `"atlas-doors",` into the
+hardcoded list, alphabetically between `"atlas-data",` and the next entry:
 
-- [ ] **Step 4: Add `atlas-doors` to docker-bake.hcl.** In `docker-bake.hcl`, add `"atlas-doors"` to the hardcoded `go_services = [ ... ]` list (line ~35). HCL cannot read JSON, so both files must list it (memory `reference_docker_bake_hand_synced`).
+```hcl
+  "atlas-data",
+  "atlas-doors",
+```
 
-- [ ] **Step 5: Tidy and build.**
-  Run:
-  ```bash
-  cd services/atlas-doors/atlas.com/doors && go mod tidy && go build ./... && cd -
-  ```
-  Expected: clean build, an `atlas-doors` binary package compiles.
+- [ ] **Step 3: Verify bake config parses.**
 
-- [ ] **Step 6: Verify the bake target resolves.**
-  Run from the worktree root:
-  ```bash
-  docker buildx bake atlas-doors --print
-  ```
-  Expected: prints a target named `atlas-doors` (no "target not found"). A full bake happens in Phase 6.
+Run: `docker buildx bake atlas-doors --print 2>&1 | head -30`
+Expected: prints a valid target for `atlas-doors` (no HCL error). (It will fail to build
+until `main.go` exists — that's fine; we only check the target resolves here.)
 
-- [ ] **Step 7: Commit**
-  ```bash
-  git add services/atlas-doors go.work .github/config/services.json docker-bake.hcl
-  git commit -m "feat(atlas-doors): register service + empty module skeleton"
-  ```
+- [ ] **Step 4: Commit.**
+
+```bash
+git add .github/config/services.json docker-bake.hcl
+git commit -m "feat(atlas-doors): register service in services.json + docker-bake"
+```
+
+### Task A5: k8s manifest + env config
+
+**Files:**
+- Create: `deploy/k8s/base/atlas-doors.yaml`
+- Modify: `deploy/k8s/base/kustomization.yaml`
+- Modify: `deploy/k8s/base/env-configmap.yaml`
+
+- [ ] **Step 1: Create `deploy/k8s/base/atlas-doors.yaml`** by mirroring
+`deploy/k8s/base/atlas-monsters.yaml` (Deployment + Service, `containerPort: 8080`,
+`envFrom` the `atlas-env` ConfigMap, `LOG_LEVEL` env, Service port 8080). Substitute
+`atlas-monsters`→`atlas-doors` and the image to
+`ghcr.io/chronicle20/atlas-doors/atlas-doors`. **If** you add a readiness probe, the path
+MUST be `/api/readyz` (the REST server base path is `/api/`).
+
+- [ ] **Step 2: Add to kustomization.** In `deploy/k8s/base/kustomization.yaml`, add a
+resource line in alpha order:
+
+```yaml
+  - atlas-doors.yaml
+```
+
+- [ ] **Step 3: Add the door topics to env-configmap.** In
+`deploy/k8s/base/env-configmap.yaml`, under the existing `COMMAND_TOPIC_*` /
+`EVENT_TOPIC_*` block, add:
+
+```yaml
+  COMMAND_TOPIC_DOOR: "command-topic-door"
+  EVENT_TOPIC_DOOR_STATUS: "event-topic-door-status"
+```
+
+(Match the existing naming convention of neighbouring topic values.)
+
+- [ ] **Step 4: Verify kustomize builds.**
+
+Run: `kubectl kustomize deploy/k8s/base >/dev/null && echo OK`
+Expected: `OK` (no kustomize error).
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add deploy/k8s/base/atlas-doors.yaml deploy/k8s/base/kustomization.yaml deploy/k8s/base/env-configmap.yaml
+git commit -m "feat(atlas-doors): k8s base manifest + door kafka topics"
+```
 
 ---
 
-## Phase 1 — Engine domain (version-agnostic)
+# PART B — Domain model, registry, id allocator
 
-All Phase-1 code lives under `services/atlas-doors/atlas.com/doors/door/` (and `data/`, `party/`). Pure logic; TDD throughout. Use the project Builder pattern for fixtures — no `*_testhelpers.go`.
+Goal: the immutable `door.Model` (a pair record), its Builder, the Redis registry with
+field/owner/town-party indices, and the object-id allocator.
 
-### Task 2: Domain model + builder
+### Task B1: `door.Model` + Builder
 
 **Files:**
 - Create: `services/atlas-doors/atlas.com/doors/door/model.go`
 - Create: `services/atlas-doors/atlas.com/doors/door/builder.go`
-- Test: `services/atlas-doors/atlas.com/doors/door/model_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/model_test.go`
 
-- [ ] **Step 1: Write the failing test.**
-  ```go
-  package door
+- [ ] **Step 1: Write the failing model test.**
 
-  import (
-  	"testing"
-  	"time"
+```go
+package door
 
-  	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-  )
+import (
+	"testing"
+	"time"
 
-  func TestBuilderBuildAndGetters(t *testing.T) {
-  	f := field.NewBuilder(1, 2, 100000000).Build()
-  	deploy := time.Unix(1000, 0)
-  	m := NewBuilder().
-  		SetAreaDoorId(1000001).
-  		SetTownDoorId(1000002).
-  		SetOwnerCharacterId(42).
-  		SetPartyId(7).
-  		SetSkillId(2311002).
-  		SetSkillLevel(30).
-  		SetField(f).
-  		SetTownMapId(104000000).
-  		SetSlot(3).
-  		SetTownPortalId(0x83).
-  		SetAreaXY(500, -200).
-  		SetTownXY(10, 20).
-  		SetDeployTime(deploy).
-  		SetExpiresAt(deploy.Add(2 * time.Minute)).
-  		Build()
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+)
 
-  	if m.AreaDoorId() != 1000001 || m.TownDoorId() != 1000002 {
-  		t.Fatalf("oids wrong: %d/%d", m.AreaDoorId(), m.TownDoorId())
-  	}
-  	if m.PairId() != 1000001 {
-  		t.Fatalf("pairId should default to areaDoorId, got %d", m.PairId())
-  	}
-  	if m.OwnerCharacterId() != 42 || m.PartyId() != 7 {
-  		t.Fatalf("owner/party wrong")
-  	}
-  	if m.Slot() != 3 || m.TownPortalId() != 0x83 {
-  		t.Fatalf("slot/portal wrong")
-  	}
-  	if m.AreaX() != 500 || m.AreaY() != -200 || m.TownX() != 10 || m.TownY() != 20 {
-  		t.Fatalf("positions wrong")
-  	}
-  	if !m.ExpiresAt().Equal(deploy.Add(2 * time.Minute)) {
-  		t.Fatalf("expiry wrong")
-  	}
-  }
+func TestBuilderAndGettersAndReslotImmutable(t *testing.T) {
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	deploy := time.Unix(1000, 0)
+	m := NewBuilder().
+		SetAreaDoorId(1_000_001).
+		SetTownDoorId(1_000_002).
+		SetOwnerCharacterId(42).
+		SetPartyId(7).
+		SetSkillId(2311002).
+		SetSkillLevel(10).
+		SetField(f).
+		SetTownMapId(104000000).
+		SetSlot(0).
+		SetTownPortalId(0x80).
+		SetAreaX(50).SetAreaY(60).
+		SetTownX(-12).SetTownY(34).
+		SetDeployTime(deploy).
+		SetExpiresAt(deploy.Add(2 * time.Minute)).
+		Build()
 
-  func TestReslotReturnsCopy(t *testing.T) {
-  	m := NewBuilder().SetAreaDoorId(1000001).SetSlot(0).SetTownPortalId(0x80).SetTownXY(1, 2).Build()
-  	n := m.Reslot(4, 0x84, 99, 88)
-  	if m.Slot() != 0 || m.TownPortalId() != 0x80 {
-  		t.Fatalf("original mutated")
-  	}
-  	if n.Slot() != 4 || n.TownPortalId() != 0x84 || n.TownX() != 99 || n.TownY() != 88 {
-  		t.Fatalf("reslot copy wrong: slot %d portal %d", n.Slot(), n.TownPortalId())
-  	}
-  	if n.AreaDoorId() != m.AreaDoorId() {
-  		t.Fatalf("reslot dropped identity")
-  	}
-  }
-  ```
+	if m.AreaDoorId() != 1_000_001 || m.TownDoorId() != 1_000_002 {
+		t.Fatalf("door ids wrong: %d/%d", m.AreaDoorId(), m.TownDoorId())
+	}
+	if m.PairId() != m.AreaDoorId() {
+		t.Fatalf("pairId must equal areaDoorId, got %d", m.PairId())
+	}
+	if m.Field().MapId() != 100000000 {
+		t.Fatalf("field map wrong: %d", m.Field().MapId())
+	}
 
-- [ ] **Step 2: Run test to verify it fails.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestBuilder -v`
-  Expected: FAIL — `undefined: NewBuilder`.
+	// Reslot returns a NEW model; original unchanged.
+	n := m.Reslot(3, 0x83, -99, 88)
+	if m.Slot() != 0 || m.TownPortalId() != 0x80 || m.TownX() != -12 {
+		t.Fatalf("original mutated by Reslot")
+	}
+	if n.Slot() != 3 || n.TownPortalId() != 0x83 || n.TownX() != -99 || n.TownY() != 88 {
+		t.Fatalf("reslot did not apply: slot=%d portal=%d x=%d y=%d", n.Slot(), n.TownPortalId(), n.TownX(), n.TownY())
+	}
+	// Reslot preserves identity fields.
+	if n.AreaDoorId() != m.AreaDoorId() || n.OwnerCharacterId() != m.OwnerCharacterId() {
+		t.Fatalf("reslot changed identity fields")
+	}
+}
+```
 
-- [ ] **Step 3: Implement model.go.**
-  ```go
-  package door
+- [ ] **Step 2: Run to verify it fails.**
 
-  import (
-  	"time"
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ ; cd -`
+Expected: FAIL (`NewBuilder` undefined).
 
-  	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-  	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-  )
+- [ ] **Step 3: Implement `model.go`** (private fields + value-receiver getters; derived
+`PairId()` returns `areaDoorId`; `Reslot` returns a Clone with new town slot fields):
 
-  // Model is the immutable representation of a Mystic Door pair (area door in the
-  // source field + town door in the return town). Both halves share one record
-  // and one pairId so expiry/removal is a single atomic operation.
-  type Model struct {
-  	areaDoorId       uint32
-  	townDoorId       uint32
-  	ownerCharacterId uint32
-  	partyId          uint32 // 0 = solo
-  	skillId          uint32
-  	skillLevel       byte
-  	fld              field.Model
-  	townMapId        _map.Id
-  	slot             byte
-  	townPortalId     uint32
-  	areaX            int16
-  	areaY            int16
-  	townX            int16
-  	townY            int16
-  	deployTime       time.Time
-  	expiresAt        time.Time
-  }
+```go
+package door
 
-  func (m Model) AreaDoorId() uint32       { return m.areaDoorId }
-  func (m Model) TownDoorId() uint32       { return m.townDoorId }
-  func (m Model) PairId() uint32           { return m.areaDoorId }
-  func (m Model) OwnerCharacterId() uint32 { return m.ownerCharacterId }
-  func (m Model) PartyId() uint32          { return m.partyId }
-  func (m Model) SkillId() uint32          { return m.skillId }
-  func (m Model) SkillLevel() byte         { return m.skillLevel }
-  func (m Model) Field() field.Model       { return m.fld }
-  func (m Model) TownMapId() _map.Id       { return m.townMapId }
-  func (m Model) Slot() byte               { return m.slot }
-  func (m Model) TownPortalId() uint32     { return m.townPortalId }
-  func (m Model) AreaX() int16             { return m.areaX }
-  func (m Model) AreaY() int16             { return m.areaY }
-  func (m Model) TownX() int16             { return m.townX }
-  func (m Model) TownY() int16             { return m.townY }
-  func (m Model) DeployTime() time.Time    { return m.deployTime }
-  func (m Model) ExpiresAt() time.Time     { return m.expiresAt }
+import (
+	"time"
 
-  // Reslot returns a copy with new town-slot placement. Used by the party
-  // membership re-slot path. Identity (oids, owner, field) is preserved.
-  func (m Model) Reslot(slot byte, townPortalId uint32, townX, townY int16) Model {
-  	n := m
-  	n.slot = slot
-  	n.townPortalId = townPortalId
-  	n.townX = townX
-  	n.townY = townY
-  	return n
-  }
-  ```
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+)
 
-- [ ] **Step 4: Implement builder.go.**
-  ```go
-  package door
+type Model struct {
+	areaDoorId       uint32
+	townDoorId       uint32
+	ownerCharacterId uint32
+	partyId          uint32
+	skillId          uint32
+	skillLevel       byte
+	fld              field.Model
+	townMapId        _map.Id
+	slot             byte
+	townPortalId     uint32
+	areaX            int16
+	areaY            int16
+	townX            int16
+	townY            int16
+	deployTime       time.Time
+	expiresAt        time.Time
+}
 
-  import (
-  	"time"
+func (m Model) AreaDoorId() uint32       { return m.areaDoorId }
+func (m Model) TownDoorId() uint32       { return m.townDoorId }
+func (m Model) PairId() uint32           { return m.areaDoorId }
+func (m Model) OwnerCharacterId() uint32 { return m.ownerCharacterId }
+func (m Model) PartyId() uint32          { return m.partyId }
+func (m Model) SkillId() uint32          { return m.skillId }
+func (m Model) SkillLevel() byte         { return m.skillLevel }
+func (m Model) Field() field.Model       { return m.fld }
+func (m Model) TownMapId() _map.Id       { return m.townMapId }
+func (m Model) Slot() byte               { return m.slot }
+func (m Model) TownPortalId() uint32     { return m.townPortalId }
+func (m Model) AreaX() int16             { return m.areaX }
+func (m Model) AreaY() int16             { return m.areaY }
+func (m Model) TownX() int16             { return m.townX }
+func (m Model) TownY() int16             { return m.townY }
+func (m Model) DeployTime() time.Time    { return m.deployTime }
+func (m Model) ExpiresAt() time.Time     { return m.expiresAt }
 
-  	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-  	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-  )
+func (m Model) Reslot(slot byte, townPortalId uint32, townX int16, townY int16) Model {
+	return Clone(m).SetSlot(slot).SetTownPortalId(townPortalId).SetTownX(townX).SetTownY(townY).Build()
+}
+```
 
-  type ModelBuilder struct {
-  	m Model
-  }
+- [ ] **Step 4: Implement `builder.go`** (pointer-receiver fluent setters, `NewBuilder()`,
+`Clone(m)`):
 
-  func NewBuilder() *ModelBuilder { return &ModelBuilder{} }
+```go
+package door
 
-  func Clone(m Model) *ModelBuilder { return &ModelBuilder{m: m} }
+import (
+	"time"
 
-  func (b *ModelBuilder) SetAreaDoorId(v uint32) *ModelBuilder       { b.m.areaDoorId = v; return b }
-  func (b *ModelBuilder) SetTownDoorId(v uint32) *ModelBuilder       { b.m.townDoorId = v; return b }
-  func (b *ModelBuilder) SetOwnerCharacterId(v uint32) *ModelBuilder { b.m.ownerCharacterId = v; return b }
-  func (b *ModelBuilder) SetPartyId(v uint32) *ModelBuilder          { b.m.partyId = v; return b }
-  func (b *ModelBuilder) SetSkillId(v uint32) *ModelBuilder          { b.m.skillId = v; return b }
-  func (b *ModelBuilder) SetSkillLevel(v byte) *ModelBuilder         { b.m.skillLevel = v; return b }
-  func (b *ModelBuilder) SetField(v field.Model) *ModelBuilder       { b.m.fld = v; return b }
-  func (b *ModelBuilder) SetTownMapId(v _map.Id) *ModelBuilder       { b.m.townMapId = v; return b }
-  func (b *ModelBuilder) SetSlot(v byte) *ModelBuilder               { b.m.slot = v; return b }
-  func (b *ModelBuilder) SetTownPortalId(v uint32) *ModelBuilder     { b.m.townPortalId = v; return b }
-  func (b *ModelBuilder) SetAreaXY(x, y int16) *ModelBuilder         { b.m.areaX = x; b.m.areaY = y; return b }
-  func (b *ModelBuilder) SetTownXY(x, y int16) *ModelBuilder         { b.m.townX = x; b.m.townY = y; return b }
-  func (b *ModelBuilder) SetDeployTime(v time.Time) *ModelBuilder    { b.m.deployTime = v; return b }
-  func (b *ModelBuilder) SetExpiresAt(v time.Time) *ModelBuilder     { b.m.expiresAt = v; return b }
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+)
 
-  func (b *ModelBuilder) Build() Model { return b.m }
-  ```
+type ModelBuilder struct {
+	areaDoorId       uint32
+	townDoorId       uint32
+	ownerCharacterId uint32
+	partyId          uint32
+	skillId          uint32
+	skillLevel       byte
+	fld              field.Model
+	townMapId        _map.Id
+	slot             byte
+	townPortalId     uint32
+	areaX            int16
+	areaY            int16
+	townX            int16
+	townY            int16
+	deployTime       time.Time
+	expiresAt        time.Time
+}
 
-- [ ] **Step 5: Run tests to verify they pass.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'TestBuilder|TestReslot' -v`
-  Expected: PASS.
+func NewBuilder() *ModelBuilder { return &ModelBuilder{} }
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/model.go services/atlas-doors/atlas.com/doors/door/builder.go services/atlas-doors/atlas.com/doors/door/model_test.go
-  git commit -m "feat(atlas-doors): immutable door Model + Builder"
-  ```
+func Clone(m Model) *ModelBuilder {
+	return &ModelBuilder{
+		areaDoorId: m.areaDoorId, townDoorId: m.townDoorId, ownerCharacterId: m.ownerCharacterId,
+		partyId: m.partyId, skillId: m.skillId, skillLevel: m.skillLevel, fld: m.fld,
+		townMapId: m.townMapId, slot: m.slot, townPortalId: m.townPortalId,
+		areaX: m.areaX, areaY: m.areaY, townX: m.townX, townY: m.townY,
+		deployTime: m.deployTime, expiresAt: m.expiresAt,
+	}
+}
 
----
+func (b *ModelBuilder) SetAreaDoorId(v uint32) *ModelBuilder       { b.areaDoorId = v; return b }
+func (b *ModelBuilder) SetTownDoorId(v uint32) *ModelBuilder       { b.townDoorId = v; return b }
+func (b *ModelBuilder) SetOwnerCharacterId(v uint32) *ModelBuilder { b.ownerCharacterId = v; return b }
+func (b *ModelBuilder) SetPartyId(v uint32) *ModelBuilder          { b.partyId = v; return b }
+func (b *ModelBuilder) SetSkillId(v uint32) *ModelBuilder          { b.skillId = v; return b }
+func (b *ModelBuilder) SetSkillLevel(v byte) *ModelBuilder         { b.skillLevel = v; return b }
+func (b *ModelBuilder) SetField(v field.Model) *ModelBuilder       { b.fld = v; return b }
+func (b *ModelBuilder) SetTownMapId(v _map.Id) *ModelBuilder       { b.townMapId = v; return b }
+func (b *ModelBuilder) SetSlot(v byte) *ModelBuilder               { b.slot = v; return b }
+func (b *ModelBuilder) SetTownPortalId(v uint32) *ModelBuilder     { b.townPortalId = v; return b }
+func (b *ModelBuilder) SetAreaX(v int16) *ModelBuilder             { b.areaX = v; return b }
+func (b *ModelBuilder) SetAreaY(v int16) *ModelBuilder             { b.areaY = v; return b }
+func (b *ModelBuilder) SetTownX(v int16) *ModelBuilder             { b.townX = v; return b }
+func (b *ModelBuilder) SetTownY(v int16) *ModelBuilder             { b.townY = v; return b }
+func (b *ModelBuilder) SetDeployTime(v time.Time) *ModelBuilder    { b.deployTime = v; return b }
+func (b *ModelBuilder) SetExpiresAt(v time.Time) *ModelBuilder     { b.expiresAt = v; return b }
 
-### Task 3: Town slot computation
+func (b *ModelBuilder) Build() Model {
+	return Model{
+		areaDoorId: b.areaDoorId, townDoorId: b.townDoorId, ownerCharacterId: b.ownerCharacterId,
+		partyId: b.partyId, skillId: b.skillId, skillLevel: b.skillLevel, fld: b.fld,
+		townMapId: b.townMapId, slot: b.slot, townPortalId: b.townPortalId,
+		areaX: b.areaX, areaY: b.areaY, townX: b.townX, townY: b.townY,
+		deployTime: b.deployTime, expiresAt: b.expiresAt,
+	}
+}
+```
 
-Pure function: party door slot from the history-sorted member ordering, and the wire town portal id.
+- [ ] **Step 5: Run to verify it passes.**
 
-**Files:**
-- Create: `services/atlas-doors/atlas.com/doors/door/slot.go`
-- Test: `services/atlas-doors/atlas.com/doors/door/slot_test.go`
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ ; cd -`
+Expected: PASS.
 
-- [ ] **Step 1: Write the failing test.**
-  ```go
-  package door
+- [ ] **Step 6: Commit.**
 
-  import "testing"
+```bash
+git add services/atlas-doors/atlas.com/doors/door/model.go services/atlas-doors/atlas.com/doors/door/builder.go services/atlas-doors/atlas.com/doors/door/model_test.go
+git commit -m "feat(atlas-doors): immutable door pair model + builder"
+```
 
-  func TestSlotForOwner(t *testing.T) {
-  	members := []uint32{10, 20, 30, 40}
-  	if got := SlotForOwner(members, 10); got != 0 {
-  		t.Fatalf("leader slot = %d, want 0", got)
-  	}
-  	if got := SlotForOwner(members, 30); got != 2 {
-  		t.Fatalf("third member slot = %d, want 2", got)
-  	}
-  }
-
-  func TestSlotForOwnerSoloOrMissing(t *testing.T) {
-  	if got := SlotForOwner(nil, 99); got != 0 {
-  		t.Fatalf("solo slot = %d, want 0", got)
-  	}
-  	if got := SlotForOwner([]uint32{1, 2}, 99); got != 0 {
-  		t.Fatalf("non-member slot = %d, want 0", got)
-  	}
-  }
-
-  func TestTownPortalId(t *testing.T) {
-  	if TownPortalId(0) != 0x80 {
-  		t.Fatalf("slot0 portal = %#x, want 0x80", TownPortalId(0))
-  	}
-  	if TownPortalId(5) != 0x85 {
-  		t.Fatalf("slot5 portal = %#x, want 0x85", TownPortalId(5))
-  	}
-  }
-  ```
-
-- [ ] **Step 2: Run test to verify it fails.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'TestSlot|TestTownPortal' -v`
-  Expected: FAIL — `undefined: SlotForOwner`.
-
-- [ ] **Step 3: Implement slot.go.**
-  ```go
-  package door
-
-  // townDoorPortalBase is the wire portal id the client expects for the first
-  // party door slot (Cosmic MapleMap.getDoorPortal: portals.get(0x80 + slot)).
-  const townDoorPortalBase uint32 = 0x80
-
-  // MaxPartySlots caps door slots at the MapleStory party size (6 → slots 0..5,
-  // portals 0x80..0x85), guaranteeing no intra-party town-door overlap.
-  const MaxPartySlots = 6
-
-  // SlotForOwner returns the owner's 0-based index in the history-sorted member
-  // list (Cosmic Party.getPartyDoor). A solo caster, or an owner not found in the
-  // list, takes slot 0.
-  func SlotForOwner(orderedMemberIds []uint32, ownerCharacterId uint32) byte {
-  	for i, id := range orderedMemberIds {
-  		if id == ownerCharacterId {
-  			return byte(i)
-  		}
-  	}
-  	return 0
-  }
-
-  // TownPortalId maps a party door slot to the wire portal id the client expects.
-  func TownPortalId(slot byte) uint32 {
-  	return townDoorPortalBase + uint32(slot)
-  }
-  ```
-
-- [ ] **Step 4: Run tests to verify they pass.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'TestSlot|TestTownPortal' -v`
-  Expected: PASS.
-
-- [ ] **Step 5: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/slot.go services/atlas-doors/atlas.com/doors/door/slot_test.go
-  git commit -m "feat(atlas-doors): party town-slot + wire portal-id computation"
-  ```
-
----
-
-### Task 4: Object-id allocator (two allocations per door)
-
-Wrap `libs/atlas-object-id`, exactly like `summon/id_allocator.go`, but expose an `AllocatePair` that fails (no MinId fallback) on error.
+### Task B2: Object-id allocator wrapper
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/door/id_allocator.go` (adapt from atlas-summons `id_allocator.go`)
-- Test: `services/atlas-doors/atlas.com/doors/door/id_allocator_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/id_allocator.go`
 
-- [ ] **Step 1: Copy and adapt.** Copy `summon/id_allocator.go` → `door/id_allocator.go`. Rename the type to `IdAllocator`, package to `door`, and the singleton funcs to `InitIdAllocator(rc)` / `GetIdAllocator()`. Keep `Allocate(ctx, t) (uint32, error)` and `Release(ctx, t, id)` but change the error policy: **propagate** the underlying allocator error instead of returning `MinId`. Add:
-  ```go
-  // AllocatePair allocates two distinct object ids (area + town). On any failure
-  // it releases whatever it already took and returns the error — the spawn must
-  // fail cleanly rather than collide on a MinId fallback.
-  func (a *IdAllocator) AllocatePair(ctx context.Context, t tenant.Model) (uint32, uint32, error) {
-  	area, err := a.Allocate(ctx, t)
-  	if err != nil {
-  		return 0, 0, err
-  	}
-  	town, err := a.Allocate(ctx, t)
-  	if err != nil {
-  		a.Release(ctx, t, area)
-  		return 0, 0, err
-  	}
-  	return area, town, nil
-  }
-  ```
-  (If atlas-summons' `Allocate` signature returns only `uint32`, change it here to return `(uint32, error)` and surface the inner error.)
+- [ ] **Step 1: Mirror `monsters/monster/id_allocator.go`** but **without** the silent
+`MinId` fallback — door allocation must surface errors so the spawn can fail cleanly
+(design §4.4):
 
-- [ ] **Step 2: Write a test that AllocatePair returns two distinct ids ≥ MinId.** Use a miniredis or the same test harness atlas-summons' allocator test uses (copy `id_allocator_test.go` and adapt). If atlas-summons has no allocator test, write one with `miniredis`:
-  ```go
-  package door
+```go
+package door
 
-  import (
-  	"context"
-  	"testing"
+import (
+	"context"
+	"sync"
 
-  	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
-  	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-  	"github.com/alicebob/miniredis/v2"
-  	goredis "github.com/redis/go-redis/v9"
-  	"github.com/google/uuid"
-  )
+	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
+)
 
-  func TestAllocatePairDistinct(t *testing.T) {
-  	mr, _ := miniredis.Run()
-  	defer mr.Close()
-  	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
-  	InitIdAllocator(rc)
-  	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-  	ctx := tenant.WithContext(context.Background(), te)
-  	a, b, err := GetIdAllocator().AllocatePair(ctx, te)
-  	if err != nil {
-  		t.Fatalf("alloc err: %v", err)
-  	}
-  	if a == b {
-  		t.Fatalf("ids not distinct: %d", a)
-  	}
-  	if a < objectid.MinId || b < objectid.MinId {
-  		t.Fatalf("ids below MinId: %d %d", a, b)
-  	}
-  }
-  ```
-  (Match the exact `tenant.Create` / `tenant.WithContext` signatures used in atlas-summons tests; adjust if the constructor differs.)
+type IdAllocator struct{ inner objectid.Allocator }
 
-- [ ] **Step 3: Run test, expect FAIL** (`undefined: AllocatePair`), then implement, then re-run.
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestAllocatePair -v`
-  Expected after impl: PASS.
+var idAllocator *IdAllocator
+var idAllocatorOnce sync.Once
 
-- [ ] **Step 4: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/id_allocator.go services/atlas-doors/atlas.com/doors/door/id_allocator_test.go
-  git commit -m "feat(atlas-doors): object-id allocator with fail-fast AllocatePair"
-  ```
+func InitIdAllocator(rc *goredis.Client) {
+	idAllocatorOnce.Do(func() { idAllocator = &IdAllocator{inner: objectid.NewRedisAllocator(rc)} })
+}
 
----
+func GetIdAllocator() *IdAllocator { return idAllocator }
 
-### Task 5: Redis registry + indices
+// Allocate returns (id, nil) or (0, err). Callers MUST fail the spawn on error and
+// release any prior allocation — never substitute MinId (collision bug, TODO.md).
+func (a *IdAllocator) Allocate(ctx context.Context, t tenant.Model) (uint32, error) {
+	return a.inner.Allocate(ctx, t)
+}
 
-Mirror `summon/registry.go`. Four key spaces: primary record, field index, owner index, town+party slot index. All via `libs/atlas-redis` (rediskeyguard-clean).
+func (a *IdAllocator) Release(ctx context.Context, t tenant.Model, id uint32) {
+	_ = a.inner.Release(ctx, t, id)
+}
+```
+
+(Confirm the exact `objectid.Allocator` interface + `NewRedisAllocator` signature against
+`libs/atlas-object-id`; adapt import path/method names to match.)
+
+- [ ] **Step 2: Verify it builds.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go build ./door/ ; cd -`
+Expected: builds.
+
+- [ ] **Step 3: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/id_allocator.go
+git commit -m "feat(atlas-doors): object-id allocator wrapper (fail-on-error)"
+```
+
+### Task B3: Redis registry + indices
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/door/registry.go` (adapt from atlas-summons `registry.go`)
-- Test: `services/atlas-doors/atlas.com/doors/door/registry_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/registry.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/registry_test.go`
 
-- [ ] **Step 1: Copy and adapt the storedDoor + Registry.** Copy `summon/registry.go` → `door/registry.go`. Define `storedDoor` (all Model fields; `field.Model` flattened to world/channel/map/instance; times as unix-milli). Keep the singleton pattern (`InitRegistry(rc)`/`GetRegistry()`), the `atlasredis.Registry[string, storedDoor]` primary store, and `atlasredis.KeyedSet[string]` indices. Use these key formats:
-  ```
-  door:{tenant}:{areaDoorId}                               (primary, via atlasredis.Registry)
-  door-field:{tenant}:{world}:{channel}:{map}:{instance}   (field index set)
-  door-owner:{tenant}:{characterId}                        (owner index set)
-  door-town:{tenant}:{world}:{channel}:{townMap}:{scope}   (town+party slot index set)
-  ```
-  where `{scope}` = `partyId` when `partyId != 0`, else `solo-{ownerCharacterId}` (per-party slot isolation; solo casters namespaced by owner — design §4.3).
+The registry mirrors `monsters/monster/registry.go`: a primary
+`atlasredis.Registry[string, storedDoor]` plus secondary `atlasredis.KeyedSet[string]`
+indices. **Doors need three indices**: by field (area-door spawn + field broadcast), by
+owner (recast/cleanup), and by town+party (slot allocation + town broadcast). Tenant id
+goes in the key suffix.
 
-- [ ] **Step 2: Implement the Registry methods** (signatures mirror summons):
-  ```go
-  func (r *Registry) Put(ctx context.Context, t tenant.Model, m Model) error
-  func (r *Registry) Get(ctx context.Context, t tenant.Model, areaDoorId uint32) (Model, error)
-  func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error)
-  func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId uint32) ([]Model, error)
-  func (r *Registry) GetInTown(ctx context.Context, t tenant.Model, worldId world.Id, channelId channel.Id, townMapId _map.Id, scope string) ([]Model, error)
-  func (r *Registry) Remove(ctx context.Context, t tenant.Model, areaDoorId uint32) error
-  func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error)
-  ```
-  `Put` adds the record + inserts into all three index sets. `Remove` deletes the record + removes from all three sets. Add a helper `townScope(m Model) string` returning `partyId` or `solo-{owner}`.
+- [ ] **Step 1: Write the failing registry test.** Use whatever in-memory redis harness
+`monsters/monster/registry_test.go` uses. Assert: Put then Get round-trips all fields;
+GetInField returns the door; GetByOwner returns it; two solo casters at the same town do
+NOT collide in the town-party index; Remove clears all three indices.
 
-- [ ] **Step 3: Write the failing test** (use miniredis):
-  ```go
-  func TestRegistryIndices(t *testing.T) {
-  	// Put a door; assert GetInField, GetByOwner, GetInTown all return it;
-  	// Remove; assert all three are now empty.
-  }
+```go
+package door
 
-  func TestRegistryPerPartySlotIsolation(t *testing.T) {
-  	// Two doors, same townMap+world+channel, DIFFERENT partyId, both slot 0 /
-  	// townPortalId 0x80. GetInTown(partyA) returns only A; GetInTown(partyB)
-  	// returns only B. Both legitimately occupy portal 0x80.
-  }
+import (
+	"context"
+	"testing"
+	"time"
 
-  func TestRegistrySoloNonCollision(t *testing.T) {
-  	// Two solo doors (partyId 0), different owners, same town, both slot 0.
-  	// GetInTown(scope solo-owner1) returns only owner1's door.
-  }
-  ```
-  Build fixtures with `NewBuilder()`. Fill in the assertions concretely.
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	// reuse whatever in-memory redis the monsters registry test uses
+)
 
-- [ ] **Step 4: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestRegistry -v`
-  Expected after impl: PASS.
+func newTestRegistry(t *testing.T) (*Registry, context.Context, tenant.Model) {
+	// mirror monsters/monster/registry_test.go: spin an in-memory redis client,
+	// build a tenant, return newRegistry(rc), tenant.WithContext(...), tenant.
+	panic("fill from monsters registry test harness")
+}
 
-- [ ] **Step 5: Verify redis-key-guard stays clean.**
-  Run from the worktree root:
-  ```bash
-  GOWORK=off tools/redis-key-guard.sh
-  ```
-  Expected: no findings (all keyed access goes through `libs/atlas-redis`).
+func TestRegistryRoundTripAndIndices(t *testing.T) {
+	r, ctx, ten := newTestRegistry(t)
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	m := NewBuilder().SetAreaDoorId(1_000_001).SetTownDoorId(1_000_002).
+		SetOwnerCharacterId(42).SetPartyId(0).SetField(f).
+		SetTownMapId(104000000).SetSlot(0).SetTownPortalId(0x80).
+		SetDeployTime(time.Unix(1000, 0)).SetExpiresAt(time.Unix(1120, 0)).Build()
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/registry.go services/atlas-doors/atlas.com/doors/door/registry_test.go
-  git commit -m "feat(atlas-doors): Redis registry with field/owner/town-party indices"
-  ```
+	if err := r.Put(ctx, ten, m); err != nil { t.Fatal(err) }
+
+	got, err := r.Get(ctx, ten, 1_000_001)
+	if err != nil || got.OwnerCharacterId() != 42 || got.TownPortalId() != 0x80 {
+		t.Fatalf("round-trip failed: %+v err=%v", got, err)
+	}
+	inField, _ := r.GetInField(ctx, ten, f)
+	if len(inField) != 1 { t.Fatalf("field index: want 1 got %d", len(inField)) }
+	byOwner, _ := r.GetByOwner(ctx, ten, 42)
+	if len(byOwner) != 1 { t.Fatalf("owner index: want 1 got %d", len(byOwner)) }
+
+	if err := r.Remove(ctx, ten, 1_000_001); err != nil { t.Fatal(err) }
+	inField, _ = r.GetInField(ctx, ten, f)
+	byOwner, _ = r.GetByOwner(ctx, ten, 42)
+	if len(inField) != 0 || len(byOwner) != 0 {
+		t.Fatalf("indices not cleared on remove: field=%d owner=%d", len(inField), len(byOwner))
+	}
+}
+```
+
+- [ ] **Step 2: Run to verify it fails.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestRegistry ; cd -`
+Expected: FAIL (`Registry`/`newRegistry` undefined).
+
+- [ ] **Step 3: Implement `registry.go`** mirroring monsters, with the door
+`storedDoor` struct (flattening tenant id/region/major/minor AND the full field +
+townMapId + all coords + slot + portal + unix-milli times) and the three indices.
+Key namespaces: `"door"` (store), `"door-field"`, `"door-owner"`, `"door-town"`.
+The town-party index suffix is
+`{tenant}:{world}:{channel}:{townMap}:{partyScope}` where `partyScope = partyId` for a
+party door, or `"solo-{ownerCharacterId}"` for a solo door (so two solo slot-0 doors at
+the same town don't collide — design §4.3).
+
+```go
+package door
+
+import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
+)
+
+type storedDoor struct {
+	// tenant
+	TenantId string `json:"tenantId"`
+	Region   string `json:"region"`
+	Major    uint16 `json:"major"`
+	Minor    uint16 `json:"minor"`
+	// field
+	WorldId   byte   `json:"worldId"`
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	Instance  string `json:"instance"`
+	// door
+	AreaDoorId       uint32 `json:"areaDoorId"`
+	TownDoorId       uint32 `json:"townDoorId"`
+	OwnerCharacterId uint32 `json:"ownerCharacterId"`
+	PartyId          uint32 `json:"partyId"`
+	SkillId          uint32 `json:"skillId"`
+	SkillLevel       byte   `json:"skillLevel"`
+	TownMapId        uint32 `json:"townMapId"`
+	Slot             byte   `json:"slot"`
+	TownPortalId     uint32 `json:"townPortalId"`
+	AreaX            int16  `json:"areaX"`
+	AreaY            int16  `json:"areaY"`
+	TownX            int16  `json:"townX"`
+	TownY            int16  `json:"townY"`
+	DeployMs         int64  `json:"deployMs"`
+	ExpiresMs        int64  `json:"expiresMs"`
+}
+
+type Registry struct {
+	reg      *atlasredis.Registry[string, storedDoor]
+	fieldIdx *atlasredis.KeyedSet[string]
+	ownerIdx *atlasredis.KeyedSet[string]
+	townIdx  *atlasredis.KeyedSet[string]
+}
+
+var registry *Registry
+var once sync.Once
+
+func newRegistry(rc *goredis.Client) *Registry {
+	id := func(s string) string { return s }
+	return &Registry{
+		reg:      atlasredis.NewRegistry[string, storedDoor](rc, "door", id),
+		fieldIdx: atlasredis.NewKeyedSet[string](rc, "door-field", id),
+		ownerIdx: atlasredis.NewKeyedSet[string](rc, "door-owner", id),
+		townIdx:  atlasredis.NewKeyedSet[string](rc, "door-town", id),
+	}
+}
+
+func InitRegistry(rc *goredis.Client) { once.Do(func() { registry = newRegistry(rc) }) }
+func GetRegistry() *Registry          { return registry }
+
+func partyScope(partyId, ownerCharacterId uint32) string {
+	if partyId != 0 {
+		return fmt.Sprintf("%d", partyId)
+	}
+	return fmt.Sprintf("solo-%d", ownerCharacterId)
+}
+
+func storeSuffix(t tenant.Model, id uint32) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), id)
+}
+func fieldSuffix(t tenant.Model, f field.Model) string {
+	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+}
+func ownerSuffix(t tenant.Model, characterId uint32) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), characterId)
+}
+func townSuffix(t tenant.Model, f field.Model, townMapId _map.Id, partyId, ownerCharacterId uint32) string {
+	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), f.WorldId(), f.ChannelId(), townMapId, partyScope(partyId, ownerCharacterId))
+}
+
+// Put/Get/GetInField/GetByOwner/GetInTownParty/Remove/GetAll:
+// mirror monsters registry method bodies, using toStored/fromStored converters and the
+// three indices. timeToMs(0 == zero time)/msToTime as in monsters. member ids stored as
+// fmt.Sprintf("%d", areaDoorId). Remove reads the model first to know field/owner/town
+// keys, removes from all three sets, then reg.Remove. GetAll regroups by rebuilt tenant.
+```
+
+Implement `toStored(t,m)`, `fromStored(s) (tenant.Model, Model, error)` (rebuild tenant
+via the monsters helper and field via `field.NewBuilder(...).SetInstance(
+uuid.MustParse(...)).Build()`), `timeToMs`/`msToTime`, and the methods:
+
+```go
+func (r *Registry) Put(ctx context.Context, t tenant.Model, m Model) error
+func (r *Registry) Get(ctx context.Context, t tenant.Model, areaDoorId uint32) (Model, error)
+func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error)
+func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId uint32) ([]Model, error)
+func (r *Registry) GetInTownParty(ctx context.Context, t tenant.Model, f field.Model, townMapId _map.Id, partyId, ownerCharacterId uint32) ([]Model, error)
+func (r *Registry) Remove(ctx context.Context, t tenant.Model, areaDoorId uint32) error
+func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error)
+func timeToMs(t time.Time) int64
+func msToTime(ms int64) time.Time
+```
+
+- [ ] **Step 4: Run to verify it passes.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestRegistry ; cd -`
+Expected: PASS.
+
+- [ ] **Step 5: Run rediskeyguard** to confirm no raw keyed go-redis calls leaked in.
+
+Run: `GOWORK=off tools/redis-key-guard.sh`
+Expected: clean.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/registry.go services/atlas-doors/atlas.com/doors/door/registry_test.go
+git commit -m "feat(atlas-doors): redis registry with field/owner/town-party indices"
+```
 
 ---
 
-### Task 6: atlas-data map client (return town + door portals)
+# PART C — Slot allocation, town resolution, cross-service data clients
 
-A REST client to atlas-data for the source map's return/forced-return/town/field-limit and the town map's door portals. Mirror the atlas-summons `data/skill` client structure (requests.Provider + Extract).
+Goal: pure slot/town logic (unit-tested), plus the atlas-data (map + portals + skill
+effect) and atlas-parties REST clients atlas-doors needs.
+
+### Task C1: atlas-data map + portal client
 
 **Files:**
 - Create: `services/atlas-doors/atlas.com/doors/data/map/model.go`
-- Create: `services/atlas-doors/atlas.com/doors/data/map/rest.go` (RestModel + Extract)
+- Create: `services/atlas-doors/atlas.com/doors/data/map/rest.go`
 - Create: `services/atlas-doors/atlas.com/doors/data/map/requests.go`
 - Create: `services/atlas-doors/atlas.com/doors/data/map/processor.go`
-- Test: `services/atlas-doors/atlas.com/doors/data/map/processor_test.go`
 
-- [ ] **Step 1: Define the Model + RestModel.** Model exposes the fields the engine needs:
-  ```go
-  // model.go
-  package _map
+Mirror the channel `data/map` + `data/portal` client pattern, but the map model must
+expose `ReturnMapId()`, `ForcedReturnMapId()`, `Town()`, `FieldLimit()`, and
+`Portals() []Portal` where `Portal` exposes `Id()`, `Name()`, `Type() uint8`, `X()`,
+`Y()`, `TargetMapId()`.
 
-  import mapconst "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+- [ ] **Step 1: Implement the REST model + Extract** (`rest.go`) including the portals
+to-many relationship. The map RestModel fields (verbatim tags from atlas-data):
+`ReturnMapId _map.Id json:"returnMapId"`, `ForcedReturnMapId _map.Id
+json:"forcedReturnMapId"`, `Town bool json:"town"`, `FieldLimit uint32
+json:"fieldLimit"`, plus the portal sub-resource. Portal RestModel:
+`Name string json:"name"`, `Type uint8 json:"type"`, `X int16 json:"x"`,
+`Y int16 json:"y"`, `TargetMapId _map.Id json:"targetMapId"`. Add the api2go
+`SetToOneReferenceID`/`SetToManyReferenceIDs` no-op stubs.
 
-  type Model struct {
-  	id                mapconst.Id
-  	town              bool
-  	returnMapId       mapconst.Id
-  	forcedReturnMapId mapconst.Id
-  	fieldLimit        uint32
-  	doorPortals       []Portal // Type==6, in load order
-  }
-  func (m Model) Id() mapconst.Id                { return m.id }
-  func (m Model) Town() bool                     { return m.town }
-  func (m Model) ReturnMapId() mapconst.Id       { return m.returnMapId }
-  func (m Model) ForcedReturnMapId() mapconst.Id { return m.forcedReturnMapId }
-  func (m Model) FieldLimit() uint32             { return m.fieldLimit }
-  func (m Model) DoorPortals() []Portal          { return m.doorPortals }
+- [ ] **Step 2: Implement `requests.go`** with `requests.RootUrl("DATA")` and templates
+`"data/maps/%d"` (with `?include=portals`) and `"data/maps/%d/portals"`.
 
-  type Portal struct {
-  	Id   uint32
-  	Type uint8
-  	X    int16
-  	Y    int16
-  }
-  ```
-  The RestModel mirrors `services/atlas-channel/atlas.com/channel/data/map/rest.go` (fields `returnMapId`, `forcedReturnMapId`, `fieldLimit`, `town`) plus a separate portals fetch. Door portals come from `GET /data/maps/{mapId}/portals` filtered to `type == 6`.
+- [ ] **Step 3: Implement `processor.go`**:
 
-- [ ] **Step 2: requests.go** — two requests:
-  ```go
-  func requestMap(mapId mapconst.Id) requests.Request[RestModel]          // GET {DATA}/data/maps/{mapId}
-  func requestPortals(mapId mapconst.Id) requests.Request[[]PortalRestModel] // GET {DATA}/data/maps/{mapId}/portals
-  ```
-  Base URL from the same env the atlas-summons `data/skill` client uses (`requests.RootUrl("DATA")` or equivalent — match the atlas-summons pattern exactly).
+```go
+type Processor interface {
+	GetById(mapId _map.Id) (Model, error)
+	GetPortals(mapId _map.Id) ([]Portal, error)
+}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl
+```
 
-- [ ] **Step 3: processor.go** — `Processor` interface + Impl:
-  ```go
-  type Processor interface {
-  	GetById(mapId mapconst.Id) (Model, error)            // map metadata only
-  	GetDoorPortals(mapId mapconst.Id) ([]Portal, error)  // Type==6 in load order
-  }
-  func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor
-  ```
-  `GetDoorPortals` fetches portals, filters `Type == PortalTypeDoor (6)`, preserves order.
+`GetById` fetches the map (with portals via include, or fetch portals separately and
+attach). `GetPortals` fetches the `/portals` sub-resource.
 
-- [ ] **Step 4: Write the failing test.** Use an `httptest.Server` returning a fixed JSON:API map + portals payload (copy the JSON:API envelope shape from a real atlas-data response; door portals as `type: "portals"` with `attributes.type == 6`). Assert `GetById` returns the right return/forced/town/fieldLimit, and `GetDoorPortals` returns only the 6-type portals in order. Inject the base URL via the env var the requests use.
-  ```go
-  func TestGetByIdParsesReturnAndTownAndLimit(t *testing.T) { /* ... */ }
-  func TestGetDoorPortalsFiltersTypeSixInOrder(t *testing.T) { /* ... */ }
-  ```
+- [ ] **Step 4: Write a small Extract test** asserting a portal of `Type==6` is read and
+its X/Y/TargetMapId survive Extract (use a fixed RestModel, no network).
 
-- [ ] **Step 5: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./data/map/ -v`
-  Expected after impl: PASS.
+```go
+func TestExtractDoorPortal(t *testing.T) {
+	rm := PortalRestModel{Name: "tp", Type: 6, X: -100, Y: 200, TargetMapId: 999}
+	p, err := ExtractPortal(rm)
+	if err != nil || p.Type() != 6 || p.X() != -100 || p.TargetMapId() != 999 {
+		t.Fatalf("portal extract wrong: %+v err=%v", p, err)
+	}
+}
+```
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/data/map
-  git commit -m "feat(atlas-doors): atlas-data map client (return town + door portals)"
-  ```
+- [ ] **Step 5: Run; implement until PASS.**
 
----
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./data/map/ ; cd -`
+Expected: PASS.
 
-### Task 7: atlas-data skill client (duration by level)
+- [ ] **Step 6: Commit.**
 
-Mirror the atlas-summons `data/skill` client; expose duration (and confirm MP/item cost are read-only here — cost is consumed channel-side, OQ-1).
+```bash
+git add services/atlas-doors/atlas.com/doors/data/map
+git commit -m "feat(atlas-doors): atlas-data map + portal client"
+```
+
+### Task C2: atlas-data skill-effect client (duration by level)
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/data/skill/{model.go,rest.go,requests.go,processor.go}` (copy from atlas-summons `data/skill`, prune to what doors needs)
-- Test: `services/atlas-doors/atlas.com/doors/data/skill/processor_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/data/skill/...` (model/rest/requests/processor)
 
-- [ ] **Step 1: Copy the atlas-summons `data/skill` package** into `services/atlas-doors/.../data/skill/` and rename the Go package import path references to `atlas-doors/data/skill`. Keep the effect Model with at least `Duration() int32`. Keep `GetEffect(skillId uint32, level byte) (effect.Model, error)`.
+- [ ] **Step 1: Mirror the channel `data/skill` client** but expose the door-relevant
+effect getters: `Duration() int32` (ms; `-1` = none), `MPConsume() uint16`,
+`ItemConsume() uint32`. `Processor.GetEffect(skillId uint32, level byte) (effect.Model,
+error)` (level 1-based → `Effects()[level-1]`). URL `data/skills/%d`,
+`requests.RootUrl("DATA")`.
 
-- [ ] **Step 2: Write a failing test** that, via `httptest.Server`, asserts `GetEffect(2311002, 30).Duration()` returns the value from the served payload (pick a representative number, e.g. duration in ms). Reuse the atlas-summons skill-client test as a template if present.
+- [ ] **Step 2: Write a test** that `GetEffect` returns the level-1 effect from a fixed
+skill RestModel with two levels (no network — test `Extract` + the level indexing helper
+directly).
 
-- [ ] **Step 3: Run, expect FAIL, implement/adjust, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./data/skill/ -v`
-  Expected after impl: PASS.
+- [ ] **Step 3: Run; implement until PASS.**
 
-- [ ] **Step 4: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/data/skill
-  git commit -m "feat(atlas-doors): atlas-data skill client (door duration by level)"
-  ```
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./data/skill/... ; cd -`
+Expected: PASS.
 
----
+- [ ] **Step 4: Commit.**
 
-### Task 8: atlas-parties client (history-sorted members)
+```bash
+git add services/atlas-doors/atlas.com/doors/data/skill
+git commit -m "feat(atlas-doors): atlas-data skill-effect client (duration by level)"
+```
 
-Read the owner's party id + the history-sorted member id ordering (for slot assignment). Confirm against atlas-parties whether members are already returned in stable history order; if not, sort by the join/history field the API exposes.
+### Task C3: atlas-parties client (history-sorted members)
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/party/{model.go,rest.go,requests.go,processor.go}`
-- Test: `services/atlas-doors/atlas.com/doors/party/processor_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/party/...` (model/rest/requests/processor)
 
-- [ ] **Step 1: Inspect the atlas-parties REST contract.** Read `services/atlas-parties/atlas.com/parties/` (resource + rest model) to find the party-by-member endpoint and the member ordering field. Note in the processor doc comment whether the API returns members in history order natively or whether we sort.
+- [ ] **Step 1: Mirror the channel `party` client.** Model exposes `Id()`, `LeaderId()`,
+and `Members() []uint32` (ordered, join order; the registry seeds `[leaderId]` so the
+slice is leader-first then join order — preserve it, do not re-sort). Requests:
+`Resource="parties"`, `ByMemberId="parties?filter[members.id]=%d"`, `ById="parties/%d"`.
+Processor: `GetByMemberId(characterId uint32) (Model, error)`, `GetById(partyId uint32)
+(Model, error)`.
 
-- [ ] **Step 2: Define the client.**
-  ```go
-  type Processor interface {
-  	// GetByMember returns the partyId (0 if not in a party) and the
-  	// history-sorted member ids (Cosmic Party order). Solo → (0, nil).
-  	GetByMember(characterId uint32) (partyId uint32, orderedMemberIds []uint32, err error)
-  }
-  func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor
-  ```
-  Mirror the channel-side party read pattern only for structure; this is a fresh atlas-doors client.
+- [ ] **Step 2: Write a test** that `Extract` preserves member order across a fixed
+two-member RestModel (member[0], member[1] order unchanged).
 
-- [ ] **Step 3: Write the failing test** with `httptest.Server` returning a party with 3 members in a known order; assert `GetByMember` returns the partyId and the ordered ids; assert a not-in-party member returns `(0, nil, nil)`.
+- [ ] **Step 3: Run; implement until PASS.**
 
-- [ ] **Step 4: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./party/ -v`
-  Expected after impl: PASS.
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./party/... ; cd -`
+Expected: PASS.
 
-- [ ] **Step 5: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/party
-  git commit -m "feat(atlas-doors): atlas-parties client (history-sorted members)"
-  ```
+- [ ] **Step 4: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/party
+git commit -m "feat(atlas-doors): atlas-parties client (ordered members)"
+```
+
+### Task C4: Slot + town-portal resolution (pure logic)
+
+**Files:**
+- Create: `services/atlas-doors/atlas.com/doors/door/slot.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/slot_test.go`
+
+This is the heart of FR-4. Pure functions over already-fetched party members + town
+portals, so they unit-test without network.
+
+- [ ] **Step 1: Write the failing slot test** covering: solo → slot 0; member index in
+party; 6-member saturation; town with ≥6 door portals indexes by slot; town with <6
+door portals falls back; wire portal id is always `0x80+slot`.
+
+```go
+package door
+
+import "testing"
+
+func TestComputeSlotSolo(t *testing.T) {
+	if got := ComputeSlot(0, []uint32{}, 42); got != 0 {
+		t.Fatalf("solo slot want 0 got %d", got)
+	}
+}
+
+func TestComputeSlotPartyIndex(t *testing.T) {
+	members := []uint32{10, 20, 30}
+	if got := ComputeSlot(7, members, 30); got != 2 {
+		t.Fatalf("want slot 2 got %d", got)
+	}
+	if got := ComputeSlot(7, members, 10); got != 0 {
+		t.Fatalf("want slot 0 got %d", got)
+	}
+}
+
+func TestComputeSlotNotMemberFallsToZero(t *testing.T) {
+	if got := ComputeSlot(7, []uint32{10, 20}, 99); got != 0 {
+		t.Fatalf("non-member want 0 got %d", got)
+	}
+}
+
+func TestResolveTownPortalWithEnoughDoorPortals(t *testing.T) {
+	portals := []TownPortal{{X: -10, Y: 1}, {X: -20, Y: 2}, {X: -30, Y: 3},
+		{X: -40, Y: 4}, {X: -50, Y: 5}, {X: -60, Y: 6}}
+	wireId, x, y, ok := ResolveTownPortal(portals, 3, defaultTownX, defaultTownY)
+	if !ok || wireId != 0x83 || x != -40 || y != 4 {
+		t.Fatalf("want 0x83/-40/4 got %d/%d/%d ok=%v", wireId, x, y, ok)
+	}
+}
+
+func TestResolveTownPortalFallbackWhenTooFew(t *testing.T) {
+	portals := []TownPortal{{X: -10, Y: 1}} // only 1 door portal
+	wireId, x, y, ok := ResolveTownPortal(portals, 3, 7, 8)
+	// wire id still 0x80+slot; position falls back to provided default
+	if !ok || wireId != 0x83 || x != 7 || y != 8 {
+		t.Fatalf("fallback wrong: %d/%d/%d ok=%v", wireId, x, y, ok)
+	}
+}
+```
+
+- [ ] **Step 2: Run to verify it fails.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'Slot|TownPortal' ; cd -`
+Expected: FAIL (undefined).
+
+- [ ] **Step 3: Implement `slot.go`.**
+
+```go
+package door
+
+const (
+	townPortalBase byte = 0x80
+	maxPartySize        = 6
+	// default door position when a town exposes too few door-type portals (design §6.3).
+	defaultTownX int16 = 0
+	defaultTownY int16 = 0
+)
+
+// TownPortal is an atlas-data door-type portal position (Type==6), in load order.
+type TownPortal struct {
+	X int16
+	Y int16
+}
+
+// ComputeSlot returns the caster's 0-based party door slot (Cosmic Party.getPartyDoor).
+// Solo (partyId==0) or non-member → slot 0.
+func ComputeSlot(partyId uint32, members []uint32, ownerCharacterId uint32) byte {
+	if partyId == 0 {
+		return 0
+	}
+	for i, id := range members {
+		if id == ownerCharacterId {
+			if i >= maxPartySize {
+				return maxPartySize - 1
+			}
+			return byte(i)
+		}
+	}
+	return 0
+}
+
+// ResolveTownPortal maps a slot to the wire portal id (0x80+slot) and a town position.
+// If the town has >slot door portals, use that portal's position; otherwise fall back to
+// the provided default position (still encoding 0x80+slot on the wire). Always ok=true.
+func ResolveTownPortal(doorPortals []TownPortal, slot byte, fallbackX, fallbackY int16) (wireId uint32, x int16, y int16, ok bool) {
+	wireId = uint32(townPortalBase + slot)
+	if int(slot) < len(doorPortals) {
+		p := doorPortals[slot]
+		return wireId, p.X, p.Y, true
+	}
+	return wireId, fallbackX, fallbackY, true
+}
+```
+
+- [ ] **Step 4: Run to verify it passes.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'Slot|TownPortal' ; cd -`
+Expected: PASS.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/slot.go services/atlas-doors/atlas.com/doors/door/slot_test.go
+git commit -m "feat(atlas-doors): party slot + town-portal resolution"
+```
+
+### Task C5: Town resolution helper (return vs forced-return)
+
+**Files:**
+- Create: `services/atlas-doors/atlas.com/doors/door/town.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/town_test.go`
+
+- [ ] **Step 1: Write the failing test.** `ResolveTownMap(returnMapId, forcedReturnMapId)`:
+forced-return wins when it is a real map; otherwise return map; "no valid return" sentinel
+detection.
+
+```go
+package door
+
+import "testing"
+
+func TestResolveTownMapForcedWins(t *testing.T) {
+	if got := ResolveTownMap(104000000, 100000000); got != 100000000 {
+		t.Fatalf("forced should win, got %d", got)
+	}
+}
+func TestResolveTownMapReturnWhenNoForced(t *testing.T) {
+	if got := ResolveTownMap(104000000, noMap); got != 104000000 {
+		t.Fatalf("want return map, got %d", got)
+	}
+}
+func TestHasReturnMapFalseWhenNone(t *testing.T) {
+	if HasValidReturn(noMap, noMap) {
+		t.Fatalf("expected no valid return")
+	}
+}
+```
+
+- [ ] **Step 2: Run to verify it fails.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'Town|Return' ; cd -`
+Expected: FAIL.
+
+- [ ] **Step 3: Implement `town.go`.** `noMap` is MapleStory's "no map" sentinel — confirm
+the exact sentinel atlas-data emits for an absent return map (check
+`libs/atlas-constants/map` for `EmptyMapId`; use that constant rather than a literal).
+
+```go
+package door
+
+import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+
+// confirm against libs/atlas-constants/map — use the EmptyMapId constant if present.
+const noMap _map.Id = 999999999 // MapleStory "no map" sentinel
+
+func HasValidReturn(returnMapId, forcedReturnMapId _map.Id) bool {
+	return ResolveTownMap(returnMapId, forcedReturnMapId) != noMap
+}
+
+func ResolveTownMap(returnMapId, forcedReturnMapId _map.Id) _map.Id {
+	if forcedReturnMapId != noMap && forcedReturnMapId != 0 {
+		return forcedReturnMapId
+	}
+	return returnMapId
+}
+```
+
+- [ ] **Step 4: Run to verify it passes; then commit.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'Town|Return' ; cd -`
+Expected: PASS.
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/town.go services/atlas-doors/atlas.com/doors/door/town_test.go
+git commit -m "feat(atlas-doors): return/forced-return town resolution"
+```
 
 ---
 
-### Task 9: Kafka envelopes (commands + events)
+# PART D — Event contracts, processor, producer, REST
 
-Define the command/event envelope types and topic env constants before the processor (the processor emits them).
+### Task D1: Event topic envelope + bodies
 
 **Files:**
 - Create: `services/atlas-doors/atlas.com/doors/door/kafka.go`
 
-- [ ] **Step 1: Implement kafka.go.** Mirror the atlas-summons `kafka.go` envelope shape (`Command[E]` / `StatusEvent[E]` with tenant/span via headers, body typed by `Type`). Topic env consts and types:
-  ```go
-  package door
+- [ ] **Step 1: Define the status-event contract** (mirror monsters `kafka.go` envelope
+shape). This is the contract atlas-channel consumes — keep field names stable.
 
-  import (
-  	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-  	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-  	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-  	"github.com/google/uuid"
-  )
+```go
+package door
 
-  const (
-  	EnvCommandTopicDoor       = "COMMAND_TOPIC_DOOR"
-  	EnvEventTopicDoorStatus   = "EVENT_TOPIC_DOOR_STATUS"
-  )
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
-  // Command types
-  const (
-  	CommandTypeSpawn  = "SPAWN"
-  	CommandTypeRemove = "REMOVE"
-  )
+const EnvEventTopicDoorStatus = "EVENT_TOPIC_DOOR_STATUS"
 
-  type Command[E any] struct {
-  	WorldId   world.Id   `json:"worldId"`
-  	ChannelId channel.Id `json:"channelId"`
-  	MapId     _map.Id    `json:"mapId"`
-  	Instance  uuid.UUID  `json:"instance"`
-  	Type      string     `json:"type"`
-  	Body      E          `json:"body"`
-  }
+const (
+	EventDoorStatusCreated     = "CREATED"
+	EventDoorStatusRemoved     = "REMOVED"
+	EventDoorStatusSlotChanged = "SLOT_CHANGED"
+)
 
-  type SpawnCommandBody struct {
-  	OwnerCharacterId uint32 `json:"ownerCharacterId"`
-  	X                int16  `json:"x"`
-  	Y                int16  `json:"y"`
-  	SkillId          uint32 `json:"skillId"`
-  	SkillLevel       byte   `json:"skillLevel"`
-  }
+// Removal reasons (FR-6.1/6.2).
+const (
+	RemoveReasonExpiry         = "EXPIRY"
+	RemoveReasonLogout         = "LOGOUT"
+	RemoveReasonChannelChanged = "CHANNEL_CHANGED"
+	RemoveReasonLeftField      = "LEFT_FIELD"
+	RemoveReasonRecast         = "RECAST"
+)
 
-  type RemoveCommandBody struct {
-  	OwnerCharacterId uint32 `json:"ownerCharacterId"`
-  	Reason           string `json:"reason"`
-  }
+type StatusEvent[E any] struct {
+	WorldId          world.Id   `json:"worldId"`
+	ChannelId        channel.Id `json:"channelId"`
+	MapId            _map.Id    `json:"mapId"`     // area field map (event key)
+	Instance         uuid.UUID  `json:"instance"`
+	PairId           uint32     `json:"pairId"`
+	OwnerCharacterId uint32     `json:"ownerCharacterId"`
+	PartyId          uint32     `json:"partyId"`
+	Type             string     `json:"type"`
+	Body             E          `json:"body"`
+}
 
-  // Event types
-  const (
-  	EventTypeCreated     = "CREATED"
-  	EventTypeRemoved     = "REMOVED"
-  	EventTypeSlotChanged = "SLOT_CHANGED"
-  )
+type CreatedBody struct {
+	AreaDoorId   uint32  `json:"areaDoorId"`
+	TownDoorId   uint32  `json:"townDoorId"`
+	TownMapId    _map.Id `json:"townMapId"`
+	Slot         byte    `json:"slot"`
+	TownPortalId uint32  `json:"townPortalId"`
+	AreaX        int16   `json:"areaX"`
+	AreaY        int16   `json:"areaY"`
+	TownX        int16   `json:"townX"`
+	TownY        int16   `json:"townY"`
+	SkillId      uint32  `json:"skillId"`
+	SkillLevel   byte    `json:"skillLevel"`
+	ExpiresAt    int64   `json:"expiresAt"` // unix-milli
+}
 
-  // Removal reasons
-  const (
-  	ReasonExpiry         = "EXPIRY"
-  	ReasonDisconnect     = "DISCONNECT"
-  	ReasonChannelChanged = "CHANNEL_CHANGED"
-  	ReasonLeftField      = "LEFT_FIELD"
-  	ReasonRecast         = "RECAST"
-  )
+type RemovedBody struct {
+	AreaDoorId uint32  `json:"areaDoorId"`
+	TownDoorId uint32  `json:"townDoorId"`
+	TownMapId  _map.Id `json:"townMapId"`
+	Slot       byte    `json:"slot"`
+	Reason     string  `json:"reason"`
+}
 
-  type StatusEvent[E any] struct {
-  	WorldId          world.Id   `json:"worldId"`
-  	ChannelId        channel.Id `json:"channelId"`
-  	MapId            _map.Id    `json:"mapId"` // area field map; CreateKey on this
-  	Instance         uuid.UUID  `json:"instance"`
-  	PairId           uint32     `json:"pairId"`
-  	OwnerCharacterId uint32     `json:"ownerCharacterId"`
-  	PartyId          uint32     `json:"partyId"`
-  	Type             string     `json:"type"`
-  	Body             E          `json:"body"`
-  }
+type SlotChangedBody struct {
+	AreaDoorId   uint32  `json:"areaDoorId"`
+	TownDoorId   uint32  `json:"townDoorId"`
+	TownMapId    _map.Id `json:"townMapId"`
+	OldSlot      byte    `json:"oldSlot"`
+	NewSlot      byte    `json:"newSlot"`
+	TownPortalId uint32  `json:"townPortalId"`
+	TownX        int16   `json:"townX"`
+	TownY        int16   `json:"townY"`
+}
+```
 
-  type CreatedBody struct {
-  	TownMapId    _map.Id `json:"townMapId"`
-  	Slot         byte    `json:"slot"`
-  	AreaDoorId   uint32  `json:"areaDoorId"`
-  	TownDoorId   uint32  `json:"townDoorId"`
-  	TownPortalId uint32  `json:"townPortalId"`
-  	AreaX        int16   `json:"areaX"`
-  	AreaY        int16   `json:"areaY"`
-  	TownX        int16   `json:"townX"`
-  	TownY        int16   `json:"townY"`
-  	ExpiresAt    int64   `json:"expiresAt"` // unix-milli
-  }
+- [ ] **Step 2: Verify build; commit.**
 
-  type RemovedBody struct {
-  	TownMapId  _map.Id `json:"townMapId"`
-  	AreaDoorId uint32  `json:"areaDoorId"`
-  	TownDoorId uint32  `json:"townDoorId"`
-  	Slot       byte    `json:"slot"`
-  	Reason     string  `json:"reason"`
-  }
+Run: `cd services/atlas-doors/atlas.com/doors && go build ./door/ ; cd -`
 
-  type SlotChangedBody struct {
-  	TownMapId    _map.Id `json:"townMapId"`
-  	OldSlot      byte    `json:"oldSlot"`
-  	NewSlot      byte    `json:"newSlot"`
-  	TownPortalId uint32  `json:"townPortalId"`
-  	TownDoorId   uint32  `json:"townDoorId"`
-  	TownX        int16   `json:"townX"`
-  	TownY        int16   `json:"townY"`
-  }
-  ```
-  (Match field tag/casing conventions to atlas-summons' `kafka.go` exactly — copy its header/CreateKey helper functions and adapt.)
+```bash
+git add services/atlas-doors/atlas.com/doors/door/kafka.go
+git commit -m "feat(atlas-doors): door status event contract"
+```
 
-- [ ] **Step 2: Build.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go build ./door/`
-  Expected: clean.
-
-- [ ] **Step 3: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/kafka.go
-  git commit -m "feat(atlas-doors): Kafka command/event envelopes + topic consts"
-  ```
-
----
-
-### Task 10: Event producers
-
-Provider helpers that turn a `door.Model` into `[]kafka.Message` for CREATED/REMOVED/SLOT_CHANGED. Mirror atlas-summons `producer.go`.
+### Task D2: Event providers
 
 **Files:**
 - Create: `services/atlas-doors/atlas.com/doors/door/producer.go`
-- Test: `services/atlas-doors/atlas.com/doors/door/producer_test.go`
 
-- [ ] **Step 1: Implement the providers** (mirror atlas-summons signature `model.Provider[[]kafka.Message]`):
-  ```go
-  func createdEventProvider(m Model) model.Provider[[]kafka.Message]
-  func removedEventProvider(m Model, reason string) model.Provider[[]kafka.Message]
-  func slotChangedEventProvider(m Model, oldSlot byte) model.Provider[[]kafka.Message]
-  ```
-  Each builds a `StatusEvent[...]` keyed by the area field map id (`CreateKey`), with the body filled from `m`. Use the same `producer.SingleMessageProvider`/key helper atlas-summons uses.
+- [ ] **Step 1: Implement the three providers** keyed by area-field map id (mirror
+monsters `producer.go` using `producer.CreateKey` + `producer.SingleMessageProvider`):
 
-- [ ] **Step 2: Write a test** asserting `createdEventProvider(m)()` yields one message whose key encodes the area map id and whose decoded value has `Type == EventTypeCreated` and the expected body fields. (Decode the message value JSON back into `StatusEvent[CreatedBody]`.)
+```go
+package door
 
-- [ ] **Step 3: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestProducer -v`
-  Expected after impl: PASS.
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/segmentio/kafka-go"
+)
 
-- [ ] **Step 4: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/producer.go services/atlas-doors/atlas.com/doors/door/producer_test.go
-  git commit -m "feat(atlas-doors): door status event producers"
-  ```
+func createdEventProvider(m Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.Field().MapId()))
+	value := StatusEvent[CreatedBody]{
+		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
+		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
+		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
+		Type: EventDoorStatusCreated,
+		Body: CreatedBody{
+			AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(), TownMapId: m.TownMapId(),
+			Slot: m.Slot(), TownPortalId: m.TownPortalId(),
+			AreaX: m.AreaX(), AreaY: m.AreaY(), TownX: m.TownX(), TownY: m.TownY(),
+			SkillId: m.SkillId(), SkillLevel: m.SkillLevel(), ExpiresAt: timeToMs(m.ExpiresAt()),
+		},
+	}
+	return producer.SingleMessageProvider(key, &value)
+}
 
----
+func removedEventProvider(m Model, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.Field().MapId()))
+	value := StatusEvent[RemovedBody]{
+		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
+		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
+		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
+		Type: EventDoorStatusRemoved,
+		Body: RemovedBody{AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
+			TownMapId: m.TownMapId(), Slot: m.Slot(), Reason: reason},
+	}
+	return producer.SingleMessageProvider(key, &value)
+}
 
-### Task 11: Processor — Spawn / Remove / Reslot / cleanup
+func slotChangedEventProvider(m Model, oldSlot byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.Field().MapId()))
+	value := StatusEvent[SlotChangedBody]{
+		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
+		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
+		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
+		Type: EventDoorStatusSlotChanged,
+		Body: SlotChangedBody{AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
+			TownMapId: m.TownMapId(), OldSlot: oldSlot, NewSlot: m.Slot(),
+			TownPortalId: m.TownPortalId(), TownX: m.TownX(), TownY: m.TownY()},
+	}
+	return producer.SingleMessageProvider(key, &value)
+}
+```
 
-The engine core. Pure orchestration over registry + data clients + party client + id allocator + producers, with injectable seams for tests (mirror atlas-summons' ProcessorImpl fields).
+- [ ] **Step 2: Build; commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/producer.go
+git commit -m "feat(atlas-doors): door event providers"
+```
+
+### Task D3: Processor — Spawn (with recast replace) + Remove + Get + Reslot
 
 **Files:**
 - Create: `services/atlas-doors/atlas.com/doors/door/processor.go`
-- Test: `services/atlas-doors/atlas.com/doors/door/processor_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/resolver.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/processor_test.go`
 
-- [ ] **Step 1: Define the interface + Impl.**
-  ```go
-  type Processor interface {
-  	GetById(areaDoorId uint32) (Model, error)
-  	GetInField(f field.Model) ([]Model, error)
-  	Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error)
-  	RemoveByOwner(ownerCharacterId uint32, reason string) error
-  	RemoveAllForOwnerLeavingField(ownerCharacterId uint32, newField field.Model) error
-  	ReslotForParty(partyId uint32) error
-  	ReslotOwnerToSolo(ownerCharacterId uint32) error
-  }
-  func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor
-  ```
-  ProcessorImpl carries `l, ctx, t tenant.Model, emit emitter` plus injectable seams: `mapData mapSource`, `skillData skillSource`, `partyData partySource`, `clock func() time.Time`. Provide a production `NewProcessor` that wires the real clients and a test constructor that accepts the seams (unexported struct literal in tests — no `*_testhelpers.go`).
+The processor is field-injected (emit + a `resolver` source) so it unit-tests without
+Kafka/REST (mirror the monsters processor seam).
 
-- [ ] **Step 2: Implement `Spawn` (the heart):**
-  1. Resolve party: `partyId, ordered, err := partyData.GetByMember(owner)`.
-  2. **Recast replace:** `RemoveByOwner(owner, ReasonRecast)` first (best-effort; ignore not-found).
-  3. Resolve source map metadata: `srcMap, _ := mapData.GetById(f.MapId())`. Reject (return a sentinel `ErrIneligible`) if `srcMap.Town()` or no valid return map. (Field-limit/town are also gated channel-side, Task 17 — re-check here defensively.)
-  4. `townMapId` = `ForcedReturnMapId` if it resolves to a real map, else `ReturnMapId`.
-  5. `slot := SlotForOwner(ordered, owner)` (solo → 0). If `slot >= MaxPartySlots` reject (no slot).
-  6. Resolve town door portals: `portals, _ := mapData.GetDoorPortals(townMapId)`. Pick `townX/townY`:
-     - if `int(slot) < len(portals)` → `portals[slot].X/Y`;
-     - else **fallback** (OQ-3): use `portals[0]` if any, else a default near the town spawn (document the chosen default in code per Task 0 findings).
-  7. `townPortalId := TownPortalId(slot)` (wire id `0x80+slot` regardless of atlas-data's internal id).
-  8. Duration: `eff, _ := skillData.GetEffect(skillId, skillLevel)`; `now := clock()`; `expiresAt := now.Add(time.Duration(eff.Duration()) * time.Millisecond)`.
-  9. Allocate: `area, town, err := GetIdAllocator().AllocatePair(ctx, t)`; on error, emit nothing and return err (clean no-op).
-  10. Build the Model, `GetRegistry().Put(...)`, `emit(EnvEventTopicDoorStatus, createdEventProvider(m))`, return m.
+- [ ] **Step 1: Write the failing processor test** for the core behaviors:
+  - `Spawn` allocates two oids, persists, emits CREATED, returns the model with
+    pairId==areaDoorId.
+  - `Spawn` recast: an existing owner door is removed (REMOVED reason RECAST emitted)
+    before the new one is deployed.
+  - `Spawn` fails cleanly when the second (town) oid allocation fails (no persist, no
+    CREATED, area oid released — allocate area first, then town).
+  - `RemoveByOwner` removes + emits REMOVED with the given reason; idempotent.
+  - `Reslot` updates slot/portal/pos + emits SLOT_CHANGED; no-op when slot unchanged.
 
-- [ ] **Step 3: Implement `RemoveByOwner`:** look up `GetByOwner`; for the door (there is at most one), `Release` both oids, `Registry.Remove`, emit `removedEventProvider(m, reason)`. The deploy-grace (FR-6.3) is honored on the **broadcast** side via the channel consumer (Task 19) — but the engine still records `deployTime`; if `reason == ReasonRecast` and `now-deployTime < grace`, the channel must defer the *remove broadcast* (note this in the event so the channel can delay). Simplest: include `deployTime` (unix-milli) in `RemovedBody` is unnecessary — instead the channel delays based on its own CREATED bookkeeping. Keep the engine simple: remove immediately, emit REMOVED.
-  > Design note: the grace delay is a **client-crash guard on the spawn→remove broadcast sequence**, owned by the channel consumer (Task 19). The engine removes state synchronously.
+Use a fake emitter capturing `(topic, decoded event Type)` and a fake `resolver`
+returning canned town/slot inputs. Build the processor with the registry test harness
+from B3 and a counter-based id allocator stub.
 
-- [ ] **Step 4: Implement `RemoveAllForOwnerLeavingField`:** for the owner's door, remove **only if** `newField` is neither the door's source field nor (the door's town map on the same world/channel). Walking into the town the door spans is a warp, not abandonment (design §5.3). Otherwise no-op.
+```go
+package door
 
-- [ ] **Step 5: Implement `ReslotForParty`:** recompute every party member's slot from fresh `partyData` ordering; for each owner whose door's slot changed, `Reslot` the Model, re-resolve town portal position, `Put`, emit `slotChangedEventProvider(m, oldSlot)`.
+import (
+	"context"
+	"testing"
 
-- [ ] **Step 6: Implement `ReslotOwnerToSolo`:** set the owner's door to solo scope, slot 0, portal `0x80`, town position from `portals[0]`; `Put`; emit `slotChangedEventProvider(m, oldSlot)`.
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+)
 
-- [ ] **Step 7: Write the failing tests** (table-driven where natural; inject seams returning fixed data; capture emitted events with a fake emitter):
-  ```go
-  func TestSpawnSoloSlotZero(t *testing.T) { /* slot 0, portal 0x80, CREATED emitted */ }
-  func TestSpawnPartyMemberSlotIndex(t *testing.T) { /* owner is 3rd → slot 2, portal 0x82 */ }
-  func TestSpawnRejectsTownMap(t *testing.T) { /* srcMap.Town()==true → ErrIneligible, no event */ }
-  func TestSpawnRejectsNoReturnMap(t *testing.T) { /* returnMap==0 → ErrIneligible */ }
-  func TestSpawnUsesForcedReturnWhenSet(t *testing.T) { /* townMapId == forced */ }
-  func TestSpawnAllocFailureNoEvent(t *testing.T) { /* allocator errors → err, zero events */ }
-  func TestSpawnRecastReplacesPrior(t *testing.T) { /* prior owner door removed (REMOVED reason RECAST) before CREATED */ }
-  func TestRemoveByOwnerReleasesAndEmits(t *testing.T) {}
-  func TestLeaveFieldRemovesOnlyWhenLeavingSource(t *testing.T) { /* warp to town map → no remove; warp elsewhere → remove */ }
-  func TestReslotForPartyEmitsSlotChangedForMovedDoors(t *testing.T) {}
-  func TestReslotOwnerToSoloResetsSlotZero(t *testing.T) {}
-  ```
-  Use miniredis for the registry and fakes for map/skill/party/emitter/clock.
+type fakeResolver struct {
+	partyId     uint32
+	townMapId   _map.Id
+	doorPortals []TownPortal
+	members     []uint32
+	durationMs  int32
+}
 
-- [ ] **Step 8: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run 'TestSpawn|TestRemove|TestLeave|TestReslot' -v`
-  Expected after impl: PASS. Then `go test -race ./door/`.
+func (f fakeResolver) PartyIdFor(_ context.Context, _ uint32) (uint32, error) { return f.partyId, nil }
+func (f fakeResolver) ResolveSpawn(_ context.Context, _ field.Model, ownerCharacterId, partyId, _ uint32, _ byte) (spawnPlan, error) {
+	slot := ComputeSlot(partyId, f.members, ownerCharacterId)
+	wireId, tx, ty, _ := ResolveTownPortal(f.doorPortals, slot, defaultTownX, defaultTownY)
+	return spawnPlan{townMapId: f.townMapId, slot: slot, townPortalId: wireId, townX: tx, townY: ty, durationMs: f.durationMs}, nil
+}
 
-- [ ] **Step 9: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/door/processor.go services/atlas-doors/atlas.com/doors/door/processor_test.go
-  git commit -m "feat(atlas-doors): door processor (spawn/remove/reslot/cleanup)"
-  ```
+func TestSpawnCreatesPairAndEmitsCreated(t *testing.T) { /* fill with harness */ }
+func TestSpawnRecastReplacesExisting(t *testing.T)      { /* pre-seed owner door */ }
+func TestSpawnFailsCleanlyOnAllocError(t *testing.T)    { /* 2nd alloc errors */ }
+```
+
+- [ ] **Step 2: Run to verify it fails.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run Spawn ; cd -`
+Expected: FAIL.
+
+- [ ] **Step 3: Implement `processor.go`.**
+
+```go
+package door
+
+import (
+	"context"
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+)
+
+type Processor interface {
+	GetById(areaDoorId uint32) (Model, error)
+	GetInField(f field.Model) ([]Model, error)
+	Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error)
+	RemoveByOwner(ownerCharacterId uint32, reason string) error
+	RemoveByOwnerIfLeftField(ownerCharacterId uint32, newField field.Model) error
+	Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX, townY int16) error
+}
+
+type spawnPlan struct {
+	townMapId    _map.Id
+	slot         byte
+	townPortalId uint32
+	townX        int16
+	townY        int16
+	durationMs   int32
+}
+
+type resolver interface {
+	ResolveSpawn(ctx context.Context, f field.Model, ownerCharacterId, partyId, skillId uint32, level byte) (spawnPlan, error)
+	PartyIdFor(ctx context.Context, ownerCharacterId uint32) (uint32, error)
+}
+
+type emitter func(topic string, p model.Provider[[]kafka.Message]) error
+
+type ProcessorImpl struct {
+	l    logrus.FieldLogger
+	ctx  context.Context
+	t    tenant.Model
+	emit emitter
+	res  resolver
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+	return &ProcessorImpl{
+		l: l, ctx: ctx, t: tenant.MustFromContext(ctx),
+		emit: func(topic string, p model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(ctx)(topic)(p)
+		},
+		res: newRestResolver(l, ctx),
+	}
+}
+
+func (p *ProcessorImpl) GetById(areaDoorId uint32) (Model, error) {
+	return GetRegistry().Get(p.ctx, p.t, areaDoorId)
+}
+func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
+	return GetRegistry().GetInField(p.ctx, p.t, f)
+}
+
+func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error) {
+	// FR-1.4 recast: remove any existing owner door first.
+	if err := p.RemoveByOwner(ownerCharacterId, RemoveReasonRecast); err != nil {
+		p.l.WithError(err).Warnf("recast cleanup failed for character %d", ownerCharacterId)
+	}
+
+	partyId, err := p.res.PartyIdFor(p.ctx, ownerCharacterId)
+	if err != nil {
+		partyId = 0
+	}
+	plan, err := p.res.ResolveSpawn(p.ctx, f, ownerCharacterId, partyId, skillId, skillLevel)
+	if err != nil {
+		p.l.WithError(err).Warnf("door spawn rejected (resolve) for character %d", ownerCharacterId)
+		return Model{}, err
+	}
+
+	areaId, err := GetIdAllocator().Allocate(p.ctx, p.t)
+	if err != nil {
+		p.l.WithError(err).Errorf("door area oid alloc failed")
+		return Model{}, err
+	}
+	townId, err := GetIdAllocator().Allocate(p.ctx, p.t)
+	if err != nil {
+		GetIdAllocator().Release(p.ctx, p.t, areaId)
+		p.l.WithError(err).Errorf("door town oid alloc failed")
+		return Model{}, err
+	}
+
+	now := time.Now()
+	expires := now
+	if plan.durationMs > 0 {
+		expires = now.Add(time.Duration(plan.durationMs) * time.Millisecond)
+	}
+	m := NewBuilder().
+		SetAreaDoorId(areaId).SetTownDoorId(townId).
+		SetOwnerCharacterId(ownerCharacterId).SetPartyId(partyId).
+		SetSkillId(skillId).SetSkillLevel(skillLevel).SetField(f).
+		SetTownMapId(plan.townMapId).SetSlot(plan.slot).SetTownPortalId(plan.townPortalId).
+		SetAreaX(x).SetAreaY(y).SetTownX(plan.townX).SetTownY(plan.townY).
+		SetDeployTime(now).SetExpiresAt(expires).Build()
+
+	if err := GetRegistry().Put(p.ctx, p.t, m); err != nil {
+		GetIdAllocator().Release(p.ctx, p.t, areaId)
+		GetIdAllocator().Release(p.ctx, p.t, townId)
+		return Model{}, err
+	}
+	if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(m)); err != nil {
+		p.l.WithError(err).Errorf("failed emitting CREATED for door %d", areaId)
+	}
+	return m, nil
+}
+
+func (p *ProcessorImpl) RemoveByOwner(ownerCharacterId uint32, reason string) error {
+	doors, err := GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
+	if err != nil {
+		return err
+	}
+	for _, m := range doors {
+		if err := GetRegistry().Remove(p.ctx, p.t, m.AreaDoorId()); err != nil {
+			p.l.WithError(err).Warnf("failed removing door %d", m.AreaDoorId())
+			continue
+		}
+		GetIdAllocator().Release(p.ctx, p.t, m.AreaDoorId())
+		GetIdAllocator().Release(p.ctx, p.t, m.TownDoorId())
+		if err := p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, reason)); err != nil {
+			p.l.WithError(err).Errorf("failed emitting REMOVED for door %d", m.AreaDoorId())
+		}
+	}
+	return nil
+}
+
+// RemoveByOwnerIfLeftField removes the owner's door only when newField is neither the
+// door's source field nor its town map (walking into the town the door spans is a warp,
+// not abandonment — FR-6.2 / design §5.3).
+func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId uint32, newField field.Model) error {
+	doors, err := GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
+	if err != nil {
+		return err
+	}
+	for _, m := range doors {
+		src := m.Field()
+		sameSource := src.WorldId() == newField.WorldId() && src.ChannelId() == newField.ChannelId() &&
+			src.MapId() == newField.MapId() && src.Instance() == newField.Instance()
+		intoTown := newField.MapId() == m.TownMapId()
+		if sameSource || intoTown {
+			continue
+		}
+		if err := GetRegistry().Remove(p.ctx, p.t, m.AreaDoorId()); err != nil {
+			continue
+		}
+		GetIdAllocator().Release(p.ctx, p.t, m.AreaDoorId())
+		GetIdAllocator().Release(p.ctx, p.t, m.TownDoorId())
+		_ = p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, RemoveReasonLeftField))
+	}
+	return nil
+}
+
+func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX, townY int16) error {
+	m, err := GetRegistry().Get(p.ctx, p.t, areaDoorId)
+	if err != nil {
+		return err
+	}
+	oldSlot := m.Slot()
+	if oldSlot == newSlot {
+		return nil
+	}
+	n := m.Reslot(newSlot, townPortalId, townX, townY)
+	if err := GetRegistry().Put(p.ctx, p.t, n); err != nil {
+		return err
+	}
+	return p.emit(EnvEventTopicDoorStatus, slotChangedEventProvider(n, oldSlot))
+}
+```
+
+- [ ] **Step 4: Implement `resolver.go`** — `newRestResolver(l, ctx) resolver` wiring the
+`data/map`, `data/skill`, and `party` clients. `PartyIdFor` reads the party (0 on
+not-found). `ResolveSpawn`: fetch map metadata; reject (error) if `!HasValidReturn` or
+`Town` or `FieldLimitNoMysticDoor` set (defensive re-check — the channel pre-checks too);
+resolve the town map; fetch town door portals (Type==6, load order) → `[]TownPortal`;
+read party members; `ComputeSlot`; `ResolveTownPortal`; read the skill effect
+`Duration()` for the level (treat `-1`/`<=0` as "no expiry" → `durationMs` 0). Return the
+`spawnPlan`.
+
+- [ ] **Step 5: Run to verify it passes.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run Spawn ; cd -`
+Expected: PASS.
+
+- [ ] **Step 6: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/processor.go services/atlas-doors/atlas.com/doors/door/resolver.go services/atlas-doors/atlas.com/doors/door/processor_test.go
+git commit -m "feat(atlas-doors): processor spawn/remove/reslot with recast + fail-clean alloc"
+```
+
+### Task D4: REST resource (GET door, GET doors-in-field)
+
+**Files:**
+- Create: `services/atlas-doors/atlas.com/doors/door/resource.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/rest.go`
+- Create: `services/atlas-doors/atlas.com/doors/world/resource.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/resource_test.go`
+
+- [ ] **Step 1: Write the failing Transform test.**
+
+```go
+package door
+
+import (
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+)
+
+func TestTransform(t *testing.T) {
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	m := NewBuilder().SetAreaDoorId(1_000_001).SetTownDoorId(1_000_002).
+		SetOwnerCharacterId(42).SetTownMapId(104000000).SetSlot(2).
+		SetTownPortalId(0x82).SetField(f).Build()
+	rm, err := Transform(m)
+	if err != nil || rm.GetID() != "1000001" || rm.OwnerCharacterId != 42 ||
+		rm.TownPortalId != 0x82 || rm.MapId != 100000000 {
+		t.Fatalf("transform wrong: %+v err=%v", rm, err)
+	}
+	if rm.GetName() != "doors" {
+		t.Fatalf("resource name want doors got %s", rm.GetName())
+	}
+}
+```
+
+- [ ] **Step 2: Run to verify it fails.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestTransform ; cd -`
+Expected: FAIL.
+
+- [ ] **Step 3: Implement `resource.go`** (RestModel + `GetID/SetID/GetName` returning
+`"doors"` + `Transform(m) (RestModel, error)` exposing areaDoorId, townDoorId, pairId,
+owner, partyId, world/channel/map/instance, townMapId, slot, townPortalId, area/town
+coords, skill id/level, expiresAt). Implement `rest.go` (`InitResource(si)` subrouting
+`/doors`, `GET /doors/{doorId}` → `ParseDoorId` → `GetById` → `MarshalResponse`).
+Implement `world/resource.go` (`GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/
+instances/{instanceId}/doors` → `GetInField` → `[]RestModel`).
+
+- [ ] **Step 4: Run to verify it passes; commit.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestTransform ; cd -`
+Expected: PASS.
+
+```bash
+git add services/atlas-doors/atlas.com/doors/door/resource.go services/atlas-doors/atlas.com/doors/door/rest.go services/atlas-doors/atlas.com/doors/world services/atlas-doors/atlas.com/doors/door/resource_test.go
+git commit -m "feat(atlas-doors): JSON:API door resource + in-field list route"
+```
 
 ---
 
-## Phase 2 — Engine wiring (Kafka, REST, leader task, main)
+# PART E — Consumers, expiry sweep, main wiring
 
-### Task 12: Command consumer (SPAWN / REMOVE)
+### Task E1: Door command consumer (SPAWN / REMOVE)
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/consumer.go` (copy from atlas-summons — NewConfig curry + LookupBrokers)
+- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/door/kafka.go`
 - Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/door/consumer.go`
-- Test: `services/atlas-doors/atlas.com/doors/kafka/consumer/door/consumer_test.go`
 
-- [ ] **Step 1: Copy the shared `kafka/consumer/consumer.go`** from atlas-summons (rename package import paths to `atlas-doors/...`).
+- [ ] **Step 1: Define the command contract** (`kafka.go`). This is the contract
+atlas-channel emits.
 
-- [ ] **Step 2: Implement the door command consumer** mirroring atlas-summons' `kafka/consumer/summon/consumer.go`:
-  - `InitConsumers(l)` registers consumer name `"door_command"`, topic env `door.EnvCommandTopicDoor`, header parsers `SpanHeaderParser, TenantHeaderParser`.
-  - `InitHandlers(l)` registers two handlers on the topic: `handleSpawnCommand` (`Command[SpawnCommandBody]`) → `door.NewProcessor(l, ctx).Spawn(...)`; `handleRemoveCommand` (`Command[RemoveCommandBody]`) → `RemoveByOwner(...)`.
-  - The handler builds `field.Model` from the command's world/channel/map/instance.
+```go
+package door
 
-- [ ] **Step 3: Write a test** that feeds a decoded `Command[SpawnCommandBody]` into `handleSpawnCommand` (with an injected processor seam) and asserts `Spawn` is called with the right args. (Mirror the atlas-summons command-consumer test if one exists; otherwise test the body→processor mapping directly.)
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/google/uuid"
+)
 
-- [ ] **Step 4: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./kafka/consumer/door/ -v`
-  Expected after impl: PASS.
+const EnvCommandTopic = "COMMAND_TOPIC_DOOR"
 
-- [ ] **Step 5: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/kafka/consumer/consumer.go services/atlas-doors/atlas.com/doors/kafka/consumer/door
-  git commit -m "feat(atlas-doors): COMMAND_TOPIC_DOOR consumer (SPAWN/REMOVE)"
-  ```
+const (
+	CommandTypeSpawn  = "SPAWN"
+	CommandTypeRemove = "REMOVE"
+)
 
----
+type Command[E any] struct {
+	WorldId          world.Id   `json:"worldId"`
+	ChannelId        channel.Id `json:"channelId"`
+	MapId            _map.Id    `json:"mapId"`
+	Instance         uuid.UUID  `json:"instance"`
+	OwnerCharacterId uint32     `json:"ownerCharacterId"`
+	Type             string     `json:"type"`
+	Body             E          `json:"body"`
+}
 
-### Task 13: Character-status consumer (cleanup)
+type SpawnBody struct {
+	SkillId    uint32 `json:"skillId"`
+	SkillLevel byte   `json:"skillLevel"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+}
+
+type RemoveBody struct {
+	Reason string `json:"reason"`
+}
+```
+
+- [ ] **Step 2: Implement `consumer.go`** mirroring monsters' command consumer:
+`InitConsumers` with `SetHeaderParsers(Span, Tenant)` + `SetStartOffset(LastOffset)`;
+`InitHandlers` registering `handleSpawn` and `handleRemove`, each guarding `c.Type`.
+
+```go
+func handleSpawn(l logrus.FieldLogger, ctx context.Context, c Command[SpawnBody]) {
+	if c.Type != CommandTypeSpawn { return }
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	_, err := door.NewProcessor(l, ctx).Spawn(f, c.OwnerCharacterId, c.Body.SkillId, c.Body.SkillLevel, c.Body.X, c.Body.Y)
+	if err != nil { l.WithError(err).Debugf("door spawn rejected for character %d", c.OwnerCharacterId) }
+}
+
+func handleRemove(l logrus.FieldLogger, ctx context.Context, c Command[RemoveBody]) {
+	if c.Type != CommandTypeRemove { return }
+	reason := c.Body.Reason
+	if reason == "" { reason = door.RemoveReasonRecast }
+	_ = door.NewProcessor(l, ctx).RemoveByOwner(c.OwnerCharacterId, reason)
+}
+```
+
+- [ ] **Step 3: Build; commit.**
+
+Run: `cd services/atlas-doors/atlas.com/doors && go build ./... ; cd -`
+
+```bash
+git add services/atlas-doors/atlas.com/doors/kafka/consumer/door
+git commit -m "feat(atlas-doors): door command consumer (SPAWN/REMOVE)"
+```
+
+### Task E2: Character-status cleanup consumer
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/character/consumer.go` (adapt from atlas-summons `kafka/consumer/character/`)
-- Test: `services/atlas-doors/atlas.com/doors/kafka/consumer/character/consumer_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/character/kafka.go`
+- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/character/consumer.go`
 
-- [ ] **Step 1: Adapt the atlas-summons character-status consumer.** Topic env `EVENT_TOPIC_CHARACTER_STATUS`, header parsers Span/Tenant. Three handlers:
-  - `handleLogout` → `RemoveByOwner(charId, ReasonDisconnect)`.
-  - `handleChannelChanged` → `RemoveByOwner(charId, ReasonChannelChanged)`.
-  - `handleMapChanged` → `RemoveAllForOwnerLeavingField(charId, newField)` where `newField` is built from the event's target world/channel/map/instance. (This is the only behavioral delta from summons, which despawns on every map change — doors persist when the owner warps into their own town.)
+- [ ] **Step 1: Mirror monsters' character-status consumer** (`EVENT_TOPIC_CHARACTER_
+STATUS`, LOGOUT/CHANNEL_CHANGED/MAP_CHANGED). Handlers:
 
-- [ ] **Step 2: Write tests:** logout/channel-change always remove; map-change removes only when leaving the source field (reuse the processor's leave-field logic via an injected processor seam — assert the right method is called with the right field).
+```go
+func handleLogout(l, ctx, e StatusEvent[LogoutBody]) {
+	if e.Type != StatusEventTypeLogout { return }
+	_ = door.NewProcessor(l, ctx).RemoveByOwner(e.CharacterId, door.RemoveReasonLogout)
+}
+func handleChannelChanged(l, ctx, e StatusEvent[ChannelChangedBody]) {
+	if e.Type != StatusEventTypeChannelChanged { return }
+	_ = door.NewProcessor(l, ctx).RemoveByOwner(e.CharacterId, door.RemoveReasonChannelChanged)
+}
+func handleMapChanged(l, ctx, e StatusEvent[MapChangedBody]) {
+	if e.Type != StatusEventTypeMapChanged { return }
+	f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId).SetInstance(e.Body.Instance).Build()
+	_ = door.NewProcessor(l, ctx).RemoveByOwnerIfLeftField(e.CharacterId, f)
+}
+```
 
-- [ ] **Step 3: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./kafka/consumer/character/ -v`
-  Expected after impl: PASS.
+(Confirm the exact `MAP_CHANGED` body field names against the real
+`EVENT_TOPIC_CHARACTER_STATUS` contract in monsters/channel — the new field is the
+*destination* map/channel/instance.)
 
-- [ ] **Step 4: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/kafka/consumer/character
-  git commit -m "feat(atlas-doors): character-status consumer (door cleanup)"
-  ```
+- [ ] **Step 2: Build; commit.**
 
----
+```bash
+git add services/atlas-doors/atlas.com/doors/kafka/consumer/character
+git commit -m "feat(atlas-doors): character-status cleanup consumer (logout/channel/map)"
+```
 
-### Task 14: Party-status consumer (re-slot)
+### Task E3: Party-status reslot consumer
 
 **Files:**
+- Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/party/kafka.go`
 - Create: `services/atlas-doors/atlas.com/doors/kafka/consumer/party/consumer.go`
-- Test: `services/atlas-doors/atlas.com/doors/kafka/consumer/party/consumer_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/reslot.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/reslot_test.go`
 
-- [ ] **Step 1: Inspect the atlas-parties event contract.** Read the atlas-parties producer / status-event types to find the membership-change event (`EVENT_TOPIC_PARTY_STATUS`) and its body shape (joined/left/leader/disband + the affected character + party id). Use those types; do not invent new ones.
+- [ ] **Step 1: Write the failing reslot-routine test.** `ReslotParty` recomputes every
+party member's slot from new membership and `Reslot`s only owners whose slot changed
+(FR-4.3/FR-6.4). Drive with a fake party member list + pre-seeded doors + a fake town
+portal resolver, asserting which owners get SLOT_CHANGED.
 
-- [ ] **Step 2: Implement the consumer.** Header parsers Span/Tenant. On any membership change for a party that may have live doors:
-  - join → `ReslotForParty(partyId)` (the joiner's own door, if any, is re-slotted; existing members re-slotted).
-  - leave → `ReslotOwnerToSolo(leaverCharId)` then `ReslotForParty(partyId)` (remaining members).
-  - leader change → `ReslotForParty(partyId)`.
-  - disband → for each former member with a door, `ReslotOwnerToSolo`.
-  > Visibility revocation for a leaver (sending `removeDoor` to that one session) is a **channel** concern (Task 19/20), driven by the party event the channel already consumes — not the engine. The engine only owns slot state.
+```go
+func TestReslotPartyRecomputesChangedSlots(t *testing.T) {
+	// party members [A,B,C]; A has a door at slot 0, C has a door at slot 2.
+	// new membership [B,C] (A left): C now slot 1 -> SLOT_CHANGED for C; A re-slotted solo 0.
+}
+```
 
-- [ ] **Step 3: Write tests** with an injected processor seam asserting the right reslot calls per event type.
+- [ ] **Step 2: Run (FAIL); implement `reslot.go`** — `ReslotParty(ctx, partyId, members,
+townPortalsByMap func(_map.Id) []TownPortal)`: for each member with a live door in this
+party, compute the new slot from the new membership ordering, resolve the new town portal,
+and `Reslot(...)`. A member no longer in the party → solo scope, slot 0.
 
-- [ ] **Step 4: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./kafka/consumer/party/ -v`
-  Expected after impl: PASS.
+- [ ] **Step 3: Implement `consumer.go`** consuming `EVENT_TOPIC_PARTY_STATUS` membership
+changes (join/leave/leader/disband) and calling `ReslotParty`. Mirror the monsters/channel
+party event envelope; confirm the exact event Type strings + member-list body shape.
 
-- [ ] **Step 5: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/kafka/consumer/party
-  git commit -m "feat(atlas-doors): party-status consumer (door re-slotting)"
-  ```
+- [ ] **Step 4: Run (PASS); commit.**
 
----
+```bash
+git add services/atlas-doors/atlas.com/doors/kafka/consumer/party services/atlas-doors/atlas.com/doors/door/reslot.go services/atlas-doors/atlas.com/doors/door/reslot_test.go
+git commit -m "feat(atlas-doors): party-status reslot consumer + routine"
+```
 
-### Task 15: Leader-elected expiry sweep + tasks + leaderconfig
-
-**Files:**
-- Create: `services/atlas-doors/atlas.com/doors/leaderconfig.go` (copy from atlas-summons, rename SUMMON→DOOR)
-- Create: `services/atlas-doors/atlas.com/doors/tasks/task.go` (copy verbatim from atlas-summons)
-- Create: `services/atlas-doors/atlas.com/doors/door/expiry_task.go` (adapt from atlas-summons `expiry_task.go`)
-- Test: `services/atlas-doors/atlas.com/doors/door/expiry_task_test.go`
-
-- [ ] **Step 1: Copy `tasks/task.go` verbatim** (Task interface + Register goroutine loop).
-
-- [ ] **Step 2: Copy `leaderconfig.go`**, renaming env vars: `DOOR_LEADER_ELECTION_ENABLED`, `DOOR_LEADER_TTL`, `DOOR_LEADER_REFRESH`, `DOOR_LEADER_BACKOFF` (same defaults as summons).
-
-- [ ] **Step 3: Adapt `expiry_task.go`.** `NewExpiryTask(l, ctx, time.Second)`; `Run()` enumerates `GetRegistry().GetAll()` grouped by tenant; for each door where `now.After(expiresAt)`, call `NewProcessor(l, tenantCtx).RemoveByOwner(owner, ReasonExpiry)` (or a direct `Registry.Remove` + emit — match how summons' expiry removes). This is also the orphan backstop.
-
-- [ ] **Step 4: Write a test** with two doors (one expired, one not) and a fixed clock; assert `Run()` removes only the expired one and emits one REMOVED with reason EXPIRY.
-
-- [ ] **Step 5: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-doors/atlas.com/doors && go test ./door/ -run TestExpiry -v`
-  Expected after impl: PASS.
-
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-doors/atlas.com/doors/leaderconfig.go services/atlas-doors/atlas.com/doors/tasks services/atlas-doors/atlas.com/doors/door/expiry_task.go services/atlas-doors/atlas.com/doors/door/expiry_task_test.go
-  git commit -m "feat(atlas-doors): leader-elected expiry sweep + tasks + leaderconfig"
-  ```
-
----
-
-### Task 16: REST (GET door, GET doors in field) + main.go wiring
+### Task E4: Leader-elected expiry sweep
 
 **Files:**
-- Create: `services/atlas-doors/atlas.com/doors/door/resource.go` (RestModel + Transform)
-- Create: `services/atlas-doors/atlas.com/doors/door/rest.go` (GET /doors/{doorId})
-- Create: `services/atlas-doors/atlas.com/doors/world/resource.go` (GET .../maps/{m}/instances/{i}/doors)
-- Create: `services/atlas-doors/atlas.com/doors/rest/handler.go` (type aliases + ParseDoorId etc., copy from atlas-summons)
-- Modify: `services/atlas-doors/atlas.com/doors/main.go`
-- Test: `services/atlas-doors/atlas.com/doors/door/resource_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/expiry_task.go`
+- Create: `services/atlas-doors/atlas.com/doors/door/expiry_task_test.go`
 
-- [ ] **Step 1: Copy `rest/handler.go`** from atlas-summons; keep the parse helpers needed (`ParseWorldId`, `ParseChannelId`, `ParseMapId`, `ParseInstanceId`) and add `ParseDoorId`.
+- [ ] **Step 1: Write the failing expiry test.** Seed an expired door past grace, an
+expired-but-within-grace door, and a future door; `Run()` removes only the first.
 
-- [ ] **Step 2: Implement `resource.go`** — `RestModel` with `GetName() string { return "doors" }`, `GetID/SetID` over `areaDoorId` (string), and `Transform(Model) (RestModel, error)` exposing owner, party, field (world/channel/map/instance), townMapId, slot, positions, pairId, townPortalId, expiresAt (unix-milli).
+```go
+func TestExpiryRemovesOnlyExpiredPastGrace(t *testing.T) {
+	// door1: deployTime=now-10m, expiresAt=now-1m -> removed.
+	// door2: deployTime=now, expiresAt=now-1ms (rapid cancel) -> NOT removed (grace).
+	// door3: expiresAt in future -> NOT removed.
+}
+```
 
-- [ ] **Step 3: Implement `door/rest.go`** — `InitResource(si)` registering `GET /doors/{doorId}` → `GetById` → Transform → JSON:API (mirror summons `rest.go`).
+- [ ] **Step 2: Run (FAIL); implement `expiry_task.go`** mirroring monsters' expiry task
+(`tasks.Task`, `GetRegistry().GetAll` grouped by tenant, `tenant.WithContext`,
+`newProcessor` field-injected). Add the grace guard:
 
-- [ ] **Step 4: Implement `world/resource.go`** — `GET /worlds/{w}/channels/{c}/maps/{m}/instances/{i}/doors` → `GetInField(f)` → `[]RestModel` (mirror summons `world/resource.go`).
+```go
+const deployGrace = 3 * time.Second
 
-- [ ] **Step 5: Write a Transform test** asserting RestModel fields map from a built Model (GetName=="doors", positions/slot/portal/expiry correct).
+func (t *ExpiryTask) Run() {
+	all, err := GetRegistry().GetAll(t.ctx)
+	if err != nil { t.l.WithError(err).Errorf("door expiry sweep failed"); return }
+	now := time.Now()
+	for ten, ms := range all {
+		tctx := tenant.WithContext(t.ctx, ten)
+		p := t.newProcessor(t.l, tctx)
+		for _, m := range ms {
+			if m.ExpiresAt().IsZero() || now.Before(m.ExpiresAt()) { continue }
+			if now.Sub(m.DeployTime()) < deployGrace { continue } // FR-6.3
+			if err := p.RemoveByOwner(m.OwnerCharacterId(), RemoveReasonExpiry); err != nil {
+				t.l.WithError(err).Warnf("failed expiring door %d", m.AreaDoorId())
+			}
+		}
+	}
+}
+```
 
-- [ ] **Step 6: Wire `main.go`.** Re-add (restoring the bits stripped in Task 1, adapted): `door.InitIdAllocator(rc)`, `door.InitRegistry(rc)`; register the three consumers (`doorcmd.InitConsumers`/`InitHandlers`, `characterevt.InitConsumers`/`InitHandlers`, `partyevt.InitConsumers`/`InitHandlers`); register routes (`door.InitResource`, `world.InitResource`); register the leader-elected expiry task via `tasks.Register` gated by `leaderconfig`. Match the atlas-summons bootstrap ordering.
+- [ ] **Step 3: Run (PASS); commit.**
 
-- [ ] **Step 7: Build + test + vet the whole module.**
-  Run:
-  ```bash
-  cd services/atlas-doors/atlas.com/doors && go build ./... && go vet ./... && go test -race ./... && cd -
-  ```
-  Expected: all clean.
+```bash
+git add services/atlas-doors/atlas.com/doors/door/expiry_task.go services/atlas-doors/atlas.com/doors/door/expiry_task_test.go
+git commit -m "feat(atlas-doors): leader-elected expiry sweep with deploy grace"
+```
 
-- [ ] **Step 8: Commit**
-  ```bash
-  git add services/atlas-doors
-  git commit -m "feat(atlas-doors): REST resources + main.go wiring (engine complete)"
-  ```
-
----
-
-## Phase 3 — Packet library (`libs/atlas-packet/door`)
-
-v83 byte layouts are transcribed from Cosmic (`~/source/Cosmic` `tools/PacketCreator.java` and `net/server/channel/handlers/DoorHandler.java`). **Read the actual Cosmic source for each packet — do not guess byte order.** Each encoder/decoder reads tenant from context and branches on version where structures diverge (pattern: `libs/atlas-packet/monster/clientbound/spawn.go`). v84≡v83 structurally; use `MajorVersion() >= 87` (not `> 83`) for v87+ branches (memory `bug_majorversion_gt83_is_off_by_one_v87`).
-
-### Task 17: spawnDoor + removeDoor encoders
-
-**Files:**
-- Create: `libs/atlas-packet/door/clientbound/spawn.go`
-- Create: `libs/atlas-packet/door/clientbound/remove.go`
-- Test: `libs/atlas-packet/door/clientbound/spawn_test.go`
-- Test: `libs/atlas-packet/door/clientbound/remove_test.go`
-
-- [ ] **Step 1: Read Cosmic `PacketCreator.spawnDoor` and `removeDoor`.** Transcribe the exact field order for v83. spawnDoor (Cosmic shape): `oid (int)`, `townFlag/in-town (byte or via linkedPortalId==-1)`, `townMapId (int)`, `x (short)`, `y (short)` — confirm exact fields/order against the source. removeDoor: `oid (int)` + flag — confirm.
-
-- [ ] **Step 2: Write the failing golden-byte test (v83).** Build the packet, encode under a v83 tenant context, assert the exact byte slice matches the transcribed Cosmic layout. Example skeleton:
-  ```go
-  func TestSpawnDoorV83Bytes(t *testing.T) {
-  	ctx := tenantContext(t, "GMS", 83, 1) // helper builds tenant ctx
-  	pkt := NewSpawnDoor(/* oid, inTown, townMapId, x, y, ... */)
-  	got := pkt.Encode(testLogger(), ctx)(map[string]interface{}{})
-  	want := []byte{ /* exact bytes from Cosmic spawnDoor layout */ }
-  	if !bytes.Equal(got, want) {
-  		t.Fatalf("v83 spawnDoor bytes:\n got %v\nwant %v", got, want)
-  	}
-  }
-  ```
-  (Provide a small `tenantContext`/`testLogger` test helper in the test file — not a `*_testhelpers.go` production file.)
-
-- [ ] **Step 3: Run, expect FAIL, implement the encoders, re-run.** Implement `NewSpawnDoor(...)` / `NewRemoveDoor(...)` + `Encode` with `response.NewWriter`, `tenant.MustFromContext(ctx)`, and version branches. Writer name consts:
-  ```go
-  const SpawnDoorWriter = "SpawnDoor"
-  const RemoveDoorWriter = "RemoveDoor"
-  ```
-  Run: `go test ./libs/atlas-packet/door/clientbound/ -run 'SpawnDoor|RemoveDoor' -v`
-  Expected: PASS for v83.
-
-- [ ] **Step 4: Commit**
-  ```bash
-  git add libs/atlas-packet/door/clientbound/spawn.go libs/atlas-packet/door/clientbound/remove.go libs/atlas-packet/door/clientbound/spawn_test.go libs/atlas-packet/door/clientbound/remove_test.go
-  git commit -m "feat(atlas-packet): door spawn/remove encoders (v83 golden bytes)"
-  ```
-
----
-
-### Task 18: spawnPortal + playPortalSound encoders
+### Task E5: `main.go` wiring
 
 **Files:**
-- Create: `libs/atlas-packet/door/clientbound/spawn_portal.go`
-- Create: `libs/atlas-packet/door/clientbound/play_portal_sound.go`
-- Test: `libs/atlas-packet/door/clientbound/spawn_portal_test.go`
-- Test: `libs/atlas-packet/door/clientbound/play_portal_sound_test.go`
+- Create: `services/atlas-doors/atlas.com/doors/main.go`
+- Create: `services/atlas-doors/atlas.com/doors/main_leader_test.go`
 
-- [ ] **Step 1: Read Cosmic `PacketCreator.spawnPortal` and `playPortalSound`.** Transcribe v83 layouts. spawnPortal (town↔target minimap portal): `townMapId (int)`, `targetMapId (int)`, `x (short)`, `y (short)` — confirm. playPortalSound: opcode + (typically) a sound-effect selector — confirm against source.
+- [ ] **Step 1: Mirror `monsters/main.go`** substituting door packages: `InitIdAllocator`
++ `InitRegistry`; register the door command, character-status, and party-status consumers
+(`InitConsumers` + `InitHandlers`); REST routes `door.InitResource` + `world.InitResource`
++ `/metrics` + `/debug/consumers`; leader block `lock.New(rc, "doors-sweep", …)` running
+`tasks.Register(...)(door.NewExpiryTask(l, leaderCtx, time.Second))`; `serviceName =
+"atlas-doors"`, `consumerGroupId = consumergroup.Resolve("Door Registry Service")`.
 
-- [ ] **Step 2: Write failing v83 golden-byte tests** for both (same pattern as Task 17).
+- [ ] **Step 2: Mirror `monsters/main_leader_test.go`** (asserts the leader gate
+enable/disable behavior compiles + the sweep registration path).
 
-- [ ] **Step 3: Run, expect FAIL, implement, re-run.** Writer name consts:
-  ```go
-  const SpawnPortalWriter = "SpawnPortal"
-  const PlayPortalSoundWriter = "PlayPortalSound" // confirm Cosmic uses a dedicated op vs. a field-effect op
-  ```
-  Run: `go test ./libs/atlas-packet/door/clientbound/ -run 'SpawnPortal|PlayPortalSound' -v`
-  Expected: PASS for v83.
+- [ ] **Step 3: Build the whole service + run all tests.**
 
-- [ ] **Step 4: Commit**
-  ```bash
-  git add libs/atlas-packet/door/clientbound/spawn_portal.go libs/atlas-packet/door/clientbound/play_portal_sound.go libs/atlas-packet/door/clientbound/spawn_portal_test.go libs/atlas-packet/door/clientbound/play_portal_sound_test.go
-  git commit -m "feat(atlas-packet): spawnPortal + playPortalSound encoders (v83 golden bytes)"
-  ```
+Run: `cd services/atlas-doors/atlas.com/doors && go build ./... && go vet ./... && go test -race ./... ; cd -`
+Expected: builds, vet clean, tests pass.
+
+- [ ] **Step 4: Bake the service image** (CLAUDE.md mandatory step).
+
+Run: `docker buildx bake atlas-doors`
+Expected: image builds.
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add services/atlas-doors/atlas.com/doors/main.go services/atlas-doors/atlas.com/doors/main_leader_test.go
+git commit -m "feat(atlas-doors): main wiring (consumers, REST, leader-elected expiry)"
+```
 
 ---
 
-### Task 19: enter-door serverbound decoder + partyPortal door fields
+# PART F — `libs/atlas-packet/door` packets
+
+Goal: the version-branching clientbound encoders (`spawnDoor`, `removeDoor`,
+`spawnPortal`) and the serverbound enter-door decoder, with per-version golden tests.
+**`playPortalSound` is NOT a new packet** — the channel reuses the existing character
+simple-effect (context.md #9). **Opcodes are config, not Go** (context.md #2) — these
+packets are referenced by writer/handle name only.
+
+> **Byte structure source:** Cosmic `tools/PacketCreator.java` (`spawnDoor`,
+> `removeDoor`, `spawnPortal`) and `DoorHandler.java` (enter-door) give the v83 field
+> order. **Per-version opcode values and any byte deltas are Part H IDA work** — do NOT
+> invent them here. Where a version is known to diverge structurally, branch on
+> `t.IsRegion("GMS") && t.MajorAtLeast(87)`; otherwise the v83 layout applies to
+> v83–v86 (off-by-one). If IDA later shows a structural delta, add the branch then.
+
+### Task F1: enter-door serverbound decoder
 
 **Files:**
 - Create: `libs/atlas-packet/door/serverbound/enter.go`
-- Test: `libs/atlas-packet/door/serverbound/enter_test.go`
+- Create: `libs/atlas-packet/door/serverbound/enter_test.go`
+
+- [ ] **Step 1: Write the failing roundtrip test** across `pt.Variants`.
+
+```go
+package serverbound
+
+import (
+	"testing"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+)
+
+func TestEnterDoorRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			in := Enter{ownerId: 4242, direction: 1}
+			out := Enter{}
+			pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+			if out.OwnerId() != in.OwnerId() || out.Direction() != in.Direction() {
+				t.Fatalf("roundtrip mismatch: %+v vs %+v", out, in)
+			}
+		})
+	}
+}
+```
+
+- [ ] **Step 2: Run to verify it fails.**
+
+Run: `cd libs/atlas-packet && go test ./door/... ; cd -`
+Expected: FAIL (package missing).
+
+- [ ] **Step 3: Implement `enter.go`** (Cosmic `DoorHandler`: `int ownerId`, `byte
+direction`):
+
+```go
+package serverbound
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	"github.com/sirupsen/logrus"
+)
+
+const EnterDoorHandle = "EnterDoorHandle"
+
+type Enter struct {
+	ownerId   uint32
+	direction byte
+}
+
+func (m Enter) OwnerId() uint32   { return m.ownerId }
+func (m Enter) Direction() byte   { return m.direction }
+func (m Enter) Operation() string { return EnterDoorHandle }
+func (m Enter) String() string    { return fmt.Sprintf("Enter{ownerId=%d direction=%d}", m.ownerId, m.direction) }
+
+func (m *Enter) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.ownerId = r.ReadUint32()
+		m.direction = r.ReadByte()
+	}
+}
+
+// Encode is symmetric, for tests + completeness.
+func (m Enter) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.ownerId)
+		w.WriteByte(m.direction)
+		return w.Bytes()
+	}
+}
+```
+
+- [ ] **Step 4: Run to verify it passes; commit.**
+
+Run: `cd libs/atlas-packet && go test ./door/serverbound/ ; cd -`
+Expected: PASS.
+
+```bash
+git add libs/atlas-packet/door/serverbound
+git commit -m "feat(atlas-packet): enter-door serverbound decoder"
+```
+
+### Task F2: spawnDoor clientbound encoder
+
+**Files:**
+- Create: `libs/atlas-packet/door/clientbound/spawn.go`
+- Create: `libs/atlas-packet/door/clientbound/spawn_test.go`
+
+Cosmic `PacketCreator.spawnDoor(int oid, Point pos, boolean town)`. Confirm the exact v83
+field order from `~/source/Cosmic/.../PacketCreator.java` `spawnDoor` before finalizing;
+the encoder follows that order (oid int, position, town flag — adjust to the verified
+Cosmic layout).
+
+- [ ] **Step 1: Write the failing test** — roundtrip across `pt.Variants` plus a v83
+golden-byte assertion and a v83≡v84..86 equality + v87(-path) assertion (mirror
+`character/clientbound/version_bounds_test.go`). No timestamp in this packet, so use
+`bytes.Equal`.
+
+- [ ] **Step 2: Run to verify it fails.**
+
+- [ ] **Step 3: Implement `spawn.go`** with `const SpawnDoorWriter = "SpawnDoor"`,
+`NewSpawnDoor(oid uint32, x, y int16, town bool)`, getters, `Operation()`, `String()`,
+and the version-branched `Encode`. Default (v83–v86) layout from Cosmic; add a
+`MajorAtLeast(87)` branch only when IDA (Part H) shows a delta.
+
+- [ ] **Step 4: Run to verify it passes; commit.**
+
+```bash
+git add libs/atlas-packet/door/clientbound/spawn.go libs/atlas-packet/door/clientbound/spawn_test.go
+git commit -m "feat(atlas-packet): spawnDoor clientbound encoder"
+```
+
+### Task F3: removeDoor clientbound encoder
+
+**Files:**
+- Create: `libs/atlas-packet/door/clientbound/remove.go`
+- Create: `libs/atlas-packet/door/clientbound/remove_test.go`
+
+Cosmic `removeDoor(int oid, boolean town)`.
+
+- [ ] **Step 1: Write the failing roundtrip + golden test** (mirror F2).
+- [ ] **Step 2: Run (FAIL).**
+- [ ] **Step 3: Implement `remove.go`** (`const RemoveDoorWriter = "RemoveDoor"`,
+`NewRemoveDoor(oid uint32, town bool)`, version-branched `Encode`).
+- [ ] **Step 4: Run (PASS); commit.**
+
+```bash
+git add libs/atlas-packet/door/clientbound/remove.go libs/atlas-packet/door/clientbound/remove_test.go
+git commit -m "feat(atlas-packet): removeDoor clientbound encoder"
+```
+
+### Task F4: spawnPortal clientbound encoder
+
+**Files:**
+- Create: `libs/atlas-packet/door/clientbound/spawn_portal.go`
+- Create: `libs/atlas-packet/door/clientbound/spawn_portal_test.go`
+
+Cosmic `spawnPortal(int townId, int targetId, Point pos)` — the minimap town↔target
+portal (two ints + position). This places the minimap door indicator for the *caster*; the
+party-wide indicator goes through the party packet (Task G6).
+
+- [ ] **Step 1: Write the failing roundtrip + golden test.**
+- [ ] **Step 2: Run (FAIL).**
+- [ ] **Step 3: Implement `spawn_portal.go`** (`const SpawnPortalWriter = "SpawnPortal"`,
+`NewSpawnPortal(townMapId, targetMapId _map.Id, x, y int16)`, version-branched `Encode`:
+two ints then position).
+- [ ] **Step 4: Run (PASS); commit.**
+
+```bash
+git add libs/atlas-packet/door/clientbound/spawn_portal.go libs/atlas-packet/door/clientbound/spawn_portal_test.go
+git commit -m "feat(atlas-packet): spawnPortal (minimap) clientbound encoder"
+```
+
+### Task F5: Populate the reserved party door block
+
+**Files:**
 - Modify: `libs/atlas-packet/party/clientbound/created.go`
-- Test: `libs/atlas-packet/party/clientbound/created_test.go`
+- Modify: `libs/atlas-packet/party/clientbound/created_test.go`
 
-- [ ] **Step 1: Read Cosmic `DoorHandler.handlePacket`.** The serverbound shape is `int ownerId`, `byte direction` (`1` = town→target, `0` = target→town). Implement the decoder:
-  ```go
-  package serverbound
+The door fields in `created.go` are currently hard-zeroed (`EmptyMapId,EmptyMapId,0,0`).
+Make them carry real door data when present (FR-3.3 — the party minimap indicator).
 
-  type Enter struct {
-  	ownerId   uint32
-  	direction byte
-  }
-  func (m Enter) OwnerId() uint32 { return m.ownerId }
-  func (m Enter) Direction() byte { return m.direction }
-  func (m *Enter) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, opts map[string]interface{}) {
-  	return func(r *request.Reader, opts map[string]interface{}) {
-  		m.ownerId = r.ReadUint32()
-  		m.direction = r.ReadByte()
-  	}
-  }
-  const EnterDoorHandle = "EnterDoor"
-  ```
+- [ ] **Step 1: Write the failing test** — a `Created` built with door fields encodes the
+town map id, target map id, and minimap x/y instead of zeros; a `Created` with no door
+still encodes the empty sentinel. Assert across `pt.Variants`.
 
-- [ ] **Step 2: Write a decode test** feeding `int ownerId=42, byte direction=1` bytes and asserting the decoded fields. (v83; confirm whether any version prepends/extends — if IDA shows a delta in Phase 5, add a branch then.)
+- [ ] **Step 2: Run (FAIL).**
 
-- [ ] **Step 3: Wire partyPortal door fields.** The party-operation `Created` packet (`libs/atlas-packet/party/clientbound/created.go`) currently hard-zeros the door fields. Add an optional door-state carrier so the channel can populate door map x/y (int) + minimap x/y (short) when a door exists for that party member. Keep the zero-fill path for the no-door case (backward compatible). Add a constructor variant:
-  ```go
-  func NewCreatedWithDoor(mode byte, partyId uint32, doorMapX, doorMapY int32, doorMiniX, doorMiniY int16) Created
-  ```
-  and have `Encode` write the provided values instead of the four zeros. Update `Decode` comments to match.
+- [ ] **Step 3: Add door fields to the `Created` struct + constructor** (e.g.
+`doorTownMapId`, `doorTargetMapId _map.Id`, `doorX`, `doorY int16`, defaulting to
+`EmptyMapId,EmptyMapId,0,0`), and write them in `Encode` in place of the hard-zeros:
 
-- [ ] **Step 4: Write a test** asserting `NewCreatedWithDoor` encodes the door fields (and that `NewCreated` still encodes zeros — no regression).
+```go
+w.WriteInt(uint32(m.doorTownMapId))
+w.WriteInt(uint32(m.doorTargetMapId))
+w.WriteShort(uint16(m.doorX))
+w.WriteShort(uint16(m.doorY))
+```
 
-- [ ] **Step 5: Run, expect FAIL, implement, re-run.**
-  Run: `go test ./libs/atlas-packet/door/serverbound/ ./libs/atlas-packet/party/clientbound/ -v`
-  Expected: PASS.
+(Keep the existing zero-default path working for callers that don't set door fields.)
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add libs/atlas-packet/door/serverbound libs/atlas-packet/party/clientbound/created.go libs/atlas-packet/party/clientbound/created_test.go
-  git commit -m "feat(atlas-packet): enter-door decoder + party-portal door fields"
-  ```
+- [ ] **Step 4: Run (PASS); commit.**
+
+```bash
+git add libs/atlas-packet/party/clientbound/created.go libs/atlas-packet/party/clientbound/created_test.go
+git commit -m "feat(atlas-packet): carry real door fields in party-created packet"
+```
+
+### Task F6: Package vet + lib test sweep
+
+- [ ] **Step 1: Run the full packet lib test + vet.**
+
+Run: `cd libs/atlas-packet && go vet ./... && go test -race ./... ; cd -`
+Expected: clean.
+
+- [ ] **Step 2: Commit any fixes** (`git commit -am "fix(atlas-packet): door package vet/test cleanup"`).
 
 ---
 
-## Phase 4 — atlas-channel edge
+# PART G — atlas-channel edge
 
-### Task 20: Cast routing — door Lookup handler
+Goal: route the cast to a SPAWN command, decode + validate + warp on enter-door, consume
+door status events and broadcast to party-scoped same-channel viewers, spawn doors to
+arriving sessions, and feed door data into the party packet. **Reuse the existing
+simple-effect for the portal sound** (no new packet).
+
+### Task G1: Door SPAWN command emission (channel side)
 
 **Files:**
-- Create: `services/atlas-channel/atlas.com/channel/skill/handler/door/door.go`
-- Create: `services/atlas-channel/atlas.com/channel/skill/handler/door/producer.go` (COMMAND_TOPIC_DOOR SPAWN emitter)
+- Create: `services/atlas-channel/atlas.com/channel/kafka/message/door/kafka.go`
+- Create: `services/atlas-channel/atlas.com/channel/door/producer.go`
+- Create: `services/atlas-channel/atlas.com/channel/door/requests.go`
+- Create: `services/atlas-channel/atlas.com/channel/door/processor.go`
+- Create: `services/atlas-channel/atlas.com/channel/door/producer_test.go`
+
+- [ ] **Step 1: Define the command envelope (channel copy)** mirroring the atlas-doors
+contract from E1 (byte-identical JSON tags) in `kafka/message/door/kafka.go`
+(`EnvDoorCommandTopic = "COMMAND_TOPIC_DOOR"`, `Command[SpawnBody]`, `CommandTypeSpawn`,
+`SpawnBody{SkillId, SkillLevel, X, Y}`; plus `RemoveBody`+`CommandTypeRemove`).
+
+- [ ] **Step 2: Write the failing provider test** — `SpawnCommandProvider` keys by the
+area map id and carries owner + skill + position.
+
+- [ ] **Step 3: Implement `door/producer.go`** mirroring `portal/producer.go`:
+
+```go
+func SpawnCommandProvider(f field.Model, ownerCharacterId, skillId uint32, level byte, x, y int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
+	value := door.Command[door.SpawnBody]{
+		WorldId: f.WorldId(), ChannelId: f.ChannelId(), MapId: f.MapId(), Instance: f.Instance(),
+		OwnerCharacterId: ownerCharacterId, Type: door.CommandTypeSpawn,
+		Body: door.SpawnBody{SkillId: skillId, SkillLevel: level, X: x, Y: y},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+```
+
+Implement `door/processor.go` with `Spawn(f, ownerCharacterId, skillId, level, x, y) error`
+calling `producer.ProviderImpl(l)(ctx)(door.EnvDoorCommandTopic)(SpawnCommandProvider(...))`,
+plus a REST read client (`door/requests.go` with `requests.RootUrl("DOORS")`):
+`GetInField(f) ([]Model, error)`, `GetByOwnerOnMap(f, ownerCharacterId) (Model, bool)` for
+the enter-door validation (G3) and map-enter spawn (G5). Add `DOORS_SERVICE_URL`/BASE
+fallback per the trimmed-client convention.
+
+- [ ] **Step 4: Run (PASS); commit.**
+
+```bash
+git add services/atlas-channel/atlas.com/channel/kafka/message/door services/atlas-channel/atlas.com/channel/door
+git commit -m "feat(atlas-channel): door command producer + atlas-doors client"
+```
+
+### Task G2: Mystic Door cast handler
+
+**Files:**
+- Create: `services/atlas-channel/atlas.com/channel/skill/handler/mysticdoor/mysticdoor.go`
+- Create: `services/atlas-channel/atlas.com/channel/skill/handler/mysticdoor/mysticdoor_test.go`
 - Modify: `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go`
-- Test: `services/atlas-channel/atlas.com/channel/skill/handler/door/door_test.go`
 
-- [ ] **Step 1: Implement the SPAWN producer** in `door/producer.go`: a `model.Provider[[]kafka.Message]` building `door.Command[door.SpawnCommandBody]` (import the envelope types from `atlas-doors`? No — atlas-channel must not import atlas-doors. Re-declare the command envelope + body + topic const locally in this package, matching the JSON shape exactly, the same way atlas-summons consumers and producers mirror types across services). Topic env: `COMMAND_TOPIC_DOOR`.
+By the time this handler runs, `UseSkill` has consumed MP + Magic Rock and skipped the
+buff (no statups). The handler does the cheap channel-side eligibility rejections
+(field-limit, town map, no return map) and, if eligible, emits the SPAWN command with the
+caster's position. Rejections emit nothing (client already re-enabled).
 
-- [ ] **Step 2: Implement the handler** `door.go` registering for `skill2.PriestMysticDoorId` via the per-skill `handler.Register`. The handler:
-  1. Loads the map metadata for `f.MapId()` via the channel's `data/map` processor.
-  2. **Channel-side rejections (emit nothing, client already re-enabled):** if `mapModel.FieldLimit() & map.FieldLimitNoMysticDoor != 0`, or `mapModel.Town()`, or no valid return map → return nil (no SPAWN).
-  3. Otherwise load the caster position (`character.NewProcessor(l, ctx).GetById()(characterId)` → `c.X(), c.Y()`) and emit `COMMAND_TOPIC_DOOR / SPAWN{ownerCharacterId, x, y, skillId, skillLevel}`.
-  Use the `Handler` signature from `registry.go`. Register via `init()`:
-  ```go
-  func init() { handler.Register(skill2.PriestMysticDoorId, Handle) }
-  ```
+- [ ] **Step 1: Write the failing test** — the handler (with seam-injected map lookup +
+spawn func + caster-position func) emits a SPAWN with the caster's X/Y when the map is
+eligible, and emits nothing when the map has `FieldLimitNoMysticDoor`, is a `Town`, or has
+no valid return map.
 
-- [ ] **Step 3: Add the blank import** to `registrations/registrations.go`:
-  ```go
-  _ "atlas-channel/skill/handler/door" // Priest Mystic Door — task 093
-  ```
+```go
+func TestMysticDoorEmitsSpawnWhenEligible(t *testing.T) { /* eligible map -> spawn called with c.X/c.Y */ }
+func TestMysticDoorRejectsFieldLimit(t *testing.T)      { /* fieldLimit&0x02 -> no spawn */ }
+func TestMysticDoorRejectsTownMap(t *testing.T)         { /* Town==true -> no spawn */ }
+func TestMysticDoorRejectsNoReturn(t *testing.T)        { /* no valid return -> no spawn */ }
+```
 
-- [ ] **Step 4: Write the failing test** (mirror the heal handler tests; inject the map-load and emitter seams like `loadCasterFunc`):
-  ```go
-  func TestDoorHandlerEmitsSpawnWithCasterPosition(t *testing.T) { /* non-town, no field-limit → one SPAWN with x/y */ }
-  func TestDoorHandlerRejectsOnFieldLimit(t *testing.T) { /* FieldLimitNoMysticDoor set → zero emits */ }
-  func TestDoorHandlerRejectsOnTownMap(t *testing.T) { /* Town()==true → zero emits */ }
-  func TestDoorHandlerRejectsOnNoReturnMap(t *testing.T) { /* returnMap invalid → zero emits */ }
-  ```
+- [ ] **Step 2: Run (FAIL).**
 
-- [ ] **Step 5: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/door/ -v`
-  Expected after impl: PASS.
+- [ ] **Step 3: Implement `mysticdoor.go`.**
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-channel/atlas.com/channel/skill/handler/door services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go
-  git commit -m "feat(atlas-channel): route Mystic Door cast to SPAWN command"
-  ```
+```go
+package mysticdoor
 
----
+import (
+	"context"
 
-### Task 21: Enter-door inbound handler (validate + warp)
+	channelhandler "atlas-channel/skill/handler"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/sirupsen/logrus"
+	// field, writer, packetmodel, effect imports as used by sibling handlers
+)
 
-**Files:**
-- Create: `services/atlas-channel/atlas.com/channel/socket/handler/door_enter.go`
-- Create: `services/atlas-channel/atlas.com/channel/door/processor.go` (REST client → atlas-doors GET)
-- Modify: `services/atlas-channel/atlas.com/channel/main.go` (register handler name→func in `produceHandlers`)
-- Test: `services/atlas-channel/atlas.com/channel/socket/handler/door_enter_test.go`
+func init() {
+	channelhandler.Register(skill2.PriestMysticDoorId, Apply)
+}
 
-- [ ] **Step 1: Implement the channel→atlas-doors REST client** `door/processor.go`:
-  ```go
-  type Processor interface {
-  	GetInField(f field.Model) ([]Model, error) // GET /worlds/.../maps/{m}/instances/{i}/doors
-  	GetById(areaDoorId uint32) (Model, error)  // GET /doors/{id}
-  }
-  func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor
-  ```
-  Model mirrors the atlas-doors RestModel fields the channel needs (owner, party, field, townMapId, slot, area/town positions, townPortalId, pairId, areaDoorId, townDoorId). Base URL via `DOORS_SERVICE_URL`/`BASE_SERVICE_URL` fallback (the standard channel REST pattern).
+// seams for tests
+var loadCaster = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (int16, int16, error) { /* character.GetById -> X,Y */ }
+var loadMap = func(l logrus.FieldLogger, ctx context.Context, mapId _map.Id) (fieldLimit uint32, town bool, hasReturn bool, err error) { /* data/map client */ }
+var emitSpawn = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId, skillId uint32, level byte, x, y int16) error { /* door.NewProcessor(l,ctx).Spawn(...) */ }
 
-- [ ] **Step 2: Implement `door_enter.go`.** Signature like `buddy_operation.go`:
-  ```go
-  func DoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, opts map[string]interface{})
-  ```
-  Decode via `serverbound.Enter`. Flow:
-  1. `GetInField(s.Field())` from atlas-doors; find the door whose `OwnerCharacterId == ownerId` present on the character's current map (area door map OR town map matching current map).
-  2. Validate requester is the owner **or** a current same-channel party member (read party via the existing channel party processor). If not, or if mid-map-change/banned → send the blocked message + re-enable actions (use the existing block helper) and return.
-  3. Determine destination from `direction` + which side the character is on: town side → warp to the area door map at area x/y; area side → warp to town map at town x/y. Use `portal.NewProcessor(l, ctx).Warp(s.Field(), s.CharacterId(), targetMapId)`.
-  4. Play the portal sound: `session.Announce(...)(clientbound.PlayPortalSoundWriter)(...)` to the entering session.
+func Apply(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+			fieldLimit, town, hasReturn, err := loadMap(l, ctx, f.MapId())
+			if err != nil { l.WithError(err).Warnf("mystic door map lookup failed"); return nil }
+			if town || !hasReturn || fieldLimit&_map.FieldLimitNoMysticDoor != 0 {
+				l.Debugf("mystic door rejected: town=%v hasReturn=%v limit=0x%x", town, hasReturn, fieldLimit)
+				return nil // client already re-enabled by UseSkill
+			}
+			x, y, err := loadCaster(l, ctx, characterId)
+			if err != nil { return nil }
+			return emitSpawn(l, ctx, f, characterId, uint32(info.SkillId()), skillLevel(info), x, y)
+		}
+	}
+}
+```
 
-- [ ] **Step 3: Register the handler name→func** in `main.go` `produceHandlers`:
-  ```go
-  handlerMap[doorsb.EnterDoorHandle] = handler.DoorEnterHandleFunc
-  ```
-  (Import the `door/serverbound` package as `doorsb`.) The opcode→validator mapping for `EnterDoorHandle` is added to tenant templates in Phase 5 with `LoggedInValidator`.
+(Resolve the cast level the same way Heal does — `skillLevel(info)` is whatever accessor
+`SkillUsageInfo` exposes; mirror `heal/heal.go`.)
 
-- [ ] **Step 4: Write the failing test** (inject the door-REST and party seams; assert warp called with the right target for each direction; assert ineligible requester is rejected without a warp):
-  ```go
-  func TestEnterDoorOwnerAreaToTownWarps(t *testing.T) {}
-  func TestEnterDoorTownToAreaWarps(t *testing.T) {}
-  func TestEnterDoorPartyMemberAllowed(t *testing.T) {}
-  func TestEnterDoorStrangerRejectedNoWarp(t *testing.T) {}
-  ```
+- [ ] **Step 4: Register the blank import** in `registrations.go`:
 
-- [ ] **Step 5: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run TestEnterDoor -v`
-  Expected after impl: PASS.
+```go
+_ "atlas-channel/skill/handler/mysticdoor" // Priest Mystic Door — task-093
+```
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-channel/atlas.com/channel/socket/handler/door_enter.go services/atlas-channel/atlas.com/channel/door services/atlas-channel/atlas.com/channel/main.go services/atlas-channel/atlas.com/channel/socket/handler/door_enter_test.go
-  git commit -m "feat(atlas-channel): enter-door handler (validate + warp via portal)"
-  ```
+- [ ] **Step 5: Run (PASS); build; commit.**
 
----
+Run: `cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/mysticdoor/ && go build ./... ; cd -`
 
-### Task 22: Door status consumer → broadcast
+```bash
+git add services/atlas-channel/atlas.com/channel/skill/handler/mysticdoor services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go
+git commit -m "feat(atlas-channel): route Mystic Door cast to door SPAWN command"
+```
+
+### Task G3: enter-door inbound handler
 
 **Files:**
+- Create: `services/atlas-channel/atlas.com/channel/socket/handler/mystic_door_enter.go`
+- Create: `services/atlas-channel/atlas.com/channel/socket/handler/mystic_door_enter_test.go`
+- Modify: `services/atlas-channel/atlas.com/channel/main.go` (`produceHandlers`)
+
+- [ ] **Step 1: Write the failing handler test** — decode `ownerId,direction`; with a
+seam-injected door lookup + party-membership check + warp func: a valid request (requester
+is owner or same-channel party member, door present on current map) calls warp to the
+linked map; an ineligible requester does NOT warp.
+
+- [ ] **Step 2: Run (FAIL).**
+
+- [ ] **Step 3: Implement the handler** (mirror `portal_script.go`), registered with
+`LoggedInValidator`:
+
+```go
+func MysticDoorEnterHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := doorsb.Enter{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		d, ok := findDoorOnMap(l, ctx, s.Field(), p.OwnerId(), s.CharacterId())
+		if !ok {
+			// blocked: re-enable actions (mirror existing blocked-message pattern)
+			return
+		}
+		targetMapId, _, _ := linkedDestination(d, s.Field()) // town side -> area; area side -> town
+		if err := portal.NewProcessor(l, ctx).Warp(s.Field(), s.CharacterId(), targetMapId); err != nil {
+			l.WithError(err).Warnf("mystic door warp failed")
+			return
+		}
+		playPortalSoundForSession(l, ctx, s) // reuse character simple-effect (context.md #9)
+	}
+}
+```
+
+`findDoorOnMap` reads atlas-doors (the G1 client), confirms a door owned by `ownerId` is
+present on `s.Field()` (area field or town map) and that `s.CharacterId()` is the owner or
+a current same-channel party member (channel party read). `playPortalSoundForSession`
+announces the existing portal-sound simple-effect — no new packet.
+
+- [ ] **Step 4: Register the handler** in `main.go` `produceHandlers()`:
+
+```go
+handlerMap[doorsb.EnterDoorHandle] = handler.MysticDoorEnterHandleFunc
+```
+
+(Validator binding is per-tenant config — Part H — and must be `LoggedInValidator`.)
+
+- [ ] **Step 5: Run (PASS); build; commit.**
+
+```bash
+git add services/atlas-channel/atlas.com/channel/socket/handler/mystic_door_enter.go services/atlas-channel/atlas.com/channel/socket/handler/mystic_door_enter_test.go services/atlas-channel/atlas.com/channel/main.go
+git commit -m "feat(atlas-channel): enter-door inbound handler (validate + warp + portal sound)"
+```
+
+### Task G4: door status consumer → broadcast
+
+**Files:**
+- Create: `services/atlas-channel/atlas.com/channel/kafka/consumer/door/kafka.go`
 - Create: `services/atlas-channel/atlas.com/channel/kafka/consumer/door/consumer.go`
-- Create: `services/atlas-channel/atlas.com/channel/kafka/consumer/door/kafka.go` (mirror the atlas-doors StatusEvent envelope locally)
-- Modify: `services/atlas-channel/atlas.com/channel/main.go` (register the consumer + handlers)
-- Test: `services/atlas-channel/atlas.com/channel/kafka/consumer/door/consumer_test.go`
+- Create: `services/atlas-channel/atlas.com/channel/socket/writer/door.go`
+- Create: `services/atlas-channel/atlas.com/channel/kafka/consumer/door/consumer_test.go`
+- Modify: `services/atlas-channel/atlas.com/channel/main.go` (consumer init + handler init + `produceWriters`)
 
-- [ ] **Step 1: Mirror the StatusEvent envelope** in `kafka.go` (CREATED/REMOVED/SLOT_CHANGED + bodies), matching the atlas-doors JSON shape. Topic env `EVENT_TOPIC_DOOR_STATUS`.
+- [ ] **Step 1: Define the channel copy of the door status contract** (`kafka.go`,
+byte-identical to atlas-doors D1 events: `StatusEvent[CreatedBody/RemovedBody/
+SlotChangedBody]`, the type + reason consts).
 
-- [ ] **Step 2: Implement the consumer** mirroring `kafka/consumer/monster/consumer.go`: `SetHeaderParsers(Span, Tenant)`, `InitConsumers`/`InitHandlers`. Handlers:
-  - **CREATED:** resolve eligible viewers = caster ∪ same-channel party members present in (a) the source field and (b) the town map. To the field viewers, `Announce` `SpawnDoorWriter` (area door). To the town viewers, `Announce` `SpawnDoorWriter` (town door) + `SpawnPortalWriter` (minimap portal). To all party members, send the party-portal update (`party/clientbound.NewCreatedWithDoor`). Eligibility = intersect `_map.NewProcessor.ForSessionsInMap(field)` with party membership (caster always included) — use `party.MemberInMap`/`OtherMemberInMap` filters (see context.md).
-  - **REMOVED:** `Announce` `RemoveDoorWriter` to both maps' eligible viewers + clear the party-portal (`NewCreated` zero-fill). Honor the deploy grace (FR-6.3): if the elapsed time since the matching CREATED is < ~3000ms, defer the remove broadcast by the remainder (track CREATED deploy time in a small per-pair in-memory map, or compare against `expiresAt - duration`). Document the chosen mechanism.
-  - **SLOT_CHANGED:** `Announce` `RemoveDoorWriter` for the old town placement then `SpawnDoorWriter`+`SpawnPortalWriter` for the new town placement to town viewers; update the party-portal.
+- [ ] **Step 2: Add channel Body wrappers** in `socket/writer/door.go`:
+`SpawnDoorBody(...)`, `RemoveDoorBody(...)`, `SpawnPortalBody(...)` mapping to the
+`libs/atlas-packet/door/clientbound` encoders (mirror `socket/writer/character_spawn.go`).
 
-- [ ] **Step 3: Register the consumer** in `main.go` alongside the other channel status consumers (monster/summon).
+- [ ] **Step 3: Write the failing consumer test** — `handleCreated` broadcasts `SpawnDoor`
+(area) to eligible field viewers and `SpawnDoor`+`SpawnPortal` to eligible town viewers;
+`handleRemoved` broadcasts `RemoveDoor` to both maps; eligibility = caster ∪ same-channel
+party members present in the map. Use the package-var broadcaster seam (mirror the mist
+consumer) so the test stubs session enumeration.
 
-- [ ] **Step 4: Write tests** with injected session-enumeration + party seams: CREATED announces spawnDoor to an in-field party member but not to a non-party in-field session; REMOVED announces removeDoor; SLOT_CHANGED re-announces at the new portal. Assert the writer names + target sessions.
+- [ ] **Step 4: Run (FAIL); implement `consumer.go`** mirroring
+`kafka/consumer/mist/consumer.go`: `InitConsumers`/`InitHandlers`, `sc.Is(tenant,
+WorldId, ChannelId)` guard (gives per-channel FR-6.5), then resolve eligible viewers and
+`Announce` the door packets. SLOT_CHANGED re-broadcasts the town door at the new portal +
+updates the party packet (G6).
 
-- [ ] **Step 5: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/door/ -v`
-  Expected after impl: PASS.
+```go
+// broadcastDoorToEligible announces `op` to sessions in `f` whose character is the owner
+// or a same-channel party member of the owner (caster always included).
+var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, ownerCharacterId, partyId uint32, writerName string, enc packet.Encode) {
+	members := partyMemberSet(l, ctx, ownerCharacterId, partyId) // includes owner
+	_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+		if _, ok := members[s.CharacterId()]; !ok { return nil }
+		return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
+	})
+}
+```
 
-- [ ] **Step 6: Commit**
-  ```bash
-  git add services/atlas-channel/atlas.com/channel/kafka/consumer/door services/atlas-channel/atlas.com/channel/main.go services/atlas-channel/atlas.com/channel/kafka/consumer/door/consumer_test.go
-  git commit -m "feat(atlas-channel): door status consumer → eligible-viewer broadcast"
-  ```
+- [ ] **Step 5: Register** in `main.go`: the writer-name consts in `produceWriters()`
+(`doorcb.SpawnDoorWriter`, `doorcb.RemoveDoorWriter`, `doorcb.SpawnPortalWriter`); the
+consumer in the consumer-init block (`doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)`)
+and handler-init block (`register(doorConsumer.InitHandlers(fl)(sc)(wp)(rh))`); the import
+alias.
 
----
+- [ ] **Step 6: Run (PASS); build; commit.**
 
-### Task 23: Map-enter spawn for self (FR-3.4)
+```bash
+git add services/atlas-channel/atlas.com/channel/kafka/consumer/door services/atlas-channel/atlas.com/channel/socket/writer/door.go services/atlas-channel/atlas.com/channel/main.go
+git commit -m "feat(atlas-channel): door status consumer broadcasts spawn/remove to party-scoped viewers"
+```
 
-**Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go` (`SpawnForSelf`, after line ~310)
-- Test: `services/atlas-channel/atlas.com/channel/kafka/consumer/map/door_spawn_test.go`
-
-- [ ] **Step 1: Add a door-spawn goroutine to `SpawnForSelf`.** After the existing spawn blocks, query atlas-doors `GetInField(f)` for the entering map; filter to doors whose owner is self or a same-channel party member; for each, `Announce` the appropriate spawn packets to the entering session only: area door (`SpawnDoorWriter`) if the map is the door's source field; town door (`SpawnDoorWriter` + `SpawnPortalWriter`) if the map is the door's town map. Reuse the same eligibility filter as Task 22 (extract a shared helper `eligibleDoorsFor(l, ctx, s, doors)` to keep DRY).
-
-- [ ] **Step 2: Write a test** asserting an entering session that is a party member receives spawn packets for an existing in-field door, and a non-party entrant receives none. Inject the door-REST + party seams.
-
-- [ ] **Step 3: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/map/ -run TestDoorSpawn -v`
-  Expected after impl: PASS.
-
-- [ ] **Step 4: Commit**
-  ```bash
-  git add services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go services/atlas-channel/atlas.com/channel/kafka/consumer/map/door_spawn_test.go
-  git commit -m "feat(atlas-channel): spawn eligible doors to entering session (FR-3.4)"
-  ```
-
----
-
-### Task 24: Leaver visibility revocation (FR-6.4)
-
-The engine re-slots on party change; the channel revokes a leaver's visibility (sends `removeDoor` to the leaver only, without destroying the door). Driven by the party event the channel already consumes.
+### Task G5: Map-enter spawn (FR-3.4)
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go` (or wherever the channel handles party membership events)
-- Test: `services/atlas-channel/atlas.com/channel/kafka/consumer/party/door_visibility_test.go`
+- Modify: `services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go` (SpawnForSelf block ~189-211)
+- Create the `spawnDoorsForSession` operator alongside `spawnReactorsForSession`
 
-- [ ] **Step 1: Locate the channel's party-status consumer.** Find where atlas-channel reacts to party membership changes (search `EVENT_TOPIC_PARTY_STATUS` consumers under `kafka/consumer/`). If none reacts to leaves yet, add a handler.
+- [ ] **Step 1: Write a failing test** of `spawnDoorsForSession`: a door whose owner is
+the entering session's character (or a same-channel party member) yields a `SpawnDoor`
+announce to that session; an ineligible door yields nothing.
 
-- [ ] **Step 2: On a leave event,** for the leaver's session, query atlas-doors for the party's other doors visible to the leaver and `Announce` `RemoveDoorWriter` to the leaver only (visibility revocation, not destruction). On a join event, (re)spawn the party's existing doors to the joiner's session (reuse the Task 23 eligible-spawn helper).
+- [ ] **Step 2: Run (FAIL); implement.** Add to the SpawnForSelf block:
 
-- [ ] **Step 3: Write a test** asserting the leaver receives removeDoor for a remaining party door (door still exists in the registry — not removed) and a joiner receives spawnDoor.
+```go
+go func() {
+	door.NewProcessor(l, ctx).ForEachInMap(f, spawnDoorsForSession(l)(ctx)(wp)(s))
+}()
+```
 
-- [ ] **Step 4: Run, expect FAIL, implement, re-run.**
-  Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/party/ -run TestDoorVisibility -v`
-  Expected after impl: PASS.
+`spawnDoorsForSession` filters to doors the session may see (owner is self or a
+same-channel party member of the owner) and announces the area `SpawnDoor` (or, in town,
+`SpawnDoor`+`SpawnPortal`). Reuse the eligibility helper from G4. (Add a `ForEachInMap` to
+the channel door client that reads `GetInField`.)
 
-- [ ] **Step 5: Commit**
-  ```bash
-  git add services/atlas-channel/atlas.com/channel/kafka/consumer/party
-  git commit -m "feat(atlas-channel): party join/leave door visibility delta (FR-6.4)"
-  ```
+- [ ] **Step 3: Run (PASS); build; commit.**
 
----
+```bash
+git add services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go services/atlas-channel/atlas.com/channel/door
+git commit -m "feat(atlas-channel): spawn eligible doors to arriving sessions"
+```
 
-### Task 25: atlas-channel module verification
-
-**Files:** none (verification only)
-
-- [ ] **Step 1: Build, vet, test the channel module.**
-  Run:
-  ```bash
-  cd services/atlas-channel/atlas.com/channel && go build ./... && go vet ./... && go test -race ./... && cd -
-  ```
-  Expected: all clean. Fix any wiring/regression (existing tests reference internal handler names — adjust call sites, don't rename blindly; memory: "Test files reference internal functions").
-
-- [ ] **Step 2: Build the packet lib.**
-  Run: `cd libs/atlas-packet && go build ./... && go vet ./... && go test -race ./... && cd -`
-  Expected: clean.
-
-- [ ] **Step 3: Commit (if any fixes were needed).**
-  ```bash
-  git add -A
-  git commit -m "test(atlas-channel): fix call sites after door wiring"
-  ```
-
----
-
-## Phase 5 — Per-version opcode coverage (OQ-5)
-
-This phase resolves opcodes + byte structures for the **non-v83** versions and wires every packet into tenant templates and live config. It is investigative (IDA/WZ). **An unresolved fname is a STOP-AND-ESCALATE — park that version/packet, do not guess** (memory `feedback_unresolved_fname_escalate`).
-
-### Task 26: Per-version packet structure verification matrix
+### Task G6: party minimap door indicator (the long-standing TODO)
 
 **Files:**
-- Modify: `docs/tasks/task-093-mystic-door/context.md` (append a "## Packet verification matrix" table)
-- Add per-version branches + golden tests to the Phase-3 packet files as needed.
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/party_operation.go` (or wherever the channel builds the party-created/update packet)
+- Modify: `docs/TODO.md` (update the stale entry at line ~146)
 
-- [ ] **Step 1: Build the matrix.** For each version `gms_v84, gms_v87, gms_v92, gms_v95, jms_v185` × each packet (`spawnDoor, removeDoor, spawnPortal, playPortalSound, partyPortal, enter-door`):
-  1. Select the version's IDB (`mcp__ida-pro__select_instance(port)` — v83/v87/v95/jms per memory `reference_ida_mcp_new_api`).
-  2. Resolve the opcode (handler + writer) and confirm the byte structure against the decompile. v84≡v83 for structure (verify the opcode row only).
-  3. Record opcode + "structure same/diff vs v83" in the matrix table.
-  4. If an fname doesn't resolve → mark the cell **PARKED** with the reason; do not invent bytes.
+- [ ] **Step 1: Wire live door data into the party-created packet.** When the channel
+emits a party-created/update for a member who owns a live door (read atlas-doors by owner),
+populate the new door fields added in F5 (town map id, target map id, minimap x/y) instead
+of the empty sentinel. Send to party members so the door shows on their minimap (FR-3.3).
 
-- [ ] **Step 2: Add per-version encode/decode branches** to the Phase-3 packet files wherever structure diverges from v83, each guarded by `MajorVersion() >= 87` / region checks (not `> 83`). Add a golden-byte test per (version × packet) that has a confirmed structure.
+- [ ] **Step 2: Update the stale TODO.** In `docs/TODO.md`, change the
+`Write doors for party` entry (~line 146) to reflect the implemented wiring (point at
+`libs/atlas-packet/party/clientbound/created.go` + this channel handler) and mark it
+done/remove it per the /dev-docs format.
 
-- [ ] **Step 3: Run the packet lib tests.**
-  Run: `cd libs/atlas-packet && go test -race ./door/... ./party/clientbound/... && cd -`
-  Expected: PASS for every non-parked cell.
+- [ ] **Step 3: Build; commit.**
 
-- [ ] **Step 4: Commit**
-  ```bash
-  git add libs/atlas-packet/door docs/tasks/task-093-mystic-door/context.md
-  git commit -m "feat(atlas-packet): per-version door packet structures + matrix (OQ-5)"
-  ```
+```bash
+git add services/atlas-channel/atlas.com/channel/socket/handler/party_operation.go docs/TODO.md
+git commit -m "feat(atlas-channel): party minimap door indicator (resolves doors-for-party TODO)"
+```
 
----
+### Task G7: channel build + test sweep
 
-### Task 27: Tenant socket template opcode rows
+- [ ] **Step 1: Run.**
 
-**Files:**
-- Modify: the tenant socket templates for each version (handlers + writers). Locate them: `grep -rln "EnterDoor\|socket.handlers\|socket.writers" deploy/ services/atlas-tenants` and the seed templates (search for where other handler/writer opcodes are defined per version).
+Run: `cd services/atlas-channel/atlas.com/channel && go vet ./... && go test -race ./... && go build ./... ; cd -`
+Expected: clean.
 
-- [ ] **Step 1: Find the template source.** Identify where per-version `socket.handlers` and `socket.writers` rows live (seed templates / tenant config). Confirm the structure with an existing entry (e.g. a recently-added writer like a monster/mount packet).
+- [ ] **Step 2: Bake the channel image** (its go.mod was touched).
 
-- [ ] **Step 2: Add writer rows** for `SpawnDoor`, `RemoveDoor`, `SpawnPortal`, `PlayPortalSound` (and confirm the party-operation writer already exists — partyPortal reuses `PartyOperation`) for every non-parked version, using the opcodes from Task 26.
+Run: `docker buildx bake atlas-channel`
+Expected: builds.
 
-- [ ] **Step 3: Add the handler row** for `EnterDoor` for every non-parked version, **each with a validator** (`LoggedInValidator`). A validator-less handler is silently dropped (memory `bug_socket_handler_missing_validator_silently_dropped`).
-
-- [ ] **Step 4: Build/validate the template format** (run whatever schema check the repo provides for templates, or at minimum `go build` of atlas-tenants if templates are Go-embedded).
-
-- [ ] **Step 5: Commit**
-  ```bash
-  git add -A
-  git commit -m "feat(tenants): door packet handler/writer opcode rows (all versions)"
-  ```
+- [ ] **Step 3: Commit any fixes.**
 
 ---
 
-### Task 28: Live tenant config patch (deploy step) + k8s manifest
+# PART H — Per-version opcode wiring & verification matrix
 
-**Files:**
-- Create: `deploy/k8s/base/atlas-doors.yaml`
-- Modify: any kustomize overlay that enumerates services (if the repo lists deployments per overlay)
-- Document: append a "## Deploy / live-config steps" section to context.md
+Goal: make the four door packets (`SpawnDoor`, `RemoveDoor`, `SpawnPortal` writers +
+`EnterDoor` handler) live on **every** supported version by adding tenant socket-template
+opcode rows (with validators) and patching live tenant config — each opcode + byte layout
+**verified against IDA**, never guessed.
 
-- [ ] **Step 1: Author `deploy/k8s/base/atlas-doors.yaml`** — Deployment + Service mirroring `deploy/k8s/base/atlas-summons.yaml`. Env: Redis, Kafka brokers, `COMMAND_TOPIC_DOOR`, `EVENT_TOPIC_DOOR_STATUS`, `EVENT_TOPIC_CHARACTER_STATUS`, `EVENT_TOPIC_PARTY_STATUS`, `DOOR_LEADER_*`, and DATA/PARTY service URLs via `BASE_SERVICE_URL` fallback (do NOT hard-code `*_SERVICE_URL` from the kustomize base — memory `bug_service_url_hardcoded_base_namespace`). Readiness probe path **`/api/readyz`** (memory `bug_readiness_probe_path_under_api_basepath`).
+> **This is the "version done" gate.** Versions: `gms_v83`, `gms_v84`, `gms_v87`,
+> `gms_v92`, `gms_v95`, `jms_v185`. Per FR-7.4 and the memory rules, **an op whose fname
+> does not resolve in the IDA export is a STOP-AND-ESCALATE** — do not auto-substitute an
+> fname, re-export, or fake a hash. Park that version's opcode (like the v92 mount-food
+> handler) and surface it to the user.
 
-- [ ] **Step 2: Add the channel env** for `COMMAND_TOPIC_DOOR` / `EVENT_TOPIC_DOOR_STATUS` / `DOORS_SERVICE_URL` to the atlas-channel deployment manifest if topic/URL envs are declared there.
+### Task H1: Locate the socket templates and the opcode-config shape
 
-- [ ] **Step 3: Document the live-config patch** in context.md: existing tenants do NOT auto-receive the new handler/writer opcodes — they must be patched into live tenant config and the **channel restarted** (projection does not hot-reload handlers/writers — memory `bug_new_opcodes_not_in_live_tenant_config`). List the exact opcodes per version to patch. (This is an operational step performed at deploy time, not in code.)
+- [ ] **Step 1: Find the tenant socket templates** (seed configs) and the live-config
+shape. Search the repo for where existing handler/writer opcode rows live for a known
+packet (e.g. `PortalScriptHandle`, `CharacterSpawn`) across versions — those are the files
+Part H edits. Document the exact path(s) and the row schema (writer name → opcode; handler
+name → opcode + `validator`). (Per-version templates + live config must both be patched;
+projection does not hot-reload handlers/writers.)
 
-- [ ] **Step 4: Validate kustomize.**
-  Run: `kubectl kustomize deploy/k8s/base >/dev/null` (or the repo's standard kustomize validation).
-  Expected: no error; `atlas-doors` resources render.
+- [ ] **Step 2: Write down the matrix** as a checklist: 4 packets × 6 versions = 24 cells,
+each needing (a) opcode resolved from IDA, (b) byte layout confirmed, (c) template row
+added (handler rows include `LoggedInValidator`), (d) golden test, (e) live-config patch.
 
-- [ ] **Step 5: Commit**
-  ```bash
-  git add deploy/k8s docs/tasks/task-093-mystic-door/context.md
-  git commit -m "feat(deploy): atlas-doors k8s manifest + live-config notes"
-  ```
+### Task H2: gms_v83 opcodes + golden bytes (baseline)
+
+- [ ] **Step 1: Resolve the four v83 opcodes from the v83 IDA export** (ida-pro-mcp v83
+instance; fname→opcode per `reference_packet_audit_tool_mechanics` /
+`reference_ida_mcp_new_api`). If any fname does not resolve, STOP and escalate.
+
+- [ ] **Step 2: Confirm the v83 byte layout** for each packet against the decompile and
+finalize the `libs/atlas-packet/door` encoders' v83 path (adjust F2-F4 if IDA differs from
+the Cosmic-derived layout — IDA is the source of truth).
+
+- [ ] **Step 3: Add the v83 template rows** (3 writers + 1 handler with `LoggedInValidator`).
+
+- [ ] **Step 4: Add/confirm the v83 golden-byte tests** in the packet lib (the
+`// packet-audit:verify packet=… version=gms_v83 ida=0x…` comment lines).
+
+- [ ] **Step 5: Commit.**
+
+```bash
+git add libs/atlas-packet/door <template files>
+git commit -m "feat(task-093): gms_v83 door opcodes + verified golden bytes"
+```
+
+### Task H3: gms_v84 opcodes
+
+- [ ] **Step 1: Resolve v84 opcodes from the v84/v83 IDA** — the opcode TABLE shifts vs v83
+above ~0x3D (bug `v84_opcode_table_shifted_vs_v83`); structure is v83-identical
+(off-by-one) but opcode values may differ. Verify each; escalate unresolved fnames.
+
+- [ ] **Step 2: Add v84 template rows + golden tests** (structure == v83; assert
+`bytes.Equal` to the v83 encoding). Commit.
+
+### Task H4: gms_v87 opcodes
+
+- [ ] **Step 1: Resolve v87 opcodes from the v87 IDA.** v87 is where structure may diverge
+(`MajorAtLeast(87)` branch). If the door packets diverge structurally, add the branch in
+F2-F4 + a v87 golden test; else assert v87 stays on the v87 path. Note bug
+`v87_template_missing_core_opcodes` — v87 templates have known gaps; do not assume an
+existing row. Escalate unresolved fnames.
+
+- [ ] **Step 2: Add v87 template rows + golden tests. Commit.**
+
+### Task H5: gms_v92 + gms_v95 opcodes
+
+- [ ] **Step 1: Resolve v95 opcodes from the v95 IDA; resolve v92 opcodes** against
+whatever v92 IDB is available — if none resolves an opcode, park that version per the
+escalation rule.
+
+- [ ] **Step 2: Add v92 + v95 template rows + golden tests. Commit.**
+
+### Task H6: jms_v185 opcodes
+
+- [ ] **Step 1: Resolve jms_v185 opcodes from the jms IDA** (audit-dir caveat:
+`reference_packet_audit_jms_dirname_mismatch` — pass the explicit audit dir; the jms IDA
+is a separate instance). jms diverges from gms — confirm the byte layout independently.
+Escalate unresolved fnames.
+
+- [ ] **Step 2: Add jms_v185 template rows + golden tests. Commit.**
+
+### Task H7: Live tenant config patch
+
+- [ ] **Step 1: For each existing live tenant**, patch the live socket config to add the 4
+door opcode rows (3 writers + 1 handler with `LoggedInValidator`) — existing tenants do
+NOT auto-receive new opcodes (bug `new_opcodes_not_in_live_tenant_config`). Document the
+patch + the channel restart requirement (projection does not hot-reload handlers/writers).
+Capture this as a deploy runbook step in the PR description (or commit it if live config is
+repo-managed).
 
 ---
 
-## Phase 6 — Full verification
+# PART I — Final verification & branch finish
 
-### Task 29: Full build/test/bake/guard sweep
+### Task I1: Full multi-module verification
 
-**Files:** none (verification only)
+- [ ] **Step 1: atlas-doors.**
 
-- [ ] **Step 1: Test + vet + build every changed module.**
-  Run (from worktree root):
-  ```bash
-  for d in services/atlas-doors/atlas.com/doors services/atlas-channel/atlas.com/channel libs/atlas-packet; do
-    echo "== $d =="; (cd "$d" && go test -race ./... && go vet ./... && go build ./...) || break
-  done
-  ```
-  Expected: all clean.
+Run: `cd services/atlas-doors/atlas.com/doors && go test -race ./... && go vet ./... && go build ./... ; cd -`
+Expected: all clean.
 
-- [ ] **Step 2: redis-key-guard.**
-  Run: `GOWORK=off tools/redis-key-guard.sh`
-  Expected: no findings.
+- [ ] **Step 2: atlas-channel.**
 
-- [ ] **Step 3: docker buildx bake the touched go-mod services.**
-  Run (from worktree root):
-  ```bash
-  docker buildx bake atlas-doors
-  docker buildx bake atlas-channel
-  ```
-  Expected: both succeed. (atlas-doors adds no new shared lib, so the root Dockerfile needs no edit — confirm the build proves it.)
+Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./... && go build ./... ; cd -`
+Expected: all clean.
 
-- [ ] **Step 4: Confirm registration completeness.** Verify `atlas-doors` appears in: `.github/config/services.json`, `docker-bake.hcl` `go_services`, `go.work`, and `deploy/k8s/base/atlas-doors.yaml`. Confirm the root `Dockerfile` was NOT edited (no new lib).
-  ```bash
-  grep -q atlas-doors .github/config/services.json && grep -q '"atlas-doors"' docker-bake.hcl && grep -q atlas-doors go.work && test -f deploy/k8s/base/atlas-doors.yaml && echo "registration OK"
-  ```
-  Expected: `registration OK`.
+- [ ] **Step 3: libs/atlas-packet.**
 
-- [ ] **Step 5: Acceptance-criteria self-check.** Walk the PRD §10 acceptance checklist against the implemented tasks; note any gap in context.md. (Code review in the next step is the formal gate.)
+Run: `cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./... ; cd -`
+Expected: all clean.
 
-- [ ] **Step 6: Commit any final fixes.**
-  ```bash
-  git add -A && git commit -m "chore(task-093): final verification sweep" || echo "nothing to commit"
-  ```
+- [ ] **Step 4: rediskeyguard.**
 
----
+Run: `GOWORK=off tools/redis-key-guard.sh`
+Expected: clean.
 
-### Task 30: Code review
+- [ ] **Step 5: Bake every touched service** (go.mod touched: atlas-doors + atlas-channel).
 
-**Files:** `docs/tasks/task-093-mystic-door/audit.md` (written by reviewers)
+Run: `docker buildx bake atlas-doors && docker buildx bake atlas-channel`
+Expected: both images build.
 
-- [ ] **Step 1: Run the code-review step BEFORE opening a PR** (CLAUDE.md "Code Review Before PR"). Invoke `superpowers:requesting-code-review`; it dispatches `plan-adherence-reviewer` + `backend-guidelines-reviewer` (Go files changed). Address findings via `superpowers:receiving-code-review`.
+- [ ] **Step 6: kustomize.**
 
-- [ ] **Step 2: Re-run the Task 29 verification sweep** after addressing review findings.
+Run: `kubectl kustomize deploy/k8s/base >/dev/null && echo OK`
+Expected: `OK`.
 
-- [ ] **Step 3: Only then** proceed to `superpowers:finishing-a-development-branch`.
+### Task I2: Acceptance-criteria walkthrough + review
+
+- [ ] **Step 1: Tick the PRD §10 acceptance criteria** against the implementation, noting
+runtime-only (live-client) items vs unit-covered, and the per-version matrix status (fully
+verified vs parked-and-escalated).
+
+- [ ] **Step 2: Code review.** Run `superpowers:requesting-code-review` (dispatches
+`plan-adherence-reviewer` + `backend-guidelines-reviewer`; the latter enforces DOM-21
+reuse of `libs/atlas-constants`). Address findings. **Do not open the PR before the
+review** (CLAUDE.md "Code Review Before PR").
+
+- [ ] **Step 3: Finish the branch** via `superpowers:finishing-a-development-branch` only
+after every Build & Verification gate above is green.
 
 ---
 
-## Self-review (plan author)
+## Spec-coverage map (self-review)
 
-**Spec coverage (PRD §4 FRs → tasks):**
-- FR-1.1 cast routing → Task 20. FR-1.2 rejections → Task 20 (channel) + Task 11 (engine re-check). FR-1.3 MP/Magic Rock consume → no task needed (OQ-1: existing `UseSkill` path; verified in design §1). FR-1.4 recast replace → Task 11 Step 2.
-- FR-2.1/2.2/2.3 paired door, shared oid, return town → Tasks 2, 4, 11, 6.
-- FR-3.1–3.4 visibility/broadcast/map-enter → Tasks 22, 23.
-- FR-4.1–4.3 slot assignment + re-slot → Tasks 3, 11, 14.
-- FR-5.1–5.4 enter/warp → Tasks 19, 21.
-- FR-6.1 expiry → Task 15. FR-6.2 disconnect/channel/leave-field cleanup → Task 13. FR-6.3 deploy grace → Task 22 Step 2. FR-6.4 party membership → Tasks 14, 24. FR-6.5 per-channel → enforced by channel eligibility (Tasks 22/23). FR-6.6 ephemeral → Task 5 (Redis-only).
-- FR-7.1–7.4 version coverage → Tasks 17–19 (v83) + 26–28 (other versions, templates, live config).
-- API §5: atlas-doors REST → Task 16; Kafka topics → Tasks 9, 12; channel edge → Tasks 20–24; cross-service reads → Tasks 6, 7, 8.
-- Data model §6 → Tasks 2, 5. Service impact §7 → all phases. NFRs §8 → Tasks 5 (multi-tenancy/redis-guard), 11 (concurrency/resilience), 15 (cleanup backstop), 22 (client safety). Registration §10 → Tasks 1, 28.
+| PRD requirement | Task(s) |
+|---|---|
+| FR-1.1 route 2311002 to spawn | G2 |
+| FR-1.2 cast rejections (field-limit/town/no-return/no-slot) | G2 (channel pre-checks), D3/resolver (engine re-check) |
+| FR-1.3 MP + Magic Rock consume (data-derived, no double) | Existing `UseSkill` (context.md #7); C2 effect client |
+| FR-1.4 recast replaces prior door | D3 `Spawn` recast |
+| FR-2.1 paired area+town door | B1 model, D3 |
+| FR-2.2 shared object-id pool (2 oids) | B2, D3 |
+| FR-2.3 return town from atlas-data | C1, C5, resolver |
+| FR-3.1/3.2 field+town visibility to party | G4, G5 |
+| FR-3.3 spawnPortal + party minimap indicator | F4, F5, G4, G6 |
+| FR-3.4 map-enter spawn | G5 |
+| FR-4.1/4.2 slot = party index → 0x80+slot | C3, C4 |
+| FR-4.3 re-slot on membership change | E3, D3 `Reslot` |
+| FR-5.1 enter-door decode | F1 |
+| FR-5.2 ownership/party validation | G3 |
+| FR-5.3 warp + portal sound | G3 (warp via portal.Warp; sound via existing simple-effect) |
+| FR-5.4 reject mid-map-change/banned | G3 |
+| FR-6.1 expiry removal + broadcast | E4, G4 |
+| FR-6.2 removal on logout/channel/left-field | E2, D3 `RemoveByOwnerIfLeftField` |
+| FR-6.3 deploy grace | E4 |
+| FR-6.4 join/leave/disband re-slot behavior | E3 |
+| FR-6.5 per-channel | E2 (channel-changed removal), G4 (`sc.Is` channel guard) |
+| FR-6.6 ephemeral (Redis, no relational) | B3 |
+| FR-7.1 all packets all versions | F, H |
+| FR-7.2 per-version opcodes + live config | H |
+| FR-7.3 handler validator present | H (LoggedInValidator rows) |
+| FR-7.4 bytes verified per version (no v83 assumption) | H (IDA), F golden tests |
+| §5.1 REST GET door + in-field | D4 |
+| §5.1 Kafka command/event topics | D1, E1 |
+| §10 build/bake/vet/test/rediskeyguard clean | I1 |
+| §10 service registration (services.json/bake/go.work/Dockerfile/k8s) | A4, A5 (Dockerfile: no edit — context.md) |
 
-**Placeholder scan:** Packet byte tasks (17–19, 26) intentionally instruct "read Cosmic/IDA, transcribe exact bytes, golden-byte test" rather than inlining fabricated bytes — this honors the project's Verification-Over-Memory rule (fabricating packet bytes would be the real failure). All other code steps contain concrete code.
+## Notes carried for the executor
 
-**Type consistency:** `door.Model` getters/builder (Task 2) are reused verbatim in Tasks 3–16. Envelope types (Task 9) are consumed by Tasks 10–14 and mirrored (not imported) channel-side in Tasks 20–22. Writer-name consts (`SpawnDoorWriter`, `RemoveDoorWriter`, `SpawnPortalWriter`, `PlayPortalSoundWriter`, Tasks 17–18) and `EnterDoorHandle` (Task 19) are referenced consistently in Tasks 21–23, 27.
-
-**Known gap flagged for execution:** the atlas-summons template lives in the task-088 sibling worktree (not merged). Every "copy from atlas-summons" step depends on that worktree existing at execution time; if it is gone, fall back to `atlas-monsters` patterns (context.md). atlas-doors must never import atlas-summons.
+- **Mirror `atlas-monsters`** for all engine boilerplate (registry, allocator, leader,
+  kafka, tasks) — `atlas-summons` is NOT in this branch.
+- **Opcodes are tenant config, not Go.** Go branches on structure only.
+- **`playPortalSound` is the existing character simple-effect** — do not add a packet.
+- **Per-version door bytes/opcodes: IDA-verify or escalate.** Never guess; never fake a
+  hash; park a version whose fname won't resolve (like v92 mount-food).
+- **Confirm Cosmic byte order** for `spawnDoor`/`removeDoor`/`spawnPortal`/enter-door
+  against `~/source/Cosmic/.../PacketCreator.java` + `DoorHandler.java` before finalizing
+  the F-task encoders; IDA (Part H) is the final arbiter.

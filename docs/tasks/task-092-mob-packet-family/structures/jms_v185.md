@@ -182,6 +182,23 @@ were not rostered (see blockers).
 - **calls (0):**
   - (no Decode/Encode calls captured — void handler or reads via descended helper)
 
+### CUserLocal::TryDoingBodyAttack
+- **address:** 0xa2ab71
+- **direction:** sb (TOUCH_MONSTER_ATTACK)
+- **calls (0):**
+  - (NAMED 2026-06-13 — was `sub_A2AB71`; renamed to the v95-canonical mangled symbol.
+    Hex-Rays FAILS to auto-decompile this 0x1a3a-byte jms function, so the export harvester
+    records it `unresolved: "decompilation failed; hand-trace"` and it was NOT merged into
+    the export JSON. The symbol now exists in the IDB and resolves by address for manual
+    evidence. Identity is byte-confirmed by: called twice from `Update@CUserLocal` immediately
+    after `FindBodyAttackMob@CMobPool` (0xA0B539→0xA0B614/0xA0B69B, the left/right facing
+    body-attack sweep — exactly the v95 pattern); callee fingerprint GetRandomHitAction@CMob +
+    GetHitPoint@CMob + AddDamageInfo@CMob + GetCurrentAction/FrameIndex@CMob + IsVulnerableTo;
+    and a stack frame with body-attack locals `rcAttack`/`nAttackIdx`/`bMoveLeft`/
+    `nMoveEndingPosX`/`nMoveType`/`nSkillID`/`bLeft`/`bChase`. Wire layout = v83/v95-equivalent
+    TOUCH_MONSTER_ATTACK; transcribe the v83 send-site (opcode + Encode order) until the jms
+    COutPacket build site is hand-traced from disasm.)
+
 ### CWvsContext::OnBridleMobCatchFail
 - **address:** 0xaec5ed
 - **calls (3):**
@@ -222,7 +239,7 @@ were not rostered (see blockers).
 
 | op | dir | opcode | registry fname | status |
 |---|---|---|---|---|
-| TOUCH_MONSTER_ATTACK | sb | 38 | CUserLocal::TryDoingBodyAttack | UNRESOLVED — no `TryDoingBodyAttack`/`DoingBodyAttack` symbol in jms IDB (unnamed send-site) |
+| TOUCH_MONSTER_ATTACK | sb | 38 | CUserLocal::TryDoingBodyAttack | **NAMED 2026-06-13** (was `sub_A2AB71` @0xA2AB71; rename saved). Symbol now resolves by address. **NOT auto-harvestable**: jms Hex-Rays fails to decompile it, so the export carries no captured layout — hand-trace the COutPacket build site or inherit the v83/v95 layout for the byte spec. See byte-layout entry above for the identity evidence. |
 | CATCH_MONSTER | cb | 268 | CMob::OnCatchEffect | RESOLVED via alt — fname unnamed; pin against `CMob::ShowCatchEffect` @0x6E5F77 (in export) or `sub_6EAE5F` @0x6EAE5F. Layout = 1×Decode1. |
 
 MOB_SPEAKING / INC_MOB_CHARGE_COUNT / MOB_SKILL_DELAY and the GMS clientbound escort/next

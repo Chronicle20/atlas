@@ -397,6 +397,11 @@
         "handler": "PetFoodHandle"
       },
       {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
+      },
+      {
         "opCode": "0x4F",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle"

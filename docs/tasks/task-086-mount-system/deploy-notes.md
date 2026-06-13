@@ -117,3 +117,37 @@ checklist is `deploy/k8s/README.md` "Adding a new service". For atlas-mounts spe
 Verification that the env came up: `atlas-mounts` pod Running/Ready on `...:pr-<N>-<sha>`, logs show
 Redis connect + the three `*_TOPIC_*-<env>` consumers + the 60s tiredness task + HTTP :8080, and Argo
 app health `Healthy`.
+
+## Task 41b findings — food 0x4D + SET_TAMING_MOB_INFO (v83, IDA-verified 2026-06-13)
+
+Verified against the v83 client (`MapleStory_dump.exe`, IDA port 13337):
+
+### Food request (inbound, 0x4D) — CONFIRMED, now wired
+`CWvsContext::SendTamingMobFoodItemUseRequest(short slot, int itemId)` builds
+`COutPacket(0x4D); Encode4(get_update_time()); Encode2(slot); Encode4(itemId)`, gated to
+equipped tamed-mob (`/10000==190`) + class-226 food (`itemId/10000==226`). Body =
+`int32 ts, int16 slot, int32 itemId` — **exactly** atlas `mount/serverbound.Food`. The handler
+was registered in the channel binary (`main.go`) but the opcode→handler mapping was **missing from
+every tenant config** (seed templates + live tenants), so the keypress no-op'd ("unhandled op").
+Fixes:
+- Seed: added `{opCode:"0x4D", validator:"LoggedInValidator", handler:"MountFoodHandle"}` to
+  `template_gms_83_1.json` `socket.handlers` (after `0x4C` PetFoodHandle; `0x4D` was free inbound).
+- Live PR tenant `caceb952-…` (GMS 83.1): PATCHed the same entry into
+  `/configurations/tenants/{id}` and restarted atlas-channel (handlers don't hot-reload).
+- **Other versions (v87/v95/JMS/12/92): opcode NOT yet verified** — the serverbound table shifts
+  across versions; do not copy 0x4D blindly. Verify per client before adding to those templates.
+
+### SET_TAMING_MOB_INFO (outbound writer) — NO standalone opcode on v83
+The mount level/exp/tiredness is **not** broadcast as its own packet on v83. It is delivered
+**inside `LP_CharacterInfo`** (`CWvsContext::OnCharacterInfo`): after the avatar/pet block,
+`Decode1(hasTamingMob)`, then `Decode4(level), Decode4(exp), Decode4(tiredness)` →
+`CUIUserInfo::SetTamingMobInfo(level, exp, tiredness)` (3 ints, **no characterId, no levelUp**).
+The atlas `SetTamingMobInfo` writer (`characterId,level,exp,tiredness,levelUp`) is a *later-version*
+`LP_SetTamingMobInfo` shape and has **no v83 opcode to map to** — the SET/TICK/FEED broadcast from
+the mount-status consumer is a dead no-op on v83 (writer name resolves to no opcode).
+Implication / open work:
+- To surface mount stats on v83, atlas must inject the `hasTamingMob + level/exp/tiredness` block
+  into its **character-info response** (query atlas-mounts for the active mount), not broadcast a
+  standalone packet. This is a char-info-integration feature, not an opcode registration.
+- The standalone writer (Task 5/26/27) should be guarded/disabled for GMS<87 (and verified to be a
+  real opcode on v87/v95/JMS before enabling there).

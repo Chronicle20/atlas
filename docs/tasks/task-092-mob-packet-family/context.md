@@ -105,7 +105,7 @@ these have serverbound registry rows — **opcodes to be read per file during Ph
 1. **MOB_SPEAKING / INC_MOB_CHARGE_COUNT / MOB_SKILL_DELAY** — registry fnames cross-mislabeled in v83/v84/v87 (opcode-cluster off-by-one). Confirm correct fname per version against the IDB; fix the yaml row (`provenance: manual`, IDA citation in `note`).
 2. **MONSTER_BOOK_COVER (serverbound)** — registry row exists but `fname` missing/empty. Derive send-site from the IDB; set `fname` (`provenance: ida-discovered`, address in `ida.address`).
 3. **MOB_ESCORT_RETURN_STOP, MOB_ESCORT_RETURN_STOP_SAY** — not found in ANY registry. If the IDB shows them (likely v95-only), add `(op, direction, opcode, fname, provenance: ida-discovered)` rows; else document as non-existent and drop from scope with evidence.
-4. **Export resolvability** — before any `evidence pin`, confirm each op's `fname` resolves in `docs/packets/ida-exports/<version>…json`. If a fname is absent from the export, `evidence pin` fails; that op needs a re-export (task-081 playbook) — surface it as a blocker, do not fake the hash.
+4. **Export resolvability** — before any `evidence pin`, confirm each op's `fname` resolves in `docs/packets/ida-exports/<version>…json`. If a fname is absent from the export, `evidence pin` fails; that op needs a re-export (task-081 playbook). **ESCALATE every unresolved fname to the user — stop and ask; do not auto-re-export, substitute a fname, or fake the hash.**
 
 ---
 

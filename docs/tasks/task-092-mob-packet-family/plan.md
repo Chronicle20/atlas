@@ -115,7 +115,7 @@ for V in gms_v83 gms_v84 gms_v87 gms_v95 jms_v185; do \
     --ida "<fname>" --category TIER1-FIXTURE ; done
 ```
 
-(If `pin` reports "function … not in export", STOP — that version's export lacks the fname; record it as a blocker per context.md §3.4, do not fabricate.)
+(If `pin` reports "function … not in export", STOP and ESCALATE to the user — that version's export lacks the fname. Do not fabricate the hash, auto-re-export, or silently substitute a fname; present it to the user and wait for a decision per context.md §3.4.)
 
 - [ ] **R-CB.7 — Register the writer.** Add `<pkg-alias>.<Op>Writer` to `produceWriters()` (main.go:592-693, sorted near sibling writers). Create `socket/writer/<op>.go`:
 
@@ -203,7 +203,7 @@ For `SET_TAMING_MOB_INFO` (encoder + golden test already exist; see context.md �
 - [ ] **Step 1:** List the export files: `ls docs/packets/ida-exports/`.
 - [ ] **Step 2:** For each of the 42 ops × applicable versions, check the op's `fname` (context.md §2) resolves in the matching export JSON's `functions` map. Use a throwaway Go/jq script: for each version key, `jq '.functions | keys[]' <export>` and grep for each fname.
 - [ ] **Step 3:** Write `structures/export-gaps.md`: a table of (op, version, fname, resolves? Y/N). Every "N" is a pin blocker — flag whether re-export (task-081 playbook) is needed or the fname string differs from the export's key (demangled vs mangled — see memory `reference_ida_mcp_new_api`).
-- [ ] **Step 4:** Commit.
+- [ ] **Step 4: ESCALATE any "N" to the user.** Do NOT auto-trigger a re-export or pick a substitute fname. Stop and present the unresolved (op, version, fname) list to the user for a decision (re-export vs fname correction vs descope). Resume only after the user responds. Commit `structures/export-gaps.md`.
 
 ### Task 0.3: Registry gap inventory
 

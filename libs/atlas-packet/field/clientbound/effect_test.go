@@ -30,6 +30,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldEffectRewardRullet version=gms_v84 ida=0x53f37d
 // packet-audit:verify packet=field/clientbound/FieldEffectSummon version=gms_v84 ida=0x53f37d
 // packet-audit:verify packet=field/clientbound/FieldEffectTremble version=gms_v84 ida=0x53f37d
+// packet-audit:verify packet=field/clientbound/FieldEffectString version=gms_v84 ida=0x53f37d
 func TestFieldEffectSummon(t *testing.T) {
 	input := NewFieldEffectSummon(0, 3, 100, 200)
 	for _, v := range test.Variants {

@@ -21,6 +21,7 @@ import (
 // packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v87 ida=0xad7ae5
 // packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v95 ida=0xa12630
 // packet-audit:verify packet=buddy/clientbound/BuddyInvite version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v84 ida=0xa8ada2
 func TestBuddyInviteByteOutput(t *testing.T) {
 	const name = "TestPlayer"
 	// offset of the first field after the ascii string: mode(1)+originatorId(4)+lenPrefix(2)+len(name)

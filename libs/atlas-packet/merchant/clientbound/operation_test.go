@@ -40,6 +40,8 @@ import (
 // packet-audit:verify packet=merchant/clientbound/FreeFormNotice version=gms_v84 ida=0xa73538
 // packet-audit:verify packet=merchant/clientbound/ShopRename version=gms_v84 ida=0xa73538
 // packet-audit:verify packet=merchant/clientbound/ShopSearch version=gms_v84 ida=0xa73538
+// packet-audit:verify packet=merchant/clientbound/OpenShop version=gms_v84 ida=0xa73538
+// packet-audit:verify packet=merchant/clientbound/RemoteShopWarp version=gms_v84 ida=0xa73538
 func TestOpenShop(t *testing.T) {
 	input := NewOpenShop(7)
 	for _, v := range test.Variants {

@@ -1,0 +1,8 @@
+packet: fame/clientbound/ErrorResponse
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGivePopularityResult#ErrorResponse
+    address: "0xa6d8ee"
+    decompile_sha256: 61167d1738f05c776ad1992b631afb45ddc4bc500b8dab7fe8807317257e8671

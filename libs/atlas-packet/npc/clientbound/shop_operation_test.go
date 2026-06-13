@@ -18,6 +18,9 @@ import (
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=jms_v185 ida=0x7cb04e
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=jms_v185 ida=0x7cb04e
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationSimple version=jms_v185 ida=0x7cb04e
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationGenericError version=gms_v84 ida=0x77905b
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationLevelRequirement version=gms_v84 ida=0x77905b
+// packet-audit:verify packet=npc/clientbound/NpcShopOperationSimple version=gms_v84 ida=0x77905b
 func TestShopOperationSimple(t *testing.T) {
 	input := NewShopOperationSimple(0)
 	for _, v := range pt.Variants {

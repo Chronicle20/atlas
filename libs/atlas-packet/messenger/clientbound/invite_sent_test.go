@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=messenger/clientbound/MessengerInviteSent version=gms_v87 ida=0x8b978f
 // packet-audit:verify packet=messenger/clientbound/MessengerInviteSent version=gms_v95 ida=0x7f5030
 // packet-audit:verify packet=messenger/clientbound/MessengerInviteSent version=jms_v185 ida=0x8e4515
+// packet-audit:verify packet=messenger/clientbound/MessengerInviteSent version=gms_v84 ida=0x87cbd8
 func TestMessengerInviteSentRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

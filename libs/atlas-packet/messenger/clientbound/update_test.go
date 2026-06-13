@@ -40,6 +40,7 @@ func updateByteAvatar() model.Avatar {
 // packet-audit:verify packet=messenger/clientbound/MessengerUpdate version=gms_v87 ida=0x8b978f
 // packet-audit:verify packet=messenger/clientbound/MessengerUpdate version=gms_v95 ida=0x7f2ea0
 // packet-audit:verify packet=messenger/clientbound/MessengerUpdate version=jms_v185 ida=0x8e4bab
+// packet-audit:verify packet=messenger/clientbound/MessengerUpdate version=gms_v84 ida=0x87cbd8
 func TestMessengerUpdateByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

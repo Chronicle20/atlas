@@ -1,6 +1,6 @@
 # BuddyInvite (← `CWvsContext::OnFriendResult#Invite`)
 
-- **IDA:** 
+- **IDA:** 0xa8ada2
 - **Atlas file:** `libs/atlas-packet/buddy/clientbound/invite.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
@@ -11,15 +11,16 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | bytes | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | bytes | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | string | string `` | ✅ |  |
+| 3 | int32 | int32 `` | ✅ |  |
+| 4 | int32 | int32 `` | ✅ |  |
+| 5 | int32 | byte `` | ❌ | width mismatch |
+| 6 | bytes | byte `` | ✅ |  |
+| 7 | byte | string `` | ❌ | width mismatch |
+| 8 | int32 | int32 `` | ✅ |  |
+| 9 | bytes | byte `` | ✅ |  |
+| 10 | byte | int32 `` | ❌ | width mismatch |
+| 11 | byte | byte `` | ❌ | atlas: short — missing trailing field |
 

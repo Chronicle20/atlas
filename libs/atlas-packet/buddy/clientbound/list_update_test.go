@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=buddy/clientbound/BuddyListUpdate version=gms_v87 ida=0xad7ae5
 // packet-audit:verify packet=buddy/clientbound/BuddyListUpdate version=gms_v95 ida=0xa12630
 // packet-audit:verify packet=buddy/clientbound/BuddyListUpdate version=jms_v185 ida=0xb2a873
+// packet-audit:verify packet=buddy/clientbound/BuddyListUpdate version=gms_v84 ida=0xa8ada2
 func TestBuddyListUpdateRoundTrip(t *testing.T) {
 	buddies := []BuddyEntry{
 		{CharacterId: 1000, Name: "Player1", ChannelId: 1, Group: "Default Group", InShop: false},

@@ -1,6 +1,6 @@
 # InventoryChangeMove (← `CWvsContext::OnInventoryOperation#ChangeMove`)
 
-- **IDA:** 
+- **IDA:** 0xa69d8f
 - **Atlas file:** `libs/atlas-packet/inventory/clientbound/change.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 1
@@ -11,11 +11,15 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | byte | byte `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
+| 3 | byte | byte `` | ✅ |  |
+| 4 | int16 | int16 `` | ✅ |  |
+| 5 | int16 | byte `` | ❌ | width mismatch |
+| 6 | byte | unresolved `packet var passed to unresolved/indirect call; hand-trace` | 🚫 | IDA read-order unresolved: packet var passed to unresolved/indirect call; hand-trace |
+| 7 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 8 | byte | int32 `` | ❌ | atlas: short — missing trailing field |
+| 9 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 10 | byte | byte `` | ❌ | atlas: short — missing trailing field |
 

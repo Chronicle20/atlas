@@ -17,6 +17,9 @@ import (
 // packet-audit:verify packet=inventory/clientbound/InventoryQuantityUpdate version=gms_v95 ida=0xa08a70
 // packet-audit:verify packet=inventory/clientbound/InventoryRemove version=gms_v95 ida=0xa08a70
 // packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v84 ida=0xa69d8f
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeMove version=gms_v84 ida=0xa69d8f
+// packet-audit:verify packet=inventory/clientbound/InventoryQuantityUpdate version=gms_v84 ida=0xa69d8f
+// packet-audit:verify packet=inventory/clientbound/InventoryRemove version=gms_v84 ida=0xa69d8f
 func TestQuantityUpdateRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

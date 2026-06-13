@@ -6,7 +6,7 @@
 Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 
 - export gms_v83: `ea152f0f070237f20736b435fcbeb9deaead0992ad75d94d2e96b29483a0ac17`
-- export gms_v84: `a93ddff2da016beb0d20b970b7f4639cf4c775582d86b3568d1cc10df9f68f9c`
+- export gms_v84: `15d615a74ff35045a57c7efa24a94914a9e71d67d47bcda5025e3a842656852c`
 - export gms_v87: `8afde1dc45c802981083835dd95b30a76c019f5879f62246e114b5c431bb1d66`
 - export gms_v95: `b00cae68c1f5896d2712c46c68c34b5194168cef370bdc6c6126db541d9cc5d3`
 - export jms_v185: `f91a7c12d00cd2cd0879508b85c5fd6ec15db4bd1f73ca14979021a989dc8b36`
@@ -57,7 +57,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | UPDATE_SKILLS | CWvsContext::OnChangeSkillRecordResult | character/clientbound/CharacterSkillChange (T1) | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x023 | ✅ | 0x022 | ✅ |
 | SKILL_USE_RESULT | CWvsContext::OnSkillUseResult |  | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x024 | ❌ | 0x023 | ❌ |
-| FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x026 | ✅ | 0x026 | ❌ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
+| FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageDropPickUpInventoryFull (T1) | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
@@ -182,7 +182,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | SPOUSE_CHAT | CField::OnCoupleMessage |  | 0x088 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x098 | ❌ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable |  | 0x089 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x086 | ❌ |
-| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | ✅ | 0x08A | ❌ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
+| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | ✅ | 0x08A | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff |  | 0x08B | ❌ | 0x08B | ❌ | 0x093 | ❌ | 0x09B | ❌ | 0x088 | ❌ |
@@ -294,7 +294,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode | ui/clientbound/Disable | 0x0DE | ✅ | 0x0E2 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
 | IDA_0X0DE | sub_A26957 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DE | ❌ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor |  | 0x0DF | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
-| TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) | 0x0E0 | ✅ | 0x0E0 | ❌ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
+| TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) | 0x0E0 | ✅ | 0x0E0 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | IDA_0X0E1 | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ | 0x0E1 | ❌ |  | ⬜ |  | ⬜ |
 | SHOW_COMBO | CUserLocal::OnIncComboResponse |  | 0x0E1 | ❌ | 0x0E1 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
 | RANDOM_EMOTION | CUser::OnRandomEmotion |  | 0x0E2 | ❌ | 0x0E2 | ❌ | 0x0F0 | ❌ | 0x102 | ❌ |  | ⬜ |
@@ -408,8 +408,8 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | ZAKUM_SHRINE | CField::OnZakumTimer |  | 0x12F | ❌ | 0x12F | ❌ | 0x140 | ❌ | 0x16A | ❌ | 0x148 | ❌ |
 | NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x130 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | MOB_ESCORT_STOP | CMob::OnEscortStopEndPermmision |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x131 | ❌ |  | ⬜ |
-| OPEN_NPC_SHOP | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x131 | ✅ | 0x138 | ❌ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
-| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | ✅ | 0x139 | ❌ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
+| OPEN_NPC_SHOP | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
+| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | ✅ | 0x139 | ✅ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
 | MOB_ESCORT_STOP_SAY | CMob::OnEscortStopSay |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ❌ |  | ⬜ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x133 | ❌ | 0x133 | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ❌ |  | ⬜ |
@@ -420,7 +420,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x136 | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x137 | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x138 | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x139 | ❌ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x139 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x13A | ❌ | 0x14B | ❌ | 0x175 | ✅ | 0x153 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament |  | 0x13B | ❌ | 0x13B | ❌ | 0x14C | ❌ | 0x176 | ❌ | 0x154 | ❌ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable |  | 0x13C | ❌ | 0x13C | ❌ | 0x14D | ❌ | 0x177 | ❌ | 0x155 | ❌ |
@@ -911,7 +911,7 @@ Tool: `a15e4d45ddd4021b4aa421e7549ee7db929c23d1`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 185 | 0 | 494 | 201 | 0 | 27.2% |
-| v84 | 136 | 1 | 540 | 203 | 0 | 20.1% |
+| v84 | 142 | 1 | 534 | 203 | 0 | 21.0% |
 | v87 | 186 | 0 | 530 | 164 | 0 | 26.0% |
 | v95 | 271 | 0 | 527 | 82 | 0 | 34.0% |
 | JMS185 | 164 | 0 | 546 | 170 | 0 | 23.1% |

@@ -46,10 +46,16 @@ func (m SummonMove) String() string {
 
 func (m SummonMove) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.cid)
-		w.WriteInt(m.oid)
+		// v95+ DELTA (gated >= 95, GMS only): the oid int after cid is a v95+
+		// addition. v83/v87 keep the summon pool keyed by owner cid and the
+		// dispatcher (CSummonedPool::OnPacket@0x938dd7) consumes only the leading
+		// Decode4 cid before OnMove — there is NO oid on the wire. IDB-confirmed.
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			w.WriteInt(m.oid)
+		}
 		w.WriteInt16(m.startX)
 		w.WriteInt16(m.startY)
 		w.WriteByteArray(m.rawMovement)
@@ -58,10 +64,12 @@ func (m SummonMove) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 }
 
 func (m *SummonMove) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cid = r.ReadUint32()
-		m.oid = r.ReadUint32()
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			m.oid = r.ReadUint32()
+		}
 		m.startX = r.ReadInt16()
 		m.startY = r.ReadInt16()
 		m.rawMovement = r.ReadBytes(r.Available())

@@ -23,7 +23,17 @@ Dispatcher: if op==0xAF → spawn (vtable+0x2C). else `cid = Decode4`, pool-look
 | **SKILL** | **0xB3** | `cid` + `byte (action&0x7F)` | summon plays skill animation. **just 1 byte** — NO summonSkillId int, NO oid. |
 | **DAMAGE** | **0xB4** | `cid` + `byte attackIdx` + `int dmg` + if attackIdx>-2:{`int mobTemplateId`,`byte bLeft`} | **no oid**. (attackIdx is Cosmic's "12".) |
 | Remove | 0xB0 | TBD (sub_7A64EB) | |
-| Spawn | 0xAF | TBD (vtable+0x2C / OnCreated) | likely no skillId int on v83 (added v95). |
+| Spawn | 0xAF | `cid(i4)` + `skillId(i4)` + `charLevel(b)` + `SLV(b)` + Init blob | **CONFIRMED asm** (OnCreated = sub_938F61). **NO oid on v83.** Init blob (sub_7A379B): `x(i2), y(i2), moveAction(b), foothold(i2), moveAbility(b), assistType(b), [if foothold found: enterType(b)]`. The int after cid is the **skillId** (passed to CSummoned ctor sub_7A30A9 → stored at [obj+0B4h] → consumed by `GetSkill@CSkillInfo` in sub_7A379B), NOT an oid. So `skillId` is PRESENT on v83; `oid` is the v95-only addition. v95 OnCreated reads cid, **oid**, skillId, charLevel, SLV before the Init blob. → gate **oid `>=95`**; keep `skillId` unconditional. avatar-look byte stays `>=95`. |
+
+### v83 spawn asm evidence (sub_938F61, the 0xAF vtable+0x2C target)
+```
+938f7c  Decode4  -> arg_4   = cid       (ctor arg_0 -> [obj+0ACh])
+938f86  Decode4  -> var_18  = skillId   (ctor arg_4 -> [obj+0B4h]; sub_7A379B does push [edi+0B4h]; GetSkill)
+938f90  Decode1  -> var_14  = charLevel (ctor arg_8 -> [obj+0B8h])
+938f9a  Decode1  -> var_10  = SLV       (ctor arg_C -> [obj+0BCh])
+939030  call sub_7A379B  (Init blob: x i2, y i2, moveAction b, foothold i2, moveAbility b, assistType b, [enterType b if fh])
+```
+Only ONE int between cid and the two bytes → v83 has NO oid. v95's OnCreated inserts oid (i4) right after cid.
 
 ### Confirmed bugs in current Atlas impl (libs/atlas-packet/summon + templates)
 1. **Extra `oid`**: clientbound Move/Attack/Damage write `int oid` right after `cid`. v83/v87 clients DON'T read it (pool is cid-keyed). `oid` is a **v95+ addition** → gate `oid` write/read on `>= 95` (GMS), omit below.

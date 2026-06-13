@@ -17,22 +17,38 @@ func TestSummonRemove(t *testing.T) {
 	}
 }
 
-// TestSummonRemoveBytes pins the exact wire layout. SummonRemove is
-// byte-identical across all versions (summon-packet-delta.md §3.2), so a single
-// v83 assertion guards against an accidental version branch.
-// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v95 ida=0x75a470
+// TestSummonRemoveBytes pins the classic (pre-95) wire: ownerId + animated byte,
+// NO oid (the remove path sub_7A64EB keys off the dispatcher-consumed cid; oid
+// is a v95+ addition — IDB-confirmed, summon-wire-truth.md).
 func TestSummonRemoveBytes(t *testing.T) {
 	in := NewSummonRemove(42, 1000001, true)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// ownerId=42, oid=1000001=0x000F4241, animated => byte 4
+	// ownerId=42, animated => byte 4 (no oid)
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // ownerId
-		0x41, 0x42, 0x0F, 0x00, // oid
 		0x04, // animated ? 4 : 1
 	}
 	if !bytes.Equal(got, want) {
-		t.Fatalf("bytes = % X, want % X", got, want)
+		t.Fatalf("v83 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonRemoveBytesV95 pins the v95+ DELTA: the oid int after ownerId.
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v95 ida=0x75a470
+func TestSummonRemoveBytesV95(t *testing.T) {
+	in := NewSummonRemove(42, 1000001, true)
+	ctx := test.CreateContext("GMS", 95, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// ownerId=42, oid=1000001=0x000F4241, animated => byte 4
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // ownerId
+		0x41, 0x42, 0x0F, 0x00, // oid (v95+ only)
+		0x04, // animated ? 4 : 1
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v95 bytes = % X, want % X", got, want)
 	}
 }

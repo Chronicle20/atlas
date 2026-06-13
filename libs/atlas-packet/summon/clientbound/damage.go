@@ -12,15 +12,21 @@ import (
 
 const SummonDamageWriter = "SummonDamage"
 
-// SummonDamage is the server -> client summon DAMAGE packet, a faithful port of
-// Cosmic PacketCreator.damageSummon (PacketCreator.java:4076):
+// SummonDamage is the server -> client summon DAMAGE packet. The wire layout is
+// the IDB-confirmed CSummonedPool::OnSkill@0x7a6ebe reader (dispatched on the
+// HIGHER of the swapped skill/damage opcodes — see summon-wire-truth.md):
 //
-//	int cid              // summon owner character id
-//	int oid              // summon object id
-//	byte 12              // fixed
-//	int damage
-//	int monsterIdFrom    // attacking monster id
-//	byte 0               // fixed
+//	int  cid              // summon owner character id (consumed by dispatcher)
+//	int  oid              // v95+ only (gated >= 95); v83/v87 have NO oid
+//	byte attackIdx        // fixed 12 (> -2, so the template branch always fires)
+//	int  damage
+//	if attackIdx > -2:
+//	  int  monsterIdFrom  // attacking monster template id
+//	  byte bLeft          // fixed 0
+//	byte dir              // v87+ only (gated >= 87); absent on v83
+//
+// The 12/0 constants mirror Cosmic; the structural gates (no oid pre-95, dir
+// byte present since v87) come from the v83/v87/v95 client readers.
 type SummonDamage struct {
 	cid           uint32
 	oid           uint32
@@ -49,26 +55,40 @@ func (m SummonDamage) String() string {
 
 func (m SummonDamage) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.cid)
-		w.WriteInt(m.oid)
-		w.WriteByte(12)
+		// v95+ DELTA: oid is a v95+ addition; v83/v87 have no oid (IDB-confirmed).
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			w.WriteInt(m.oid)
+		}
+		w.WriteByte(12) // attackIdx (> -2 so the template branch fires)
 		w.WriteInt(m.damage)
 		w.WriteInt(m.monsterIdFrom)
-		w.WriteByte(0)
+		w.WriteByte(0) // bLeft
+		// v87+ DELTA (gated >= 87): the trailing dir byte. v83's OnSkill reader
+		// (CSummonedPool::OnSkill@0x7a6ebe) reads nothing after bLeft; the byte
+		// appears since v87. Previously mis-gated >= 95.
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+			w.WriteByte(0) // dir
+		}
 		return w.Bytes()
 	}
 }
 
 func (m *SummonDamage) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	_ = tenant.MustFromContext(ctx)
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cid = r.ReadUint32()
-		m.oid = r.ReadUint32()
-		r.Skip(1) // byte 12
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			m.oid = r.ReadUint32()
+		}
+		r.Skip(1) // attackIdx (12)
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()
-		r.Skip(1) // byte 0
+		r.Skip(1) // bLeft
+		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
+			r.Skip(1) // dir
+		}
 	}
 }

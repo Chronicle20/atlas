@@ -6,11 +6,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestSummonSkill(t *testing.T) {
-	in := NewSummonSkill(42, 1320009, 6)
+	in := NewSummonSkill(42, 1000001, 6)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -26,8 +27,14 @@ func TestSummonSkill(t *testing.T) {
 			if out.CharacterId() != 42 {
 				t.Errorf("characterId = %d, want 42", out.CharacterId())
 			}
-			if out.SummonSkillId() != 1320009 {
-				t.Errorf("summonSkillId = %d, want 1320009", out.SummonSkillId())
+			// oid only round-trips on v95+ (gated); pre-95 wire carries no oid.
+			te := tenant.MustFromContext(ctx)
+			if te.IsRegion("GMS") && te.MajorAtLeast(95) {
+				if out.Oid() != 1000001 {
+					t.Errorf("oid = %d, want 1000001", out.Oid())
+				}
+			} else if out.Oid() != 0 {
+				t.Errorf("pre-95 oid = %d, want 0 (no oid on wire)", out.Oid())
 			}
 			if out.NewStance() != 6 {
 				t.Errorf("newStance = %d, want 6", out.NewStance())
@@ -36,22 +43,39 @@ func TestSummonSkill(t *testing.T) {
 	}
 }
 
-// TestSummonSkillBytes pins the exact wire layout. SummonSkill is
-// byte-identical across all versions (summon-packet-delta.md §3.6), so a single
-// v83 assertion guards against an accidental version branch.
-// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v95 ida=0x759890
+// TestSummonSkillBytes pins the classic (pre-95) wire: cid + a single stance
+// byte. There is NO summonSkillId int and NO oid on v83/v87 — OnHit@0x7a6e5a
+// reads one Decode1, masks 0x7F (IDB-confirmed, summon-wire-truth.md).
 func TestSummonSkillBytes(t *testing.T) {
-	in := NewSummonSkill(42, 1320009, 6)
+	in := NewSummonSkill(42, 1000001, 6)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, summonSkillId=1320009=0x00142449, newStance=6
+	// cid=42, newStance=6 (no skillId, no oid)
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // cid
-		0x49, 0x24, 0x14, 0x00, // summonSkillId
 		0x06, // newStance
 	}
 	if !bytes.Equal(got, want) {
-		t.Fatalf("bytes = % X, want % X", got, want)
+		t.Fatalf("v83 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonSkillBytesV95 pins the v95+ DELTA: the oid int between cid and the
+// stance byte. Still no summonSkillId int (v95 OnSkill also reads a single byte).
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v95 ida=0x759890
+func TestSummonSkillBytesV95(t *testing.T) {
+	in := NewSummonSkill(42, 1000001, 6)
+	ctx := test.CreateContext("GMS", 95, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=0x000F4241, newStance=6
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid
+		0x41, 0x42, 0x0F, 0x00, // oid (v95+ only)
+		0x06, // newStance
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v95 bytes = % X, want % X", got, want)
 	}
 }

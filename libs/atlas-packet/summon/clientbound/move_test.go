@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -27,8 +28,14 @@ func TestSummonMove(t *testing.T) {
 			if out.Cid() != 42 {
 				t.Errorf("cid = %d, want 42", out.Cid())
 			}
-			if out.Oid() != 1000001 {
-				t.Errorf("oid = %d, want 1000001", out.Oid())
+			// oid only round-trips on v95+ (gated); pre-95 wire carries no oid.
+			te := tenant.MustFromContext(ctx)
+			if te.IsRegion("GMS") && te.MajorAtLeast(95) {
+				if out.Oid() != 1000001 {
+					t.Errorf("oid = %d, want 1000001", out.Oid())
+				}
+			} else if out.Oid() != 0 {
+				t.Errorf("pre-95 oid = %d, want 0 (no oid on wire)", out.Oid())
 			}
 			if out.StartX() != 100 {
 				t.Errorf("startX = %d, want 100", out.StartX())
@@ -43,25 +50,43 @@ func TestSummonMove(t *testing.T) {
 	}
 }
 
-// TestSummonMoveBytes pins the exact wire layout. SummonMove is byte-identical
-// across all versions (summon-packet-delta.md §3.3), so a single v83 assertion
-// guards against an accidental version branch.
-// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v95 ida=0x759830
+// TestSummonMoveBytes pins the classic (pre-95) wire: NO oid (the summon pool is
+// cid-keyed on v83/v87; oid is a v95+ addition — IDB-confirmed, summon-wire-truth.md).
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, 100, -50, raw)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, oid=0x000F4241, startX=100=0x0064, startY=-50=0xFFCE, then raw blob
+	// cid=42, NO oid, startX=100=0x0064, startY=-50=0xFFCE, then raw blob
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // cid
-		0x41, 0x42, 0x0F, 0x00, // oid
 		0x64, 0x00, // startX
 		0xCE, 0xFF, // startY
 		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement
 	}
 	if !bytes.Equal(got, want) {
-		t.Fatalf("bytes = % X, want % X", got, want)
+		t.Fatalf("v83 bytes = % X, want % X", got, want)
+	}
+}
+
+// TestSummonMoveBytesV95 pins the v95+ DELTA: the oid int after cid.
+// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v95 ida=0x759830
+func TestSummonMoveBytesV95(t *testing.T) {
+	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
+	in := NewSummonMove(42, 1000001, 100, -50, raw)
+	ctx := test.CreateContext("GMS", 95, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+
+	// cid=42, oid=0x000F4241, startX=100, startY=-50, raw blob
+	want := []byte{
+		0x2A, 0x00, 0x00, 0x00, // cid
+		0x41, 0x42, 0x0F, 0x00, // oid (v95+ only)
+		0x64, 0x00, // startX
+		0xCE, 0xFF, // startY
+		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v95 bytes = % X, want % X", got, want)
 	}
 }

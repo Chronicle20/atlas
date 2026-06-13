@@ -60,7 +60,12 @@ func (m SummonAttack) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
-		w.WriteInt(m.oid)
+		// v95+ DELTA (gated >= 95, GMS only): the oid int is a v95+ addition.
+		// v83/v87 summon attack (CSummonedPool::OnAttack@0x7a6882) reads no oid —
+		// the dispatcher consumes only the leading cid. IDB-confirmed.
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			w.WriteInt(m.oid)
+		}
 		w.WriteByte(0) // char level
 		w.WriteByte(m.direction)
 		w.WriteByte(byte(len(m.targets)))
@@ -86,7 +91,9 @@ func (m *SummonAttack) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
-		m.oid = r.ReadUint32()
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+			m.oid = r.ReadUint32()
+		}
 		_ = r.ReadByte() // char level
 		m.direction = r.ReadByte()
 		count := int(r.ReadByte())

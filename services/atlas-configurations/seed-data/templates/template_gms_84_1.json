@@ -2017,15 +2017,15 @@
         }
       },
       {
-        "opCode": "0xE1",
+        "opCode": "0xE2",
         "writer": "UiLock"
       },
       {
-        "opCode": "0xE2",
+        "opCode": "0xE3",
         "writer": "UiDisable"
       },
       {
-        "opCode": "0xE4",
+        "opCode": "0xE5",
         "writer": "GuideTalk"
       },
       {
@@ -2033,15 +2033,15 @@
         "writer": "CharacterSkillCooldown"
       },
       {
-        "opCode": "0xEC",
+        "opCode": "0xF2",
         "writer": "SpawnMonster"
       },
       {
-        "opCode": "0xED",
+        "opCode": "0xF3",
         "writer": "DestroyMonster"
       },
       {
-        "opCode": "0xEE",
+        "opCode": "0xF4",
         "writer": "ControlMonster"
       },
       {

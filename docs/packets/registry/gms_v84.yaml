@@ -776,16 +776,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MULTICHAT
   direction: clientbound
-  opcode: 134
+  opcode: 137
   fname: CField::OnGroupMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CField::OnGroupMessage = CField low-dispatch case 0x89 (reads type+sender+msg). v83 0x86 shifted +3.'
 - op: WHISPER
   direction: clientbound
-  opcode: 135
+  opcode: 138
   fname: CField::OnWhisper
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CField::OnWhisper = CField low-dispatch case 0x8A (find-friend location modes). v83 0x87 shifted +3.'
 - op: SPOUSE_CHAT
   direction: clientbound
   opcode: 136
@@ -1268,16 +1268,16 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: LOCK_UI
   direction: clientbound
-  opcode: 221
+  opcode: 226
   fname: CUserLocal::SetDirectionMode
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CUserLocal::OnSetDirectionMode = sub_988561 case 226. v83 LOCK_UI 221.'
 - op: DISABLE_UI
   direction: clientbound
-  opcode: 226
+  opcode: 227
   fname: CUserLocal::OnSetStandAloneMode
   provenance: manual
-  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CUserLocal::OnSetStandAloneMode = sub_988561 case 227 (named). Earlier manual 226 was wrong (226=SetDirectionMode).'
 - op: SPAWN_GUIDE
   direction: clientbound
   opcode: 223
@@ -1286,10 +1286,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: TALK_GUIDE
   direction: clientbound
-  opcode: 224
+  opcode: 229
   fname: CUserLocal::OnTutorMsg
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CUserLocal::OnTutorMsg = sub_988561 case 229 (named). v83 TALK_GUIDE 224.'
 - op: SHOW_COMBO
   direction: clientbound
   opcode: 225
@@ -1352,22 +1352,22 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SPAWN_MONSTER
   direction: clientbound
-  opcode: 236
+  opcode: 242
   fname: CMobPool::OnMobEnterField
   provenance: manual
-  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CMobPool::OnPacket (0x68fe98) case 242 -> CMobPool::OnMobEnterField. Earlier 236 was wrong.'
 - op: KILL_MONSTER
   direction: clientbound
-  opcode: 237
+  opcode: 243
   fname: CMobPool::OnMobLeaveField
   provenance: manual
-  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CMobPool::OnPacket (0x68fe98) case 243 -> CMobPool::OnMobLeaveField. Earlier 237 was wrong.'
 - op: SPAWN_MONSTER_CONTROL
   direction: clientbound
-  opcode: 238
+  opcode: 244
   fname: CMobPool::OnMobChangeController
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CMobPool::OnPacket (0x68fe98) case 244 -> CMobPool::OnMobChangeController. Earlier 238 was wrong.'
 - op: MOVE_MONSTER
   direction: clientbound
   opcode: 245
@@ -1394,10 +1394,10 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085): CMobPool::OnMobPacket case 249 -> CMob::OnStatReset'
 - op: RESET_MONSTER_ANIMATION
   direction: clientbound
-  opcode: 244
+  opcode: 250
   fname: CMob::OnSuspendReset
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CMobPool::OnMobPacket (0x68fef7) case 250 -> sub_682802 (animation/movie playback, v83-order slot after OnStatReset 249). Earlier 244 collided with the true SPAWN_MONSTER_CONTROL slot.'
 - op: MOB_AFFECTED
   direction: clientbound
   opcode: 245
@@ -3273,10 +3273,10 @@
   note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
 - op: PET_EXCLUDE_ITEMS
   direction: serverbound
-  opcode: 172
+  opcode: 177
   fname: CPet::SendUpdateExceptionListRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CPet::SendUpdateExceptionListRequest constructs COutPacket(177). v83 172.'
 - op: UNNAMED_R288
   direction: serverbound
   opcode: 173
@@ -3376,10 +3376,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_DAMAGE_MOB_FRIENDLY
   direction: serverbound
-  opcode: 192
+  opcode: 197
   fname: CMob::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CMob::Update (0x67d4ea) constructs COutPacket(197) for friendly mob-vs-mob damage. v83 192.'
 - op: MONSTER_BOMB
   direction: serverbound
   opcode: 193
@@ -3388,10 +3388,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_DAMAGE_MOB
   direction: serverbound
-  opcode: 194
+  opcode: 199
   fname: CMob::SetDamagedByMob
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CMob::SetDamagedByMob (0x6871bc) constructs COutPacket(199). v83 194.'
 - op: MOB_SKILL_DELAY_END
   direction: serverbound
   opcode: 195
@@ -3406,10 +3406,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: NPC_ACTION
   direction: serverbound
-  opcode: 197
+  opcode: 203
   fname: CNpc::GenerateMovePath
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CNpc::GenerateMovePath constructs COutPacket(203). v83 NPC_ACTION 197 shifted.'
 - op: NPC_SPECIAL_ACTION
   direction: serverbound
   opcode: 198

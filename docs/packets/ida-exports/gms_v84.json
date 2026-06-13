@@ -5115,15 +5115,9 @@
       ]
     },
     "CUIGuildBBS::OnGuildBBSPacket": {
-      "address": "",
+      "address": "0xa5c77c",
       "direction": "",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
+      "calls": null
     },
     "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
       "address": "",
@@ -20132,6 +20126,894 @@
           "op": "Decode1",
           "comment": "",
           "guard": "!result"
+        }
+      ]
+    },
+    "CCashShop::OnBuyNormal": {
+      "address": "0x47104e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 && !sub_9D389C(v12, v13, v14, v15, v16) && v22 && <default> && !v29 && sub_470A53(v11, v12, v13, (char)v14, v15, v16) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v2 && !sub_9D389C(v12, v13, v14, v15, v16) && v22 && <default> && !v29 && sub_470A53(v11, v12, v13, (char)v14, v15, v16) == 1"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResLoadGiftDone": {
+      "address": "0x47c73c",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CCashShop::OnEnableEquipSlotExt": {
+      "address": "0x46efb6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "sub_46EACA((char)v16, v17, v18) == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "sub_46EACA((char)v16, v17, v18) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_46EACA((char)v16, v17, v18) == 1"
+        }
+      ]
+    },
+    "CCashShop::OnIncCharacterSlotCount": {
+      "address": "0x46edcd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!this[6] && (int)this[292] < 15 && sub_46EACA((char)v13, v14, v15) == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!this[6] && (int)this[292] < 15 && sub_46EACA((char)v13, v14, v15) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!this[6] && (int)this[292] < 15 && sub_46EACA((char)v13, v14, v15) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!this[6] && (int)this[292] < 15 && sub_46EACA((char)v13, v14, v15) == 1"
+        }
+      ]
+    },
+    "CCashShop::OnIncTrunkCount": {
+      "address": "0x46ec30",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!this[6] && sub_46EACA((char)v9, v10, v11) == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!this[6] && sub_46EACA((char)v9, v10, v11) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!this[6] && sub_46EACA((char)v9, v10, v11) == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!this[6] && sub_46EACA((char)v9, v10, v11) == 1"
+        }
+      ]
+    },
+    "CCashShop::OnMoveCashItemLtoS": {
+      "address": "0x475128",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnMoveCashItemStoL": {
+      "address": "0x475316",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnQueryCashResult": {
+      "address": "0x47c0b3",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnSetWish": {
+      "address": "0x473873",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!this[6] && a2 && (int)result >= 0 && result[8]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!this[6] && a2 && (int)result >= 0 && result[8]"
+        }
+      ]
+    },
+    "CCashShop::RequestCashPurchaseRecord": {
+      "address": "0x46e300",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendBuyNameChangeItemPacket": {
+      "address": "0x475f79",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendBuyTransferWorldItemPacket": {
+      "address": "0x47614b",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::TrySendQueryCashRequest": {
+      "address": "0x47544e",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CCashTradingRoomDlg::Trade": {
+      "address": "0x489210",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && loop v29 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && loop v29 && <default>"
+        }
+      ]
+    },
+    "CEntrustedShopDlg::AddBlackList": {
+      "address": "0x5226c2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CEntrustedShopDlg::DeleteBlackList": {
+      "address": "0x522746",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::AddBlackList": {
+      "address": "0x543c2c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::DeleteBlackList": {
+      "address": "0x543ca4",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendAcceptFriendMsg": {
+      "address": "0x53d4f2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendCreateNewPartyMsg": {
+      "address": "0x53be37",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendDeleteFriendMsg": {
+      "address": "0x53d443",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8[0]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v8[0]"
+        }
+      ]
+    },
+    "CField::SendInviteTradingRoomMsg": {
+      "address": "0x53bc2a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "CField::SendJoinPartyMsg": {
+      "address": "0x53c061",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v1[3017]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v1[3017]"
+        }
+      ]
+    },
+    "CField::SendKickPartyMsg": {
+      "address": "0x53c29c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v5"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && v5"
+        }
+      ]
+    },
+    "CMemoListDlg::SetRet": {
+      "address": "0x6606a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == (void *)6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == (void *)6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == (void *)6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == (void *)6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == (void *)6 && (unsigned int)v29 >= *(_DWORD *)(v11 - 4) && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == (void *)6 && (unsigned int)v29 >= *(_DWORD *)(v11 - 4) && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == (void *)6 && (unsigned int)v29 >= *(_DWORD *)(v11 - 4) && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == (void *)6 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == (void *)6 && <default>"
+        }
+      ]
+    },
+    "CMemoryGameDlg::SendTurnUpCard": {
+      "address": "0x664afc",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase": {
+      "address": "0x673db5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!dword_C40C60",
+          "ref": "sub_6743A4"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!dword_C40C60 && v4",
+          "ref": "sub_674863"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!dword_C40C60",
+          "ref": "sub_6746B1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!v6 && v1 == 3",
+          "ref": "sub_6746B1"
+        }
+      ]
+    },
+    "CNpc::GenerateMovePath": {
+      "address": "0x6ea340",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "COmokDlg::OnRetreatRequest": {
+      "address": "0x6fb416",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "COmokDlg::PutStoneChecker": {
+      "address": "0x6ffcc4",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CPersonalShopDlg::MoveItemToInventory": {
+      "address": "0x719ffd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CPersonalShopDlg::OnClickBanButton": {
+      "address": "0x71a2ac",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v15 && sub_9D3ABC((char)v6, v7, v8, v9, v10) == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v15 && sub_9D3ABC((char)v6, v7, v8, v9, v10) == 6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v15 && sub_9D3ABC((char)v6, v7, v8, v9, v10) == 6"
+        }
+      ]
+    },
+    "CPersonalShopDlg::OnRefresh": {
+      "address": "0x718f44",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4",
+          "ref": "GW_ItemSlotBase::Decode"
+        }
+      ]
+    },
+    "CPersonalShopDlg::PutItem": {
+      "address": "0x719c8a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CTradingRoomDlg::Trade": {
+      "address": "0x7e9ae6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result == 6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == 6 && loop v9 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == 6 && loop v9 && <default>"
+        }
+      ]
+    },
+    "CUser::OnChat": {
+      "address": "0x96e3ed",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "strcmp(v7, v6)",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "sub_4386B9() && v13 == 2",
+          "ref": "sub_552230"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_97A035"
+        }
+      ]
+    },
+    "CUserRemote::OnReceiveHP": {
+      "address": "0x9c3d88",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnGatherItemResult": {
+      "address": "0xa69bf9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnMemoNotify_Receive": {
+      "address": "0xa708ea",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "CWvsContext::OnSortItemResult": {
+      "address": "0xa69c23",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendGatherItemRequest": {
+      "address": "0xa531fa",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeItemUseRequest": {
+      "address": "0xa5360f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_A5A9B6(a3, 1) && sub_48903A(200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sub_A5A9B6(a3, 1) && sub_48903A(200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_A5A9B6(a3, 1) && sub_48903A(200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendUpgradeItemUseRequest": {
+      "address": "0xa53535",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
         }
       ]
     }

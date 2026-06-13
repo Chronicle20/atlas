@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v87 ida=0xa9e6c4
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v83 ida=0xa08ee6
 // packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=jms_v185 ida=0xaed8dd
+// packet-audit:verify packet=inventory/serverbound/InventoryCompartmentMergeRequest version=gms_v84 ida=0xa531fa
 func TestCompartmentMergeRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

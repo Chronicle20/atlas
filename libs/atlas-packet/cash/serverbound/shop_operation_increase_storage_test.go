@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=cash/serverbound/CashShopOperationIncreaseStorage version=gms_v87 ida=0x4763e0
 // packet-audit:verify packet=cash/serverbound/CashShopOperationIncreaseStorage version=gms_v83 ida=0x46c55b
 // packet-audit:verify packet=cash/serverbound/CashShopOperationIncreaseStorage version=jms_v185 ida=0x47c766
+// packet-audit:verify packet=cash/serverbound/CashShopOperationIncreaseStorage version=gms_v84 ida=0x46ec30
 func TestShopOperationIncreaseStorageItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

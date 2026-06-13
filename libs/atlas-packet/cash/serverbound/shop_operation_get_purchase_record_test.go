@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=cash/serverbound/CashShopOperationGetPurchaseRecord version=gms_v87 ida=0x475b91
 // packet-audit:verify packet=cash/serverbound/CashShopOperationGetPurchaseRecord version=gms_v83 ida=0x46bd0e
 // packet-audit:verify packet=cash/serverbound/CashShopOperationGetPurchaseRecord version=jms_v185 ida=0x47bf86
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGetPurchaseRecord version=gms_v84 ida=0x46e300
 func TestShopOperationGetPurchaseRecordRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

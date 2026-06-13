@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=cash/clientbound/CashQueryResult version=jms_v185 ida=0x48b3e8
 // packet-audit:verify packet=cash/clientbound/CashQueryResult version=gms_v87 ida=0x484616
 // packet-audit:verify packet=cash/clientbound/CashQueryResult version=gms_v83 ida=0x478f81
+// packet-audit:verify packet=cash/clientbound/CashQueryResult version=gms_v84 ida=0x47c0b3
 func TestQueryResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

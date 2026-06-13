@@ -1856,10 +1856,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: QUERY_CASH_RESULT
   direction: clientbound
-  opcode: 324
+  opcode: 331
   fname: CCashShop::OnQueryCashResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: v84 opcode 0x14B verified from the CCashShop cash dispatcher (sub_47BF59 case 331) (task-085); csv-import 324 was wrong.
 - op: CASHSHOP_OPERATION
   direction: clientbound
   opcode: 332
@@ -3588,13 +3588,13 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 377: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: CHECK_CASH
   direction: serverbound
-  opcode: 228
+  opcode: 234
   fname: CCashShop::TrySendQueryCashRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: v84 opcode 0xEA verified from COutPacket(234) in TrySendQueryCashRequest (task-085); csv-import 228 was wrong.
 - op: CASHSHOP_OPERATION
   direction: serverbound
-  opcode: 229
+  opcode: 235
   fname: CCashShop::RequestCashPurchaseRecord
   fname_alts:
     - CCashShop::OnMoveCashItemLtoS
@@ -3621,8 +3621,8 @@
     - CCashShop::OnBuyFriendship
     - CCashShop::GiftWishItem
     - CCashShop::OnCashGachaponCopy
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: v84 opcode 0xEB verified from COutPacket(235) in RequestCashPurchaseRecord (task-085); csv-import 229 was wrong.
 - op: COUPON_CODE
   direction: serverbound
   opcode: 230

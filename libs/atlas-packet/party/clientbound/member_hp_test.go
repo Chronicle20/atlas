@@ -15,6 +15,7 @@ import (
 // packet-audit:verify packet=party/clientbound/PartyMemberHP version=gms_v87 ida=0xa09474
 // packet-audit:verify packet=party/clientbound/PartyMemberHP version=gms_v83 ida=0x9839ea
 // packet-audit:verify packet=party/clientbound/PartyMemberHP version=jms_v185 ida=0xa575be
+// packet-audit:verify packet=party/clientbound/PartyMemberHP version=gms_v84 ida=0x9c3d88
 func TestPartyMemberHPByteOutput(t *testing.T) {
 	const wantBytes = 12 // characterId(4) + hp(4) + maxHp(4)
 	input := NewPartyMemberHP(1234, 5000, 10000)

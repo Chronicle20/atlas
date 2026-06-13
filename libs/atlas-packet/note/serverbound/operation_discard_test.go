@@ -9,6 +9,7 @@ import (
 // packet-audit:verify packet=note/serverbound/NoteOperationDiscard version=gms_v95 ida=0x624280
 // packet-audit:verify packet=note/serverbound/NoteOperationDiscard version=gms_v87 ida=0x684843
 // packet-audit:verify packet=note/serverbound/NoteOperationDiscard version=gms_v83 ida=0x64aa57
+// packet-audit:verify packet=note/serverbound/NoteOperationDiscard version=gms_v84 ida=0x6606a0
 func TestOperationDiscardRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

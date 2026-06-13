@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=note/serverbound/NoteOperationSend version=gms_v87 ida=0x484cc5
 // packet-audit:verify packet=note/serverbound/NoteOperationSend version=gms_v83 ida=0x47959e
 // packet-audit:verify packet=note/serverbound/NoteOperationSend version=jms_v185 ida=0x48bdc8
+// packet-audit:verify packet=note/serverbound/NoteOperationSend version=gms_v84 ida=0x47c73c
 func TestOperationSendRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

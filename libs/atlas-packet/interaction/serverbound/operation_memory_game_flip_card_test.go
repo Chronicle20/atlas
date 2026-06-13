@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v87 ida=0x688d3b
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v83 ida=0x64ee2b
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=jms_v185 ida=0x6c8b94
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameFlipCard version=gms_v84 ida=0x664afc
 func TestOperationMemoryGameFlipCardRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

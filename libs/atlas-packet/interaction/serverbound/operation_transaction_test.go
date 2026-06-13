@@ -10,6 +10,7 @@ import (
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v87 ida=0x494dcb
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v83 ida=0x485dcd
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=jms_v185 ida=0x499b67
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v84 ida=0x489210
 func TestOperationTransactionRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

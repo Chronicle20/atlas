@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationMoveFromCashInventory
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnMoveCashItemLtoS
+    address: "0x475128"
+    decompile_sha256: 16bde9a64e8a9f10558871084767bcf3395dbad2a48012ce9b012c4510cb839f

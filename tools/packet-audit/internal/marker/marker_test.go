@@ -3,6 +3,7 @@ package marker
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ func TestScanFile(t *testing.T) {
 }
 
 func TestScanDuplicateMarkerIsError(t *testing.T) {
-	ms, errs := scanString("// packet-audit:verify packet=a/b/C version=gms_v83 ida=0x1\n// packet-audit:verify packet=a/b/C version=gms_v83 ida=0x2\n", "x_test.go")
+	ms, errs := scanReader(strings.NewReader("// packet-audit:verify packet=a/b/C version=gms_v83 ida=0x1\n// packet-audit:verify packet=a/b/C version=gms_v83 ida=0x2\n"), "x_test.go")
 	_ = ms
 	if len(errs) == 0 {
 		t.Error("duplicate (packet,version) across markers must error (design §7: one marker per cell)")

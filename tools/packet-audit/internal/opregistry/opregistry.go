@@ -88,7 +88,11 @@ func (v *VersionFile) Lookup(op string, dir Direction) (Entry, bool) {
 	return e, ok
 }
 
-// ByFName returns the entry whose fname (or any fname_alt) matches.
+// ByFName returns the entry whose fname (or any fname_alt) matches in the given
+// direction. Deferred public seam: the current audit pipeline resolves
+// serverbound ops via IDA send-site literals (verify-serverbound), not by
+// registry fname lookup, so this has no in-tree caller yet — it is the
+// registry's by-fname accessor, kept (and tested) for tooling that needs it.
 func (v *VersionFile) ByFName(fname string, dir Direction) (Entry, bool) {
 	for _, e := range v.Entries {
 		if e.Direction != dir {

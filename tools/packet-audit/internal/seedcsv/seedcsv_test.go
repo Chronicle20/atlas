@@ -2,6 +2,7 @@ package seedcsv
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -85,7 +86,7 @@ func TestLoadServerboundQuirks(t *testing.T) {
 }
 
 func TestLoadBadOpcodeFailsLoudly(t *testing.T) {
-	_, err := LoadFromString("Op,FName,Index,GMS v83\nX,CFoo::Bar,1,zzz\n")
+	_, err := load(strings.NewReader("Op,FName,Index,GMS v83\nX,CFoo::Bar,1,zzz\n"), "<string>")
 	if err == nil {
 		t.Fatal("expected loud failure with row number")
 	}

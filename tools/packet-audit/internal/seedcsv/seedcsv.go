@@ -38,10 +38,6 @@ func Load(path string) ([]Row, error) {
 	return load(f, path)
 }
 
-func LoadFromString(s string) ([]Row, error) {
-	return load(strings.NewReader(s), "<string>")
-}
-
 func load(src io.Reader, name string) ([]Row, error) {
 	r := csv.NewReader(src)
 	r.FieldsPerRecord = -1

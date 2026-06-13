@@ -110,7 +110,3 @@ func scanReader(r io.Reader, file string) ([]Marker, []string) {
 	}
 	return ms, errs
 }
-
-func scanString(s, file string) ([]Marker, []string) {
-	return scanReader(strings.NewReader(s), file)
-}

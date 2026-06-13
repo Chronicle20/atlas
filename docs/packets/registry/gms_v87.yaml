@@ -1319,21 +1319,21 @@
 - op: MOB_SPEAKING
   direction: clientbound
   opcode: 270
-  fname: CMob::OnIncMobChargeCount
+  fname: CMob::OnMobSpeaking
   provenance: manual
-  note: 'IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10E -> CMob::OnIncMobChargeCount (0x6AC230). CSV had OnMobSpeaking here (off-by-one); realigned to IDB. See SHOW_MAGNET (0x10D) note re: op-name offset.'
+  note: 'task-092 Stage 1: un-rotate. fname assigned by op-name. IDA v87 CMob::OnMobSpeaking (0x6AC31E), dispatched from CMobPool::OnMobPacket (0x6B4EAD) case 0x10D. Atlas op enum sits +1 vs the client case label for the 0x10D-0x110 cluster (known off-by-one, see SHOW_MAGNET note); fname tracks the op name, not the raw case.'
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
   opcode: 271
-  fname: CMob::OnMobSkillDelay
+  fname: CMob::OnIncMobChargeCount
   provenance: manual
-  note: 'IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10F -> CMob::OnMobSkillDelay (0x6AD0E8). CSV had OnIncMobChargeCount here (off-by-one); realigned to IDB. See SHOW_MAGNET (0x10D) note re: op-name offset.'
+  note: 'task-092 Stage 1: un-rotate. fname assigned by op-name. IDA v87 CMob::OnIncMobChargeCount (0x6AC230), dispatched from CMobPool::OnMobPacket (0x6B4EAD) case 0x10E. See MOB_SPEAKING note re: cluster off-by-one.'
 - op: MOB_SKILL_DELAY
   direction: clientbound
   opcode: 272
-  fname: CMob::OnMobAttackedByMob
+  fname: CMob::OnMobSkillDelay
   provenance: manual
-  note: 'IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x110 -> CMob::OnMobAttackedByMob (0x6AC074). CSV had OnMobSkillDelay here (off-by-one); realigned to IDB. See SHOW_MAGNET (0x10D) note re: op-name offset.'
+  note: 'task-092 Stage 1: un-rotate. fname assigned by op-name. IDA v87 CMob::OnMobSkillDelay (0x6AD0E8), dispatched from CMobPool::OnMobPacket (0x6B4EAD) case 0x10F. See MOB_SPEAKING note re: cluster off-by-one.'
 - op: MOB_ESCORT_FULL_PATH
   direction: clientbound
   opcode: 273
@@ -2144,8 +2144,9 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 60
-  fname: ""
-  provenance: csv-import
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  note: 'task-092 Stage 1: send-site derived from v87 IDB. CUserLocal::SetMonsterBookCover @ 0x9E2D06.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 61

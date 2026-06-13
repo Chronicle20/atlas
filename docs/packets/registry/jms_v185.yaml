@@ -2178,8 +2178,9 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 49
-  fname: ""
-  provenance: csv-import
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  note: 'task-092 Stage 1: send-site derived from jms_v185 IDB. CUserLocal::SetMonsterBookCover @ 0xA2C930.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 50

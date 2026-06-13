@@ -1373,8 +1373,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 19
         },
         "gms_v84": {
@@ -1383,13 +1382,11 @@
           "opcode": 19
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 19
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 19
         },
         "jms_v185": {
@@ -2214,8 +2211,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 29
         },
         "gms_v84": {
@@ -2224,13 +2220,11 @@
           "opcode": 29
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 29
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 28
         },
         "jms_v185": {
@@ -2251,8 +2245,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 30
         },
         "gms_v84": {
@@ -2261,13 +2254,11 @@
           "opcode": 30
         },
         "gms_v87": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 30
         },
         "gms_v95": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 29
         },
         "jms_v185": {

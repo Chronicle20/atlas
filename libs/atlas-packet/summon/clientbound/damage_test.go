@@ -42,28 +42,28 @@ func TestSummonDamageBytes(t *testing.T) {
 	}
 }
 
-// TestSummonDamageBytesV87 pins the v87 DELTA: the trailing dir byte appears
-// since v87 (gate >= 87), but there is still NO oid (oid is v95+).
+// TestSummonDamageBytesV87 pins that v87 is byte-identical to v83: NO oid (oid is
+// v95+) and NO trailing dir byte (v87 OnSkill@0x7f969f reads nothing after bLeft,
+// same as v83 and v95 — IDB-confirmed).
 func TestSummonDamageBytesV87(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 87, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	want := append(append([]byte{}, summonDamageV83Body...), 0x00) // + trailing dir byte
-	if !bytes.Equal(got, want) {
-		t.Fatalf("v87 bytes = % X, want % X", got, want)
+	if !bytes.Equal(got, summonDamageV83Body) {
+		t.Fatalf("v87 bytes = % X, want % X (identical to v83)", got, summonDamageV83Body)
 	}
 }
 
-// TestSummonDamageBytesV95 pins the v95+ layout: oid after cid AND the trailing
-// dir byte.
+// TestSummonDamageBytesV95 pins the v95+ layout: oid after cid; still NO trailing
+// dir byte (v95 OnHit@0x74bc80 stops at bLeft — the dir byte is serverbound only).
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v95 ida=0x7598c0
 func TestSummonDamageBytesV95(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 95, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, oid=0x000F4241, attackIdx 12, damage, monsterIdFrom, bLeft, dir
+	// cid=42, oid=0x000F4241, attackIdx 12, damage, monsterIdFrom, bLeft
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // cid
 		0x41, 0x42, 0x0F, 0x00, // oid (v95+ only)
@@ -71,7 +71,6 @@ func TestSummonDamageBytesV95(t *testing.T) {
 		0xD2, 0x04, 0x00, 0x00, // damage
 		0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom
 		0x00, // bLeft
-		0x00, // dir (v87+)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v95 bytes = % X, want % X", got, want)

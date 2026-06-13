@@ -23,10 +23,12 @@ const SummonDamageWriter = "SummonDamage"
 //	if attackIdx > -2:
 //	  int  monsterIdFrom  // attacking monster template id
 //	  byte bLeft          // fixed 0
-//	byte dir              // v87+ only (gated >= 87); absent on v83
 //
-// The 12/0 constants mirror Cosmic; the structural gates (no oid pre-95, dir
-// byte present since v87) come from the v83/v87/v95 client readers.
+// The 12/0 constants mirror Cosmic; the only structural gate is the v95+ oid.
+// The clientbound damage reader stops at bLeft on ALL versions — v83
+// CSummonedPool::OnSkill@0x7a6ebe, v87 @0x7f969f, and v95 OnHit@0x74bc80 all
+// read nothing after bLeft (the dir<0 byte belongs to the SERVERBOUND
+// SetDamaged send, not this broadcast).
 type SummonDamage struct {
 	cid           uint32
 	oid           uint32
@@ -65,13 +67,7 @@ func (m SummonDamage) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 		w.WriteByte(12) // attackIdx (> -2 so the template branch fires)
 		w.WriteInt(m.damage)
 		w.WriteInt(m.monsterIdFrom)
-		w.WriteByte(0) // bLeft
-		// v87+ DELTA (gated >= 87): the trailing dir byte. v83's OnSkill reader
-		// (CSummonedPool::OnSkill@0x7a6ebe) reads nothing after bLeft; the byte
-		// appears since v87. Previously mis-gated >= 95.
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
-			w.WriteByte(0) // dir
-		}
+		w.WriteByte(0) // bLeft (final field — no trailing dir byte on any version)
 		return w.Bytes()
 	}
 }
@@ -86,9 +82,6 @@ func (m *SummonDamage) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 		r.Skip(1) // attackIdx (12)
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()
-		r.Skip(1) // bLeft
-		if t.IsRegion("GMS") && t.MajorAtLeast(87) {
-			r.Skip(1) // dir
-		}
+		r.Skip(1) // bLeft (final field — no trailing dir byte on any version)
 	}
 }

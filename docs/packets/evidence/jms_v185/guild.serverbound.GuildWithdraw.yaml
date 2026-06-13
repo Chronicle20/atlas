@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildWithdraw
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendWithdrawGuildMsg
+    address: "0x56dcc7"
+    decompile_sha256: 7f029b4be74d44d7489ed89486be91383baa2638b5bfef7e0117cf4f7550a708

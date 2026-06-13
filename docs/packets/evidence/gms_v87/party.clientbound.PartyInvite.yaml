@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyInvite
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Invite
+    address: "0xad697a"
+    decompile_sha256: 609abdca377b047904c8441e586f7d6b027aa656a2613fb7fdef68960d99435d
+verifies:
+    - libs/atlas-packet/party/clientbound/invite_test.go#TestInviteByteOutput

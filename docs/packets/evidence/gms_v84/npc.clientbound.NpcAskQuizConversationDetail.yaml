@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskQuizConversationDetail
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskQuiz#AskQuiz
+    address: "0xa722bf"
+    decompile_sha256: fd4e9f1a2aee121ff149772a584c46885f578b15d9c5d33128e4a6a1127d6eb3

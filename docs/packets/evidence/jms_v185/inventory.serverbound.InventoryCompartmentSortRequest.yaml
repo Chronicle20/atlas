@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryCompartmentSortRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSortItemRequest
+    address: "0xaed96f"
+    decompile_sha256: 8bc62e80ada6cee97e08768c61dee10236fd069198d3917f7c042faa3c0da89b

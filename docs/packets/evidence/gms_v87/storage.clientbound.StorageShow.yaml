@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageShow
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#Show
+    address: "0x819648"
+    decompile_sha256: e1301853bcd7e36b837ef1afbcf195a8ff0a49841ed35fef885adec64396f61b

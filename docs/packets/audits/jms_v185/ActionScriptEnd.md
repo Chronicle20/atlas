@@ -1,7 +1,7 @@
 # ActionScriptEnd (← `CQuest::StartQuest#ActionScriptEnd`)
 
 - **IDA:** 0x77d065
-- **Atlas file:** `../../libs/atlas-packet/quest/serverbound/action_script_end.go`
+- **Atlas file:** `libs/atlas-packet/quest/serverbound/action_script_end.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

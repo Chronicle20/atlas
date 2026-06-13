@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationIncreaseInventory
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuySlotInc
+    address: "0x480daa"
+    decompile_sha256: 36e7f86cca02d260b31db6ec41af289a2a3d335b1359515f5b01a9ed9b63b4a0

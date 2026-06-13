@@ -1,7 +1,7 @@
 # InteractionOperationPersonalStoreBuy (← `CPersonalShopDlg::BuyItem`)
 
 - **IDA:** 0x74076b
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go`
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_personal_store_buy.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

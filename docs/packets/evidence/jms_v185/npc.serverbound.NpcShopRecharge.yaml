@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcShopRecharge
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SendRechargeRequest
+    address: "0x7caecf"
+    decompile_sha256: 6d1a8588e7878a55826b57d154a1b70d28164d6d0d15c2576959ab27df96457f

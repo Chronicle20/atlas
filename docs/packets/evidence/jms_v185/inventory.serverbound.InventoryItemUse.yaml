@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryItemUse
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemUseRequest
+    address: "0xaedea5"
+    decompile_sha256: 6f9eb5bb8607a4c3b17df6525f49b8b536d62bb9aeff42da324ffef621e46670

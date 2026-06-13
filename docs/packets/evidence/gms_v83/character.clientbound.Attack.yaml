@@ -1,0 +1,8 @@
+packet: character/clientbound/Attack
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnAttack
+    address: "0x9803ab"
+    decompile_sha256: fe23bbea256ed59401c12e505fb78d11b6f1c07a56dad29becd9b416dee81d17

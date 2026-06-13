@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcSayImageConversationDetail
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnSayImage#SayImage
+    address: "0x961275"
+    decompile_sha256: 114a8a6420b557c54ca4d7d5682788482ee01cd23fc5a24456b1c5a5f83c6494

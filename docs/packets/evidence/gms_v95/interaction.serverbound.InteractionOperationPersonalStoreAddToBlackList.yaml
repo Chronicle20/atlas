@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::OnClickBanButton
+    address: "0x69b1c0"
+    decompile_sha256: 14c292c8f244b378b9d05ba9ab6879410590123fa4a06077234cb0aeaa2efd81

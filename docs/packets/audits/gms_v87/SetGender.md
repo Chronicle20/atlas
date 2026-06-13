@@ -1,7 +1,7 @@
 # SetGender (← `CLogin::SendSetGenderPacket`)
 
 - **IDA:** 0x63409f
-- **Atlas file:** `../../libs/atlas-packet/account/serverbound/set_gender.go`
+- **Atlas file:** `libs/atlas-packet/account/serverbound/set_gender.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ✅

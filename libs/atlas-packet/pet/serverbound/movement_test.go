@@ -6,6 +6,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v83 ida=0x9c4e41
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v87 ida=0xa558b6
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v95 ida=0x99f5a0
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=jms_v185 ida=0xaa25ab
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v84 ida=0xa0c600
 func TestPetMovement(t *testing.T) {
 	p := MovementRequest{}
 	p.petId = 5000001

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcNpcConversation
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnScriptMessage
+    address: "0x7b7160"
+    decompile_sha256: cccc2c17c925b1e295f263ad8a2ae200467d8bc68301a6e4b549b0b96dc7d8a2

@@ -4,7 +4,7 @@
   "Address": "0x48b3e8",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/cash/clientbound/query_result.go",
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/query_result.go",
   "Rows": [
     {
       "Index": 0,

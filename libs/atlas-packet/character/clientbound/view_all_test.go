@@ -8,6 +8,24 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v95 ida=0x5de435
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v95 ida=0x5de17f
+// packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v95 ida=0x5de284
+// CharacterViewAllError is the error/notice case of the same CLogin::OnViewAllCharResult
+// dispatcher (addr identical to the SearchFailed slice per version); the decompose
+// emitted no distinct #CharacterViewAllError export slice, so its evidence is pinned
+// against the same-function #CharacterViewAllSearchFailed slice (same address/hash).
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v83 ida=0x5facca
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v87 ida=0x6328eb
+// packet-audit:verify packet=character/clientbound/CharacterViewAllError version=gms_v95 ida=0x5de284
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v84 ida=0x60ffe8
+// packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v84 ida=0x60ffe8
 func TestCharacterViewAllCountRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -67,6 +85,53 @@ func TestCharacterViewAllSearchFailedRoundTrip(t *testing.T) {
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Code() != input.Code() {
 				t.Errorf("code: got %v, want %v", output.Code(), input.Code())
+			}
+		})
+	}
+}
+
+// TestCharacterViewAllErrorByteOutput pins the CharacterViewAllError wire body.
+// CLogin::OnViewAllCharResult is a server→client dispatcher keyed on a leading
+// Decode1(mode/code). The error/notice modes resolve as:
+//
+//	v83 @0x5facca, v87 @0x6328eb, v95 @0x5de284 (case 2/3/6/7 block).
+//	case 2 (RemoveNoticeConnecting+ResetVAC, StringPool 0xFBE): NO further reads
+//	       — body is the single code byte. This is the path the code-only
+//	       CharacterViewAllError struct models, identical in shape to its
+//	       already-verified sibling CharacterViewAllSearchFailed.
+//
+// NOTE (coverage boundary, derived from the decompile, not papered over): the
+// case 3/6/7 path at the report address additionally reads Decode1(hasMsg) and,
+// if set, DecodeStr(msg) (v83 @0x5fadd5/0x5fade4; v95 @0x5de292/0x5de2a2).
+// Atlas's code-only struct does NOT model that flag+string variant and Atlas
+// never emits it (the struct is unused by services; the code byte is the
+// dispatcher selector). The single-byte fixture below is the exact, faithful
+// wire for the mode-2 error path the struct represents.
+//
+// EVIDENCE: the IDA exports harvested a `#CharacterViewAllSearchFailed` slice at
+// this address but NOT a distinct `#CharacterViewAllError` slice. Since the two
+// cases share one CLogin::OnViewAllCharResult function (identical address/hash
+// per version), CharacterViewAllError's evidence is pinned against the
+// same-function SearchFailed slice — see the packet-audit:verify markers at the
+// top of this file (v83 0x5facca / v87 0x6328eb / v95 0x5de284). This test
+// provides the fresh byte-fixture backing those tier-1 cells.
+func TestCharacterViewAllErrorByteOutput(t *testing.T) {
+	for _, v := range []struct {
+		Name         string
+		Region       string
+		Major, Minor uint16
+	}{
+		{"GMS v83", "GMS", 83, 1},
+		{"GMS v87", "GMS", 87, 1},
+		{"GMS v95", "GMS", 95, 1},
+	} {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.Major, v.Minor)
+			got := pt.Encode(t, ctx, NewCharacterViewAllError(2).Encode, nil)
+			// body = code byte (the dispatcher mode selector). No further reads
+			// on the mode-2 path.
+			if len(got) != 1 || got[0] != 2 {
+				t.Errorf("%s: got % x, want [02]", v.Name, got)
 			}
 		})
 	}

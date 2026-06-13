@@ -38,11 +38,26 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "triage" {
 		return runTriage(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "registry" {
+		return runRegistry(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "matrix" {
+		return runMatrix(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "evidence" {
+		return runEvidence(args[1:], stderr)
+	}
 	if len(args) > 0 && args[0] == "resolve-dispatch" {
 		return runResolveDispatch(args[1:], stderr)
 	}
 	if len(args) > 0 && args[0] == "diff-shape" {
 		return runDiffShape(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "discover-ops" {
+		return runDiscoverOps(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "verify-serverbound" {
+		return runVerifyServerbound(args[1:], stderr)
 	}
 	fs := flag.NewFlagSet("packet-audit", flag.ContinueOnError)
 	fs.SetOutput(stderr)

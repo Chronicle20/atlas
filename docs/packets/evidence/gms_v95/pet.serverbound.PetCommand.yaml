@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetCommand
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CPet::ParseCommand
+    address: "0x6a3cc0"
+    decompile_sha256: b7c979f0848ad5d42520c8ccfb7f30b6610ec15f5003afc30b4b96121a87e192

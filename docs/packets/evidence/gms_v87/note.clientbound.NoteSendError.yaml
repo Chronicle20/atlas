@@ -1,0 +1,8 @@
+packet: note/clientbound/NoteSendError
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#SendError
+    address: "0xabccc2"
+    decompile_sha256: c735c354566a8ccf50045adfe326de6fd4802a8d655cf43e6a09764947b3f415

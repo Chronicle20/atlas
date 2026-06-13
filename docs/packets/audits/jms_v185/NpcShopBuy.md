@@ -1,7 +1,7 @@
 # NpcShopBuy (← `CShopDlg::SendBuyRequest`)
 
 - **IDA:** 0x7ca2c9
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/shop_buy.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/shop_buy.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** ✅

@@ -1,7 +1,7 @@
 # NpcSpawn (← `CNpcPool::OnNpcEnterField`)
 
 - **IDA:** 0x72068f
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/spawn.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/spawn.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

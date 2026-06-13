@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetDropPickUp
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CPet::SendDropPickUpRequest
+    address: "0x6a0820"
+    decompile_sha256: 4338042246a4f4da58db95d57f7004b4e6db2c18322c49dc0fe745bd96a1d4da

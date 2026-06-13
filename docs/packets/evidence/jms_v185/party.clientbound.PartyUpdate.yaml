@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyUpdate
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Update
+    address: "0xb297e7"
+    decompile_sha256: 5e9bca24ad21ec5243efb172deba622475f2ae28c5d5791c0da3714cb7044a1f
+verifies:
+    - libs/atlas-packet/party/clientbound/update_test.go#TestUpdateByteOutput

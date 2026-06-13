@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectString
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#String
+    address: "0x570359"
+    decompile_sha256: 3b8aa2d4126e2b358c1458397a53151b2fc6d2b21dae31c1da44caf3403bead9

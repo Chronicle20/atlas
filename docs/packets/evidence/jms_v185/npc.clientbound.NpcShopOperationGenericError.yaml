@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationGenericError
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#GenericError
+    address: "0x7cb04e"
+    decompile_sha256: ca693265f8c801ab2962e0b90c365f9ed4b1f25cda64051ff51885855f73b247

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskYesNoConversationDetail
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskYesNo#AskYesNo
+    address: "0x6dc5a0"
+    decompile_sha256: d74a0a2efd661d039217685ef6d612b8ef38f1334673cfe322bfbda670e0a67f

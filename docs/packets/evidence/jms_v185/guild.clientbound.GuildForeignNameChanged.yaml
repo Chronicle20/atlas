@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildForeignNameChanged
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnGuildNameChanged
+    address: "0xa5763e"
+    decompile_sha256: 27405d3aa26bb31fcb2b3aac2e703010de771a576caff17efc441340faee926f

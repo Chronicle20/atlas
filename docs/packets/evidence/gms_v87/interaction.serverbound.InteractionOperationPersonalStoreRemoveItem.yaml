@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreRemoveItem
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::MoveItemToInventory
+    address: "0x741271"
+    decompile_sha256: f593d2ae57c54938e4eaa6b0c8f7f4d632ab4bc7207204903691bef7b3f790bc

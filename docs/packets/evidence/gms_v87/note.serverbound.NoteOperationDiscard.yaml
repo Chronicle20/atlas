@@ -1,0 +1,8 @@
+packet: note/serverbound/NoteOperationDiscard
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CMemoListDlg::SetRet
+    address: "0x684843"
+    decompile_sha256: 9947bd41338f954bdadbccc22b10a0c2c50cd888771294ada6a2d9e743096a99

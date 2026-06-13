@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyError
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Error
+    address: "0xb297e7"
+    decompile_sha256: 294db5600a6925c7242cc1f91ca82b558497913a912553a1f49b3b8da1fd5d89

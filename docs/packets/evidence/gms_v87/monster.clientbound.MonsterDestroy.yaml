@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterDestroy
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobLeaveField
+    address: "0x6b5169"
+    decompile_sha256: 551de8d3ce9ca3b0a810b57f842fa1e7c3d2481b98e8a7f5dff63d43d61163a0

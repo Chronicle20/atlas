@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMovementRequest
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMob::GenerateMovePath
+    address: "0x66b6fc"
+    decompile_sha256: 603d40416fa190762c12f47de206f802c77981abf03776a769ae86954d0c7557
+verifies:
+    - libs/atlas-packet/monster/serverbound/movement_test.go#TestMonsterMovementVersionBoundary

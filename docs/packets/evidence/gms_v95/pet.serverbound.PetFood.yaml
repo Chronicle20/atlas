@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetFood
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendPetFoodItemUseRequest
+    address: "0x9d9f20"
+    decompile_sha256: c5aaa240068363ca39b83bc839eca30d4452c83c35794a2cef0822a197fd78e3

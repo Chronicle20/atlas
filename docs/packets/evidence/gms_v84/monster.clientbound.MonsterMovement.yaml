@@ -1,0 +1,8 @@
+packet: monster/clientbound/MonsterMovement
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnMove
+    address: "0x6820ea"
+    decompile_sha256: 15fd685a3916390317811c0f015b61b89f724baddee0079e7868ac1bea73a8d7

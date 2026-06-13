@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldChange
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendTransferFieldRequest
+    address: "0x56d75a"
+    decompile_sha256: 74990356915e2c1578d980180f7d8a6d39bb1cd4a765c3b3870fea7692a75184

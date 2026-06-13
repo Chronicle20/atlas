@@ -1,0 +1,10 @@
+packet: storage/clientbound/StorageShow
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#Show
+    address: "0x76a990"
+    decompile_sha256: 2352214aed60fc48c05ec904640ada414dc01032fd31501ec2b5e283232bf713
+verifies:
+    - libs/atlas-packet/storage/clientbound/show_test.go#TestStorageShowSegmentation

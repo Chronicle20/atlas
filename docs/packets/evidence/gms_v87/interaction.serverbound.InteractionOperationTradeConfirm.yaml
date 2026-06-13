@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationTradeConfirm
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::Trade
+    address: "0x8170d5"
+    decompile_sha256: b9143b9403a13a6a43b9795caf8155eb039018cd6d6d5b94acabb8cf5b400d3d

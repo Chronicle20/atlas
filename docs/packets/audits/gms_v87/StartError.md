@@ -1,7 +1,7 @@
 # StartError (← `CClientSocket::OnConnect#StartError`)
 
 - **IDA:** 0x4a6e5a
-- **Atlas file:** `../../libs/atlas-packet/socket/serverbound/start_error.go`
+- **Atlas file:** `libs/atlas-packet/socket/serverbound/start_error.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

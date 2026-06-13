@@ -1,0 +1,8 @@
+packet: buddy/clientbound/BuddyCapacityUpdate
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult#CapacityUpdate
+    address: "0xa3f2e8"
+    decompile_sha256: bc5c1f9629f646b6317a7abdf7b5697abb7f5f9334d60a7c7924ddad2e2f5bba

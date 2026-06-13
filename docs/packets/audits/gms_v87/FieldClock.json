@@ -4,7 +4,7 @@
   "Address": "0x55DA5F",
   "Variant": "GMS/v87",
   "BranchDepth": 1,
-  "AtlasFile": "../../libs/atlas-packet/field/clientbound/clock.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/clock.go",
   "Rows": [
     {
       "Index": 0,

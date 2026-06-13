@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectWeather
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnBlowWeather
+    address: "0x5723E6"
+    decompile_sha256: 5bf1872bd7e5134f260a61cee3bf8e5eddb1c15e2de5079a8daf4fa3f6ff9cac

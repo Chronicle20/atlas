@@ -1,0 +1,8 @@
+packet: party/serverbound/PartyOperation
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendCreateNewPartyMsg
+    address: "0x556eb0"
+    decompile_sha256: a052df454ffd36ea4ca30380821e5500227dbde6ae0f012599c3ecebb60ca471

@@ -17,6 +17,11 @@ import (
 // originatorName="PartyLeader" → 2+11=13 bytes.
 //   v83..86: 1+4+13+1 = 19 bytes
 //   v87+:    1+4+13+4+4+1 = 27 bytes
+// packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v83 ida=0xa3e31c
+// packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v87 ida=0xad697a
+// packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v95 ida=0xa10b5f
+// packet-audit:verify packet=party/clientbound/PartyInvite version=jms_v185 ida=0xb297e7
+// packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v84 ida=0xa89cf3
 func TestInviteByteOutput(t *testing.T) {
 	cases := []struct {
 		variant   pt.TenantVariant

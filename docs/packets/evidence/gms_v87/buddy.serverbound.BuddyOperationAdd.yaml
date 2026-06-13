@@ -1,0 +1,8 @@
+packet: buddy/serverbound/BuddyOperationAdd
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetFriendMsg
+    address: "0x558844"
+    decompile_sha256: 19527243624605420dbe89fa60f7818c328989c9c59817a2c5a30accef7f6d90

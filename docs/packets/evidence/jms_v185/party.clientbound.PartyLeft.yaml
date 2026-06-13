@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyLeft
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Left
+    address: "0xb297e7"
+    decompile_sha256: c7521faa1a9405186f46f4dfe844dd33dd0215f2c10e3a61de665029e1eadb69
+verifies:
+    - libs/atlas-packet/party/clientbound/left_test.go#TestLeftByteOutput

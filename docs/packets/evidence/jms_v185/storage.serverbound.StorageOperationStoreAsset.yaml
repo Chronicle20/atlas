@@ -1,0 +1,8 @@
+packet: storage/serverbound/StorageOperationStoreAsset
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::SendPutItemRequest
+    address: "0x84e07d"
+    decompile_sha256: 3e5bc8a7c8413e806606ece42aecc8519815a9f53ca7d5d4df657ed0aaef763d

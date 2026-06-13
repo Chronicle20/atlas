@@ -1,0 +1,8 @@
+packet: character/clientbound/BuffGiveForeign
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetTemporaryStat
+    address: "0x9c3bfb"
+    decompile_sha256: f3ec35e7f88a9ac5c57d5ea445bd0e39c6a38052760ad9e7096cd16c74083ec4

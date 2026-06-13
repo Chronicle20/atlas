@@ -1,0 +1,8 @@
+packet: messenger/serverbound/MessengerOperationChat
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::ProcessChat
+    address: "0x8e4f92"
+    decompile_sha256: 4297e9897a48c0ad5cbecb133f1b81b6c948899b336c876efc4c6c42487aef6b

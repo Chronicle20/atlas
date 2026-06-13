@@ -1,0 +1,8 @@
+packet: character/serverbound/BuffCancelRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::SendSkillCancelRequest
+    address: "0xa3e3ec"
+    decompile_sha256: fec1ef3c2c5990fd7f741c838befea18bd827adc491c7c42d9fa8204eafbe459

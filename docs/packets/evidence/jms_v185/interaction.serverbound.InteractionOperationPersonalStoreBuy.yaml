@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreBuy
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::BuyItem
+    address: "0x762365"
+    decompile_sha256: 6497270317594569888b83ff4d46374151e380e8b8ac780bd34312b81298b892

@@ -1,7 +1,7 @@
 # FieldChange (← `CField::SendTransferFieldRequest`)
 
 - **IDA:** 0x53035d
-- **Atlas file:** `../../libs/atlas-packet/field/serverbound/change.go`
+- **Atlas file:** `libs/atlas-packet/field/serverbound/change.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ✅

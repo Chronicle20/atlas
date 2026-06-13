@@ -1,0 +1,8 @@
+packet: stat/clientbound/Changed
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnStatChanged
+    address: "0xb06632"
+    decompile_sha256: 8c029a18016a385915f295cb32c4fdadc2bfa630cd70ff7961f41ad2a959d4e4

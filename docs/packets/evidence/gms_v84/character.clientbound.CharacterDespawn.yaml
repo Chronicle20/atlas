@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterDespawn
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserPool::OnUserLeaveField
+    address: "0x9b2299"
+    decompile_sha256: 49fae7d7c81aade37fcb33b68139efcb6c08dad57e5d26cbefe3f4ec76372698

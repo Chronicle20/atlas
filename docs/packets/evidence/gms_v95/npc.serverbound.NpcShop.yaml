@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcShop
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#ShopDispatch
+    address: "0x6e4b80"
+    decompile_sha256: fa18f17c337375eda62804b8b57eb95666d5e41a1cfa7a9f23e6fd479eaa2688

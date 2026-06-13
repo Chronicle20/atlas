@@ -1,7 +1,7 @@
 # Lock (← `CUserLocal::OnSetDirectionMode`)
 
 - **IDA:** 0x95ff5a
-- **Atlas file:** `../../libs/atlas-packet/ui/clientbound/lock.go`
+- **Atlas file:** `libs/atlas-packet/ui/clientbound/lock.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 2
 - **Verdict:** ✅

@@ -1,0 +1,10 @@
+- op: LOGIN_STATUS
+  direction: clientbound
+  opcode: 0x000
+  fname: "CLogin::OnCheckPasswordResult"
+  provenance: csv-import
+- op: LOGIN_STATUS
+  direction: clientbound
+  opcode: 0x001
+  fname: "CLogin::OnCheckPasswordResult"
+  provenance: manual

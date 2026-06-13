@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterSitResult
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnSitResult
+    address: "0x997968"
+    decompile_sha256: e763acb8f418948fa84fedd2704716bba95dd1b95f4982eed7f65096ca4ea724

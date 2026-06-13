@@ -1,0 +1,8 @@
+packet: character/clientbound/AddCharacterError
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCreateNewCharacterResult#AddCharacterError
+    address: "0x5dabcd"
+    decompile_sha256: dba9dff85ae622454b04b94fc7288f91525de97d9ebe8ee8a419ace2759595a9

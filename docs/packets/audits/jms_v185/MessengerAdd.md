@@ -1,7 +1,7 @@
 # MessengerAdd (← `CUIMessenger::OnPacket#Add`)
 
 - **IDA:** 0x8e447e
-- **Atlas file:** `../../libs/atlas-packet/messenger/clientbound/add.go`
+- **Atlas file:** `libs/atlas-packet/messenger/clientbound/add.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

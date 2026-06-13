@@ -4,7 +4,8 @@
   "minorVersion": 1,
   "usesPin": false,
   "socket": {
-    "handlers": [{
+    "handlers": [
+      {
         "opCode": "0x45",
         "validator": "LoggedInValidator",
         "handler": "MountFoodHandle"
@@ -30,6 +31,11 @@
         "handler": "CharacterSelectedHandle"
       },
       {
+        "opCode": "0x07",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
         "opCode": "0x08",
         "validator": "LoggedInValidator",
         "handler": "CharacterCheckNameHandle"
@@ -48,6 +54,16 @@
         "opCode": "0x0D",
         "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x0E",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
+      },
+      {
+        "opCode": "0x0F",
+        "validator": "NoOpValidator",
+        "handler": "StartErrorHandle"
       },
       {
         "opCode": "0x13",
@@ -70,11 +86,6 @@
         "handler": "CreateSecurityHandle"
       },
       {
-        "opCode": "0x07",
-        "validator": "NoOpValidator",
-        "handler": "CharacterLoggedInHandle"
-      },
-      {
         "opCode": "0x1D",
         "validator": "LoggedInValidator",
         "handler": "MapChangeHandle"
@@ -94,7 +105,8 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterMoveHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -230,9 +242,39 @@
         }
       },
       {
+        "opCode": "0x21",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x22",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
         "opCode": "0x29",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle"
+      },
+      {
+        "opCode": "0x2A",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
+        "opCode": "0x34",
+        "validator": "LoggedInValidator",
+        "handler": "NPCContinueConversationHandle"
+      },
+      {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x3E",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentSortHandle"
       },
       {
         "opCode": "0x3F",
@@ -240,9 +282,59 @@
         "handler": "CharacterInventoryMoveHandle"
       },
       {
+        "opCode": "0x40",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x41",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x44",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x4E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle"
+      },
+      {
+        "opCode": "0x52",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeApHandle"
+      },
+      {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x57",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x5A",
+        "validator": "LoggedInValidator",
+        "handler": "FameChangeHandle"
+      },
+      {
         "opCode": "0x5C",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle"
+      },
+      {
+        "opCode": "0x5D",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle"
       },
       {
         "opCode": "0x5F",
@@ -250,11 +342,89 @@
         "handler": "PortalScriptHandle"
       },
       {
+        "opCode": "0x66",
+        "validator": "LoggedInValidator",
+        "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0x7B",
+        "validator": "LoggedInValidator",
+        "handler": "MessengerOperationHandle"
+      },
+      {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "PERSONAL_STORE_BUY": 20,
+            "MERCHANT_BUY": 31,
+            "PERSONAL_STORE_SET_BLACK_LIST": 27
+          }
+        }
+      },
+      {
+        "opCode": "0x7D",
+        "validator": "LoggedInValidator",
+        "handler": "PartyOperationHandle"
+      },
+      {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "GuildOperationHandle"
+      },
+      {
+        "opCode": "0x82",
+        "validator": "LoggedInValidator",
+        "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x85",
+        "validator": "LoggedInValidator",
+        "handler": "BuddyOperationHandle"
+      },
+      {
+        "opCode": "0x86",
+        "validator": "LoggedInValidator",
+        "handler": "NoteOperationHandle"
+      },
+      {
+        "opCode": "0xAA",
+        "validator": "LoggedInValidator",
+        "handler": "PetMovementHandle"
+      },
+      {
+        "opCode": "0xAB",
+        "validator": "LoggedInValidator",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xAC",
+        "validator": "LoggedInValidator",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xAD",
+        "validator": "LoggedInValidator",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xAE",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xAF",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemExcludeHandle"
+      },
+      {
         "opCode": "0xC2",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -394,7 +564,8 @@
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -530,16 +701,19 @@
         }
       },
       {
-        "opCode": "0x7C",
+        "opCode": "0xD5",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInteractionHandle",
-        "options": {
-          "operations": {
-            "PERSONAL_STORE_BUY": 20,
-            "MERCHANT_BUY": 31,
-            "PERSONAL_STORE_SET_BLACK_LIST": 27
-          }
-        }
+        "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0xD8",
+        "validator": "LoggedInValidator",
+        "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xF4",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckWalletHandle"
       },
       {
         "opCode": "0xF5",
@@ -571,21 +745,10 @@
         "handler": "SummonDamageHandle"
       }
     ],
-    "writers": [{
+    "writers": [
+      {
         "opCode": "0x2D",
         "writer": "SetTamingMobInfo"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthSuccess"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthTemporaryBan"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthPermanentBan"
       },
       {
         "opCode": "0x00",
@@ -611,12 +774,24 @@
         }
       },
       {
-        "opCode": "0x02",
-        "writer": "ServerListEntry"
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan"
       },
       {
         "opCode": "0x02",
         "writer": "ServerListEnd"
+      },
+      {
+        "opCode": "0x02",
+        "writer": "ServerListEntry"
       },
       {
         "opCode": "0x03",
@@ -699,6 +874,14 @@
         }
       },
       {
+        "opCode": "0x08",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x9",
+        "writer": "Ping"
+      },
+      {
         "opCode": "0x14",
         "writer": "CharacterViewAll",
         "options": {
@@ -725,10 +908,6 @@
         "writer": "LoginAuth"
       },
       {
-        "opCode": "0x08",
-        "writer": "ChannelChange"
-      },
-      {
         "opCode": "0x1B",
         "writer": "CharacterInventoryChange"
       },
@@ -737,8 +916,56 @@
         "writer": "StatChanged"
       },
       {
+        "opCode": "0x1E",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x1F",
+        "writer": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x22",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0x24",
+        "writer": "FameResponse"
+      },
+      {
+        "opCode": "0x2F",
+        "writer": "HiredMerchantOperation"
+      },
+      {
+        "opCode": "0x31",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x32",
+        "writer": "CompartmentSort"
+      },
+      {
         "opCode": "0x35",
         "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x36",
+        "writer": "PartyOperation"
+      },
+      {
+        "opCode": "0x39",
+        "writer": "BuddyOperation"
+      },
+      {
+        "opCode": "0x3B",
+        "writer": "GuildOperation"
+      },
+      {
+        "opCode": "0x46",
+        "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x76",
+        "writer": "ScriptProgress"
       },
       {
         "opCode": "0x7B",
@@ -747,6 +974,22 @@
       {
         "opCode": "0x7D",
         "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0x87",
+        "writer": "FieldEffect"
+      },
+      {
+        "opCode": "0x8B",
+        "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0x90",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0x92",
+        "writer": "FieldTransportState"
       },
       {
         "opCode": "0x9E",
@@ -761,10 +1004,39 @@
         "writer": "CharacterChatGeneral"
       },
       {
+        "opCode": "0xA1",
+        "writer": "ChatGeneralChat"
+      },
+      {
+        "opCode": "0xA2",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xA5",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0xB0",
+        "writer": "PetMovement"
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "PetChat"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "PetExcludeResponse"
+      },
+      {
+        "opCode": "0xB4",
+        "writer": "PetCommandResponse"
+      },
+      {
         "opCode": "0xBF",
         "writer": "CharacterMovement",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -900,8 +1172,84 @@
         }
       },
       {
+        "opCode": "0xC0",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xC1",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xC2",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xC3",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xC6",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xC7",
+        "writer": "CharacterExpression"
+      },
+      {
         "opCode": "0xCB",
         "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xCC",
+        "writer": "CharacterEffect"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xCF",
+        "writer": "PartyMemberHP"
+      },
+      {
+        "opCode": "0xD0",
+        "writer": "GuildNameChanged"
+      },
+      {
+        "opCode": "0xD1",
+        "writer": "GuildEmblemChanged"
+      },
+      {
+        "opCode": "0xD3",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterEffect"
+      },
+      {
+        "opCode": "0xDF",
+        "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0xE5",
+        "writer": "UiOpen"
+      },
+      {
+        "opCode": "0xE8",
+        "writer": "UiDisable"
+      },
+      {
+        "opCode": "0xEA",
+        "writer": "GuideTalk"
+      },
+      {
+        "opCode": "0xFB",
+        "writer": "CharacterSkillCooldown"
       },
       {
         "opCode": "0xFD",
@@ -919,7 +1267,8 @@
         "opCode": "0x100",
         "writer": "MoveMonster",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -1059,6 +1408,22 @@
         "writer": "MoveMonsterAck"
       },
       {
+        "opCode": "0x103",
+        "writer": "MonsterStatSet"
+      },
+      {
+        "opCode": "0x104",
+        "writer": "MonsterStatReset"
+      },
+      {
+        "opCode": "0x107",
+        "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x10B",
+        "writer": "MonsterHealth"
+      },
+      {
         "opCode": "0x116",
         "writer": "SpawnNPC"
       },
@@ -1070,7 +1435,8 @@
         "opCode": "0x119",
         "writer": "NPCAction",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -1206,6 +1572,38 @@
         }
       },
       {
+        "opCode": "0x121",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x122",
+        "writer": "DropDestroy"
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "ReactorHit"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "ReactorSpawn"
+      },
+      {
+        "opCode": "0x130",
+        "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x14A",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x14B",
+        "writer": "NPCShopOperation"
+      },
+      {
+        "opCode": "0x152",
+        "writer": "MessengerOperation"
+      },
+      {
         "opCode": "0x163",
         "writer": "CashShopCashQueryResult"
       },
@@ -1214,36 +1612,16 @@
         "writer": "CashShopOperation"
       },
       {
-        "opCode": "0x1E",
-        "writer": "CharacterBuffGive"
+        "opCode": "0x170",
+        "writer": "CharacterKeyMap"
       },
       {
-        "opCode": "0x22",
-        "writer": "CharacterSkillChange"
+        "opCode": "0x171",
+        "writer": "CharacterKeyMapAutoHp"
       },
       {
-        "opCode": "0xC0",
-        "writer": "CharacterAttackMelee"
-      },
-      {
-        "opCode": "0xC1",
-        "writer": "CharacterAttackRanged"
-      },
-      {
-        "opCode": "0xC2",
-        "writer": "CharacterAttackMagic"
-      },
-      {
-        "opCode": "0xC3",
-        "writer": "CharacterAttackEnergy"
-      },
-      {
-        "opCode": "0xC6",
-        "writer": "CharacterDamage"
-      },
-      {
-        "opCode": "0xCD",
-        "writer": "CharacterBuffGiveForeign"
+        "opCode": "0x172",
+        "writer": "CharacterKeyMapAutoMp"
       },
       {
         "opCode": "0xB5",
@@ -1272,165 +1650,431 @@
     ]
   },
   "characters": {
-    "templates": [{
+    "templates": [
+      {
         "jobIndex": 0,
         "subJobIndex": 0,
         "mapId": 130010220,
         "gender": 0,
-        "faces": [20100, 20401, 20402],
-        "hairs": [30030, 30027, 30000],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1040002, 1040006, 1040010],
-        "bottoms": [1060002, 1060006],
-        "shoes": [1072001, 1072005, 1072037, 1072038],
-        "weapons": [1302000, 1322005, 1312004],
-        "items": [4161047]
-      }, {
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30027,
+          30000
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
         "jobIndex": 0,
         "subJobIndex": 0,
         "mapId": 130010220,
         "gender": 1,
-        "faces": [21700, 21201, 21002],
-        "hairs": [31002, 31047, 31057],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1041002, 1041006, 1041010, 1041011],
-        "bottoms": [1061002, 1061008],
-        "shoes": [1072001, 1072005, 1072037, 1072038],
-        "weapons": [1302000, 1322005, 1312004],
-        "items": [4161047]
-      }, {
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31002,
+          31047,
+          31057
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
         "jobIndex": 1,
         "subJobIndex": 0,
         "mapId": 10000,
         "gender": 0,
-        "faces": [20100, 20401, 20402],
-        "hairs": [30030, 30027, 30000],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1040002, 1040006, 1040010],
-        "bottoms": [1060002, 1060006],
-        "shoes": [1072001, 1072005, 1072037, 1072038],
-        "weapons": [1302000, 1322005, 1312004],
-        "items": [4161001]
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30027,
+          30000
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
       },
       {
         "jobIndex": 1,
         "subJobIndex": 0,
         "mapId": 10000,
         "gender": 1,
-        "faces": [21000, 21001, 21002],
-        "hairs": [31000, 31040, 31050],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1041002, 1041006, 1041010, 1041011],
-        "bottoms": [1061002, 1061008],
-        "shoes": [1072001, 1072005, 1072037, 1072038],
-        "weapons": [1302000, 1322005, 1312004],
-        "items": [4161001]
-      }, {
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
         "jobIndex": 2,
         "subJobIndex": 0,
         "mapId": 140090000,
         "gender": 0,
-        "faces": [20100, 20401, 20402],
-        "hairs": [30030, 30027, 30000],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1042167],
-        "bottoms": [1062115],
-        "shoes": [1072383],
-        "weapons": [1442079],
-        "items": [4161048]
-      }, {
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30027,
+          30000
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
         "jobIndex": 2,
         "subJobIndex": 0,
         "mapId": 140090000,
         "gender": 1,
-        "faces": [21700, 21201, 21002],
-        "hairs": [31002, 31047, 31057],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1042167],
-        "bottoms": [1062115],
-        "shoes": [1072383],
-        "weapons": [1442079],
-        "items": [4161048]
-      }, {
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31002,
+          31047,
+          31057
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
         "jobIndex": 3,
         "subJobIndex": 0,
         "mapId": 100030100,
         "gender": 0,
-        "faces": [20100, 20401, 20402],
-        "hairs": [30030, 30027, 30000],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1042180],
-        "bottoms": [1060138],
-        "shoes": [1072418],
-        "weapons": [1302132]
-      }, {
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30027,
+          30000
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1060138
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      },
+      {
         "jobIndex": 3,
         "subJobIndex": 0,
         "mapId": 100030100,
         "gender": 1,
-        "faces": [21700, 21201, 21002],
-        "hairs": [31002, 31047, 31057],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1042180],
-        "bottoms": [1061160],
-        "shoes": [1072418],
-        "weapons": [1302132]
-      }, {
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31002,
+          31047,
+          31057
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1061160
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      },
+      {
         "jobIndex": 1,
         "subJobIndex": 1,
         "mapId": 10000,
         "gender": 0,
-        "faces": [20100, 20401, 20402],
-        "hairs": [30030, 30027, 30000],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1052269],
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30027,
+          30000
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1052269
+        ],
         "bottoms": [],
-        "shoes": [1072001, 1072005, 1072037, 1072038],
-        "weapons": [1302000, 1322005, 1312004],
-        "items": [4161001]
-      }, {
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
         "jobIndex": 1,
         "subJobIndex": 1,
         "mapId": 10000,
         "gender": 1,
-        "faces": [21700, 21201, 21002],
-        "hairs": [31002, 31047, 31057],
-        "hairColors": [0],
-        "skinColors": [0],
-        "tops": [1052269],
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31002,
+          31047,
+          31057
+        ],
+        "hairColors": [
+          0
+        ],
+        "skinColors": [
+          0
+        ],
+        "tops": [
+          1052269
+        ],
         "bottoms": [],
-        "shoes": [1072001, 1072005, 1072037, 1072038],
-        "weapons": [1302000, 1322005, 1312004],
-        "items": [4161001]
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
       }
     ],
     "presets": []
   },
-  "worlds": [{
-      "name": "かえで",
+  "worlds": [
+    {
+      "name": "\u304b\u3048\u3067",
       "flag": "Nothing",
-      "serverMessage": "かえでへようこそ！",
-      "eventMessage": "かえで!",
-      "whyAmIRecommended": "人口が多い!",
+      "serverMessage": "\u304b\u3048\u3067\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u304b\u3048\u3067!",
+      "whyAmIRecommended": "\u4eba\u53e3\u304c\u591a\u3044!",
       "expRate": 1.0,
       "mesoRate": 1.0,
       "itemDropRate": 1.0,
       "questExpRate": 1.0
     },
     {
-      "name": "もみじ",
+      "name": "\u3082\u307f\u3058",
       "flag": "Nothing",
-      "serverMessage": "もみじへようこそ！",
-      "eventMessage": "もみじ!",
+      "serverMessage": "\u3082\u307f\u3058\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3082\u307f\u3058!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1438,10 +2082,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "あんず",
+      "name": "\u3042\u3093\u305a",
       "flag": "Nothing",
-      "serverMessage": "あんずへようこそ！",
-      "eventMessage": "あんず!",
+      "serverMessage": "\u3042\u3093\u305a\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3042\u3093\u305a!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1449,10 +2093,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "かりん",
+      "name": "\u304b\u308a\u3093",
       "flag": "Nothing",
-      "serverMessage": "かりんへようこそ！",
-      "eventMessage": "かりん!",
+      "serverMessage": "\u304b\u308a\u3093\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u304b\u308a\u3093!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1460,10 +2104,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "さくら",
+      "name": "\u3055\u304f\u3089",
       "flag": "Nothing",
-      "serverMessage": "さくらへようこそ！",
-      "eventMessage": "さくら!",
+      "serverMessage": "\u3055\u304f\u3089\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3055\u304f\u3089!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1471,10 +2115,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "すもも",
+      "name": "\u3059\u3082\u3082",
       "flag": "Nothing",
-      "serverMessage": "すももへようこそ！",
-      "eventMessage": "すもも!",
+      "serverMessage": "\u3059\u3082\u3082\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3059\u3082\u3082!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1482,10 +2126,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "ぽぷら",
+      "name": "\u307d\u3077\u3089",
       "flag": "Nothing",
-      "serverMessage": "ぽぷらへようこそ！",
-      "eventMessage": "ぽぷら!",
+      "serverMessage": "\u307d\u3077\u3089\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u307d\u3077\u3089!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1493,10 +2137,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "けやき",
+      "name": "\u3051\u3084\u304d",
       "flag": "Nothing",
-      "serverMessage": "けやきへようこそ！",
-      "eventMessage": "けやき!",
+      "serverMessage": "\u3051\u3084\u304d\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3051\u3084\u304d!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1504,10 +2148,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "ぷらむ",
+      "name": "\u3077\u3089\u3080",
       "flag": "Nothing",
-      "serverMessage": "ぷらむへようこそ！",
-      "eventMessage": "ぷらむ!",
+      "serverMessage": "\u3077\u3089\u3080\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3077\u3089\u3080!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1515,10 +2159,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "なつめ",
+      "name": "\u306a\u3064\u3081",
       "flag": "Nothing",
-      "serverMessage": "なつめへようこそ！",
-      "eventMessage": "なつめ!",
+      "serverMessage": "\u306a\u3064\u3081\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u306a\u3064\u3081!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1526,10 +2170,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "くぬぎ",
+      "name": "\u304f\u306c\u304e",
       "flag": "Nothing",
-      "serverMessage": "くぬぎへようこそ！",
-      "eventMessage": "くぬぎ!",
+      "serverMessage": "\u304f\u306c\u304e\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u304f\u306c\u304e!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1537,10 +2181,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "つばき",
+      "name": "\u3064\u3070\u304d",
       "flag": "Nothing",
-      "serverMessage": "つばきへようこそ！",
-      "eventMessage": "つばき!",
+      "serverMessage": "\u3064\u3070\u304d\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u3064\u3070\u304d!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1548,10 +2192,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "みずき",
+      "name": "\u307f\u305a\u304d",
       "flag": "Nothing",
-      "serverMessage": "みずきへようこそ！",
-      "eventMessage": "みずき!",
+      "serverMessage": "\u307f\u305a\u304d\u3078\u3088\u3046\u3053\u305d\uff01",
+      "eventMessage": "\u307f\u305a\u304d!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -1562,9 +2206,18 @@
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [
-        {"templateId": 5211060, "hours": 2},
-        {"templateId": 5211048, "hours": 4},
-        {"templateId": 5360042, "hours": 4}
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
       ]
     }
   }

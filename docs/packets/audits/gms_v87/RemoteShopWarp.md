@@ -1,7 +1,7 @@
 # RemoteShopWarp (← `CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp`)
 
 - **IDA:** 0xabf9ea
-- **Atlas file:** `../../libs/atlas-packet/merchant/clientbound/operation.go`
+- **Atlas file:** `libs/atlas-packet/merchant/clientbound/operation.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

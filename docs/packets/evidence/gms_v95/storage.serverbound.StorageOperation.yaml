@@ -1,0 +1,8 @@
+packet: storage/serverbound/StorageOperation
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#Operation
+    address: "0x76a990"
+    decompile_sha256: 50fc91484e0c9056d1b9d5907216297e9edb5abbf01b70b2e144ca687b88233d

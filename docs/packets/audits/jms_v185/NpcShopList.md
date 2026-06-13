@@ -1,7 +1,7 @@
 # NpcShopList (← `CShopDlg::SetShopDlg`)
 
 - **IDA:** 0x7c6536
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/shop_list.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_list.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** 🔍

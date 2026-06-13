@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashCheckWallet
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::TrySendQueryCashRequest
+    address: "0x472958"
+    decompile_sha256: 0e54387efb21b1c4bd1f64dded39220f6699bd247c5ae478df174037c8a7abfd

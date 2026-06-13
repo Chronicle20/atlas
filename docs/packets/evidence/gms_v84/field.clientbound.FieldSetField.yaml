@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetField
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetField
+    address: "0x798987"
+    decompile_sha256: 6759a73048235756ced7850c474ca5de14dcb45ce1c79d43220315328282cfe6

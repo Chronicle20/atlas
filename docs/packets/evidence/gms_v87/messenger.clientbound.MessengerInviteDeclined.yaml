@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerInviteDeclined
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#InviteDeclined
+    address: "0x8b978f"
+    decompile_sha256: 313753d838499c91c0788cbdf30c9a50a126ce6c5efb8a31d3869a506d1f29f6

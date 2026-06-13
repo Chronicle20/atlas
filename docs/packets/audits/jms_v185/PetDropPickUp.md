@@ -1,11 +1,10 @@
 # PetDropPickUp (← `CPet::SendDropPickUpRequest`)
 
 - **IDA:** 0x76bcc6
-- **Atlas file:** `../../libs/atlas-packet/pet/serverbound/drop_pick_up.go`
+- **Atlas file:** `libs/atlas-packet/pet/serverbound/drop_pick_up.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 3
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -21,8 +20,8 @@
 | 7 | byte | byte `m_bPickupOthers` | ✅ |  |
 | 8 | byte | byte `m_bSweepForDrop` | ✅ |  |
 | 9 | byte | byte `m_bLongRange` | ✅ |  |
-| 10 | byte | int16 `pet pos.x — gated dwID % 13 == 0` | ❌ | atlas: short — missing trailing field |
-| 11 | byte | int16 `pet pos.y` | ❌ | atlas: short — missing trailing field |
-| 12 | byte | int32 `m_dwPosCRC` | ❌ | atlas: short — missing trailing field |
-| 13 | byte | int32 `dwRectCrc` | ❌ | atlas: short — missing trailing field |
+| 10 | int16 | int16 `pet pos.x — gated dwID % 13 == 0` | ✅ |  |
+| 11 | int16 | int16 `pet pos.y` | ✅ |  |
+| 12 | int32 | int32 `m_dwPosCRC` | ✅ |  |
+| 13 | int32 | int32 `dwRectCrc` | ✅ |  |
 

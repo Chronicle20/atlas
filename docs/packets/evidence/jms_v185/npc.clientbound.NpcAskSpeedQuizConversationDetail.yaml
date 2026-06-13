@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcAskSpeedQuizConversationDetail
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz
+    address: "0x7b8501"
+    decompile_sha256: a2d4b036a86f90f8e4417ba60b7d74b97f1f08f572cc0305f65d1fdec30281c8

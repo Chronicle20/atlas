@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationInvite
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendInviteTradingRoomMsg
+    address: "0x53bc2a"
+    decompile_sha256: 5e4e23b25edb24ecc32ea8049e5e432058acc6b4fa969065667525448e297fda

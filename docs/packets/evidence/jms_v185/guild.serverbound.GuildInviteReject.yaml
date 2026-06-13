@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildInviteReject
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CFadeWnd::SendCloseMessage#DenyGuildRequest
+    address: "0x557267"
+    decompile_sha256: 664bc8eda942002da72c81fa98b09ce5a83bebc4dec7c2af9891cb543be2fe5b

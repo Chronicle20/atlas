@@ -52,12 +52,27 @@ func isSkillOnlyMount(id skill2.Id, level byte) bool {
 	return ok
 }
 
-// vehicleStatups builds the MONSTER_RIDING statup slice carrying the vehicle id
-// (the equipped taming-mob item id) as its amount. This is the cross-task
-// contract: the Task-2 CTS encoder and Task-18 buff consumer read the buff
-// change Amount as the vehicle id.
-func vehicleStatups(vehicleId int32) []statup.Model {
-	return []statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeMonsterRiding), vehicleId)}
+// tamedMountStatups returns the effect's statups with the MONSTER_RIDING amount
+// overridden to vehicleId (the equipped taming-mob item id), preserving any
+// other stats the mount skill grants (e.g. WEAPON_DEFENSE/MAGIC_DEFENSE). The
+// vehicle id is the cross-task contract: the CTS encoder and buff consumer read
+// the MONSTER_RIDING change Amount as the vehicle id. If the effect carries no
+// MONSTER_RIDING statup, one is appended so the mount always renders.
+func tamedMountStatups(e effect.Model, vehicleId int32) []statup.Model {
+	out := make([]statup.Model, 0, len(e.StatUps())+1)
+	hasRiding := false
+	for _, su := range e.StatUps() {
+		if su.Mask() == string(charconst.TemporaryStatTypeMonsterRiding) {
+			out = append(out, statup.NewModel(su.Mask(), vehicleId))
+			hasRiding = true
+			continue
+		}
+		out = append(out, su)
+	}
+	if !hasRiding {
+		out = append(out, statup.NewModel(string(charconst.TemporaryStatTypeMonsterRiding), vehicleId))
+	}
+	return out
 }
 
 // HandleMount implements the server-driven mount toggle. It runs BEFORE the
@@ -65,14 +80,14 @@ func vehicleStatups(vehicleId int32) []statup.Model {
 //
 // Cases (design §5.1):
 //  1. Already mounted (active MONSTER_RIDING from this skill) -> Cancel, no Apply.
-//  2. Tamed, slots -18 AND -19 both present, not mounted -> Apply with
-//     amount = item@-18 (the taming-mob/vehicle id), sourceId = skillId,
-//     duration = MaxInt32.
+//  2. Tamed, slots -18 AND -19 both present, not mounted -> Apply the effect's
+//     statups with MONSTER_RIDING amount = item@-18 (the taming-mob/vehicle id),
+//     sourceId = skillId, duration = MaxInt32.
 //  3. Tamed, slot -18 empty -> silent no-op.
 //  4. Tamed, slot -19 empty -> silent no-op.
-//  5. Skill-only, not mounted -> Apply with amount = the MONSTER_RIDING amount
-//     already present in e.StatUps() (the vehicle id atlas-data produced), no
-//     slot lookup.
+//  5. Skill-only, not mounted -> Apply the effect's full statup set (the vehicle
+//     id atlas-data injected into MONSTER_RIDING plus any stats the skill grants),
+//     no slot lookup.
 //
 // All no-op paths return nil; the caller (character_skill_use.go) unconditionally
 // re-enables actions after UseSkill returns, so HandleMount never needs to.
@@ -95,15 +110,16 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 		return nil
 	}
 
-	// Case 5: skill-only mount -> apply the vehicle id carried in the effect's
-	// MONSTER_RIDING statup. No equip-slot lookup.
+	// Case 5: skill-only mount -> apply the effect's full statup set. atlas-data
+	// already injected the vehicle id into the MONSTER_RIDING statup, so the
+	// effect carries the vehicle plus any stats the skill grants (e.g. the Yeti
+	// Rider's +10 weapon/magic defense). No equip-slot lookup.
 	if isSkillOnlyMount(skillId, info.SkillLevel()) {
-		statups := monsterRidingStatups(e)
-		if len(statups) == 0 {
+		if len(monsterRidingStatups(e)) == 0 {
 			l.Warnf("Character [%d] cast skill-only mount [%d] but effect carries no MONSTER_RIDING statup; no-op.", characterId, info.SkillId())
 			return nil
 		}
-		return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, statups)
+		return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, e.StatUps())
 	}
 
 	// Cases 2-4: tamed mount. Require BOTH the taming-mob (-18) and saddle (-19).
@@ -127,8 +143,10 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 		return nil
 	}
 
-	// Case 2: both slots present -> mount. The vehicle id is the taming-mob item id.
-	return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, vehicleStatups(tamingMobId))
+	// Case 2: both slots present -> mount. The vehicle id is the taming-mob item
+	// id (overriding atlas-data's skill-id placeholder); other granted stats are
+	// preserved.
+	return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, tamedMountStatups(e, tamingMobId))
 }
 
 // monsterRidingStatups filters the effect's statups down to MONSTER_RIDING.

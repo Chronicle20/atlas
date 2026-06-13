@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskMemberShopAvatarConversationDetail
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar
+    address: "0x6dd340"
+    decompile_sha256: b08d9de0a602f94f516f4e64cb0ddbe77ed1107a6dd718b58a26bfcaa0008025
+verifies:
+    - libs/atlas-packet/npc/clientbound/conversation_test.go#TestAskMemberShopAvatarConversationDetailEncode

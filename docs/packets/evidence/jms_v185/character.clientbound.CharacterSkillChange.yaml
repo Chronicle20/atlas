@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterSkillChange
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnChangeSkillRecordResult
+    address: "0xb04ff3"
+    decompile_sha256: 51436b5cd9ebb9429cf478e84f8d96bba8788961cbf2fea054f2c97c502bcf77

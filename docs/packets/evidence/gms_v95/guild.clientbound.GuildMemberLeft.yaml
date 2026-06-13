@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberLeft
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberLeft
+    address: "0xa0dd06"
+    decompile_sha256: ca683cdcee73b591f25de20d17e340cbaf7522712b7ebaeecd3cf0ddb1432e8d

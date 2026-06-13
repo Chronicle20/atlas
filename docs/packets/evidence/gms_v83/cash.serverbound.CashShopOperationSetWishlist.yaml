@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationSetWishlist
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnSetWish
+    address: "0x470d7d"
+    decompile_sha256: 1004af5458f164e4f1c2c8f54886fddd3d62e89423387d736f5447977bd1482a

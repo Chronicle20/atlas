@@ -8,6 +8,21 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=fame/clientbound/ErrorResponse version=gms_v83 ida=0xa223dc
+// packet-audit:verify packet=fame/clientbound/ErrorResponse version=gms_v87 ida=0xab9c24
+// packet-audit:verify packet=fame/clientbound/ErrorResponse version=gms_v95 ida=0x9fea60
+// packet-audit:verify packet=fame/clientbound/ErrorResponse version=jms_v185 ida=0xb094aa
+// packet-audit:verify packet=fame/clientbound/ReceiveResponse version=gms_v83 ida=0xa223dc
+// packet-audit:verify packet=fame/clientbound/GiveResponse version=gms_v83 ida=0xa223dc
+// packet-audit:verify packet=fame/clientbound/ReceiveResponse version=gms_v87 ida=0xab9c24
+// packet-audit:verify packet=fame/clientbound/GiveResponse version=gms_v87 ida=0xab9c24
+// packet-audit:verify packet=fame/clientbound/ReceiveResponse version=gms_v95 ida=0x9fea60
+// packet-audit:verify packet=fame/clientbound/GiveResponse version=gms_v95 ida=0x9fea60
+// packet-audit:verify packet=fame/clientbound/ReceiveResponse version=jms_v185 ida=0xb094aa
+// packet-audit:verify packet=fame/clientbound/GiveResponse version=jms_v185 ida=0xb094aa
+// packet-audit:verify packet=fame/clientbound/ReceiveResponse version=gms_v84 ida=0xa6d8ee
+// packet-audit:verify packet=fame/clientbound/ErrorResponse version=gms_v84 ida=0xa6d8ee
+// packet-audit:verify packet=fame/clientbound/GiveResponse version=gms_v84 ida=0xa6d8ee
 func TestReceiveFameResponse(t *testing.T) {
 	input := NewReceiveFameResponse(0, "Player1", 1)
 	for _, v := range pt.Variants {

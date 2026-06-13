@@ -1,0 +1,8 @@
+packet: drop/clientbound/DropSpawn
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CDropPool::OnDropEnterField
+    address: "0x50e789"
+    decompile_sha256: 98178cdd8bc101b64a7b4c503dca6be25f8f17894f0e3d21bb02677fbc52da60

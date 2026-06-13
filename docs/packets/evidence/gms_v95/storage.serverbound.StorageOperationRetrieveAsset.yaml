@@ -1,0 +1,8 @@
+packet: storage/serverbound/StorageOperationRetrieveAsset
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::SendGetItemRequest
+    address: "0x769e00"
+    decompile_sha256: 93c733e147866e5b2a3e6f9f2e8d3259ae436b4ca602f11df39cf90e80ae3340

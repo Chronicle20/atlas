@@ -1,0 +1,8 @@
+packet: note/clientbound/NoteDisplay
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#Display
+    address: "0x9f9da0"
+    decompile_sha256: 7b94fe2df0cae651665c49fb3e9474b9e3bac8ba1daecd3eacdb148af3ee81e8

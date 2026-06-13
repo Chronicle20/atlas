@@ -1,7 +1,7 @@
 # NpcGuideTalkMessage (← `CUserLocal::OnTutorMsg#Message`)
 
 - **IDA:** 0xa2d342
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/guide_talk.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/guide_talk.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

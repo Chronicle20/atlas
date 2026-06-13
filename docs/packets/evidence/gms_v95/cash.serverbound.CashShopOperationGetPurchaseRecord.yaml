@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationGetPurchaseRecord
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::RequestCashPurchaseRecord
+    address: "0x4823c0"
+    decompile_sha256: f46129eba33c6bffe33a0d2699cc008e4f6e68dc11f05c7d0d580723d006bae5

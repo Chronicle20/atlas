@@ -1,7 +1,7 @@
 # PortalScript (← `CUserLocal::CheckPortal_Collision`)
 
 - **IDA:** 0x94dac6
-- **Atlas file:** `../../libs/atlas-packet/portal/serverbound/script.go`
+- **Atlas file:** `libs/atlas-packet/portal/serverbound/script.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

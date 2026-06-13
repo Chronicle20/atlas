@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcShopSell
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SendSellRequest
+    address: "0x7a256b"
+    decompile_sha256: d4e5c6697d1f324526bb46bf7750b118ffc10bb54076e6932b169558fc646efc

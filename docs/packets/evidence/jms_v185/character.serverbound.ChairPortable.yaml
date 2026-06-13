@@ -1,0 +1,8 @@
+packet: character/serverbound/ChairPortable
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSitOnPortableChairRequest
+    address: "0xaf3ee8"
+    decompile_sha256: c60987d356b8eb89961160b7e175a819b10a6cf056d42d9c8df8a57de8fe9b60

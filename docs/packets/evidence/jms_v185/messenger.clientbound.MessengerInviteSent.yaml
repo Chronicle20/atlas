@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerInviteSent
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#InviteSent
+    address: "0x8e4515"
+    decompile_sha256: 2cc0e693f046103af3ef86930ac00aa3e8c29e6aa43895d150827e0c34d92d03

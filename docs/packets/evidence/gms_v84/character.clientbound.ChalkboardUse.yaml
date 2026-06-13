@@ -1,0 +1,8 @@
+packet: character/clientbound/ChalkboardUse
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnADBoard
+    address: "0x96e8c0"
+    decompile_sha256: b636e5d0acb7a90b9257e3d21c28bb7366d0e2f37a4135b4d8a34bae0455ec3e

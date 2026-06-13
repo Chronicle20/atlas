@@ -273,9 +273,16 @@ Note: `CUserLocal::TryDoingBodyAttack` (TOUCH_MONSTER_ATTACK) and
 
 | op | dir | opcode | registry fname | status |
 |---|---|---|---|---|
-| MOB_TIME_BOMB_END | sb | 208 | CMob::UpdateTimeBomb | UNRESOLVED — no `UpdateTimeBomb`/`TimeBomb` symbol in v87 IDB |
-| MOB_ESCORT_COLLISION | sb | 209 | CMob::SendCollisionEscort | UNRESOLVED — no `Escort`/`CollisionEscort` symbol in v87 IDB |
-| MOB_ESCORT_FULL_PATH | cb | 273 | CMob::OnEscortFullPath | VERSION-ABSENT — 0x111 not dispatched; no symbol (see dispatcher above) |
+| MOB_TIME_BOMB_END | sb | 208 | CMob::UpdateTimeBomb | UNRESOLVED — **inlined into `Update@CMob`** (0x6A1C43) in v87. The v95 standalone `CMob::UpdateTimeBomb` (0x155-byte private method, sole caller Update@CMob) has no v87 counterpart; every GetBodyRect-calling unnamed CMob sub was checked (the only 0x156-byte one, `sub_6AADC9`, is the HP-tag-layer positioner, not the time-bomb send). Left unnamed per the no-guess rule. |
+| MOB_ESCORT_COLLISION | sb | 209 | CMob::SendCollisionEscort | **VERSION-ABSENT (corrected 2026-06-13)** — the entire escort family is absent in v87: the dispatcher (@0x6B4EAD) ends at OnMobAttackedByMob/0x110 with no escort cases, and there is no `CVecCtrlMob::CollisionDetectEscortDest` (the sole caller of SendCollisionEscort in v95) nor any `Escort` symbol in the v87 IDB. Escort was introduced after v87. Not an IDB-naming gap. |
+| MOB_ESCORT_FULL_PATH | cb | 273 | CMob::OnEscortFullPath | VERSION-ABSENT — 0x111 not dispatched; no symbol (see dispatcher above). |
 
-TIME_BOMB_END / ESCORT_COLLISION are real ops with unnamed send-sites; ESCORT_FULL_PATH is
-genuinely version-absent in v87. Flagged, not fabricated.
+Disposition after the 2026-06-13 naming pass:
+- **MOB_ESCORT_COLLISION (sb): VERSION-ABSENT** — escort family absent in v87 (dispatcher +
+  no CVecCtrlMob::CollisionDetectEscortDest). Reclassified from the earlier "unnamed send-site"
+  guess; matches MOB_ESCORT_FULL_PATH's version-absent status.
+- **MOB_TIME_BOMB_END (sb): inlined** into `Update@CMob` in v87 (the standalone helper is a
+  later-build refactor; same situation as v83). Not nameable as a discrete function without
+  splitting the inline out, which the no-guess rule forbids.
+- `CMob::OnMobSkillDelay` (cb) is ALREADY named + harvested in v87 (case 0x10F @0x6AD0E8,
+  4×Decode4) — no action needed; it is NOT a v87 gap (contrast v83, where it is version-absent).

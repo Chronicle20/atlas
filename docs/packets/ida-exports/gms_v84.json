@@ -21016,6 +21016,16 @@
           "guard": "result"
         }
       ]
+    },
+    "CMobPool::OnMobCrcKeyChanged": {
+      "address": "0x690354",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

@@ -167,3 +167,170 @@ atlas-channel/atlas-consumables/atlas-data/atlas-messages/atlas-npc-conversation
 ## Overall Verdict
 
 **NEEDS-WORK.** The new `atlas-mounts` service is a clean, idiomatic clone of the pets pattern: immutable model+builder, processor interface/impl with `With(WithTransaction)` and atomic tx-then-emit, tenant-scoped GORM access with no manual tenant predicates, Redis confined to the `atlas-redis` lib wrappers, and curried Kafka consumer/handler registration. Build and tests are green. Two Important issues must be fixed before merge — the missing env-configmap topic declarations (DOM-23) and the consumables food-consumer producer-stub discipline (DOM-24) — plus the dead-code cleanup (M-1). DOM-21 constant reuse is fully satisfied across all touched modules.
+
+---
+
+## Plan adherence audit (post-mount-fix) — 2026-06-13
+
+**Plan Path:** docs/tasks/task-086-mount-system/plan.md
+**Branch:** task-086-mount-system (HEAD cfb91e71b)
+**Auditor focus:** post-IDA mount-render fix + SET_TAMING_MOB_INFO → char-info substitution; food opcodes per version; Task 41b cross-version status.
+
+### Executive summary
+
+The plan is faithfully implemented. All 42 numbered tasks are DONE except: Task 8 (correctly conditional-SKIPPED, WZ carries no heal field), Task 41b (PARTIAL — v83/v84/v87/v95/jms verified, v12/v92 explicitly deferred with no IDB), and Task 30 (resolved via the user-approved Task 30b cancel_all_buffs substitution). The post-plan IDA discovery — that no supported client has a standalone SET_TAMING_MOB_INFO opcode — was handled by a complete, consistent substitution: the standalone broadcast is guarded OFF and mount stats are injected into the character-info packet. Builds and targeted tests are green across all 6 affected modules; redis-key-guard (workspace mode) exits 0.
+
+### Build & test results (this audit, worktree)
+
+| Module | Build | Tests (targeted) |
+|---|---|---|
+| libs/atlas-packet | PASS | PASS (model, character/clientbound, mount/serverbound) |
+| libs/atlas-constants | PASS | PASS (skill) |
+| services/atlas-mounts | PASS | PASS (all pkgs); `go vet` clean |
+| services/atlas-channel | PASS | PASS (skill/handler, socket/handler, kafka/consumer/mount, food) |
+| services/atlas-consumables | PASS | PASS (kafka/consumer/food, consumable) |
+| services/atlas-data | PASS | PASS (skill) |
+
+redis-key-guard.sh (workspace mode): exit 0.
+
+### SET_TAMING_MOB_INFO substitution — VERIFIED COMPLETE & CONSISTENT
+
+The plan's standalone-broadcast design (Tasks 5/26/27) was superseded by char-info injection. Every leg of the substitution is present:
+
+1. **Packet model** — `libs/atlas-packet/character/clientbound/info.go:42-47` `MountInfo{Active,Level,Exp,Tiredness}`; encode at `info.go:111-120` writes a 1-byte present flag then 3×int32 (or a single 0 byte), with a matching decode at `:189`. Documented as IDA-uniform across v83/v87/v95/JMS.
+2. **Standalone writer still exists but is GUARDED OFF** — `services/atlas-channel/.../kafka/consumer/mount/consumer.go:63` `clientHasStandaloneTamingMobInfo = func(_ tenant.Model) bool { return false }`; gated at `:106`. The Task-5 writer (`libs/atlas-packet/.../set_taming_mob_info.go`) and Task-26 body wrapper (`socket/writer/set_taming_mob_info.go`) remain as dead-but-ready code behind the flag. The TooTired notice (`:111-113`) still fires unconditionally — correct.
+3. **Char-info handler fetches the mount** — `socket/handler/character_info_request.go:65-75` queries `mount.NewProcessor(...).GetByCharacterId(...)` and passes a populated `MountInfo` into `writer.CharacterInfoBody`.
+4. **atlas-channel/mount REST client** — `services/atlas-channel/atlas.com/channel/mount/{model,processor,requests,rest}.go` present and compiles.
+5. **nginx route** — `deploy/shared/routes.conf:91` and `deploy/k8s/base/routes.conf.template.generated:91` route `^/api/characters/[^/]+/mount(/.*)?$` → `atlas-mounts:8080`.
+
+No half-done edges found: the broadcast path, the guard, the char-info injection, the REST client, and the nginx route are mutually consistent.
+
+### Food opcodes (Task 28 / 41b)
+
+Per-version `MountFoodHandle` opcode bindings confirmed in seed templates (services/atlas-configurations/seed-data/templates):
+- gms_83_1 = 0x4D, gms_84_1 = 0x4D, gms_87_1 = 0x50, gms_95_1 = 0x53, jms_185_1 = 0x45.
+These match deploy-notes.md §"Multi-version mount food opcodes". v12/v92 intentionally absent (no IDB) — documented. Serverbound body (`libs/atlas-packet/mount/serverbound/food.go` ts/slot/itemId) version-uniform per IDA.
+
+### Kafka contract cross-check (Task 35) — PASS
+
+- `COMMAND_TOPIC_TAMING_MOB_FOOD` (channel→consumables), `EVENT_TOPIC_TAMING_MOB_FOOD` (consumables→mounts), `EVENT_TOPIC_MOUNT_STATUS` (mounts→channel) — topic constants identical on both ends; all three declared in `deploy/k8s/base/env-configmap.yaml` + `deploy/compose/.env.example` (DOM-23 fix landed).
+- Revitalizer heal pinned: `RevitalizerTirednessHeal = 30` (consumables `kafka/message/food/kafka.go:61`), emitted at `consumable/processor.go:270` gated on `item.ClassificationRevitalizer` (226).
+
+### Task-by-task status
+
+| # | Task | Status | Evidence |
+|---|---|---|---|
+| 1 | Pin game data | DONE | context.md §8 (CAP=31, mountExp 29-entry table, heal=30, quest 20523) |
+| 2-3 | MONSTER_RIDING base-stat encode (self+foreign) | DONE | character_temporary_stat.go:849-856 (nOption=Value/vehicle, rOption=SourceId/skill); tests pass |
+| 4,6 | atlas-packet module gates | DONE | build+test green this audit |
+| 5 | SET_TAMING_MOB_INFO writer | DONE (superseded/guarded) | set_taming_mob_info.go present; guarded off — see substitution above |
+| 7 | atlas-data skill reader vehicle ids | DONE | skill/reader.go (+reader_test.go); tests pass |
+| 8 | Consumable tiredness-heal spec | SKIPPED (justified) | WZ carries no heal field (context §8.4); heal is server constant 30 — task's own conditional |
+| 8b | atlas-data gate | DONE | build+test green |
+| 9-24 | atlas-mounts service (scaffold→entity→model→feed→tiredness→processor→kafka→registry→consumers→ticker→rest→main→gate) | DONE | full service builds, vet clean, all pkg tests pass; feed.go CAP=31 + table match §8.2; registry via atlas-redis (key-guard clean) |
+| 17 | atlas-constants mount ids/class226/helpers | DONE | skill/constants.go, skill/mount.go, item/constants.go; tests pass |
+| 25 | Channel mount toggle | DONE | skill/handler/mount.go (both-slots -18/-19, MaxInt32, isMounted, skill-only); mount_test.go pass |
+| 26-27 | Writer reg + mount-status consumer | DONE (guarded) | broadcast guarded off; TooTired notice live; char-info injection is the active path |
+| 28-29 | Food handler 0x4D + channel command | DONE | socket/handler/mount_food.go; food/producer.go; per-version opcodes in templates |
+| 30 | Job-change dismount | DONE (via 30b) | resolved by cancel_all_buffs substitution |
+| 30b | cancel_all_buffs on job change | DONE | npc operation_executor.go:821 + messages commands.go:34 both append the step |
+| 31 | Channel gate | DONE | build+targeted tests green |
+| 32-34 | Consumables food consumer + TamingMobFed + gate | DONE | consumable/processor.go RequestFeed (class-226 gate, heal 30); consumer tests pass |
+| 35 | Kafka contract check | DONE | topic constants + heal verified identical across pairs (above) |
+| 36-38 | Riding Mimiana questline | DONE | deploy/seed/gms/83_1/npc-conversations/quests/quest-20523.json (start/complete; WZ EndActions award skill 10001004 + saddle 1912005 + taming-mob 1902005) |
+| 39-40 | services.json + docker-bake + go.work + k8s manifest | DONE | all reference atlas-mounts; routes + env-configmap + PR overlay onboarded |
+| 41 | docker buildx bake | DONE (per deploy-notes §8) | not re-run in this read-only audit; recorded clean on branch |
+| 41b | Cross-version packet verification | PARTIAL (deferral documented/justified) | v83/v84/v87/v95/jms food opcodes + v95 SecondaryStat verified; v12/v92 deferred (no IDB); JMS skill-ids + main-tenant live patches remain post-merge. Plan checkboxes for 41b left unchecked — honest. |
+| 42 | Live-config deploy note + final gate | DONE | deploy-notes.md present and detailed |
+
+### Silently-skipped work
+
+None found. The only unchecked boxes are Task 8 (conditional skip, documented with rationale) and Task 41b steps (pre-deploy gate, explicitly partial with v12/v92 and JMS-skill-id remainder called out in plan + deploy-notes). No task claimed DONE without supporting code.
+
+### Verdict
+
+**Plan adherence: FULL** (with the two documented, justified non-DONE items above). The post-plan architectural pivot (char-info injection replacing the standalone opcode) is complete and internally consistent — not half-done. **Recommendation: READY_TO_MERGE** for v83/v84/v87/v95/jms tenants; v12/v92 enablement and live main-tenant opcode patches are correctly gated behind Task 41b as post-merge / pre-deploy work.
+
+---
+
+# Backend guidelines audit (post-mount-fix) — 2026-06-13
+
+Re-audit of the full task-086 branch (`git diff origin/main..HEAD`) after the fixes that
+followed the 2026-06-12 audit. Scope: atlas-mounts (new service), atlas-channel mount/food
+client + consumer + socket handlers, atlas-consumables food consumer, libs/atlas-packet
+(character_temporary_stat, character info, mount food), libs/atlas-constants (temporary_stat,
+skill/mount). Default-FAIL mindset; every PASS carries a file:line.
+
+## Build & Test Results (objective gate)
+
+| Module | build | vet | test -race |
+|--------|-------|-----|------------|
+| services/atlas-mounts/atlas.com/mounts | PASS | PASS | PASS (mount, kafka/consumer/{buff,character,food}, kafka/message/mount) |
+| libs/atlas-packet | PASS | — | PASS (all packages) |
+| libs/atlas-constants | PASS | — | PASS (incl. skill/mount_test) |
+| services/atlas-channel/atlas.com/channel | PASS | PASS | PASS (mount, kafka/consumer/mount, socket/handler, socket/writer, skill/handler, food) |
+| services/atlas-consumables/.../kafka/consumer/food | — | — | PASS (0.006s — confirms producer stub floor; no 42s emit hang) |
+
+All four named modules build, vet, and test clean. Objective gate: **PASS** — proceed.
+
+## Status changes vs the 2026-06-12 audit
+
+- **DOM-23 — now PASS (was FAIL/blocking).** All three topics are declared in
+  `deploy/k8s/base/env-configmap.yaml` with the required `KEY: "KEY"` shape:
+  `EVENT_TOPIC_CHARACTER_STATUS` (:92), `EVENT_TOPIC_MOUNT_STATUS` (:125),
+  `EVENT_TOPIC_TAMING_MOB_FOOD` (:142). The atlas-mounts Deployment consumes them via
+  `envFrom: configMapRef` (`deploy/k8s/base/atlas-mounts.yaml:21-22`) with no literal
+  per-service overrides. The earlier blocking miss is resolved.
+- **DOM-24 — now PASS (was FAIL/blocking).** `services/atlas-consumables/.../kafka/consumer/food/consumer_test.go`
+  now has a `TestMain` installing the shared `producertest.InstallNoop()` floor (:27-29), and
+  the forbidden `t.Cleanup(ResetInstance)` revert is gone — the helper explicitly documents NOT
+  resetting the singleton (:82-91). The service-local `capturingWriter`/`ConfigWriterFactory`
+  layered on top (:89-91) is the accepted message-capture path (producertest has no capturing
+  variant); the two negative tests assert *no* emission and the shape test calls the provider
+  directly, so no real broker path is reachable. Test runtime 0.006s confirms it.
+
+## Domain Checklist — atlas-mounts `mount` (unchanged PASS, spot-reverified)
+
+DOM-01..DOM-22 all PASS as previously recorded. Reverified high-signal items:
+- DOM-06 `logrus.FieldLogger` processor.go:39; DOM-10 `RegisterTenantCallbacks` processor_test.go:44;
+  DOM-11 `db.WithContext(ctx)` processor.go:71 + string-based WHERE administrator.go:35,47 (no manual
+  tenant predicate, no struct-WHERE); DOM-15 no `db.Create/Save/Delete` in resource.go;
+  DOM-21 reuse confirmed — buff/consumer.go:70 uses `characterconst.TemporaryStatTypeMonsterRiding`,
+  :92 `skill.IsTamedMountSkill`; no service-local redeclaration of shared types.
+- DOM-17 remains **WARN** (non-blocking): mount/resource.go:32,38 map every error to HTTP 500.
+  Acceptable because the processor default-creates on first read (processor.go:70-103), so a genuine
+  404 is unreachable on this GET; only infra errors arrive, for which 500 is correct.
+
+## New findings this pass (not in prior audit) — atlas-channel mount REST client
+
+The `services/atlas-channel/atlas.com/channel/mount/` client was not assessed against the External
+HTTP Client checklist before. Triggered by `requests.GetRequest[RestModel]` in requests.go:18.
+
+- **EXT-01 — PASS.** Upstream `mounts` resource is a flat JSON:API model with no `relationships`
+  block (`services/atlas-mounts/atlas.com/mounts/mount/rest.go` has no relationship methods), so the
+  missing `SetToOneReferenceID`/`SetToManyReferenceIDs` on the channel-side `RestModel` (rest.go:4-19)
+  cannot cause an api2go unmarshal error. Low risk; not blocking.
+- **EXT-02 — FAIL (non-blocking).** No httptest-backed integration test exists for the client. The
+  `mount/` package has only model.go/processor.go/requests.go/rest.go — no `_test.go` at all. The
+  client's `GetByCharacterId` unmarshal path (processor.go:26-28 via `requests.Provider`) is exercised
+  by nothing. A `httptest.NewServer` fixture returning the upstream `{"data":{"type":"mounts",...}}`
+  shape and asserting a populated Model is required by the checklist.
+- **EXT-03 — FAIL (Important).** `socket/handler/character_info_request.go:66` treats **any**
+  `GetByCharacterId` error as "no mount block" (`if ... mErr == nil { populate }` else leaves
+  `mountInfo` zero/inactive). The client does not use `requests.ErrNotFound` anywhere
+  (grep -> 0 in mount/). Because atlas-mounts default-creates a row on first read, a real 404 is not
+  expected — which means every error that reaches this branch is actually a transport/decode/5xx
+  failure being silently swallowed as "character has no mount." This is exactly the masking the
+  checklist warns against. At minimum the non-404 error should be logged at the call site (it currently
+  is not) and ideally surfaced distinctly from the genuine no-mount case.
+- **EXT-04 — PASS.** URL composed via `requests.RootUrl("MOUNTS")` (requests.go:14), not hardcoded DNS.
+
+## Overall Verdict (post-fix)
+
+**NEEDS-WORK.** The two prior blocking items (DOM-23 env-configmap, DOM-24 producer stub) are
+**resolved** — build/vet/test are green across all four modules and the consumables food test no
+longer risks the 42s emit hang. The atlas-mounts service itself remains a clean, idiomatic
+implementation with full DOM-21 constant reuse. The remaining issues are confined to the
+atlas-channel mount REST client: EXT-03 (error masking at character_info_request.go:66) is the one
+item worth fixing before merge; EXT-02 (no httptest client test) is a should-fix. Neither breaks the
+build. No new blocking defects in the mount domain itself.

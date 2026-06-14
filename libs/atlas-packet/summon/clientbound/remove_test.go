@@ -23,7 +23,6 @@ func TestSummonRemove(t *testing.T) {
 // (sub_7A64EB). (The prior "no oid" reading missed the upstream cid — see
 // summon-wire-truth.md.) NOTE: v84/v87/jms inherit this correction; their matrix
 // cells need re-verification against the cid-pre-reading dispatcher.
-// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x938dd7
 func TestSummonRemoveBytes(t *testing.T) {
 	in := NewSummonRemove(42, 1000001, true)
 	ctx := test.CreateContext("GMS", 83, 1)

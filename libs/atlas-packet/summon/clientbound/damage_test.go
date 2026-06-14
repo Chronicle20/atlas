@@ -40,7 +40,6 @@ var summonDamageV83Body = []byte{
 // broadcast). (The prior "no oid" reading missed the upstream CUserPool cid read
 // — see summon-wire-truth.md.) NOTE: v84/v87/jms inherit this correction; their
 // matrix cells need re-verification against the cid-pre-reading dispatcher.
-// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x938dd7
 func TestSummonDamageBytes(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 83, 1)

@@ -87,7 +87,6 @@ var summonAttackV83Body = []byte{
 // upstream cid — see summon-wire-truth.md.) NOTE: v84/v87/jms inherit this
 // correction; their matrix cells need re-verification against the cid-pre-reading
 // dispatcher.
-// packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x938dd7
 func TestSummonAttackBytes(t *testing.T) {
 	targets := []SummonAttackTarget{
 		NewSummonAttackTarget(1000001, 1234),

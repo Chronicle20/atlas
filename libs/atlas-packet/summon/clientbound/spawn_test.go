@@ -75,7 +75,6 @@ var summonSpawnV83Body = []byte{
 // (spawnSummon always writes ownerId, objectId, skillId), but have NOT been
 // re-confirmed live — their coverage-matrix cells need re-verification against the
 // cid-pre-reading dispatcher (the old ida= markers below point at the wrong path).
-// packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v83 ida=0x95adec
 func TestSummonSpawnBytesV83(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("GMS", 83, 1)

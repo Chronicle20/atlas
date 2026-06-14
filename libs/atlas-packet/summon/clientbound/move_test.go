@@ -52,7 +52,6 @@ func TestSummonMove(t *testing.T) {
 // the cid — see summon-wire-truth.md.) NOTE: v84/v87/jms inherit this correction
 // by the same dispatcher logic; their matrix cells need re-verification against the
 // cid-pre-reading dispatcher (the old ida= markers analyzed the wrong layer).
-// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v83 ida=0x938dd7
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, 100, -50, raw)

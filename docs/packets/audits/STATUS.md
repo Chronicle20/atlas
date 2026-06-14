@@ -5,11 +5,11 @@
 
 Tool: `2a158caf3b3241148d9e36b4c95629ac7b486c25`
 
-- export gms_v83: `f3608d0712c51cd7dbadb7def455072ff05cb47143e2b1ec1d33bb214bc5b77f`
+- export gms_v83: `aa54cf23bf3e593ebb2b46bdff73c4ab0fd75542e214c1c704e37e32c7a56644`
 - export gms_v84: `c1db9c78e59795b4a061403f49275b790e0eed7cca4ac239bbc0bd5036f9b2a2`
-- export gms_v87: `1ce8952dde8bcb00e91226a7d86870d764d4e8f9f3f395413b5721a6419abd6e`
-- export gms_v95: `01f959cc3fc1440c4676e1286bd59358c32070407111993050aa8427b23488a3`
-- export jms_v185: `c012a22e908b3525dd2fd7ce57bae51b80c7f22374b49696120920d474d62b54`
+- export gms_v87: `901f5a3d59939d3356c161c3539b1c9eacf16ab42ab45834e77481517c72cb3c`
+- export gms_v95: `f77c7ab1446366e3f7c956de5476576fbcdaffcb27c501676ec2be8d226ce081`
+- export jms_v185: `5fab251b2ed9344007b3b3e3c35a631fb8c1c3c6aafccf70d3ff6cf75a9eeb78`
 
 ## Clientbound
 
@@ -170,38 +170,38 @@ Tool: `2a158caf3b3241148d9e36b4c95629ac7b486c25`
 | SHOW_SLOT_MESSAGE | CWvsContext::OnShowSlotMessage |  |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x083 | ❌ |  | ⬜ |
 | ACCOUNT_MORE_INFO | CWvsContext::OnAccountMoreInfo |  |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ |  | ⬜ |
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  | 0x082 | ❌ | 0x082 | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x080 | ❌ |
-| BLOCKED_MAP | CField::OnTransferFieldReqIgnored |  | 0x083 | ❌ | 0x083 | ❌ | 0x08B | ❌ | 0x093 | ❌ | 0x081 | ❌ |
+| BLOCKED_MAP | CField::OnTransferFieldReqIgnored |  | 0x083 | ❌ | 0x086 | ❌ | 0x08B | ❌ | 0x093 | ❌ | 0x081 | ❌ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ |  | ⬜ |
-| BLOCKED_SERVER | CField::OnTransferChannelReqIgnored |  | 0x084 | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x094 | ❌ | 0x082 | ❌ |
+| BLOCKED_SERVER | CField::OnTransferChannelReqIgnored |  | 0x084 | ❌ | 0x087 | ❌ | 0x08C | ❌ | 0x094 | ❌ | 0x082 | ❌ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
-| FORCED_MAP_EQUIP | CField::OnFieldSpecificData |  | 0x085 | ❌ | 0x085 | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x083 | ❌ |
+| FORCED_MAP_EQUIP | CField::OnFieldSpecificData |  | 0x085 | ❌ | 0x088 | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x083 | ❌ |
 | MULTICHAT | CField::OnGroupMessage |  | 0x086 | ❌ | 0x089 | ❌ | 0x08E | ❌ | 0x096 | ❌ | 0x084 | ❌ |
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | WHISPER | CField::OnWhisper |  | 0x087 | ❌ | 0x08A | ❌ | 0x08F | ❌ | 0x097 | ❌ | 0x085 | ❌ |
 | DRAGON_BALL_BOX | CWvsContext::OnDragonBallBox |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | SPOUSE_CHAT | CField::OnCoupleMessage |  | 0x088 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x098 | ❌ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
-| SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable |  | 0x089 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x086 | ❌ |
+| SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable |  | 0x089 | ❌ | 0x08C | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x086 | ❌ |
 | FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | ✅ | 0x08A | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
-| FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff |  | 0x08B | ❌ | 0x08B | ❌ | 0x093 | ❌ | 0x09B | ❌ | 0x088 | ❌ |
-| FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus |  | 0x08C | ❌ | 0x08C | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x089 | ❌ |
-| FIELD_OBSTACLE_ALL_RESET | CField::OnFieldObstacleAllRese; CField::OnFieldObstacleAllReset |  | 0x08D | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x08A | ❌ |
+| FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff |  | 0x08B | ❌ | 0x08E | ❌ | 0x093 | ❌ | 0x09B | ❌ | 0x088 | ❌ |
+| FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus |  | 0x08C | ❌ | 0x08F | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x089 | ❌ |
+| FIELD_OBSTACLE_ALL_RESET | CField::OnFieldObstacleAllReset |  | 0x08D | ❌ | 0x090 | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x08A | ❌ |
 | BLOW_WEATHER | CField::OnBlowWeather; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
-| PLAY_JUKEBOX | CField::OnPlayJukeBox |  | 0x08F | ❌ | 0x08F | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x08C | ❌ |
+| PLAY_JUKEBOX | CField::OnPlayJukeBox |  | 0x08F | ❌ | 0x092 | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x08C | ❌ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F |  | 0x090 | ❌ | 0x090 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x08D | ❌ |
-| OX_QUIZ | CField::OnQuiz |  | 0x091 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x08E | ❌ |
-| GMEVENT_INSTRUCTIONS | CField::OnDesc |  | 0x092 | ❌ | 0x092 | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x08F | ❌ |
+| OX_QUIZ | CField::OnQuiz |  | 0x091 | ❌ | 0x094 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x08E | ❌ |
+| GMEVENT_INSTRUCTIONS | CField::OnDesc |  | 0x092 | ❌ | 0x095 | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x08F | ❌ |
 | CLOCK | CField::OnClock | field/clientbound/FieldClock (T1) | 0x093 | ✅ | 0x096 | ✅ | 0x09B | ✅ | 0x0A3 | ✅ | 0x090 | ✅ |
 | CONTI_MOVE | CField_ContiMove::OnContiMove |  | 0x094 | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x0A4 | ❌ | 0x091 | ❌ |
 | CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A5 | ✅ | 0x092 | ✅ |
-| SET_QUEST_CLEAR | CField::OnSetQuestClear |  | 0x096 | ❌ | 0x096 | ❌ | 0x09E | ❌ | 0x0A6 | ❌ | 0x093 | ❌ |
-| SET_QUEST_TIME | CField::OnSetQuestTime |  | 0x097 | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x094 | ❌ |
+| SET_QUEST_CLEAR | CField::OnSetQuestClear |  | 0x096 | ❌ | 0x099 | ❌ | 0x09E | ❌ | 0x0A6 | ❌ | 0x093 | ❌ |
+| SET_QUEST_TIME | CField::OnSetQuestTime |  | 0x097 | ❌ | 0x09A | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x094 | ❌ |
 | ARIANT_RESULT | CField::OnWarnMessage |  | 0x098 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x0A8 | ❌ |  | ⬜ |
 | IDA_0X098 | CField::OnStalkResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x098 | ❌ |
-| SET_OBJECT_STATE | CField::OnSetObjectState |  | 0x099 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x0A9 | ❌ | 0x095 | ❌ |
-| STOP_CLOCK | CField::OnDestroyClock |  | 0x09A | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x0AA | ❌ | 0x096 | ❌ |
+| SET_OBJECT_STATE | CField::OnSetObjectState |  | 0x099 | ❌ | 0x09C | ❌ | 0x0A1 | ❌ | 0x0A9 | ❌ | 0x095 | ❌ |
+| STOP_CLOCK | CField::OnDestroyClock |  | 0x09A | ❌ | 0x09D | ❌ | 0x0A2 | ❌ | 0x0AA | ❌ | 0x096 | ❌ |
 | ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult |  | 0x09B | ❌ | 0x09B | ❌ | 0x0A3 | ❌ | 0x0AB | ❌ | 0x097 | ❌ |
 | IDA_0X09C | CField::OnFootHoldInfo; CField::OnStalkResult |  | 0x09C | ❌ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09C | ❌ |
 | IDA_0X09D | CField::OnRequestFootHoldInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09D | ❌ |

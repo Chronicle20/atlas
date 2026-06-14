@@ -8364,6 +8364,1126 @@
       "address": "0x95719b",
       "direction": "",
       "calls": null
+    },
+    "CField::InputGuildName": {
+      "address": "0x5305ae",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "valid && v2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "valid && v2"
+        }
+      ]
+    },
+    "CField::OnAdminResult": {
+      "address": "0x5352e9",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3 > 0x13u && v38 && v39"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 > 0x13u && v38 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 == 19"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 == 19 && CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 19 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 == 19"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && v5 && v6 && v7 && v7 == 7"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && v5 && v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && v5 && v6 && sub_4CC68B(&a2, &WindowName)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && v5 && v6 && sub_4CC68B(&a2, &WindowName)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && v5 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "CField::OnCharacterSale": {
+      "address": "0x537fa6",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnCoupleMessage": {
+      "address": "0x532087",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "<default> && CInPacket::Decode1(v2)"
+        }
+      ]
+    },
+    "CField::OnDesc": {
+      "address": "0x5360c0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnDestroyClock": {
+      "address": "0x53184a",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnFieldObstacleAllReset": {
+      "address": "0x5330b6",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnFieldObstacleOnOff": {
+      "address": "0x53300b",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnFieldObstacleOnOffStatus": {
+      "address": "0x533057",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 > 0"
+        }
+      ]
+    },
+    "CField::OnFieldSpecificData": {
+      "address": "0x531b7b",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnGroupMessage": {
+      "address": "0x531e00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnHontailTimer": {
+      "address": "0x5335a3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnItemUpgrade": {
+      "address": "0x537f8c",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnPlayJukeBox": {
+      "address": "0x535224",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "get_consume_cash_item_type(v3) == 20 && this->m_nJukeBoxItemID >= 0"
+        }
+      ]
+    },
+    "CField::OnQuiz": {
+      "address": "0x535a57",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnSetObjectState": {
+      "address": "0x537a1e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnSetQuestClear": {
+      "address": "0x5378ba",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnSetQuestTime": {
+      "address": "0x5378cd",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v3"
+        }
+      ]
+    },
+    "CField::OnStalkResult": {
+      "address": "0x537a6a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 > 0 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 0 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > 0 && <default>"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 > 0 && <default>",
+          "ref": "sub_85BBE4"
+        }
+      ]
+    },
+    "CField::OnSummonItemInavailable": {
+      "address": "0x532fcf",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnTransferChannelReqIgnored": {
+      "address": "0x531a08",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnTransferFieldReqIgnored": {
+      "address": "0x53185c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnWarnMessage": {
+      "address": "0x5364c5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_428211"
+        }
+      ]
+    },
+    "CField::OnWhisper": {
+      "address": "0x53228e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 == 0xA"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 == 0xA"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 == 0x12"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 != 0x22 && v120 != 0x48 && v120 != 138"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 != 0x22 && v120 != 0x48 && v120 != 138"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 != 0x22 && v120 != 0x48 && v120 != 138"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v120 != 0x22"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v120 != 0x22"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v120 != 0x22"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v120 != 0x22 && (v120 & 1) != 0 && v34 == 3",
+          "ref": "CWvsContext::GetChannelName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v120 != 0x22 && (v120 & 1) != 0 && v34 == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v120 != 0x22 && (v120 & 1) != 0 && v34 == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v120 != 0x22 && v121 && v34 == 3",
+          "ref": "CWvsContext::GetChannelName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnZakumTimer": {
+      "address": "0x53347c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash": {
+      "address": "0x52c40c",
+      "direction": "",
+      "calls": null
+    },
+    "CField::TryEnterTownPortal": {
+      "address": "0x5375ed",
+      "direction": "",
+      "calls": null
+    },
+    "CField_AriantArena::OnShowResult": {
+      "address": "0x53ef95",
+      "direction": "",
+      "calls": null
+    },
+    "CField_AriantArena::OnUserScore": {
+      "address": "0x53e5e1",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3"
+        }
+      ]
+    },
+    "CField_Battlefield::OnScoreUpdate": {
+      "address": "0x545c1e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Battlefield::OnTeamChanged": {
+      "address": "0x545c52",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "User"
+        }
+      ]
+    },
+    "CField_Coconut::BasicActionAttack": {
+      "address": "0x549902",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Coconut::OnCoconutHit": {
+      "address": "0x549834",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Coconut::OnCoconutScore": {
+      "address": "0x549802",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_ContiMove::OnContiMove": {
+      "address": "0x54dca3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 && v4 && v5 && v6 && v7",
+          "ref": "CField_ContiMove::OnEndShipMoveField"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 && v4 && v5 && v6 && <default>",
+          "ref": "nullsub_7"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 && v4 && v5 && <default>",
+          "ref": "CField_ContiMove::OnMoveField"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 && v4 && <default>",
+          "ref": "nullsub_6"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 && <default>",
+          "ref": "CField_ContiMove::OnStartShipMoveField"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "nullsub_5"
+        }
+      ]
+    },
+    "CField_GuildBoss::BasicActionAttack": {
+      "address": "0x558b45",
+      "direction": "",
+      "calls": null
+    },
+    "CField_GuildBoss::OnHealerMove": {
+      "address": "0x558c0c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_GuildBoss::OnPulleyStateChange": {
+      "address": "0x558c3b",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Massacre::OnMassacreIncGauge": {
+      "address": "0x560a81",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_MassacreResult::OnMassacreResult": {
+      "address": "0x5617c5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::BasicActionAttack": {
+      "address": "0x575387",
+      "direction": "",
+      "calls": null
+    },
+    "CField_SnowBall::OnSnowBallHit": {
+      "address": "0x575191",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallMsg": {
+      "address": "0x5751cc",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallState": {
+      "address": "0x5750a3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v8"
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallTouch": {
+      "address": "0x575372",
+      "direction": "",
+      "calls": null
+    },
+    "CField_SnowBall::Update": {
+      "address": "0x574df1",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Tournament::OnPacket": {
+      "address": "0x57b5b4",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Tournament::OnTournament": {
+      "address": "0x57b61a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "CField_Tournament::OnTournamentMatchTable": {
+      "address": "0x57b78a",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Tournament::OnTournamentSetPrize": {
+      "address": "0x57b815",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)",
+          "ref": "sub_428211"
+        }
+      ]
+    },
+    "CField_Tournament::OnTournamentUEW": {
+      "address": "0x57ba16",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Wedding::OnWeddingCeremonyEnd": {
+      "address": "0x581b49",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Wedding::OnWeddingProgress": {
+      "address": "0x58153d",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Witchtower::OnPacket": {
+      "address": "0x585255",
+      "direction": "",
+      "calls": null
+    },
+    "CITC::OnNormalItemResult": {
+      "address": "0x5a4311",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 21",
+          "ref": "CITC::OnGetITCListDone"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 22",
+          "ref": "sub_5A4882"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 23",
+          "ref": "sub_5A4A02"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 24",
+          "ref": "sub_5A49E3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 29",
+          "ref": "sub_5A4674"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 30",
+          "ref": "sub_5A4581"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 31",
+          "ref": "sub_5A46B2"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 32",
+          "ref": "sub_5A46F0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 33",
+          "ref": "sub_5A4AF3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 34",
+          "ref": "sub_5A4C2A"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 35",
+          "ref": "sub_5A4C57"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 36",
+          "ref": "sub_5A4CE7"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 37",
+          "ref": "sub_5A4D14"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 38",
+          "ref": "sub_5A4D49"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 39",
+          "ref": "CITC::OnMoveITCPurchaseItemLtoSDone"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 40",
+          "ref": "sub_5A4DCF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 41",
+          "ref": "sub_5A4DFC"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 42",
+          "ref": "sub_5A4E31"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 43",
+          "ref": "sub_5A4E66"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 44",
+          "ref": "sub_5A4E91"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 45",
+          "ref": "sub_5A4EC6"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 46",
+          "ref": "sub_5A4FDC"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 47",
+          "ref": "sub_5A5011"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 48",
+          "ref": "sub_5A503C"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 49",
+          "ref": "sub_5A5071"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 50",
+          "ref": "sub_5A50DF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 51",
+          "ref": "sub_5A5114"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 52",
+          "ref": "sub_5A513F"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 53",
+          "ref": "sub_5A5174"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 54",
+          "ref": "sub_5A519F"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 55",
+          "ref": "sub_5A51D4"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 56",
+          "ref": "sub_5A5209"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 60",
+          "ref": "sub_5A5444"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 61",
+          "ref": "sub_5A523E"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "switch == 62",
+          "ref": "sub_5A52DE"
+        }
+      ]
+    },
+    "CITC::OnQueryCashResult": {
+      "address": "0x5a428c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

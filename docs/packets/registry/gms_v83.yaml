@@ -2638,12 +2638,20 @@
   direction: serverbound
   opcode: 139
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_Wedding::OnWeddingProgress @0x58153d emits COutPacket(139)
+    + Encode1(m_nCurrentStep). Body = { byte currentStep }. Distinct serverbound op
+    (NOT a mode of the clientbound WEDDING_PROGRESS=320); shares the fname only
+    because OnWeddingProgress both reads the clientbound progress packet and emits
+    this serverbound reply when the groom/bride confirms the cathedral step.'
 - op: WEDDING_TALK
   direction: serverbound
   opcode: 140
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_Wedding::OnWeddingProgress @0x58153d emits COutPacket(0x8C=140)
+    with no body (header only). Sent on the bless YESNO confirm (field 680000210,
+    step 2, non-couple witness). Distinct serverbound op, emitted by OnWeddingProgress.'
 - op: BOOBY_TRAP_ALERT
   direction: serverbound
   opcode: 141

@@ -21639,6 +21639,188 @@
       "address": "0x98da5f",
       "direction": "serverbound",
       "calls": null
+    },
+    "CField::OnDesc": {
+      "address": "0x5423c4",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnDestroyClock": {
+      "address": "0x53dad0",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnFieldObstacleAllReset": {
+      "address": "0x53f33c",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnFieldObstacleOnOff": {
+      "address": "0x53f291",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_65833F"
+        }
+      ]
+    },
+    "CField::OnFieldObstacleOnOffStatus": {
+      "address": "0x53f2dd",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v1 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v1 > 0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v1 > 0",
+          "ref": "sub_65833F"
+        }
+      ]
+    },
+    "CField::OnFieldSpecificData": {
+      "address": "0x53de01",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnPlayJukeBox": {
+      "address": "0x5414aa",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "result == 20 && (int)this[6] >= 0"
+        }
+      ]
+    },
+    "CField::OnQuiz": {
+      "address": "0x541d5b",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnSetObjectState": {
+      "address": "0x543d1c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_65833F"
+        }
+      ]
+    },
+    "CField::OnSetQuestClear": {
+      "address": "0x543bb8",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnSetQuestTime": {
+      "address": "0x543bcb",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(_BYTE)result"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(_BYTE)result"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(_BYTE)result"
+        }
+      ]
+    },
+    "CField::OnSummonItemInavailable": {
+      "address": "0x53f255",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnTransferChannelReqIgnored": {
+      "address": "0x53dc8e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnTransferFieldReqIgnored": {
+      "address": "0x53dae2",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterMobBanishPlayer
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::SendBanMapByMobRequest
+    address: "0x908d50"
+    decompile_sha256: cdabe98c218adecfc70d8c49bd40a06da96ebf772a8e592048c2a48cd796cdf6
+verifies:
+    - libs/atlas-packet/character/serverbound/mob_banish_player_test.go#TestMobBanishPlayer

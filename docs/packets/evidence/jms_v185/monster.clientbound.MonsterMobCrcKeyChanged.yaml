@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobCrcKeyChanged
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobCrcKeyChanged
+    address: "0x6f8bcb"
+    decompile_sha256: 3c51100a9d7aee4deec027dc526df426f2e6b599b174334062c77a8242575f76
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_crc_key_changed_test.go#TestMobCrcKeyChanged

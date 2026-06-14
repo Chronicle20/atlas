@@ -1,0 +1,21 @@
+{
+  "WriterName": "CharacterSetCover",
+  "IDAName": "CWvsContext::OnMonsterBookSetCover",
+  "Address": "0xa525c3",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/monsterbook/set_cover.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

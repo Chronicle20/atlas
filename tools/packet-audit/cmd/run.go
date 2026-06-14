@@ -344,6 +344,34 @@ func candidatesFromFName(fname string) []candidate {
 		// CUserLocal::OnPacket (case 231 = 0xE7) delegates directly (no characterId prefix).
 		// Reads: Decode1 (sitting flag); if 1: Decode2 (chairId).
 		return []candidate{{name: "CharacterSitResult", dir: csvpkg.DirClientbound}}
+	// --- task-092 Cluster-B/C: catch/taming + monster-book (character domain) ---
+	case "CWvsContext::OnBridleMobCatchFail":
+		// task-092 Cluster-B: BRIDLE_MOB_CATCH_FAIL — atlas BridleMobCatchFail
+		// (writer = "BridleMobCatchFail"). Decode1 reason + Decode4 itemId +
+		// trailing Decode4 (read, discarded). Byte-identical across all 5 versions.
+		return []candidate{{name: "BridleMobCatchFail", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnSetTamingMobInfo":
+		// task-092 Cluster-B: SET_TAMING_MOB_INFO — atlas SetTamingMobInfo (writer =
+		// "SetTamingMobInfo", pre-existing encoder). Decode4×4 (charId, level, exp,
+		// fatigue) + Decode1 (levelUp). Byte-identical across all 5 versions.
+		return []candidate{{name: "SetTamingMobInfo", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMonsterBookSetCard":
+		// task-092 Cluster-C: MONSTER_BOOK_SET_CARD — atlas SetCard
+		// (character/clientbound/monsterbook; writer = "MonsterBookSetCard"). Decode1
+		// (added flag) + Decode4 cardId + Decode4 count. Same layout across versions.
+		return []candidate{{name: "SetCard", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMonsterBookSetCover":
+		// task-092 Cluster-C: MONSTER_BOOK_SET_COVER — atlas SetCover
+		// (character/clientbound/monsterbook; writer = "MonsterBookSetCover"). Single
+		// Decode4 (cover cardId). Same layout across versions.
+		return []candidate{{name: "SetCover", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::SetMonsterBookCover":
+		// task-092 Cluster-C: MONSTER_BOOK_COVER (serverbound) — atlas Cover
+		// (character/serverbound/monsterbook; handle = "MonsterBookCover"). The client
+		// sends one Encode4 (cover cardId); CUserLocal::SetMonsterBookCover is the
+		// named cover setter the send site delegates to (send site itself is
+		// unnamed/inlined). v84: unnamed in the IDB → no export entry → blocker cell.
+		return []candidate{{name: "Cover", pkg: "character", dir: csvpkg.DirServerbound}}
 	// --- Character tail bucket ---
 	case "CLogin::OnDeleteCharacterResult":
 		// Struct is DeleteCharacterResponse; writer = "DeleteCharacterResponse".
@@ -538,6 +566,28 @@ func candidatesFromFName(fname string) []candidate {
 		// dr0/dr1 (GMS>83), fieldKey, dr2/dr3 (GMS>83), crc (GMS>28), dwKey/crc32 (GMS>83)
 		// then delegates movement encoding to CMovePath::Encode/Flush (DecodeLoop).
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound}}
+	// task-092 Stage 4: the four serverbound attack requests. All share the
+	// model.AttackInfo wire structure; each links to a thin per-op wrapper in
+	// character/serverbound (AttackMeleeRequest/...Ranged/...Magic/...Touch) that
+	// embeds AttackInfo, so each registry op gets a distinct packet/evidence —
+	// mirroring how clientbound CUserRemote::OnAttack maps to the shared Attack
+	// struct. The channel handlers (CharacterMelee/Ranged/Magic/TouchAttack) decode
+	// the same model.AttackInfo directly; the wrappers are the matrix's per-op codec
+	// representation and verify the identical wire structure.
+	case "CUserLocal::TryDoingNormalAttack", "CUserLocal::TryDoingMeleeAttack":
+		// CLOSE_RANGE_ATTACK. The v83 registry primary fname is TryDoingNormalAttack
+		// (TryDoingMeleeAttack is an alt); both are basic-melee senders decoded by the
+		// same AttackInfo(AttackTypeMelee). Map either to the shared wrapper.
+		return []candidate{{name: "AttackMeleeRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TryDoingShootAttack":
+		// RANGED_ATTACK (0x2D v83). alt: TryDoingSmoothingMovingShootAttack.
+		return []candidate{{name: "AttackRangedRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TryDoingMagicAttack":
+		// MAGIC_ATTACK (0x2E v83).
+		return []candidate{{name: "AttackMagicRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TryDoingBodyAttack":
+		// TOUCH_MONSTER_ATTACK (0x2F v83). AttackTypeEnergy variant.
+		return []candidate{{name: "AttackTouchRequest", pkg: "character", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeRequest":
 		// Struct is HealOverTime; handler constant = "CharacterHealOverTimeHandle".
 		// Client sends opcode 0x64 (100) with Encode4(updateTime)+Encode4(val)+
@@ -654,6 +704,130 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Damage", pkg: "monster", dir: csvpkg.DirClientbound}}
 	case "CMob::OnHPIndicator":
 		return []candidate{{name: "Health", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnAffected":
+		// task-092 Cluster-A: MOB_AFFECTED — atlas MobAffected (writer =
+		// "MobAffected"). Decode4 skillId + Decode2 delay.
+		return []candidate{{name: "MobAffected", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnSpecialEffectBySkill":
+		// task-092 Cluster-A: MONSTER_SPECIAL_EFFECT_BY_SKILL — atlas
+		// MonsterSpecialEffectBySkill (writer = "MonsterSpecialEffectBySkill").
+		// Decode4 skillId (v83/v84/v87/jms); +Decode4 characterId +Decode2 delay (v95).
+		return []candidate{{name: "MonsterSpecialEffectBySkill", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnSuspendReset":
+		// task-092 Cluster-A: RESET_MONSTER_ANIMATION — atlas
+		// ResetMonsterAnimation (writer = "ResetMonsterAnimation"). Single Decode1 bool.
+		return []candidate{{name: "ResetMonsterAnimation", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnCatchEffect":
+		// task-092 Cluster-B: CATCH_MONSTER — atlas CatchMonster (writer =
+		// "CatchMonster"). Decode1 result (v83/v84/v87/jms); +Decode1 success (v95).
+		// jms OnCatchEffect is unnamed (pins against CMob::ShowCatchEffect).
+		return []candidate{{name: "CatchMonster", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::ShowCatchEffect":
+		// jms-only alias: jms CMob::OnCatchEffect is unnamed (dispatched via
+		// sub_6EAE5F); the named ShowCatchEffect is the export key that carries the
+		// 1×Decode1 catch layout for the jms CATCH_MONSTER evidence pin.
+		return []candidate{{name: "CatchMonster", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEffectByItem":
+		// task-092 Cluster-B: CATCH_MONSTER_WITH_ITEM — atlas CatchMonsterWithItem
+		// (writer = "CatchMonsterWithItem"). Decode4 itemId + Decode1 result, all versions.
+		return []candidate{{name: "CatchMonsterWithItem", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMobPool::OnMobCrcKeyChanged":
+		// One IDA function backs BOTH directions: it reads the clientbound
+		// MOB_CRC_KEY_CHANGED (Decode4 crcKey) and emits the serverbound
+		// MOB_CRC_KEY_CHANGED_REPLY (empty payload) acknowledgement. task-092
+		// Cluster-D models them as two structs.
+		return []candidate{
+			{name: "MobCrcKeyChanged", pkg: "monster", dir: csvpkg.DirClientbound},
+			{name: "MobCrcKeyChangedReply", pkg: "monster", dir: csvpkg.DirServerbound},
+		}
+
+	// --- Combat: Monster Carnival (task-092 Cluster E) ---
+	// Carnival codecs live under monster/carnival/{clientbound,serverbound}; the
+	// struct names are globally unique so pkg is left empty (locateAtlasFile finds
+	// the file by struct name; PacketID = monster/carnival/<dir>/<Struct>).
+	case "CField_MonsterCarnival::OnEnter":
+		// MONSTER_CARNIVAL_START — Decode1 team, 6x Decode2 CP, then per-summon-slot
+		// Decode1 loop. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalStart", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnPersonalCP":
+		// MONSTER_CARNIVAL_OBTAINED_CP — 2x Decode2 (cp,total). All 5 versions.
+		return []candidate{{name: "MonsterCarnivalObtainedCP", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnTeamCP":
+		// MONSTER_CARNIVAL_PARTY_CP — Decode1 team + 2x Decode2 (cp,total). All 5 versions.
+		return []candidate{{name: "MonsterCarnivalPartyCP", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnRequestResult":
+		// One dispatcher fn backs TWO distinct clientbound ops, demuxed on the
+		// OnPacket arg: SUMMON (arg != 0: Decode1 tab, Decode1 idx, DecodeStr name)
+		// and MESSAGE (arg == 0: a single Decode1 selector; strings from StringPool).
+		// Both candidates are emitted; each op-row grades worst-of and matches its
+		// own marker. All 5 versions.
+		return []candidate{
+			{name: "MonsterCarnivalSummon", dir: csvpkg.DirClientbound},
+			{name: "MonsterCarnivalMessage", dir: csvpkg.DirClientbound},
+		}
+	case "CField_MonsterCarnival::OnProcessForDeath":
+		// MONSTER_CARNIVAL_DIED — Decode1 team, DecodeStr name, Decode1 lostCp. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalDied", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnShowMemberOutMsg":
+		// MONSTER_CARNIVAL_LEAVE — 2x Decode1 (leader,team) + DecodeStr name. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalLeave", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnShowGameResult":
+		// MONSTER_CARNIVAL_RESULT — a single Decode1 outcome selector. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalResult", dir: csvpkg.DirClientbound}}
+	case "CUIMonsterCarnival::RequestSend":
+		// MONSTER_CARNIVAL (serverbound) — Encode1 tab + Encode4 (idx-1). All 5 versions.
+		return []candidate{{name: "MonsterCarnival", dir: csvpkg.DirServerbound}}
+
+	// --- Combat: monster version-tail (task-092 Cluster F) ---
+	case "CMob::OnIncMobChargeCount":
+		// INC_MOB_CHARGE_COUNT — atlas IncMobChargeCount. Two Decode4
+		// (chargeCount, attackReady). v83/v84/v87/v95; jms version-absent.
+		return []candidate{{name: "IncMobChargeCount", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMobSkillDelay":
+		// MOB_SKILL_DELAY — atlas MobSkillDelay. Four Decode4 (delay, skillId,
+		// skillLevel, option). v84/v87/v95/jms; v83 version-absent (no dispatcher case).
+		return []candidate{{name: "MobSkillDelay", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMobSpeaking":
+		// MOB_SPEAKING — atlas MobSpeaking. Two Decode4 forwarded to TrySpeaking.
+		// All five versions.
+		return []candidate{{name: "MobSpeaking", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMobAttackedByMob":
+		// MOB_ATTACKED_BY_MOB — atlas MobAttackedByMob. Decode1 attackIndex +
+		// Decode4 damage, then (attackIndex>-2) Decode4 mobTemplateId + Decode1 left.
+		// All five versions.
+		return []candidate{{name: "MobAttackedByMob", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnNextAttack":
+		// MOB_NEXT_ATTACK — atlas MobNextAttack. Single Decode4. v95-only.
+		return []candidate{{name: "MobNextAttack", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortReturnBefore":
+		// MOB_ESCORT_RETURN_BEFORE — atlas MobEscortReturnBefore. Single Decode4.
+		// v95 + jms.
+		return []candidate{{name: "MobEscortReturnBefore", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortStopEndPermmision":
+		// MOB_ESCORT_STOP — atlas MobEscortStop. Empty payload (handler takes no
+		// CInPacket). v95 (jms dispatches but has no registry row).
+		return []candidate{{name: "MobEscortStop", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortStopSay":
+		// MOB_ESCORT_STOP_SAY — atlas MobEscortStopSay. Decode4 duration +
+		// Decode4 chatBalloon + Decode1 weather + Decode1 hasText (DecodeStr text +
+		// Decode4 action). v95 + jms.
+		return []candidate{{name: "MobEscortStopSay", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortFullPath":
+		// MOB_ESCORT_FULL_PATH — atlas MobEscortFullPath. Decode4 mode + Decode4
+		// count + per-waypoint loop + tail + arrive/reset bools. v95 + jms.
+		return []candidate{{name: "MobEscortFullPath", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::SendCollisionEscort":
+		// MOB_ESCORT_COLLISION — atlas MobEscortCollision. Two Encode4 (mobCrc,
+		// dest). v95 + jms.
+		return []candidate{{name: "MobEscortCollision", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::SendRequestEscortPath":
+		// MOB_REQUEST_ESCORT_INFO — atlas MobRequestEscortInfo. Single Encode4
+		// (mobCrc). v95 + jms.
+		return []candidate{{name: "MobRequestEscortInfo", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::SendEscortStopEndRequest":
+		// MOB_ESCORT_STOP_END_REQUEST — atlas MobEscortStopEndRequest. Single
+		// Encode4 (mobCrc). v95 + jms.
+		return []candidate{{name: "MobEscortStopEndRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: drop (clientbound) ---
 	case "CDropPool::OnDropEnterField":
@@ -694,6 +868,41 @@ func candidatesFromFName(fname string) []candidate {
 	case "CMob::GenerateMovePath":
 		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
 		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::SendDropPickUpRequest":
+		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
+		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).
+		return []candidate{{name: "MobDropPickupRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::Update":
+		// task-092 Cluster-A: CMob::Update (the mob per-frame tick) builds THREE
+		// distinct serverbound COutPackets at distinct send-sites/opcodes:
+		// FIELD_DAMAGE_MOB (mobCrc+damage), MOB_DAMAGE_MOB_FRIENDLY (mobCrc+charId
+		// +attackerMobCrc), and MOB_SKILL_DELAY_END (mobCrc+skillId+lvl+value, absent
+		// in v83). All three share this one fname; each is its own atlas struct.
+		return []candidate{
+			{name: "FieldDamageMob", pkg: "monster", dir: csvpkg.DirServerbound},
+			// MOB_DAMAGE_MOB_FRIENDLY already exists as character/serverbound
+			// MonsterDamageFriendly (3xEncode4: attacker, observer, attacked) — reuse it.
+			{name: "MonsterDamageFriendly", pkg: "character", dir: csvpkg.DirServerbound},
+			{name: "MobSkillDelayEnd", pkg: "monster", dir: csvpkg.DirServerbound},
+		}
+	case "CMob::SetDamagedByMob":
+		// task-092 Cluster-A: MOB_DAMAGE_MOB — atlas MobDamageMob (handle =
+		// "MobDamageMob"). 3xEncode4 + Encode1 + Encode4 + Encode1 + 2xEncode2.
+		return []candidate{{name: "MobDamageMob", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::TryFirstSelfDestruction":
+		// task-092 Cluster-A: MONSTER_BOMB — atlas MonsterBomb (handle =
+		// "MonsterBomb"). Single Encode4 (mobId). v84 sender unnamed in IDB.
+		return []candidate{{name: "MonsterBomb", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::UpdateTimeBomb":
+		// task-092 Cluster-A: MOB_TIME_BOMB_END — atlas MobTimeBombEnd (handle =
+		// "MobTimeBombEnd"). mobCrc + [boss x,y] + localUser x,y. Standalone only in
+		// v95/jms (inlined into CMob::Update in v83/v84/v87).
+		return []candidate{{name: "MobTimeBombEnd", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::SendBanMapByMobRequest":
+		// task-092 Cluster-D: MOB_BANISH_PLAYER — atlas MobBanishPlayer
+		// (handle = "MobBanishPlayer"), in character/serverbound. One Encode4
+		// (mobTemplateId). v83/v84 senders are inlined into CUserLocal::Update.
+		return []candidate{{name: "MobBanishPlayer", pkg: "character", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: drop (serverbound) ---
 	case "CWvsContext::SendDropPickUpRequest":

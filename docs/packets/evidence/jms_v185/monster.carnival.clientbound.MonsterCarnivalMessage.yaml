@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalMessage
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnRequestResult
+    address: "0x5b0332"
+    decompile_sha256: 56bb7607b0a4a46a8ca6ac6e395125e66189deaa8c5a67553a31aa0207b4b6e3
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_message_test.go#TestMonsterCarnivalMessage

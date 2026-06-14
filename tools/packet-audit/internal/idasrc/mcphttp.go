@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -337,9 +338,11 @@ type lookupFnEntry struct {
 // lookup_funcs tool (queries:[name]). The first result entry is inspected: a
 // non-null fn yields (fn.addr, true, nil); a null fn / "Not found" error yields
 // ("", false, nil) — the resolver turns that into an honest Unresolved, so a
-// single missing function never aborts an export. Demangled Class::Method forms
-// resolve to "Not found" (acceptable); addresses, sub_XXXX, and MANGLED names
-// resolve. Genuine transport/protocol errors stay loud.
+// single missing function never aborts an export. Addresses, sub_XXXX, and
+// MANGLED names resolve via lookup_funcs directly. A DEMANGLED Class::Method form
+// does NOT (IDA stores the symbol mangled, e.g. ?OnAffected@CMob@@…), so on that
+// miss we fall back to lookupByDemangled (func_query over the mangled name).
+// Genuine transport/protocol errors stay loud.
 func (c *MCPHTTPClient) GetFunctionByName(ctx context.Context, name string) (string, bool, error) {
 	raw, err := c.callStructured(ctx, "lookup_funcs", map[string]any{"queries": []string{name}})
 	if err != nil {
@@ -352,16 +355,66 @@ func (c *MCPHTTPClient) GetFunctionByName(ctx context.Context, name string) (str
 		return "", false, fmt.Errorf("idasrc: parse lookup_funcs result: %w", err)
 	}
 	if len(payload.Result) == 0 {
-		return "", false, nil
+		return c.lookupByDemangled(ctx, name)
 	}
 	e := payload.Result[0]
 	if e.Fn == nil {
-		// Miss (error typically "Not found"). Soft: ("", false, nil).
-		return "", false, nil
+		// Exact lookup missed. If this is a demangled Class::Method name, bridge
+		// to the mangled symbol via func_query; otherwise honest soft miss.
+		return c.lookupByDemangled(ctx, name)
 	}
 	addr := strings.TrimSpace(e.Fn.Addr)
 	if addr == "" {
 		return "", false, fmt.Errorf("idasrc: lookup_funcs %q: empty addr in result", name)
+	}
+	return addr, true, nil
+}
+
+// lookupByDemangled bridges a demangled Class::Method name to its address when
+// the exact lookup_funcs match missed. IDA stores MSVC symbols mangled, so
+// lookup_funcs("CMob::OnAffected") returns "Not found" even though the function
+// exists as ?OnAffected@CMob@@QAEXAAVCInPacket@@@Z. We issue a func_query whose
+// name_regex is anchored to the mangled qualified-name infix — ^\?Method@Class@@
+// (the qualifier chain is reversed: A::B::M mangles to ?M@B@A@@) — and return the
+// lowest-address match. Names with no "::" (addresses, sub_XXXX, already-mangled
+// symbols) skip the fallback and stay a soft miss, so the caller still produces an
+// honest Unresolved when the function genuinely is absent.
+func (c *MCPHTTPClient) lookupByDemangled(ctx context.Context, name string) (string, bool, error) {
+	parts := strings.Split(name, "::")
+	if len(parts) < 2 {
+		return "", false, nil
+	}
+	method := parts[len(parts)-1]
+	var b strings.Builder
+	b.WriteString(`^\?`)
+	b.WriteString(regexp.QuoteMeta(method))
+	for i := len(parts) - 2; i >= 0; i-- { // qualifier chain, reversed
+		b.WriteString("@")
+		b.WriteString(regexp.QuoteMeta(parts[i]))
+	}
+	b.WriteString("@@")
+	raw, err := c.callStructured(ctx, "func_query", map[string]any{
+		"queries": []map[string]any{{"name_regex": b.String(), "count": 8, "sort_by": "addr"}},
+	})
+	if err != nil {
+		return "", false, err
+	}
+	var payload struct {
+		Result []struct {
+			Data []struct {
+				Addr string `json:"addr"`
+			} `json:"data"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return "", false, fmt.Errorf("idasrc: parse func_query result: %w", err)
+	}
+	if len(payload.Result) == 0 || len(payload.Result[0].Data) == 0 {
+		return "", false, nil
+	}
+	addr := strings.TrimSpace(payload.Result[0].Data[0].Addr)
+	if addr == "" {
+		return "", false, nil
 	}
 	return addr, true, nil
 }

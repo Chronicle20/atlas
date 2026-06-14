@@ -7,6 +7,15 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterSetTamingMobInfo version=gms_v83 ida=0xa29115
+// packet-audit:verify packet=character/clientbound/CharacterSetTamingMobInfo version=gms_v84 ida=0xa748d8
+// packet-audit:verify packet=character/clientbound/CharacterSetTamingMobInfo version=gms_v87 ida=0xac0d8b
+// packet-audit:verify packet=character/clientbound/CharacterSetTamingMobInfo version=gms_v95 ida=0x9f7280
+// packet-audit:verify packet=character/clientbound/CharacterSetTamingMobInfo version=jms_v185 ida=0xb103a1
+//
+// Layout (Decode4 charId, Decode4 level, Decode4 exp, Decode4 fatigue, Decode1
+// levelUp flag) is byte-identical across all 5 versions (IDA-verified
+// CWvsContext::OnSetTamingMobInfo at each address above) — no version gate.
 func TestSetTamingMobInfoFieldOrder(t *testing.T) {
 	m := NewSetTamingMobInfo(100200, 5, 1234, 42, true)
 	got := m.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)

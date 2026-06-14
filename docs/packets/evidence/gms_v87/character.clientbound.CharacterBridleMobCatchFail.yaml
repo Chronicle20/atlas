@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterBridleMobCatchFail
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnBridleMobCatchFail
+    address: "0xa9d692"
+    decompile_sha256: 05c4083f04021917c62659803350bb6e41a35ffc830619e17b7af2d28a36a698
+verifies:
+    - libs/atlas-packet/character/clientbound/bridle_mob_catch_fail_test.go#TestBridleMobCatchFail

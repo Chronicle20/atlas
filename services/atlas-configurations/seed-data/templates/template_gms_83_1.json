@@ -297,6 +297,11 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x38",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
         "opCode": "0x39",
         "validator": "LoggedInValidator",
         "handler": "MonsterBookCover"
@@ -650,6 +655,11 @@
         }
       },
       {
+        "opCode": "0xA4",
+        "validator": "LoggedInValidator",
+        "handler": "MobCrcKeyChangedReply"
+      },
+      {
         "opCode": "0xA7",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
@@ -877,9 +887,29 @@
         }
       },
       {
+        "opCode": "0xBE",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
+      },
+      {
+        "opCode": "0xBF",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
         "opCode": "0xC0",
         "validator": "LoggedInValidator",
         "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xC1",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
+      },
+      {
+        "opCode": "0xC2",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
       },
       {
         "opCode": "0xC5",
@@ -993,6 +1023,11 @@
         "handler": "ReactorHitHandle"
       },
       {
+        "opCode": "0xDA",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
         "opCode": "0xE4",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckWalletHandle"
@@ -1027,10 +1062,6 @@
       }
     ],
     "writers": [
-      {
-        "opCode": "0x30",
-        "writer": "SetTamingMobInfo"
-      },
       {
         "opCode": "0x00",
         "writer": "AuthSuccess"
@@ -1367,6 +1398,10 @@
         }
       },
       {
+        "opCode": "0x30",
+        "writer": "SetTamingMobInfo"
+      },
+      {
         "opCode": "0x32",
         "writer": "HiredMerchantOperation",
         "options": {
@@ -1529,6 +1564,10 @@
       {
         "opCode": "0x4C",
         "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x4F",
+        "writer": "BridleMobCatchFail"
       },
       {
         "opCode": "0x53",
@@ -2133,12 +2172,48 @@
         "writer": "MonsterStatReset"
       },
       {
+        "opCode": "0xF4",
+        "writer": "ResetMonsterAnimation"
+      },
+      {
+        "opCode": "0xF5",
+        "writer": "MobAffected"
+      },
+      {
         "opCode": "0xF6",
         "writer": "MonsterDamage"
       },
       {
+        "opCode": "0xF7",
+        "writer": "MonsterSpecialEffectBySkill"
+      },
+      {
+        "opCode": "0xF9",
+        "writer": "MobCrcKeyChanged"
+      },
+      {
         "opCode": "0xFA",
         "writer": "MonsterHealth"
+      },
+      {
+        "opCode": "0xFB",
+        "writer": "CatchMonster"
+      },
+      {
+        "opCode": "0xFC",
+        "writer": "CatchMonsterWithItem"
+      },
+      {
+        "opCode": "0xFD",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0xFE",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0xFF",
+        "writer": "MobAttackedByMob"
       },
       {
         "opCode": "0x101",
@@ -2267,6 +2342,38 @@
       {
         "opCode": "0x118",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x121",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
+        "opCode": "0x122",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x123",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x124",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x125",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
+        "opCode": "0x126",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x127",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
+        "opCode": "0x128",
+        "writer": "MonsterCarnivalResult"
       },
       {
         "opCode": "0x130",

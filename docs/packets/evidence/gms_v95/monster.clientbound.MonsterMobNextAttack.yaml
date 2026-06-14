@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobNextAttack
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnNextAttack
+    address: "0x6528a0"
+    decompile_sha256: 5bea2c5adab79658f4beeed101f7c0d06cea422d322dfd530e36e850a215a753
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_next_attack_test.go#TestMobNextAttack

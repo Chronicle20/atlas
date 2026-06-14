@@ -452,10 +452,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: BRIDLE_MOB_CATCH_FAIL
   direction: clientbound
-  opcode: 79
+  opcode: 81
   fname: CWvsContext::OnBridleMobCatchFail
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10822396
+  note: 'task-092 Cluster-B: v84 opcode corrected 79->81 (0x51). CWvsContext::OnPacket @0xa51cd0 case 0x51 -> OnBridleMobCatchFail (sub_A522FC). The v84 CWvsContext sub-table is +2 shifted vs v83 (two NPC forwarders inserted). The prior csv-import value 79 (0x4F) was the stale v83 opcode.'
 - op: IMITATED_NPC_RESULT
   direction: clientbound
   opcode: 80
@@ -476,16 +478,20 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MONSTER_BOOK_SET_CARD
   direction: clientbound
-  opcode: 83
+  opcode: 85
   fname: CWvsContext::OnMonsterBookSetCard
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10822822
+  note: 'task-092 Cluster-C: v84 opcode corrected 83->85 (0x55). CWvsContext::OnPacket @0xa51cd0 case 0x55 -> OnMonsterBookSetCard (sub_A524A6). +2 shift vs v83. Stale csv value 83 (0x53) was the v83 opcode.'
 - op: MONSTER_BOOK_SET_COVER
   direction: clientbound
-  opcode: 84
+  opcode: 86
   fname: CWvsContext::OnMonsterBookSetCover
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10823107
+  note: 'task-092 Cluster-C: v84 opcode corrected 84->86 (0x56). CWvsContext::OnPacket @0xa51cd0 case 0x56 -> OnMonsterBookSetCover (sub_A525C3). +2 shift vs v83. Stale csv value 84 (0x54) was the v83 opcode.'
 - op: HOUR_CHANGED
   direction: clientbound
   opcode: 85
@@ -1400,10 +1406,10 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CMobPool::OnMobPacket (0x68fef7) case 250 -> sub_682802 (animation/movie playback, v83-order slot after OnStatReset 249). Earlier 244 collided with the true SPAWN_MONSTER_CONTROL slot.'
 - op: MOB_AFFECTED
   direction: clientbound
-  opcode: 245
+  opcode: 251
   fname: CMob::OnAffected
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-092 Cluster-A): CMobPool::OnMobPacket (0x68fef7) case 251 -> sub_682977 = OnAffected @0x682977. The csv-import seed (245, copied from the v83 column) was stale — the v84 mob-cluster opcode table is shifted vs v83 (see header VERDICT + bug_v84_opcode_table_shifted_vs_v83). Layout Decode4+Decode2, identical to v83.'
 - op: DAMAGE_MONSTER
   direction: clientbound
   opcode: 246
@@ -1412,16 +1418,18 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MONSTER_SPECIAL_EFFECT_BY_SKILL
   direction: clientbound
-  opcode: 247
+  opcode: 253
   fname: CMob::OnSpecialEffectBySkill
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from IDB dispatcher case label (task-092 Cluster-A): CMobPool::OnMobPacket (0x68fef7) case 253 -> sub_683BE9 = OnSpecialEffectBySkill @0x683be9. The csv-import seed (247, copied from the v83 column) was stale — the v84 mob-cluster opcode table is shifted vs v83 (see header VERDICT + bug_v84_opcode_table_shifted_vs_v83). Layout single Decode4 (skillId), the v95 user-id/delay additions are GMS-95+ only.'
 - op: MOB_CRC_KEY_CHANGED
   direction: clientbound
-  opcode: 249
+  opcode: 255
   fname: CMobPool::OnMobCrcKeyChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6882132
+  note: 'task-092 Cluster-D: v84 opcode RE-DERIVED from the IDB dispatcher CMobPool::OnPacket @0x68fe98 — case 255 (0xFF) calls OnMobCrcKeyChanged @0x690354. The csv-import seed value 249/0xF9 was the v83-inherited opcode and is WRONG for v84 (0xF9 is MonsterStatReset in v84); the +6 mob-range shift documented in this file header applies. Byte layout identical to v83 (1x Decode4).'
 - op: SHOW_MONSTER_HP
   direction: clientbound
   opcode: 256
@@ -1430,40 +1438,56 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CATCH_MONSTER
   direction: clientbound
-  opcode: 251
+  opcode: 257
   fname: CMob::OnCatchEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6830523
+  note: 'task-092 Cluster-B: v84 opcode corrected 251->257 (0x101). CMobPool::OnMobPacket @0x68fef7 case 257 -> OnCatchEffect (sub_6839BB). The v84 mob clientbound table is shifted above the v83 cluster. Stale csv value 251 (0xFB) was the v83 opcode.'
 - op: CATCH_MONSTER_WITH_ITEM
   direction: clientbound
-  opcode: 252
+  opcode: 258
   fname: CMob::OnEffectByItem
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: SHOW_MAGNET
-  direction: clientbound
-  opcode: 253
-  fname: ""
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6831263
+  note: 'task-092 Cluster-B: v84 opcode corrected 252->258 (0x102). CMobPool::OnMobPacket @0x68fef7 case 258 -> OnEffectByItem (sub_683C9F). Stale csv value 252 (0xFC) was the v83 opcode.'
+# SHOW_MAGNET removed task-092 Stage 4: stale CSV mislabel duplicating
+# MOB_SPEAKING (empty fname, off-by-one opcode 253). v84 dispatcher (0x68FEF7)
+# case 259 -> CMob::OnMobSpeaking; the MOB_SPEAKING row below carries the real
+# opcode. See gms_v83.yaml for the cluster off-by-one resolution.
 - op: MOB_SPEAKING
   direction: clientbound
-  opcode: 254
+  opcode: 259
   fname: CMob::OnMobSpeaking
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x687743
+  note: 'task-092 Cluster F: opcode corrected 254->259 (0x103). IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 259 -> sub_687743/CMob::OnMobSpeaking. The 254/255/256 triple was a stale v83-seeded copy; v84 cluster shifted to 259-262.'
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
-  opcode: 255
+  opcode: 260
   fname: CMob::OnIncMobChargeCount
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x687655
+  note: 'task-092 Cluster F: opcode corrected 255->260 (0x104). IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 260 -> sub_687655/CMob::OnIncMobChargeCount.'
 - op: MOB_SKILL_DELAY
   direction: clientbound
-  opcode: 256
+  opcode: 261
   fname: CMob::OnMobSkillDelay
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x688524
+  note: 'task-092 Cluster F: opcode corrected 256->261 (0x105). IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 261 -> sub_688524/CMob::OnMobSkillDelay (4x Decode4). v84 HAS skill-delay (v83 does not) — a real v84!=v83 delta.'
+- op: MOB_ATTACKED_BY_MOB
+  direction: clientbound
+  opcode: 262
+  fname: CMob::OnMobAttackedByMob
+  provenance: ida-discovered
+  ida:
+    address: 0x68749a
+  note: 'task-092 Cluster F: IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 262 -> sub_68749A/CMob::OnMobAttackedByMob (0x68749A). Registry gap; applicability.md v95-only corrected by the dispatcher.'
 - op: SPAWN_NPC
   direction: clientbound
   opcode: 264
@@ -1652,52 +1676,68 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MONSTER_CARNIVAL_START
   direction: clientbound
-  opcode: 289
+  opcode: 296
   fname: CField_MonsterCarnival::OnEnter
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5709982
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_OBTAINED_CP
   direction: clientbound
-  opcode: 290
+  opcode: 297
   fname: CField_MonsterCarnival::OnPersonalCP
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710357
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_PARTY_CP
   direction: clientbound
-  opcode: 291
+  opcode: 298
   fname: CField_MonsterCarnival::OnTeamCP
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710405
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_SUMMON
   direction: clientbound
-  opcode: 292
+  opcode: 299
   fname: CField_MonsterCarnival::OnRequestResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710468
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_MESSAGE
   direction: clientbound
-  opcode: 293
+  opcode: 300
   fname: CField_MonsterCarnival::OnRequestResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710468
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_DIED
   direction: clientbound
-  opcode: 294
+  opcode: 301
   fname: CField_MonsterCarnival::OnProcessForDeath
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5711086
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_LEAVE
   direction: clientbound
-  opcode: 295
+  opcode: 302
   fname: CField_MonsterCarnival::OnShowMemberOutMsg
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5711465
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_RESULT
   direction: clientbound
-  opcode: 296
+  opcode: 303
   fname: CField_MonsterCarnival::OnShowGameResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5711844
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: ARIANT_ARENA_USER_SCORE
   direction: clientbound
   opcode: 297
@@ -2373,9 +2413,11 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 57
-  fname: ""
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  ida:
+    address: 0x99e8ee
+  note: 'task-092 Stage 4: fname filled from the v84 IDB. CUserLocal::SetMonsterBookCover @0x99E8EE is a local setter (writes CharacterData+1523, no COutPacket — the send site is inlined/unnamed in every IDB); opcode 57/0x39 unchanged from v83 (below the v84 shift point). Function named in the v84 IDB this stage.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 58
@@ -3228,10 +3270,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_CRC_KEY_CHANGED_REPLY
   direction: serverbound
-  opcode: 164
+  opcode: 170
   fname: CMobPool::OnMobCrcKeyChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6882132
+  note: 'task-092 Cluster-D: v84 reply opcode RE-DERIVED from CMobPool::OnMobCrcKeyChanged @0x690354 — the reply COutPacket is constructed with opcode 170 (0xAA), not the v83-inherited 164/0xA4. Empty payload (no Encode* calls).'
 - op: FIND_FRIEND
   direction: serverbound
   opcode: 166
@@ -3364,16 +3408,18 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
-  opcode: 190
+  opcode: 195
   fname: CMob::SendDropPickUpRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x684cdf
+  note: 'task-092 Stage 4: opcode corrected 190->195 (0xBE->0xC3). IDA v84 CMob::SendDropPickUpRequest @0x684CDF builds COutPacket(195); the csv-seeded 0xBE was the un-shifted v83 value (v84 serverbound table shifts +5 in this cluster). Encode4(fused mobId)+Encode4(dropObjId). Function named in the v84 IDB this stage; template route fixed to 0xC3.'
 - op: FIELD_DAMAGE_MOB
   direction: serverbound
-  opcode: 191
+  opcode: 196
   fname: CMob::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from the COutPacket build site in CMob::Update (task-092 Cluster-A): @0x67dd33 pushes opcode 0xC4 (196) for the 2xEncode4 field-damage send (mobCrc+damage). The csv-import seed (191/0xBF, copied from the v83 column) was stale — the v84 mob serverbound opcode table is shifted vs v83.'
 - op: MOB_DAMAGE_MOB_FRIENDLY
   direction: serverbound
   opcode: 197
@@ -3382,10 +3428,12 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CMob::Update (0x67d4ea) constructs COutPacket(197) for friendly mob-vs-mob damage. v83 192.'
 - op: MONSTER_BOMB
   direction: serverbound
-  opcode: 193
+  opcode: 198
   fname: CMob::TryFirstSelfDestruction
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x6849ee
+  note: 'task-092 Stage 4: opcode corrected 193->198 (0xC1->0xC6). IDA v84 CMob::TryFirstSelfDestruction @0x6849EE builds COutPacket(198); the csv-seeded 0xC1 was the un-shifted v83 value (v84 +5 in this cluster). Single Encode4(fused mobId). Function named in the v84 IDB this stage; template route added at 0xC6.'
 - op: MOB_DAMAGE_MOB
   direction: serverbound
   opcode: 199
@@ -3394,16 +3442,13 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CMob::SetDamagedByMob (0x6871bc) constructs COutPacket(199). v83 194.'
 - op: MOB_SKILL_DELAY_END
   direction: serverbound
-  opcode: 195
+  opcode: 200
   fname: CMob::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: MOB_TIME_BOMB_END
-  direction: serverbound
-  opcode: 196
-  fname: CMob::UpdateTimeBomb
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from the COutPacket build site in CMob::Update (task-092 Cluster-A): @0x67d534 pushes opcode 0xC8 (200) for the 4xEncode4 skill-delay-end send (mobCrc+skillId+level+value). The csv-import seed (195/0xC3, copied from the v83 column) was stale — the v84 mob serverbound opcode table is shifted vs v83. v83 itself has NO such sender (the feature post-dates v83).'
+# MOB_TIME_BOMB_END removed task-092 Stage 4: VERSION-ABSENT in v84 (owner-confirmed).
+# v95+ feature; no sender in the v84 client (exhaustive COutPacket scan found none).
+# Dropped so the cell reads ⬜.
 - op: NPC_ACTION
   direction: serverbound
   opcode: 203
@@ -3534,10 +3579,12 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 364: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MONSTER_CARNIVAL
   direction: serverbound
-  opcode: 218
+  opcode: 224
   fname: CUIMonsterCarnival::RequestSend
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9027034
+  note: 'ida-verified: CUIMonsterCarnival::RequestSend @0x89bdda COutPacket(224/0xE0) (task-092 Cluster-E). v84 serverbound opcode is +6 vs v83 (0xE0 vs 0xDA); the csv-import value was stale v83.'
 - op: UNNAMED_R366
   direction: serverbound
   opcode: 219

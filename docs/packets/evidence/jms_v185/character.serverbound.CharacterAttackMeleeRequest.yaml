@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterAttackMeleeRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TryDoingNormalAttack
+    address: "0xa122be"
+    decompile_sha256: 507b4b005ec145ffa69d10150e7954d284f19c57d259dc6831546958115ce3fa
+verifies:
+    - libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequest

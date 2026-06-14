@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobEscortReturnBefore
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnEscortReturnBefore
+    address: "0x6f029c"
+    decompile_sha256: 41bcdbb0fb0abb6dfd09f5bad521113f7009dbe5d3c7b32f71c9fe307d58ef27
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_escort_return_before_test.go#TestMobEscortReturnBefore

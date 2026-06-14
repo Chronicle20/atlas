@@ -1213,29 +1213,39 @@
   opcode: 252
   fname: CMob::OnEffectByItem
   provenance: csv-import
-- op: SHOW_MAGNET
+# SHOW_MAGNET removed task-092 Stage 4: stale CSV mislabel — a duplicate of
+# MOB_SPEAKING (same fname CMob::OnMobSpeaking). The CSV op-name labels for the
+# 0xFD-0xFF mob cluster were shifted +1 vs the IDB; SHOW_MAGNET coincidentally
+# held the real OnMobSpeaking opcode 0xFD. Folded into the corrected MOB_SPEAKING
+# row below; the off-by-one is resolved here, not left for follow-up.
+- op: MOB_SPEAKING
   direction: clientbound
   opcode: 253
   fname: CMob::OnMobSpeaking
-  provenance: manual
-  note: 'IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFD -> CMob::OnMobSpeaking (0x6711EA). Registry FName was empty. NOTE: the CSV op-name labels for 0xFD-0xFF appear shifted by one vs the IDB handlers (client handler for op-name MOB_SPEAKING actually sits at 0xFD); op names left unchanged, FNames realigned to IDB. Possible Atlas opcode-enum off-by-one in this mob cluster - flagged for follow-up.'
-- op: MOB_SPEAKING
+  provenance: ida-discovered
+  ida:
+    address: 0x6711ea
+  note: 'task-092 Stage 4: off-by-one corrected. IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFD -> CMob::OnMobSpeaking (0x6711EA). Was opcode 254 (CSV off-by-one); the real dispatcher case is 0xFD/253. v83 template routes MobSpeaking at 0xFD (matches).'
+- op: INC_MOB_CHARGE_COUNT
   direction: clientbound
   opcode: 254
   fname: CMob::OnIncMobChargeCount
-  provenance: manual
-  note: 'IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFE -> CMob::OnIncMobChargeCount (0x6710FC). CSV had OnMobSpeaking here (off-by-one); realigned to IDB. See SHOW_MAGNET (0xFD) note re: op-name offset.'
-- op: INC_MOB_CHARGE_COUNT
+  provenance: ida-discovered
+  ida:
+    address: 0x6710fc
+  note: 'task-092 Stage 4: off-by-one corrected. IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFE -> CMob::OnIncMobChargeCount (0x6710FC). Was opcode 255 (CSV off-by-one); the real dispatcher case is 0xFE/254. v83 template routes IncMobChargeCount at 0xFE (matches).'
+# MOB_SKILL_DELAY removed task-092 Stage 4: VERSION-ABSENT in v83. The v83
+# dispatcher (0x67936D) switch ENDS at case 0xFF (OnMobAttackedByMob) with no
+# skill-delay case — it is a later-version feature (v84 case 261 onward). Dropped
+# so the matrix cell reads n/a (⬜) instead of ❌, like other genuinely-absent ops.
+- op: MOB_ATTACKED_BY_MOB
   direction: clientbound
   opcode: 255
   fname: CMob::OnMobAttackedByMob
-  provenance: manual
-  note: 'IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFF -> CMob::OnMobAttackedByMob (0x670F41). CSV had OnIncMobChargeCount here (off-by-one); realigned to IDB. See SHOW_MAGNET (0xFD) note re: op-name offset.'
-- op: MOB_SKILL_DELAY
-  direction: clientbound
-  opcode: 256
-  fname: CMob::OnMobSkillDelay
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x670f41
+  note: 'task-092 Cluster F: IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFF -> CMob::OnMobAttackedByMob (0x670F41). Decode1 attackIndex + Decode4 damage, then (attackIndex>-2) Decode4 mobTemplateId + Decode1 left. Was a registry gap (the op dispatches in v83 but had no row); applicability.md v95-only is corrected by the dispatcher.'
 - op: SPAWN_NPC
   direction: clientbound
   opcode: 257
@@ -2015,8 +2025,11 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 57
-  fname: ""
-  provenance: csv-import
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  ida:
+    address: 9829182
+  note: 'task-092 Stage 1: send-site derived from v83 IDB. CUserLocal::SetMonsterBookCover @ 0x95FB3E.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 58
@@ -2909,16 +2922,15 @@
   opcode: 194
   fname: CMob::SetDamagedByMob
   provenance: csv-import
-- op: MOB_SKILL_DELAY_END
-  direction: serverbound
-  opcode: 195
-  fname: CMob::Update
-  provenance: csv-import
-- op: MOB_TIME_BOMB_END
-  direction: serverbound
-  opcode: 196
-  fname: CMob::UpdateTimeBomb
-  provenance: csv-import
+# MOB_SKILL_DELAY_END (serverbound) is VERSION-ABSENT in v83 (task-092 Cluster-A):
+# CMob::Update @0x6675a8 builds no COutPacket for this op — no `push 0xC3; COutPacket`
+# site exists anywhere in the v83 binary. The skill-delay-end send (4xEncode4) first
+# appears in v84/v87/v95/jms (mirroring its clientbound twin MOB_SKILL_DELAY, whose
+# v83 dispatcher case is likewise absent). The csv-import row (opcode 195/0xC3) was a
+# stale slot copied from the CSV; removed so the matrix grades v83 n/a, not conflict.
+# MOB_TIME_BOMB_END removed task-092 Stage 4: VERSION-ABSENT in v83 (owner-confirmed).
+# The mob time-bomb-end send is a v95+ feature; no sender exists in the v83 client
+# (no UpdateTimeBomb function, no matching COutPacket). Dropped so the cell reads ⬜.
 - op: NPC_ACTION
   direction: serverbound
   opcode: 197

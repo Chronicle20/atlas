@@ -6,11 +6,6 @@
   "socket": {
     "handlers": [
       {
-        "opCode": "0x53",
-        "validator": "LoggedInValidator",
-        "handler": "MountFoodHandle"
-      },
-      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -158,6 +153,26 @@
         "handler": "CharacterChairPortableHandle"
       },
       {
+        "opCode": "0x2F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMeleeAttackHandle"
+      },
+      {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterRangedAttackHandle"
+      },
+      {
+        "opCode": "0x31",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMagicAttackHandle"
+      },
+      {
+        "opCode": "0x32",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterTouchAttackHandle"
+      },
+      {
         "opCode": "0x36",
         "handler": "CharacterChatGeneralHandle"
       },
@@ -170,6 +185,16 @@
         "opCode": "0x38",
         "validator": "LoggedInValidator",
         "handler": "CharacterExpressionHandle"
+      },
+      {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
+        "opCode": "0x3E",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
       },
       {
         "opCode": "0x41",
@@ -198,6 +223,11 @@
       {
         "opCode": "0x52",
         "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
       },
       {
         "opCode": "0x5D",
@@ -274,6 +304,11 @@
         "handler": "GuildBBSHandle"
       },
       {
+        "opCode": "0xBE",
+        "validator": "LoggedInValidator",
+        "handler": "MobCrcKeyChangedReply"
+      },
+      {
         "opCode": "0xC7",
         "handler": "PetMovementHandle"
       },
@@ -302,6 +337,56 @@
         "handler": "MonsterMovementHandle"
       },
       {
+        "opCode": "0xE5",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
+      },
+      {
+        "opCode": "0xE6",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
+        "opCode": "0xE7",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xE8",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
+      },
+      {
+        "opCode": "0xE9",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
+      },
+      {
+        "opCode": "0xEA",
+        "validator": "LoggedInValidator",
+        "handler": "MobSkillDelayEnd"
+      },
+      {
+        "opCode": "0xEB",
+        "validator": "LoggedInValidator",
+        "handler": "MobTimeBombEnd"
+      },
+      {
+        "opCode": "0xEC",
+        "validator": "LoggedInValidator",
+        "handler": "MobEscortCollision"
+      },
+      {
+        "opCode": "0xED",
+        "validator": "LoggedInValidator",
+        "handler": "MobRequestEscortInfo"
+      },
+      {
+        "opCode": "0xEE",
+        "validator": "LoggedInValidator",
+        "handler": "MobEscortStopEndRequest"
+      },
+      {
         "opCode": "0xF1",
         "handler": "NPCActionHandle"
       },
@@ -314,6 +399,11 @@
         "handler": "ReactorHitHandle"
       },
       {
+        "opCode": "0x106",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
         "opCode": "0x112",
         "handler": "CashShopCheckWalletHandle"
       },
@@ -323,10 +413,6 @@
       }
     ],
     "writers": [
-      {
-        "opCode": "0x2F",
-        "writer": "SetTamingMobInfo"
-      },
       {
         "opCode": "0x00",
         "writer": "AuthLoginFailed",
@@ -545,6 +631,10 @@
         "writer": "NoteOperation"
       },
       {
+        "opCode": "0x2F",
+        "writer": "SetTamingMobInfo"
+      },
+      {
         "opCode": "0x31",
         "writer": "HiredMerchantOperation"
       },
@@ -575,6 +665,18 @@
       {
         "opCode": "0x4F",
         "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x52",
+        "writer": "BridleMobCatchFail"
+      },
+      {
+        "opCode": "0x56",
+        "writer": "MonsterBookSetCard"
+      },
+      {
+        "opCode": "0x57",
+        "writer": "MonsterBookSetCover"
       },
       {
         "opCode": "0x7F",
@@ -761,12 +863,72 @@
         "writer": "MonsterStatReset"
       },
       {
+        "opCode": "0x124",
+        "writer": "ResetMonsterAnimation"
+      },
+      {
+        "opCode": "0x125",
+        "writer": "MobAffected"
+      },
+      {
         "opCode": "0x126",
         "writer": "MonsterDamage"
       },
       {
+        "opCode": "0x127",
+        "writer": "MonsterSpecialEffectBySkill"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "MobCrcKeyChanged"
+      },
+      {
         "opCode": "0x12A",
         "writer": "MonsterHealth"
+      },
+      {
+        "opCode": "0x12B",
+        "writer": "CatchMonster"
+      },
+      {
+        "opCode": "0x12C",
+        "writer": "CatchMonsterWithItem"
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x12E",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x130",
+        "writer": "MobEscortFullPath"
+      },
+      {
+        "opCode": "0x131",
+        "writer": "MobEscortStop"
+      },
+      {
+        "opCode": "0x132",
+        "writer": "MobEscortStopSay"
+      },
+      {
+        "opCode": "0x133",
+        "writer": "MobEscortReturnBefore"
+      },
+      {
+        "opCode": "0x134",
+        "writer": "MobNextAttack"
+      },
+      {
+        "opCode": "0x135",
+        "writer": "MobAttackedByMob"
       },
       {
         "opCode": "0x137",
@@ -799,6 +961,38 @@
       {
         "opCode": "0x151",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x15A",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
+        "opCode": "0x15B",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x15C",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x15D",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x15E",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
+        "opCode": "0x15F",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x160",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
+        "opCode": "0x161",
+        "writer": "MonsterCarnivalResult"
       },
       {
         "opCode": "0x16C",

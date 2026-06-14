@@ -33,7 +33,6 @@ import (
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	mountConsumer "atlas-channel/kafka/consumer/mount"
-	monsterDomain "atlas-channel/monster"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
@@ -51,6 +50,7 @@ import (
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/listener"
 	"atlas-channel/logger"
+	monsterDomain "atlas-channel/monster"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -79,6 +79,7 @@ import (
 	mbsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound/monsterbook"
 	chatCB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	chatSB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
+	doorsb "github.com/Chronicle20/atlas/libs/atlas-packet/door/serverbound"
 	dropcb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 	dropsb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/serverbound"
 	famecb "github.com/Chronicle20/atlas/libs/atlas-packet/fame/clientbound"
@@ -94,17 +95,17 @@ import (
 	invsb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/serverbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	messengersb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/serverbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monstercb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	monstersb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/serverbound"
+	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
-	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	petcb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	petsb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/serverbound"
@@ -698,6 +699,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[socketsb.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[npcsb.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[portal2.PortalScriptHandle] = handler.PortalScriptHandleFunc
+	handlerMap[doorsb.EnterDoorHandle] = handler.MysticDoorEnterHandleFunc
 	handlerMap[fieldsb.MapChangeHandle] = handler.MapChangeHandleFunc
 	handlerMap[charsb.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
 	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc

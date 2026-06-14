@@ -103,15 +103,35 @@ func (m Attack) String() string {
 }
 
 // hasAntiHackEnvelope reports whether the version emits the drInfo/dwKey/crc32
-// anti-hack envelope (GMS >= 84). Only v83 sends the lean layout; v84 already
-// carries the envelope (IDA-confirmed, GMS_v84.1 send block @0x7cafcd).
+// anti-hack envelope. Present on GMS >= 84 (only v83 sends the lean layout; v84
+// already carries the envelope — IDA-confirmed, GMS_v84.1 send block @0x7cafcd)
+// AND on JMS v185. The jms185 summon manual-attack send (TryDoingAttackManual,
+// inlined into CSummoned::Update via sub_824A81@0x824a81) calls DR_check@0x826202
+// and stores the resulting _DR_INFO block (var_20@0x8261fd) for the send — the
+// same anti-hack envelope GMS gained at v84, IDB-confirmed present in jms185.
+// The COutPacket(0xB3) emit itself is behind the jms185 anti-tamper VM
+// (jmp loc_DE90B8@0x82620f -> loc_D21897), so the field order below mirrors the
+// v95 PDB-clean send (CSummoned::TryDoingAttackManual@0x751240); the envelope's
+// PRESENCE is proven by the DR_check call.
 func hasAntiHackEnvelope(t tenant.Model) bool {
+	if t.IsRegion("JMS") {
+		return t.MajorAtLeast(185)
+	}
 	return t.IsRegion("GMS") && t.MajorAtLeast(84)
 }
 
 // hasRepeatSkillPoint reports whether the version emits the trailing
-// repeatSkillPoint int after the position block (GMS >= 95).
+// repeatSkillPoint int after the position block. Present on GMS >= 95
+// (CUserLocal::GetRepeatSkillPoint v95@0x748e50 -> Encode4@0x752450) AND on JMS
+// v185. repeatSkillPoint is a permanent post-v95 addition to the summon-attack
+// envelope; JMS v185 (v185 >> v95 in the shared GMS/JMS code lineage) inherits
+// it. The jms185 send is VM-obfuscated so the field cannot be read directly; its
+// presence is inferred from the build lineage (the envelope itself is confirmed
+// via DR_check). The decoder skips it at its exact width to stay aligned.
 func hasRepeatSkillPoint(t tenant.Model) bool {
+	if t.IsRegion("JMS") {
+		return t.MajorAtLeast(185)
+	}
 	return t.IsRegion("GMS") && t.MajorAtLeast(95)
 }
 

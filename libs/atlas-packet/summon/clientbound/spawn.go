@@ -82,13 +82,16 @@ func (m SummonSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteByte(m.movementType)
 		w.WriteBool(!m.puppet)   // attack flag = !isPuppet
 		w.WriteBool(!m.animated) // !animated
-		// v95+ DELTA (gated >= 95, GMS only — JMS185's classic reader does NOT
-		// decode an avatar-look blob; see summon-packet-delta.md §3.1 "≥87 gate").
-		// CSummoned::Init@0x755740 reads byte bAvatarLook here, then an
-		// AvatarLook blob iff present, then a Tesla-Coil-only triangle tail.
-		// None of the 21 v83-roster summons carry an avatar look and Tesla Coil
-		// is out of roster, so we write present = 0 and the client skips both.
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		// avatar-look DELTA: the spawn Init blob ends with a byte bAvatarLook,
+		// then an AvatarLook blob iff present, then a Tesla-Coil-only triangle
+		// tail. Present on GMS v95+ (CSummoned::Init@0x755740) AND on JMS v185
+		// (jms185 spawn Init reader sub_823AED@0x823aed: Decode1 bAvatarLook
+		// @0x823b99, then `if (v8) AvatarLook::Decode` @0x823bb0 — IDB-confirmed).
+		// It is ABSENT on GMS v83/v84/v87 (only ONE int + the fixed Init tail; no
+		// avatar byte). None of the 21 v83-roster summons carry an avatar look and
+		// Tesla Coil is out of roster, so we write present = 0 and the client skips
+		// both the blob and the triangle tail. See spawnHasAvatarLook.
+		if spawnHasAvatarLook(t) {
 			w.WriteByte(0) // bAvatarLook present = 0 (no AvatarLook blob, no Tesla tail)
 		}
 		return w.Bytes()
@@ -112,11 +115,23 @@ func (m *SummonSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 		m.movementType = r.ReadByte()
 		m.puppet = !r.ReadBool()   // attack flag = !isPuppet
 		m.animated = !r.ReadBool() // !animated
-		// v95+ DELTA (mirror of Encode): read the bAvatarLook present byte. For
-		// our roster it is always 0, so no AvatarLook blob / Tesla tail follows.
-		// See summon-packet-delta.md §3.1 (CSummoned::Init@0x755740).
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		// avatar-look DELTA (mirror of Encode): read the bAvatarLook present byte
+		// on GMS v95+ and JMS v185. For our roster it is always 0, so no
+		// AvatarLook blob / Tesla tail follows. See spawnHasAvatarLook.
+		if spawnHasAvatarLook(t) {
 			_ = r.ReadByte() // bAvatarLook present (0 for our roster)
 		}
 	}
+}
+
+// spawnHasAvatarLook reports whether the spawn Init blob carries the trailing
+// bAvatarLook present-byte (+ optional AvatarLook blob + Tesla triangle tail).
+// Present on GMS v95+ (CSummoned::Init@0x755740) and on JMS v185 (spawn Init
+// reader sub_823AED@0x823aed Decode1 bAvatarLook@0x823b99). Absent on GMS
+// v83/v84/v87 (no avatar byte in the Init tail — IDB-confirmed).
+func spawnHasAvatarLook(t tenant.Model) bool {
+	if t.IsRegion("JMS") {
+		return t.MajorAtLeast(185)
+	}
+	return t.IsRegion("GMS") && t.MajorAtLeast(95)
 }

@@ -122,14 +122,27 @@ func TestSummonSpawnBytesV95(t *testing.T) {
 	}
 }
 
-// TestSummonSpawnJMS185NoDelta confirms JMS185 (major 185) stays on the classic
-// body despite MajorAtLeast(95) being true — both the oid and avatar-look deltas
-// are GMS-gated.
-func TestSummonSpawnJMS185NoDelta(t *testing.T) {
+// TestSummonSpawnBytesJMS185 pins the JMS185 spawn wire: NO oid (jms185 keeps the
+// summon pool cid-keyed — OnCreated reader sub_9F80F8@0x9f80f8 reads cid, skillId,
+// charLevel, SLV with only ONE int between cid and the two bytes), but the Init
+// blob DOES end with a trailing bAvatarLook present-byte (jms185 Init reader
+// sub_823AED@0x823aed: Decode1 bAvatarLook@0x823b99, then `if (v8) AvatarLook::
+// Decode`@0x823bb0). So the JMS185 body is the classic v83 body PLUS one
+// avatar-look byte = 0 (no AvatarLook blob, no Tesla tail for our roster). This
+// is the spawn wire bug the JMS gate-fix corrected: the GMS-only avatar-look gate
+// had JMS185 falling through to the lean v83 shape (1 byte short).
+// packet-audit:verify packet=summon/clientbound/SummonSpawn version=jms_v185 ida=0x9f80f8
+func TestSummonSpawnBytesJMS185(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
 	ctx := test.CreateContext("JMS", 185, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
-	if !bytes.Equal(got, summonSpawnV83Body) {
-		t.Fatalf("JMS185 bytes = % X, want classic body % X", got, summonSpawnV83Body)
+
+	// classic v83 body (no oid), then bAvatarLook present = 0.
+	want := append(append([]byte{}, summonSpawnV83Body...), 0x00)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("JMS185 bytes = % X, want % X", got, want)
+	}
+	if len(got) != len(summonSpawnV83Body)+1 {
+		t.Fatalf("JMS185 len = %d, want v83 len + 1 (avatarLook) = %d", len(got), len(summonSpawnV83Body)+1)
 	}
 }

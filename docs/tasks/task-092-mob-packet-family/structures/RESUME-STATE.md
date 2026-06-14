@@ -84,11 +84,27 @@ Decide per cell at Stage 2 (codec+test+route still land; only the evidence pin i
 Commits: D `95178fbdf`; A `2db28f14c`+`b4394460e`; B/C `1107bbfde`; F `f1406b946`; E `593c8c0bb`+`ef695647b`.
 41 of 42 ops have codec+wiring+test+routes; the vast majority of cells verified ✅.
 
-### Residual cleanup for Stage 4 (bounded — none are conflicts; matrix --check is green)
-1. **TOUCH_MONSTER_ATTACK** — DEFERRED to its own task (version-divergent attack packet, not byte-plumbing). The only fully-unlanded op.
-2. **jms placeholder registry rows** — `IDA_0X110/0X112/0X113`, `SHOW_MAGNET` duplicate the canonical escort F-ops on the same fname; they show ❌ in v95 col. Rename to canonical op-names / dedupe (registry-cleanup; entangled with the v83/v87 off-by-one cluster Stage-1 left).
-3. **v87 escort VERSION-ABSENT pins** — MOB_ESCORT_FULL_PATH (0x111) + MOB_ESCORT_COLLISION (0x0D1) show ❌ at v87 but are VERSION-ABSENT per Stage-1.5; pin VERSION-ABSENT (→ ⬜) or drop the v87 registry rows.
-4. **Documented inlined/unnamed-sender blockers** (codec+route landed; evidence un-pinnable, stay ❌): MOB_BANISH_PLAYER v83/v84; MOB_TIME_BOMB_END v83/v84/v87; MONSTER_BOMB v84; MOB_DROP_PICKUP_REQUEST v84; MONSTER_BOOK_COVER v84. These need IDB naming of the inlined/unnamed senders (a v84-heavy RE follow-up) OR a sibling-equivalence justification.
+### Residual cleanup for Stage 4 — STATUS (all IDA-verified this stage)
+1. **TOUCH_MONSTER_ATTACK** — v83 wire layout DERIVED + documented
+   (`structures/touch_monster_attack.md`); opcode off-by-one found (real v83 =
+   `0x30`, not csv `0x2F`). Codec NOT landed: it is a heavily-conditional,
+   version-divergent attack packet whose v95 variant carries crypto-masked
+   `_DR_INFO` fields + GetCrc32 + an ATTACKINFO[15] hit loop — a faithful
+   byte-exact 3-version codec is task-sized and cannot be verified to the
+   no-knowingly-wrong-codec bar inside this stage. Recommended follow-up task,
+   with v83 already derived as a head start.
+2. **jms/v95 escort + SHOW_MAGNET dedupe — DONE** (commit, item 2): verified all
+   5 OnMobPacket dispatchers; v83 off-by-one fixed; SHOW_MAGNET deleted; jms
+   placeholders renamed to canonical. MOB_SPEAKING ✅×5; jms escort/skill-delay ✅.
+3. **v87 escort VERSION-ABSENT — DONE** (item 3): dropped the v87 MOB_ESCORT_FULL_PATH
+   + MOB_ESCORT_COLLISION rows (dispatcher ends at 0x110); cells now ⬜.
+4. **Inlined/unnamed senders — MOSTLY DONE** (item 4): named the v84 senders in the
+   IDB and pinned MONSTER_BOMB, MOB_DROP_PICKUP_REQUEST, MONSTER_BOOK_COVER (v84)
+   and MOB_BANISH_PLAYER (v83+v84 — both DISCRETE, the "inlined" claim was wrong)
+   → all ✅×5. Fixed the v84 DROP_PICKUP route opcode bug (0xBE→0xC3) and added the
+   missing MonsterBomb route (0xC6). Only **MOB_TIME_BOMB_END v83/v84/v87** remains
+   ❌ — no sender locatable in those clients (v84 exhaustive scan negative; no named
+   TimeBomb fn in v83/v87); left honest rather than fabricated. v95/jms pinned.
 
 ### Remaining stages
 - **Stage 3 — DONE.** `docs/packets/IMPLEMENTING_A_PACKET.md` (four-step recipe, worked MOB_CRC_KEY_CHANGED example, conventions: package-by-owner-class + tier-1 prefix, no-emitter seam, validator-mandatory/BuildHandlerMap silent-drop, `>83`→`MajorAtLeast(87)` gate, fname-mislabel guard, export-resolvability precondition; cross-links VERIFYING_A_PACKET/tiers.yaml/registry README) + `deploy-notes.md` (per-version writer+handler opcode tables from the template diff, PATCH shape, rollout checklist, post-deploy checks). Also removed a stray 40MB `atlas-channel` build binary left untracked in the worktree root.

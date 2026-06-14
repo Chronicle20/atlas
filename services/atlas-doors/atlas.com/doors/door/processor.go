@@ -20,6 +20,7 @@ import (
 type Processor interface {
 	GetById(areaDoorId uint32) (Model, error)
 	GetInField(f field.Model) ([]Model, error)
+	GetByOwner(ownerCharacterId uint32) ([]Model, error)
 	Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error)
 	RemoveByOwner(ownerCharacterId uint32, reason string) error
 	RemoveByOwnerIfLeftField(ownerCharacterId uint32, newField field.Model) error
@@ -79,6 +80,10 @@ func (p *ProcessorImpl) GetById(areaDoorId uint32) (Model, error) {
 
 func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return GetRegistry().GetInField(p.ctx, p.t, f)
+}
+
+func (p *ProcessorImpl) GetByOwner(ownerCharacterId uint32) ([]Model, error) {
+	return GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
 }
 
 func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error) {

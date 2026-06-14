@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-doors/character"
 	character2 "atlas-doors/kafka/consumer/character"
 	door2 "atlas-doors/kafka/consumer/door"
 	party2 "atlas-doors/kafka/consumer/party"
@@ -86,6 +87,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(door.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
+		AddRouteInitializer(character.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()

@@ -236,6 +236,49 @@ func TestSpawnFailsCleanlyOnAllocError(t *testing.T) {
 }
 
 // -----------------------------------------------------------------------------
+// GetByOwner
+// -----------------------------------------------------------------------------
+
+// TestGetByOwnerReturnsOnlyOwnersDoors seeds two owners' doors and asserts that
+// GetByOwner returns only the requested owner's door(s).
+func TestGetByOwnerReturnsOnlyOwnersDoors(t *testing.T) {
+	res := fakeResolver{}
+	alloc := &counterAllocator{next: 1}
+	em := &fakeEmit{}
+	p, ten, ctx := newTestProcessor(t, res, alloc, em)
+
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	townMapId := _map.Id(104000000)
+	seedDoor(t, ctx, ten, 600_001, 600_002, 11, f, townMapId)
+	seedDoor(t, ctx, ten, 610_001, 610_002, 22, f, townMapId)
+
+	got, err := p.GetByOwner(11)
+	if err != nil {
+		t.Fatalf("GetByOwner: %v", err)
+	}
+	if len(got) != 1 || got[0].OwnerCharacterId() != 11 || got[0].AreaDoorId() != 600_001 {
+		t.Fatalf("expected only owner 11's door 600001, got %+v", got)
+	}
+
+	other, err := p.GetByOwner(22)
+	if err != nil {
+		t.Fatalf("GetByOwner: %v", err)
+	}
+	if len(other) != 1 || other[0].OwnerCharacterId() != 22 || other[0].AreaDoorId() != 610_001 {
+		t.Fatalf("expected only owner 22's door 610001, got %+v", other)
+	}
+
+	// Unknown owner returns no doors.
+	none, err := p.GetByOwner(33)
+	if err != nil {
+		t.Fatalf("GetByOwner: %v", err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("expected no doors for unknown owner, got %+v", none)
+	}
+}
+
+// -----------------------------------------------------------------------------
 // RemoveByOwner
 // -----------------------------------------------------------------------------
 

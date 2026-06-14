@@ -38,6 +38,10 @@ func ParseDoorId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.
 	return server.ParseIntId[uint32](l, "doorId", next)
 }
 
+func ParseCharacterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "characterId", next)
+}
+
 func ParseChannelId(l logrus.FieldLogger, next func(channel.Id) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseIntId[channel.Id](l, "channelId", next)
 }

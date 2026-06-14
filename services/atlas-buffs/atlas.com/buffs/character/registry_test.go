@@ -109,9 +109,10 @@ func TestRegistry_Cancel(t *testing.T) {
 
 	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false)
 
-	b, err := GetRegistry().Cancel(ctx, characterId, sourceId)
+	cancelled, err := GetRegistry().Cancel(ctx, characterId, sourceId)
 	assert.NoError(t, err)
-	assert.Equal(t, sourceId, b.SourceId())
+	assert.Len(t, cancelled, 1)
+	assert.Equal(t, sourceId, cancelled[0].SourceId())
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 0)
@@ -490,6 +491,28 @@ func TestRegistry_Apply_Accumulate_PerStatExpiry(t *testing.T) {
 	assert.Len(t, m.Buffs(), 1) // magic defense survives
 	_, hasMdef := m.Buffs()[statKey(sourceId, "MAGIC_DEFENSE")]
 	assert.True(t, hasMdef)
+}
+
+// Cancel by sourceId must return EVERY per-stat accumulate buff under that source
+// (Beholder Hex) so the caller emits one EXPIRED each — otherwise the un-returned
+// stats' icons stay stuck on the client (removed from storage, never cancelled).
+func TestRegistry_Cancel_Accumulate_ReturnsAllStats(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	characterId := uint32(1000)
+	sourceId := int32(1320009)
+	for _, st := range []string{"WEAPON_DEFENSE", "MAGIC_DEFENSE", "WEAPON_ATTACK"} {
+		_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat(st, 50)}, true)
+	}
+
+	cancelled, err := GetRegistry().Cancel(ctx, characterId, sourceId)
+	assert.NoError(t, err)
+	assert.Len(t, cancelled, 3) // all three per-stat buffs returned for EXPIRED emission
+
+	m, _ := GetRegistry().Get(ctx, characterId)
+	assert.Len(t, m.Buffs(), 0) // and all removed from storage
 }
 
 // Regression: default (non-accumulate) Apply still replaces the whole source on

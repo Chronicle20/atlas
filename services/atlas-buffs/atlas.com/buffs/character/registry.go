@@ -146,33 +146,37 @@ func (r *Registry) GetCharacters(ctx context.Context) []Model {
 	return vals
 }
 
-func (r *Registry) Cancel(ctx context.Context, characterId uint32, sourceId int32) (buff.Model, error) {
+// Cancel removes every buff for the character whose SourceId matches and returns
+// them all, so the caller can emit one EXPIRED per removed buff. In accumulate
+// mode a single sourceId (e.g. Beholder Hex 1320009) maps to several per-stat
+// buffs; returning only one would leave the other stats' icons stuck on the
+// client (removed from storage but never cancelled). Returns ErrNotFound when no
+// buff matched.
+func (r *Registry) Cancel(ctx context.Context, characterId uint32, sourceId int32) ([]buff.Model, error) {
 	t := tenant.MustFromContext(ctx)
 
 	m, err := r.characters.Get(ctx, t, characterId)
 	if errors.Is(err, atlas.ErrNotFound) {
-		return buff.Model{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 	if err != nil {
-		return buff.Model{}, err
+		return nil, err
 	}
 
-	var cancelled buff.Model
-	var found bool
+	cancelled := make([]buff.Model, 0)
 	not := make(map[string]buff.Model)
 	for id, b := range m.buffs {
 		if b.SourceId() != sourceId {
 			not[id] = b
 		} else {
-			cancelled = b
-			found = true
+			cancelled = append(cancelled, b)
 		}
 	}
 	m.buffs = not
 	_ = r.characters.Put(ctx, t, characterId, m)
 
-	if !found {
-		return buff.Model{}, ErrNotFound
+	if len(cancelled) == 0 {
+		return nil, ErrNotFound
 	}
 	return cancelled, nil
 }

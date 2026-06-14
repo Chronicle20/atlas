@@ -65,12 +65,23 @@ func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterI
 }
 
 func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId int32) error {
-	b, err := GetRegistry().Cancel(p.ctx, characterId, sourceId)
+	cancelled, err := GetRegistry().Cancel(p.ctx, characterId, sourceId)
 	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
+	if err != nil {
+		return err
+	}
+	// One EXPIRED per removed buff: a sourceId can map to several per-stat buffs
+	// in accumulate mode (Beholder Hex), and each needs its own cancel so the
+	// client clears every icon rather than leaving the others stuck.
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		return buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt()))
+		for _, b := range cancelled {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

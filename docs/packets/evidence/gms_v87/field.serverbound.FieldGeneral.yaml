@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldGeneral
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsg
+    address: "0x552b67"
+    decompile_sha256: a3e02c70ecc67557ab22433a41d5a9d6efd82723df672b2d115a61ec0aabb015

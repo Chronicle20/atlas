@@ -1,4 +1,4 @@
-packet: chat/serverbound/ChatGeneral
+packet: field/serverbound/FieldGeneral
 direction: serverbound
 version: gms_v84
 category: TIER1-FIXTURE

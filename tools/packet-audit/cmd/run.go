@@ -1143,8 +1143,8 @@ func candidatesFromFName(fname string) []candidate {
 	// Atlas General writes: WriteInt(updateTime, GMS>83 gate) + WriteAsciiString(msg) + WriteBool(bOnlyBalloon).
 	// Gate fires for v95 → all 3 fields written → matches IDA wire exactly.
 	case "CField::SendChatMsg":
-		// CSV: GENERAL_CHAT — atlas General (serverbound chat/general.go).
-		return []candidate{{name: "General", pkg: "chat", dir: csvpkg.DirServerbound}}
+		// CSV: GENERAL_CHAT — atlas General (relocated to field/serverbound/general.go, task-096 R-MARK).
+		return []candidate{{name: "General", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// CSV: MULTI_CHAT (0xDD / 221) → CUIStatusBar::SendGroupMessage.
 	// Wire at LABEL_24: Encode4(updateTime) + Encode1(nChatTarget) + Encode1(nMemberCnt) +

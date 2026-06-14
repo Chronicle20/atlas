@@ -779,7 +779,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[monstersb.MobEscortStopEndRequestHandle] = handler.MobEscortStopEndRequestHandleFunc
 	handlerMap[carnivalsb.MonsterCarnivalHandle] = handler.MonsterCarnivalHandleFunc
 	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
-	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
+	handlerMap[fieldsb.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc

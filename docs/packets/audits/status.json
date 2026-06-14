@@ -1,5 +1,5 @@
 {
-  "toolSha": "46f1bfa4e464a7d9e302b6d14fa8525252fd3b91",
+  "toolSha": "6fc8f1bd334f18ff7e11ccfd1ed87e05660912b8",
   "exportHashes": {
     "gms_v83": "c0310c662e0984070e4ff9f7464029a9ac7343bfd65cca61c02c039480863331",
     "gms_v84": "bda0d701349af14fc05247f62414ed573e266965f6290888a8ba8bea0968e965",
@@ -3605,7 +3605,7 @@
     {
       "kind": "op",
       "op": "GENERAL_CHAT",
-      "packet": "chat/serverbound/ChatGeneral",
+      "packet": "field/serverbound/FieldGeneral",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -3614,8 +3614,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 49
         },
         "gms_v84": {

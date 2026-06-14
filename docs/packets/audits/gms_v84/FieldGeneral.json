@@ -1,10 +1,10 @@
 {
-  "WriterName": "ChatGeneral",
+  "WriterName": "FieldGeneral",
   "IDAName": "CField::SendChatMsg",
   "Address": "0x5382d7",
   "Variant": "GMS/v84",
   "BranchDepth": 2,
-  "AtlasFile": "libs/atlas-packet/chat/serverbound/general.go",
+  "AtlasFile": "libs/atlas-packet/field/serverbound/general.go",
   "Rows": [
     {
       "Index": 0,

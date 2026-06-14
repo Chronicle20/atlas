@@ -6,21 +6,6 @@
   "socket": {
     "handlers": [
       {
-        "opCode": "0xE0",
-        "validator": "LoggedInValidator",
-        "handler": "MonsterCarnival"
-      },
-      {
-        "opCode": "0x38",
-        "validator": "LoggedInValidator",
-        "handler": "MobBanishPlayer"
-      },
-      {
-        "opCode": "0x4D",
-        "validator": "LoggedInValidator",
-        "handler": "MountFoodHandle"
-      },
-      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -316,6 +301,11 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x38",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
         "opCode": "0x39",
         "validator": "LoggedInValidator",
         "handler": "MonsterBookCover"
@@ -414,6 +404,11 @@
         "opCode": "0x4C",
         "validator": "LoggedInValidator",
         "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
       },
       {
         "opCode": "0x4F",
@@ -1049,6 +1044,11 @@
         "handler": "ReactorHitHandle"
       },
       {
+        "opCode": "0xE0",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
         "opCode": "0xEA",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckWalletHandle"
@@ -1083,42 +1083,6 @@
       }
     ],
     "writers": [
-      {
-        "opCode": "0x128",
-        "writer": "MonsterCarnivalStart"
-      },
-      {
-        "opCode": "0x129",
-        "writer": "MonsterCarnivalObtainedCP"
-      },
-      {
-        "opCode": "0x12A",
-        "writer": "MonsterCarnivalPartyCP"
-      },
-      {
-        "opCode": "0x12B",
-        "writer": "MonsterCarnivalSummon"
-      },
-      {
-        "opCode": "0x12C",
-        "writer": "MonsterCarnivalMessage"
-      },
-      {
-        "opCode": "0x12D",
-        "writer": "MonsterCarnivalDied"
-      },
-      {
-        "opCode": "0x12E",
-        "writer": "MonsterCarnivalLeave"
-      },
-      {
-        "opCode": "0x12F",
-        "writer": "MonsterCarnivalResult"
-      },
-      {
-        "opCode": "0x30",
-        "writer": "SetTamingMobInfo"
-      },
       {
         "opCode": "0x00",
         "writer": "AuthSuccess"
@@ -1453,6 +1417,10 @@
             "RECEIVER_INBOX_FULL": 2
           }
         }
+      },
+      {
+        "opCode": "0x30",
+        "writer": "SetTamingMobInfo"
       },
       {
         "opCode": "0x32",
@@ -2245,22 +2213,6 @@
         "writer": "MobAffected"
       },
       {
-        "opCode": "0x103",
-        "writer": "MobSpeaking"
-      },
-      {
-        "opCode": "0x104",
-        "writer": "IncMobChargeCount"
-      },
-      {
-        "opCode": "0x105",
-        "writer": "MobSkillDelay"
-      },
-      {
-        "opCode": "0x106",
-        "writer": "MobAttackedByMob"
-      },
-      {
         "opCode": "0xFC",
         "writer": "MonsterDamage"
       },
@@ -2283,6 +2235,22 @@
       {
         "opCode": "0x102",
         "writer": "CatchMonsterWithItem"
+      },
+      {
+        "opCode": "0x103",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x104",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0x105",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x106",
+        "writer": "MobAttackedByMob"
       },
       {
         "opCode": "0x108",
@@ -2415,6 +2383,38 @@
       {
         "opCode": "0x11F",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x128",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x12A",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x12B",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x12C",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x12E",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "MonsterCarnivalResult"
       },
       {
         "opCode": "0x137",

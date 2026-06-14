@@ -6,26 +6,6 @@
   "socket": {
     "handlers": [
       {
-        "opCode": "0x106",
-        "validator": "LoggedInValidator",
-        "handler": "MonsterCarnival"
-      },
-      {
-        "opCode": "0x3D",
-        "validator": "LoggedInValidator",
-        "handler": "MobBanishPlayer"
-      },
-      {
-        "opCode": "0x3E",
-        "validator": "LoggedInValidator",
-        "handler": "MonsterBookCover"
-      },
-      {
-        "opCode": "0x53",
-        "validator": "LoggedInValidator",
-        "handler": "MountFoodHandle"
-      },
-      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -207,6 +187,16 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
+        "opCode": "0x3E",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
         "opCode": "0x41",
         "handler": "NPCContinueConversationHandle"
       },
@@ -233,6 +223,11 @@
       {
         "opCode": "0x52",
         "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
       },
       {
         "opCode": "0x5D",
@@ -377,26 +372,6 @@
         "handler": "MobTimeBombEnd"
       },
       {
-        "opCode": "0xF1",
-        "handler": "NPCActionHandle"
-      },
-      {
-        "opCode": "0xF6",
-        "handler": "DropPickUpHandle"
-      },
-      {
-        "opCode": "0xF9",
-        "handler": "ReactorHitHandle"
-      },
-      {
-        "opCode": "0x112",
-        "handler": "CashShopCheckWalletHandle"
-      },
-      {
-        "opCode": "0x113",
-        "handler": "CashShopOperationHandle"
-      },
-      {
         "opCode": "0xEC",
         "validator": "LoggedInValidator",
         "handler": "MobEscortCollision"
@@ -410,45 +385,34 @@
         "opCode": "0xEE",
         "validator": "LoggedInValidator",
         "handler": "MobEscortStopEndRequest"
+      },
+      {
+        "opCode": "0xF1",
+        "handler": "NPCActionHandle"
+      },
+      {
+        "opCode": "0xF6",
+        "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0xF9",
+        "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0x106",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
+        "opCode": "0x112",
+        "handler": "CashShopCheckWalletHandle"
+      },
+      {
+        "opCode": "0x113",
+        "handler": "CashShopOperationHandle"
       }
     ],
     "writers": [
-      {
-        "opCode": "0x15A",
-        "writer": "MonsterCarnivalStart"
-      },
-      {
-        "opCode": "0x15B",
-        "writer": "MonsterCarnivalObtainedCP"
-      },
-      {
-        "opCode": "0x15C",
-        "writer": "MonsterCarnivalPartyCP"
-      },
-      {
-        "opCode": "0x15D",
-        "writer": "MonsterCarnivalSummon"
-      },
-      {
-        "opCode": "0x15E",
-        "writer": "MonsterCarnivalMessage"
-      },
-      {
-        "opCode": "0x15F",
-        "writer": "MonsterCarnivalDied"
-      },
-      {
-        "opCode": "0x160",
-        "writer": "MonsterCarnivalLeave"
-      },
-      {
-        "opCode": "0x161",
-        "writer": "MonsterCarnivalResult"
-      },
-      {
-        "opCode": "0x2F",
-        "writer": "SetTamingMobInfo"
-      },
       {
         "opCode": "0x00",
         "writer": "AuthLoginFailed",
@@ -665,6 +629,10 @@
       {
         "opCode": "0x28",
         "writer": "NoteOperation"
+      },
+      {
+        "opCode": "0x2F",
+        "writer": "SetTamingMobInfo"
       },
       {
         "opCode": "0x31",
@@ -927,6 +895,42 @@
         "writer": "CatchMonsterWithItem"
       },
       {
+        "opCode": "0x12D",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x12E",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x130",
+        "writer": "MobEscortFullPath"
+      },
+      {
+        "opCode": "0x131",
+        "writer": "MobEscortStop"
+      },
+      {
+        "opCode": "0x132",
+        "writer": "MobEscortStopSay"
+      },
+      {
+        "opCode": "0x133",
+        "writer": "MobEscortReturnBefore"
+      },
+      {
+        "opCode": "0x134",
+        "writer": "MobNextAttack"
+      },
+      {
+        "opCode": "0x135",
+        "writer": "MobAttackedByMob"
+      },
+      {
         "opCode": "0x137",
         "writer": "SpawnNPC"
       },
@@ -957,6 +961,38 @@
       {
         "opCode": "0x151",
         "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x15A",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
+        "opCode": "0x15B",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x15C",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x15D",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x15E",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
+        "opCode": "0x15F",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x160",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
+        "opCode": "0x161",
+        "writer": "MonsterCarnivalResult"
       },
       {
         "opCode": "0x16C",
@@ -997,42 +1033,6 @@
       {
         "opCode": "0x190",
         "writer": "CharacterKeyMapAutoMp"
-      },
-      {
-        "opCode": "0x12D",
-        "writer": "MobSpeaking"
-      },
-      {
-        "opCode": "0x12E",
-        "writer": "IncMobChargeCount"
-      },
-      {
-        "opCode": "0x12F",
-        "writer": "MobSkillDelay"
-      },
-      {
-        "opCode": "0x130",
-        "writer": "MobEscortFullPath"
-      },
-      {
-        "opCode": "0x131",
-        "writer": "MobEscortStop"
-      },
-      {
-        "opCode": "0x132",
-        "writer": "MobEscortStopSay"
-      },
-      {
-        "opCode": "0x133",
-        "writer": "MobEscortReturnBefore"
-      },
-      {
-        "opCode": "0x134",
-        "writer": "MobNextAttack"
-      },
-      {
-        "opCode": "0x135",
-        "writer": "MobAttackedByMob"
       }
     ]
   },

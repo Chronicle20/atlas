@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldGuildBossHealerMove
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_GuildBoss::OnHealerMove
+    address: "0x558c0c"
+    decompile_sha256: e398a8dc120ed674167024bfa2183d462c313c80fb34c8aeb421701e997011fa

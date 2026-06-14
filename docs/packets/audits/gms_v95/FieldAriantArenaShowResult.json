@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldAriantArenaShowResult",
+  "IDAName": "CField_AriantArena::OnShowResult",
+  "Address": "0x547630",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/ariant_arena_show_result.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

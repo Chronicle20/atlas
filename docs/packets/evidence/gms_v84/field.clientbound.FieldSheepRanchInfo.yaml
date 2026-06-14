@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSheepRanchInfo
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField_Battlefield::OnScoreUpdate
+    address: "0x5522cf"
+    decompile_sha256: d6509ab4242887164e764054e3c712809411080ea6e9c361128f1765beb7bf13

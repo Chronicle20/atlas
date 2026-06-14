@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldCoconutScore
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_Coconut::OnCoconutScore
+    address: "0x549802"
+    decompile_sha256: 18cda8862b4cbe41fb3da77c859e532daf40349ac0aabe42aa99293e494d387f

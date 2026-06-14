@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSheepRanchClothes
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField_Battlefield::OnTeamChanged
+    address: "0x56f6c2"
+    decompile_sha256: f251d7727460eb351bf3522526207cb780b346720f5da7a6cad338b59a9fedf6

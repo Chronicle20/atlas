@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldPyramidGauge
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField_Massacre::OnMassacreIncGauge
+    address: "0x56d6bc"
+    decompile_sha256: c80c0dda8d048c44eb184a8d4e7117fe684366eebbd2ea4e74b18e85a2d3c5e9

@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldPyramidGauge",
+  "IDAName": "CField_Massacre::OnMassacreIncGauge",
+  "Address": "0x560a81",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/pyramid_gauge.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

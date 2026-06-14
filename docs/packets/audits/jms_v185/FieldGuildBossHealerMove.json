@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldGuildBossHealerMove",
+  "IDAName": "CField_GuildBoss::OnHealerMove",
+  "Address": "0x59f94c",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/guild_boss_healer_move.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

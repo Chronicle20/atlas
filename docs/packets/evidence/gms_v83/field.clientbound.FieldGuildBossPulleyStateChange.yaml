@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldGuildBossPulleyStateChange
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_GuildBoss::OnPulleyStateChange
+    address: "0x558c3b"
+    decompile_sha256: 5f50f8cb9106a175302f2eac79a280f117bc826d8ed918a166bf7ab0938482b2

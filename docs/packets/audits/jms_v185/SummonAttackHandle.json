@@ -128,7 +128,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "summonY — emit virtualized; mirrors v95@0x752438",
+      "IDAComment": "summonY — emit virtualized; mirrors v87@send-block (NO repeatSkillPoint; jms185 ≈ GMS v87, not v95)",
       "Verdict": 0,
       "Note": ""
     },
@@ -137,7 +137,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "repeatSkillPoint (post-v95 envelope tail; lineage-inferred for jms185) — emit virtualized; mirrors v95@0x752450",
+      "IDAComment": "mob[i].mobId — emit virtualized; mirrors v87 per-target loop, loop nMobCount times",
       "Verdict": 0,
       "Note": ""
     },
@@ -146,39 +146,30 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "mob[i].mobId — emit virtualized; mirrors v95@0x7524ac, loop nMobCount times",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 16,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 2,
       "IDAComment": "mob[i].templateId — mirrors v95@0x7524cc",
       "Verdict": 0,
       "Note": ""
     },
     {
-      "Index": 17,
-      "AtlasOp": 1,
+      "Index": 16,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "mob[i].hitAction — mirrors v95@0x7524e2",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
-      "Index": 18,
-      "AtlasOp": 1,
+      "Index": 17,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "mob[i].foreAction|isLeft\u003c\u003c7 — mirrors v95@0x75250c",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
-      "Index": 19,
+      "Index": 18,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -187,8 +178,8 @@
       "Note": "width mismatch"
     },
     {
-      "Index": 20,
-      "AtlasOp": 2,
+      "Index": 19,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "mob[i].calcDamageStatIdx — mirrors v95@0x75253b",
@@ -196,16 +187,16 @@
       "Note": "width mismatch"
     },
     {
-      "Index": 21,
-      "AtlasOp": 2,
+      "Index": 20,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "mob[i].curX — mirrors v95@0x75256c",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
-      "Index": 22,
+      "Index": 21,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
@@ -214,25 +205,25 @@
       "Note": ""
     },
     {
-      "Index": 23,
-      "AtlasOp": 1,
+      "Index": 22,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "mob[i].hitX — mirrors v95@0x7525d3",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
-      "Index": 24,
-      "AtlasOp": 1,
+      "Index": 23,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "mob[i].hitY — mirrors v95@0x752607",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
-      "Index": 25,
+      "Index": 24,
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
@@ -241,7 +232,7 @@
       "Note": ""
     },
     {
-      "Index": 26,
+      "Index": 25,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
@@ -250,17 +241,26 @@
       "Note": ""
     },
     {
-      "Index": 27,
-      "AtlasOp": 1,
+      "Index": 26,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "skillCRC — emit virtualized; mirrors v95@0x75266f",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
       "Verdict": 2,
-      "Note": "width mismatch"
+      "Note": "atlas: extra — client never reads this field"
     },
     {
       "Index": 28,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -269,6 +269,15 @@
     },
     {
       "Index": 29,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 30,
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,

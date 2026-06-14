@@ -24,21 +24,22 @@
 | 10 | int16 | int16 `userX — emit virtualized; mirrors v95@0x7523a5` | ✅ |  |
 | 11 | int16 | int16 `userY — emit virtualized; mirrors v95@0x7523dd` | ✅ |  |
 | 12 | int16 | int16 `summonX — emit virtualized; mirrors v95@0x75240a` | ✅ |  |
-| 13 | int16 | int16 `summonY — emit virtualized; mirrors v95@0x752438` | ✅ |  |
-| 14 | int32 | int32 `repeatSkillPoint (post-v95 envelope tail; lineage-inferred for jms185) — emit virtualized; mirrors v95@0x752450` | ✅ |  |
-| 15 | int32 | int32 `mob[i].mobId — emit virtualized; mirrors v95@0x7524ac, loop nMobCount times` | ✅ |  |
-| 16 | int32 | int32 `mob[i].templateId — mirrors v95@0x7524cc` | ✅ |  |
-| 17 | int16 | byte `mob[i].hitAction — mirrors v95@0x7524e2` | ❌ | width mismatch |
-| 18 | int16 | byte `mob[i].foreAction\|isLeft<<7 — mirrors v95@0x75250c` | ❌ | width mismatch |
-| 19 | int16 | byte `mob[i].frameIdx — mirrors v95@0x752522` | ❌ | width mismatch |
-| 20 | int32 | byte `mob[i].calcDamageStatIdx — mirrors v95@0x75253b` | ❌ | width mismatch |
-| 21 | int32 | int16 `mob[i].curX — mirrors v95@0x75256c` | ❌ | width mismatch |
-| 22 | int16 | int16 `mob[i].curY — mirrors v95@0x7525a0` | ✅ |  |
-| 23 | int16 | int16 `mob[i].hitX — mirrors v95@0x7525d3` | ✅ |  |
-| 24 | int16 | int16 `mob[i].hitY — mirrors v95@0x752607` | ✅ |  |
-| 25 | int16 | int16 `mob[i].tDelay — mirrors v95@0x75261d` | ✅ |  |
-| 26 | int32 | int32 `mob[i].damage — mirrors v95@0x752632` | ✅ |  |
-| 27 | int16 | int32 `skillCRC — emit virtualized; mirrors v95@0x75266f` | ❌ | width mismatch |
-| 28 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 13 | int16 | int16 `summonY — emit virtualized; mirrors v87@send-block (NO repeatSkillPoint; jms185 ≈ GMS v87, not v95)` | ✅ |  |
+| 14 | int32 | int32 `mob[i].mobId — emit virtualized; mirrors v87 per-target loop, loop nMobCount times` | ✅ |  |
+| 15 | int32 | int32 `mob[i].templateId — mirrors v95@0x7524cc` | ✅ |  |
+| 16 | byte | byte `mob[i].hitAction — mirrors v95@0x7524e2` | ✅ |  |
+| 17 | byte | byte `mob[i].foreAction\|isLeft<<7 — mirrors v95@0x75250c` | ✅ |  |
+| 18 | int16 | byte `mob[i].frameIdx — mirrors v95@0x752522` | ❌ | width mismatch |
+| 19 | int16 | byte `mob[i].calcDamageStatIdx — mirrors v95@0x75253b` | ❌ | width mismatch |
+| 20 | int16 | int16 `mob[i].curX — mirrors v95@0x75256c` | ✅ |  |
+| 21 | int16 | int16 `mob[i].curY — mirrors v95@0x7525a0` | ✅ |  |
+| 22 | int32 | int16 `mob[i].hitX — mirrors v95@0x7525d3` | ❌ | width mismatch |
+| 23 | int32 | int16 `mob[i].hitY — mirrors v95@0x752607` | ❌ | width mismatch |
+| 24 | int16 | int16 `mob[i].tDelay — mirrors v95@0x75261d` | ✅ |  |
+| 25 | int32 | int32 `mob[i].damage — mirrors v95@0x752632` | ✅ |  |
+| 26 | int32 | int32 `skillCRC — emit virtualized; mirrors v95@0x75266f` | ✅ |  |
+| 27 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 28 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 29 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 30 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

@@ -7599,7 +7599,7 @@
     "CSummoned::TryDoingAttackManual": {
       "address": "0x824a81",
       "direction": "serverbound",
-      "note": "SUMMON_ATTACK send (CMSG 179/0xB3). On jms185 TryDoingAttackManual is inlined into CSummoned::Update@0x824381 via sub_824A81@0x824a81 (the manual-attack target builder; called from Update case 1 @0x8245d1 and the rune-attack branch @0x82463c). It builds the per-target damage array, then calls DR_check@0x826202 to compute the _DR_INFO[4] anti-hack block (staged at var_20@0x8261fd) and jumps into the jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f -> loc_D21897) where the COutPacket(0xB3) emit lives. The emit is NOT statically recoverable (virtualized), but the DR_check call PROVES the drInfo/dwKey/crc32 anti-hack envelope is present (the same envelope GMS gained at v84). repeatSkillPoint is the permanent post-v95 envelope tail (GMS v95 GetRepeatSkillPoint@0x748e50 -> Encode4@0x752450); JMS v185 (>> v95) inherits it. The field ORDER below therefore mirrors the v95 PDB-clean send (CSummoned::TryDoingAttackManual@0x751240); only the envelope's PRESENCE (proven by DR_check) and the lineage of repeatSkillPoint are jms185-derived. The per-target block + skillCRC trailer are byte-identical across all versions. jms185 identity = owner cid. Atlas serverbound Attack (hasAntiHackEnvelope -> JMS true via DR_check; hasRepeatSkillPoint -> JMS true via lineage) decodes summonId + envelope + action + count + positions + repeatSkillPoint + per-target loop + skillCRC. jms185 reference (IDB asm-confirmed envelope; VM-obfuscated emit, field order mirrored from v95).",
+      "note": "SUMMON_ATTACK send (CMSG 179/0xB3). On jms185 TryDoingAttackManual is inlined into CSummoned::Update@0x824381 via sub_824A81@0x824a81 (the manual-attack target builder; called from Update case 1 @0x8245d1 and the rune-attack branch @0x82463c). It builds the per-target damage array, then calls DR_check@0x826202 to compute the _DR_INFO[4] anti-hack block (staged at var_20@0x8261fd) and jumps into the jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f -> loc_D21897) where the COutPacket(0xB3) emit lives. The emit is NOT statically recoverable (virtualized), but the DR_check call PROVES the drInfo/dwKey/crc32 anti-hack envelope is present (the same envelope GMS gained at v84). JMS v185 corresponds structurally to the GMS v87 era (envelope + crc, NO repeatSkillPoint), NOT v95 — the JMS/GMS code lines diverged and raw version numbers don't map (v185 ≈ v87 here). An earlier pass wrongly inferred the v95-only repeatSkillPoint from version-number lineage (v185 >> v95); that has been removed. The field ORDER below mirrors the v95 PDB-clean send (CSummoned::TryDoingAttackManual@0x751240) MINUS repeatSkillPoint; the envelope's PRESENCE (proven by DR_check) is jms185-derived. The per-target block + skillCRC trailer are byte-identical across all versions. jms185 identity = owner cid. Atlas serverbound Attack (hasAntiHackEnvelope -> JMS true via DR_check; hasRepeatSkillPoint -> JMS false, matching v87) decodes summonId + envelope + action + count + positions + per-target loop + skillCRC. jms185 reference (IDB asm-confirmed envelope; VM-obfuscated emit, field order mirrored from v87).",
       "calls": [
         {
           "op": "Encode4",
@@ -7655,15 +7655,11 @@
         },
         {
           "op": "Encode2",
-          "comment": "summonY \u2014 emit virtualized; mirrors v95@0x752438"
+          "comment": "summonY \u2014 emit virtualized; mirrors v87@send-block (NO repeatSkillPoint; jms185 \u2248 GMS v87, not v95)"
         },
         {
           "op": "Encode4",
-          "comment": "repeatSkillPoint (post-v95 envelope tail; lineage-inferred for jms185) \u2014 emit virtualized; mirrors v95@0x752450"
-        },
-        {
-          "op": "Encode4",
-          "comment": "mob[i].mobId \u2014 emit virtualized; mirrors v95@0x7524ac, loop nMobCount times",
+          "comment": "mob[i].mobId \u2014 emit virtualized; mirrors v87 per-target loop, loop nMobCount times",
           "guard": "loop mobs"
         },
         {

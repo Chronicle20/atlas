@@ -121,17 +121,17 @@ func hasAntiHackEnvelope(t tenant.Model) bool {
 }
 
 // hasRepeatSkillPoint reports whether the version emits the trailing
-// repeatSkillPoint int after the position block. Present on GMS >= 95
-// (CUserLocal::GetRepeatSkillPoint v95@0x748e50 -> Encode4@0x752450) AND on JMS
-// v185. repeatSkillPoint is a permanent post-v95 addition to the summon-attack
-// envelope; JMS v185 (v185 >> v95 in the shared GMS/JMS code lineage) inherits
-// it. The jms185 send is VM-obfuscated so the field cannot be read directly; its
-// presence is inferred from the build lineage (the envelope itself is confirmed
-// via DR_check). The decoder skips it at its exact width to stay aligned.
+// repeatSkillPoint int after the position block. Present on GMS >= 95 ONLY
+// (CUserLocal::GetRepeatSkillPoint v95@0x748e50 -> Encode4@0x752450).
+//
+// JMS v185 does NOT carry it: structurally JMS v185 corresponds to the GMS v87
+// era (envelope + crc, NO repeatSkillPoint), not the v95 era. The jms185
+// manual-attack send is behind the anti-tamper VM so the tail can't be read
+// statically; an earlier pass guessed a v95-shaped tail (repeatSkillPoint) from
+// raw version-number lineage (v185 >> v95), which is wrong — the JMS/GMS code
+// lines diverged and v185 ≈ v87 here. The anti-hack envelope itself IS confirmed
+// for jms185 (DR_check@0x826202); only the v95-only repeatSkillPoint is excluded.
 func hasRepeatSkillPoint(t tenant.Model) bool {
-	if t.IsRegion("JMS") {
-		return t.MajorAtLeast(185)
-	}
 	return t.IsRegion("GMS") && t.MajorAtLeast(95)
 }
 

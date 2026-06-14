@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CSummoned::TryDoingAttackManual
     address: "0x824a81"
-    decompile_sha256: 8b06038d2749681f8c6f3f3d9c321947f0352c5115546a9b30355068c316fc2d
+    decompile_sha256: 2bf5ddecd9e2ce081121acf3798b9c445a04db13ab15e09ea3f2d9b581b0a6f9
 verifies:
     - libs/atlas-packet/summon/serverbound/attack_test.go#TestSummonAttackDecodeJMS185

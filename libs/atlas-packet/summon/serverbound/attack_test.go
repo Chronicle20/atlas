@@ -127,19 +127,20 @@ func TestSummonAttackDecodeV95(t *testing.T) {
 }
 
 // TestSummonAttackDecodeJMS185 decodes a real-shaped 2-target JMS185 attack send:
-// the anti-hack envelope PLUS the trailing repeatSkillPoint int — same layout as
-// the GMS v95 send. The jms185 manual-attack (TryDoingAttackManual inlined into
-// CSummoned::Update via sub_824A81@0x824a81) calls DR_check@0x826202 and stages
-// the _DR_INFO envelope (var_20@0x8261fd) for the COutPacket(0xB3) emit. The emit
-// itself is behind the jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f), so the
-// field order mirrors the v95 PDB-clean send; the envelope's PRESENCE is proven
-// by DR_check, and repeatSkillPoint is the permanent post-v95 envelope tail (JMS
-// v185 >> v95). This is the serverbound wire bug the JMS gate-fix corrected: the
-// GMS-only envelope/repeatSkillPoint gates had JMS185 decoding the lean v83
-// header, which would misalign every per-target mobOid/damage field.
+// the anti-hack envelope but NO trailing repeatSkillPoint — structurally the GMS
+// v87 layout, NOT v95. JMS v185 corresponds to the GMS v87 era (the JMS/GMS code
+// lines diverged; raw version numbers don't map — v185 ≈ v87 here, not v95). The
+// jms185 manual-attack (TryDoingAttackManual inlined into CSummoned::Update via
+// sub_824A81@0x824a81) calls DR_check@0x826202 and stages the _DR_INFO envelope
+// (var_20@0x8261fd) for the COutPacket(0xB3) emit. The emit itself is behind the
+// jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f), so the field order mirrors the
+// v95 PDB-clean send MINUS the v95-only repeatSkillPoint; the envelope's PRESENCE
+// is proven by DR_check. The JMS gate-fix corrected the original GMS-only gates
+// (which had JMS185 decoding the lean v83 header and misaligning every per-target
+// field) AND a later over-correction that wrongly added the v95 repeatSkillPoint.
 // packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=jms_v185 ida=0x824a81
 func TestSummonAttackDecodeJMS185(t *testing.T) {
-	body := envelopeHeader(1000005, true)
+	body := envelopeHeader(1000005, false)
 	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)
 	body = append(body, mobBlock(2000002, 9300166, -50, 5678)...)
 	body = append(body, le32(0xABCD)...) // skillCRC

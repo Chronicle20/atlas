@@ -9,6 +9,20 @@
 
 ## v83 clientbound (CSummonedPool::OnPacket @0x938dd7 dispatch)
 
+> **CORRECTION (oid is present on EVERY summon clientbound packet, v83 included).**
+> The cid is read UPSTREAM in `CUserPool::OnUserCommonPacket@0x972401` (`Decode4
+> characterId` for the whole `0xAF–0xB4` band) — NOT in `CSummonedPool::OnPacket`.
+> So in `CSummonedPool::OnPacket@0x938dd7`: spawn (`0xAF`) calls `OnCreated` with no
+> further Decode4 (→ oid, skillId); every non-spawn op does ONE `Decode4` = the
+> **oid** (the pool lookup key) before its handler. The table below was written
+> against `CSummonedPool::OnPacket` alone and mislabeled that per-op `Decode4` as
+> the "cid" — it is the **oid**, and the real cid sits in front of it (upstream).
+> Net wire for ALL ops: **`cid + oid + body`**. Atlas now writes the oid
+> unconditionally in every `summon/clientbound/*.go`. v83 live-confirmed (x32dbg);
+> v84/v87/v95/jms inherit by the same dispatcher logic + Cosmic — matrix cells need
+> re-verification against the cid-pre-reading dispatcher (`0x938dd7`/`0x972401`),
+> not the old per-handler addrs.
+
 Dispatcher: if op==0xAF → spawn (vtable+0x2C). else `cid = Decode4`, pool-lookup by cid, then:
 - 0xB0 → remove (sub_7A64EB)
 - 0xB1 → OnMove @0x7a6861

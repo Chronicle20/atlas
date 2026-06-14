@@ -6,7 +6,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,16 +45,15 @@ func (m SummonMove) String() string {
 
 func (m SummonMove) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.cid)
-		// v95+ DELTA (gated >= 95, GMS only): the oid int after cid is a v95+
-		// addition. v83/v87 keep the summon pool keyed by owner cid and the
-		// dispatcher (CSummonedPool::OnPacket@0x938dd7) consumes only the leading
-		// Decode4 cid before OnMove — there is NO oid on the wire. IDB-confirmed.
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			w.WriteInt(m.oid)
-		}
+		// oid: present on ALL versions. cid is read upstream by
+		// CUserPool::OnUserCommonPacket@0x972401 (Decode4 characterId for the whole
+		// 0xAF-0xB4 summon band); CSummonedPool::OnPacket@0x938dd7 then does one more
+		// Decode4 = the oid (pool lookup key) before OnMove. Wire = cid + oid + body.
+		// The old "no oid pre-95" reading missed the upstream cid read and mislabeled
+		// the oid as the cid. See summon-wire-truth.md.
+		w.WriteInt(m.oid)
 		w.WriteInt16(m.startX)
 		w.WriteInt16(m.startY)
 		w.WriteByteArray(m.rawMovement)
@@ -64,12 +62,9 @@ func (m SummonMove) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 }
 
 func (m *SummonMove) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cid = r.ReadUint32()
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			m.oid = r.ReadUint32()
-		}
+		m.oid = r.ReadUint32() // present on all versions (see Encode)
 		m.startX = r.ReadInt16()
 		m.startY = r.ReadInt16()
 		m.rawMovement = r.ReadBytes(r.Available())

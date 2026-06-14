@@ -6,7 +6,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,14 +35,13 @@ func (m SummonRemove) String() string {
 
 func (m SummonRemove) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.ownerId)
-		// v95+ DELTA: oid is a v95+ addition; v83/v87 remove (sub_7A64EB) keys off
-		// the dispatcher-consumed cid and reads no oid (IDB-confirmed).
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			w.WriteInt(m.oid)
-		}
+		// oid: present on ALL versions. cid is read upstream by
+		// CUserPool::OnUserCommonPacket; CSummonedPool::OnPacket@0x938dd7 then does
+		// one Decode4 = the oid before the pool-remove (sub_7A64EB). Wire = cid + oid
+		// + animated byte (the old "no oid pre-95" reading missed the upstream cid).
+		w.WriteInt(m.oid)
 		if m.animated {
 			w.WriteByte(4)
 		} else {
@@ -54,12 +52,9 @@ func (m SummonRemove) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 }
 
 func (m *SummonRemove) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.ownerId = r.ReadUint32()
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			m.oid = r.ReadUint32()
-		}
+		m.oid = r.ReadUint32() // present on all versions (see Encode)
 		m.animated = r.ReadByte() == 4
 	}
 }

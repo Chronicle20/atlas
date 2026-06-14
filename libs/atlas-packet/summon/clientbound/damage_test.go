@@ -17,39 +17,30 @@ func TestSummonDamage(t *testing.T) {
 	}
 }
 
-// summonDamageV83Body is the classic v83 wire: NO oid, NO trailing dir byte.
-// CSummonedPool::OnSkill@0x7a6ebe (dispatched on the HIGHER swapped opcode) reads
-// attackIdx(b), dmg(i), if attackIdx>-2:{templateId(i), bLeft(b)} and nothing
-// after — IDB-confirmed (summon-wire-truth.md).
+// summonDamageV83Body is the v83 wire: cid + oid + body, NO trailing dir byte.
+// The cid is read upstream by CUserPool::OnUserCommonPacket@0x972401; CSummonedPool::
+// OnPacket@0x938dd7 then does one Decode4 = the oid before the damage leaf
+// (OnSkill@0x7a6ebe, the HIGHER swapped opcode), which reads attackIdx(b), dmg(i),
+// if attackIdx>-2:{templateId(i), bLeft(b)} and nothing after. (The prior "no oid"
+// reading missed the upstream cid — see summon-wire-truth.md.)
 //
-//	cid=42, attackIdx 12, damage=1234=0x000004D2,
+//	cid=42, oid=1000001=0x000F4241, attackIdx 12, damage=1234=0x000004D2,
 //	monsterIdFrom=9300018=0x008DE832, bLeft 0
 var summonDamageV83Body = []byte{
 	0x2A, 0x00, 0x00, 0x00, // cid
+	0x41, 0x42, 0x0F, 0x00, // oid=1000001
 	0x0C,                   // attackIdx (12)
 	0xD2, 0x04, 0x00, 0x00, // damage
 	0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom
 	0x00, // bLeft
 }
 
-// TestSummonDamageBytes pins the classic v83 layout (no oid, no trailing byte).
-// v83 DAMAGE behavior lives at OnSkill@0x7a6ebe (the HIGHER of the swapped
-// skill/damage opcodes); the export key CSummonedPool::OnHit records this addr.
-// v84 DAMAGE behavior lives at sub_7CC984@0x7cc984 (field op 0xB8, the higher
-// of the swapped skill/damage handlers): Decode1 attackIdx + Decode4 damage +
-// if attackIdx>-2:{Decode4 templateId + Decode1 bLeft} — stops at bLeft, no dir
-// byte, no oid (GMS_v84.1 IDB-confirmed byte-identical to v83). The export key
-// CSummonedPool::OnHit records this addr.
-// jms185 DAMAGE behavior lives at the IDB function named OnSkill (sub @0x828d16,
-// the HIGHER of the swapped skill/damage opcodes, registry op 0xB9): Decode1
-// attackIdx@0x828d47 + Decode4 damage@0x828d5c + if attackIdx>-2:{Decode4
-// templateId@0x828d6e + Decode1 bLeft@0x828d7c} — stops at bLeft, no dir byte, no
-// oid (jms185 IDB-confirmed byte-identical to v83). The export key
-// CSummonedPool::OnHit records this damage-reader addr. The TestSummonDamage
-// variant loop covers JMS.
-// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x7a6ebe
-// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v84 ida=0x7cc984
-// packet-audit:verify packet=summon/clientbound/SummonDamage version=jms_v185 ida=0x828d16
+// TestSummonDamageBytes pins the v83 layout: cid + oid + body, no trailing dir
+// byte (the dir<0 byte belongs to the SERVERBOUND SetDamaged send, not this
+// broadcast). (The prior "no oid" reading missed the upstream CUserPool cid read
+// — see summon-wire-truth.md.) NOTE: v84/v87/jms inherit this correction; their
+// matrix cells need re-verification against the cid-pre-reading dispatcher.
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x938dd7
 func TestSummonDamageBytes(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 83, 1)
@@ -59,12 +50,10 @@ func TestSummonDamageBytes(t *testing.T) {
 	}
 }
 
-// TestSummonDamageBytesV87 pins that v87 is byte-identical to v83: NO oid (oid is
-// v95+) and NO trailing dir byte (v87 OnSkill@0x7f969f reads nothing after bLeft,
-// same as v83 and v95 — IDB-confirmed). v87 DAMAGE behavior lives at OnSkill@0x7f969f
-// (op 0xC0, the higher of the swapped skill/damage handlers); the export key
-// CSummonedPool::OnHit records this addr.
-// packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v87 ida=0x7f969f
+// TestSummonDamageBytesV87 pins that v87 is byte-identical to v83 (cid + oid +
+// body, no trailing dir byte). NOTE: v87 inherits the oid correction by the same
+// dispatcher logic; this cell needs re-verification against the cid-pre-reading
+// dispatcher.
 func TestSummonDamageBytesV87(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 87, 1)
@@ -75,24 +64,16 @@ func TestSummonDamageBytesV87(t *testing.T) {
 	}
 }
 
-// TestSummonDamageBytesV95 pins the v95+ layout: oid after cid; still NO trailing
-// dir byte (v95 OnHit@0x74bc80 stops at bLeft — the dir byte is serverbound only).
+// TestSummonDamageBytesV95 pins that v95 is byte-identical to v83 for damage: the
+// oid is now in the shared body and there is no v95-specific delta (v95 OnHit@
+// 0x74bc80 stops at bLeft — the dir byte is serverbound only).
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v95 ida=0x7598c0
 func TestSummonDamageBytesV95(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 95, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, oid=0x000F4241, attackIdx 12, damage, monsterIdFrom, bLeft
-	want := []byte{
-		0x2A, 0x00, 0x00, 0x00, // cid
-		0x41, 0x42, 0x0F, 0x00, // oid (v95+ only)
-		0x0C,                   // attackIdx (12)
-		0xD2, 0x04, 0x00, 0x00, // damage
-		0x32, 0xE8, 0x8D, 0x00, // monsterIdFrom
-		0x00, // bLeft
-	}
-	if !bytes.Equal(got, want) {
-		t.Fatalf("v95 bytes = % X, want % X", got, want)
+	if !bytes.Equal(got, summonDamageV83Body) {
+		t.Fatalf("v95 bytes = % X, want % X (identical to v83)", got, summonDamageV83Body)
 	}
 }

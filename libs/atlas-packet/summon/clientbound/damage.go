@@ -6,7 +6,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -57,13 +56,13 @@ func (m SummonDamage) String() string {
 
 func (m SummonDamage) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.cid)
-		// v95+ DELTA: oid is a v95+ addition; v83/v87 have no oid (IDB-confirmed).
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			w.WriteInt(m.oid)
-		}
+		// oid: present on ALL versions. cid is read upstream by
+		// CUserPool::OnUserCommonPacket; CSummonedPool::OnPacket@0x938dd7 then does
+		// one Decode4 = the oid before the damage handler. Wire = cid + oid + body
+		// (the old "no oid pre-95" reading missed the upstream cid read).
+		w.WriteInt(m.oid)
 		w.WriteByte(12) // attackIdx (> -2 so the template branch fires)
 		w.WriteInt(m.damage)
 		w.WriteInt(m.monsterIdFrom)
@@ -73,12 +72,9 @@ func (m SummonDamage) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 }
 
 func (m *SummonDamage) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cid = r.ReadUint32()
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			m.oid = r.ReadUint32()
-		}
+		m.oid = r.ReadUint32() // present on all versions (see Encode)
 		r.Skip(1) // attackIdx (12)
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()

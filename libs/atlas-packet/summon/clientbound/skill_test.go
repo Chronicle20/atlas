@@ -6,7 +6,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -27,14 +26,10 @@ func TestSummonSkill(t *testing.T) {
 			if out.CharacterId() != 42 {
 				t.Errorf("characterId = %d, want 42", out.CharacterId())
 			}
-			// oid only round-trips on v95+ (gated); pre-95 wire carries no oid.
-			te := tenant.MustFromContext(ctx)
-			if te.IsRegion("GMS") && te.MajorAtLeast(95) {
-				if out.Oid() != 1000001 {
-					t.Errorf("oid = %d, want 1000001", out.Oid())
-				}
-			} else if out.Oid() != 0 {
-				t.Errorf("pre-95 oid = %d, want 0 (no oid on wire)", out.Oid())
+			// oid round-trips on ALL versions: cid is read upstream by
+			// CUserPool::OnUserCommonPacket, so the per-op Decode4 is the oid.
+			if out.Oid() != 1000001 {
+				t.Errorf("oid = %d, want 1000001", out.Oid())
 			}
 			if out.NewStance() != 6 {
 				t.Errorf("newStance = %d, want 6", out.NewStance())
@@ -43,33 +38,24 @@ func TestSummonSkill(t *testing.T) {
 	}
 }
 
-// TestSummonSkillBytes pins the classic (pre-95) wire: cid + a single stance
-// byte. There is NO summonSkillId int and NO oid on v83/v87 — OnHit@0x7a6e5a
-// reads one Decode1, masks 0x7F (IDB-confirmed, summon-wire-truth.md).
-// v83 SKILL behavior lives at OnHit@0x7a6e5a (the LOWER of the swapped
-// skill/damage opcodes); the export key CSummonedPool::OnSkill records this addr.
-// v87 SKILL behavior lives at OnHit@0x7f963b (op 0xC1): one Decode1, &0x7F,
-// SetAttackAction@0x7f9695 — same single-byte shape, no oid.
-// v84 SKILL behavior lives at sub_7CC920@0x7cc920 (field op 0xB7): one Decode1,
-// &0x7F, SetAttackAction sub_7CBAD3 — byte-identical single-byte shape, no oid
-// (GMS_v84.1 IDB-confirmed).
-// jms185 SKILL behavior lives at the IDB function named OnHit (sub @0x828cb2, the
-// LOWER of the swapped skill/damage opcodes, registry op 0xBA): one Decode1@0x828d01,
-// &0x7F@0x828d0c, SetAttackAction@0x82800f — same single-byte shape, no oid
-// (jms185 IDB-confirmed). The export key CSummonedPool::OnSkill records this
-// skill-reader addr. The TestSummonSkill variant loop covers JMS.
-// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
-// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v87 ida=0x7f963b
-// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v84 ida=0x7cc920
-// packet-audit:verify packet=summon/clientbound/SummonSkill version=jms_v185 ida=0x828cb2
+// TestSummonSkillBytes pins the v83 wire: cid + oid + a single stance byte. There
+// is NO summonSkillId int (OnHit reads one Decode1, masks 0x7F). The cid is read
+// upstream by CUserPool::OnUserCommonPacket@0x972401; CSummonedPool::OnPacket@
+// 0x938dd7 then does one Decode4 = the oid before OnHit (the skill leaf, the LOWER
+// of the swapped skill/damage opcodes). (The prior "no oid" reading missed the
+// upstream cid — see summon-wire-truth.md.) NOTE: v84/v87/jms inherit this
+// correction; their matrix cells need re-verification against the cid-pre-reading
+// dispatcher.
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x938dd7
 func TestSummonSkillBytes(t *testing.T) {
 	in := NewSummonSkill(42, 1000001, 6)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, newStance=6 (no skillId, no oid)
+	// cid=42, oid=1000001=0x000F4241, newStance=6 (no skillId)
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // cid
+		0x41, 0x42, 0x0F, 0x00, // oid
 		0x06, // newStance
 	}
 	if !bytes.Equal(got, want) {

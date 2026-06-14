@@ -17,28 +17,22 @@ func TestSummonRemove(t *testing.T) {
 	}
 }
 
-// TestSummonRemoveBytes pins the classic (pre-95) wire: ownerId + animated byte,
-// NO oid (the remove path sub_7A64EB keys off the dispatcher-consumed cid; oid
-// is a v95+ addition — IDB-confirmed, summon-wire-truth.md). v87 is byte-identical:
-// the op 0xBD remove path sub_7F8CB0@0x7f8cb0 reads one Decode1 (animated flag),
-// no oid. v84 is byte-identical: the field op 0xB4 remove path sub_7CBFA1@0x7cbfa1
-// reads one Decode1 (leave/animated flag) after the dispatcher-consumed cid, no
-// oid (GMS_v84.1 IDB-confirmed). jms185 is byte-identical: the op 0xB6 remove
-// path sub_828502@0x828502 reads one Decode1 leave-type flag@0x828517 after the
-// dispatcher-consumed cid, no oid (jms185 IDB-confirmed). The TestSummonRemove
-// variant loop covers JMS.
-// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x7a64eb
-// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v87 ida=0x7f8cb0
-// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v84 ida=0x7cbfa1
-// packet-audit:verify packet=summon/clientbound/SummonRemove version=jms_v185 ida=0x828502
+// TestSummonRemoveBytes pins the v83 wire: ownerId + oid + animated byte. The cid
+// is read upstream by CUserPool::OnUserCommonPacket@0x972401; CSummonedPool::
+// OnPacket@0x938dd7 then does one Decode4 = the oid before the pool-remove
+// (sub_7A64EB). (The prior "no oid" reading missed the upstream cid — see
+// summon-wire-truth.md.) NOTE: v84/v87/jms inherit this correction; their matrix
+// cells need re-verification against the cid-pre-reading dispatcher.
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x938dd7
 func TestSummonRemoveBytes(t *testing.T) {
 	in := NewSummonRemove(42, 1000001, true)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// ownerId=42, animated => byte 4 (no oid)
+	// ownerId=42, oid=1000001=0x000F4241, animated => byte 4
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // ownerId
+		0x41, 0x42, 0x0F, 0x00, // oid
 		0x04, // animated ? 4 : 1
 	}
 	if !bytes.Equal(got, want) {

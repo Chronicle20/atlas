@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterResetMonsterAnimation
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnSuspendReset
+    address: "0x6e9c8d"
+    decompile_sha256: ff67d8fcb8fb9590754fb61c3a651c280a49b412796c4cdc55802f7c2ad756d0
+verifies:
+    - libs/atlas-packet/monster/clientbound/reset_monster_animation_test.go#TestResetMonsterAnimation

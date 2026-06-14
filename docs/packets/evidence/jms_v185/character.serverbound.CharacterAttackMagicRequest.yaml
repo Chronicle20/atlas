@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterAttackMagicRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TryDoingMagicAttack
+    address: "0xa1d280"
+    decompile_sha256: f747eec7848f2f1d4f78d5945bec9f2f9a0d7a6f35fcd6a616d3872f3a165d95
+verifies:
+    - libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMagicRequest

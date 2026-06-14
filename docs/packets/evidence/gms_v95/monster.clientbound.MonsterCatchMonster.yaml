@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterCatchMonster
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnCatchEffect
+    address: "0x63cd00"
+    decompile_sha256: 37ac7f1dca6a52c7544b77da64b1fb7e30e6f1a18455fc93d50aeed83c8adfc7
+verifies:
+    - libs/atlas-packet/monster/clientbound/catch_monster_test.go#TestCatchMonster

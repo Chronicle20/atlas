@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterAttackTouchRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TryDoingBodyAttack
+    address: "0xa2ac53"
+    decompile_sha256: 5122bab308f11faf919d7f226a63291836ba2db04bf293128fc425b33fa88e5b
+verifies:
+    - libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackTouchRequest

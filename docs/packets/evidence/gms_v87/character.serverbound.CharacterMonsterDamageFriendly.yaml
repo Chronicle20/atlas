@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterMonsterDamageFriendly
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CMob::Update
+    address: "0x6a1c43"
+    decompile_sha256: 3fece7970fc9acb75e159ff93aba064d6fe35c97af80438764d2f4e29e6be948
+verifies:
+    - libs/atlas-packet/character/serverbound/monster_damage_friendly_test.go#TestMonsterDamageFriendlyGolden

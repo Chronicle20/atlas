@@ -1,0 +1,30 @@
+{
+  "WriterName": "MonsterCarnival",
+  "IDAName": "CUIMonsterCarnival::RequestSend",
+  "Address": "0x8d93c3",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/monster/carnival/serverbound/monster_carnival.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

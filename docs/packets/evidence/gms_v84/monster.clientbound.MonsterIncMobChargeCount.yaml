@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterIncMobChargeCount
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnIncMobChargeCount
+    address: "0x687655"
+    decompile_sha256: 2722b8104b1d8e6485044017f93891f7d9e6bef5a788270d0a922e4ac9cf75b7
+verifies:
+    - libs/atlas-packet/monster/clientbound/inc_mob_charge_count_test.go#TestIncMobChargeCount

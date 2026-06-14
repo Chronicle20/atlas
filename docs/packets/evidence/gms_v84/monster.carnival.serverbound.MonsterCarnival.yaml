@@ -1,0 +1,10 @@
+packet: monster/carnival/serverbound/MonsterCarnival
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUIMonsterCarnival::RequestSend
+    address: "0x89bdda"
+    decompile_sha256: bb09064b7fb40e540a412d7798bc71909c41ad91e8e13ac968792818fc76fc5d
+verifies:
+    - libs/atlas-packet/monster/carnival/serverbound/monster_carnival_test.go#TestMonsterCarnival

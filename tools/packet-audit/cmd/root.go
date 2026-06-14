@@ -105,6 +105,13 @@ func runExport(args []string, stderr io.Writer) int {
 	fs.StringVar(&generatedAt, "generated-at", "", "fixed provenance timestamp (default: now / $PACKET_AUDIT_GENERATED_AT)")
 	var idaPort int
 	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	// Roster-source overrides (additive; default behaviour is unchanged when the
+	// flags are absent). Pass an empty value (e.g. --prior-export "") to harvest a
+	// TARGETED roster — only the FNames listed in --pending — instead of the full
+	// prior-export ∪ _pending union. Used by task-092 to add a small set of new
+	// FNames to an export without re-harvesting the existing records.
+	priorOverride := fs.String("prior-export", "", "override prior-export roster path (default: docs/packets/ida-exports/<version>.json; pass \"\" for no prior)")
+	pendingOverride := fs.String("pending", "", "override pending roster path (default: docs/packets/ida-exports/_pending.md; pass \"\" for none)")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -120,6 +127,16 @@ func runExport(args []string, stderr io.Writer) int {
 
 	eo.PriorExport = "docs/packets/ida-exports/" + eo.Version + ".json"
 	eo.Pending = "docs/packets/ida-exports/_pending.md"
+	// Honour the overrides only when explicitly passed, so an explicit empty
+	// string (targeted harvest) is distinguishable from "flag absent".
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "prior-export":
+			eo.PriorExport = *priorOverride
+		case "pending":
+			eo.Pending = *pendingOverride
+		}
+	})
 
 	// Provenance timestamp is the only non-deterministic input; resolve it here
 	// (NOT in exportRun) so the core is a pure function of its opts.

@@ -98,14 +98,16 @@ import (
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	messengersb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	carnivalcb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/clientbound"
+	carnivalsb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/serverbound"
 	monstercb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	monstersb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/serverbound"
+	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
-	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	petcb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	petsb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/serverbound"
@@ -618,6 +620,29 @@ func produceWriters() []string {
 		summoncb.SummonAttackWriter,
 		summoncb.SummonDamageWriter,
 		summoncb.SummonSkillWriter,
+		monstercb.MobCrcKeyChangedWriter,
+		monstercb.MobAffectedWriter,
+		monstercb.MonsterSpecialEffectBySkillWriter,
+		monstercb.ResetMonsterAnimationWriter,
+		monstercb.CatchMonsterWriter,
+		monstercb.CatchMonsterWithItemWriter,
+		monstercb.IncMobChargeCountWriter,
+		monstercb.MobSkillDelayWriter,
+		monstercb.MobSpeakingWriter,
+		monstercb.MobAttackedByMobWriter,
+		monstercb.MobNextAttackWriter,
+		monstercb.MobEscortReturnBeforeWriter,
+		monstercb.MobEscortStopWriter,
+		monstercb.MobEscortStopSayWriter,
+		monstercb.MobEscortFullPathWriter,
+		carnivalcb.MonsterCarnivalStartWriter,
+		carnivalcb.MonsterCarnivalObtainedCPWriter,
+		carnivalcb.MonsterCarnivalPartyCPWriter,
+		carnivalcb.MonsterCarnivalSummonWriter,
+		carnivalcb.MonsterCarnivalMessageWriter,
+		carnivalcb.MonsterCarnivalDiedWriter,
+		carnivalcb.MonsterCarnivalLeaveWriter,
+		carnivalcb.MonsterCarnivalResultWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -702,6 +727,7 @@ func produceWriters() []string {
 		mbcb.MonsterBookSetCardWriter,
 		mbcb.MonsterBookSetCoverWriter,
 		charcb.SetTamingMobInfoWriter,
+		charcb.BridleMobCatchFailWriter,
 	}
 }
 
@@ -719,6 +745,18 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
 	handlerMap[summonsb.SummonAttackHandle] = handler.SummonAttackHandleFunc
 	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
+	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
+	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
+	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc
+	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc
+	handlerMap[monstersb.MobSkillDelayEndHandle] = handler.MobSkillDelayEndHandleFunc
+	handlerMap[monstersb.MobTimeBombEndHandle] = handler.MobTimeBombEndHandleFunc
+	handlerMap[monstersb.MobEscortCollisionHandle] = handler.MobEscortCollisionHandleFunc
+	handlerMap[monstersb.MobRequestEscortInfoHandle] = handler.MobRequestEscortInfoHandleFunc
+	handlerMap[monstersb.MobEscortStopEndRequestHandle] = handler.MobEscortStopEndRequestHandleFunc
+	handlerMap[carnivalsb.MonsterCarnivalHandle] = handler.MonsterCarnivalHandleFunc
+	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc

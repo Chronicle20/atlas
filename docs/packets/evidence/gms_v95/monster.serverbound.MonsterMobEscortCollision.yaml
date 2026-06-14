@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobEscortCollision
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMob::SendCollisionEscort
+    address: "0x641150"
+    decompile_sha256: 961707c1e729e4feda276dded180fc20bf4df8191070aabb162be8b8b6626682
+verifies:
+    - libs/atlas-packet/monster/serverbound/mob_escort_collision_test.go#TestMobEscortCollision

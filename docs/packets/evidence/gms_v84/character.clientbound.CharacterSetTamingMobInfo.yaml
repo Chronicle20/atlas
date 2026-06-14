@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSetTamingMobInfo
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSetTamingMobInfo
+    address: "0xa748d8"
+    decompile_sha256: 1307b3faf59b8f0fd81ba1e853faad02696a34b42ded7c4f73d1f4ca89058ca5
+verifies:
+    - libs/atlas-packet/character/clientbound/set_taming_mob_info_test.go#TestSetTamingMobInfoFieldOrder

@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterFieldDamageMob
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::Update
+    address: "0x6e3d2f"
+    decompile_sha256: 6a7e1886bc5d35203baa4ebc9703785b0f7aaef88eb42f900bc43235e0221d33
+verifies:
+    - libs/atlas-packet/monster/serverbound/field_damage_mob_test.go#TestFieldDamageMob

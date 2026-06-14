@@ -1379,50 +1379,57 @@
 - op: CATCH_MONSTER
   direction: clientbound
   opcode: 268
-  fname: CMob::OnCatchEffect
+  fname: CMob::ShowCatchEffect
   fname_alts:
+    - CMob::OnCatchEffect
     - sub_6EAE5F
   provenance: manual
-  note: 'IDA jms185: CMobPool::OnMobPacket (0x6F8732) case 0x10C dispatches to unnamed sub_6EAE5F (0x6EAE5F), which Decode1s then calls CMob::ShowCatchEffect - i.e. OnCatchEffect, unnamed in this IDB. Recorded as alt.'
+  note: 'IDA jms185: CMobPool::OnMobPacket (0x6F8732) case 0x10C dispatches to unnamed sub_6EAE5F (0x6EAE5F), which Decode1s then calls CMob::ShowCatchEffect. OnCatchEffect itself is unnamed in this IDB; the only named, export-resolvable symbol carrying the 1xDecode1 catch layout is CMob::ShowCatchEffect (@0x6E5F77), so it is the primary fname here (task-092 Cluster-B). OnCatchEffect/sub_6EAE5F recorded as alts.'
 - op: CATCH_MONSTER_WITH_ITEM
   direction: clientbound
   opcode: 269
   fname: CMob::OnEffectByItem
   provenance: csv-import
-- op: SHOW_MAGNET
+- op: MOB_SPEAKING
   direction: clientbound
   opcode: 270
   fname: CMob::OnMobSpeaking
-  provenance: manual
-  note: 'IDA jms185: CMobPool::OnMobPacket (0x6F8732) case 0x10E -> CMob::OnMobSpeaking (0x6EE398). Registry FName was empty; filled from IDB. Op label SHOW_MAGNET likely mislabeled for this slot (same label-vs-handler family as the v87 0x10D-0x110 mob cluster); op name retained pending follow-up.'
-- op: IDA_0X10F
+  provenance: ida-discovered
+  ida:
+    address: 0x6ee398
+  note: 'task-092 Stage 4: renamed from placeholder SHOW_MAGNET to canonical op-name (jms is NOT version-absent for MOB_SPEAKING, contra context.md §2). jms CMobPool::OnMobPacket (0x6F8732) case 0x10E -> CMob::OnMobSpeaking (0x6EE398).'
+- op: MOB_SKILL_DELAY
   direction: clientbound
   opcode: 271
   fname: CMob::OnMobSkillDelay
   provenance: ida-discovered
   ida:
-    address: 7309106
-- op: IDA_0X110
+    address: 0x6ef0d4
+  note: 'task-092 Stage 4: renamed from placeholder IDA_0X10F. jms OnMobPacket case 0x10F -> CMob::OnMobSkillDelay (0x6EF0D4). Address was the dispatcher placeholder; corrected to the handler.'
+- op: MOB_ESCORT_FULL_PATH
   direction: clientbound
   opcode: 272
   fname: CMob::OnEscortFullPath
   provenance: ida-discovered
   ida:
-    address: 7309106
-- op: IDA_0X112
+    address: 0x6efa01
+  note: 'task-092 Stage 4: renamed from placeholder IDA_0X110. jms OnMobPacket case 0x110 -> CMob::OnEscortFullPath (0x6EFA01).'
+- op: MOB_ESCORT_STOP_SAY
   direction: clientbound
   opcode: 274
   fname: CMob::OnEscortStopSay
   provenance: ida-discovered
   ida:
-    address: 7309106
-- op: IDA_0X113
+    address: 0x6f0090
+  note: 'task-092 Stage 4: renamed from placeholder IDA_0X112. jms OnMobPacket case 0x112 -> CMob::OnEscortStopSay (0x6F0090).'
+- op: MOB_ESCORT_RETURN_BEFORE
   direction: clientbound
   opcode: 275
   fname: CMob::OnEscortReturnBefore
   provenance: ida-discovered
   ida:
-    address: 7309106
+    address: 0x6f029c
+  note: 'task-092 Stage 4: renamed from placeholder IDA_0X113. jms OnMobPacket case 0x113 -> CMob::OnEscortReturnBefore (0x6F029C).'
 - op: IDA_0X114
   direction: clientbound
   opcode: 276
@@ -2184,8 +2191,11 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 49
-  fname: ""
-  provenance: csv-import
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  ida:
+    address: 10668336
+  note: 'task-092 Stage 1: send-site derived from jms_v185 IDB. CUserLocal::SetMonsterBookCover @ 0xA2C930.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 50

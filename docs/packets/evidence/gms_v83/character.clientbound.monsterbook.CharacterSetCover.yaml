@@ -1,0 +1,10 @@
+packet: character/clientbound/monsterbook/CharacterSetCover
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMonsterBookSetCover
+    address: "0xa082d5"
+    decompile_sha256: 657e65084fbd05a285ac76471195ef85a88cc22d58bad21c1502f6d49ccb9b52
+verifies:
+    - libs/atlas-packet/character/clientbound/monsterbook/set_cover_test.go#TestSetCoverEncodeShape

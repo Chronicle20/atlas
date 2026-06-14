@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalLeave
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnShowMemberOutMsg
+    address: "0x55ad80"
+    decompile_sha256: e1cde6a4c3f7c48fab54ca873349c57cd55c14e1da66522280a0e6b6ba819aaa
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_leave_test.go#TestMonsterCarnivalLeave

@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalStart
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnEnter
+    address: "0x55a6c0"
+    decompile_sha256: 3599247346fa3a021e9745240af9c47630eddf6b5123db33086991ac6b51bfdc
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_start_test.go#TestMonsterCarnivalStart

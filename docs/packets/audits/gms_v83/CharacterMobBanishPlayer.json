@@ -1,0 +1,21 @@
+{
+  "WriterName": "CharacterMobBanishPlayer",
+  "IDAName": "CUserLocal::SendBanMapByMobRequest",
+  "Address": "0x99b16a",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/mob_banish_player.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

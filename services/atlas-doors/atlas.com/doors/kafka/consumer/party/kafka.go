@@ -1,6 +1,7 @@
 package party
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -19,11 +20,11 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	ActorId uint32   `json:"actorId"`
-	WorldId world.Id `json:"worldId"`
-	PartyId uint32   `json:"partyId"`
-	Type    string   `json:"type"`
-	Body    E        `json:"body"`
+	ActorId character.Id `json:"actorId"`
+	WorldId world.Id     `json:"worldId"`
+	PartyId uint32       `json:"partyId"`
+	Type    string       `json:"type"`
+	Body    E            `json:"body"`
 }
 
 type JoinedEventBody struct{}
@@ -31,14 +32,14 @@ type JoinedEventBody struct{}
 type LeftEventBody struct{}
 
 type ExpelEventBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId character.Id `json:"characterId"`
 }
 
 type DisbandEventBody struct {
-	Members []uint32 `json:"members"`
+	Members []character.Id `json:"members"`
 }
 
 type ChangeLeaderEventBody struct {
-	CharacterId  uint32 `json:"characterId"`
-	Disconnected bool   `json:"disconnected"`
+	CharacterId  character.Id `json:"characterId"`
+	Disconnected bool         `json:"disconnected"`
 }

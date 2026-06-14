@@ -1,15 +1,19 @@
 package door
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+)
 
 func TestComputeSlotSolo(t *testing.T) {
-	if got := ComputeSlot(0, []uint32{}, 42); got != 0 {
+	if got := ComputeSlot(0, []character.Id{}, 42); got != 0 {
 		t.Fatalf("solo slot want 0 got %d", got)
 	}
 }
 
 func TestComputeSlotPartyIndex(t *testing.T) {
-	members := []uint32{10, 20, 30}
+	members := []character.Id{10, 20, 30}
 	if got := ComputeSlot(7, members, 30); got != 2 {
 		t.Fatalf("want slot 2 got %d", got)
 	}
@@ -19,7 +23,7 @@ func TestComputeSlotPartyIndex(t *testing.T) {
 }
 
 func TestComputeSlotNotMemberFallsToZero(t *testing.T) {
-	if got := ComputeSlot(7, []uint32{10, 20}, 99); got != 0 {
+	if got := ComputeSlot(7, []character.Id{10, 20}, 99); got != 0 {
 		t.Fatalf("non-member want 0 got %d", got)
 	}
 }

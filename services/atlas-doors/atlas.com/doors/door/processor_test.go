@@ -6,8 +6,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -23,16 +25,16 @@ type fakeResolver struct {
 	partyId     uint32
 	townMapId   _map.Id
 	doorPortals []TownPortal
-	members     []uint32
+	members     []character.Id
 	durationMs  int32
 	resolveErr  error
 }
 
-func (f fakeResolver) PartyIdFor(_ context.Context, _ uint32) (uint32, error) {
+func (f fakeResolver) PartyIdFor(_ context.Context, _ character.Id) (uint32, error) {
 	return f.partyId, nil
 }
 
-func (f fakeResolver) ResolveSpawn(_ context.Context, _ field.Model, ownerCharacterId, partyId, _ uint32, _ byte) (spawnPlan, error) {
+func (f fakeResolver) ResolveSpawn(_ context.Context, _ field.Model, ownerCharacterId character.Id, partyId uint32, _ skill.Id, _ byte) (spawnPlan, error) {
 	if f.resolveErr != nil {
 		return spawnPlan{}, f.resolveErr
 	}
@@ -323,7 +325,7 @@ func TestRemoveByOwnerEmitsRemovedAndIsIdempotent(t *testing.T) {
 
 // seedDoor is a test helper that places a door for ownerCharacterId in the
 // registry using the given field/town/oid values.  It returns the seeded Model.
-func seedDoor(t *testing.T, ctx context.Context, ten tenant.Model, areaDoorId, townDoorId, ownerCharacterId uint32, f field.Model, townMapId _map.Id) Model {
+func seedDoor(t *testing.T, ctx context.Context, ten tenant.Model, areaDoorId, townDoorId uint32, ownerCharacterId character.Id, f field.Model, townMapId _map.Id) Model {
 	t.Helper()
 	m := NewBuilder().
 		SetAreaDoorId(areaDoorId).SetTownDoorId(townDoorId).

@@ -7,6 +7,7 @@ import (
 	mapdata "atlas-doors/data/map"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -75,7 +76,7 @@ func townPortalsForMap(l logrus.FieldLogger, ctx context.Context) func(_map.Id) 
 //
 // newMembers: the post-change ordered member list (from atlas-parties).
 // formerMembers: character ids that just LEFT (may be empty, e.g. on join).
-func reslotAfterMembership(l logrus.FieldLogger, ctx context.Context, partyId uint32, newMembers []uint32, formerMembers []uint32) {
+func reslotAfterMembership(l logrus.FieldLogger, ctx context.Context, partyId uint32, newMembers []character.Id, formerMembers []character.Id) {
 	p := enginedoor.NewProcessor(l, ctx)
 	if err := enginedoor.ReslotParty(p, partyId, newMembers, formerMembers, townPortalsForMap(l, ctx)); err != nil {
 		l.WithError(err).Warnf("ReslotParty failed for party %d", partyId)
@@ -109,10 +110,10 @@ func handleLeft(l logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]
 		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			// Party may be disbanded already — still reslot the leaver to solo.
-			reslotAfterMembership(l, ctx, e.PartyId, nil, []uint32{e.ActorId})
+			reslotAfterMembership(l, ctx, e.PartyId, nil, []character.Id{e.ActorId})
 			return
 		}
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []uint32{e.ActorId})
+		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []character.Id{e.ActorId})
 	}
 }
 
@@ -124,10 +125,10 @@ func handleExpel(l logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBod
 		}
 		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
-			reslotAfterMembership(l, ctx, e.PartyId, nil, []uint32{e.Body.CharacterId})
+			reslotAfterMembership(l, ctx, e.PartyId, nil, []character.Id{e.Body.CharacterId})
 			return
 		}
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []uint32{e.Body.CharacterId})
+		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []character.Id{e.Body.CharacterId})
 	}
 }
 

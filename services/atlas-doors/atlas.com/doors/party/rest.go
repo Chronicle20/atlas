@@ -3,6 +3,7 @@ package party
 import (
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
@@ -10,7 +11,7 @@ import (
 // atlas-parties. Members are a to-many relationship stored in join order.
 type RestModel struct {
 	Id       uint32            `json:"-"`
-	LeaderId uint32            `json:"leaderId"`
+	LeaderId character.Id      `json:"leaderId"`
 	Members  []MemberRestModel `json:"-"`
 }
 
@@ -67,7 +68,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			if err != nil {
 				return err
 			}
-			r.Members = append(r.Members, MemberRestModel{Id: uint32(id)})
+			r.Members = append(r.Members, MemberRestModel{Id: character.Id(id)})
 		}
 	}
 	return nil
@@ -99,7 +100,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 // returned by atlas-parties (join order, leader at index 0). No re-sort is
 // applied.
 func Extract(rm RestModel) (Model, error) {
-	members := make([]uint32, 0, len(rm.Members))
+	members := make([]character.Id, 0, len(rm.Members))
 	for _, m := range rm.Members {
 		members = append(members, m.Id)
 	}
@@ -114,7 +115,7 @@ func Extract(rm RestModel) (Model, error) {
 // the Id field is used; we preserve the full JSON:API resource shape so that
 // SetReferencedStructs can be satisfied by the api2go unmarshaller.
 type MemberRestModel struct {
-	Id uint32 `json:"-"`
+	Id character.Id `json:"-"`
 }
 
 func (r MemberRestModel) GetName() string {
@@ -130,6 +131,6 @@ func (r *MemberRestModel) SetID(idStr string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint32(id)
+	r.Id = character.Id(id)
 	return nil
 }

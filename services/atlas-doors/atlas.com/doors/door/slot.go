@@ -1,22 +1,30 @@
 package door
 
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+)
+
 const (
 	townPortalBase byte = 0x80
 	maxPartySize        = 6
-	// default door position when a town exposes too few door-type portals (design §6.3).
-	defaultTownX int16 = 0
-	defaultTownY int16 = 0
+)
+
+// default door position when a town exposes too few door-type portals (design §6.3).
+const (
+	defaultTownX point.X = 0
+	defaultTownY point.Y = 0
 )
 
 // TownPortal is an atlas-data door-type portal position (Type==6), in load order.
 type TownPortal struct {
-	X int16
-	Y int16
+	X point.X
+	Y point.Y
 }
 
 // ComputeSlot returns the caster's 0-based party door slot (Cosmic Party.getPartyDoor).
 // Solo (partyId==0) or non-member → slot 0.
-func ComputeSlot(partyId uint32, members []uint32, ownerCharacterId uint32) byte {
+func ComputeSlot(partyId uint32, members []character.Id, ownerCharacterId character.Id) byte {
 	if partyId == 0 {
 		return 0
 	}
@@ -34,7 +42,7 @@ func ComputeSlot(partyId uint32, members []uint32, ownerCharacterId uint32) byte
 // ResolveTownPortal maps a slot to the wire portal id (0x80+slot) and a town position.
 // If the town has >slot door portals, use that portal's position; otherwise fall back to
 // the provided default position (still encoding 0x80+slot on the wire). Always ok=true.
-func ResolveTownPortal(doorPortals []TownPortal, slot byte, fallbackX, fallbackY int16) (wireId uint32, x int16, y int16, ok bool) {
+func ResolveTownPortal(doorPortals []TownPortal, slot byte, fallbackX point.X, fallbackY point.Y) (wireId uint32, x point.X, y point.Y, ok bool) {
 	wireId = uint32(townPortalBase + slot)
 	if int(slot) < len(doorPortals) {
 		p := doorPortals[slot]

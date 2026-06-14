@@ -1,14 +1,17 @@
 package map_
 
-import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+import (
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+)
 
 // Portal is an immutable model for a single portal in a map.
 type Portal struct {
 	id          uint32
 	name        string
 	portalType  uint8
-	x           int16
-	y           int16
+	x           point.X
+	y           point.Y
 	targetMapId _map.Id
 }
 
@@ -24,11 +27,11 @@ func (p Portal) Type() uint8 {
 	return p.portalType
 }
 
-func (p Portal) X() int16 {
+func (p Portal) X() point.X {
 	return p.x
 }
 
-func (p Portal) Y() int16 {
+func (p Portal) Y() point.Y {
 	return p.y
 }
 

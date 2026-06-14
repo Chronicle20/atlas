@@ -8,8 +8,10 @@ import (
 	skilldata "atlas-doors/data/skill"
 	"atlas-doors/party"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,7 +45,7 @@ func newRestResolver(l logrus.FieldLogger, ctx context.Context) resolver {
 }
 
 // PartyIdFor returns the caster's party id, or 0 when not in a party.
-func (r *restResolver) PartyIdFor(_ context.Context, ownerCharacterId uint32) (uint32, error) {
+func (r *restResolver) PartyIdFor(_ context.Context, ownerCharacterId character.Id) (uint32, error) {
 	pm, err := r.party.GetByMemberId(ownerCharacterId)
 	if err != nil {
 		return 0, nil
@@ -54,7 +56,7 @@ func (r *restResolver) PartyIdFor(_ context.Context, ownerCharacterId uint32) (u
 // ResolveSpawn fetches the source map metadata, defensively re-checks the spawn
 // is permitted (the channel pre-checks too), resolves the town map and its door
 // portals, computes the caster's party slot, and reads the skill effect duration.
-func (r *restResolver) ResolveSpawn(_ context.Context, f field.Model, ownerCharacterId, partyId, skillId uint32, level byte) (spawnPlan, error) {
+func (r *restResolver) ResolveSpawn(_ context.Context, f field.Model, ownerCharacterId character.Id, partyId uint32, skillId skill.Id, level byte) (spawnPlan, error) {
 	srcMap, err := r.maps.GetById(f.MapId())
 	if err != nil {
 		return spawnPlan{}, err
@@ -86,7 +88,7 @@ func (r *restResolver) ResolveSpawn(_ context.Context, f field.Model, ownerChara
 	}
 
 	// Party members (ordered) for slot computation; solo casters have none.
-	var members []uint32
+	var members []character.Id
 	if partyId != 0 {
 		if pm, perr := r.party.GetByMemberId(ownerCharacterId); perr == nil {
 			members = pm.Members()

@@ -3,13 +3,14 @@ package party
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	GetByMemberId(characterId uint32) (Model, error)
+	GetByMemberId(characterId character.Id) (Model, error)
 	GetById(partyId uint32) (Model, error)
 }
 
@@ -26,7 +27,7 @@ func (p *ProcessorImpl) GetById(partyId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(partyId), Extract)()
 }
 
-func (p *ProcessorImpl) GetByMemberId(characterId uint32) (Model, error) {
+func (p *ProcessorImpl) GetByMemberId(characterId character.Id) (Model, error) {
 	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(characterId), Extract, model.Filters[Model]())
 	return model.FirstProvider(rp, model.Filters[Model]())()
 }

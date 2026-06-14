@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -98,22 +101,22 @@ func fieldSuffix(t tenant.Model, f field.Model) string {
 
 // ownerSuffix is the entity-key tail for the owner index SET.
 // Full Redis key: atlas:door-owner:<tenantId>:<characterId>
-func ownerSuffix(t tenant.Model, characterId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), characterId)
+func ownerSuffix(t tenant.Model, characterId character.Id) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), uint32(characterId))
 }
 
 // partyScope returns a discriminator that prevents two solo casters at the same
 // town from sharing a town-party index bucket (design §4.3).
-func partyScope(partyId, ownerCharacterId uint32) string {
+func partyScope(partyId uint32, ownerCharacterId character.Id) string {
 	if partyId != 0 {
 		return fmt.Sprintf("%d", partyId)
 	}
-	return fmt.Sprintf("solo-%d", ownerCharacterId)
+	return fmt.Sprintf("solo-%d", uint32(ownerCharacterId))
 }
 
 // townSuffix is the entity-key tail for the town-party index SET.
 // Full Redis key: atlas:door-town:<tenantId>:<world>:<channel>:<townMap>:<partyScope>
-func townSuffix(t tenant.Model, f field.Model, townMapId _map.Id, partyId, ownerCharacterId uint32) string {
+func townSuffix(t tenant.Model, f field.Model, townMapId _map.Id, partyId uint32, ownerCharacterId character.Id) string {
 	return fmt.Sprintf("%s:%d:%d:%d:%s",
 		t.Id().String(),
 		byte(f.WorldId()), byte(f.ChannelId()), uint32(townMapId),
@@ -141,17 +144,17 @@ func toStored(t tenant.Model, m Model) storedDoor {
 		Instance:         m.fld.Instance().String(),
 		AreaDoorId:       m.areaDoorId,
 		TownDoorId:       m.townDoorId,
-		OwnerCharacterId: m.ownerCharacterId,
+		OwnerCharacterId: uint32(m.ownerCharacterId),
 		PartyId:          m.partyId,
-		SkillId:          m.skillId,
+		SkillId:          uint32(m.skillId),
 		SkillLevel:       m.skillLevel,
 		TownMapId:        uint32(m.townMapId),
 		Slot:             m.slot,
 		TownPortalId:     m.townPortalId,
-		AreaX:            m.areaX,
-		AreaY:            m.areaY,
-		TownX:            m.townX,
-		TownY:            m.townY,
+		AreaX:            int16(m.areaX),
+		AreaY:            int16(m.areaY),
+		TownX:            int16(m.townX),
+		TownY:            int16(m.townY),
 		DeployMs:         timeToMs(m.deployTime),
 		ExpiresMs:        timeToMs(m.expiresAt),
 	}
@@ -176,18 +179,18 @@ func fromStored(sd storedDoor) (tenant.Model, Model, error) {
 	m := NewBuilder().
 		SetAreaDoorId(sd.AreaDoorId).
 		SetTownDoorId(sd.TownDoorId).
-		SetOwnerCharacterId(sd.OwnerCharacterId).
+		SetOwnerCharacterId(character.Id(sd.OwnerCharacterId)).
 		SetPartyId(sd.PartyId).
-		SetSkillId(sd.SkillId).
+		SetSkillId(skill.Id(sd.SkillId)).
 		SetSkillLevel(sd.SkillLevel).
 		SetField(f).
 		SetTownMapId(_map.Id(sd.TownMapId)).
 		SetSlot(sd.Slot).
 		SetTownPortalId(sd.TownPortalId).
-		SetAreaX(sd.AreaX).
-		SetAreaY(sd.AreaY).
-		SetTownX(sd.TownX).
-		SetTownY(sd.TownY).
+		SetAreaX(point.X(sd.AreaX)).
+		SetAreaY(point.Y(sd.AreaY)).
+		SetTownX(point.X(sd.TownX)).
+		SetTownY(point.Y(sd.TownY)).
 		SetDeployTime(msToTime(sd.DeployMs)).
 		SetExpiresAt(msToTime(sd.ExpiresMs)).
 		Build()
@@ -248,13 +251,13 @@ func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model
 }
 
 // GetByOwner returns all doors owned by characterId.
-func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId uint32) ([]Model, error) {
+func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId character.Id) ([]Model, error) {
 	return r.lookupByIndex(ctx, t, r.ownerIdx, ownerSuffix(t, characterId))
 }
 
 // GetInTownParty returns all doors in the town-party bucket for the given
 // field, townMapId, and party/owner scope.
-func (r *Registry) GetInTownParty(ctx context.Context, t tenant.Model, f field.Model, townMapId _map.Id, partyId, ownerCharacterId uint32) ([]Model, error) {
+func (r *Registry) GetInTownParty(ctx context.Context, t tenant.Model, f field.Model, townMapId _map.Id, partyId uint32, ownerCharacterId character.Id) ([]Model, error) {
 	return r.lookupByIndex(ctx, t, r.townIdx, townSuffix(t, f, townMapId, partyId, ownerCharacterId))
 }
 

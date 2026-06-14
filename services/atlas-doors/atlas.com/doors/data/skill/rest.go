@@ -4,13 +4,14 @@ import (
 	"atlas-doors/data/skill/effect"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // RestModel mirrors the subset of atlas-data's skill wire format that
 // atlas-doors needs: the id and the per-level effects array.
 type RestModel struct {
-	Id      uint32             `json:"-"`
+	Id      skill.Id           `json:"-"`
 	Effects []effect.RestModel `json:"effects"`
 }
 
@@ -27,7 +28,7 @@ func (r *RestModel) SetID(idStr string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint32(id)
+	r.Id = skill.Id(id)
 	return nil
 }
 

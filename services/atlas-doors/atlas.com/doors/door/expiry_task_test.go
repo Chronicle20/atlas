@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -13,10 +14,10 @@ import (
 
 // fakeExpiryProcessor records which owner ids were passed to RemoveByOwner.
 type fakeExpiryProcessor struct {
-	removed []uint32
+	removed []character.Id
 }
 
-func (f *fakeExpiryProcessor) RemoveByOwner(ownerCharacterId uint32, reason string) error {
+func (f *fakeExpiryProcessor) RemoveByOwner(ownerCharacterId character.Id, reason string) error {
 	f.removed = append(f.removed, ownerCharacterId)
 	return nil
 }

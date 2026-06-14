@@ -3,6 +3,7 @@ package door
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
@@ -27,9 +28,9 @@ import (
 func TestReslotPartyRecomputesChangedSlots(t *testing.T) {
 	const (
 		partyId = uint32(42)
-		charA   = uint32(1)
-		charB   = uint32(2)
-		charC   = uint32(3)
+		charA   = character.Id(1)
+		charB   = character.Id(2)
+		charC   = character.Id(3)
 	)
 
 	em := &fakeEmit{}
@@ -85,8 +86,8 @@ func TestReslotPartyRecomputesChangedSlots(t *testing.T) {
 	}
 
 	// newMembers=[B,C], formerMembers=[A].
-	newMembers := []uint32{charB, charC}
-	formerMembers := []uint32{charA}
+	newMembers := []character.Id{charB, charC}
+	formerMembers := []character.Id{charA}
 
 	if err := ReslotParty(p, partyId, newMembers, formerMembers, townPortalsByMap); err != nil {
 		t.Fatalf("ReslotParty: %v", err)

@@ -6,8 +6,11 @@ import (
 
 	doorproducer "atlas-doors/kafka/producer"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -20,11 +23,11 @@ import (
 type Processor interface {
 	GetById(areaDoorId uint32) (Model, error)
 	GetInField(f field.Model) ([]Model, error)
-	GetByOwner(ownerCharacterId uint32) ([]Model, error)
-	Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error)
-	RemoveByOwner(ownerCharacterId uint32, reason string) error
-	RemoveByOwnerIfLeftField(ownerCharacterId uint32, newField field.Model) error
-	Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX, townY int16) error
+	GetByOwner(ownerCharacterId character.Id) ([]Model, error)
+	Spawn(f field.Model, ownerCharacterId character.Id, skillId skill.Id, skillLevel byte, x point.X, y point.Y) (Model, error)
+	RemoveByOwner(ownerCharacterId character.Id, reason string) error
+	RemoveByOwnerIfLeftField(ownerCharacterId character.Id, newField field.Model) error
+	Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX point.X, townY point.Y) error
 }
 
 // spawnPlan is the resolver's verdict for a single spawn: where the town side
@@ -33,16 +36,16 @@ type spawnPlan struct {
 	townMapId    _map.Id
 	slot         byte
 	townPortalId uint32
-	townX        int16
-	townY        int16
+	townX        point.X
+	townY        point.Y
 	durationMs   int32
 }
 
 // resolver computes the spawnPlan from external data (map/skill/party). Injected
 // so tests can supply canned inputs.
 type resolver interface {
-	ResolveSpawn(ctx context.Context, f field.Model, ownerCharacterId, partyId, skillId uint32, level byte) (spawnPlan, error)
-	PartyIdFor(ctx context.Context, ownerCharacterId uint32) (uint32, error)
+	ResolveSpawn(ctx context.Context, f field.Model, ownerCharacterId character.Id, partyId uint32, skillId skill.Id, level byte) (spawnPlan, error)
+	PartyIdFor(ctx context.Context, ownerCharacterId character.Id) (uint32, error)
 }
 
 // allocator is the object-id allocation seam. *IdAllocator satisfies it; tests
@@ -82,11 +85,11 @@ func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return GetRegistry().GetInField(p.ctx, p.t, f)
 }
 
-func (p *ProcessorImpl) GetByOwner(ownerCharacterId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByOwner(ownerCharacterId character.Id) ([]Model, error) {
 	return GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
 }
 
-func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId, skillId uint32, skillLevel byte, x, y int16) (Model, error) {
+func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId character.Id, skillId skill.Id, skillLevel byte, x point.X, y point.Y) (Model, error) {
 	// FR-1.4 recast: remove any existing owner door (and emit REMOVED/RECAST)
 	// BEFORE deploying the replacement.
 	if err := p.RemoveByOwner(ownerCharacterId, RemoveReasonRecast); err != nil {
@@ -141,7 +144,7 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId, skillId uint32, s
 	return m, nil
 }
 
-func (p *ProcessorImpl) RemoveByOwner(ownerCharacterId uint32, reason string) error {
+func (p *ProcessorImpl) RemoveByOwner(ownerCharacterId character.Id, reason string) error {
 	doors, err := GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
 	if err != nil {
 		return err
@@ -163,7 +166,7 @@ func (p *ProcessorImpl) RemoveByOwner(ownerCharacterId uint32, reason string) er
 // RemoveByOwnerIfLeftField removes the owner's door only when newField is neither the
 // door's source field nor its town map (walking into the town the door spans is a warp,
 // not abandonment — FR-6.2 / design §5.3).
-func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId uint32, newField field.Model) error {
+func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId character.Id, newField field.Model) error {
 	doors, err := GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
 	if err != nil {
 		return err
@@ -186,7 +189,7 @@ func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId uint32, newFie
 	return nil
 }
 
-func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX, townY int16) error {
+func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX point.X, townY point.Y) error {
 	m, err := GetRegistry().Get(p.ctx, p.t, areaDoorId)
 	if err != nil {
 		return err

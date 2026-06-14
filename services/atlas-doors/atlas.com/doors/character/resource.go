@@ -5,6 +5,7 @@ import (
 	"atlas-doors/rest"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -27,7 +28,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 }
 
 func handleGetDoorsByOwner(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId character.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := door.NewProcessor(d.Logger(), d.Context())
 			ms, err := p.GetByOwner(characterId)

@@ -1,6 +1,7 @@
 package door
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
@@ -26,11 +27,11 @@ import (
 func ReslotParty(
 	p *ProcessorImpl,
 	partyId uint32,
-	newMembers []uint32,
-	formerMembers []uint32,
+	newMembers []character.Id,
+	formerMembers []character.Id,
 	townPortalsByMap func(_map.Id) []TownPortal,
 ) error {
-	process := func(ownerCharacterId uint32, newSlot byte) error {
+	process := func(ownerCharacterId character.Id, newSlot byte) error {
 		doors, err := GetRegistry().GetByOwner(p.ctx, p.t, ownerCharacterId)
 		if err != nil {
 			return err

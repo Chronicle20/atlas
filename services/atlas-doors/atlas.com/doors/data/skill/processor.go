@@ -5,14 +5,15 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
 // Processor is the interface for fetching skill data from atlas-data.
 type Processor interface {
-	GetById(skillId uint32) (Model, error)
-	GetEffect(skillId uint32, level byte) (effect.Model, error)
+	GetById(skillId skill.Id) (Model, error)
+	GetEffect(skillId skill.Id, level byte) (effect.Model, error)
 }
 
 // ProcessorImpl implements Processor using the atlas-data REST API.
@@ -26,14 +27,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 }
 
 // GetById fetches the skill from atlas-data by skill id.
-func (p *ProcessorImpl) GetById(skillId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(skillId skill.Id) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(skillId), Extract)()
 }
 
 // GetEffect returns the effect for the given 1-based skill level.
 // Level 0 returns an empty Model (no-op). Returns an error if the
 // level exceeds the number of effects stored in atlas-data.
-func (p *ProcessorImpl) GetEffect(skillId uint32, level byte) (effect.Model, error) {
+func (p *ProcessorImpl) GetEffect(skillId skill.Id, level byte) (effect.Model, error) {
 	s, err := p.GetById(skillId)
 	if err != nil {
 		return effect.Model{}, err

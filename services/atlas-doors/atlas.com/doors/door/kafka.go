@@ -2,7 +2,10 @@ package door
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -25,30 +28,30 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId          world.Id   `json:"worldId"`
-	ChannelId        channel.Id `json:"channelId"`
-	MapId            _map.Id    `json:"mapId"` // area field map (event key)
-	Instance         uuid.UUID  `json:"instance"`
-	PairId           uint32     `json:"pairId"`
-	OwnerCharacterId uint32     `json:"ownerCharacterId"`
-	PartyId          uint32     `json:"partyId"`
-	Type             string     `json:"type"`
-	Body             E          `json:"body"`
+	WorldId          world.Id     `json:"worldId"`
+	ChannelId        channel.Id   `json:"channelId"`
+	MapId            _map.Id      `json:"mapId"` // area field map (event key)
+	Instance         uuid.UUID    `json:"instance"`
+	PairId           uint32       `json:"pairId"`
+	OwnerCharacterId character.Id `json:"ownerCharacterId"`
+	PartyId          uint32       `json:"partyId"`
+	Type             string       `json:"type"`
+	Body             E            `json:"body"`
 }
 
 type CreatedBody struct {
-	AreaDoorId   uint32  `json:"areaDoorId"`
-	TownDoorId   uint32  `json:"townDoorId"`
-	TownMapId    _map.Id `json:"townMapId"`
-	Slot         byte    `json:"slot"`
-	TownPortalId uint32  `json:"townPortalId"`
-	AreaX        int16   `json:"areaX"`
-	AreaY        int16   `json:"areaY"`
-	TownX        int16   `json:"townX"`
-	TownY        int16   `json:"townY"`
-	SkillId      uint32  `json:"skillId"`
-	SkillLevel   byte    `json:"skillLevel"`
-	ExpiresAt    int64   `json:"expiresAt"` // unix-milli
+	AreaDoorId   uint32   `json:"areaDoorId"`
+	TownDoorId   uint32   `json:"townDoorId"`
+	TownMapId    _map.Id  `json:"townMapId"`
+	Slot         byte     `json:"slot"`
+	TownPortalId uint32   `json:"townPortalId"`
+	AreaX        point.X  `json:"areaX"`
+	AreaY        point.Y  `json:"areaY"`
+	TownX        point.X  `json:"townX"`
+	TownY        point.Y  `json:"townY"`
+	SkillId      skill.Id `json:"skillId"`
+	SkillLevel   byte     `json:"skillLevel"`
+	ExpiresAt    int64    `json:"expiresAt"` // unix-milli
 }
 
 type RemovedBody struct {
@@ -66,6 +69,6 @@ type SlotChangedBody struct {
 	OldSlot      byte    `json:"oldSlot"`
 	NewSlot      byte    `json:"newSlot"`
 	TownPortalId uint32  `json:"townPortalId"`
-	TownX        int16   `json:"townX"`
-	TownY        int16   `json:"townY"`
+	TownX        point.X `json:"townX"`
+	TownY        point.Y `json:"townY"`
 }

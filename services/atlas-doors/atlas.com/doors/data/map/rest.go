@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
@@ -12,8 +13,8 @@ type PortalRestModel struct {
 	Id          string  `json:"-"`
 	Name        string  `json:"name"`
 	Type        uint8   `json:"type"`
-	X           int16   `json:"x"`
-	Y           int16   `json:"y"`
+	X           point.X `json:"x"`
+	Y           point.Y `json:"y"`
 	TargetMapId _map.Id `json:"targetMapId"`
 }
 

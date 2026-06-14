@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -38,8 +39,8 @@ func ParseDoorId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.
 	return server.ParseIntId[uint32](l, "doorId", next)
 }
 
-func ParseCharacterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[uint32](l, "characterId", next)
+func ParseCharacterId(l logrus.FieldLogger, next func(character.Id) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[character.Id](l, "characterId", next)
 }
 
 func ParseChannelId(l logrus.FieldLogger, next func(channel.Id) http.HandlerFunc) http.HandlerFunc {

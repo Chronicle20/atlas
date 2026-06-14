@@ -1,14 +1,18 @@
 package skill
 
-import "atlas-doors/data/skill/effect"
+import (
+	"atlas-doors/data/skill/effect"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+)
 
 // Model is an immutable skill value carrying its per-level effects.
 type Model struct {
-	id      uint32
+	id      skill.Id
 	effects []effect.Model
 }
 
-func (m Model) Id() uint32 {
+func (m Model) Id() skill.Id {
 	return m.id
 }
 

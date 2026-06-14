@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +18,7 @@ const deployGrace = 3 * time.Second
 // expiryProcessor is the minimal interface the ExpiryTask needs from a
 // processor. *ProcessorImpl satisfies it; tests inject a fake.
 type expiryProcessor interface {
-	RemoveByOwner(ownerCharacterId uint32, reason string) error
+	RemoveByOwner(ownerCharacterId character.Id, reason string) error
 }
 
 // ExpiryTask is a periodic tasks.Task that sweeps expired doors across all

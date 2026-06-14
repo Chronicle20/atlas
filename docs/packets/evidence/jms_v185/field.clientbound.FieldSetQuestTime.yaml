@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetQuestTime
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSetQuestTime
+    address: "0x574b06"
+    decompile_sha256: 0fb14cf4db0a0a7e79b72084384eb7a9583f65f0f9d5ab56b665a748db0c1a9a

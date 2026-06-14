@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldSetQuestClear",
+  "IDAName": "CField::OnSetQuestClear",
+  "Address": "0x5378ba",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/set_quest_clear.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

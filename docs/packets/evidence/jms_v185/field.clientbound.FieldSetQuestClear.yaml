@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSetQuestClear
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSetQuestClear
+    address: "0x574af3"
+    decompile_sha256: efefc5f0a58fee087c0a8cd4c15a1339cdb8b68f98e70f8a4f42c8faddd34a3c

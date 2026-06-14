@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldFieldObstacleAllReset
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldObstacleAllReset
+    address: "0x55a8cf"
+    decompile_sha256: 1a0b2d17dae786b08d9f61d537541c18c9040eca8d00163bdbcabc4ec95fe442

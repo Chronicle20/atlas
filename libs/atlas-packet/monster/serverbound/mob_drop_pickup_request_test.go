@@ -7,7 +7,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v84 sender CMob::SendDropPickUpRequest was unnamed in the v84 IDB; task-092
+// Stage 4 located + named it (@0x684cdf, COutPacket(0xC3) — opcode corrected from
+// the csv-stale 0xBE; Encode4(fused mobId)+Encode4(dropObjId)) and pinned v84.
 // packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=gms_v83 ida=0x66e91f
+// packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=gms_v84 ida=0x684cdf
 // packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=gms_v87 ida=0x6a98ae
 // packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=gms_v95 ida=0x644450
 // packet-audit:verify packet=monster/serverbound/MonsterMobDropPickupRequest version=jms_v185 ida=0x6ec289

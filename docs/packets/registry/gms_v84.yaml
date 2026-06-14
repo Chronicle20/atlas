@@ -2413,9 +2413,11 @@
 - op: MONSTER_BOOK_COVER
   direction: serverbound
   opcode: 57
-  fname: ""
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname: CUserLocal::SetMonsterBookCover
+  provenance: ida-discovered
+  ida:
+    address: 0x99e8ee
+  note: 'task-092 Stage 4: fname filled from the v84 IDB. CUserLocal::SetMonsterBookCover @0x99E8EE is a local setter (writes CharacterData+1523, no COutPacket — the send site is inlined/unnamed in every IDB); opcode 57/0x39 unchanged from v83 (below the v84 shift point). Function named in the v84 IDB this stage.'
 - op: NPC_TALK
   direction: serverbound
   opcode: 58
@@ -3406,10 +3408,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
-  opcode: 190
+  opcode: 195
   fname: CMob::SendDropPickUpRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x684cdf
+  note: 'task-092 Stage 4: opcode corrected 190->195 (0xBE->0xC3). IDA v84 CMob::SendDropPickUpRequest @0x684CDF builds COutPacket(195); the csv-seeded 0xBE was the un-shifted v83 value (v84 serverbound table shifts +5 in this cluster). Encode4(fused mobId)+Encode4(dropObjId). Function named in the v84 IDB this stage; template route fixed to 0xC3.'
 - op: FIELD_DAMAGE_MOB
   direction: serverbound
   opcode: 196
@@ -3424,10 +3428,12 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CMob::Update (0x67d4ea) constructs COutPacket(197) for friendly mob-vs-mob damage. v83 192.'
 - op: MONSTER_BOMB
   direction: serverbound
-  opcode: 193
+  opcode: 198
   fname: CMob::TryFirstSelfDestruction
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x6849ee
+  note: 'task-092 Stage 4: opcode corrected 193->198 (0xC1->0xC6). IDA v84 CMob::TryFirstSelfDestruction @0x6849EE builds COutPacket(198); the csv-seeded 0xC1 was the un-shifted v83 value (v84 +5 in this cluster). Single Encode4(fused mobId). Function named in the v84 IDB this stage; template route added at 0xC6.'
 - op: MOB_DAMAGE_MOB
   direction: serverbound
   opcode: 199

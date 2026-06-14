@@ -9,6 +9,7 @@ import (
 )
 
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v83 ida=0x95fb3e
+// packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v84 ida=0x99e8ee
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v87 ida=0x9e2d06
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v95 ida=0x908dd0
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=jms_v185 ida=0xa2c930
@@ -16,10 +17,9 @@ import (
 // MONSTER_BOOK_COVER (serverbound): the client sends a single int cover cardId,
 // consumed by CUserLocal::SetMonsterBookCover (the named cover setter; the send
 // site is unnamed/inlined in every IDB). Layout = one Decode4, byte-identical
-// across versions. gms_v84 has NO marker/evidence: CUserLocal::SetMonsterBookCover
-// is unnamed in the v84 IDB (CUserLocal cluster fully unnamed, no anchor symbols)
-// so it is absent from the v84 export and cannot be pinned — that cell is a
-// documented blocker (structures/gms_v84.md), the codec + route still land.
+// across versions. task-092 Stage 4 located + named CUserLocal::SetMonsterBookCover
+// in the v84 IDB (@0x99e8ee, local setter writing CharacterData+1523) so the v84
+// cell now pins like the others.
 //
 // TestCoverDecode verifies the serverbound MonsterBookCover (recv 0x39) decoder
 // reads a single little-endian uint32 cardId off the wire.

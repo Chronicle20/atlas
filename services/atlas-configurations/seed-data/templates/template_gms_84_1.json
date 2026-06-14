@@ -799,11 +799,6 @@
         "handler": "PetItemExcludeHandle"
       },
       {
-        "opCode": "0xBE",
-        "validator": "LoggedInValidator",
-        "handler": "MobDropPickupRequest"
-      },
-      {
         "opCode": "0xC1",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
@@ -909,6 +904,11 @@
         }
       },
       {
+        "opCode": "0xC3",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
+      },
+      {
         "opCode": "0xC4",
         "validator": "LoggedInValidator",
         "handler": "FieldDamageMob"
@@ -917,6 +917,11 @@
         "opCode": "0xC5",
         "validator": "LoggedInValidator",
         "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xC6",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
       },
       {
         "opCode": "0xC7",

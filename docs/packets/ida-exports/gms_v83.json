@@ -7961,6 +7961,11 @@
           "guard": "v3 > -2"
         }
       ]
+    },
+    "CUserLocal::SendBanMapByMobRequest": {
+      "address": "0x99b16a",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

@@ -7,10 +7,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// v84 sender (CMob::TryFirstSelfDestruction) is unnamed in the v84 IDB (no anchor
-// symbol — see structures/applicability.md); the wire shape is v83-identical so the
-// route still lands but evidence is pinned only for v83/v87/v95/jms.
+// v84 sender CMob::TryFirstSelfDestruction was unnamed in the v84 IDB; task-092
+// Stage 4 located + named it (@0x6849ee, COutPacket(0xC6), single Encode4 of the
+// fused mob id — v83-identical wire shape) and pinned v84 evidence.
 // packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v83 ida=0x66e636
+// packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v84 ida=0x6849ee
 // packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v87 ida=0x6a95bd
 // packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v95 ida=0x640ee0
 // packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=jms_v185 ida=0x6ebf98

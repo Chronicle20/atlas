@@ -21428,6 +21428,46 @@
           "comment": ""
         }
       ]
+    },
+    "CMob::SendDropPickUpRequest": {
+      "address": "0x684cdf",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::TryFirstSelfDestruction": {
+      "address": "0x6849ee",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && result && !*(_DWORD *)(v3 + 12) && dword_C49BA8(v8, v9, Src)"
+        }
+      ]
+    },
+    "CUserLocal::SendBanMapByMobRequest": {
+      "address": "0x99b173",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CUserLocal::SetMonsterBookCover": {
+      "address": "0x99e8ee",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

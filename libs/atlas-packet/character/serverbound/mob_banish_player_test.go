@@ -7,14 +7,14 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// MOB_BANISH_PLAYER. v83/v84 senders are INLINED into CUserLocal::Update — no
-// standalone function exists to pin, so no verify marker / evidence for those two
-// versions (see structures/RESUME-STATE.md). The v87/v95/jms standalone
-// CUserLocal::SendBanMapByMobRequest is a one-Encode4 wrapper; the v83/v84 inlined
-// send is byte-identical, so the single codec covers all five versions.
+// MOB_BANISH_PLAYER. CUserLocal::SendBanMapByMobRequest is a discrete one-Encode4
+// wrapper (opcode 0x38) in ALL five clients — task-092 Stage 4 corrected the prior
+// "v83/v84 inlined" note: the v83 function (@0x99b16a) and v84 function (@0x99b173)
+// were just unnamed sub_XXXX, not inlined. Both were named in their IDBs and pinned.
+// The send is byte-identical across versions, so the single codec covers all five.
 //
-// behavior/evidence: v83+v84 blocked (inlined sender, see RESUME-STATE.md)
-//
+// packet-audit:verify packet=character/serverbound/CharacterMobBanishPlayer version=gms_v83 ida=0x99b16a
+// packet-audit:verify packet=character/serverbound/CharacterMobBanishPlayer version=gms_v84 ida=0x99b173
 // packet-audit:verify packet=character/serverbound/CharacterMobBanishPlayer version=gms_v87 ida=0x9df571
 // packet-audit:verify packet=character/serverbound/CharacterMobBanishPlayer version=gms_v95 ida=0x908d50
 // packet-audit:verify packet=character/serverbound/CharacterMobBanishPlayer version=jms_v185 ida=0xa28621

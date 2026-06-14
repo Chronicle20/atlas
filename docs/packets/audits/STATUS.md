@@ -5,8 +5,8 @@
 
 Tool: `426af65684f35154915c007c2831053c55ffa423`
 
-- export gms_v83: `9e699a90271e5ce3ae236d8ef04ce192000395ff16bf03981fae1211cd03955a`
-- export gms_v84: `e94f48f613f3b25ba827394627184c550cd3c5c51fc87aaf5a69c8eaab38aa3a`
+- export gms_v83: `8d37704b4f6f0c1dfba203c36b7e2bf5acc9dd28b3613449df2f502ffcb733f5`
+- export gms_v84: `5cf417235d9ad86de328953befd2c25f8d39dbd1b3c6d79d24e5b4f5a6001629`
 - export gms_v87: `8c8da86e7c19dde4c16ddc26a46c3b52836e7042c4421fcca2c40a6da5083508`
 - export gms_v95: `e96407effd2c03bb4033f7fa9d3872d91efd03ba66ef78f3826c3ab8b9a98d65`
 - export jms_v185: `8a94f69d3c6e7622fcb4a35f87185024d8e8f98f536bd5ade4bf2d8962540d5a`
@@ -543,8 +543,8 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect |  | 0x035 | ❌ | 0x035 | ❌ | 0x038 | ❌ | 0x03A | ❌ | 0x02D | ❌ |
 | UNNAMED_R74 |  |  | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | UNNAMED_R75 |  |  | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
-| MOB_BANISH_PLAYER | CUserLocal::SendBanMapByMobRequest | character/serverbound/CharacterMobBanishPlayer (T1) | 0x038 | ❌ | 0x038 | ❌ | 0x03B | ✅ | 0x03D | ✅ | 0x030 | ✅ |
-| MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) | 0x039 | ✅ | 0x039 | ❌ | 0x03C | ✅ | 0x03E | ✅ | 0x031 | ✅ |
+| MOB_BANISH_PLAYER | CUserLocal::SendBanMapByMobRequest | character/serverbound/CharacterMobBanishPlayer (T1) | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03D | ✅ | 0x030 | ✅ |
+| MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03E | ✅ | 0x031 | ✅ |
 | NPC_TALK | CNpc::ShowQuestList; CUserLocal::TalkToNpc |  | 0x03A | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x032 | ❌ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | NPC_TALK_MORE | CScriptMan::OnAskAvatar; CScriptMan::OnAskBoxText; CScriptMan::OnAskMembershopAvatar; CScriptMan::OnAskMenu; CScriptMan::OnAskNumber; CScriptMan::OnAskPet; CScriptMan::OnAskPetAll; CScriptMan::OnAskSlideMenu; CScriptMan::OnAskText; CScriptMan::OnAskYesNo; CScriptMan::OnSay; CScriptMan::OnSayImage; CUIInitialQuiz::SendResult; CUISpeedQuiz::SendResult | npc/clientbound/NpcAskSlideMenuConversationDetail (T1) | 0x03C | ✅ | 0x03C | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x034 | ✅ |
@@ -699,11 +699,11 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap |  | 0x0B7 | ❌ | 0x0B7 | ❌ | 0x0C3 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
 | AUTO_AGGRO | CMob::ApplyControl |  | 0x0BD | ❌ | 0x0BD | ❌ | 0x0C9 | ❌ | 0x0E4 | ❌ | 0x0C3 | ❌ |
-| MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest | monster/serverbound/MonsterMobDropPickupRequest (T1) | 0x0BE | ✅ | 0x0BE | ❌ | 0x0CA | ✅ | 0x0E5 | ✅ | 0x0C4 | ✅ |
+| MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest | monster/serverbound/MonsterMobDropPickupRequest (T1) | 0x0BE | ✅ | 0x0C3 | ✅ | 0x0CA | ✅ | 0x0E5 | ✅ | 0x0C4 | ✅ |
 | FIELD_DAMAGE_MOB | CMob::Update | character/serverbound/CharacterMonsterDamageFriendly (T1) | 0x0BF | ✅ | 0x0C4 | ✅ | 0x0CB | ✅ | 0x0E6 | ✅ | 0x0C5 | ✅ |
 | REQUEST_SESSION_VALUE | CWvsContext::SendRequestSessionValue |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ | 0x09F | ❌ |
 | MOB_DAMAGE_MOB_FRIENDLY | CMob::Update | character/serverbound/CharacterMonsterDamageFriendly (T1) | 0x0C0 | ✅ | 0x0C5 | ✅ | 0x0CC | ✅ | 0x0E7 | ✅ | 0x0C6 | ✅ |
-| MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) | 0x0C1 | ✅ | 0x0C1 | ❌ | 0x0CD | ✅ | 0x0E8 | ✅ | 0x0C7 | ✅ |
+| MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E8 | ✅ | 0x0C7 | ✅ |
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | ASK_AP_SP_EVENT | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C3 | ❌ |  | ⬜ |
 | DRAGON_BALL_BOX_REQUEST | CWvsContext::SendDragonBallBoxRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C4 | ❌ |  | ⬜ |
@@ -909,8 +909,8 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 258 | 0 | 419 | 202 | 0 | 38.1% |
-| v84 | 213 | 0 | 464 | 202 | 0 | 31.5% |
+| v83 | 259 | 0 | 418 | 202 | 0 | 38.3% |
+| v84 | 217 | 0 | 460 | 202 | 0 | 32.1% |
 | v87 | 276 | 0 | 438 | 165 | 0 | 38.7% |
 | v95 | 312 | 0 | 486 | 81 | 0 | 39.1% |
 | JMS185 | 263 | 0 | 447 | 169 | 0 | 37.0% |

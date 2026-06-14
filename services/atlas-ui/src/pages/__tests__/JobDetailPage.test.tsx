@@ -26,7 +26,7 @@ function def(over: Partial<SkillDefinitionWithIcon>): SkillDefinitionWithIcon {
     id: 1101004, name: "Iron Body", description: "Hardens the body.", action: false,
     element: "", animationTime: 0, maxLevel: 20, effects: [{ weaponDefense: 16 }],
     iconUrl: "/api/assets/x/GMS/83.1/skill/1101004/icon.png", ...over,
-  };
+  } as SkillDefinitionWithIcon;
 }
 
 function renderAt(jobId = "112") {
@@ -59,22 +59,52 @@ describe("JobDetailPage", () => {
     expect(screen.getByText(/grants no skills/i)).toBeInTheDocument();
   });
 
-  it("renders a skill row with title, master level and a type badge", () => {
+  it("renders a skill row with a Master Lv indicator and a type badge", () => {
     useJobSkillsMock.mockReturnValue({ data: [1101004], isLoading: false, isError: false });
     useJobSkillDefsMock.mockReturnValue({ definitions: [def({})], isLoading: false, isError: false });
     renderAt();
     expect(screen.getByText("Iron Body")).toBeInTheDocument();
+    expect(screen.getByText(/Master Lv/i)).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("Passive")).toBeInTheDocument();
   });
 
-  it("falls back to a placeholder icon when the image fails", () => {
+  it("renders Beginner skills with a curated fallback when the server name is blank", () => {
+    useJobSkillsMock.mockReturnValue({ data: [1000, 1004], isLoading: false, isError: false });
+    useJobSkillDefsMock.mockReturnValue({
+      definitions: [def({ id: 1000, name: "" }), def({ id: 1004, name: "" })],
+      isLoading: false, isError: false,
+    });
+    renderAt("0");
+    expect(screen.getByText("Three Snails")).toBeInTheDocument();
+    expect(screen.getByText("Monster Riding")).toBeInTheDocument();
+  });
+
+  it("renders the job id as a copyable (focusable) header element", () => {
+    useJobSkillsMock.mockReturnValue({ data: [], isLoading: false, isError: false });
+    useJobSkillDefsMock.mockReturnValue({ definitions: [], isLoading: false, isError: false });
+    renderAt("112");
+    expect(screen.getByText("112")).toHaveAttribute("tabindex", "0");
+  });
+
+  it("uses a page-local overflow container for scrolling", () => {
+    useJobSkillsMock.mockReturnValue({ data: [], isLoading: false, isError: false });
+    useJobSkillDefsMock.mockReturnValue({ definitions: [], isLoading: false, isError: false });
+    const { container } = renderAt();
+    expect(container.firstChild).toHaveClass("overflow-y-auto");
+  });
+
+  it("renders a markup description with line breaks and no raw '#'", () => {
     useJobSkillsMock.mockReturnValue({ data: [1101004], isLoading: false, isError: false });
-    useJobSkillDefsMock.mockReturnValue({ definitions: [def({})], isLoading: false, isError: false });
+    useJobSkillDefsMock.mockReturnValue({
+      definitions: [def({ description: "Line one\n#cColored#" })],
+      isLoading: false, isError: false,
+    });
     renderAt();
-    const img = screen.getByAltText("Iron Body") as HTMLImageElement;
-    fireEvent.error(img);
-    expect(screen.getByTestId("skill-icon-fallback-1101004")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /iron body/i }));
+    expect(screen.getByText("Line one")).toBeInTheDocument();
+    expect(screen.getByText("Colored")).toBeInTheDocument();
+    expect(screen.queryByText(/#c/)).toBeNull();
   });
 
   it("expanding a skill reveals its per-level table", () => {

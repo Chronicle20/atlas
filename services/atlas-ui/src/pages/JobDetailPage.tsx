@@ -8,15 +8,20 @@ import type { SkillDefinitionWithIcon } from "@/lib/hooks/api/useSkillDefinition
 import { getJobNameById } from "@/lib/jobs";
 import { deriveSkillType } from "@/lib/skills/skill-type";
 import { buildLevelTable } from "@/lib/skills/level-table";
+import { resolveSkillName } from "@/lib/skills/beginner-skill-names";
+import { formatSkillDescription, type FormattedDescription } from "@/lib/skills/format-skill-description";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 
-function SkillIcon({ def }: { def: SkillDefinitionWithIcon }) {
+function SkillIcon({ def, name }: { def: SkillDefinitionWithIcon; name: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
@@ -28,13 +33,30 @@ function SkillIcon({ def }: { def: SkillDefinitionWithIcon }) {
   return (
     <img
       src={def.iconUrl}
-      alt={def.name}
+      alt={name}
       width={32}
       height={32}
       loading="lazy"
       className="object-contain"
       onError={() => setFailed(true)}
     />
+  );
+}
+
+function SkillDescription({ formatted }: { formatted: FormattedDescription }) {
+  if (formatted.lines.length === 0) {
+    return <p className="text-sm text-muted-foreground">No description available.</p>;
+  }
+  return (
+    <div className="text-sm space-y-1">
+      {formatted.lines.map((line, i) => (
+        <p key={i}>
+          {line.map((seg, j) => (
+            <span key={j}>{seg.text}</span>
+          ))}
+        </p>
+      ))}
+    </div>
   );
 }
 
@@ -69,22 +91,36 @@ function LevelTable({ def }: { def: SkillDefinitionWithIcon }) {
 
 function SkillRow({ def }: { def: SkillDefinitionWithIcon }) {
   const type = deriveSkillType(def);
+  const name = resolveSkillName(def.id, def.name);
+  const formatted = formatSkillDescription(def.description);
   return (
     <Collapsible>
       <div className="flex items-center gap-3 py-2 border-b">
-        <SkillIcon def={def} />
+        <SkillIcon def={def} name={name} />
         <CollapsibleTrigger asChild>
           <button className="flex-1 text-left">
-            <span className="font-medium">{def.name}</span>
+            <span className="font-medium">{name}</span>
           </button>
         </CollapsibleTrigger>
         <Badge variant="secondary">{type}</Badge>
-        <span className="text-sm text-muted-foreground w-16 text-right">
-          Lv <span>{def.maxLevel ?? "—"}</span>
-        </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className="text-sm text-muted-foreground w-24 text-right cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                Master Lv <span>{def.maxLevel ?? "—"}</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Skill&#39;s maximum (master) level</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <CollapsibleContent className="py-3 pl-11 space-y-3">
-        <p className="text-sm">{def.description || "No description available."}</p>
+        <SkillDescription formatted={formatted} />
         <div className="flex gap-4 text-xs text-muted-foreground">
           <span>Type: {type}</span>
           {def.element ? <span>Element: {def.element}</span> : null}
@@ -109,13 +145,27 @@ export function JobDetailPage() {
   const loading = skillsQuery.isLoading || (skillIds.length > 0 && defsLoading);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
+    <div className="flex flex-col flex-1 min-h-0 space-y-6 overflow-y-auto p-10 pb-16">
       <div className="flex items-center gap-2">
         <Link to="/jobs" className="text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-5 w-5" />
         </Link>
         <h2 className="text-2xl font-bold tracking-tight">{jobName}</h2>
-        <Badge variant="outline">{jobId}</Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className="inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {jobId}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent copyable>
+              <p>{jobId}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {!activeTenant ? (

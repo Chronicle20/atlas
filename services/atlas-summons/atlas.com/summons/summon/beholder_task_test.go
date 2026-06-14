@@ -68,7 +68,7 @@ func newBeholderModel(id uint32, owner uint32, f field.Model, nextHeal, nextBuff
 		SetHealAmount(60).
 		SetHealInterval(4 * time.Second).
 		SetBuffInterval(4 * time.Second).
-		SetBuffSourceId(-int32(1320009)).
+		SetBuffSourceId(int32(1320009)).
 		SetBuffLevel(10).
 		SetBuffDuration(213000).
 		SetBuffChanges([]StatChange{{Type: "WATK", Amount: 30}}).
@@ -151,8 +151,8 @@ func TestBeholderSweepFiresHealAndBuffWhenDue(t *testing.T) {
 	if ap.Body.FromId != 42 {
 		t.Fatalf("expected FromId 42, got %d", ap.Body.FromId)
 	}
-	if ap.Body.SourceId != -int32(1320009) {
-		t.Fatalf("expected SourceId %d, got %d", -int32(1320009), ap.Body.SourceId)
+	if ap.Body.SourceId != int32(1320009) {
+		t.Fatalf("expected SourceId %d, got %d", int32(1320009), ap.Body.SourceId)
 	}
 
 	// SKILL pulse assertion: both the heal and the buff sweep emit a SummonSkill

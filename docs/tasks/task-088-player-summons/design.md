@@ -50,7 +50,7 @@ so summon and monster oids never collide on a map.
 |---|---|---|
 | **Q1** | Puppet aggro command exists? | **No.** `atlas-monsters` has no inbound aggro/control-redirect command (control is server-assigned via `StartControl`). Add a new `ADD_PUPPET`/`REMOVE_PUPPET` command pair on `COMMAND_TOPIC_MONSTER` + a per-field puppet set that biases controller selection toward an in-vicinity puppet owner (Cosmic `MonsterAggroCoordinator`, vicinity `distanceSq < 177777`). See §9. |
 | **Q2** | Server-scheduled attacks? | **All 21 are client-driven** in Cosmic (`SummonDamageHandler` reads the client packet). The server schedules **only** Beholder's heal/buff timers. ⇒ **no attack-interval field** is added to `atlas-data`. |
-| **Q3** | Beholder buff source-id range? | Buff `SourceId` is `int32` and is normally a (positive) skill id; no reserved range exists. **Summon-applied buffs use the negation of the applying skill id** (`sourceId = -int32(skillId)`). Player skill ids are always positive and < 2³¹, so negatives never collide. See §10. |
+| **Q3** | Beholder buff source-id range? | Buff `SourceId` is `int32` and MUST be the positive, real skill id (`HEX_OF_THE_BEHOLDER` = `1320009`). ~~Originally negated for collision-avoidance~~ — **CORRECTED (live v83 testing):** the client writes `sourceId` into the give-buff packet as the per-stat `rSkillID` and calls `GetSkillTemplate(rSkillID)` to render the buff icon; a negative id resolves to null and **crashes the client**. There is no real collision (the hex skill is only ever applied by the Beholder), so the positive skill id is both safe and correct. See §10. |
 | **Q4** | Shared object-id pool? | **Yes.** Reuse `libs/atlas-object-id` (per-tenant Redis allocator, MinId 1,000,000), same pool as monsters/drops/reactors. |
 | **Q5** | Per-version roster gaps? | **Graceful no-op** (FR-1.3): a cast whose skill id has no roster entry logs at debug and spawns nothing. No hard error. |
 | **Q6** | Aerial Strike / Battleship? | **Out of scope.** Aerial Strike (`5221003`) is a dead constant (not a `Summon`); Battleship (`5221006`) is a mount. Neither spawns a summon object. |
@@ -316,7 +316,7 @@ separate owner skills** the player has trained — `AURA_OF_BEHOLDER` (`1320008`
 - resolve owner levels in `1320008`/`1320009` and those skills' effects
 - `healAmount = aura.effect.hp`; heal interval = `aura.effect.x` seconds
 - `buffChanges/buffLevel/buffDuration = hex.effect.*`; buff interval = `hex.effect.x` s
-- `buffSourceId = -int32(1320009)` (Q3: negated skill id → collision-free)
+- `buffSourceId = int32(1320009)` (Q3 CORRECTED: positive real skill id — negative crashes the v83 client's icon lookup)
 - set `nextHealAt` / `nextBuffAt`
 
 **Leader-elected beholder-aura sweep task** scans beholder summons; when a timer is
@@ -324,7 +324,7 @@ due it:
 - heal: `COMMAND_TOPIC_CHARACTER` `CHANGE_HP{channelId, amount: +healAmount}`
   (delta int16, clamped to MaxHP by `atlas-character` — the same path the Heal skill
   uses, `heal/heal.go` + `character/processor.go ChangeHP`)
-- buff: `COMMAND_TOPIC_CHARACTER_BUFF` `APPLY{fromId: owner, sourceId: -1320009,
+- buff: `COMMAND_TOPIC_CHARACTER_BUFF` `APPLY{fromId: owner, sourceId: 1320009,
   level, duration, changes}`
 - advance `nextHealAt` / `nextBuffAt`
 
@@ -394,7 +394,7 @@ has no v92 and adds v28/v86), per `character/clientbound/spawn_test.go`.
 - `COMMAND_TOPIC_MONSTER` `DAMAGE` (owner-credited attacker damage).
 - `COMMAND_TOPIC_MONSTER` `APPLY_STATUS` (stun/freeze).
 - `COMMAND_TOPIC_CHARACTER` `CHANGE_HP` (Beholder heal).
-- `COMMAND_TOPIC_CHARACTER_BUFF` `APPLY` (Beholder buff, negated source id).
+- `COMMAND_TOPIC_CHARACTER_BUFF` `APPLY` (Beholder buff, positive source id 1320009).
 - `EVENT_TOPIC_CHARACTER_STATUS` `LOGOUT`/`CHANNEL_CHANGED`/`MAP_CHANGED` (despawn).
 
 **Error handling (FR-5.5 / §5.5)**

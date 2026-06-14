@@ -171,9 +171,17 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 				for _, su := range hex.Statups() {
 					changes = append(changes, StatChange{Type: su.Type, Amount: su.Amount})
 				}
+				// The buff sourceId MUST be the positive, real skill id. It is
+				// written into the client give-buff packet as the per-stat rSkillID,
+				// and the v83 client looks up GetSkillTemplate(rSkillID) to render the
+				// buff icon/tooltip — a negative id resolves to null and crashes the
+				// client. (design.md Q3 negated it for server-side collision
+				// avoidance, but HEX_OF_THE_BEHOLDER is only ever applied by the
+				// Beholder, so there is no real collision and the negation was
+				// client-fatal.)
 				b.SetBuffInterval(buffInterval).SetNextBuffAt(now.Add(buffInterval)).
 					SetBuffDuration(hex.Duration()).SetBuffLevel(hexLevel).
-					SetBuffSourceId(-int32(skillconst.DarkKnightHexOfTheBeholderId)).
+					SetBuffSourceId(int32(skillconst.DarkKnightHexOfTheBeholderId)).
 					SetBuffChanges(changes)
 			}
 		}

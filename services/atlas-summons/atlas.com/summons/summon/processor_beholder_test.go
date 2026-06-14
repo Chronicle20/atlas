@@ -80,8 +80,8 @@ func TestBeholderSpawnSnapshotsAuraAndHex(t *testing.T) {
 	if m.BuffLevel() != 9 {
 		t.Fatalf("expected BuffLevel == hexLevel (9), got %d", m.BuffLevel())
 	}
-	if m.BuffSourceId() != -int32(skillconst.DarkKnightHexOfTheBeholderId) {
-		t.Fatalf("expected BuffSourceId -1320009, got %d", m.BuffSourceId())
+	if m.BuffSourceId() != int32(skillconst.DarkKnightHexOfTheBeholderId) {
+		t.Fatalf("expected BuffSourceId 1320009 (positive: client looks up the skill template for the icon; negative crashes), got %d", m.BuffSourceId())
 	}
 	if len(m.BuffChanges()) != 1 || m.BuffChanges()[0].Type != "WEAPON_DEFENSE" || m.BuffChanges()[0].Amount != 20 {
 		t.Fatalf("expected BuffChanges [WEAPON_DEFENSE +20], got %+v", m.BuffChanges())

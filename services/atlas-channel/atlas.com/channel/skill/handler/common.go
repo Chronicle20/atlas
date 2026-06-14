@@ -107,11 +107,7 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			if e.Duration() > 0 && len(e.StatUps()) > 0 {
 				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
 				_ = applyBuffFunc(characterId)
-				casterX, casterY := int16(0), int16(0)
-				if c, cErr := character.NewProcessor(l, ctx).GetById()(characterId); cErr == nil {
-					casterX, casterY = c.X(), c.Y()
-				}
-				_ = applyToParty(l)(ctx)(f, characterId, casterX, casterY, e, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 			}
 
 			// Handle mob-affecting buffs (crash, dispel, etc.)
@@ -339,11 +335,15 @@ func dispelSkillClass(skillId skill2.Id) string {
 	}
 }
 
-func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-	return func(ctx context.Context) func(f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-		return func(f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
+// applyToParty applies idOperator to every party member selected for a party
+// buff. Party buffs apply map-wide (no LT/RB rectangle), so member selection
+// is driven by the client-sent affected-member bitmap via
+// SelectPartyMembersInMap rather than the range-limited Heal selector.
+func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
+	return func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
+		return func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
 			return func(idOperator model2.Operator[uint32]) error {
-				recipients := SelectInRangePartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap)
+				recipients := SelectPartyMembersInMap(l, ctx, f, casterId, memberBitmap)
 				for _, r := range recipients {
 					_ = idOperator(r.Id())
 				}

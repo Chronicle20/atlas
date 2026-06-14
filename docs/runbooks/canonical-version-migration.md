@@ -26,9 +26,12 @@ version's canonical dataset rather than the global sentinel.
 rows are not removed until step 5, so no tenant ever falls back to an empty
 canonical dataset during the cutover.
 
-**`atlas-pr-bootstrap` impact:** none. Once per-version baselines are
-published (step 4), `auto` mode restores the correct version automatically —
-no changes to the bootstrap job are required.
+**`atlas-pr-bootstrap` impact:** the bootstrap is **baseline-only** — it
+provisions PR-env data exclusively by restoring the published canonical
+baseline for the env's version and **fails fast** (before bringing services
+up) when none exists. Publishing the per-version baseline (step 4) is
+therefore a **prerequisite** for any ephemeral env on that version, not an
+optimization. See [ephemeral-pr-deployments.md](ephemeral-pr-deployments.md) §9.1.
 
 ---
 
@@ -104,7 +107,7 @@ The response should reflect the canonical row count, not zero.
 
 ### Step 4 — Re-publish baselines per version
 
-Publish the version-correct dump and sha256 sidecar so ephemeral `auto`-mode
+Publish the version-correct dump and sha256 sidecar so the ephemeral baseline-only
 bootstrap can restore the correct canonical dataset:
 
 ```sh

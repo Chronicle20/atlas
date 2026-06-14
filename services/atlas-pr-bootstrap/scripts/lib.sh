@@ -6,13 +6,10 @@ set -uo pipefail
 log() {
     # Logs are diagnostic output and MUST go to stderr. The fallback branch
     # already does; the jq branch did not, which caused subtle bugs when a
-    # caller captured a function's stdout via $(): e.g. resolve_mode echoes
-    # the resolved mode on stdout, but a `log warn` inside it would prepend
-    # a JSON line into the captured value and break the subsequent `case`
-    # match. PR-544 hit this — auto-mode resolution silently produced a
-    # multi-line mode value, the case statement no-op'd, and the bootstrap
-    # exited cleanly without running ingest. Fixed by redirecting both
-    # branches to stderr.
+    # caller captured a function's stdout via $(): a helper that echoes a
+    # value on stdout would get a `log` line prepended into the captured
+    # value, breaking the caller's parse. PR-544 hit this in a since-removed
+    # mode-resolution helper. Fixed by redirecting both branches to stderr.
     local level="$1"; shift
     local step="${ATLAS_STEP:-init}"
     if command -v jq >/dev/null 2>&1; then

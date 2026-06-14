@@ -198,7 +198,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-a2207e7
+    newTag: main-240243e
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
@@ -270,7 +270,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
-    newTag: main-a2207e7
+    newTag: main-b1aea07
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
@@ -298,6 +298,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-a2207e7
+    newTag: main-85cd53c
 commonLabels:
   atlas.env: main

@@ -22539,6 +22539,333 @@
           "comment": ""
         }
       ]
+    },
+    "CField::OnCoupleMessage": {
+      "address": "0x53e30d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v2",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v2",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "<default> && CInPacket::Decode1(v1)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default> && CInPacket::Decode1(v1)",
+          "ref": "sub_4B1B18"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default> && CInPacket::Decode1(v1)",
+          "ref": "sub_447019"
+        }
+      ]
+    },
+    "CField::OnGroupMessage": {
+      "address": "0x53e086",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_418C8E"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_417123"
+        }
+      ]
+    },
+    "CField::OnWhisper": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)10"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)10"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)10",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)10 && !v24",
+          "ref": "sub_4C2816"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)10 && !v24",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18 && v14",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18 && <default>",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 == (volatile LONG *)18 && v17",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138",
+          "ref": "sub_417123"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 2",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 3",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 3 && <default>",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 4",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1 && v37 && v105",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 2",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 3 && v113",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 1 && v89 && v105",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 1",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)",
+          "ref": "sub_4C2816"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)",
+          "ref": "sub_447019"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_447019"
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash": {
+      "address": "0x5383ce",
+      "direction": "",
+      "calls": null
     }
   }
 }

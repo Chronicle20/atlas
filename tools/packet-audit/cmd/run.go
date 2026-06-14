@@ -719,6 +719,43 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "MobCrcKeyChangedReply", pkg: "monster", dir: csvpkg.DirServerbound},
 		}
 
+	// --- Combat: Monster Carnival (task-092 Cluster E) ---
+	// Carnival codecs live under monster/carnival/{clientbound,serverbound}; the
+	// struct names are globally unique so pkg is left empty (locateAtlasFile finds
+	// the file by struct name; PacketID = monster/carnival/<dir>/<Struct>).
+	case "CField_MonsterCarnival::OnEnter":
+		// MONSTER_CARNIVAL_START — Decode1 team, 6x Decode2 CP, then per-summon-slot
+		// Decode1 loop. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalStart", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnPersonalCP":
+		// MONSTER_CARNIVAL_OBTAINED_CP — 2x Decode2 (cp,total). All 5 versions.
+		return []candidate{{name: "MonsterCarnivalObtainedCP", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnTeamCP":
+		// MONSTER_CARNIVAL_PARTY_CP — Decode1 team + 2x Decode2 (cp,total). All 5 versions.
+		return []candidate{{name: "MonsterCarnivalPartyCP", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnRequestResult":
+		// One dispatcher fn backs TWO distinct clientbound ops, demuxed on the
+		// OnPacket arg: SUMMON (arg != 0: Decode1 tab, Decode1 idx, DecodeStr name)
+		// and MESSAGE (arg == 0: a single Decode1 selector; strings from StringPool).
+		// Both candidates are emitted; each op-row grades worst-of and matches its
+		// own marker. All 5 versions.
+		return []candidate{
+			{name: "MonsterCarnivalSummon", dir: csvpkg.DirClientbound},
+			{name: "MonsterCarnivalMessage", dir: csvpkg.DirClientbound},
+		}
+	case "CField_MonsterCarnival::OnProcessForDeath":
+		// MONSTER_CARNIVAL_DIED — Decode1 team, DecodeStr name, Decode1 lostCp. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalDied", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnShowMemberOutMsg":
+		// MONSTER_CARNIVAL_LEAVE — 2x Decode1 (leader,team) + DecodeStr name. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalLeave", dir: csvpkg.DirClientbound}}
+	case "CField_MonsterCarnival::OnShowGameResult":
+		// MONSTER_CARNIVAL_RESULT — a single Decode1 outcome selector. All 5 versions.
+		return []candidate{{name: "MonsterCarnivalResult", dir: csvpkg.DirClientbound}}
+	case "CUIMonsterCarnival::RequestSend":
+		// MONSTER_CARNIVAL (serverbound) — Encode1 tab + Encode4 (idx-1). All 5 versions.
+		return []candidate{{name: "MonsterCarnival", dir: csvpkg.DirServerbound}}
+
 	// --- Combat: monster version-tail (task-092 Cluster F) ---
 	case "CMob::OnIncMobChargeCount":
 		// INC_MOB_CHARGE_COUNT — atlas IncMobChargeCount. Two Decode4

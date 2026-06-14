@@ -6,6 +6,11 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0xE7",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
         "opCode": "0x3B",
         "validator": "LoggedInValidator",
         "handler": "MobBanishPlayer"
@@ -714,6 +719,38 @@
       }
     ],
     "writers": [
+      {
+        "opCode": "0x132",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
+        "opCode": "0x133",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x134",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x135",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x136",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
+        "opCode": "0x137",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x138",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
+        "opCode": "0x139",
+        "writer": "MonsterCarnivalResult"
+      },
       {
         "opCode": "0x30",
         "writer": "SetTamingMobInfo"

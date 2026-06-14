@@ -1,5 +1,5 @@
 {
-  "toolSha": "d77329d4128f1a8dc85caa5fe373ffc483536676",
+  "toolSha": "426af65684f35154915c007c2831053c55ffa423",
   "exportHashes": {
     "gms_v83": "9e699a90271e5ce3ae236d8ef04ce192000395ff16bf03981fae1211cd03955a",
     "gms_v84": "e94f48f613f3b25ba827394627184c550cd3c5c51fc87aaf5a69c8eaab38aa3a",
@@ -18095,35 +18095,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL",
+      "packet": "monster/carnival/serverbound/MonsterCarnival",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUIMonsterCarnival::RequestSend"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 218
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 218
+          "state": "verified",
+          "opcode": 224
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 231
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 262
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 229
         }
       }
@@ -23426,35 +23422,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_START",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalStart",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnEnter"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 289
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 289
+          "state": "verified",
+          "opcode": 296
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 306
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 346
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 313
         }
       }
@@ -23462,35 +23454,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_OBTAINED_CP",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalObtainedCP",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnPersonalCP"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 290
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 290
+          "state": "verified",
+          "opcode": 297
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 307
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 347
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 314
         }
       }
@@ -23498,35 +23486,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_PARTY_CP",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalPartyCP",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnTeamCP"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 291
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 291
+          "state": "verified",
+          "opcode": 298
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 308
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 348
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 315
         }
       }
@@ -23534,35 +23518,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_SUMMON",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnRequestResult"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 292
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 292
+          "state": "verified",
+          "opcode": 299
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 309
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 349
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 316
         }
       }
@@ -23570,35 +23550,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_MESSAGE",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnRequestResult"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 293
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 293
+          "state": "verified",
+          "opcode": 300
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 310
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 350
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 317
         }
       }
@@ -23606,35 +23582,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_DIED",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalDied",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnProcessForDeath"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 294
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 294
+          "state": "verified",
+          "opcode": 301
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 311
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 351
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 318
         }
       }
@@ -23642,35 +23614,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_LEAVE",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalLeave",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnShowMemberOutMsg"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 295
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 295
+          "state": "verified",
+          "opcode": 302
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 312
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 352
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 319
         }
       }
@@ -23678,35 +23646,31 @@
     {
       "kind": "op",
       "op": "MONSTER_CARNIVAL_RESULT",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_MonsterCarnival::OnShowGameResult"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 296
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 296
+          "state": "verified",
+          "opcode": 303
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 313
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 353
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 320
         }
       }

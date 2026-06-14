@@ -1678,52 +1678,68 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MONSTER_CARNIVAL_START
   direction: clientbound
-  opcode: 289
+  opcode: 296
   fname: CField_MonsterCarnival::OnEnter
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5709982
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_OBTAINED_CP
   direction: clientbound
-  opcode: 290
+  opcode: 297
   fname: CField_MonsterCarnival::OnPersonalCP
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710357
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_PARTY_CP
   direction: clientbound
-  opcode: 291
+  opcode: 298
   fname: CField_MonsterCarnival::OnTeamCP
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710405
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_SUMMON
   direction: clientbound
-  opcode: 292
+  opcode: 299
   fname: CField_MonsterCarnival::OnRequestResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710468
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_MESSAGE
   direction: clientbound
-  opcode: 293
+  opcode: 300
   fname: CField_MonsterCarnival::OnRequestResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5710468
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_DIED
   direction: clientbound
-  opcode: 294
+  opcode: 301
   fname: CField_MonsterCarnival::OnProcessForDeath
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5711086
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_LEAVE
   direction: clientbound
-  opcode: 295
+  opcode: 302
   fname: CField_MonsterCarnival::OnShowMemberOutMsg
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5711465
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: MONSTER_CARNIVAL_RESULT
   direction: clientbound
-  opcode: 296
+  opcode: 303
   fname: CField_MonsterCarnival::OnShowGameResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5711844
+  note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: ARIANT_ARENA_USER_SCORE
   direction: clientbound
   opcode: 297
@@ -3562,10 +3578,12 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 364: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MONSTER_CARNIVAL
   direction: serverbound
-  opcode: 218
+  opcode: 224
   fname: CUIMonsterCarnival::RequestSend
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9027034
+  note: 'ida-verified: CUIMonsterCarnival::RequestSend @0x89bdda COutPacket(224/0xE0) (task-092 Cluster-E). v84 serverbound opcode is +6 vs v83 (0xE0 vs 0xDA); the csv-import value was stale v83.'
 - op: UNNAMED_R366
   direction: serverbound
   opcode: 219

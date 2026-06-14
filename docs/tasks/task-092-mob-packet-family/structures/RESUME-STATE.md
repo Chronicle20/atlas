@@ -62,5 +62,23 @@ Decide per cell at Stage 2 (codec+test+route still land; only the evidence pin i
   (CMob::Update @0x67dd33 / @0x67d534 COutPacket sites).
 - v83 serverbound MOB_SKILL_DELAY_END row removed (version-absent).
 
-## Next: Cluster B (catch/taming), C (monster book), F (version-tail), E (carnival);
-then Stage 3 docs, Stage 4 gates+review. Revisit TOUCH_MONSTER_ATTACK as its own task.
+- **Cluster E** (Monster Carnival, 9 ops) — new pkg `monster/carnival/{clientbound,serverbound}`.
+  All 9 ✅ across all 5 versions; matrix --check exit 0. Tier-1 preserved (cells show T1 —
+  `monster/` prefix matches via the nested pkg). carnivalcb/carnivalsb aliases added in main.go.
+  - clientbound (8): MONSTER_CARNIVAL_START (OnEnter: Decode1 team + 6×Decode2 CP + per-slot
+    Decode1 loop), OBTAINED_CP (OnPersonalCP: 2×Decode2), PARTY_CP (OnTeamCP: Decode1+2×Decode2),
+    SUMMON + MESSAGE (OnRequestResult demux — **confirmed two DISTINCT shapes**: SUMMON arg≠0 =
+    Decode1,Decode1,DecodeStr; MESSAGE arg=0 = single Decode1, strings from StringPool),
+    DIED (OnProcessForDeath: Decode1,DecodeStr,Decode1), LEAVE (OnShowMemberOutMsg:
+    Decode1,Decode1,DecodeStr), RESULT (OnShowGameResult: Decode1).
+  - serverbound (1): MONSTER_CARNIVAL (RequestSend: Encode1 tab + Encode4 idx-1), LoggedInValidator.
+  - All `CField_MonsterCarnival::On*` decompiled per version (v83/v95/jms full bodies; v87/jms/v84
+    addresses + dispatcher OnPacket verified). Layouts byte-identical across all 5 versions.
+  - **v84 opcode corrections (csv-stale → IDB-verified, the +7 cb / +6 sb v84 table shift):**
+    cb START..RESULT 0x121-0x128 → 0x128-0x12F (296-303; CField_MonsterCarnival::OnPacket
+    @0x571FF5: SUMMON=case 299 arg=1, MESSAGE=case 300 arg=0); sb MONSTER_CARNIVAL 0xDA → 0xE0
+    (RequestSend @0x89bdda COutPacket(224)). Registry gms_v84.yaml rows updated (ida-discovered +
+    ida.address). v83/v87/v95/jms opcodes confirmed unchanged against their dispatchers.
+
+## Next: Stage 3 docs, Stage 4 gates+review. Revisit TOUCH_MONSTER_ATTACK as its own task.
+(Clusters D, A, B, C, F, E all landed.)

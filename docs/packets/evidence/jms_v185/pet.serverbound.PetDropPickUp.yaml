@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetDropPickUp
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::SendDropPickUpRequest
+    address: "0x76bcc6"
+    decompile_sha256: 255ad1f46d33c24a85467dd7ff0dcc450b109ea1d7ece69f5ca1cc50d97f1784

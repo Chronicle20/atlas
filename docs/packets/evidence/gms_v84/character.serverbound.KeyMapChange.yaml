@@ -1,0 +1,8 @@
+packet: character/serverbound/KeyMapChange
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CFuncKeyMappedMan::SaveFuncKeyMap
+    address: "0x59df22"
+    decompile_sha256: cb7bb3ccbb3e2ba418e798dbfb3b4084fded850a67a684d1d88eda65a7fe0a9e

@@ -1,0 +1,9 @@
+packet: character/clientbound/CharacterKeyMap
+direction: clientbound
+version: gms_v95
+category: TRUNCATION
+ida:
+    function: CFuncKeyMappedMan::OnInit
+    address: "0x568c30"
+    decompile_sha256: 3081272d66afb2c5f71d53ca59a78e1ef98e1eee35aeacdad4427c6401f97505
+notes: "Migrated from docs/packets/ida-exports/_pending.md S3 (KeyMapChange/CharacterKeyMap row): CFuncKeyMappedMan::OnInit loop count 89 vs 90 - the export captures a fixed loop length; Atlas always sends the full keymap (LOOP + truncation)."

@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildInvite
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#Invite
+    address: "0xa0d664"
+    decompile_sha256: 44ec526a2042a04c28bcae1cc3e321fbea5023aaf5d69c1390d5d038c5ff4455

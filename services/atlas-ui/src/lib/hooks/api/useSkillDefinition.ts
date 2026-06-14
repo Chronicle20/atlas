@@ -13,34 +13,45 @@ export const skillDefinitionKeys = {
     ["skill-definition", tenantId, skillId] as const,
 };
 
+/** Shared fetcher: skill definition + deterministic icon URL. Reused by the batch hook. */
+export async function fetchSkillDefinitionWithIcon(
+  tenant: Tenant,
+  skillId: number,
+): Promise<SkillDefinitionWithIcon> {
+  const def = await skillsService.getSkillById(skillId.toString());
+  return {
+    ...def,
+    iconUrl: getAssetIconUrl(
+      tenant.id,
+      tenant.attributes.region,
+      tenant.attributes.majorVersion,
+      tenant.attributes.minorVersion,
+      "skill",
+      skillId,
+    ),
+  };
+}
+
+/** Retry policy shared with the batch hook: never retry a 404. */
+export function skillDefinitionRetry(failureCount: number, error: Error): boolean {
+  const msg = error?.message?.toLowerCase() ?? "";
+  if (msg.includes("404") || msg.includes("not found")) return false;
+  return failureCount < 3;
+}
+
 export function useSkillDefinition(
   tenant: Tenant | null | undefined,
-  skillId: number
+  skillId: number,
 ): UseQueryResult<SkillDefinitionWithIcon, Error> {
   return useQuery({
     queryKey: skillDefinitionKeys.detail(tenant?.id, skillId),
-    queryFn: async () => {
+    queryFn: () => {
       if (!tenant) throw new Error("Tenant is required");
-      const def = await skillsService.getSkillById(skillId.toString());
-      return {
-        ...def,
-        iconUrl: getAssetIconUrl(
-          tenant.id,
-          tenant.attributes.region,
-          tenant.attributes.majorVersion,
-          tenant.attributes.minorVersion,
-          "skill",
-          skillId,
-        ),
-      };
+      return fetchSkillDefinitionWithIcon(tenant, skillId);
     },
     enabled: !!tenant?.id && skillId > 0,
     staleTime: 30 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
-    retry: (failureCount, error) => {
-      const msg = error?.message?.toLowerCase() ?? "";
-      if (msg.includes("404") || msg.includes("not found")) return false;
-      return failureCount < 3;
-    },
+    retry: skillDefinitionRetry,
   });
 }

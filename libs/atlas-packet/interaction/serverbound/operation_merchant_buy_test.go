@@ -8,6 +8,9 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=gms_v87 ida=0x74076b
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=jms_v185 ida=0x762365
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=gms_v84 ida=0x71951e
 func TestOperationMerchantBuyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -32,6 +35,8 @@ func TestOperationMerchantBuyRoundTrip(t *testing.T) {
 // (LE), int itemCRC (LE). The entrusted-merchant buy shares
 // CPersonalShopDlg::BuyItem (op 0x22 vs 0x17) and carries the same trailing
 // CItemInfo::GetItemCRC int in both v83 (@0x6fd261) and v95 (@0x69a7f0).
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=gms_v83 ida=0x6fd261
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantBuy version=gms_v95 ida=0x69a7f0
 func TestOperationMerchantBuyBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)

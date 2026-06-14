@@ -1,0 +1,397 @@
+// Package discover enumerates a version's operation universe from its IDA
+// database (task-085 design §5.2): clientbound via the client packet
+// dispatcher's switch, serverbound via send-op constant sites.
+package discover
+
+import (
+	"fmt"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
+)
+
+// DispatchCase is one (opcode, handler) pair extracted from the dispatcher.
+type DispatchCase struct {
+	Opcode  int
+	Handler string // demangled name or sub_XXXX
+}
+
+var (
+	// caseRe matches a Hex-Rays case label; the capture group is the numeric
+	// literal (hex or decimal); a trailing 'u' suffix is consumed by the `u?`.
+	caseRe = regexp.MustCompile(`^\s*case\s+(0x[0-9a-fA-F]+|\d+)u?\s*:`)
+
+	// callRe matches a C-style function call. It captures either a demangled
+	// C++ name (including optional leading ~ for destructors) or a sub_XXXX
+	// synthetic IDA name. The open-paren is required to avoid matching keywords.
+	// Note: the regex intentionally stops at '<' (template bracket) to avoid
+	// capturing TSingleton<...> as a truncated name — isNoise drops those.
+	callRe = regexp.MustCompile(`([A-Za-z_][A-Za-z0-9_:]*(?:::[~A-Za-z_][A-Za-z0-9_]*)?|sub_[0-9A-Fa-f]+)\s*\(`)
+)
+
+// ParseDispatch walks Hex-Rays text of the packet dispatcher and yields one
+// DispatchCase per case label, binding pending (fallthrough) labels to the
+// first call in the case body.
+//
+// Scoping rules (robustness against real Hex-Rays output):
+//   - Brace depth is tracked per line. The depth at which the FIRST case label
+//     appears is recorded as the dispatch depth; any case label at depth >=
+//     dispatchDepth where the line is NOT inside a nested switch is treated as
+//     a dispatch arm. Braced case bodies (depth == dispatchDepth+1) are handled
+//     transparently.
+//   - Nested switches are tracked by depth: when a "switch (" keyword appears
+//     after dispatchDepth is established, the current depth is pushed onto a
+//     stack; everything until the brace depth drops back to that recorded depth
+//     is "inside a nested switch" and case labels / calls / terminators there
+//     are silently skipped for the outer dispatch.
+//   - goto/return on a line clears pending labels (like break) so that a tail
+//     goto/return case does not leak its labels into the next real case.
+//   - All call matches on a line are scanned (not just the first); the first
+//     non-noise candidate with a plausible handler shape is chosen.
+//
+// CONTRACT: Only switch-based dispatch is supported. An if/else-if chain
+// that dispatches by opcode will yield zero cases — callers should treat a
+// zero-case result as suspicious (wrong function or unsupported dispatch form).
+func ParseDispatch(text string) ([]DispatchCase, error) {
+	out := make([]DispatchCase, 0)
+	var pending []int
+	depth := 0
+	dispatchDepth := -1 // depth of the enclosing switch's case labels; -1 = unseen
+
+	// nestedSwitchDepths is a stack of brace depths at which nested switch
+	// statements were opened. A line is "inside a nested switch" when this stack
+	// is non-empty. We push when we encounter "switch (" after dispatchDepth is
+	// set; we pop when brace depth returns to the recorded depth (or below).
+	var nestedSwitchDepths []int
+
+	for _, line := range strings.Split(text, "\n") {
+		// Count brace changes on this line BEFORE detecting switch keywords and
+		// acting on case/call so that a closing '}' correctly reduces depth before
+		// we check for case labels.
+		openCount := strings.Count(line, "{")
+		closeCount := strings.Count(line, "}")
+		depth += openCount - closeCount
+
+		// Pop any nested-switch depth entries that have been exited (brace depth
+		// fell to or below the recorded entry depth).
+		for len(nestedSwitchDepths) > 0 && depth <= nestedSwitchDepths[len(nestedSwitchDepths)-1] {
+			nestedSwitchDepths = nestedSwitchDepths[:len(nestedSwitchDepths)-1]
+		}
+
+		// Detect a new nested switch AFTER dispatchDepth has been established.
+		// We use the code portion (comment-stripped) to avoid false positives from
+		// comments that happen to contain "switch (".
+		codePart := stripLineComment(line)
+		if dispatchDepth != -1 && strings.Contains(codePart, "switch (") {
+			// Record the PRE-brace depth so a `switch (v) {` line with the open
+			// brace on the same line still suppresses its whole body: the pop
+			// condition (depth <= recorded) must only fire once the body's
+			// closing brace returns to the depth the switch statement sits at.
+			preBraceDepth := depth - (openCount - closeCount)
+			// Only suppress (push onto nestedSwitchDepths) when this switch
+			// starts INSIDE a case body, i.e. pre-brace depth >= dispatchDepth.
+			// A sibling switch at the same level as the dispatch switch has
+			// pre-brace depth == dispatchDepth-1, and its case labels should
+			// bind to the dispatch just like the first switch's labels did.
+			if preBraceDepth >= dispatchDepth {
+				nestedSwitchDepths = append(nestedSwitchDepths, preBraceDepth)
+			}
+		}
+
+		insideNestedSwitch := len(nestedSwitchDepths) > 0
+
+		if m := caseRe.FindStringSubmatch(line); m != nil {
+			// Record the dispatch depth on the very first case label seen.
+			if dispatchDepth == -1 {
+				dispatchDepth = depth
+			}
+			// Record labels at the dispatch depth and NOT inside a nested switch.
+			// depth >= dispatchDepth covers braced case bodies (depth == dispatchDepth+1
+			// for the label line itself is not typical, but depth == dispatchDepth is
+			// the normal case for the label line; the body may be at depth+1).
+			if !insideNestedSwitch && depth == dispatchDepth {
+				op, err := parseIntLabel(m[1])
+				if err != nil {
+					return nil, fmt.Errorf("bad case label %q: %w", m[1], err)
+				}
+				pending = append(pending, op)
+				// a call on the same line as the label falls through to the
+				// call-check below
+			}
+		}
+
+		if len(pending) == 0 {
+			continue
+		}
+
+		// Strip trailing C++ // comment before scanning calls and terminators so
+		// that keywords like "goto" or "return" appearing only in comment text do
+		// not falsely clear pending labels.
+		// (codePart was already computed above for the switch-detection pass.)
+
+		// Bind calls when we have pending labels and are NOT inside a nested switch.
+		// depth > dispatchDepth is fine here — it covers braced case bodies and
+		// braced if-bodies inside a case arm.
+		if !insideNestedSwitch {
+			if matches := callRe.FindAllStringSubmatch(codePart, -1); matches != nil {
+				for _, m := range matches {
+					name := m[1]
+					if isNoise(name) {
+						continue
+					}
+					if !isPlausibleHandler(name) {
+						continue
+					}
+					for _, op := range pending {
+						out = append(out, DispatchCase{Opcode: op, Handler: name})
+					}
+					pending = nil
+					break
+				}
+			}
+		}
+
+		// break / goto / return all end a case body; only check the code portion
+		// to avoid false triggers from comment text, and only when NOT inside a
+		// nested switch so that break/goto/return inside nested switch arms do not
+		// clear the enclosing pending labels.
+		if !insideNestedSwitch &&
+			(strings.Contains(codePart, "break;") ||
+				strings.Contains(codePart, "goto ") ||
+				strings.Contains(codePart, "return")) {
+			pending = nil
+		}
+	}
+	return out, nil
+}
+
+// stripLineComment returns the portion of a Hex-Rays source line before any
+// C++ // comment, trimming trailing whitespace. This prevents keywords like
+// "goto" or "return" that appear only in comment text from falsely triggering
+// end-of-case logic.
+func stripLineComment(line string) string {
+	if idx := strings.Index(line, "//"); idx >= 0 {
+		return strings.TrimRight(line[:idx], " \t")
+	}
+	return line
+}
+
+// isPlausibleHandler returns true if name looks like a real handler:
+// either a class method (contains "::") or an unnamed IDA stub ("sub_" prefix).
+// Bare single-word names (alloca, void, new, etc.) are rejected here even if
+// isNoise did not catch them explicitly.
+func isPlausibleHandler(name string) bool {
+	if strings.HasPrefix(name, "sub_") {
+		return true
+	}
+	return strings.Contains(name, "::")
+}
+
+func parseIntLabel(s string) (int, error) {
+	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
+		n, err := strconv.ParseInt(s[2:], 16, 32)
+		return int(n), err
+	}
+	n, err := strconv.ParseInt(s, 10, 32)
+	return int(n), err
+}
+
+// isNoise filters non-handler calls that appear inside dispatch arms.
+// It is called for every candidate match; isPlausibleHandler provides a
+// second, shape-based gate so isNoise only needs to cover name-based cases.
+func isNoise(name string) bool {
+	switch name {
+	case "memset", "memcpy", "operator", "if", "while", "switch",
+		"alloca", "new", "void":
+		return true
+	}
+	// CInPacket:: / COutPacket:: are packet I/O helpers, never dispatch targets.
+	if strings.HasPrefix(name, "CInPacket::") || strings.HasPrefix(name, "COutPacket::") {
+		return true
+	}
+	// Singleton accessors (e.g. TSingleton truncated before '<' to just the class name).
+	if strings.HasSuffix(name, "::GetInstance") {
+		return true
+	}
+	return false
+}
+
+// Discovered is one (opcode, handler, address) result from IDA dispatch-walk.
+type Discovered struct {
+	Opcode  int
+	Handler string
+	Address string // hex string, e.g. "0x5e1230"
+}
+
+// Collision records that the registry and IDA disagree on the handler for the
+// same opcode.
+type Collision struct {
+	Entry      opregistry.Entry
+	Discovered Discovered
+}
+
+// InternalCollision records that two different dispatchers claim the SAME
+// opcode but disagree on the handler. These are excluded from the union and
+// must be reviewed by a human before landing in the registry.
+type InternalCollision struct {
+	Opcode   int
+	DispA    string // dispatcher name / address that first claimed this opcode
+	HandlerA Discovered
+	DispB    string // dispatcher name / address that disagreed
+	HandlerB Discovered
+}
+
+// DispatcherResult holds the per-dispatcher output before union.
+type DispatcherResult struct {
+	Name  string // function name or hex address as supplied by the caller
+	Addr  string // resolved hex address from IDA
+	Cases []Discovered
+}
+
+// Union merges per-dispatcher Discovered slices into a single deduplicated
+// slice. The rules are:
+//   - Same opcode, same handler (case-sensitive) → deduplicated silently; the
+//     first entry wins.
+//   - Same opcode, different handler → recorded as an InternalCollision and
+//     excluded from the returned cases (needs human eyes).
+//
+// The returned cases slice is sorted by opcode for deterministic output.
+func Union(perDispatcher []DispatcherResult) (cases []Discovered, internalCollisions []InternalCollision) {
+	type entry struct {
+		d        Discovered
+		dispName string
+	}
+	byOpcode := map[int]entry{}
+
+	for _, dr := range perDispatcher {
+		for _, d := range dr.Cases {
+			if prev, ok := byOpcode[d.Opcode]; ok {
+				if prev.d.Handler == d.Handler {
+					// exact duplicate — keep the first; skip silently
+					continue
+				}
+				// different handler — internal collision: remove from union, record it
+				delete(byOpcode, d.Opcode)
+				internalCollisions = append(internalCollisions, InternalCollision{
+					Opcode:   d.Opcode,
+					DispA:    prev.dispName,
+					HandlerA: prev.d,
+					DispB:    dr.Name,
+					HandlerB: d,
+				})
+			} else {
+				// check if already flagged as collision
+				alreadyCollision := false
+				for _, ic := range internalCollisions {
+					if ic.Opcode == d.Opcode {
+						alreadyCollision = true
+						break
+					}
+				}
+				if !alreadyCollision {
+					byOpcode[d.Opcode] = entry{d: d, dispName: dr.Name}
+				}
+			}
+		}
+	}
+
+	cases = make([]Discovered, 0, len(byOpcode))
+	for _, e := range byOpcode {
+		cases = append(cases, e.d)
+	}
+	// stable sort by opcode for deterministic output
+	sort.Slice(cases, func(i, j int) bool { return cases[i].Opcode < cases[j].Opcode })
+	sort.Slice(internalCollisions, func(i, j int) bool {
+		return internalCollisions[i].Opcode < internalCollisions[j].Opcode
+	})
+	return cases, internalCollisions
+}
+
+// ReconcileResult is the output of Reconcile.
+type ReconcileResult struct {
+	Append             []opregistry.Entry // new ops, provenance ida-discovered
+	MissingAtDiscovery []opregistry.Entry // in registry, not found in IDB — review worklist
+	Collisions         []Collision        // same opcode, different handler — review worklist
+}
+
+// Reconcile compares a seeded VersionFile against discovery output for one
+// direction:
+//   - discovered op not in registry → append with provenance ida-discovered,
+//   - registry entry not found by discovery → flag for review (never auto-deleted),
+//   - discovered opcode colliding with a different existing entry → Collisions.
+func Reconcile(vf *opregistry.VersionFile, discovered []Discovered, dir opregistry.Direction) ReconcileResult {
+	var res ReconcileResult
+	byOpcode := map[int]opregistry.Entry{}
+	for _, e := range vf.Entries {
+		if e.Direction == dir {
+			byOpcode[e.Opcode] = e
+		}
+	}
+	seenOpcode := map[int]bool{}
+	for _, d := range discovered {
+		seenOpcode[d.Opcode] = true
+		if e, ok := byOpcode[d.Opcode]; ok {
+			if e.FName != d.Handler && !hasAlt(e, d.Handler) && d.Handler != "" {
+				res.Collisions = append(res.Collisions, Collision{Entry: e, Discovered: d})
+			}
+			continue
+		}
+		addr := parseAddr(d.Address)
+		res.Append = append(res.Append, opregistry.Entry{
+			Op:         opNameFor(d),
+			Direction:  dir,
+			Opcode:     d.Opcode,
+			FName:      d.Handler,
+			Provenance: "ida-discovered",
+			IDA:        &opregistry.IDARef{Address: addr},
+		})
+	}
+	for _, e := range vf.Entries {
+		if e.Direction == dir && !seenOpcode[e.Opcode] {
+			res.MissingAtDiscovery = append(res.MissingAtDiscovery, e)
+		}
+	}
+	return res
+}
+
+// hasAlt returns true if the entry's FNameAlts list includes name.
+func hasAlt(e opregistry.Entry, name string) bool {
+	for _, a := range e.FNameAlts {
+		if a == name {
+			return true
+		}
+	}
+	return false
+}
+
+// parseAddr converts a hex-string address ("0x5e1230") to uint64.
+// Returns 0 for empty or unparseable input.
+func parseAddr(s string) uint64 {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+	low := strings.ToLower(s)
+	if strings.HasPrefix(low, "0x") {
+		v, err := strconv.ParseUint(low[2:], 16, 64)
+		if err != nil {
+			return 0
+		}
+		return v
+	}
+	v, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+// opNameFor derives the placeholder op name for a newly discovered opcode.
+// The format is IDA_0X<HEX> (e.g. IDA_0X002 for opcode 2).
+// Canonical renames are human edits with provenance: manual (design D9).
+func opNameFor(d Discovered) string {
+	return fmt.Sprintf("IDA_0X%03X", d.Opcode)
+}

@@ -4,7 +4,8 @@
   "minorVersion": 1,
   "usesPin": false,
   "socket": {
-    "handlers": [{
+    "handlers": [
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -70,6 +71,11 @@
         "handler": "CharacterSelectedHandle"
       },
       {
+        "opCode": "0x14",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle"
+      },
+      {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
         "handler": "CharacterCheckNameHandle"
@@ -83,6 +89,11 @@
         "opCode": "0x17",
         "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle"
+      },
+      {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
       },
       {
         "opCode": "0x19",
@@ -120,11 +131,6 @@
         "handler": "NoOpHandler"
       },
       {
-        "opCode": "0x14",
-        "validator": "NoOpValidator",
-        "handler": "CharacterLoggedInHandle"
-      },
-      {
         "opCode": "0x28",
         "validator": "LoggedInValidator",
         "handler": "MapChangeHandle"
@@ -144,7 +150,8 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterMoveHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -246,6 +253,36 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0x2C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairInteractionHandle"
+      },
+      {
+        "opCode": "0x2D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle"
+      },
+      {
+        "opCode": "0x2E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMeleeAttackHandle"
+      },
+      {
+        "opCode": "0x2F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterRangedAttackHandle"
+      },
+      {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMagicAttackHandle"
+      },
+      {
+        "opCode": "0x31",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterTouchAttackHandle"
       },
       {
         "opCode": "0x34",
@@ -253,9 +290,94 @@
         "handler": "CharacterChatGeneralHandle"
       },
       {
+        "opCode": "0x35",
+        "validator": "LoggedInValidator",
+        "handler": "ChalkboardCloseHandle"
+      },
+      {
+        "opCode": "0x3B",
+        "validator": "LoggedInValidator",
+        "handler": "MobBanishPlayer"
+      },
+      {
+        "opCode": "0x3C",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "NPCContinueConversationHandle"
+      },
+      {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentMergeHandle"
+      },
+      {
+        "opCode": "0x49",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentSortHandle"
+      },
+      {
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle"
+      },
+      {
+        "opCode": "0x4B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x4C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemCancelHandle"
+      },
+      {
+        "opCode": "0x4F",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle"
+      },
+      {
+        "opCode": "0x50",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle"
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle"
+      },
+      {
+        "opCode": "0x5B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterAutoDistributeApHandle"
+      },
+      {
+        "opCode": "0x5C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterHealOverTimeHandle"
+      },
+      {
+        "opCode": "0x5D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDistributeSpHandle"
+      },
+      {
+        "opCode": "0x5F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x61",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDropMesoHandle"
+      },
+      {
+        "opCode": "0x62",
+        "validator": "LoggedInValidator",
+        "handler": "FameChangeHandle"
       },
       {
         "opCode": "0x64",
@@ -263,16 +385,92 @@
         "handler": "CharacterInfoRequestHandle"
       },
       {
+        "opCode": "0x65",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle"
+      },
+      {
         "opCode": "0x67",
         "validator": "LoggedInValidator",
         "handler": "PortalScriptHandle"
+      },
+      {
+        "opCode": "0x6E",
+        "validator": "LoggedInValidator",
+        "handler": "QuestActionHandle"
+      },
+      {
+        "opCode": "0x80",
+        "validator": "LoggedInValidator",
+        "handler": "MessengerOperationHandle"
+      },
+      {
+        "opCode": "0x82",
+        "validator": "LoggedInValidator",
+        "handler": "PartyOperationHandle"
+      },
+      {
+        "opCode": "0x87",
+        "validator": "LoggedInValidator",
+        "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x8A",
+        "validator": "LoggedInValidator",
+        "handler": "BuddyOperationHandle"
+      },
+      {
+        "opCode": "0x8B",
+        "validator": "LoggedInValidator",
+        "handler": "NoteOperationHandle"
+      },
+      {
+        "opCode": "0xA3",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBBSHandle"
+      },
+      {
+        "opCode": "0xAE",
+        "validator": "LoggedInValidator",
+        "handler": "MobCrcKeyChangedReply"
+      },
+      {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "PetMovementHandle"
+      },
+      {
+        "opCode": "0xB4",
+        "validator": "LoggedInValidator",
+        "handler": "PetChatHandle"
+      },
+      {
+        "opCode": "0xB5",
+        "validator": "LoggedInValidator",
+        "handler": "PetCommandHandle"
+      },
+      {
+        "opCode": "0xB6",
+        "validator": "LoggedInValidator",
+        "handler": "PetDropPickUpHandle"
+      },
+      {
+        "opCode": "0xB7",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle"
+      },
+      {
+        "opCode": "0xB8",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemExcludeHandle"
       },
       {
         "opCode": "0xC8",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -374,13 +572,44 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0xCA",
+        "validator": "LoggedInValidator",
+        "handler": "MobDropPickupRequest"
+      },
+      {
+        "opCode": "0xCB",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
+        "opCode": "0xCC",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
+      },
+      {
+        "opCode": "0xCE",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
+      },
+      {
+        "opCode": "0xCF",
+        "validator": "LoggedInValidator",
+        "handler": "MobSkillDelayEnd"
       },
       {
         "opCode": "0xD2",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -482,20 +711,49 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0xD7",
+        "validator": "LoggedInValidator",
+        "handler": "DropPickUpHandle"
+      },
+      {
+        "opCode": "0xDA",
+        "validator": "LoggedInValidator",
+        "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xE7",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival"
+      },
+      {
+        "opCode": "0xF1",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckWalletHandle"
+      },
+      {
+        "opCode": "0xF2",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopOperationHandle"
+      },
+      {
+        "opCode": "0xBB",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xBC",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xBD",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
       }
     ],
-    "writers": [{
-        "opCode": "0x00",
-        "writer": "AuthSuccess"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthTemporaryBan"
-      },
-      {
-        "opCode": "0x00",
-        "writer": "AuthPermanentBan"
-      },
+    "writers": [
       {
         "opCode": "0x00",
         "writer": "AuthLoginFailed",
@@ -522,6 +780,18 @@
             "FULL_CLIENT_NOTICE": 27
           }
         }
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthPermanentBan"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthSuccess"
+      },
+      {
+        "opCode": "0x00",
+        "writer": "AuthTemporaryBan"
       },
       {
         "opCode": "0x03",
@@ -571,11 +841,11 @@
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEntry"
+        "writer": "ServerListEnd"
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEnd"
+        "writer": "ServerListEntry"
       },
       {
         "opCode": "0x0B",
@@ -654,6 +924,14 @@
         }
       },
       {
+        "opCode": "0x10",
+        "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x11",
+        "writer": "Ping"
+      },
+      {
         "opCode": "0x1A",
         "writer": "SelectWorld"
       },
@@ -666,10 +944,6 @@
         "writer": "PicResult"
       },
       {
-        "opCode": "0x10",
-        "writer": "ChannelChange"
-      },
-      {
         "opCode": "0x1D",
         "writer": "CharacterInventoryChange"
       },
@@ -678,8 +952,80 @@
         "writer": "StatChanged"
       },
       {
+        "opCode": "0x20",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x21",
+        "writer": "CharacterBuffCancel"
+      },
+      {
+        "opCode": "0x24",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0x26",
+        "writer": "FameResponse"
+      },
+      {
+        "opCode": "0x27",
+        "writer": "CharacterStatusMessage"
+      },
+      {
+        "opCode": "0x29",
+        "writer": "NoteOperation"
+      },
+      {
+        "opCode": "0x30",
+        "writer": "SetTamingMobInfo"
+      },
+      {
+        "opCode": "0x32",
+        "writer": "HiredMerchantOperation"
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CompartmentMerge"
+      },
+      {
+        "opCode": "0x35",
+        "writer": "CompartmentSort"
+      },
+      {
         "opCode": "0x3D",
         "writer": "CharacterInfo"
+      },
+      {
+        "opCode": "0x3E",
+        "writer": "PartyOperation"
+      },
+      {
+        "opCode": "0x41",
+        "writer": "BuddyOperation"
+      },
+      {
+        "opCode": "0x43",
+        "writer": "GuildOperation"
+      },
+      {
+        "opCode": "0x4E",
+        "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x51",
+        "writer": "BridleMobCatchFail"
+      },
+      {
+        "opCode": "0x55",
+        "writer": "MonsterBookSetCard"
+      },
+      {
+        "opCode": "0x56",
+        "writer": "MonsterBookSetCover"
+      },
+      {
+        "opCode": "0x7D",
+        "writer": "ScriptProgress"
       },
       {
         "opCode": "0x85",
@@ -688,6 +1034,22 @@
       {
         "opCode": "0x87",
         "writer": "CashShopOpen"
+      },
+      {
+        "opCode": "0x92",
+        "writer": "FieldEffect"
+      },
+      {
+        "opCode": "0x96",
+        "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0x9B",
+        "writer": "Clock"
+      },
+      {
+        "opCode": "0x9D",
+        "writer": "FieldTransportState"
       },
       {
         "opCode": "0xAB",
@@ -702,10 +1064,35 @@
         "writer": "CharacterChatGeneral"
       },
       {
+        "opCode": "0xAF",
+        "writer": "ChalkboardUse"
+      },
+      {
+        "opCode": "0xB2",
+        "writer": "CharacterItemUpgrade"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "PetMovement"
+      },
+      {
+        "opCode": "0xB8",
+        "writer": "PetChat"
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "PetExcludeResponse"
+      },
+      {
+        "opCode": "0xBB",
+        "writer": "PetCommandResponse"
+      },
+      {
         "opCode": "0xC6",
         "writer": "CharacterMovement",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -809,8 +1196,80 @@
         }
       },
       {
+        "opCode": "0xC7",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xC8",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xC9",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "CharacterExpression"
+      },
+      {
+        "opCode": "0xD1",
+        "writer": "CharacterShowChair"
+      },
+      {
         "opCode": "0xD2",
         "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xD3",
+        "writer": "CharacterEffectForeign"
+      },
+      {
+        "opCode": "0xD4",
+        "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0xD6",
+        "writer": "PartyMemberHP"
+      },
+      {
+        "opCode": "0xDA",
+        "writer": "CharacterSitResult"
+      },
+      {
+        "opCode": "0xDB",
+        "writer": "CharacterEffect"
+      },
+      {
+        "opCode": "0xE3",
+        "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0xE9",
+        "writer": "UiOpen"
+      },
+      {
+        "opCode": "0xEC",
+        "writer": "UiDisable"
+      },
+      {
+        "opCode": "0xEE",
+        "writer": "GuideTalk"
+      },
+      {
+        "opCode": "0xFA",
+        "writer": "CharacterSkillCooldown"
       },
       {
         "opCode": "0xFC",
@@ -828,7 +1287,8 @@
         "opCode": "0xFF",
         "writer": "MoveMonster",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -936,6 +1396,62 @@
         "writer": "MoveMonsterAck"
       },
       {
+        "opCode": "0x102",
+        "writer": "MonsterStatSet"
+      },
+      {
+        "opCode": "0x103",
+        "writer": "MonsterStatReset"
+      },
+      {
+        "opCode": "0x104",
+        "writer": "ResetMonsterAnimation"
+      },
+      {
+        "opCode": "0x105",
+        "writer": "MobAffected"
+      },
+      {
+        "opCode": "0x106",
+        "writer": "MonsterDamage"
+      },
+      {
+        "opCode": "0x107",
+        "writer": "MonsterSpecialEffectBySkill"
+      },
+      {
+        "opCode": "0x109",
+        "writer": "MobCrcKeyChanged"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "MonsterHealth"
+      },
+      {
+        "opCode": "0x10B",
+        "writer": "CatchMonster"
+      },
+      {
+        "opCode": "0x10C",
+        "writer": "CatchMonsterWithItem"
+      },
+      {
+        "opCode": "0x10D",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x10E",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0x10F",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x110",
+        "writer": "MobAttackedByMob"
+      },
+      {
         "opCode": "0x112",
         "writer": "SpawnNPC"
       },
@@ -947,7 +1463,8 @@
         "opCode": "0x115",
         "writer": "NPCAction",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -1051,6 +1568,74 @@
         }
       },
       {
+        "opCode": "0x11D",
+        "writer": "DropSpawn"
+      },
+      {
+        "opCode": "0x11E",
+        "writer": "DropDestroy"
+      },
+      {
+        "opCode": "0x126",
+        "writer": "ReactorHit"
+      },
+      {
+        "opCode": "0x128",
+        "writer": "ReactorSpawn"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "ReactorDestroy"
+      },
+      {
+        "opCode": "0x132",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
+        "opCode": "0x133",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x134",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x135",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x136",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
+        "opCode": "0x137",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x138",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
+        "opCode": "0x139",
+        "writer": "MonsterCarnivalResult"
+      },
+      {
+        "opCode": "0x142",
+        "writer": "NPCShop"
+      },
+      {
+        "opCode": "0x143",
+        "writer": "NPCShopOperation"
+      },
+      {
+        "opCode": "0x146",
+        "writer": "StorageOperation"
+      },
+      {
+        "opCode": "0x14A",
+        "writer": "MessengerOperation"
+      },
+      {
         "opCode": "0x155",
         "writer": "CashShopCashQueryResult"
       },
@@ -1059,154 +1644,422 @@
         "writer": "CashShopOperation"
       },
       {
-        "opCode": "0x20",
-        "writer": "CharacterBuffGive"
+        "opCode": "0x163",
+        "writer": "CharacterKeyMap"
       },
       {
-        "opCode": "0x24",
-        "writer": "CharacterSkillChange"
+        "opCode": "0x164",
+        "writer": "CharacterKeyMapAutoHp"
       },
       {
-        "opCode": "0xC7",
-        "writer": "CharacterAttackMelee"
+        "opCode": "0x165",
+        "writer": "CharacterKeyMapAutoMp"
       },
       {
-        "opCode": "0xC8",
-        "writer": "CharacterAttackRanged"
+        "opCode": "0xBC",
+        "writer": "SummonSpawn"
       },
       {
-        "opCode": "0xC9",
-        "writer": "CharacterAttackMagic"
+        "opCode": "0xBD",
+        "writer": "SummonRemove"
       },
       {
-        "opCode": "0xCA",
-        "writer": "CharacterAttackEnergy"
+        "opCode": "0xBE",
+        "writer": "SummonMove"
       },
       {
-        "opCode": "0xCD",
-        "writer": "CharacterDamage"
+        "opCode": "0xBF",
+        "writer": "SummonAttack"
       },
       {
-        "opCode": "0xD4",
-        "writer": "CharacterBuffGiveForeign"
+        "opCode": "0xC1",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0xC0",
+        "writer": "SummonSkill"
       }
     ]
   },
   "characters": {
-    "templates": [{
-      "jobIndex": 0,
-      "subJobIndex": 0,
-      "mapId": 130010220,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161047]
-    }, {
-      "jobIndex": 0,
-      "subJobIndex": 0,
-      "mapId": 130010220,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161047]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }, {
-      "jobIndex": 2,
-      "subJobIndex": 0,
-      "mapId": 140090000,
-      "gender": 0,
-      "faces": [20100, 20401, 20402],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042167],
-      "bottoms": [1062115],
-      "shoes": [1072383],
-      "weapons": [1442079],
-      "items": [4161048]
-    }, {
-      "jobIndex": 2,
-      "subJobIndex": 0,
-      "mapId": 140090000,
-      "gender": 1,
-      "faces": [21700, 21201, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042167],
-      "bottoms": [1062115],
-      "shoes": [1072383],
-      "weapons": [1442079],
-      "items": [4161048]
-    }, {
-      "jobIndex": 3,
-      "subJobIndex": 0,
-      "mapId": 100030100,
-      "gender": 0,
-      "faces": [20100, 20401, 20402],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042180],
-      "bottoms": [1060138],
-      "shoes": [1072418],
-      "weapons": [1302132]
-    }, {
-      "jobIndex": 3,
-      "subJobIndex": 0,
-      "mapId": 100030100,
-      "gender": 1,
-      "faces": [21700, 21201, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1042180],
-      "bottoms": [1061160],
-      "shoes": [1072418],
-      "weapons": [1302132]
-    }],
+    "templates": [
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
+        "jobIndex": 0,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1060138
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      },
+      {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1061160
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      }
+    ],
     "presets": []
   },
-  "worlds": [{
+  "worlds": [
+    {
       "name": "Scania",
       "flag": "Nothing",
       "serverMessage": "Welcome to Scania!",
@@ -1441,9 +2294,18 @@
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [
-        {"templateId": 5211060, "hours": 2},
-        {"templateId": 5211048, "hours": 4},
-        {"templateId": 5360042, "hours": 4}
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
       ]
     }
   }

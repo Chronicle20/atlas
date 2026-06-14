@@ -93,6 +93,17 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			if e.Cooldown() > 0 {
 				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)
 			}
+			// Mount toggle (tamed + skill-only). Runs BEFORE the generic buff
+			// apply and short-circuits it: mounts apply MONSTER_RIDING with a
+			// MaxInt32 duration and a vehicle-id amount, or cancel on re-cast.
+			skillId := skill2.Id(info.SkillId())
+			if skill2.IsTamedMountSkill(skillId) || isSkillOnlyMount(skillId, info.SkillLevel()) {
+				if err := HandleMount(l, f, characterId, info, e, newMountDeps(l, ctx)); err != nil {
+					l.WithError(err).Errorf("Mount toggle failed for character [%d] skill [%d].", characterId, info.SkillId())
+				}
+				return nil
+			}
+
 			if e.Duration() > 0 && len(e.StatUps()) > 0 {
 				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
 				_ = applyBuffFunc(characterId)

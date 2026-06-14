@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterViewAllCharacters
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult#CharacterViewAllCharacters
+    address: "0x6328eb"
+    decompile_sha256: 2924fc4db94b1f9bd61955cc035291672860a8b6e47f357672a2fb69499c4c5d

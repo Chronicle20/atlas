@@ -1,0 +1,8 @@
+packet: account/serverbound/RegisterPin
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckPinCodeResult#RegisterPin
+    address: "0x611975"
+    decompile_sha256: 715eb8864b5915ba710f74be4779cb973cd28e5f7e547adb558c20f09b6936ae

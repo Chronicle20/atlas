@@ -1,0 +1,10 @@
+packet: character/serverbound/ExpressionRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendEmotionChange
+    address: "0xb0b8be"
+    decompile_sha256: ca70e4c77eb65b30ef9fb5e00ffd70f6cb3773d3cbe21e22c067bd77a302865b
+verifies:
+    - libs/atlas-packet/character/serverbound/expression_test.go#TestExpressionRequestRoundTrip

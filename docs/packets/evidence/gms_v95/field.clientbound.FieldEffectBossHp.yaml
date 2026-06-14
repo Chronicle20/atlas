@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectBossHp
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#BossHp
+    address: "0x53b9c1"
+    decompile_sha256: f778183b01f2a23a713fdb6bea107685f47ec00e251a5e32b3c5792260bca2c1

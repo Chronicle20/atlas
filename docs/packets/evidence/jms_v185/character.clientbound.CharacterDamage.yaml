@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterDamage
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnHit
+    address: "0xa56e2e"
+    decompile_sha256: dbdee55d528671bc19097ae482c364917f7116470a8d3ecba14662855d2efb93

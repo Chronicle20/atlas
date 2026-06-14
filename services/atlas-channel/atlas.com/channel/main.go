@@ -32,7 +32,7 @@ import (
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
-	monsterDomain "atlas-channel/monster"
+	mountConsumer "atlas-channel/kafka/consumer/mount"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
@@ -47,9 +47,11 @@ import (
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
+	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/listener"
 	"atlas-channel/logger"
+	monsterDomain "atlas-channel/monster"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -93,11 +95,14 @@ import (
 	invsb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/serverbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	messengersb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/serverbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	carnivalcb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/clientbound"
+	carnivalsb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/serverbound"
 	monstercb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	monstersb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/serverbound"
+	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
@@ -116,6 +121,8 @@ import (
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
+	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
+	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -174,6 +181,7 @@ func main() {
 	member.InitConsumers(l)(cmf)(consumerGroupId)
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	summonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
@@ -202,6 +210,7 @@ func main() {
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	// Boot the configuration projection: subscribe to the two config-status
 	// topics, gate on caught-up so we don't drive the listener registry
@@ -436,6 +445,9 @@ func buildListener(
 		if err := register(monster.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -529,6 +541,9 @@ func buildListener(
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
@@ -599,6 +614,35 @@ func produceWriters() []string {
 		monstercb.MonsterControlWriter,
 		monstercb.MonsterMovementWriter,
 		monstercb.MonsterMovementAckWriter,
+		summoncb.SummonSpawnWriter,
+		summoncb.SummonRemoveWriter,
+		summoncb.SummonMoveWriter,
+		summoncb.SummonAttackWriter,
+		summoncb.SummonDamageWriter,
+		summoncb.SummonSkillWriter,
+		monstercb.MobCrcKeyChangedWriter,
+		monstercb.MobAffectedWriter,
+		monstercb.MonsterSpecialEffectBySkillWriter,
+		monstercb.ResetMonsterAnimationWriter,
+		monstercb.CatchMonsterWriter,
+		monstercb.CatchMonsterWithItemWriter,
+		monstercb.IncMobChargeCountWriter,
+		monstercb.MobSkillDelayWriter,
+		monstercb.MobSpeakingWriter,
+		monstercb.MobAttackedByMobWriter,
+		monstercb.MobNextAttackWriter,
+		monstercb.MobEscortReturnBeforeWriter,
+		monstercb.MobEscortStopWriter,
+		monstercb.MobEscortStopSayWriter,
+		monstercb.MobEscortFullPathWriter,
+		carnivalcb.MonsterCarnivalStartWriter,
+		carnivalcb.MonsterCarnivalObtainedCPWriter,
+		carnivalcb.MonsterCarnivalPartyCPWriter,
+		carnivalcb.MonsterCarnivalSummonWriter,
+		carnivalcb.MonsterCarnivalMessageWriter,
+		carnivalcb.MonsterCarnivalDiedWriter,
+		carnivalcb.MonsterCarnivalLeaveWriter,
+		carnivalcb.MonsterCarnivalResultWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -682,6 +726,8 @@ func produceWriters() []string {
 		interaction2.MiniRoomWriter,
 		mbcb.MonsterBookSetCardWriter,
 		mbcb.MonsterBookSetCoverWriter,
+		charcb.SetTamingMobInfoWriter,
+		charcb.BridleMobCatchFailWriter,
 	}
 }
 
@@ -696,6 +742,21 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cashsb.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
+	handlerMap[summonsb.SummonAttackHandle] = handler.SummonAttackHandleFunc
+	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
+	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
+	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
+	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc
+	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc
+	handlerMap[monstersb.MobSkillDelayEndHandle] = handler.MobSkillDelayEndHandleFunc
+	handlerMap[monstersb.MobTimeBombEndHandle] = handler.MobTimeBombEndHandleFunc
+	handlerMap[monstersb.MobEscortCollisionHandle] = handler.MobEscortCollisionHandleFunc
+	handlerMap[monstersb.MobRequestEscortInfoHandle] = handler.MobRequestEscortInfoHandleFunc
+	handlerMap[monstersb.MobEscortStopEndRequestHandle] = handler.MobEscortStopEndRequestHandleFunc
+	handlerMap[carnivalsb.MonsterCarnivalHandle] = handler.MonsterCarnivalHandleFunc
+	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
@@ -736,6 +797,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[petsb.PetChatHandle] = handler.PetChatHandleFunc
 	handlerMap[petsb.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
 	handlerMap[petsb.PetFoodHandle] = handler.PetFoodHandleFunc
+	handlerMap[mountsb.MountFoodHandle] = handler.MountFoodHandleFunc
 	handlerMap[invsb.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
 	handlerMap[charsb.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
 	handlerMap[invsb.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc

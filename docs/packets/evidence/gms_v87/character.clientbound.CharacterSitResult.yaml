@@ -1,0 +1,9 @@
+packet: character/clientbound/CharacterSitResult
+direction: clientbound
+version: gms_v87
+category: LOOP-EXCLUSIVE-BRANCH
+ida:
+    function: CUserLocal::OnSitResult
+    address: "0x9dbd69"
+    decompile_sha256: 9cac4a0f3b1152dea500df8d1ad904ab93e8b5bb1ed0563b03698b376a9187f5
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (CharacterSitResult row): divergent-length exclusive if/else (byte+short vs byte); client reads Decode1 + conditional Decode2 - matches."

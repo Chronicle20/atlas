@@ -11,7 +11,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -40,7 +39,6 @@ type Model struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	reborns            uint32
@@ -215,10 +213,6 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) MapId() _map.Id {
-	return m.mapId
-}
-
 func (m Model) SpawnPoint() byte {
 	return 0
 }
@@ -346,7 +340,6 @@ func Clone(m Model) *ModelBuilder {
 		experience:         m.experience,
 		fame:               m.fame,
 		gachaponExperience: m.gachaponExperience,
-		mapId:              m.mapId,
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		reborns:            m.reborns,
@@ -387,7 +380,6 @@ type ModelBuilder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	reborns            uint32
@@ -433,7 +425,6 @@ func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *ModelBuilder) SetMapId(v _map.Id) *ModelBuilder             { b.mapId = v; return b }
 func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
@@ -470,7 +461,6 @@ func (b *ModelBuilder) Build() Model {
 		experience:         b.experience,
 		fame:               b.fame,
 		gachaponExperience: b.gachaponExperience,
-		mapId:              b.mapId,
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
 		reborns:            b.reborns,

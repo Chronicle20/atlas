@@ -71,7 +71,7 @@ func (p Publisher) Publish(ctx context.Context, region string, major, minor int)
 	}
 	for _, table := range DumpTables {
 		p.L.Debugf("publish: dump-table %s", table)
-		if err := dumpTable(ctx, p.DB, table, tw); err != nil {
+		if err := dumpTable(ctx, p.DB, table, region, major, minor, tw); err != nil {
 			return "", fmt.Errorf("publish: dump-table %s: %w", table, err)
 		}
 	}
@@ -100,7 +100,7 @@ func (p Publisher) Publish(ctx context.Context, region string, major, minor int)
 	return sum, nil
 }
 
-func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) error {
+func dumpTable(ctx context.Context, db *gorm.DB, table, region string, major, minor int, tw *tar.Writer) error {
 	raw, err := db.DB()
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) e
 	}
 	defer conn.Close()
 	return conn.Raw(func(driverConn any) error {
-		return runCopyOut(ctx, driverConn, table, tw)
+		return runCopyOut(ctx, driverConn, table, region, major, minor, tw)
 	})
 }
 
@@ -121,15 +121,13 @@ func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) e
 // The full canonical subset of one table is buffered in memory (bounded by the
 // PRD-mandated ~150 MB cap on canonical data) so the tar entry can be written
 // with a known Size header.
-func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Writer) error {
+func runCopyOut(ctx context.Context, driverConn any, table, region string, major, minor int, tw *tar.Writer) error {
 	pgxConn, ok := driverConn.(*stdlib.Conn)
 	if !ok {
 		return fmt.Errorf("expected *stdlib.Conn, got %T", driverConn)
 	}
 	var buf bytes.Buffer
-	sql := fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY id) TO STDOUT (FORMAT binary)`,
-		table, canonical.TenantUUID)
-	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, sql); err != nil {
+	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, copyOutSQL(table, region, major, minor)); err != nil {
 		return err
 	}
 	if err := tw.WriteHeader(&tar.Header{
@@ -141,6 +139,40 @@ func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Write
 	}
 	_, err := tw.Write(buf.Bytes())
 	return err
+}
+
+// copyOutSQL builds the binary COPY statement that dumps the version-scoped
+// canonical-tenant subset of a table, ordered deterministically by a column
+// the table actually has. The documents table carries a surrogate `id`; the
+// *_search_index tables are keyed by (tenant_id, <entity>_id) with no `id`,
+// so ordering them by `id` fails with SQLSTATE 42703 — the publish-time
+// empty-500 seen on atlas-main.
+func copyOutSQL(table, region string, major, minor int) string {
+	tenantId := canonical.TenantId(region, uint16(major), uint16(minor)).String()
+	return fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY %s) TO STDOUT (FORMAT binary)`,
+		table, tenantId, orderColumn(table))
+}
+
+// orderColumn returns the column used to order a table's COPY dump. Mirrors the
+// DumpTables set; the default orders by tenant_id (present on every dumped
+// table) so an unmapped future table degrades to a stable-but-coarse order
+// rather than crashing the dump.
+func orderColumn(table string) string {
+	switch table {
+	case "documents":
+		return "id"
+	case "monster_search_index":
+		return "monster_id"
+	case "npc_search_index":
+		return "npc_id"
+	case "reactor_search_index":
+		return "reactor_id"
+	case "map_search_index":
+		return "map_id"
+	case "item_string_search_index":
+		return "item_id"
+	}
+	return "tenant_id"
 }
 
 func strReader(s string) io.Reader { return bytes.NewReader([]byte(s)) }

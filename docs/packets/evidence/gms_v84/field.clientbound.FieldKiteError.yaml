@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldKiteError
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMessageBoxPool::OnCreateFailed
+    address: "0x670a95"
+    decompile_sha256: 3ecf2642eb1bd5a7bd568e81aafac7ecbc498fb887c3fda02cafab8335a278a6

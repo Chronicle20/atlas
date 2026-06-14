@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationSimple
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#Simple
+    address: "0x7cb04e"
+    decompile_sha256: 75a904be5fbeac68ce7dc454f7ea80d6c24cb55af2ce7e2c34ff1819f808d2a7

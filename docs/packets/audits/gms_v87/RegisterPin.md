@@ -1,7 +1,7 @@
 # RegisterPin (← `CLogin::OnCheckPinCodeResult#RegisterPin`)
 
 - **IDA:** 0x6342b0
-- **Atlas file:** `../../libs/atlas-packet/account/serverbound/register_pin.go`
+- **Atlas file:** `libs/atlas-packet/account/serverbound/register_pin.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 1
 - **Verdict:** ✅

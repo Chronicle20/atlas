@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashCashShopInventory
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CashShopInventory
+    address: "0x48bcff"
+    decompile_sha256: d2b6079630df0dbafd3f13ec38599d967fa2ff7fb2d8ed2b6cbbabac7f045e88
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_inventory_test.go#TestCashShopInventoryTrailingShortsGate

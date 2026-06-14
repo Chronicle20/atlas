@@ -1,0 +1,158 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21716,
+      "questName": "Aran Green Mushroom Investigation",
+      "startStateMachine": {
+        "startState": "askWhatSaid",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerExplainsObservation",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What did #p1032112# say?"
+            },
+            "id": "askWhatSaid",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "askWhatSaid",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "suspiciousKid",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "#b(You tell her what #p1032112# observed.)#k"
+            },
+            "id": "playerExplainsObservation",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuestAction",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "A kid with a puppet? That seems very suspicious. I am sure that kid is the reason the Green Mushrooms have suddenly turned violent."
+            },
+            "id": "suspiciousKid",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What? I don't think there are any suspects besides that kid. Please think again."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "cleanupMess"
+                }
+              ]
+            },
+            "id": "startQuestAction",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "reportToTru",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "How dare this kid wreak havoc in the South Forest. Who knows how long it will take to restore the forest... I'll have to devote most of my time cleaning up the mess."
+            },
+            "id": "cleanupMess",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "cleanupMess",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendPrev",
+              "speaker": "CHARACTER",
+              "text": "#b(You were able to find out what caused the changes in the Green Mushrooms. You should report #p1002104# and deliver the information you've collected.)#k"
+            },
+            "id": "reportToTru",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "21716",
+    "type": "quest-conversation"
+  }
+}

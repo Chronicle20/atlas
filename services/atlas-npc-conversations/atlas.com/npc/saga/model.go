@@ -24,6 +24,7 @@ type (
 	DestroyAssetPayload          = sharedsaga.DestroyAssetPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	ChangeJobPayload             = sharedsaga.ChangeJobPayload
+	CancelAllBuffsPayload        = sharedsaga.CancelAllBuffsPayload
 	CreateSkillPayload           = sharedsaga.CreateSkillPayload
 	UpdateSkillPayload           = sharedsaga.UpdateSkillPayload
 	IncreaseBuddyCapacityPayload = sharedsaga.IncreaseBuddyCapacityPayload
@@ -102,6 +103,7 @@ const (
 	DestroyAsset           = sharedsaga.DestroyAsset
 	DestroyAssetFromSlot   = sharedsaga.DestroyAssetFromSlot
 	ChangeJob              = sharedsaga.ChangeJob
+	CancelAllBuffs         = sharedsaga.CancelAllBuffs
 	CreateSkill            = sharedsaga.CreateSkill
 	UpdateSkill            = sharedsaga.UpdateSkill
 	ValidateCharacterState = sharedsaga.ValidateCharacterState

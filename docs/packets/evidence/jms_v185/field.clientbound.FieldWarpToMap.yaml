@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWarpToMap
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetField#WarpToMap
+    address: "0x7eea69"
+    decompile_sha256: 9bacf2cb8482b7f7f56d41162e3a03c4e988c329f51f59e2f31129d600ee6d7d
+verifies:
+    - libs/atlas-packet/field/clientbound/warp_to_map_test.go#TestWarpToMapWireLength

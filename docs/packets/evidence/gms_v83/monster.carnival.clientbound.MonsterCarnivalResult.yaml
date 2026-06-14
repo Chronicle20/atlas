@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalResult
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnShowGameResult
+    address: "0x565add"
+    decompile_sha256: 33ff5b2e5a16afde34035a5069240a9ad76a538e8e7bc82b605973d467bf14a0
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_result_test.go#TestMonsterCarnivalResult

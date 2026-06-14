@@ -1,7 +1,7 @@
 # Pong (← `CClientSocket::OnAliveReq#PongSend`)
 
 - **IDA:** 0x4966c0
-- **Atlas file:** `../../libs/atlas-packet/socket/serverbound/pong.go`
+- **Atlas file:** `libs/atlas-packet/socket/serverbound/pong.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

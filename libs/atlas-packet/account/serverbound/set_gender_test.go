@@ -6,6 +6,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=account/serverbound/SetGender version=gms_v87 ida=0x63409f
+// packet-audit:verify packet=account/serverbound/SetGender version=gms_v95 ida=0x5d4650
 func TestSetGenderRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name+"/set_true", func(t *testing.T) {

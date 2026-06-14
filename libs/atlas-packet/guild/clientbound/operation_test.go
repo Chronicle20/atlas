@@ -6,6 +6,74 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=jms_v185 ida=0xb22518
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v95 ida=0xa0dfe2
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v95 ida=0xa0dfcb
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v95 ida=0xa0e394
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v95 ida=0xa0d99e
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v95 ida=0xa0d7d2
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v95 ida=0xa0d664
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v95 ida=0xa0dd06
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v95 ida=0xa0dbc0
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v95 ida=0xa0dd06
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v95 ida=0xa0e563
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v95 ida=0xa0e0b5
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v95 ida=0xa0e44b
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v95 ida=0xa0e239
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v95 ida=0x0
+// packet-audit:verify packet=guild/clientbound/GuildMemberJoined version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildNoticeChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildTitleChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildCapacityChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildDisband version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildEmblemChange version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberStatusUpdate version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberTitleUpdate version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessage version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildErrorMessageWithTarget version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberExpel version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildMemberLeft version=gms_v84 ida=0xa82e2b
+// packet-audit:verify packet=guild/clientbound/GuildRequestAgreement version=gms_v84 ida=0xa82e2b
 func TestRequestAgreementRoundTrip(t *testing.T) {
 	input := NewRequestAgreement(0x01, 100, "LeaderName", "GuildName")
 	for _, v := range pt.Variants {
@@ -127,6 +195,8 @@ func TestMemberJoinedRoundTrip(t *testing.T) {
 // originatorName="InviterName" → 2+11=13 bytes.
 //   v83..86: 1+4+13 = 18 bytes
 //   v87+:    1+4+13+4+4 = 26 bytes
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildInvite version=gms_v87 ida=0xacf7d3
 func TestInviteByteOutput(t *testing.T) {
 	cases := []struct {
 		variant   pt.TenantVariant

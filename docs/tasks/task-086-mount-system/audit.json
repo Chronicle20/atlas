@@ -1,0 +1,75 @@
+{
+  "service": "atlas-mounts",
+  "path": "services/atlas-mounts/atlas.com/mounts",
+  "date": "2026-06-13",
+  "auditPass": "backend-guidelines re-audit (post-mount-fix)",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "modulesVerified": [
+    { "module": "services/atlas-mounts/atlas.com/mounts", "build": "pass", "vet": "pass", "testRace": "pass" },
+    { "module": "libs/atlas-packet", "build": "pass", "testRace": "pass" },
+    { "module": "libs/atlas-constants", "build": "pass", "testRace": "pass" },
+    { "module": "services/atlas-channel/atlas.com/channel", "build": "pass", "vet": "pass", "testRace": "pass" },
+    { "module": "services/atlas-consumables/.../kafka/consumer/food", "testRace": "pass (0.006s)" }
+  ],
+  "domains": [
+    {
+      "name": "mount (atlas-mounts)",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "mount/builder.go:22 NewModelBuilder, fluent setters, Build() @:61 (no invariant validation; nominal)" },
+        { "id": "DOM-02", "name": "ToEntity()/Make symmetry", "status": "pass", "evidence": "Make mount/entity.go:28; create builds Entity directly mount/administrator.go:13 (pets pattern)" },
+        { "id": "DOM-03", "name": "Make(Entity) returns (Model,error)", "status": "pass", "evidence": "mount/entity.go:28" },
+        { "id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "mount/rest.go:35" },
+        { "id": "DOM-05", "name": "TransformSlice / no inline loops", "status": "pass", "evidence": "N/A single-resource GET; model.Map(Transform) resource.go:35" },
+        { "id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "mount/processor.go:39 logrus.FieldLogger" },
+        { "id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "mount/resource.go:28" },
+        { "id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "N/A read-only; only GET resource.go:20" },
+        { "id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "resource.go:36-40" },
+        { "id": "DOM-10", "name": "Test DB tenant callbacks", "status": "pass", "evidence": "mount/processor_test.go:44 database.RegisterTenantCallbacks" },
+        { "id": "DOM-11", "name": "Providers lazy/context-scoped", "status": "pass", "evidence": "processor.go:71 db.WithContext(ctx); administrator.go:35,47 string-based WHERE, no tenant predicate" },
+        { "id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "grep os.Getenv resource.go/rest.HandlerDependency -> 0" },
+        { "id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "resource.go:29 calls only mount processor" },
+        { "id": "DOM-14", "name": "Handlers don't call providers", "status": "pass", "evidence": "resource.go:29 p.GetByCharacterId only" },
+        { "id": "DOM-15", "name": "No direct entity writes in handlers", "status": "pass", "evidence": "grep db.Create/Save/Delete resource.go -> 0" },
+        { "id": "DOM-16", "name": "administrator.go for writes", "status": "pass", "evidence": "mount/administrator.go create:11 / update:44" },
+        { "id": "DOM-17", "name": "Domain error -> HTTP status mapping", "status": "warn", "evidence": "resource.go:32,38 all errors -> 500; only infra errors reachable (processor default-creates, no 404 path)" },
+        { "id": "DOM-18", "name": "JSON:API interface on REST model", "status": "pass", "evidence": "rest.go:19-30 GetName/GetID/SetID" },
+        { "id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "N/A no request models; RestModel flat with Id json:\"-\"" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "mount/feed_test.go, mount/producer_test.go []struct + t.Run" },
+        { "id": "DOM-21", "name": "Reuse atlas-constants types", "status": "pass", "evidence": "world.Id; skill.Id/IsTamedMountSkill (buff/consumer.go:92); skill.SkillOnlyMountVehicleId; characterconst.TemporaryStatTypeMonsterRiding (buff/consumer.go:70); new temporary-stat + skill consts live IN libs/atlas-constants, not service-local. No reinvention." },
+        { "id": "DOM-22", "name": "Dockerfile lib wiring", "status": "pass", "evidence": "shared root Dockerfile (ARG SERVICE); services.json:289, docker-bake.hcl:71, go.work:59; all 9 direct-require libs present in root Dockerfile COPY block (lines 32-50)" },
+        { "id": "DOM-23", "name": "Kafka topic in env-configmap", "status": "pass", "evidence": "FIXED: env-configmap.yaml:92 EVENT_TOPIC_CHARACTER_STATUS, :125 EVENT_TOPIC_MOUNT_STATUS, :142 EVENT_TOPIC_TAMING_MOB_FOOD (KEY:\"KEY\"); atlas-mounts.yaml:21-22 envFrom configMapRef; no literal overrides" },
+        { "id": "DOM-24", "name": "Kafka producer stubbed via producertest", "status": "pass", "evidence": "FIXED: atlas-consumables food/consumer_test.go:27 TestMain producertest.InstallNoop(); no t.Cleanup(ResetInstance) (:82-91 documents NOT resetting). atlas-mounts processor tests buffer-only; consumer tests override emit seams. Food test runs 0.006s." }
+      ]
+    },
+    {
+      "name": "mount client (atlas-channel)",
+      "type": "external-http-client",
+      "checks": [
+        { "id": "EXT-01", "name": "JSON:API relationship interfaces", "status": "pass", "evidence": "upstream mounts resource flat, no relationships block (atlas-mounts mount/rest.go); channel RestModel missing SetTo*ReferenceID(s) is harmless here" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no _test.go in services/atlas-channel/atlas.com/channel/mount/; GetByCharacterId unmarshal path (processor.go:26) untested" },
+        { "id": "EXT-03", "name": "Errors distinguish 404 from other failures", "status": "fail", "evidence": "socket/handler/character_info_request.go:66 treats any mErr as 'no mount'; no requests.ErrNotFound use (grep -> 0); error not even logged. atlas-mounts default-creates so all reachable errors are infra failures masked as no-mount." },
+        { "id": "EXT-04", "name": "URL via RootUrl, not hardcoded", "status": "pass", "evidence": "mount/requests.go:14 requests.RootUrl(\"MOUNTS\")" }
+      ]
+    }
+  ],
+  "blocking": [],
+  "important": [
+    "EXT-03: services/atlas-channel/atlas.com/channel/socket/handler/character_info_request.go:66 swallows every atlas-mounts client error as 'no mount block' (no ErrNotFound distinction, no error log). Since atlas-mounts default-creates on first read, all reachable errors are transport/5xx failures being masked. Log/surface the non-404 error distinctly."
+  ],
+  "shouldFix": [
+    "EXT-02: add an httptest-backed test for the atlas-channel mount client exercising the JSON:API unmarshal path (services/atlas-channel/atlas.com/channel/mount/ has no _test.go).",
+    "DOM-17: mount/resource.go:32,38 map all errors to 500 (acceptable given no 404 path, but undifferentiated)."
+  ],
+  "nonBlocking": [
+    "M-1: dead code in mount/administrator.go (pets carryover, if any unreferenced helpers remain) — confirm and delete.",
+    "M-2: unused mount/rest.go Extract and kafka/message/message.go EmitWithResult — confirm and delete.",
+    "M-3: builder.go:61 Build() performs no invariant validation.",
+    "INFO: tools/redis-key-guard.sh exits 1 overall but the failures are PRE-EXISTING in atlas-account/atlas-effective-stats/etc., NOT atlas-mounts (which routes all redis through libs/atlas-redis TenantRegistry/Set, registry.go). Out of scope for task-086.",
+    "INFO: feed.go CAP=31 vs 29-entry mountExp table; bounded by MaxInt32 sentinel (feed.go:26-31), functionally safe."
+  ]
+}

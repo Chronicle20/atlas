@@ -1,0 +1,8 @@
+packet: character/serverbound/ItemCancel
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemCancelRequest
+    address: "0xa53a91"
+    decompile_sha256: 4224ac187d149caf05a34b97d6f6fa43e4bcf65ed4dc10a4c4ce38cc0c077fb4

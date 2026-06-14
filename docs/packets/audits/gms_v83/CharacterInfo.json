@@ -4,7 +4,7 @@
   "Address": "0xa2370b",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/info.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/info.go",
   "Rows": [
     {
       "Index": 0,
@@ -225,6 +225,15 @@
     {
       "Index": 24,
       "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",

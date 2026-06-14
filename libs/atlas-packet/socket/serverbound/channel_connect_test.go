@@ -8,6 +8,10 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=socket/serverbound/ChannelConnect version=gms_v83 ida=0x494ed1
+// packet-audit:verify packet=socket/serverbound/ChannelConnect version=gms_v87 ida=0x4a6e5a
+// packet-audit:verify packet=socket/serverbound/ChannelConnect version=gms_v95 ida=0x4aef10
+// packet-audit:verify packet=socket/serverbound/ChannelConnect version=jms_v185 ida=0x4b0066
 func TestChannelConnectRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

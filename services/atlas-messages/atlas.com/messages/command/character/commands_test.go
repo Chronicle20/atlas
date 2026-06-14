@@ -3,17 +3,20 @@ package character
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
+	"atlas-messages/saga"
 	"regexp"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) character.Model {
+func createTestCharacter(id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
@@ -22,7 +25,6 @@ func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) chara
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
-		SetMapId(mapId).
 		SetAccountId(100).
 		Build()
 }
@@ -238,6 +240,57 @@ func TestChangeJobCommandProducer_RegexPatterns(t *testing.T) {
 	}
 }
 
+// TestBuildChangeJobSaga_AppendsCancelAllBuffs verifies the GM job-change saga
+// emits a cancel_all_buffs step alongside the change_job step, so a job change
+// clears all active buffs (and dismounts any MONSTER_RIDING mount, FR-4.2).
+func TestBuildChangeJobSaga_AppendsCancelAllBuffs(t *testing.T) {
+	characterId := uint32(12345)
+	worldId := world.Id(1)
+	channelId := channel.Id(2)
+	jobId := job.Id(200)
+
+	s, err := buildChangeJobSaga(characterId, worldId, channelId, jobId)
+	if err != nil {
+		t.Fatalf("buildChangeJobSaga returned error: %v", err)
+	}
+
+	if len(s.Steps) != 2 {
+		t.Fatalf("expected 2 steps (change_job + cancel_all_buffs), got %d", len(s.Steps))
+	}
+
+	if s.Steps[0].Action != saga.ChangeJob {
+		t.Errorf("step 0 action = %v, want ChangeJob", s.Steps[0].Action)
+	}
+	if s.Steps[1].Action != saga.CancelAllBuffs {
+		t.Errorf("step 1 action = %v, want CancelAllBuffs", s.Steps[1].Action)
+	}
+	if s.Steps[1].StepId != "cancel_all_buffs" {
+		t.Errorf("step 1 stepId = %q, want %q", s.Steps[1].StepId, "cancel_all_buffs")
+	}
+
+	cjp, ok := s.Steps[0].Payload.(saga.ChangeJobPayload)
+	if !ok {
+		t.Fatalf("change_job payload type = %T, want ChangeJobPayload", s.Steps[0].Payload)
+	}
+	if cjp.JobId != jobId {
+		t.Errorf("change_job JobId = %d, want %d", cjp.JobId, jobId)
+	}
+
+	cbp, ok := s.Steps[1].Payload.(saga.CancelAllBuffsPayload)
+	if !ok {
+		t.Fatalf("cancel_all_buffs payload type = %T, want CancelAllBuffsPayload", s.Steps[1].Payload)
+	}
+	if cbp.CharacterId != characterId {
+		t.Errorf("cancel_all_buffs CharacterId = %d, want %d", cbp.CharacterId, characterId)
+	}
+	if cbp.WorldId != worldId {
+		t.Errorf("cancel_all_buffs WorldId = %d, want %d", cbp.WorldId, worldId)
+	}
+	if cbp.ChannelId != channelId {
+		t.Errorf("cancel_all_buffs ChannelId = %d, want %d", cbp.ChannelId, channelId)
+	}
+}
+
 // TestAwardMesoCommandProducer_RegexPatterns tests the meso command regex
 func TestAwardMesoCommandProducer_RegexPatterns(t *testing.T) {
 	re := regexp.MustCompile(`@award\s+(\w+)\s+meso\s+(-?\d+)`)
@@ -335,7 +388,7 @@ func TestAwardExperienceCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
 
 			producer := AwardExperienceCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -375,7 +428,7 @@ func TestAwardLevelCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
 
 			producer := AwardLevelCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -415,7 +468,7 @@ func TestChangeJobCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
 
 			producer := ChangeJobCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -455,7 +508,7 @@ func TestAwardMesoCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
 
 			producer := AwardMesoCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -472,7 +525,7 @@ func TestAwardMesoCommandProducer_GmCheck(t *testing.T) {
 func TestCommandProducers_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar := createTestCharacter(12345, "TestGM", true)
 
 	testCases := []struct {
 		name     string
@@ -526,7 +579,7 @@ func TestCommandProducers_NoMatchReturnsNil(t *testing.T) {
 func TestAwardExperienceCommandProducer_InvalidAmount(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar := createTestCharacter(12345, "TestGM", true)
 
 	// Note: The regex only matches digits, so truly invalid amounts won't match
 	// This tests the case where the regex matches but parsing might fail
@@ -564,7 +617,7 @@ func TestAwardExperienceCommandProducer_InvalidAmount(t *testing.T) {
 func TestAwardLevelCommandProducer_InvalidAmount(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar := createTestCharacter(12345, "TestGM", true)
 
 	testCases := []struct {
 		name        string

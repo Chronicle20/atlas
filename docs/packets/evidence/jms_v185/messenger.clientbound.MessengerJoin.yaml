@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerJoin
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Join
+    address: "0x8e447e"
+    decompile_sha256: 6d4442c859932630112a6ceeae2ed130ed7342b92c8d9667a4a6e701853fa505

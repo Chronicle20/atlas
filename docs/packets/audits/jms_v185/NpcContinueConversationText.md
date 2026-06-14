@@ -1,7 +1,7 @@
 # NpcContinueConversationText (← `CScriptMan::OnAskText#Reply`)
 
 - **IDA:** 0x7b77bd
-- **Atlas file:** `../../libs/atlas-packet/npc/serverbound/continue_conversation_text.go`
+- **Atlas file:** `libs/atlas-packet/npc/serverbound/continue_conversation_text.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** 🔍

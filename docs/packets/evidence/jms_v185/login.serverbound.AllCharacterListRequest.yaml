@@ -1,0 +1,8 @@
+packet: login/serverbound/AllCharacterListRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendViewAllCharPacket
+    address: "0x67094e"
+    decompile_sha256: b62d310c2f6c3250008d39f3c60a026866929d3360107faba905e8d733387940

@@ -696,3 +696,149 @@ func TestCreateStepForOperation_RebalanceAP_RejectsMalformedJSON(t *testing.T) {
 		t.Fatal("expected error on malformed JSON")
 	}
 }
+
+// TestCreateSagaForOperation_ChangeJobAppendsCancelAllBuffs verifies that the
+// single-operation saga for a change_job operation also emits a cancel_all_buffs
+// step, so a job change clears all active buffs (and dismounts any
+// MONSTER_RIDING mount, FR-4.2).
+func TestCreateSagaForOperation_ChangeJobAppendsCancelAllBuffs(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+
+	l, _ := test.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+
+	characterId := uint32(33)
+
+	convCtx := NewConversationContextBuilder().
+		SetCharacterId(characterId).
+		Build()
+	GetRegistry().SetContext(tctx, characterId, convCtx)
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{
+		l:   l,
+		ctx: tctx,
+		t:   tm,
+	}
+
+	op, err := NewOperationBuilder().
+		SetType("change_job").
+		AddParamValue("jobId", "200").
+		Build()
+	if err != nil {
+		t.Fatalf("failed to build change_job op: %v", err)
+	}
+
+	worldId := world.Id(0)
+	channelId := channel.Id(1)
+	f := field.NewBuilder(worldId, channelId, _map.Id(100000000)).Build()
+
+	s, err := executor.createSagaForOperation(f, characterId, op)
+	if err != nil {
+		t.Fatalf("createSagaForOperation returned error: %v", err)
+	}
+
+	if len(s.Steps) != 2 {
+		t.Fatalf("expected 2 steps (change_job + cancel_all_buffs), got %d: %+v", len(s.Steps), stepIds(s.Steps))
+	}
+	if s.Steps[0].Action != saga.ChangeJob {
+		t.Errorf("step 0 action = %v, want ChangeJob", s.Steps[0].Action)
+	}
+	if s.Steps[1].Action != saga.CancelAllBuffs {
+		t.Errorf("step 1 action = %v, want CancelAllBuffs", s.Steps[1].Action)
+	}
+
+	pl, ok := s.Steps[1].Payload.(saga.CancelAllBuffsPayload)
+	if !ok {
+		t.Fatalf("cancel_all_buffs payload type = %T, want CancelAllBuffsPayload", s.Steps[1].Payload)
+	}
+	if pl.CharacterId != characterId {
+		t.Errorf("cancel_all_buffs CharacterId = %d, want %d", pl.CharacterId, characterId)
+	}
+	if pl.WorldId != worldId {
+		t.Errorf("cancel_all_buffs WorldId = %d, want %d", pl.WorldId, worldId)
+	}
+	if pl.ChannelId != channelId {
+		t.Errorf("cancel_all_buffs ChannelId = %d, want %d", pl.ChannelId, channelId)
+	}
+}
+
+// TestCreateSagaForOperations_ChangeJobAppendsCancelAllBuffs verifies that the
+// batch saga path appends a single cancel_all_buffs step when a change_job
+// operation is present alongside other operations (FR-4.2).
+func TestCreateSagaForOperations_ChangeJobAppendsCancelAllBuffs(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+
+	l, _ := test.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+
+	characterId := uint32(44)
+
+	convCtx := NewConversationContextBuilder().
+		SetCharacterId(characterId).
+		Build()
+	GetRegistry().SetContext(tctx, characterId, convCtx)
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{
+		l:   l,
+		ctx: tctx,
+		t:   tm,
+	}
+
+	mustOp := func(t *testing.T, opType string, params map[string]string) OperationModel {
+		t.Helper()
+		b := NewOperationBuilder().SetType(opType)
+		for k, v := range params {
+			b.AddParamValue(k, v)
+		}
+		op, err := b.Build()
+		if err != nil {
+			t.Fatalf("failed to build op %s: %v", opType, err)
+		}
+		return op
+	}
+
+	ops := []OperationModel{
+		mustOp(t, "award_item", map[string]string{"itemId": "2000000", "quantity": "1"}),
+		mustOp(t, "change_job", map[string]string{"jobId": "200"}),
+	}
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	s, err := executor.createSagaForOperations(f, characterId, ops)
+	if err != nil {
+		t.Fatalf("createSagaForOperations returned error: %v", err)
+	}
+
+	// 2 source ops + 1 appended cancel_all_buffs step.
+	if len(s.Steps) != 3 {
+		t.Fatalf("expected 3 steps, got %d: %+v", len(s.Steps), stepIds(s.Steps))
+	}
+
+	var cancelCount int
+	for _, step := range s.Steps {
+		if step.Action == saga.CancelAllBuffs {
+			cancelCount++
+		}
+	}
+	if cancelCount != 1 {
+		t.Fatalf("expected exactly 1 cancel_all_buffs step, got %d: %+v", cancelCount, stepIds(s.Steps))
+	}
+
+	// The cancel step is appended after the change_job step.
+	last := s.Steps[len(s.Steps)-1]
+	if last.Action != saga.CancelAllBuffs {
+		t.Errorf("last step action = %v, want CancelAllBuffs", last.Action)
+	}
+}

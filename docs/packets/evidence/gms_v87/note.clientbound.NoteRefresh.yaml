@@ -1,0 +1,8 @@
+packet: note/clientbound/NoteRefresh
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#Refresh
+    address: "0xabccc2"
+    decompile_sha256: 6f7edd81b643cb0b42504611e6e085d7127a4ebef411867b469228fc1d07993a

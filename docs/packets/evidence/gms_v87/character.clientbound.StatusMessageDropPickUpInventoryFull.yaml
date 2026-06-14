@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageDropPickUpInventoryFull
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage
+    address: "0xab8076"
+    decompile_sha256: 6fcb8611834a009b4bcb7cb3d0844bcab4aed4ab367ca9532000d091aa16f0ac

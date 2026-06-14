@@ -14,12 +14,18 @@ type Model struct {
 	worldId     world.Id
 	channelId   channel.Id
 	characterId uint32
-	buffs       map[int32]buff.Model
+	// buffs are keyed by a composite string: "<sourceId>" for a normal
+	// whole-source buff (replace-on-recast), or "<sourceId>:<statType>" for an
+	// accumulate-mode buff where each stat is tracked with its own timer (see
+	// Registry.Apply). The map value's SourceId() remains authoritative for all
+	// source-based operations (Cancel, etc.), so callers iterate values rather
+	// than parsing keys.
+	buffs map[string]buff.Model
 }
 
-func (m Model) Buffs() map[int32]buff.Model {
+func (m Model) Buffs() map[string]buff.Model {
 	// Return defensive copy to prevent external mutation
-	result := make(map[int32]buff.Model, len(m.buffs))
+	result := make(map[string]buff.Model, len(m.buffs))
 	for k, v := range m.buffs {
 		result[k] = v
 	}
@@ -43,7 +49,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		WorldId     world.Id             `json:"worldId"`
 		ChannelId   channel.Id           `json:"channelId"`
 		CharacterId uint32               `json:"characterId"`
-		Buffs       map[int32]buff.Model `json:"buffs"`
+		Buffs       map[string]buff.Model `json:"buffs"`
 	}{
 		WorldId:     m.worldId,
 		ChannelId:   m.channelId,
@@ -57,7 +63,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 		WorldId     world.Id             `json:"worldId"`
 		ChannelId   channel.Id           `json:"channelId"`
 		CharacterId uint32               `json:"characterId"`
-		Buffs       map[int32]buff.Model `json:"buffs"`
+		Buffs       map[string]buff.Model `json:"buffs"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err

@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyCreated
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Created
+    address: "0xb297e7"
+    decompile_sha256: 9a2ba773649eb5b1091e2403b4708f73331dbe8bd2a45c675593938f44abe6c7

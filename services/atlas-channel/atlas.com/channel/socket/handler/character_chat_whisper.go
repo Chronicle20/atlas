@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/maps/location"
 	"atlas-channel/message"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -62,10 +63,11 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(tc.Id())
 					if err == nil {
+						tcMapId := location.ResolveMapId(l, ctx, tc.Id())
 						if resultMode == 0x09 {
-							return af(chatCB.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tc.MapId()), tc.X(), tc.Y()).Encode)(s)
+							return af(chatCB.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tcMapId), tc.X(), tc.Y()).Encode)(s)
 						}
-						return af(chatCB.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tc.MapId())).Encode)(s)
+						return af(chatCB.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tcMapId)).Encode)(s)
 					}
 
 					// TODO find a way to look up remote channel.

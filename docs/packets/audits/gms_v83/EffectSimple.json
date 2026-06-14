@@ -1,17 +1,17 @@
 {
   "WriterName": "EffectSimple",
-  "IDAName": "CUser::OnEffect",
+  "IDAName": "CUser::OnEffect#EffectSimple",
   "Address": "0x9377d9",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/character/clientbound/effect.go",
+  "AtlasFile": "libs/atlas-packet/character/clientbound/effect.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
+      "IDAComment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -20,9 +20,9 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "nMode — switch discriminator dispatching to 27 effect branches (case 0..26)",
+      "IDAComment": "nMode \u2014 switch discriminator dispatching to 27 effect branches (case 0..26)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "atlas: short \u2014 missing trailing field"
     }
   ],
   "Verdict": 3,

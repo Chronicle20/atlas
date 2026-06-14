@@ -4,7 +4,7 @@
   "Address": "0x9e36c9",
   "Variant": "GMS/v87",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/guide_talk.go",
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/guide_talk.go",
   "Rows": [
     {
       "Index": 0,

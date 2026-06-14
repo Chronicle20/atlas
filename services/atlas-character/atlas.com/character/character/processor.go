@@ -1749,18 +1749,6 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				})
 			}
 
-			// MapId/Instance updates are now owned by atlas-maps (task-055).
-			// The RestModel still carries the fields for D11 backward compat, but
-			// any change to them must be propagated via atlas-maps' CHANGE_MAP /
-			// CHANGE_CHANNEL_REQUEST flows, not via this REST shim.
-			if input.MapId != 0 {
-				p.l.WithFields(logrus.Fields{
-					"transaction_id": transactionId.String(),
-					"character_id":   characterId,
-					"map_id":         input.MapId,
-				}).Debug("Update: ignoring MapId in input; atlas-maps owns location.")
-			}
-
 			// If no updates are needed, return early
 			if len(changes) == 0 {
 				return nil

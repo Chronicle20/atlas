@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldEffectWeather
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnBlowWeather
+    address: "0x5468f0"
+    decompile_sha256: 8eab55c67840d33e4f925c72606036130f244b013d67524501fceb96e3951557

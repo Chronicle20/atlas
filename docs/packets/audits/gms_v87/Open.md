@@ -1,7 +1,7 @@
 # Open (← `CUserLocal::OnOpenUI`)
 
 - **IDA:** 0x9e32c0
-- **Atlas file:** `../../libs/atlas-packet/ui/clientbound/open.go`
+- **Atlas file:** `libs/atlas-packet/ui/clientbound/open.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

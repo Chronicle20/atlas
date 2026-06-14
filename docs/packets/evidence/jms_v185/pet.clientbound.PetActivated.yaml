@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetActivated
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnPetActivated
+    address: "0xa576d3"
+    decompile_sha256: 6b21b435e819bef9e9aa2de1180989f69cad6b6d28e2a863f2208650eb29bbee

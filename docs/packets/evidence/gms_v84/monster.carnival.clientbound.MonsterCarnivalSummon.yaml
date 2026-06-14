@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalSummon
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnRequestResult
+    address: "0x572284"
+    decompile_sha256: 6c712fbd1127db3796da19f92db626c7fff9b9723fd73ec5f33b9aa0a7c2c247
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_summon_test.go#TestMonsterCarnivalSummon

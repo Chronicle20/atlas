@@ -1,0 +1,8 @@
+packet: party/clientbound/PartyLeft
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Left
+    address: "0xad697a"
+    decompile_sha256: 1271bdc03e84cae67d2ec4aaf189e0da8077077b4e28e7f613bfc7de57492278

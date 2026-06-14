@@ -2,7 +2,8 @@ import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { hiddenColumns, getColumns } from "@/pages/accounts-columns";
 import { useCallback, useEffect, useState } from "react";
-import { useAccounts, useInvalidateAccounts } from "@/lib/hooks/api/useAccounts";
+import { useAccounts } from "@/lib/hooks/api/useAccounts";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { bansService } from "@/services/api/bans.service";
 import type { Account } from "@/types/models/account";
 import { BanType, type Ban, type CheckBanAttributes } from "@/types/models/ban";
@@ -16,7 +17,7 @@ import { AccountPageSkeleton } from "@/components/common/skeletons/AccountPageSk
 export function AccountsPage() {
   const { activeTenant } = useTenant();
   const accountsQuery = useAccounts(activeTenant!);
-  const { invalidateAll: invalidateAccounts } = useInvalidateAccounts();
+  const { isRefreshing, onRefresh } = useGridRefresh([accountsQuery]);
 
   const accounts = accountsQuery.data ?? [];
   const loading = accountsQuery.isLoading;
@@ -104,7 +105,7 @@ export function AccountsPage() {
 
   const columns = getColumns({
     tenant: activeTenant,
-    onRefresh: () => invalidateAccounts(),
+    onRefresh,
     banStatuses,
     banStatusLoading,
     onBanAccount: handleBanAccount,
@@ -130,7 +131,8 @@ export function AccountsPage() {
           columns={columns}
           data={accounts}
           error={error}
-          onRefresh={() => invalidateAccounts()}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No accounts found",

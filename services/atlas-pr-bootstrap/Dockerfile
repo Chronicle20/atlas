@@ -4,7 +4,7 @@
 # Single-stage Alpine. rpk (Redpanda CLI; Kafka admin protocol compatible)
 # replaces the Apache Kafka tarball + JRE — single static Go binary,
 # ~30 MB vs. ~235 MB and no JVM startup latency per cleanup invocation.
-FROM alpine:3.23
+FROM alpine:3.24
 
 # Bumping RPK_VERSION invalidates test/fixtures/rpk-*.json — rpk's
 # --format json schema is a stability boundary, not a CLI flag. After

@@ -9,6 +9,7 @@ import (
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
 	"atlas-pets/kafka/producer"
+	"atlas-pets/location"
 	"atlas-pets/skill"
 	"context"
 	"errors"
@@ -495,10 +496,16 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 
 					c, err := p.cp.GetById()(actorId)
 					if err == nil {
-						var fh position.Model
-						fh, err = p.pp.GetBelow(c.MapId(), c.X(), c.Y())()
+						var f field.Model
+						f, err = location.GetField(p.l, p.ctx, actorId)
 						if err == nil {
-							p.tr.Update(p.ctx, p.t, petId, c.X(), c.Y(), 0, int16(fh.Id()))
+							var fh position.Model
+							fh, err = p.pp.GetBelow(f.MapId(), c.X(), c.Y())()
+							if err == nil {
+								p.tr.Update(p.ctx, p.t, petId, c.X(), c.Y(), 0, int16(fh.Id()))
+							}
+						} else if !errors.Is(err, location.ErrNotFound) {
+							p.l.WithError(err).Warnf("Unable to resolve location for character [%d] from atlas-maps; skipping pet foothold update.", actorId)
 						}
 					}
 					td := p.tr.GetById(p.ctx, p.t, pe.Id())

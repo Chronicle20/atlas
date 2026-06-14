@@ -4,7 +4,7 @@
   "Address": "0x76bcc6",
   "Variant": "JMS/v185",
   "BranchDepth": 3,
-  "AtlasFile": "../../libs/atlas-packet/pet/serverbound/drop_pick_up.go",
+  "AtlasFile": "libs/atlas-packet/pet/serverbound/drop_pick_up.go",
   "Rows": [
     {
       "Index": 0,
@@ -98,41 +98,41 @@
     },
     {
       "Index": 10,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "pet pos.x — gated dwID % 13 == 0",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "pet pos.y",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "m_dwPosCRC",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "dwRectCrc",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 0,
+  "FlatInvalid": false
 }

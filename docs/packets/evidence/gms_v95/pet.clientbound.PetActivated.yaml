@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetActivated
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnPetActivated
+    address: "0x9547d0"
+    decompile_sha256: 69b1b9a77f87514fea92b341370e6c3edee0d53081c9c97344cb0bc1f863f5ef

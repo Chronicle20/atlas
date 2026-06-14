@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterInfo
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCharacterInfo
+    address: "0xabb181"
+    decompile_sha256: 681defd19ec40bb7ad64f40fc60a774771860f5433a5f9f5b5294ccb070843e4

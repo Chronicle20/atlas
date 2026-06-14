@@ -42,13 +42,31 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
-	t := tenant.MustFromContext(ctx)
+// srcKey is the map key for a normal whole-source buff (replace-on-recast).
+func srcKey(sourceId int32) string {
+	return strconv.FormatInt(int64(sourceId), 10)
+}
 
-	b, err := buff.NewBuff(sourceId, level, duration, changes)
-	if err != nil {
-		return buff.Model{}, err
-	}
+// statKey is the map key for an accumulate-mode per-stat buff: each stat of a
+// source is tracked under its own key so it carries an independent timer and
+// expires on its own (Beholder Hex). Re-applying the same stat overwrites just
+// that key (timer refresh); a different stat of the same source coexists.
+func statKey(sourceId int32, statType string) string {
+	return srcKey(sourceId) + ":" + statType
+}
+
+// Apply stores a buff for characterId and returns the buff(s) created so the
+// caller can emit one APPLIED event each.
+//
+// accumulate == false (default): the whole source is one buff keyed by sourceId;
+// a re-apply replaces it (refresh). Returns exactly one buff.
+//
+// accumulate == true: each change is stored as its own single-stat buff keyed by
+// (sourceId, statType), each with its own expiry; other stats of the same source
+// are left intact, so the source's buffs accumulate one-at-a-time. Returns one
+// buff per change.
+func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) ([]buff.Model, error) {
+	t := tenant.MustFromContext(ctx)
 
 	m, err := r.characters.Get(ctx, t, characterId)
 	if errors.Is(err, atlas.ErrNotFound) {
@@ -56,25 +74,42 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 			worldId:     worldId,
 			channelId:   channelId,
 			characterId: characterId,
-			buffs:       make(map[int32]buff.Model),
+			buffs:       make(map[string]buff.Model),
 		}
 	} else if err != nil {
-		return buff.Model{}, err
+		return nil, err
 	} else {
 		m.channelId = channelId
 	}
 
-	m.buffs[sourceId] = b
-	err = r.characters.Put(ctx, t, characterId, m)
-	if err != nil {
-		return buff.Model{}, err
+	var applied []buff.Model
+	if accumulate {
+		for _, c := range changes {
+			b, err := buff.NewBuff(sourceId, level, duration, []stat.Model{c})
+			if err != nil {
+				return nil, err
+			}
+			m.buffs[statKey(sourceId, c.Type())] = b
+			applied = append(applied, b)
+		}
+	} else {
+		b, err := buff.NewBuff(sourceId, level, duration, changes)
+		if err != nil {
+			return nil, err
+		}
+		m.buffs[srcKey(sourceId)] = b
+		applied = append(applied, b)
+	}
+
+	if err := r.characters.Put(ctx, t, characterId, m); err != nil {
+		return nil, err
 	}
 
 	if tb, err := json.Marshal(&t); err == nil {
 		_ = r.tenants.Add(ctx, string(tb))
 	}
 
-	return b, nil
+	return applied, nil
 }
 
 func (r *Registry) Get(ctx context.Context, id uint32) (Model, error) {
@@ -111,33 +146,37 @@ func (r *Registry) GetCharacters(ctx context.Context) []Model {
 	return vals
 }
 
-func (r *Registry) Cancel(ctx context.Context, characterId uint32, sourceId int32) (buff.Model, error) {
+// Cancel removes every buff for the character whose SourceId matches and returns
+// them all, so the caller can emit one EXPIRED per removed buff. In accumulate
+// mode a single sourceId (e.g. Beholder Hex 1320009) maps to several per-stat
+// buffs; returning only one would leave the other stats' icons stuck on the
+// client (removed from storage but never cancelled). Returns ErrNotFound when no
+// buff matched.
+func (r *Registry) Cancel(ctx context.Context, characterId uint32, sourceId int32) ([]buff.Model, error) {
 	t := tenant.MustFromContext(ctx)
 
 	m, err := r.characters.Get(ctx, t, characterId)
 	if errors.Is(err, atlas.ErrNotFound) {
-		return buff.Model{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 	if err != nil {
-		return buff.Model{}, err
+		return nil, err
 	}
 
-	var cancelled buff.Model
-	var found bool
-	not := make(map[int32]buff.Model)
+	cancelled := make([]buff.Model, 0)
+	not := make(map[string]buff.Model)
 	for id, b := range m.buffs {
 		if b.SourceId() != sourceId {
 			not[id] = b
 		} else {
-			cancelled = b
-			found = true
+			cancelled = append(cancelled, b)
 		}
 	}
 	m.buffs = not
 	_ = r.characters.Put(ctx, t, characterId, m)
 
-	if !found {
-		return buff.Model{}, ErrNotFound
+	if len(cancelled) == 0 {
+		return nil, ErrNotFound
 	}
 	return cancelled, nil
 }
@@ -150,7 +189,7 @@ func (r *Registry) GetExpired(ctx context.Context, characterId uint32) []buff.Mo
 		return make([]buff.Model, 0)
 	}
 
-	not := make(map[int32]buff.Model)
+	not := make(map[string]buff.Model)
 	var expired []buff.Model
 	for id, b := range m.buffs {
 		if b.Expired() {
@@ -180,7 +219,7 @@ func (r *Registry) CancelAll(ctx context.Context, characterId uint32) []buff.Mod
 	for _, b := range m.buffs {
 		all = append(all, b)
 	}
-	m.buffs = make(map[int32]buff.Model)
+	m.buffs = make(map[string]buff.Model)
 	_ = r.characters.Put(ctx, t, characterId, m)
 
 	return all
@@ -205,7 +244,7 @@ func (r *Registry) CancelByStatTypes(ctx context.Context, characterId uint32, ty
 	}
 
 	cancelled := make([]buff.Model, 0)
-	keep := make(map[int32]buff.Model)
+	keep := make(map[string]buff.Model)
 	for id, b := range m.buffs {
 		matched := false
 		for _, c := range b.Changes() {

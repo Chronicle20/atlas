@@ -1,0 +1,8 @@
+packet: guild/clientbound/GuildMemberTitleUpdate
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult#MemberTitleUpdate
+    address: "0xa82e2b"
+    decompile_sha256: e9656fe58be92a26d4f53449f26192d3ebc7c4b0b9576431fae7445b6e53e500

@@ -8,6 +8,8 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=login/serverbound/AllCharacterListSelectWithPic version=gms_v83 ida=0x5f76ae
+// packet-audit:verify packet=login/serverbound/AllCharacterListSelectWithPic version=gms_v95 ida=0x5d7550
 func TestAllCharacterListSelectWithPicRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

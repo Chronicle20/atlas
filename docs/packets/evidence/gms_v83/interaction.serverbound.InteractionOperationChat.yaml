@@ -1,0 +1,11 @@
+packet: interaction/serverbound/InteractionOperationChat
+direction: serverbound
+version: gms_v83
+category: OP-MODE-PREFIX
+ida:
+    function: CMiniRoomBaseDlg::CheckAndSendChat
+    address: "0x65f438"
+    decompile_sha256: cbff84ac88f7f4da101f9bc2ce14e2d0d1703c27f015210126d127d0c5271cd3
+notes: "Migrated from docs/packets/ida-exports/_pending.md S5 (InteractionOperationChat row): CheckAndSendChat op-byte prefix; v83 single-string shape (update_time gated GMS>=95, task-067)."
+verifies:
+    - libs/atlas-packet/interaction/serverbound/operation_chat_test.go#TestOperationChatBytes

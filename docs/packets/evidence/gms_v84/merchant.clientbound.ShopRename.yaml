@@ -1,0 +1,8 @@
+packet: merchant/clientbound/ShopRename
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnEntrustedShopCheckResult#ShopRename
+    address: "0xa73538"
+    decompile_sha256: ba2cfbec44d3f34253ebc6cab85a74636957ddc54904f520b6ff743cbf1e258a

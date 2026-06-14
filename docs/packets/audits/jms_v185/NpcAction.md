@@ -1,7 +1,7 @@
 # NpcAction (← `CNpc::OnMove`)
 
 - **IDA:** 0x7194d1
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/action.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/action.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 1
 - **Verdict:** 🔍

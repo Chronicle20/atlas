@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcGuideTalkIdx
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnTutorMsg#Idx
+    address: "0x99f28c"
+    decompile_sha256: 0b4b383457d19ca1993e705c5a757a53e9c54355366c11df05c17e44883f987c

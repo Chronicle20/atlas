@@ -4,25 +4,25 @@
   "Address": "0x776020",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/field/clientbound/set_field.go",
+  "AtlasFile": "libs/atlas-packet/field/clientbound/set_field.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "m_nChannelID (channel id) — v83 has NO DecodeOpt before it and NO m_dwOldDriverID after it",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "sNotifierMessage flag (HIBYTE v110)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 2,
@@ -35,34 +35,34 @@
     },
     {
       "Index": 3,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "nNotifierCheck (v108; notifier string-loop count)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 4,
-      "AtlasOp": 2,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "damage seed 1 (CalcDamage::SetSeed; bCharacterData branch)",
-      "Verdict": 0,
-      "Note": ""
-    },
-    {
-      "Index": 5,
-      "AtlasOp": 3,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "damage seed 2",
       "Verdict": 2,
       "Note": "width mismatch"
     },
     {
+      "Index": 4,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "damage seed 1 (CalcDamage::SetSeed; bCharacterData branch)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "damage seed 2",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
       "Index": 6,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "damage seed 3",
@@ -71,7 +71,7 @@
     },
     {
       "Index": 7,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 5,
       "IDAComment": "CharacterData::Decode — ENVELOPE BOUNDARY (character domain task-028)",
@@ -80,16 +80,16 @@
     },
     {
       "Index": 8,
-      "AtlasOp": 5,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 3,
       "IDAComment": "timestamp (DecodeBuffer p,8u FILETIME) — v83 has NO logout-gift block before it",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 9,
-      "AtlasOp": 0,
+      "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -116,7 +116,7 @@
     },
     {
       "Index": 12,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -134,7 +134,7 @@
     },
     {
       "Index": 14,
-      "AtlasOp": 3,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -143,7 +143,7 @@
     },
     {
       "Index": 15,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -152,7 +152,7 @@
     },
     {
       "Index": 16,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -251,7 +251,7 @@
     },
     {
       "Index": 27,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -278,7 +278,7 @@
     },
     {
       "Index": 30,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -287,7 +287,7 @@
     },
     {
       "Index": 31,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -314,7 +314,7 @@
     },
     {
       "Index": 34,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -323,7 +323,7 @@
     },
     {
       "Index": 35,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -341,7 +341,7 @@
     },
     {
       "Index": 37,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -377,7 +377,7 @@
     },
     {
       "Index": 41,
-      "AtlasOp": 3,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -387,7 +387,7 @@
     {
       "Index": 42,
       "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -395,7 +395,7 @@
     },
     {
       "Index": 43,
-      "AtlasOp": 1,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -431,7 +431,7 @@
     },
     {
       "Index": 47,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -449,7 +449,7 @@
     },
     {
       "Index": 49,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -512,8 +512,8 @@
     },
     {
       "Index": 56,
-      "AtlasOp": 1,
-      "AtlasKind": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
       "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
@@ -521,7 +521,7 @@
     },
     {
       "Index": 57,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -530,7 +530,7 @@
     },
     {
       "Index": 58,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -539,7 +539,7 @@
     },
     {
       "Index": 59,
-      "AtlasOp": 3,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -557,7 +557,7 @@
     },
     {
       "Index": 61,
-      "AtlasOp": 1,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -584,7 +584,7 @@
     },
     {
       "Index": 64,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -602,7 +602,7 @@
     },
     {
       "Index": 66,
-      "AtlasOp": 4,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -620,7 +620,7 @@
     },
     {
       "Index": 68,
-      "AtlasOp": 1,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -629,7 +629,7 @@
     },
     {
       "Index": 69,
-      "AtlasOp": 3,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -647,7 +647,7 @@
     },
     {
       "Index": 71,
-      "AtlasOp": 1,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -674,7 +674,7 @@
     },
     {
       "Index": 74,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -683,7 +683,7 @@
     },
     {
       "Index": 75,
-      "AtlasOp": 2,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -701,7 +701,7 @@
     },
     {
       "Index": 77,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -710,7 +710,7 @@
     },
     {
       "Index": 78,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -719,7 +719,7 @@
     },
     {
       "Index": 79,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -728,7 +728,7 @@
     },
     {
       "Index": 80,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -746,7 +746,7 @@
     },
     {
       "Index": 82,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -764,6 +764,60 @@
     },
     {
       "Index": 84,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 85,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 86,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 87,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 88,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 89,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 90,
       "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
@@ -772,6 +826,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 2,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

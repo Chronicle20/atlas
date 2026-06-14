@@ -1,0 +1,19 @@
+void __thiscall CWvsContext::OnPacket(CWvsContext *this, CInPacket *a2)
+{
+  int op;
+  op = CInPacket::Decode2(a2);
+  switch ( op )
+  {
+    case 0xA0u:
+      CWvsContext::OnStatChanged(this, a2);
+      break;
+    case 0xA1u:
+      CWvsContext::OnInventoryOperation(this, a2);
+      break;
+    case 0xA2u:
+      sub_A07B40(this, a2);
+      break;
+    default:
+      break;
+  }
+}

@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationFieldRemoveFromBlackList
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::DeleteBlackList
+    address: "0x5379a6"
+    decompile_sha256: 5d76afd5a9d65f1339d993ce7e25552762410a9b2d91f660932e0ebc04bcb3cf

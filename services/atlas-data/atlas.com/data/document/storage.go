@@ -3,9 +3,9 @@ package document
 import (
 	"context"
 
+	"atlas-data/canonical"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -41,7 +41,7 @@ func (s *Storage[I, M]) ByIdProvider(ctx context.Context) func(id I) model.Provi
 			}
 			return model.FixedProvider(m)
 		}
-		nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+		nt, err := tenant.Create(canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()), t.Region(), t.MajorVersion(), t.MinorVersion())
 		if err != nil {
 			return model.ErrorProvider[M](err)
 		}
@@ -73,19 +73,31 @@ func (s *Storage[I, M]) AllProvider(ctx context.Context) model.Provider[[]M] {
 	var ms []M
 	var err error
 	ms, err = s.dbSto.All(ctx)()
-	if err == nil {
+	if err == nil && len(ms) > 0 {
 		return model.FixedProvider(ms)
 	}
-	nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+	// A tenant with no rows of this document type falls back to the
+	// version-scoped canonical dataset (canonical.TenantId), mirroring
+	// ByIdProvider. Without this, a tenant that was never directly seeded
+	// (e.g. a version provisioned after canonical ingestion) gets an empty
+	// batch result while per-id lookups silently succeed via the same
+	// canonical fallback — an asymmetry that surfaced as preset skill
+	// validation rejecting every skill for such tenants.
+	nt, cerr := tenant.Create(canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()), t.Region(), t.MajorVersion(), t.MinorVersion())
+	if cerr != nil {
+		return model.ErrorProvider[[]M](cerr)
+	}
+	nctx := tenant.WithContext(ctx, nt)
+	cms, cerr := s.dbSto.All(nctx)()
+	if cerr == nil && len(cms) > 0 {
+		return model.FixedProvider(cms)
+	}
+	// No canonical rows either: prefer a real error from the original lookup,
+	// otherwise return the (empty) original result rather than masking it.
 	if err != nil {
 		return model.ErrorProvider[[]M](err)
 	}
-	nctx := tenant.WithContext(ctx, nt)
-	ms, err = s.dbSto.All(nctx)()
-	if err == nil {
-		return model.FixedProvider(ms)
-	}
-	return model.ErrorProvider[[]M](err)
+	return model.FixedProvider(ms)
 }
 
 func (s *Storage[I, M]) GetAll(ctx context.Context) ([]M, error) {

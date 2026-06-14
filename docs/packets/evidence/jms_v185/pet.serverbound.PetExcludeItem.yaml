@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetExcludeItem
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::SendUpdateExceptionListRequest
+    address: "0x76c05e"
+    decompile_sha256: 367751ea4ed05fcd9c4137b002f2dbc4b1b3e7e16762415c2b527050371f9a25

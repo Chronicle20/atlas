@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterDamage
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnHit
+    address: "0x954c50"
+    decompile_sha256: a84b9d14ff222455ea50e40c0b44f4fd980d3699bdab34526865443eafcef72e

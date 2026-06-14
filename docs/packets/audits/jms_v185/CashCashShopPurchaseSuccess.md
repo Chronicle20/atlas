@@ -1,7 +1,7 @@
 # CashCashShopPurchaseSuccess (← `CCashShop::OnCashItemResult#CashShopPurchaseSuccess`)
 
 - **IDA:** 0x48c0f0
-- **Atlas file:** `../../libs/atlas-packet/cash/clientbound/shop_inventory.go`
+- **Atlas file:** `libs/atlas-packet/cash/clientbound/shop_inventory.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

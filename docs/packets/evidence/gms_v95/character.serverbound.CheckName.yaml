@@ -1,0 +1,8 @@
+packet: character/serverbound/CheckName
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendCheckDuplicateIDPacket
+    address: "0x5d5690"
+    decompile_sha256: 20ac0db9b81ba4efa167ca4367444ef1f787a74beb297501838895695b629de3

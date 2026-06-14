@@ -1,0 +1,8 @@
+packet: messenger/serverbound/MessengerOperationDeclineInvite
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CFadeWnd::SendCloseMessage
+    address: "0x557267"
+    decompile_sha256: ee343005172d295fd9df31c97e89dc4350092e6ea7fe3e88a21fbb472143a51e

@@ -1,0 +1,8 @@
+packet: character/clientbound/ItemUpgrade
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUser::ShowItemUpgradeEffect
+    address: "0x93354d"
+    decompile_sha256: dccead8b22ca9c9ba86e0b07f2fd1ef40f5946e3f1d96eae5080fb9be596c9c3

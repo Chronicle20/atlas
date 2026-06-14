@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameFlipCard
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMemoryGameDlg::SendTurnUpCard
+    address: "0x64ee2b"
+    decompile_sha256: 6c86af7bf97f391982f6cfceaa027eac7915cd290b60a44b47b5e75b14e6fec2

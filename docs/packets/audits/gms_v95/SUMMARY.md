@@ -80,6 +80,15 @@
 | [StorageShow](StorageShow.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/show.go` |
 | [StorageUpdateAssets](StorageUpdateAssets.md) | 🔍 | `../../libs/atlas-packet/storage/clientbound/update_assets.go` |
 | [StorageUpdateMeso](StorageUpdateMeso.md) | ✅ | `../../libs/atlas-packet/storage/clientbound/error.go` |
+| [SummonSpawn](SummonSpawn.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/spawn.go` |
+| [SummonRemove](SummonRemove.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/remove.go` |
+| [SummonMove](SummonMove.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/move.go` |
+| [SummonAttack](SummonAttack.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/attack.go` |
+| [SummonSkill](SummonSkill.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/skill.go` |
+| [SummonDamage](SummonDamage.md) | ✅ | `../../libs/atlas-packet/summon/clientbound/damage.go` |
+| [SummonMoveHandle](SummonMoveHandle.md) | ✅ | `../../libs/atlas-packet/summon/serverbound/move.go` |
+| [SummonDamageHandle](SummonDamageHandle.md) | ✅ | `../../libs/atlas-packet/summon/serverbound/damage.go` |
+| [SummonAttackHandle](SummonAttackHandle.md) | ❌ | `../../libs/atlas-packet/summon/serverbound/attack.go` |
 | [GuildBBSThread](GuildBBSThread.md) | ✅ | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
 | [GuildBBSThreadList](GuildBBSThreadList.md) | 🔍 | `../../libs/atlas-packet/guild/clientbound/bbs.go` |
 | [MessengerAdd](MessengerAdd.md) | ✅ | `../../libs/atlas-packet/messenger/clientbound/add.go` |

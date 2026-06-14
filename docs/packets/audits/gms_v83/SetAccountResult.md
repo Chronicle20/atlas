@@ -1,7 +1,7 @@
 # SetAccountResult (← `CLogin::OnSetAccountResult`)
 
 - **IDA:** 0x5fc731
-- **Atlas file:** `../../libs/atlas-packet/login/clientbound/set_account_result.go`
+- **Atlas file:** `libs/atlas-packet/login/clientbound/set_account_result.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 0
 - **Verdict:** ✅

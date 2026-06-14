@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationEnableEquipSlot
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnEnableEquipSlotExt
+    address: "0x476766"
+    decompile_sha256: 2cdb3672e978e3f299b675a41cd05df6e3f1b14fa9bacd3000a9c4abcab3a868

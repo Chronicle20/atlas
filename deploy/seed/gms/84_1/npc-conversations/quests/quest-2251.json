@@ -1,0 +1,130 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkItems",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "4032399",
+                      "type": "item",
+                      "value": "20"
+                    }
+                  ],
+                  "nextState": "missingItems"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "completeQuest"
+                }
+              ]
+            },
+            "id": "checkItems",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please bring me 20 #b#t4032399##k...  #i4032399#"
+            },
+            "id": "missingItems",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032399",
+                    "quantity": "20"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "8000"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "thankYou"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oh, you brought 20 #b#t4032399##k! Thank you."
+            },
+            "id": "thankYou",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "npcId": 1061011,
+      "questId": 2251,
+      "questName": "Zombie Mushroom Signal 3",
+      "startStateMachine": {
+        "startState": "noStartDialogue",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "This quest has no start dialogue."
+            },
+            "id": "noStartDialogue",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "2251",
+    "type": "quest-conversation"
+  }
+}

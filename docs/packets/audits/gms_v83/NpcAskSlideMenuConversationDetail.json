@@ -4,7 +4,7 @@
   "Address": "0x76b5c8",
   "Variant": "GMS/v83",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/npc/clientbound/conversation.go",
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/conversation.go",
   "Rows": [
     {
       "Index": 0,
@@ -17,14 +17,23 @@
     },
     {
       "Index": 1,
-      "AtlasOp": 4,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "message text (v11)",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 0,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

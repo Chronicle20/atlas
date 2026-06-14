@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcGuideTalkMessage
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnTutorMsg#Message
+    address: "0x916f60"
+    decompile_sha256: eb95d1736e7cda68da99b8b30ead2078fe5bb5b73884c089bc78a1324bd85ed0
+verifies:
+    - libs/atlas-packet/npc/clientbound/guide_talk_test.go#TestGuideTalkMessage

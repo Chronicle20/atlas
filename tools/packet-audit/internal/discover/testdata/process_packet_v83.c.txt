@@ -1,0 +1,87 @@
+void __thiscall CClientSocket::ProcessPacket(CClientSocket *this, CInPacket *a2)
+{
+  int op;
+  op = CInPacket::Decode2(a2);
+  switch ( op )
+  {
+    case 0x11u:
+      CLogin::OnFoo(this, a2);
+      break;
+    case 0x12u:
+    case 0x13u:
+      CLogin::OnBarBaz(this, a2);
+      break;
+    case 200u:
+      CLogin::OnCheckPasswordResult(this, a2);
+      break;
+    case 0x20u:
+      sub_5E1230(this, a2);
+      break;
+    case 0x21u:
+      CLogin::OnAccountInfoResult(this, a2);
+      break;
+    case 0x22u:
+      CLogin::OnWorldInformation(this, a2);
+      break;
+    // ---- noise-hardening cases below (task-085 robustness probe) ----
+    case 0x30u:
+      // COutPacket ctor noise: must not bind as handler
+      COutPacket::COutPacket(&v9, 6);
+      // alloca noise line
+      alloca(v5);
+      // operator new noise: v4 = operator new(0x44u)
+      v4 = operator new(0x44u);
+      // TSingleton::GetInstance noise (regex breaks at '<', captures bare class name)
+      TSingleton::GetInstance();
+      // vtable call noise: (*(void(**)(...))(...)) — captures 'void'
+      (*(void(**)(CClientSocket *, CInPacket *))(*((_DWORD *)v3)))(v3, a2);
+      // real handler comes after all the noise
+      CLogin::OnSelectWorld(this, a2);
+      break;
+    case 0x31u:
+      // goto-tail: label must not leak into the next case
+      CLogin::OnExtraWork(this, a2);
+      goto LABEL_END;
+    case 0x32u:
+      // This case must bind its own handler, not bleed from goto case above
+      CLogin::OnCharList(this, a2);
+      break;
+    case 0x40u:
+      // nested switch inside a case body — inner labels must not become top-level opcodes
+      {
+        int sub_op;
+        sub_op = CInPacket::Decode1(a2);
+        switch ( sub_op )
+        {
+          case 0x01u:
+            CLogin::OnSubOpA(this, a2);
+            break;
+          case 0x02u:
+            CLogin::OnSubOpB(this, a2);
+            break;
+        }
+      }
+      CLogin::OnMigrateIn(this, a2);
+      break;
+    // ---- braced-case-body regression (task-085 fix) ----
+    case 0x50u:
+    {
+      CLogin::OnBracedBody(this, a2);
+      break;
+    }
+    case 0x51u:
+      CLogin::OnAfterBraced(this, a2);
+      break;
+    // ---- braced-if inside case (task-085 fix) ----
+    case 0x52u:
+      if (v5)
+      {
+        CLogin::OnBracedIf(this, a2);
+      }
+      break;
+    default:
+      break;
+  }
+LABEL_END:
+  return;
+}

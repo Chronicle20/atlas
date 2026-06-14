@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreSetBlackList
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::DeliverBlackList
+    address: "0x6fdeda"
+    decompile_sha256: f3baf4ae4c7eaa9c5569a81a96c41d4bf935b18ead994ff95bedd0ea9748d568
+verifies:
+    - libs/atlas-packet/interaction/serverbound/operation_personal_store_set_black_list_test.go#TestOperationPersonalStoreSetBlackListBytes

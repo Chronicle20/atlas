@@ -1,0 +1,8 @@
+packet: npc/serverbound/NpcStartConversation
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TalkToNpc
+    address: "0x99ec4e"
+    decompile_sha256: ef100929665da7ba193e8547d369ffce93f55dae067a626074b52e461aa7e4d3

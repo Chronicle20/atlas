@@ -4,7 +4,7 @@
   "Address": "0x56d75a",
   "Variant": "JMS/v185",
   "BranchDepth": 2,
-  "AtlasFile": "../../libs/atlas-packet/field/serverbound/change.go",
+  "AtlasFile": "libs/atlas-packet/field/serverbound/change.go",
   "Rows": [
     {
       "Index": 0,

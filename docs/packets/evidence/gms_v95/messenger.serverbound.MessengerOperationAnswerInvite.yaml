@@ -1,0 +1,8 @@
+packet: messenger/serverbound/MessengerOperationAnswerInvite
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnCreate
+    address: "0x7f59d0"
+    decompile_sha256: ee33f07a47611088453524037b27033ac283525fc120297bb8ef1607877196c6

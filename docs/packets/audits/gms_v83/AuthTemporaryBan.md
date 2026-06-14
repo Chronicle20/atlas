@@ -1,7 +1,7 @@
 # AuthTemporaryBan (← `CLogin::OnCheckPasswordResult#AuthTemporaryBan`)
 
 - **IDA:** 0x5f83ee
-- **Atlas file:** `../../libs/atlas-packet/login/clientbound/auth_temporary_ban.go`
+- **Atlas file:** `libs/atlas-packet/login/clientbound/auth_temporary_ban.go`
 - **Variant:** GMS/v83
 - **Branch depth:** 1
 - **Verdict:** ✅

@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationBuyWorldTransfer
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendBuyTransferWorldItemPacket
+    address: "0x47614b"
+    decompile_sha256: 82d829eff449d401d46430c3215eb42ddcd2bb6845fbec789ce7823daa7c596d

@@ -6,6 +6,10 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=gms_v95 ida=0x497270
+// packet-audit:verify packet=cash/clientbound/CashOperationError version=gms_v95 ida=0x4969f0
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v95 ida=0x497390
+// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v95 ida=0x494d60
 func TestOperationErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

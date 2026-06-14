@@ -6,6 +6,15 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v87 ida=0xabccc2
+// packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v87 ida=0xabccc2
+// packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v87 ida=0xabccc2
+// packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v95 ida=0x9f9da0
+// packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v95 ida=0x9f9da0
+// packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v95 ida=0x9f9da0
+// packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v83 ida=0xa2508b
+// packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v83 ida=0xa2508b
+// packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v83 ida=0xa2508b
 func TestSendSuccessRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

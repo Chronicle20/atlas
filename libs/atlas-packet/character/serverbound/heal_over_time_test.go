@@ -6,6 +6,10 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/serverbound/HealOverTime version=gms_v83 ida=0xa1e997
+// packet-audit:verify packet=character/serverbound/HealOverTime version=gms_v87 ida=0xab5ca8
+// packet-audit:verify packet=character/serverbound/HealOverTime version=gms_v95 ida=0x9f2a00
+// packet-audit:verify packet=character/serverbound/HealOverTime version=gms_v84 ida=0xa69c4d
 func TestHealOverTimeRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

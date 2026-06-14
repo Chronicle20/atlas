@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionUpdateMerchant
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::OnRefresh#UpdateMerchant
+    address: "0x51cc30"
+    decompile_sha256: f52c5f15b152ba9841c52752efe99759a216ee37c23459dade08733f1f94da57

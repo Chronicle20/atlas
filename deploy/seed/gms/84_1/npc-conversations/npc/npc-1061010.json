@@ -1,0 +1,202 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1061010,
+      "startState": "askLeave",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMap",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to leave?"
+          },
+          "id": "askLeave",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "108010101"
+                  }
+                ],
+                "nextState": "warpToSleepyDungeonV"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "108010201"
+                  }
+                ],
+                "nextState": "warpToForestOfEvilII"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "108010301"
+                  }
+                ],
+                "nextState": "warpToAntTunnelPark"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "108010401"
+                  }
+                ],
+                "nextState": "warpToMonkeySwampII"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "108010501"
+                  }
+                ],
+                "nextState": "warpToCaveOfEvilEyeII"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkMap",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "105040305",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToSleepyDungeonV",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "100040106",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToForestOfEvilII",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "105070001",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToAntTunnelPark",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "107000402",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToMonkeySwampII",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "105070200",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToCaveOfEvilEyeII",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1061010",
+    "type": "npc-conversation"
+  }
+}

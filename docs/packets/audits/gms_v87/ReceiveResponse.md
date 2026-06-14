@@ -1,7 +1,7 @@
 # ReceiveResponse (← `CWvsContext::OnGivePopularityResult#ReceiveResponse`)
 
 - **IDA:** 0xab9c24
-- **Atlas file:** `../../libs/atlas-packet/fame/clientbound/response.go`
+- **Atlas file:** `libs/atlas-packet/fame/clientbound/response.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

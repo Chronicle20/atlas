@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-data/canonical"
 	"atlas-data/document"
 	"atlas-data/rest"
 	"context"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -107,11 +109,43 @@ func parseDBTime(s string) (time.Time, error) {
 	return time.Time{}, nil
 }
 
+// resolveStatusTenantId maps the ?scope= query parameter to the tenant_id the
+// ingest wrote documents under, mirroring workers.tenantFromParams: the default
+// (empty or "tenant") scope reads the active tenant's rows, while "shared" reads
+// the canonical baseline rows anchored to the version-scoped canonical id
+// (canonical.TenantId(region, major, minor)). The shared scope is gated behind
+// operator credentials, matching wzinput.ResolveScope. On an invalid request it
+// writes the HTTP error and returns ok=false.
+func resolveStatusTenantId(w http.ResponseWriter, r *http.Request, t tenant.Model) (string, bool) {
+	switch r.URL.Query().Get("scope") {
+	case "", "tenant":
+		return t.Id().String(), true
+	case "shared":
+		if r.Header.Get("X-Atlas-Operator") != "1" {
+			http.Error(w, "operator required", http.StatusForbidden)
+			return "", false
+		}
+		return canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()).String(), true
+	default:
+		http.Error(w, "invalid scope", http.StatusBadRequest)
+		return "", false
+	}
+}
+
 func handleGetStatus(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := tenant.MustFromContext(d.Context())
-			count, maxUpdated, err := queryStatus(d.Context(), db, t.Id().String())
+			tenantId, ok := resolveStatusTenantId(w, r, t)
+			if !ok {
+				return
+			}
+			// queryStatus filters tenant_id explicitly to the resolved scope,
+			// so bypass the automatic context-tenant filter — otherwise a
+			// scope=shared read would be AND-ed with the caller's tenant_id and
+			// never see the canonical baseline rows.
+			ctx := database.WithoutTenantFilter(d.Context())
+			count, maxUpdated, err := queryStatus(ctx, db, tenantId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to read data status.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -119,7 +153,7 @@ func handleGetStatus(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handle
 			}
 
 			res := StatusRestModel{
-				Id:            t.Id().String(),
+				Id:            tenantId,
 				DocumentCount: count,
 			}
 			if maxUpdated != nil {

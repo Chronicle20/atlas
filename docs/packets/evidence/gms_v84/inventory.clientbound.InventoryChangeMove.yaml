@@ -1,0 +1,8 @@
+packet: inventory/clientbound/InventoryChangeMove
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#ChangeMove
+    address: "0xa69d8f"
+    decompile_sha256: 036c62220a941b9bec3bebb98f5e1dff07e312df4c18294638200a7ca46d331f

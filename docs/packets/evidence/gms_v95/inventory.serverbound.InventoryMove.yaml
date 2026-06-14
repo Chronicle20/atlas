@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryMove
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendChangeSlotPositionRequest
+    address: "0x9d9c10"
+    decompile_sha256: f3701b0247ac1ebb1c1ead963b1bd816a4551f3c9f4ceee080a171e6b1dfa17a

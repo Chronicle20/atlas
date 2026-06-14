@@ -1,7 +1,7 @@
 # NpcSayConversationDetail (← `CScriptMan::OnSay#Say`)
 
 - **IDA:** 0x7b7315
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/conversation.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
 - **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** ✅

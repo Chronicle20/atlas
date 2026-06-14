@@ -7,6 +7,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v83 ida=0xa209d4
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v87 ida=0xab8076
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v95 ida=0xa06c90
+// packet-audit:verify packet=character/clientbound/StatusMessageDropPickUpInventoryFull version=gms_v84 ida=0xa6bdd9
 func TestStatusMessageDropPickUpItemUnavailable(t *testing.T) {
 	input := NewStatusMessageDropPickUpItemUnavailable(0)
 	for _, v := range test.Variants {

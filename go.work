@@ -56,6 +56,7 @@ use (
 	./services/atlas-monster-book/atlas.com/monster-book
 	./services/atlas-monster-death/atlas.com/monster
 	./services/atlas-monsters/atlas.com/monsters
+	./services/atlas-mounts/atlas.com/mounts
 	./services/atlas-notes/atlas.com/notes
 	./services/atlas-npc-conversations/atlas.com/npc
 	./services/atlas-npc-shops/atlas.com/npc
@@ -73,6 +74,7 @@ use (
 	./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
 	./services/atlas-skills/atlas.com/skills
 	./services/atlas-storage/atlas.com/storage
+	./services/atlas-summons/atlas.com/summons
 	./services/atlas-tenants/atlas.com/tenants
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world

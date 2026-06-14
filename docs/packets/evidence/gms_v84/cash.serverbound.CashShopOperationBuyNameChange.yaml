@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationBuyNameChange
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendBuyNameChangeItemPacket
+    address: "0x475f79"
+    decompile_sha256: db6a983aed1d6aa5feb55b904766f01f71b72cb4603d36dd6c6b144d0fbde789

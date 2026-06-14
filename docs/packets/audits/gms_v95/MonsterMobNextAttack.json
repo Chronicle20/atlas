@@ -1,0 +1,21 @@
+{
+  "WriterName": "MonsterMobNextAttack",
+  "IDAName": "CMob::OnNextAttack",
+  "Address": "0x6528a0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/monster/clientbound/mob_next_attack.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

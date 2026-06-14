@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashShopOperationGift
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendGiftsPacket
+    address: "0x472436"
+    decompile_sha256: 9f84c7df858d52a345afc92a7f5bd0e5556ca97753c26f0a208e1b248ee3d931

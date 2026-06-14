@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyJoin
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult#Join
+    address: "0xb297e7"
+    decompile_sha256: 4bf4d18cbda57646d9b298e71f214bc30f0841919e77ab99b54170b5f788d91b
+verifies:
+    - libs/atlas-packet/party/clientbound/join_test.go#TestJoinByteOutput

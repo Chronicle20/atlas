@@ -26,7 +26,7 @@ func TestCharacterInfoBody_CoverIsMobId(t *testing.T) {
 		SetMonsterBook(monsterbook.NewModel(col, nil)).
 		MustBuild()
 
-	enc := CharacterInfoBody(c, guild.Model{}, nil)
+	enc := CharacterInfoBody(c, guild.Model{}, nil, charcb.MountInfo{})
 	out := charcb.CharacterInfo{}
 	ctx := pt.CreateContext("GMS", 83, 1)
 	pt.RoundTrip(t, ctx, enc, out.Decode, nil)

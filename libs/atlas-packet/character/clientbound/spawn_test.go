@@ -9,6 +9,10 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v83 ida=0x972100
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v87 ida=0x9f7084
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v95 ida=0x94db40
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v84 ida=0x9b20a0
 func TestCharacterSpawnEncode(t *testing.T) {
 	avatar := model.Avatar{}
 	cts := model.NewCharacterTemporaryStat()

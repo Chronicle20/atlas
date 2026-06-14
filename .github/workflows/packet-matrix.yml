@@ -1,0 +1,67 @@
+name: packet-matrix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/packet-audit/**'
+      - 'libs/atlas-packet/**'
+      - 'docs/packets/**'
+      - 'services/atlas-configurations/seed-data/templates/**'
+
+env:
+  GO_VERSION: '1.25.5'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Packet-audit tests
+        run: cd tools/packet-audit && go test ./...
+
+      - name: Coverage matrix check
+        # The conflict backlog was burned down to ZERO in task-085 (registry
+        # re-derivation + template wiring across all five versions), so
+        # `matrix --check` now exits 0 on a clean tree. The gate is fully
+        # blocking: ANY non-zero exit fails CI — a 🟥 conflict (exit 1, a
+        # genuine registry/template/Atlas discrepancy), a stale committed
+        # STATUS.md/status.json (exit 1, regenerate and commit), a fatal-class
+        # finding (orphan/dangling/stale/drift/unresolvable/malformed/no-export),
+        # or a runtime error (exit 3). The capture-then-report shape below only
+        # exists to print a helpful, categorized message before failing.
+        run: |
+          set +e
+          go run ./tools/packet-audit matrix --check 2>/tmp/matrix_check.txt
+          rc=$?
+          echo $rc > /tmp/matrix_check_code
+          exit 0
+        id: matrix_check
+
+      - name: Matrix check gate
+        run: |
+          rc=$(cat /tmp/matrix_check_code)
+          if [ "$rc" -eq 0 ]; then
+            echo "matrix --check passed (exit 0): no conflicts, no fatal findings, outputs fresh."
+            exit 0
+          fi
+          # Highlight the most actionable class first.
+          fatal=$(grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true)
+          if [ "$fatal" -gt 0 ]; then
+            echo "::error::matrix --check reported $fatal fatal-class finding(s) (orphan/dangling/stale/drift/unresolvable/malformed/no-export):"
+            grep -iE 'orphan|dangling|stale|drift|unresolv|malformed|no export for version' /tmp/matrix_check.txt || true
+          fi
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::matrix --check exited 3 (runtime failure — corrupt registry/template, unreadable export, etc.):"
+          else
+            echo "::error::matrix --check exited $rc — a 🟥 conflict or stale committed STATUS.md/status.json. Regenerate with 'go run ./tools/packet-audit matrix' and commit, or resolve the conflict:"
+          fi
+          cat /tmp/matrix_check.txt
+          exit 1

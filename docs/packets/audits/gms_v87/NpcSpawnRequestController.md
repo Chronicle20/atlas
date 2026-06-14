@@ -1,7 +1,7 @@
 # NpcSpawnRequestController (← `CNpcPool::OnNpcChangeController`)
 
 - **IDA:** 0x7170c8
-- **Atlas file:** `../../libs/atlas-packet/npc/clientbound/spawn_request_controller.go`
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/spawn_request_controller.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 0
 - **Verdict:** ✅

@@ -39,6 +39,7 @@ resources:
   - atlas-monster-book.yaml
   - atlas-monster-death.yaml
   - atlas-monsters.yaml
+  - atlas-mounts.yaml
   - atlas-notes.yaml
   - atlas-npc-conversations.yaml
   - atlas-npc-shops.yaml
@@ -56,6 +57,7 @@ resources:
   - atlas-saga-orchestrator.yaml
   - atlas-skills.yaml
   - atlas-storage.yaml
+  - atlas-summons.yaml
   - atlas-tenants.yaml
   - atlas-transports.yaml
   - atlas-ui.yaml

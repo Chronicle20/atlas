@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: COmokDlg::OnRetreatRequest
+    address: "0x6804b0"
+    decompile_sha256: 16b5ef292f6df7d7613f53043d259a56042a95e2b8baeb5896e269091b5523c0

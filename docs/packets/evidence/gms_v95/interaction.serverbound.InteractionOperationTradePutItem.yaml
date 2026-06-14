@@ -1,0 +1,8 @@
+packet: interaction/serverbound/InteractionOperationTradePutItem
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::PutItem
+    address: "0x7641d0"
+    decompile_sha256: 9016ced29ba1f61290c797b3943da08f12d852c33aece7626e1ac3e833828213

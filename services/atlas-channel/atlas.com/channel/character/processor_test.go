@@ -41,7 +41,6 @@ func createTestCharacter(id uint32, name string, level byte) character.Model {
 		SetMaxHp(50).
 		SetMp(5).
 		SetMaxMp(5).
-		SetMapId(100000000).
 		MustBuild()
 }
 

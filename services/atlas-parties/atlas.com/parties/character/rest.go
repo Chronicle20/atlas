@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
@@ -35,7 +34,6 @@ type ForeignRestModel struct {
 	Face               uint32   `json:"face"`
 	Ap                 uint16   `json:"ap"`
 	Sp                 string   `json:"sp"`
-	MapId              _map.Id  `json:"mapId"`
 	SpawnPoint         uint32   `json:"spawnPoint"`
 	Gm                 int      `json:"gm"`
 	X                  int16    `json:"x"`
@@ -100,7 +98,6 @@ func ExtractForeign(rm ForeignRestModel) (ForeignModel, error) {
 	return ForeignModel{
 		id:      rm.Id,
 		worldId: rm.WorldId,
-		mapId:   rm.MapId,
 		name:    rm.Name,
 		level:   rm.Level,
 		jobId:   rm.JobId,

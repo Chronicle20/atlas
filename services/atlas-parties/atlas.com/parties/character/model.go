@@ -184,7 +184,6 @@ func (m Model) GM() int {
 type ForeignModel struct {
 	id      uint32
 	worldId world.Id
-	mapId   _map.Id
 	name    string
 	level   byte
 	jobId   job.Id
@@ -205,10 +204,6 @@ func (m ForeignModel) JobId() job.Id {
 
 func (m ForeignModel) WorldId() world.Id {
 	return m.worldId
-}
-
-func (m ForeignModel) MapId() _map.Id {
-	return m.mapId
 }
 
 func (m ForeignModel) GM() int {

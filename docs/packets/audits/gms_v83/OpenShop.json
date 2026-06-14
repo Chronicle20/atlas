@@ -4,7 +4,7 @@
   "Address": "0xa27d75",
   "Variant": "GMS/v83",
   "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/merchant/clientbound/operation.go",
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/operation.go",
   "Rows": [
     {
       "Index": 0,

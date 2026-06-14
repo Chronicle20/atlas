@@ -1,0 +1,8 @@
+packet: character/serverbound/ItemCancel
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemCancelRequest
+    address: "0xaee339"
+    decompile_sha256: 3772d5902423c87818082791c3cddd2638c10c012b1798351a2fc2781b926967

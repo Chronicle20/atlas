@@ -6,6 +6,10 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=guild/clientbound/GuildInfo version=gms_v87 ida=0xacf7d3
+// packet-audit:verify packet=guild/clientbound/GuildInfo version=gms_v83 ida=0xa37490
+// packet-audit:verify packet=guild/clientbound/GuildInfo version=gms_v95 ida=0x4fb760
+// packet-audit:verify packet=guild/clientbound/GuildInfo version=gms_v84 ida=0xa82e2b
 func TestInfoInGuildRoundTrip(t *testing.T) {
 	members := []GuildMemberInfo{
 		{CharacterId: 1001, Name: "MemberOne", JobId: 100, Level: 50, Title: 0, Online: true, Signature: 12345, AllianceTitle: 1},

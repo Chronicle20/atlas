@@ -1,0 +1,247 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2561,
+      "questName": "A Monkey's First Gift",
+      "startStateMachine": {
+        "startState": "monkeyGreeting",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerRemember",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Ook, ook! Oook! Ook! Ook! Ook?!"
+            },
+            "id": "monkeyGreeting",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "monkeyGreeting",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "monkeyOok2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "I remember...I was on my way to Maple Island, to become an Explorer... What happened? What's going on?"
+            },
+            "id": "playerRemember",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerRemember",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "playerBalrog",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Oook! Ook! Ook! Oooook!"
+            },
+            "id": "monkeyOok2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "monkeyOok2",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "monkeyAngry",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "I was talking to the captain, and admiring the scenery, and... Balrog! Balrog attacked the ship! So... Did I fall overboard? Then, why am I alive? I know #bI can swim#k, but can I swim while unconscious? Maybe I can. Maybe I'm a natural swimmer!"
+            },
+            "id": "playerBalrog",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerApple",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Ooook! Ook! Ook! (Huh, a little monkey...tapping its foot angrily. Actually, when I first woke up, that monkey was the only thing I saw...)"
+            },
+            "id": "monkeyAngry",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "monkeyAngry",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAcceptApple",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Huh? Why are you waving your arms like that? Are you trying to tell me something? (The monkey took an apple out of the nearby chest. It looks delicious. But, what is he trying to tell you?)\r\n\r\n#i2010000#"
+            },
+            "id": "playerApple",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "giveAppleAndStartQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineApple",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Ook ook! Om nom nom! (The monkey looks frustrated that you don't understand him. He pretends to eat the apple. Wait, does he want YOU to eat it? That must be it! What a nice monkey.)"
+            },
+            "id": "askAcceptApple",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "The thing is, I don't like apples... Sorry, but no thanks."
+            },
+            "id": "declineApple",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "2010000",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "receivedApple"
+                }
+              ]
+            },
+            "id": "giveAppleAndStartQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "showTutorial",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "(You have received a delicious-looking apple. You should eat it. Now...how do you open your Inventory? Was it the #bI#k key...?)"
+            },
+            "id": "receivedApple",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "path": "UI/tutorial.img/28"
+                  },
+                  "type": "show_info"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "showTutorial",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2561",
+    "type": "quest-conversation"
+  }
+}

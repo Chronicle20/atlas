@@ -1,0 +1,8 @@
+packet: pet/clientbound/PetCommandResponse
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnActionCommand
+    address: "0x76a6ab"
+    decompile_sha256: cae7ea19826c74fe61618359a3393dd274a7aa23aa2ac9e59ee275552873e9de

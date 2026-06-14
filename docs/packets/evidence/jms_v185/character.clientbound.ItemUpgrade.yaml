@@ -1,0 +1,10 @@
+packet: character/clientbound/ItemUpgrade
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CUser::ShowItemUpgradeEffect
+    address: "0x9f1a92"
+    decompile_sha256: efa69909dd4a01c646ac3b12d01dcfeb27207d198e799b5ed11bf748a3386b9d
+verifies:
+    - libs/atlas-packet/character/clientbound/item_upgrade_test.go#TestItemUpgradeRoundTrip

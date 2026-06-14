@@ -1,7 +1,7 @@
 # CashShopOperationRebateLockerItem (← `CCashShop::OnRebateLockerItem`)
 
 - **IDA:** 0x0
-- **Atlas file:** `../../libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go`
+- **Atlas file:** `libs/atlas-packet/cash/serverbound/shop_operation_rebate_locker_item.go`
 - **Variant:** GMS/v87
 - **Branch depth:** 3
 - **Verdict:** ✅

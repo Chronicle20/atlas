@@ -95,6 +95,13 @@ func TestRegistryRoundTripAndIndices(t *testing.T) {
 	if len(inField) != 0 || len(byOwner) != 0 {
 		t.Fatalf("indices not cleared on remove: field=%d owner=%d", len(inField), len(byOwner))
 	}
+	inTownParty, err := r.GetInTownParty(ctx, ten, f, _map.Id(104000000), 0, 42)
+	if err != nil {
+		t.Fatalf("GetInTownParty after remove error: %v", err)
+	}
+	if len(inTownParty) != 0 {
+		t.Fatalf("town index not cleared on remove: got %d doors", len(inTownParty))
+	}
 }
 
 // TestSoloNonCollisionInTownPartyIndex asserts that two solo casters

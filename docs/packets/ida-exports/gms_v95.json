@@ -10169,24 +10169,6 @@
         {
           "op": "Decode1",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "switch == 8",
-          "ref": "CField_ContiMove::OnStartShipMoveField"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "switch == 0xA",
-          "ref": "CField_ContiMove::OnMoveField"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "switch == 0xC",
-          "ref": "CField_ContiMove::OnEndShipMoveField"
         }
       ]
     },

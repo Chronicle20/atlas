@@ -9324,42 +9324,6 @@
         {
           "op": "Decode1",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 && v4 && v5 && v6 && v7",
-          "ref": "CField_ContiMove::OnEndShipMoveField"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 && v4 && v5 && v6 && <default>",
-          "ref": "nullsub_11"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 && v4 && v5 && <default>",
-          "ref": "CField_ContiMove::OnMoveField"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 && v4 && <default>",
-          "ref": "nullsub_10"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 && <default>",
-          "ref": "CField_ContiMove::OnStartShipMoveField"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default>",
-          "ref": "nullsub_9"
         }
       ]
     },

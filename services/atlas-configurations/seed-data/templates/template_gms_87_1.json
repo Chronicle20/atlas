@@ -1711,6 +1711,62 @@
       {
         "opCode": "0x170",
         "writer": "MtsOperation2"
+      },
+      {
+        "opCode": "0x9C",
+        "writer": "ContiMove"
+      },
+      {
+        "opCode": "0xA3",
+        "writer": "AriantArenaShowResult"
+      },
+      {
+        "opCode": "0xA5",
+        "writer": "PyramidGauge"
+      },
+      {
+        "opCode": "0xA6",
+        "writer": "PyramidScore"
+      },
+      {
+        "opCode": "0x12A",
+        "writer": "SnowballState"
+      },
+      {
+        "opCode": "0x12B",
+        "writer": "SnowballHit"
+      },
+      {
+        "opCode": "0x12C",
+        "writer": "SnowballMessage"
+      },
+      {
+        "opCode": "0x12E",
+        "writer": "CoconutHit"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "CoconutScore"
+      },
+      {
+        "opCode": "0x130",
+        "writer": "GuildBossHealerMove"
+      },
+      {
+        "opCode": "0x131",
+        "writer": "GuildBossPulleyStateChange"
+      },
+      {
+        "opCode": "0x13A",
+        "writer": "AriantArenaUserScore"
+      },
+      {
+        "opCode": "0x13C",
+        "writer": "SheepRanchInfo"
+      },
+      {
+        "opCode": "0x13D",
+        "writer": "SheepRanchClothes"
       }
     ]
   },

@@ -866,10 +866,10 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CONTI_MOVE
   direction: clientbound
-  opcode: 148
+  opcode: 151
   fname: CField_ContiMove::OnContiMove
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 148->151 (0x97), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: CONTI_STATE
   direction: clientbound
   opcode: 152
@@ -908,22 +908,22 @@
   note: 'task-096 Cluster 2: v84 opcode corrected 154->157 (0x9D). IDA v84 CField::OnPacket (0x53D5A7) case 0x9D -> sub_53DAD0 (empty body, clock destroy, ≡ v83 OnDestroyClock). +3 vs v83; prior csv 154 (0x9A) was stale.'
 - op: ARIANT_ARENA_SHOW_RESULT
   direction: clientbound
-  opcode: 155
+  opcode: 158
   fname: CField_AriantArena::OnShowResult
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 155->158 (0x9E), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: PYRAMID_GAUGE
   direction: clientbound
-  opcode: 157
+  opcode: 160
   fname: CField_Massacre::OnMassacreIncGauge
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 157->160 (0xA0), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: PYRAMID_SCORE
   direction: clientbound
-  opcode: 158
+  opcode: 161
   fname: CField_MassacreResult::OnMassacreResult
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 158->161 (0xA1), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: QUICKSLOT_INIT
   direction: clientbound
   opcode: 159
@@ -1628,22 +1628,22 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SNOWBALL_STATE
   direction: clientbound
-  opcode: 281
+  opcode: 288
   fname: CField_SnowBall::OnSnowBallState
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 281->288 (0x120), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: HIT_SNOWBALL
   direction: clientbound
-  opcode: 282
+  opcode: 289
   fname: CField_SnowBall::OnSnowBallHit
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 282->289 (0x121), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: SNOWBALL_MESSAGE
   direction: clientbound
-  opcode: 283
+  opcode: 290
   fname: CField_SnowBall::OnSnowBallMsg
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 283->290 (0x122), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: LEFT_KNOCK_BACK
   direction: clientbound
   opcode: 284
@@ -1652,28 +1652,28 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: COCONUT_HIT
   direction: clientbound
-  opcode: 285
+  opcode: 292
   fname: CField_Coconut::OnCoconutHit
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 285->292 (0x124), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: COCONUT_SCORE
   direction: clientbound
-  opcode: 286
+  opcode: 293
   fname: CField_Coconut::OnCoconutScore
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 286->293 (0x125), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: GUILD_BOSS_HEALER_MOVE
   direction: clientbound
-  opcode: 287
+  opcode: 294
   fname: CField_GuildBoss::OnHealerMove
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 287->294 (0x126), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: GUILD_BOSS_PULLEY_STATE_CHANGE
   direction: clientbound
-  opcode: 288
+  opcode: 295
   fname: CField_GuildBoss::OnPulleyStateChange
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 288->295 (0x127), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: MONSTER_CARNIVAL_START
   direction: clientbound
   opcode: 296
@@ -1740,22 +1740,22 @@
   note: 'ida-verified: CField_MonsterCarnival::OnPacket @0x571FF5 (task-092 Cluster-E). v84 carnival opcodes are +7 vs v83 (296-303 / 0x128-0x12F) per the v84 clientbound table shift; the csv-import value was stale v83. SUMMON=case 299 (arg=1), MESSAGE=case 300 (arg=0).'
 - op: ARIANT_ARENA_USER_SCORE
   direction: clientbound
-  opcode: 297
+  opcode: 304
   fname: CField_AriantArena::OnUserScore
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 297->304 (0x130), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: SHEEP_RANCH_INFO
   direction: clientbound
-  opcode: 299
+  opcode: 306
   fname: CField_Battlefield::OnScoreUpdate
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 299->306 (0x132), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: SHEEP_RANCH_CLOTHES
   direction: clientbound
-  opcode: 300
+  opcode: 307
   fname: CField_Battlefield::OnTeamChanged
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-096 minigame family: v84 opcode corrected 300->307 (0x133), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: HORNTAIL_CAVE
   direction: clientbound
   opcode: 309

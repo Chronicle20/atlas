@@ -22239,12 +22239,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v3"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3",
-          "ref": "sub_54AF77"
         }
       ]
     },
@@ -22321,36 +22315,6 @@
         {
           "op": "Decode1",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "nullsub_5"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_55A5CF"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "nullsub_6"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_55A5F4"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "nullsub_7"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_55A62A"
         }
       ]
     },

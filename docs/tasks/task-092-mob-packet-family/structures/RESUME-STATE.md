@@ -80,5 +80,16 @@ Decide per cell at Stage 2 (codec+test+route still land; only the evidence pin i
     (RequestSend @0x89bdda COutPacket(224)). Registry gms_v84.yaml rows updated (ida-discovered +
     ida.address). v83/v87/v95/jms opcodes confirmed unchanged against their dispatchers.
 
-## Next: Stage 3 docs, Stage 4 gates+review. Revisit TOUCH_MONSTER_ATTACK as its own task.
-(Clusters D, A, B, C, F, E all landed.)
+## STAGE 2 COMPLETE — all 6 clusters landed (D,A,B,C,F,E). matrix --check exit 0.
+Commits: D `95178fbdf`; A `2db28f14c`+`b4394460e`; B/C `1107bbfde`; F `f1406b946`; E `593c8c0bb`+`ef695647b`.
+41 of 42 ops have codec+wiring+test+routes; the vast majority of cells verified ✅.
+
+### Residual cleanup for Stage 4 (bounded — none are conflicts; matrix --check is green)
+1. **TOUCH_MONSTER_ATTACK** — DEFERRED to its own task (version-divergent attack packet, not byte-plumbing). The only fully-unlanded op.
+2. **jms placeholder registry rows** — `IDA_0X110/0X112/0X113`, `SHOW_MAGNET` duplicate the canonical escort F-ops on the same fname; they show ❌ in v95 col. Rename to canonical op-names / dedupe (registry-cleanup; entangled with the v83/v87 off-by-one cluster Stage-1 left).
+3. **v87 escort VERSION-ABSENT pins** — MOB_ESCORT_FULL_PATH (0x111) + MOB_ESCORT_COLLISION (0x0D1) show ❌ at v87 but are VERSION-ABSENT per Stage-1.5; pin VERSION-ABSENT (→ ⬜) or drop the v87 registry rows.
+4. **Documented inlined/unnamed-sender blockers** (codec+route landed; evidence un-pinnable, stay ❌): MOB_BANISH_PLAYER v83/v84; MOB_TIME_BOMB_END v83/v84/v87; MONSTER_BOMB v84; MOB_DROP_PICKUP_REQUEST v84; MONSTER_BOOK_COVER v84. These need IDB naming of the inlined/unnamed senders (a v84-heavy RE follow-up) OR a sibling-equivalence justification.
+
+### Remaining stages
+- **Stage 3** — docs: `docs/packets/IMPLEMENTING_A_PACKET.md` (the recipe) + `deploy-notes.md` (per-version opcode table + live-tenant patch + channel restart).
+- **Stage 4** — final gates (test/vet/build, redis-key-guard, matrix --check) + reconcile residual 1–4 above + `superpowers:requesting-code-review` (plan-adherence + backend-guidelines).

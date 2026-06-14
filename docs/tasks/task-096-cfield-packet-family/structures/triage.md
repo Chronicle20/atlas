@@ -209,7 +209,7 @@ owns the op per the v83 IDB / registry.
 | MATCH_TABLE | SB | CField | — | **B** (R-SB) | `CField::SendChatMsgSlash` slash family. |
 | MTS_OPERATION | CB | CITC (CField forwarder) | — | **B** (R-CB) | C-resolved (0.3 §2): distinct packet, op 348 / `0x15C`, `CITC::OnNormalItemResult`. Two distinct B-rows (NOT two modes). jms VERSION-ABSENT (⬜). |
 | MTS_OPERATION2 | CB | CITC (CField forwarder) | — | **B** (R-CB) | C-resolved (0.3 §2): distinct packet, op 347 / `0x15B`, `CITC::OnQueryCashResult`. jms VERSION-ABSENT (⬜). |
-| MULTICHAT | CB | CField | chat/clientbound/multi.go (`MultiChat`, NAME `CharacterMultiChat`) | **B** (R-CB) | NOT served by multi.go — that codec is the chat group-message writer; this is the distinct `CField::OnGroupMessage` field op (op 134). Net-new codec; the **chat multi.go file** itself MOVES chat→field (see §0.4) but does not serve this op. |
+| MULTICHAT | CB | CField | chat/clientbound/multi.go (`MultiChat`, NAME `CharacterMultiChat`) | **A** (R-MARK after MOVE) | **CORRECTED** (was erroneously B): `MultiChat{mode,from,message}` IS the `CField::OnGroupMessage` codec — registry MULTICHAT.fname = `CField::OnGroupMessage` (op 134 / `0x86`), and OnGroupMessage is exactly `mode + from + message`. MOVE chat→field (Task 2.1.2) then R-MARK; **no new codec**. Stage 1 confirms the per-version byte layout equals the existing codec's; any divergence is a wire-fix commit before marking. |
 | OX_QUIZ | CB | CField | — | **B** (R-CB) | `CField::OnQuiz`. |
 | PLAY_JUKEBOX | CB | CField | — | **B** (R-CB) | `CField::OnPlayJukeBox`. |
 | SET_OBJECT_STATE | CB | CField | — | **B** (R-CB) | `CField::OnSetObjectState`. |
@@ -222,7 +222,7 @@ owns the op per the v83 IDB / registry.
 | SUMMON_ITEM_INAVAILABLE | CB | CField | — | **B** (R-CB) | `CField::OnSummonItemInavailable` (op 137). |
 | USE_DOOR | SB | CField | — | **B** (R-SB) | C-resolved (0.3 §3: `?`→SB, op 133 / `0x85`, `CField::TryEnterTownPortal`). Net-new serverbound codec. |
 | VICIOUS_HAMMER | CB | CField | — | **B** (R-CB) | `CField::OnItemUpgrade`; jms VERSION-ABSENT (⬜). |
-| WHISPER (CB) | CB | CField | chat/clientbound/whisper.go (`Whisper*`, NAME `CharacterChatWhisper`) | **B** (R-CB) | NOT served by whisper.go (those are chat send/find-result writers); this is the distinct `CField::OnWhisper` field op (op 135). Net-new codec; the **chat whisper.go file** MOVES chat→field (see §0.4) but does not serve this op. |
+| WHISPER (CB) | CB | CField | chat/clientbound/whisper.go (`Whisper*`, NAME `CharacterChatWhisper`) | **A** (R-MARK after MOVE) | **CORRECTED** (was erroneously B): the clientbound `CField::OnWhisper` op (op 135 / `0x87`) is mode-dispatched, and whisper.go already holds those modes (`WhisperReceive`, `WhisperFindResult*`, etc.) under NAME `CharacterChatWhisper`. MOVE chat→field (Task 2.1.3) then R-MARK; **no new codec**. Stage 1 confirms the per-version layout / mode set against the existing codec; any divergence is a wire-fix commit before marking. |
 | WHISPER (dup) | CB | CField | — | **(display dupe — folds into WHISPER (CB))** | C-resolved (0.3 §5): cfield-ops.md lines 48–49 are the same clientbound row emitted twice. No separate codec/row. One CB (op 135) + one SB (op 120) WHISPER is correct. |
 | WITCH_TOWER_SCORE_UPDATE | CB | CField | — | **B** (R-CB) | `CField::OnChaosZakumTimer`. |
 | ZAKUM_SHRINE | CB | CField | — | **B** (R-CB) | `CField::OnZakumTimer`. |
@@ -309,17 +309,18 @@ Counting the 75 work-list rows exactly as enumerated in `cfield-ops.md`
 
 | Class | Count | Rows |
 |-------|------:|------|
-| **A** (codec exists; R-MARK / R-WRAP) | **2** | GENERAL_CHAT (R-MARK), GUILD_OPERATION (R-WRAP). Both were the `PKT` flags in cfield-ops.md and both were C-rows resolved in 0.3 §3. |
-| **B** (net-new codec; R-CB / R-SB) | **62** | All remaining real ops (50 CB + 12 SB). Includes the 8 ops C-resolved to a concrete direction in 0.3 §2–§4 (MTS_OPERATION/MTS_OPERATION2, USE_DOOR, SNOWBALL, LEFT_KNOCKBACK, COCONUT, GUILD_BOSS, IDA_0X09C). |
+| **A** (codec exists; R-MARK / R-WRAP) | **4** | GENERAL_CHAT (R-MARK after MOVE), **MULTICHAT (R-MARK after MOVE)**, **WHISPER CB (R-MARK after MOVE)**, GUILD_OPERATION (R-WRAP). All four are relocate-or-link existing codecs — **no new codec**. The three chat relocations (Cluster 1) confirm per-version byte layout in Stage 1 before marking. |
+| **B** (net-new codec; R-CB / R-SB) | **60** | All remaining real ops (48 CB + 12 SB). Includes the 8 ops C-resolved to a concrete direction in 0.3 §2–§4 (MTS_OPERATION/MTS_OPERATION2, USE_DOOR, SNOWBALL, LEFT_KNOCKBACK, COCONUT, GUILD_BOSS, IDA_0X09C). |
 | **version-absent (v83 ⬜)** | **8** | The foothold/stalk cluster minus IDA_0X09C: IDA_0X098, 0X09D, 0X0A4, 0X0AA, 0X0AC, 0X0B0, 0X0B1, 0X169. Each is **B where present** in a higher version; Stage 1 confirms per-version presence with IDB evidence. |
 | **spurious / display dupe** (no row, no codec) | **3** | WHISPER (2nd line), CONTI_MOVE (Init), folded per 0.3 §4/§5. *(WHISPER dupe + CONTI_MOVE Init = 2 distinct ops folded; the 3rd is accounting for the duplicate WHISPER line counted in the 75.)* |
 
-Reconciliation against the 75 rows in cfield-ops.md: 2 (A) + 62 (B real) + 8
+Reconciliation against the 75 rows in cfield-ops.md: 4 (A) + 60 (B real) + 8
 (v83 version-absent, B-where-present) + 2 fold-outs (WHISPER dup line,
-CONTI_MOVE Init) = 74; plus the WHISPER (CB) real row already counted in B
-gives the 75th list line. **Distinct implementable codecs: 2 A-row +
-~70 B-row (62 v83-present + 8 higher-version-only), with the WHISPER and
-CONTI_MOVE duplicate lines contributing no additional codec.**
+CONTI_MOVE Init) = 74; the WHISPER (CB) real row is one of the 4 A-rows, and the
+duplicate WHISPER list line is the 75th. **Distinct implementable units: 4 A-row
+(3 relocations + 1 wrapper, no new codec) + ~68 B-row (60 v83-present + 8
+higher-version-only), with the WHISPER and CONTI_MOVE duplicate lines
+contributing no additional codec.**
 
 No row remains classified **C**.
 

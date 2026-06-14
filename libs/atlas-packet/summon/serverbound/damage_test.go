@@ -40,10 +40,15 @@ var summonDamageMobBody = []byte{
 // v84 SetDamaged sub_7CBAF6@0x7cbaf6 (op 0xB6) emits the byte-identical body too
 // (GMS_v84.1 IDB-confirmed: COutPacket(182)+Encode4 cid + mob-path{attackIdx,
 // damage,templateId,dir<0} or no-mob{0xFE,damage}).
+// jms185 SetDamaged@0x828032 (op 0xB4) emits the byte-identical body too (jms185
+// IDB-confirmed: COutPacket(0xB4)@0x82827e + Encode4 cid@0x828293 + mob-path
+// {attackIdx@0x8282ba, damage@0x8282c3, templateId@0x8282e0, dir<0@0x8282f0} or
+// no-mob{0xFE@0x8282a4, damage@0x8282ad}). The decoder has no version gate.
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v95 ida=0x74b730
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v83 ida=0x7a607a
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v87 ida=0x7f879a
 // packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=gms_v84 ida=0x7cbaf6
+// packet-audit:verify packet=summon/serverbound/SummonDamageHandle version=jms_v185 ida=0x828032
 func TestDamageDecodeMob(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,0 +1,282 @@
+{
+  "WriterName": "SummonAttackHandle",
+  "IDAName": "CSummoned::TryDoingAttackManual",
+  "Address": "0x824a81",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/serverbound/attack.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "summonId (owner cid on jms185) — emit virtualized; mirrors v95 TryDoingAttackManual@0x752287",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "~drInfo[0] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x75229b",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "~drInfo[1] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x7522af",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "updateTime — emit virtualized; mirrors v95@0x7522c0",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "~drInfo[2] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x7522d4",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "~drInfo[3] (anti-hack; from DR_check@0x826202) — emit virtualized; mirrors v95@0x7522e8",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "action byte (action\u00260x7F | bLeft\u003c\u003c7) — emit virtualized; mirrors v95@0x752302",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwKey (crc rand key) — emit virtualized; mirrors v95@0x752325",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "crc32 — emit virtualized; mirrors v95@0x75234c",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nMobCount — emit virtualized; mirrors v95@0x75235c",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "userX — emit virtualized; mirrors v95@0x7523a5",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "userY — emit virtualized; mirrors v95@0x7523dd",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "summonX — emit virtualized; mirrors v95@0x75240a",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "summonY — emit virtualized; mirrors v95@0x752438",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "repeatSkillPoint (post-v95 envelope tail; lineage-inferred for jms185) — emit virtualized; mirrors v95@0x752450",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "mob[i].mobId — emit virtualized; mirrors v95@0x7524ac, loop nMobCount times",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "mob[i].templateId — mirrors v95@0x7524cc",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mob[i].hitAction — mirrors v95@0x7524e2",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mob[i].foreAction|isLeft\u003c\u003c7 — mirrors v95@0x75250c",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mob[i].frameIdx — mirrors v95@0x752522",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mob[i].calcDamageStatIdx — mirrors v95@0x75253b",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "mob[i].curX — mirrors v95@0x75256c",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "mob[i].curY — mirrors v95@0x7525a0",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "mob[i].hitX — mirrors v95@0x7525d3",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "mob[i].hitY — mirrors v95@0x752607",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "mob[i].tDelay — mirrors v95@0x75261d",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 26,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "mob[i].damage — mirrors v95@0x752632",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 27,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "skillCRC — emit virtualized; mirrors v95@0x75266f",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 28,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 29,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

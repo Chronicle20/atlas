@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonSkill
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnSkill
+    address: "0x828cb2"
+    decompile_sha256: 5c838184dc38eb13ee0535b7d1b9f67a3dee3958bf5f9a5b37ddec389b90b488
+verifies:
+    - libs/atlas-packet/summon/clientbound/skill_test.go#TestSummonSkillBytes

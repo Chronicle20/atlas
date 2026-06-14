@@ -7371,6 +7371,361 @@
           "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
         }
       ]
+    },
+    "CSummonedPool::OnCreated": {
+      "address": "0x9f80f8",
+      "direction": "clientbound",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (op 181/0xB5). CSummonedPool::OnPacket@0x9f7f6e dispatches op 0xB5 -> spawn (vtable+48 target sub_9F80F8). sub_9F80F8 reads Decode4(cid)@0x9f811a then Decode4(skillId)@0x9f8124 + Decode1(charLevel)@0x9f812e + Decode1(SLV)@0x9f813d (passed to CSummoned ctor sub_8231AA@0x9f81ad), then the Init blob via sub_823AED@0x9f81c7. There is NO oid on jms185 \u2014 only ONE int (skillId) sits between cid and the two bytes (matches v83; the v95 GMS path inserts oid right after cid, but jms185 keeps the pool cid-keyed via the dispatcher Decode4 cid@0x9f7fad). Init blob (sub_823AED@0x823aed): Decode2(x)@0x823b15, Decode2(y)@0x823b22, Decode1(moveAction)@0x823b2f, Decode2(foothold)@0x823b39, Decode1(moveAbility)@0x823b46, Decode1(assistType)@0x823b49, Decode1(enterType)@0x823b8b, then Decode1(bAvatarLook)@0x823b99 and, iff bAvatarLook!=0, AvatarLook::Decode@0x823bb0. The trailing bAvatarLook byte IS present on jms185 (the avatar-look field GMS gained at v95) \u2014 atlas writes present=0 for the v83 roster (no AvatarLook blob, no Tesla tail). Atlas SummonSpawn (gated oid >=95 GMS-only -> JMS no oid; spawnHasAvatarLook -> JMS185 writes the byte) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated+0(bAvatarLook) for jms185. jms185 reference (IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid \u2014 read by sub_9F80F8@0x9f811a (also consumed by CSummonedPool::OnPacket dispatch; pool is cid-keyed)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (nSkillID) \u2014 sub_9F80F8@0x9f8124; consumed by GetSkill@CSkillInfo in sub_823AED@0x823b6b. (NO oid on jms185 \u2014 the int after cid is the skillId)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "charLevel (nCharLevel) \u2014 sub_9F80F8@0x9f812e; atlas writes fixed 0x0A (visual-only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "SLV skill level (nSLV) \u2014 sub_9F80F8@0x9f813d; atlas 'level'"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nX \u2014 CSummoned Init blob sub_823AED@0x823b15"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nY \u2014 sub_823AED@0x823b22"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMoveAction (stance) \u2014 sub_823AED@0x823b2f"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nCurFoothold \u2014 sub_823AED@0x823b39; atlas writes fixed 0 (visual-only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMoveAbility (movementType) \u2014 sub_823AED@0x823b46"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nAssistType (!puppet attack flag) \u2014 sub_823AED@0x823b49"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nEnterType (!animated flag) \u2014 sub_823AED@0x823b8b (read unconditionally on jms185)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bAvatarLook present byte \u2014 sub_823AED@0x823b99; atlas writes fixed 0 (no AvatarLook blob / Tesla tail for the v83 roster). PRESENT on jms185 (avatar-look field GMS gained at v95); ABSENT on GMS v83/v84/v87."
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "AvatarLook blob \u2014 sub_823AED@0x823bb0, read ONLY when bAvatarLook!=0 (AvatarLook::Decode). Absent for the v83 roster (present byte = 0).",
+          "guard": "bAvatarLook != 0"
+        }
+      ]
+    },
+    "CSummonedPool::OnRemoved": {
+      "address": "0x828502",
+      "direction": "clientbound",
+      "note": "REMOVE_SPECIAL_MAPOBJECT (op 182/0xB6). CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, pool-lookup by cid, then op 0xB6 -> remove (sub_828502@0x828502). jms185 keys off the dispatcher-consumed cid and reads NO oid. The remove path consumes a trailing Decode1 leave-type flag@0x828517 (0/2/3/4; 4=animated leave, 1=immediate) consistent with the spawn path. Atlas SummonRemove (gated oid >=95 GMS-only -> JMS no oid) writes cid + byte(4|1) for jms185. jms185 reference (IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "leave-type/animated flag (0/2/3/4) \u2014 consumed in the remove path sub_828502@0x828517; atlas writes 4 or 1"
+        }
+      ]
+    },
+    "CSummonedPool::OnMove": {
+      "address": "0x8286e4",
+      "direction": "clientbound",
+      "note": "MOVE_SUMMON (op 183/0xB7). CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, pool-lookup by cid, op 0xB7 -> OnMove@0x8286e4 which calls CMovePath::OnMovePacket@0x70c5dc (the movement blob; startX/startY are its first 4 bytes). NO oid on jms185 (dispatcher consumes only the leading cid; pool is cid-keyed). Atlas SummonMove (gated oid >=95 GMS-only -> JMS no oid) writes cid+startX+startY+rawMovement for jms185. jms185 reference (IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "startX \u2014 CMovePath::OnMovePacket movement-blob head (CSummonedPool::OnMove@0x8286e4 -> CMovePath::OnMovePacket@0x70c5dc)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "startY \u2014 CMovePath::OnMovePacket movement-blob head"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rawMovement blob \u2014 CMovePath::OnMovePacket@0x70c5dc (variable-length movement path)"
+        }
+      ]
+    },
+    "CSummonedPool::OnAttack": {
+      "address": "0x828707",
+      "direction": "clientbound",
+      "note": "SUMMON_ATTACK (op 184/0xB8). CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xB8 -> OnAttack@0x828707 reads Decode1(charLevel)@0x82878d (-> [this+188]) + Decode1(action: bit7=left @0x8287a7, &0x7F @0x8287ab)@0x82879b + Decode1(count)@0x8287db + per-target loop{Decode4(mobOid)@0x82880c; if mobOid!=0: Decode1@0x82881a + Decode4(damage)@0x82882d}. There is NO trailing byte after the loop on jms185 and NO oid (dispatcher consumes only cid). Atlas SummonAttack (gated oid >=95 GMS-only, trailing byte >=95 GMS-only -> JMS neither) writes cid+0(charLevel)+direction+count+per{mobOid+6+damage} for jms185. jms185 reference (IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "charLevel (-> [this+188]) \u2014 CSummonedPool::OnAttack@0x82878d; atlas writes fixed 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action byte (low7=action @0x8287ab, bit7=bLeft @0x8287a7) \u2014 OnAttack@0x82879b; atlas 'direction'"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (mob count) \u2014 OnAttack@0x8287db"
+        },
+        {
+          "op": "Decode4",
+          "comment": "target[i].monsterOid \u2014 OnAttack@0x82880c, loop count times",
+          "guard": "loop targets"
+        },
+        {
+          "op": "Decode1",
+          "comment": "target[i].byte (only when monsterOid!=0) \u2014 OnAttack@0x82881a; atlas writes fixed 6",
+          "guard": "loop targets (only when monsterOid!=0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "target[i].damage (only when monsterOid!=0) \u2014 OnAttack@0x82882d",
+          "guard": "loop targets (only when monsterOid!=0)"
+        }
+      ]
+    },
+    "CSummonedPool::OnHit": {
+      "address": "0x828d16",
+      "direction": "clientbound",
+      "note": "DAMAGE_SUMMON (op 185/0xB9). The DAMAGE behavior lives at the IDB function NAMED OnSkill (sub @0x828d16) \u2014 the client OnHit/OnSkill names are swapped relative to behavior (summon-wire-truth.md), so this export key (CSummonedPool::OnHit, which candidatesFromFName maps to the Atlas SummonDamage writer) points at the damage-reader ADDRESS 0x828d16. CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xB9 (registry DAMAGE_SUMMON) dispatches to OnHit@0x828cb2 by NAME but the DAMAGE wire is read here at 0x828d16: Decode1(attackIdx, signed)@0x828d47 + Decode4(damage)@0x828d5c + if attackIdx>-2 (v5>-2 @0x828d5f): Decode4(mobTemplateId)@0x828d6e (-> GetMobTemplate@0x828d7f) + Decode1(bLeft)@0x828d7c. Stops after bLeft \u2014 NO trailing dir byte, NO oid. Atlas SummonDamage (writer 'SummonDamage', gated oid >=95 GMS-only -> JMS no oid) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for jms185. jms185 reference (IDB asm-confirmed). NOTE: opcode-driven swap \u2014 same as v83/v87/v95 where the OnHit export key carries the damage-reader address.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "attackIdx (signed) \u2014 damage reader @0x828d47; atlas writes fixed 12"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage (nDamage) \u2014 @0x828d5c"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mobTemplateId (monsterIdFrom; only when attackIdx>-2) \u2014 @0x828d6e (-> GetMobTemplate@0x828d7f)",
+          "guard": "attackIdx > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bLeft (only when attackIdx>-2) \u2014 @0x828d7c; atlas writes fixed 0. NO trailing dir byte after bLeft on jms185 (the dir byte is serverbound-only).",
+          "guard": "attackIdx > -2"
+        }
+      ]
+    },
+    "CSummonedPool::OnSkill": {
+      "address": "0x828cb2",
+      "direction": "clientbound",
+      "note": "SUMMON_SKILL (op 186/0xBA). The SKILL behavior lives at the IDB function NAMED OnHit (sub @0x828cb2) \u2014 the client OnHit/OnSkill names are swapped relative to behavior (summon-wire-truth.md), so this export key (CSummonedPool::OnSkill, which candidatesFromFName maps to the Atlas SummonSkill writer) points at the skill-reader ADDRESS 0x828cb2. CSummonedPool::OnPacket@0x9f7f6e reads Decode4(cid)@0x9f7fad, op 0xBA (registry SUMMON_SKILL) dispatches to OnSkill@0x828d16 by NAME but the SKILL wire is read here at 0x828cb2: a single Decode1@0x828d01, masked &0x7F @0x828d0c, passed to CSummoned::SetAttackAction@0x82800f to replay the summon's skill animation. Just ONE byte: NO summonSkillId int, NO oid. Atlas SummonSkill (writer 'SummonSkill', gated oid >=95 GMS-only -> JMS no oid) writes cid + byte(newStance) for jms185. jms185 reference (IDB asm-confirmed). NOTE: opcode-driven swap \u2014 same as v83/v87/v95 where the OnSkill export key carries the skill-reader address.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid \u2014 read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action/newStance (v & 0x7F -> SetAttackAction@0x82800f) \u2014 skill reader @0x828d01 (SKILL behavior). NO summonSkillId int on the wire."
+        }
+      ]
+    },
+    "CVecCtrlSummoned::EndUpdateActive": {
+      "address": "0xaa5fc6",
+      "direction": "serverbound",
+      "note": "MOVE_SUMMON send (CMSG 178/0xB2). CVecCtrlSummoned::EndUpdateActive@0xaa5fc6: COutPacket(0xB2)@0xaa600d + Encode4(summonId = this[190] = owner cid)@0xaa601e + CMovePath::Flush movement blob@0xaa602b (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). jms185 identity = owner cid (no oid concept; pool is cid-keyed). Atlas serverbound Move Encode writes summonId + rawMovement (the opaque blob, startX/startY being its first 4 bytes), modeled as Encode4 + EncodeBuf to match the opaque rebroadcast shape. jms185 reference (IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "summonId (this[190] = owner cid on jms185) \u2014 CVecCtrlSummoned::EndUpdateActive@0xaa601e"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "movement blob \u2014 CMovePath::Flush@0xaa602b (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
+        }
+      ]
+    },
+    "CSummoned::SetDamaged": {
+      "address": "0x828032",
+      "direction": "serverbound",
+      "note": "DAMAGE_SUMMON send (CMSG 180/0xB4). CSummoned::SetDamaged@0x828032: COutPacket(0xB4)@0x82827e + Encode4(summonId = [this+44] = owner cid)@0x828293, then (mob-present path, v8!=0 @0x82829a) Encode1(nAttackIdx)@0x8282ba + Encode4(damage)@0x8282c3 + Encode4(mobTemplateId)@0x8282e0 + Encode1(nDir<0)@0x8282f0. (No-mob path @0x8282a4: Encode1(0xFE)@0x8282a4 + Encode4(damage)@0x8282ad.) The trailing dir byte and the 0xFE no-mob branch BOTH exist on jms185 (byte-identical body to v83/v87/v95). jms185 identity = owner cid. Atlas serverbound Damage decodes summonId+attackIdx(or 0xFE)+damage(+templateId+dir for the mob path). jms185 reference (IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "summonId ([this+44] = owner cid on jms185) \u2014 SetDamaged@0x828293"
+        },
+        {
+          "op": "Encode1",
+          "comment": "attackIdx (mob-present path; 0xFE sentinel on the no-mob path @0x8282a4) \u2014 SetDamaged@0x8282ba; atlas skip1"
+        },
+        {
+          "op": "Encode4",
+          "comment": "damage (nDamage) \u2014 SetDamaged@0x8282c3 (mob path) / @0x8282ad (no-mob path)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mobTemplateId (monsterIdFrom; mob-present path only) \u2014 SetDamaged@0x8282e0",
+          "guard": "mob present (attackIdx != 0xFE)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "dir<0 flag (mob-present path only) \u2014 SetDamaged@0x8282f0; atlas skip1. PRESENT on jms185.",
+          "guard": "mob present (attackIdx != 0xFE)"
+        }
+      ]
+    },
+    "CSummoned::TryDoingAttackManual": {
+      "address": "0x824a81",
+      "direction": "serverbound",
+      "note": "SUMMON_ATTACK send (CMSG 179/0xB3). On jms185 TryDoingAttackManual is inlined into CSummoned::Update@0x824381 via sub_824A81@0x824a81 (the manual-attack target builder; called from Update case 1 @0x8245d1 and the rune-attack branch @0x82463c). It builds the per-target damage array, then calls DR_check@0x826202 to compute the _DR_INFO[4] anti-hack block (staged at var_20@0x8261fd) and jumps into the jms185 anti-tamper VM (jmp loc_DE90B8@0x82620f -> loc_D21897) where the COutPacket(0xB3) emit lives. The emit is NOT statically recoverable (virtualized), but the DR_check call PROVES the drInfo/dwKey/crc32 anti-hack envelope is present (the same envelope GMS gained at v84). repeatSkillPoint is the permanent post-v95 envelope tail (GMS v95 GetRepeatSkillPoint@0x748e50 -> Encode4@0x752450); JMS v185 (>> v95) inherits it. The field ORDER below therefore mirrors the v95 PDB-clean send (CSummoned::TryDoingAttackManual@0x751240); only the envelope's PRESENCE (proven by DR_check) and the lineage of repeatSkillPoint are jms185-derived. The per-target block + skillCRC trailer are byte-identical across all versions. jms185 identity = owner cid. Atlas serverbound Attack (hasAntiHackEnvelope -> JMS true via DR_check; hasRepeatSkillPoint -> JMS true via lineage) decodes summonId + envelope + action + count + positions + repeatSkillPoint + per-target loop + skillCRC. jms185 reference (IDB asm-confirmed envelope; VM-obfuscated emit, field order mirrored from v95).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "summonId (owner cid on jms185) \u2014 emit virtualized; mirrors v95 TryDoingAttackManual@0x752287"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[0] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x75229b"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[1] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x7522af"
+        },
+        {
+          "op": "Encode4",
+          "comment": "updateTime \u2014 emit virtualized; mirrors v95@0x7522c0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[2] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x7522d4"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[3] (anti-hack; from DR_check@0x826202) \u2014 emit virtualized; mirrors v95@0x7522e8"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action byte (action&0x7F | bLeft<<7) \u2014 emit virtualized; mirrors v95@0x752302"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwKey (crc rand key) \u2014 emit virtualized; mirrors v95@0x752325"
+        },
+        {
+          "op": "Encode4",
+          "comment": "crc32 \u2014 emit virtualized; mirrors v95@0x75234c"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nMobCount \u2014 emit virtualized; mirrors v95@0x75235c"
+        },
+        {
+          "op": "Encode2",
+          "comment": "userX \u2014 emit virtualized; mirrors v95@0x7523a5"
+        },
+        {
+          "op": "Encode2",
+          "comment": "userY \u2014 emit virtualized; mirrors v95@0x7523dd"
+        },
+        {
+          "op": "Encode2",
+          "comment": "summonX \u2014 emit virtualized; mirrors v95@0x75240a"
+        },
+        {
+          "op": "Encode2",
+          "comment": "summonY \u2014 emit virtualized; mirrors v95@0x752438"
+        },
+        {
+          "op": "Encode4",
+          "comment": "repeatSkillPoint (post-v95 envelope tail; lineage-inferred for jms185) \u2014 emit virtualized; mirrors v95@0x752450"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mob[i].mobId \u2014 emit virtualized; mirrors v95@0x7524ac, loop nMobCount times",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mob[i].templateId \u2014 mirrors v95@0x7524cc",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].hitAction \u2014 mirrors v95@0x7524e2",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].foreAction|isLeft<<7 \u2014 mirrors v95@0x75250c",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].frameIdx \u2014 mirrors v95@0x752522",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].calcDamageStatIdx \u2014 mirrors v95@0x75253b",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].curX \u2014 mirrors v95@0x75256c",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].curY \u2014 mirrors v95@0x7525a0",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].hitX \u2014 mirrors v95@0x7525d3",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].hitY \u2014 mirrors v95@0x752607",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].tDelay \u2014 mirrors v95@0x75261d",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mob[i].damage \u2014 mirrors v95@0x752632",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode4",
+          "comment": "skillCRC \u2014 emit virtualized; mirrors v95@0x75266f"
+        }
+      ]
     }
   }
 }

@@ -53,9 +53,15 @@ func TestSummonSkill(t *testing.T) {
 // v84 SKILL behavior lives at sub_7CC920@0x7cc920 (field op 0xB7): one Decode1,
 // &0x7F, SetAttackAction sub_7CBAD3 — byte-identical single-byte shape, no oid
 // (GMS_v84.1 IDB-confirmed).
+// jms185 SKILL behavior lives at the IDB function named OnHit (sub @0x828cb2, the
+// LOWER of the swapped skill/damage opcodes, registry op 0xBA): one Decode1@0x828d01,
+// &0x7F@0x828d0c, SetAttackAction@0x82800f — same single-byte shape, no oid
+// (jms185 IDB-confirmed). The export key CSummonedPool::OnSkill records this
+// skill-reader addr. The TestSummonSkill variant loop covers JMS.
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v87 ida=0x7f963b
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v84 ida=0x7cc920
+// packet-audit:verify packet=summon/clientbound/SummonSkill version=jms_v185 ida=0x828cb2
 func TestSummonSkillBytes(t *testing.T) {
 	in := NewSummonSkill(42, 1000001, 6)
 	ctx := test.CreateContext("GMS", 83, 1)

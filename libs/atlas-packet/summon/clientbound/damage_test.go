@@ -40,8 +40,16 @@ var summonDamageV83Body = []byte{
 // if attackIdx>-2:{Decode4 templateId + Decode1 bLeft} — stops at bLeft, no dir
 // byte, no oid (GMS_v84.1 IDB-confirmed byte-identical to v83). The export key
 // CSummonedPool::OnHit records this addr.
+// jms185 DAMAGE behavior lives at the IDB function named OnSkill (sub @0x828d16,
+// the HIGHER of the swapped skill/damage opcodes, registry op 0xB9): Decode1
+// attackIdx@0x828d47 + Decode4 damage@0x828d5c + if attackIdx>-2:{Decode4
+// templateId@0x828d6e + Decode1 bLeft@0x828d7c} — stops at bLeft, no dir byte, no
+// oid (jms185 IDB-confirmed byte-identical to v83). The export key
+// CSummonedPool::OnHit records this damage-reader addr. The TestSummonDamage
+// variant loop covers JMS.
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x7a6ebe
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v84 ida=0x7cc984
+// packet-audit:verify packet=summon/clientbound/SummonDamage version=jms_v185 ida=0x828d16
 func TestSummonDamageBytes(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
 	ctx := test.CreateContext("GMS", 83, 1)

@@ -23,10 +23,14 @@ func TestSummonRemove(t *testing.T) {
 // the op 0xBD remove path sub_7F8CB0@0x7f8cb0 reads one Decode1 (animated flag),
 // no oid. v84 is byte-identical: the field op 0xB4 remove path sub_7CBFA1@0x7cbfa1
 // reads one Decode1 (leave/animated flag) after the dispatcher-consumed cid, no
-// oid (GMS_v84.1 IDB-confirmed).
+// oid (GMS_v84.1 IDB-confirmed). jms185 is byte-identical: the op 0xB6 remove
+// path sub_828502@0x828502 reads one Decode1 leave-type flag@0x828517 after the
+// dispatcher-consumed cid, no oid (jms185 IDB-confirmed). The TestSummonRemove
+// variant loop covers JMS.
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x7a64eb
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v87 ida=0x7f8cb0
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v84 ida=0x7cbfa1
+// packet-audit:verify packet=summon/clientbound/SummonRemove version=jms_v185 ida=0x828502
 func TestSummonRemoveBytes(t *testing.T) {
 	in := NewSummonRemove(42, 1000001, true)
 	ctx := test.CreateContext("GMS", 83, 1)

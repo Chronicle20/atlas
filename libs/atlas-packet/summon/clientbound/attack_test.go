@@ -88,9 +88,14 @@ var summonAttackV83Body = []byte{
 // CSummonedPool::OnAttack sub_7CC338@0x7cc338 reads charLevel+action+count+
 // per{mobOid; if!=0: byte+damage} with no trailing byte — GMS_v84.1
 // IDB-confirmed byte-identical to v83).
+// jms185 (CSummonedPool::OnAttack@0x828707) reads charLevel@0x82878d +
+// action@0x82879b + count@0x8287db + per{mobOid@0x82880c; if!=0: byte@0x82881a +
+// damage@0x82882d} with NO trailing byte and NO oid — jms185 IDB-confirmed
+// byte-identical to v83. The TestSummonAttackRoundTrip variant loop covers JMS.
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x7a6882
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v87 ida=0x7f904c
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v84 ida=0x7cc338
+// packet-audit:verify packet=summon/clientbound/SummonAttack version=jms_v185 ida=0x828707
 func TestSummonAttackBytes(t *testing.T) {
 	targets := []SummonAttackTarget{
 		NewSummonAttackTarget(1000001, 1234),

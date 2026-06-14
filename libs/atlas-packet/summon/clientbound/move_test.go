@@ -56,9 +56,14 @@ func TestSummonMove(t *testing.T) {
 // the same cid + movement-blob shape as v83 — byte-identical, no oid.
 // v84 (CSummonedPool::OnMove sub_7CC317@0x7cc317 -> CMovePath__OnMovePacket@0x6a203f)
 // reads the same cid + movement-blob shape — GMS_v84.1 IDB-confirmed, no oid.
+// jms185 (CSummonedPool::OnMove@0x8286e4 -> CMovePath::OnMovePacket@0x70c5dc) reads
+// the same cid + movement-blob shape — jms185 IDB-confirmed, no oid (the v95+ oid
+// is GMS-only; jms185 keeps the pool cid-keyed). The TestSummonMove variant loop
+// covers JMS v185 bytes.
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v83 ida=0x7a6861
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v87 ida=0x7f902b
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v84 ida=0x7cc317
+// packet-audit:verify packet=summon/clientbound/SummonMove version=jms_v185 ida=0x8286e4
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
 	in := NewSummonMove(42, 1000001, 100, -50, raw)

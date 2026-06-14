@@ -31,6 +31,14 @@ require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 WZ_CANONICAL="${WZ_CANONICAL:-/opt/wz/atlas.zip}"
 BOOTSTRAP_MODE="${BOOTSTRAP_MODE:-auto}"
 MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio.minio.svc.cluster.local:9000}"
+# Canonical tenant descriptor baked into the image. Single source of truth
+# for the (region, major, minor) the baseline preflight probes and the
+# tenant-create step uses. Overridable so bats can point at a fixture.
+CANONICAL_TENANT_JSON="${CANONICAL_TENANT_JSON:-/atlas/canonical/tenant.json}"
+# Baseline-probe retry budget. Only transient (000) connection failures are
+# retried; a 404 is decisive. Test seam: bats sets these to 1/0.
+MINIO_PROBE_RETRIES="${MINIO_PROBE_RETRIES:-5}"
+MINIO_PROBE_SLEEP="${MINIO_PROBE_SLEEP:-5}"
 
 # Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
 # tenant-aware endpoints route through (ParseTenant) requires the
@@ -130,6 +138,69 @@ canonical_baseline_exists() {
     code=$(curl -sS -o /dev/null -w '%{http_code}' -I "$sha_url" 2>/dev/null || echo 000)
     [ "$code" = "200" ]
 }
+
+# baseline_object_status <url> → echo the HTTP status of an anonymous HEAD
+# (e.g. 200/404); echo 000 on a connection-level failure. Anonymous read is
+# enabled on the atlas-canonical bucket, so no credentials are needed.
+baseline_object_status() {
+    local url="$1" code
+    code=$(curl -sS -o /dev/null -w '%{http_code}' -I "$url" 2>/dev/null) || code=000
+    printf '%s' "$code"
+}
+
+# baseline_reachable <url> — retry()-friendly predicate. Sets the global
+# BASELINE_PROBE_CODE to the HTTP status and returns 0 whenever MinIO
+# answered at all (even 404); returns 1 ONLY on a 000 connection failure so
+# retry() rides out a cold-start MinIO blip without masking a real 404.
+BASELINE_PROBE_CODE=""
+baseline_reachable() {
+    BASELINE_PROBE_CODE=$(baseline_object_status "$1")
+    [ "$BASELINE_PROBE_CODE" != "000" ]
+}
+
+# probe_baseline_object <url> — drive baseline_reachable through retry(). On
+# success leaves the HTTP code in BASELINE_PROBE_CODE. If MinIO stays
+# unreachable through the retry budget, log a DISTINCT "unreachable" error
+# and exit non-zero (do NOT tell the operator to publish a baseline that may
+# already exist). Called directly (never in $()) so its exit halts the script.
+probe_baseline_object() {
+    local url="$1"
+    if ! retry "$MINIO_PROBE_RETRIES" "$MINIO_PROBE_SLEEP" baseline_reachable "$url"; then
+        log error "MinIO unreachable at $MINIO_ENDPOINT ($url) — cannot verify canonical baseline; check MinIO, do not assume the baseline is missing"
+        exit 1
+    fi
+}
+
+# preflight_baseline — hard-gate the bootstrap on a published canonical
+# baseline BEFORE any data-affecting work. Reads (region, major, minor) from
+# CANONICAL_TENANT_JSON so the probe targets exactly the version the later
+# restore requests (not the initial env-injected values). HEADs BOTH the
+# documents.dump.sha256 sidecar AND the documents.dump object, so a
+# half-published baseline fails here rather than breaking the restore later.
+preflight_baseline() {
+    local region major minor base sha_code dump_code
+    region=$(jq -r '.data.attributes.region' "$CANONICAL_TENANT_JSON")
+    major=$(jq -r '.data.attributes.majorVersion' "$CANONICAL_TENANT_JSON")
+    minor=$(jq -r '.data.attributes.minorVersion' "$CANONICAL_TENANT_JSON")
+    base="$MINIO_ENDPOINT/atlas-canonical/baseline/regions/$region/versions/$major.$minor"
+
+    probe_baseline_object "$base/documents.dump.sha256"
+    sha_code="$BASELINE_PROBE_CODE"
+    probe_baseline_object "$base/documents.dump"
+    dump_code="$BASELINE_PROBE_CODE"
+
+    if [ "$sha_code" = "200" ] && [ "$dump_code" = "200" ]; then
+        log info "canonical baseline present for $region $major.$minor"
+        return 0
+    fi
+    log error "no canonical baseline for $region $major.$minor (documents.dump.sha256=$sha_code documents.dump=$dump_code) — publish one (see docs/runbooks/canonical-version-migration.md) before deploying this env"
+    exit 1
+}
+
+# Fail fast, before any data-affecting work (tenant create, config clone,
+# restarts, restore), when no canonical baseline exists for this version.
+# A read-only MinIO probe with no dependency on atlas-data being up.
+ATLAS_STEP=preflight-baseline preflight_baseline
 
 # Resolve BOOTSTRAP_MODE=auto → baseline|full by probing MinIO; echo the
 # chosen mode (and log a WARN on fallback). For explicit modes, just

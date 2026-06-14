@@ -23,20 +23,31 @@ Dispatcher: if op==0xAF → spawn (vtable+0x2C). else `cid = Decode4`, pool-look
 | **SKILL** | **0xB3** | `cid` + `byte (action&0x7F)` | summon plays skill animation. **just 1 byte** — NO summonSkillId int, NO oid. |
 | **DAMAGE** | **0xB4** | `cid` + `byte attackIdx` + `int dmg` + if attackIdx>-2:{`int mobTemplateId`,`byte bLeft`} | **no oid**. (attackIdx is Cosmic's "12".) |
 | Remove | 0xB0 | TBD (sub_7A64EB) | |
-| Spawn | 0xAF | `cid(i4)` + `skillId(i4)` + `charLevel(b)` + `SLV(b)` + Init blob | **CONFIRMED asm** (OnCreated = sub_938F61). **NO oid on v83.** Init blob (sub_7A379B): `x(i2), y(i2), moveAction(b), foothold(i2), moveAbility(b), assistType(b), [if foothold found: enterType(b)]`. The int after cid is the **skillId** (passed to CSummoned ctor sub_7A30A9 → stored at [obj+0B4h] → consumed by `GetSkill@CSkillInfo` in sub_7A379B), NOT an oid. So `skillId` is PRESENT on v83; `oid` is the v95-only addition. v95 OnCreated reads cid, **oid**, skillId, charLevel, SLV before the Init blob. → gate **oid `>=95`**; keep `skillId` unconditional. avatar-look byte stays `>=95`. |
+| Spawn | 0xAF | `cid(i4)` + **`oid(i4)`** + `skillId(i4)` + `charLevel(b)` + `SLV(b)` + Init blob | **CORRECTED — oid IS present on v83.** The earlier "no oid" reading analyzed `sub_938F61`, an **INACTIVE** OnCreated whose dispatcher does NOT pre-read cid. The **ACTIVE** field path is **OnCreated `@0x95ADEC`**, dispatched by a CSummonedPool::OnPacket that DOES `Decode4 cid` before the call. So the live read order is: dispatcher `cid`, then OnCreated `Decode4 oid` (→ ctor arg → [obj+0ACh]), `Decode4 skillId` (→ [obj+0B4h] → `GetSkill`), `Decode1 charLevel`, `Decode1 SLV`, then Init blob (`sub_7A379B`: `x i2, y i2, moveAction b, foothold i2, moveAbility b, assistType b, [Decode1 if GetSkill≠0]`). Wire = **cid, oid, skillId** (matches Cosmic spawnSummon). Write `oid` unconditionally; avatar-look byte stays `>=95` (GMS) / `>=185` (JMS). |
 
-### v83 spawn asm evidence (sub_938F61, the 0xAF vtable+0x2C target)
+### v83 spawn — LIVE x32dbg evidence (the authoritative correction)
+Breakpoint at OnCreated `@0x95AE07` (its first `Decode4`): `[ecx+0x14]` (CInPacket read offset) = **`0xA`** = header(4) + opcode(2) + **cid(4)** already consumed by the dispatcher. So the first `Decode4` reads the int AFTER cid; stepping it returned `EAX = 0x2F785D` = **3111005 (the skillId)** — proving that with no oid, the client consumes the skillId into the cid slot and then starves at the foothold `Decode2` (`@0x7A37CF`), closing the client.
 ```
-938f7c  Decode4  -> arg_4   = cid       (ctor arg_0 -> [obj+0ACh])
-938f86  Decode4  -> var_18  = skillId   (ctor arg_4 -> [obj+0B4h]; sub_7A379B does push [edi+0B4h]; GetSkill)
-938f90  Decode1  -> var_14  = charLevel (ctor arg_8 -> [obj+0B8h])
-938f9a  Decode1  -> var_10  = SLV       (ctor arg_C -> [obj+0BCh])
-939030  call sub_7A379B  (Init blob: x i2, y i2, moveAction b, foothold i2, moveAbility b, assistType b, [enterType b if fh])
+dispatcher  Decode4 -> cid        (consumed before OnCreated; [ecx+14]=0xA on entry)
+95ae07      Decode4 -> oid        (ctor arg_0 -> [obj+0ACh])   <-- this is the missing int
+95ae10      Decode4 -> skillId    (ctor arg_4 -> [obj+0B4h]; GetSkill)
+95ae1a      Decode1 -> charLevel
+95ae24      Decode1 -> SLV
+            CSummoned::Init(sub_7A379B)  Init blob
 ```
-Only ONE int between cid and the two bytes → v83 has NO oid. v95's OnCreated inserts oid (i4) right after cid.
+> NOTE: `sub_938F61` (no-oid) and `0x95ADEC` (oid) have identical *bodies*; they differ only in whether their dispatcher pre-reads cid. The active GMS-field path is `0x95ADEC`. v84/v87/jms185 inherit this correction by the same dispatcher logic + Cosmic, but were NOT re-confirmed live — their coverage-matrix cells need re-verification against the cid-pre-reading dispatcher.
 
 ### Confirmed bugs in current Atlas impl (libs/atlas-packet/summon + templates)
-1. **Extra `oid`**: clientbound Move/Attack/Damage write `int oid` right after `cid`. v83/v87 clients DON'T read it (pool is cid-keyed). `oid` is a **v95+ addition** → gate `oid` write/read on `>= 95` (GMS), omit below.
+1. **`oid` gating was WRONG for Spawn (FIXED) — re-check Move/Attack/Damage.** Spawn
+   *does* carry the oid on v83 (live-confirmed above; oid is now written
+   unconditionally in `clientbound/spawn.go`). The original "no oid pre-95" reading
+   came from the inactive `sub_938F61` dispatcher path. The Move/Attack/Damage
+   clientbound packets were gated the same way (`oid >= 95`) on the same (now
+   suspect) reasoning — they very likely ALSO need the oid on v83, but the owner's
+   own client renders move/attack locally so a solo test never exercises them
+   (they broadcast to OTHER sessions only). **Action: live-verify Move/Attack/Damage
+   (and Remove/Skill) against the cid-pre-reading dispatcher with a second character
+   in the map before trusting their `>=95` gate.**
 2. **Skill/Damage opcodes SWAPPED** in templates for v83/v84/v87/jms185: skill is the LOWER opcode, damage the HIGHER, in **every** version (incl. v95, which the task-088 6.1 harvest got right by luck; the others it assigned backwards by trusting the misleading OnHit/OnSkill names). v83 must be SKILL=0xB3, DAMAGE=0xB4. v95 (SKILL=0x11A, DAMAGE=0x11B) already correct.
 3. **SummonSkill structure wrong**: we write `cid + summonSkillId(int) + newStance(byte)`. Client reads `cid + 1 byte`. Drop the summonSkillId int (all versions — v95 OnSkill also reads a single byte).
 

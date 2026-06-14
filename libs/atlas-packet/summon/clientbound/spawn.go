@@ -60,14 +60,17 @@ func (m SummonSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.ownerId)
-		// v95+ DELTA: the oid int between cid and skillId is a v95+ addition. The
-		// v83 spawn reader (CSummonedPool OnCreated = sub_938F61) reads cid, then
-		// skillId, charLevel, SLV directly — NO oid (IDB-confirmed; the int after
-		// cid is the skillId, consumed by GetSkill@CSkillInfo). v95's OnCreated
-		// inserts oid right after cid. See summon-wire-truth.md spawn row.
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			w.WriteInt(m.oid)
-		}
+		// oid: the summon object id, present on ALL versions (cid, oid, skillId) —
+		// matches Cosmic spawnSummon (ownerId, objectId, skillId). The ACTIVE client
+		// dispatch (v83 field path → OnCreated @0x95ADEC) has the DISPATCHER consume
+		// the leading cid, so OnCreated then reads oid, skillId, charLevel, SLV. This
+		// was confirmed live in x32dbg: at OnCreated's first Decode4 the read offset
+		// is already past cid (0x0A), so the int after cid MUST be the oid — omitting
+		// it makes the client read skillId into the cid slot and starve at the
+		// foothold Decode2 (client closes). The earlier "no oid pre-95" reading
+		// analyzed the INACTIVE OnCreated @0x938F61, whose dispatcher does NOT
+		// pre-read cid — the wrong path. See summon-wire-truth.md spawn row.
+		w.WriteInt(m.oid)
 		w.WriteInt(m.skillId)
 		// v83 "0x0A marker" is semantically the charLevel byte; the following
 		// "reserved short 0" is the foothold id. Both are visual-only and the
@@ -102,9 +105,7 @@ func (m *SummonSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.ownerId = r.ReadUint32()
-		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
-			m.oid = r.ReadUint32()
-		}
+		m.oid = r.ReadUint32() // present on all versions (see Encode)
 		m.skillId = r.ReadUint32()
 		_ = r.ReadByte() // charLevel (visual-only); see summon-packet-delta.md §3.1
 		m.level = r.ReadByte()

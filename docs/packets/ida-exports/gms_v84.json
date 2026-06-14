@@ -22588,33 +22588,8 @@
           "comment": ""
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_418C8E"
-        },
-        {
           "op": "DecodeStr",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_417123"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_417123"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_417123"
         }
       ]
     },

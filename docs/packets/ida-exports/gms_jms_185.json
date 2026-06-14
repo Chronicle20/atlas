@@ -8331,11 +8331,6 @@
         {
           "op": "DecodeStr",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_4067E3"
         }
       ]
     },

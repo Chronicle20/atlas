@@ -703,6 +703,10 @@
         "writer": "SpouseChat"
       },
       {
+        "opCode": "0x96",
+        "writer": "CharacterMultiChat"
+      },
+      {
         "opCode": "0x94",
         "writer": "BlockedServer"
       },

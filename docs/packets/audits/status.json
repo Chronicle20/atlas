@@ -1,11 +1,11 @@
 {
-  "toolSha": "30c48ce784b70acf977b04871eac6f6aebd04930",
+  "toolSha": "46f1bfa4e464a7d9e302b6d14fa8525252fd3b91",
   "exportHashes": {
     "gms_v83": "c0310c662e0984070e4ff9f7464029a9ac7343bfd65cca61c02c039480863331",
-    "gms_v84": "895ff3be6a9cf8d06c942a1fee18f72de5fc2c2ab9855f56247d3f1bd766ddce",
+    "gms_v84": "bda0d701349af14fc05247f62414ed573e266965f6290888a8ba8bea0968e965",
     "gms_v87": "c4d63aa89b881d0ea959e6110ffa8ae08c86e83aefb1fefccded9e38ab2bc38b",
     "gms_v95": "bd52a491679299724e30a2888ae39ccf110a3a66a6d50a76053f74e723b4ef2a",
-    "jms_v185": "cf6492ba4425de6a48245590921d7156263eaa895262ba034640a1e2a11f9ea1"
+    "jms_v185": "ab522355433d5283b5678ad5b1974146367d418be88a721ac023ffec6676a334"
   },
   "rows": [
     {
@@ -10967,35 +10967,31 @@
     {
       "kind": "op",
       "op": "MULTICHAT",
+      "packet": "field/clientbound/FieldMultiChat",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnGroupMessage"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 134
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 137
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 142
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 150
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 132
         }
       }

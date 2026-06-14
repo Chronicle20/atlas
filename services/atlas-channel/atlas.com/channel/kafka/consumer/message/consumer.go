@@ -22,6 +22,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
@@ -140,7 +141,7 @@ func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	return func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 			return func(name string, message string, mode byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(chatpkt.MultiChatWriter)(chatpkt.NewMultiChat(mode, name, message).Encode)
+				return session.Announce(l)(ctx)(wp)(fieldcb.MultiChatWriter)(fieldcb.NewMultiChat(mode, name, message).Encode)
 			}
 		}
 	}

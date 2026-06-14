@@ -1075,6 +1075,10 @@
         "writer": "ForcedMapEquip"
       },
       {
+        "opCode": "0x84",
+        "writer": "CharacterMultiChat"
+      },
+      {
         "opCode": "0x82",
         "writer": "BlockedServer"
       },

@@ -1109,8 +1109,8 @@ func candidatesFromFName(fname string) []candidate {
 	// Atlas MultiChat writes WriteByte(mode)+WriteAsciiString(from)+WriteAsciiString(message) — parameterised.
 	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
 	case "CField::OnGroupMessage":
-		// CSV: MULTICHAT — atlas MultiChat (clientbound chat/multi.go).
-		return []candidate{{name: "MultiChat", pkg: "chat", dir: csvpkg.DirClientbound}}
+		// CSV: MULTICHAT — atlas MultiChat (relocated to field/clientbound/multi.go, task-096 R-MARK).
+		return []candidate{{name: "MultiChat", pkg: "field", dir: csvpkg.DirClientbound}}
 
 	// CSV: WHISPER (0x97 / 151) → CField::OnWhisper.
 	// Dispatches on a leading mode byte: 9/10=find, 18=receive-whisper, 34=blocked, 146=weather.

@@ -638,7 +638,7 @@ func produceWriters() []string {
 		charcb.CharacterAppearanceUpdateWriter,
 		charcb.CharacterDespawnWriter,
 		partycb.PartyOperationWriter,
-		chatCB.MultiChatWriter,
+		fieldcb.MultiChatWriter,
 		charcb.CharacterKeyMapWriter,
 		buddy2.BuddyOperationWriter,
 		charcb.CharacterExpressionWriter,

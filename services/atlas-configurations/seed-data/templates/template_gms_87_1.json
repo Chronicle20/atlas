@@ -1037,6 +1037,10 @@
         "writer": "SpouseChat"
       },
       {
+        "opCode": "0x8E",
+        "writer": "CharacterMultiChat"
+      },
+      {
         "opCode": "0x8C",
         "writer": "BlockedServer"
       },

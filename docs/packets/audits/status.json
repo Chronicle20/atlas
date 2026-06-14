@@ -1,5 +1,5 @@
 {
-  "toolSha": "2c3a72815e8d9201775cb38e7106bdfdbf3c4b12",
+  "toolSha": "5e0d62789564a40e3cd135b3188b04a164f6f246",
   "exportHashes": {
     "gms_v83": "23ee5897a83d273ce6d2697322d0da547ad8a3d6debaa4d35350b3a1c9c1dcde",
     "gms_v84": "e94f48f613f3b25ba827394627184c550cd3c5c51fc87aaf5a69c8eaab38aa3a",
@@ -3552,35 +3552,31 @@
     {
       "kind": "op",
       "op": "SET_TAMING_MOB_INFO",
+      "packet": "character/clientbound/CharacterSetTamingMobInfo",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnSetTamingMobInfo"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 48
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 48
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 48
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 47
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 45
         }
       }
@@ -4201,15 +4197,15 @@
     {
       "kind": "op",
       "op": "MONSTER_BOOK_COVER",
+      "packet": "character/serverbound/monsterbook/CharacterCover",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::SetMonsterBookCover"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 57
         },
         "gms_v84": {
@@ -4218,18 +4214,15 @@
           "opcode": 57
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 60
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 62
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 49
         }
       }
@@ -5925,35 +5918,31 @@
     {
       "kind": "op",
       "op": "BRIDLE_MOB_CATCH_FAIL",
+      "packet": "character/clientbound/CharacterBridleMobCatchFail",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnBridleMobCatchFail"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 79
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 79
+          "state": "verified",
+          "opcode": 81
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 81
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 82
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 73
         }
       }
@@ -6379,35 +6368,31 @@
     {
       "kind": "op",
       "op": "MONSTER_BOOK_SET_CARD",
+      "packet": "character/clientbound/monsterbook/CharacterSetCard",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnMonsterBookSetCard"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 83
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 83
+          "state": "verified",
+          "opcode": 85
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 85
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 86
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 87
         }
       }
@@ -6483,35 +6468,31 @@
     {
       "kind": "op",
       "op": "MONSTER_BOOK_SET_COVER",
+      "packet": "character/clientbound/monsterbook/CharacterSetCover",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnMonsterBookSetCover"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 84
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 84
+          "state": "verified",
+          "opcode": 86
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 86
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 87
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 88
         }
       }
@@ -21277,36 +21258,33 @@
     {
       "kind": "op",
       "op": "CATCH_MONSTER",
+      "packet": "monster/clientbound/MonsterCatchMonster",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMob::OnCatchEffect",
+        "CMob::ShowCatchEffect",
         "sub_6EAE5F"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 251
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 251
+          "state": "verified",
+          "opcode": 257
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 267
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 299
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 268
         }
       }
@@ -21350,35 +21328,31 @@
     {
       "kind": "op",
       "op": "CATCH_MONSTER_WITH_ITEM",
+      "packet": "monster/clientbound/MonsterCatchMonsterWithItem",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMob::OnEffectByItem"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 252
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 252
+          "state": "verified",
+          "opcode": 258
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 268
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 300
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 269
         }
       }

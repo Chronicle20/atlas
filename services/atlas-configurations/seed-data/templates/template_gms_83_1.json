@@ -1561,6 +1561,10 @@
         "writer": "PetCashFoodResult"
       },
       {
+        "opCode": "0x4F",
+        "writer": "BridleMobCatchFail"
+      },
+      {
         "opCode": "0x53",
         "writer": "MonsterBookSetCard"
       },
@@ -2185,6 +2189,14 @@
       {
         "opCode": "0xFA",
         "writer": "MonsterHealth"
+      },
+      {
+        "opCode": "0xFB",
+        "writer": "CatchMonster"
+      },
+      {
+        "opCode": "0xFC",
+        "writer": "CatchMonsterWithItem"
       },
       {
         "opCode": "0x101",

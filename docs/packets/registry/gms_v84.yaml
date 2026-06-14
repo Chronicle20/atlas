@@ -452,10 +452,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: BRIDLE_MOB_CATCH_FAIL
   direction: clientbound
-  opcode: 79
+  opcode: 81
   fname: CWvsContext::OnBridleMobCatchFail
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10822396
+  note: 'task-092 Cluster-B: v84 opcode corrected 79->81 (0x51). CWvsContext::OnPacket @0xa51cd0 case 0x51 -> OnBridleMobCatchFail (sub_A522FC). The v84 CWvsContext sub-table is +2 shifted vs v83 (two NPC forwarders inserted). The prior csv-import value 79 (0x4F) was the stale v83 opcode.'
 - op: IMITATED_NPC_RESULT
   direction: clientbound
   opcode: 80
@@ -476,16 +478,20 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MONSTER_BOOK_SET_CARD
   direction: clientbound
-  opcode: 83
+  opcode: 85
   fname: CWvsContext::OnMonsterBookSetCard
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10822822
+  note: 'task-092 Cluster-C: v84 opcode corrected 83->85 (0x55). CWvsContext::OnPacket @0xa51cd0 case 0x55 -> OnMonsterBookSetCard (sub_A524A6). +2 shift vs v83. Stale csv value 83 (0x53) was the v83 opcode.'
 - op: MONSTER_BOOK_SET_COVER
   direction: clientbound
-  opcode: 84
+  opcode: 86
   fname: CWvsContext::OnMonsterBookSetCover
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10823107
+  note: 'task-092 Cluster-C: v84 opcode corrected 84->86 (0x56). CWvsContext::OnPacket @0xa51cd0 case 0x56 -> OnMonsterBookSetCover (sub_A525C3). +2 shift vs v83. Stale csv value 84 (0x54) was the v83 opcode.'
 - op: HOUR_CHANGED
   direction: clientbound
   opcode: 85
@@ -1432,16 +1438,20 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CATCH_MONSTER
   direction: clientbound
-  opcode: 251
+  opcode: 257
   fname: CMob::OnCatchEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6830523
+  note: 'task-092 Cluster-B: v84 opcode corrected 251->257 (0x101). CMobPool::OnMobPacket @0x68fef7 case 257 -> OnCatchEffect (sub_6839BB). The v84 mob clientbound table is shifted above the v83 cluster. Stale csv value 251 (0xFB) was the v83 opcode.'
 - op: CATCH_MONSTER_WITH_ITEM
   direction: clientbound
-  opcode: 252
+  opcode: 258
   fname: CMob::OnEffectByItem
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6831263
+  note: 'task-092 Cluster-B: v84 opcode corrected 252->258 (0x102). CMobPool::OnMobPacket @0x68fef7 case 258 -> OnEffectByItem (sub_683C9F). Stale csv value 252 (0xFC) was the v83 opcode.'
 - op: SHOW_MAGNET
   direction: clientbound
   opcode: 253

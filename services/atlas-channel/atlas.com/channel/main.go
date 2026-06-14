@@ -609,6 +609,8 @@ func produceWriters() []string {
 		monstercb.MobAffectedWriter,
 		monstercb.MonsterSpecialEffectBySkillWriter,
 		monstercb.ResetMonsterAnimationWriter,
+		monstercb.CatchMonsterWriter,
+		monstercb.CatchMonsterWithItemWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -693,6 +695,7 @@ func produceWriters() []string {
 		mbcb.MonsterBookSetCardWriter,
 		mbcb.MonsterBookSetCoverWriter,
 		charcb.SetTamingMobInfoWriter,
+		charcb.BridleMobCatchFailWriter,
 	}
 }
 

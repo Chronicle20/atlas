@@ -1373,11 +1373,12 @@
 - op: CATCH_MONSTER
   direction: clientbound
   opcode: 268
-  fname: CMob::OnCatchEffect
+  fname: CMob::ShowCatchEffect
   fname_alts:
+    - CMob::OnCatchEffect
     - sub_6EAE5F
   provenance: manual
-  note: 'IDA jms185: CMobPool::OnMobPacket (0x6F8732) case 0x10C dispatches to unnamed sub_6EAE5F (0x6EAE5F), which Decode1s then calls CMob::ShowCatchEffect - i.e. OnCatchEffect, unnamed in this IDB. Recorded as alt.'
+  note: 'IDA jms185: CMobPool::OnMobPacket (0x6F8732) case 0x10C dispatches to unnamed sub_6EAE5F (0x6EAE5F), which Decode1s then calls CMob::ShowCatchEffect. OnCatchEffect itself is unnamed in this IDB; the only named, export-resolvable symbol carrying the 1xDecode1 catch layout is CMob::ShowCatchEffect (@0x6E5F77), so it is the primary fname here (task-092 Cluster-B). OnCatchEffect/sub_6EAE5F recorded as alts.'
 - op: CATCH_MONSTER_WITH_ITEM
   direction: clientbound
   opcode: 269

@@ -11,6 +11,11 @@
         "handler": "MobBanishPlayer"
       },
       {
+        "opCode": "0x31",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
         "opCode": "0x45",
         "validator": "LoggedInValidator",
         "handler": "MountFoodHandle"
@@ -994,6 +999,18 @@
         "writer": "PetCashFoodResult"
       },
       {
+        "opCode": "0x49",
+        "writer": "BridleMobCatchFail"
+      },
+      {
+        "opCode": "0x57",
+        "writer": "MonsterBookSetCard"
+      },
+      {
+        "opCode": "0x58",
+        "writer": "MonsterBookSetCover"
+      },
+      {
         "opCode": "0x76",
         "writer": "ScriptProgress"
       },
@@ -1468,6 +1485,14 @@
       {
         "opCode": "0x10B",
         "writer": "MonsterHealth"
+      },
+      {
+        "opCode": "0x10C",
+        "writer": "CatchMonster"
+      },
+      {
+        "opCode": "0x10D",
+        "writer": "CatchMonsterWithItem"
       },
       {
         "opCode": "0x116",

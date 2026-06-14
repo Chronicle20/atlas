@@ -344,6 +344,34 @@ func candidatesFromFName(fname string) []candidate {
 		// CUserLocal::OnPacket (case 231 = 0xE7) delegates directly (no characterId prefix).
 		// Reads: Decode1 (sitting flag); if 1: Decode2 (chairId).
 		return []candidate{{name: "CharacterSitResult", dir: csvpkg.DirClientbound}}
+	// --- task-092 Cluster-B/C: catch/taming + monster-book (character domain) ---
+	case "CWvsContext::OnBridleMobCatchFail":
+		// task-092 Cluster-B: BRIDLE_MOB_CATCH_FAIL — atlas BridleMobCatchFail
+		// (writer = "BridleMobCatchFail"). Decode1 reason + Decode4 itemId +
+		// trailing Decode4 (read, discarded). Byte-identical across all 5 versions.
+		return []candidate{{name: "BridleMobCatchFail", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnSetTamingMobInfo":
+		// task-092 Cluster-B: SET_TAMING_MOB_INFO — atlas SetTamingMobInfo (writer =
+		// "SetTamingMobInfo", pre-existing encoder). Decode4×4 (charId, level, exp,
+		// fatigue) + Decode1 (levelUp). Byte-identical across all 5 versions.
+		return []candidate{{name: "SetTamingMobInfo", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMonsterBookSetCard":
+		// task-092 Cluster-C: MONSTER_BOOK_SET_CARD — atlas SetCard
+		// (character/clientbound/monsterbook; writer = "MonsterBookSetCard"). Decode1
+		// (added flag) + Decode4 cardId + Decode4 count. Same layout across versions.
+		return []candidate{{name: "SetCard", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMonsterBookSetCover":
+		// task-092 Cluster-C: MONSTER_BOOK_SET_COVER — atlas SetCover
+		// (character/clientbound/monsterbook; writer = "MonsterBookSetCover"). Single
+		// Decode4 (cover cardId). Same layout across versions.
+		return []candidate{{name: "SetCover", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::SetMonsterBookCover":
+		// task-092 Cluster-C: MONSTER_BOOK_COVER (serverbound) — atlas Cover
+		// (character/serverbound/monsterbook; handle = "MonsterBookCover"). The client
+		// sends one Encode4 (cover cardId); CUserLocal::SetMonsterBookCover is the
+		// named cover setter the send site delegates to (send site itself is
+		// unnamed/inlined). v84: unnamed in the IDB → no export entry → blocker cell.
+		return []candidate{{name: "Cover", pkg: "character", dir: csvpkg.DirServerbound}}
 	// --- Character tail bucket ---
 	case "CLogin::OnDeleteCharacterResult":
 		// Struct is DeleteCharacterResponse; writer = "DeleteCharacterResponse".
@@ -667,6 +695,20 @@ func candidatesFromFName(fname string) []candidate {
 		// task-092 Cluster-A: RESET_MONSTER_ANIMATION — atlas
 		// ResetMonsterAnimation (writer = "ResetMonsterAnimation"). Single Decode1 bool.
 		return []candidate{{name: "ResetMonsterAnimation", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnCatchEffect":
+		// task-092 Cluster-B: CATCH_MONSTER — atlas CatchMonster (writer =
+		// "CatchMonster"). Decode1 result (v83/v84/v87/jms); +Decode1 success (v95).
+		// jms OnCatchEffect is unnamed (pins against CMob::ShowCatchEffect).
+		return []candidate{{name: "CatchMonster", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::ShowCatchEffect":
+		// jms-only alias: jms CMob::OnCatchEffect is unnamed (dispatched via
+		// sub_6EAE5F); the named ShowCatchEffect is the export key that carries the
+		// 1×Decode1 catch layout for the jms CATCH_MONSTER evidence pin.
+		return []candidate{{name: "CatchMonster", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEffectByItem":
+		// task-092 Cluster-B: CATCH_MONSTER_WITH_ITEM — atlas CatchMonsterWithItem
+		// (writer = "CatchMonsterWithItem"). Decode4 itemId + Decode1 result, all versions.
+		return []candidate{{name: "CatchMonsterWithItem", pkg: "monster", dir: csvpkg.DirClientbound}}
 	case "CMobPool::OnMobCrcKeyChanged":
 		// One IDA function backs BOTH directions: it reads the clientbound
 		// MOB_CRC_KEY_CHANGED (Decode4 crcKey) and emits the serverbound

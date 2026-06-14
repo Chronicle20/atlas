@@ -1758,6 +1758,41 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::OnQueryCashResult":
 		return []candidate{{name: "MtsOperation2", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField clientbound minigame family (task-096, recipe R-CB). Version-invariant
+	// wire layouts derived from IDA (addresses pinned per version in the test markers).
+	// CField_ContiMove::OnContiMove and CField_AriantArena::OnUserScore carry a
+	// post-read switch-dispatch / Delegate chain that is application logic, not a
+	// wire read; those delegate entries are stripped from the exports (and re-pinned)
+	// so Resolve yields only the wire fields.
+	case "CField_SnowBall::OnSnowBallState":
+		return []candidate{{name: "SnowballState", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_SnowBall::OnSnowBallHit":
+		return []candidate{{name: "SnowballHit", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_SnowBall::OnSnowBallMsg":
+		return []candidate{{name: "SnowballMessage", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Coconut::OnCoconutHit":
+		return []candidate{{name: "CoconutHit", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Coconut::OnCoconutScore":
+		return []candidate{{name: "CoconutScore", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_GuildBoss::OnHealerMove":
+		return []candidate{{name: "GuildBossHealerMove", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_GuildBoss::OnPulleyStateChange":
+		return []candidate{{name: "GuildBossPulleyStateChange", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_AriantArena::OnUserScore":
+		return []candidate{{name: "AriantArenaUserScore", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_AriantArena::OnShowResult":
+		return []candidate{{name: "AriantArenaShowResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Battlefield::OnScoreUpdate":
+		return []candidate{{name: "SheepRanchInfo", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Battlefield::OnTeamChanged":
+		return []candidate{{name: "SheepRanchClothes", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_ContiMove::OnContiMove":
+		return []candidate{{name: "ContiMove", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Massacre::OnMassacreIncGauge":
+		return []candidate{{name: "PyramidGauge", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_MassacreResult::OnMassacreResult":
+		return []candidate{{name: "PyramidScore", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	case "CField::OnTransferChannelReqIgnored":

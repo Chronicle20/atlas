@@ -672,7 +672,7 @@ func produceWriters() []string {
 		monstercb.MonsterHealthWriter,
 		partycb.PartyMemberHPWriter,
 		charcb.ChalkboardUseWriter,
-		chatCB.WhisperWriter,
+		fieldcb.WhisperWriter,
 		messengercb.MessengerOperationWriter,
 		petcb.PetActivatedWriter,
 		petcb.PetMovementWriter,

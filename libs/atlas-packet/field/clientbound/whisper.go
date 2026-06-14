@@ -139,15 +139,15 @@ type WhisperFindResultMap struct {
 	targetName string
 	mapId      uint32
 	includeXY  bool
-	x          int16
-	y          int16
+	x          int32
+	y          int32
 }
 
 func NewWhisperFindResultMap(mode byte, targetName string, mapId uint32) WhisperFindResultMap {
 	return WhisperFindResultMap{mode: mode, targetName: targetName, mapId: mapId}
 }
 
-func NewWhisperFindResultMapWithXY(mode byte, targetName string, mapId uint32, x int16, y int16) WhisperFindResultMap {
+func NewWhisperFindResultMapWithXY(mode byte, targetName string, mapId uint32, x int32, y int32) WhisperFindResultMap {
 	return WhisperFindResultMap{mode: mode, targetName: targetName, mapId: mapId, includeXY: true, x: x, y: y}
 }
 
@@ -155,8 +155,8 @@ func (m WhisperFindResultMap) Mode() byte        { return m.mode }
 func (m WhisperFindResultMap) TargetName() string { return m.targetName }
 func (m WhisperFindResultMap) MapId() uint32      { return m.mapId }
 func (m WhisperFindResultMap) IncludeXY() bool    { return m.includeXY }
-func (m WhisperFindResultMap) X() int16           { return m.x }
-func (m WhisperFindResultMap) Y() int16           { return m.y }
+func (m WhisperFindResultMap) X() int32           { return m.x }
+func (m WhisperFindResultMap) Y() int32           { return m.y }
 
 func (m WhisperFindResultMap) Operation() string { return WhisperWriter }
 func (m WhisperFindResultMap) String() string {
@@ -171,8 +171,8 @@ func (m WhisperFindResultMap) Encode(l logrus.FieldLogger, _ context.Context) fu
 		w.WriteByte(1)
 		w.WriteInt(m.mapId)
 		if m.includeXY {
-			w.WriteShort(uint16(m.x))
-			w.WriteShort(uint16(m.y))
+			w.WriteInt(uint32(m.x))
+			w.WriteInt(uint32(m.y))
 		}
 		return w.Bytes()
 	}
@@ -185,8 +185,8 @@ func (m *WhisperFindResultMap) Decode(_ logrus.FieldLogger, _ context.Context) f
 		_ = r.ReadByte() // findMode = 1
 		m.mapId = r.ReadUint32()
 		if m.includeXY {
-			m.x = int16(r.ReadUint16())
-			m.y = int16(r.ReadUint16())
+			m.x = int32(r.ReadUint32())
+			m.y = int32(r.ReadUint32())
 		}
 	}
 }

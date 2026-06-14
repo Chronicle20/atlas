@@ -27,7 +27,8 @@ func TestMain(m *testing.M) {
 
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	InitIdAllocator(rc)
-	testRegistry = newRegistry(rc)
+	InitRegistry(rc)
+	testRegistry = GetRegistry()
 
 	os.Exit(m.Run())
 }

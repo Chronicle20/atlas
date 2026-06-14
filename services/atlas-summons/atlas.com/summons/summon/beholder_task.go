@@ -5,6 +5,7 @@ import (
 	charmsg "atlas-summons/character"
 	producer "atlas-summons/kafka/producer"
 	"context"
+	"math/rand"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -30,6 +31,11 @@ type BeholderTask struct {
 	// is a field so tests can substitute a capturing emitter and avoid a real kafka
 	// publish; production uses producer.ProviderImpl.
 	emit func(ctx context.Context, topic string, provider model.Provider[[]kafka.Message]) error
+	// pick returns a pseudo-random index in [0,n) and selects which single Hex
+	// statup the buff sweep applies this pulse (one random buff per pulse, so the
+	// owner's buffs accumulate one-at-a-time — original-GMS behavior). It is a
+	// field so tests can inject a deterministic chooser; production uses rand.Intn.
+	pick func(n int) int
 }
 
 func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *BeholderTask {
@@ -40,6 +46,7 @@ func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Du
 		emit: func(emitCtx context.Context, topic string, provider model.Provider[[]kafka.Message]) error {
 			return producer.ProviderImpl(l)(emitCtx)(topic)(provider)
 		},
+		pick: rand.Intn,
 	}
 }
 
@@ -110,11 +117,19 @@ func (t *BeholderTask) sweepBuff(ctx context.Context, ten tenant.Model, m Model,
 	if m.NextBuffAt().IsZero() || now.Before(m.NextBuffAt()) {
 		return
 	}
-	changes := make([]buffmsg.StatChange, 0, len(m.BuffChanges()))
-	for _, c := range m.BuffChanges() {
-		changes = append(changes, buffmsg.StatChange{Type: c.Type, Amount: c.Amount})
+	// Original GMS applies ONE randomly-chosen Hex statup per pulse, each with its
+	// own timer, so the owner's buff icons accumulate one-at-a-time (the whole pool
+	// fills in over several pulses) rather than refreshing as a single combined
+	// buff. Pick one statup from the snapshot pool and send it with Accumulate so
+	// atlas-buffs stores it per-stat (independent expiry). Re-rolling an active stat
+	// simply refreshes that stat's timer. An empty pool (no Hex trained) is skipped.
+	pool := m.BuffChanges()
+	if len(pool) == 0 {
+		return
 	}
-	if err := t.emit(ctx, buffmsg.EnvCommandTopic, buffmsg.ApplyProvider(m.Field(), m.OwnerCharacterId(), m.OwnerCharacterId(), m.BuffSourceId(), m.BuffLevel(), m.BuffDuration(), changes)); err != nil {
+	c := pool[t.pick(len(pool))]
+	changes := []buffmsg.StatChange{{Type: c.Type, Amount: c.Amount}}
+	if err := t.emit(ctx, buffmsg.EnvCommandTopic, buffmsg.ApplyProvider(m.Field(), m.OwnerCharacterId(), m.OwnerCharacterId(), m.BuffSourceId(), m.BuffLevel(), m.BuffDuration(), changes, true)); err != nil {
 		t.l.WithError(err).Warnf("Beholder sweep failed to apply buff to owner [%d] of summon [%d].", m.OwnerCharacterId(), m.Id())
 		return
 	}

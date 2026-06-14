@@ -42,13 +42,19 @@ type Command[E any] struct {
 	Body        E          `json:"body"`
 }
 
-// ApplyCommandBody mirrors buffs/kafka/message/character/kafka.go:30-36.
+// ApplyCommandBody mirrors buffs/kafka/message/character/kafka.go:30-43.
 type ApplyCommandBody struct {
 	FromId   uint32       `json:"fromId"`
 	SourceId int32        `json:"sourceId"`
 	Level    byte         `json:"level"`
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
+	// Accumulate, when true, asks atlas-buffs to store each change as its own
+	// independently-timed buff under the same sourceId (per-stat keying) rather
+	// than replacing the whole sourceId buff. The Beholder Hex sweep sets this so
+	// its buffs accumulate one-at-a-time (original-GMS behavior). omitempty keeps
+	// the wire byte-identical to other producers that never set it.
+	Accumulate bool `json:"accumulate,omitempty"`
 }
 
 // StatChange mirrors buffs/kafka/message/character/kafka.go:38-41.
@@ -60,7 +66,7 @@ type StatChange struct {
 // applyProvider applies a buff to characterId. Used by the Beholder aura sweep to
 // re-apply the Beholder buff to the owner (FR-5.x). The key is the character id so
 // all of a character's buff commands stay ordered on one partition.
-func applyProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []StatChange) model.Provider[[]kafka.Message] {
+func applyProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []StatChange, accumulate bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &Command[ApplyCommandBody]{
 		WorldId:     f.WorldId(),
@@ -70,17 +76,18 @@ func applyProvider(f field.Model, characterId uint32, fromId uint32, sourceId in
 		CharacterId: characterId,
 		Type:        CommandTypeApply,
 		Body: ApplyCommandBody{
-			FromId:   fromId,
-			SourceId: sourceId,
-			Level:    level,
-			Duration: duration,
-			Changes:  changes,
+			FromId:     fromId,
+			SourceId:   sourceId,
+			Level:      level,
+			Duration:   duration,
+			Changes:    changes,
+			Accumulate: accumulate,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 // ApplyProvider is the exported entry point for the Beholder aura sweep.
-func ApplyProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []StatChange) model.Provider[[]kafka.Message] {
-	return applyProvider(f, characterId, fromId, sourceId, level, duration, changes)
+func ApplyProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []StatChange, accumulate bool) model.Provider[[]kafka.Message] {
+	return applyProvider(f, characterId, fromId, sourceId, level, duration, changes, accumulate)
 }

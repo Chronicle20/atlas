@@ -16,7 +16,7 @@ import (
 
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
-	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) error
+	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) error
 	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
 	CancelAll(worldId world.Id, characterId uint32) error
 	CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error
@@ -40,18 +40,27 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	return GetRegistry().Get(p.ctx, characterId)
 }
 
-func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) error {
+func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) error {
 	if isDiseaseChange(changes) && GetRegistry().HasImmunity(p.ctx, characterId) {
 		p.l.Debugf("Character [%d] is immune to disease, skipping apply.", characterId)
 		return nil
 	}
 
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		b, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes)
+		applied, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes, accumulate)
 		if err != nil {
 			return err
 		}
-		return buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, fromId, sourceId, level, duration, changes, b.CreatedAt(), b.ExpiresAt()))
+		// One APPLIED per stored buff: default mode returns a single whole-source
+		// buff; accumulate mode returns one buff per stat, each carrying its own
+		// changes/expiry so the channel sets (and later cancels) each stat icon
+		// independently.
+		for _, b := range applied {
+			if err := buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, fromId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

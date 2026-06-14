@@ -112,6 +112,7 @@ func TestBeholderSweepFiresHealAndBuffWhenDue(t *testing.T) {
 	cap := &beholderCaptureEmitter{}
 	task := NewBeholderTask(logrus.New(), context.Background(), time.Second)
 	task.emit = cap.emit
+	task.pick = func(int) int { return 0 } // deterministic: pick the first pool stat
 	task.Run()
 
 	// CHANGE_HP assertion.
@@ -153,6 +154,15 @@ func TestBeholderSweepFiresHealAndBuffWhenDue(t *testing.T) {
 	}
 	if ap.Body.SourceId != int32(1320009) {
 		t.Fatalf("expected SourceId %d, got %d", int32(1320009), ap.Body.SourceId)
+	}
+	if !ap.Body.Accumulate {
+		t.Fatalf("expected Accumulate=true so Hex stats accumulate per-stat")
+	}
+	if len(ap.Body.Changes) != 1 {
+		t.Fatalf("expected exactly 1 stat per pulse (one random buff), got %d", len(ap.Body.Changes))
+	}
+	if ap.Body.Changes[0].Type != "WATK" {
+		t.Fatalf("expected the picked stat WATK, got %q", ap.Body.Changes[0].Type)
 	}
 
 	// SKILL pulse assertion: both the heal and the buff sweep emit a SummonSkill
@@ -197,6 +207,7 @@ func TestBeholderSweepSkipsWhenNotDue(t *testing.T) {
 	cap := &beholderCaptureEmitter{}
 	task := NewBeholderTask(logrus.New(), context.Background(), time.Second)
 	task.emit = cap.emit
+	task.pick = func(int) int { return 0 } // deterministic: pick the first pool stat
 	task.Run()
 
 	if got := len(cap.byTopic(charmsg.EnvCommandTopic)); got != 0 {
@@ -213,5 +224,60 @@ func TestBeholderSweepSkipsWhenNotDue(t *testing.T) {
 	}
 	if !unchanged.NextHealAt().Equal(notDue.NextHealAt().Truncate(time.Millisecond)) {
 		t.Fatalf("expected NextHealAt unchanged, got %v", unchanged.NextHealAt())
+	}
+}
+
+// Over successive pulses the buff sweep applies one random stat each, covering the
+// whole pool (accumulation), and a re-rolled stat is re-applied (timer refresh).
+func TestBeholderSweepBuffAccumulatesAcrossPulses(t *testing.T) {
+	ten, ctx, f := setupBeholderRegistry(t)
+
+	m := NewBuilder().SetId(2000010).SetOwnerCharacterId(50).SetField(f).
+		SetSummonType(SummonTypeBuffAura).SetMovementType(MovementFollow).
+		SetSkillId(1320009).SetSkillLevel(25).
+		SetNextBuffAt(time.Now().Add(-time.Second)).
+		SetBuffInterval(time.Second).
+		SetBuffSourceId(int32(1320009)).SetBuffLevel(25).SetBuffDuration(99000).
+		SetBuffChanges([]StatChange{{Type: "WDEF", Amount: 100}, {Type: "MDEF", Amount: 100}, {Type: "WATK", Amount: 15}}).
+		Build()
+	if err := GetRegistry().Put(ctx, ten, m); err != nil {
+		t.Fatal(err)
+	}
+
+	cap := &beholderCaptureEmitter{}
+	task := NewBeholderTask(logrus.New(), context.Background(), time.Second)
+	task.emit = cap.emit
+	seq := []int{0, 1, 2, 0} // WDEF, MDEF, WATK, WDEF (re-roll)
+	i := 0
+	task.pick = func(n int) int { v := seq[i] % n; i++; return v }
+
+	base := time.Now()
+	for p := 0; p < len(seq); p++ {
+		cur, err := GetRegistry().Get(ctx, ten, 2000010)
+		if err != nil {
+			t.Fatalf("re-fetch: %v", err)
+		}
+		task.sweepBuff(ctx, ten, cur, base.Add(time.Duration(p+1)*time.Hour))
+	}
+
+	got := map[string]int{}
+	for _, msg := range cap.byTopic(buffmsg.EnvCommandTopic) {
+		var ap buffmsg.Command[buffmsg.ApplyCommandBody]
+		if err := json.Unmarshal(msg.payload, &ap); err != nil {
+			t.Fatalf("decode APPLY: %v", err)
+		}
+		if !ap.Body.Accumulate || len(ap.Body.Changes) != 1 {
+			t.Fatalf("each pulse must carry exactly one stat with Accumulate=true, got %+v", ap.Body)
+		}
+		got[ap.Body.Changes[0].Type]++
+	}
+
+	for _, s := range []string{"WDEF", "MDEF", "WATK"} {
+		if got[s] == 0 {
+			t.Fatalf("expected stat %s applied across pulses, got %v", s, got)
+		}
+	}
+	if got["WDEF"] != 2 {
+		t.Fatalf("expected WDEF rolled twice (indices 0 and 3), got %d", got["WDEF"])
 	}
 }

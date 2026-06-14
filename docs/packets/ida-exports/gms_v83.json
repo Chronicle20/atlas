@@ -7934,9 +7934,118 @@
       "calls": null
     },
     "CUserLocal::TryDoingBodyAttack": {
-      "address": "0x9581a9",
-      "direction": "",
-      "calls": null
+      "address": "0x95f135",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v94 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
     },
     "CMob::OnMobAttackedByMob": {
       "address": "0x670f41",
@@ -7965,6 +8074,295 @@
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0x99b16a",
       "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingMagicAttack": {
+      "address": "0x95571f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v236 > 0 && v222 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v236 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v170"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v170"
+        }
+      ]
+    },
+    "CUserLocal::TryDoingShootAttack": {
+      "address": "0x9537d5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a6 > 0 && v233 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a6 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_424704"
+        }
+      ]
+    },
+    "sub_424704": {
+      "address": "0x424704",
+      "direction": "",
+      "calls": null
+    },
+    "CUserLocal::TryDoingNormalAttack": {
+      "address": "0x95719b",
+      "direction": "",
       "calls": null
     }
   }

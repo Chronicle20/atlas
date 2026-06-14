@@ -1,8 +1,8 @@
 {
   "toolSha": "426af65684f35154915c007c2831053c55ffa423",
   "exportHashes": {
-    "gms_v83": "8d37704b4f6f0c1dfba203c36b7e2bf5acc9dd28b3613449df2f502ffcb733f5",
-    "gms_v84": "5cf417235d9ad86de328953befd2c25f8d39dbd1b3c6d79d24e5b4f5a6001629",
+    "gms_v83": "f3608d0712c51cd7dbadb7def455072ff05cb47143e2b1ec1d33bb214bc5b77f",
+    "gms_v84": "a0d2f88076d1fbb81bb84ca427f34f8b557a765b168b7b60d8ff73b708ffbc06",
     "gms_v87": "8c8da86e7c19dde4c16ddc26a46c3b52836e7042c4421fcca2c40a6da5083508",
     "gms_v95": "e96407effd2c03bb4033f7fa9d3872d91efd03ba66ef78f3826c3ab8b9a98d65",
     "jms_v185": "8a94f69d3c6e7622fcb4a35f87185024d8e8f98f536bd5ade4bf2d8962540d5a"
@@ -3297,8 +3297,9 @@
     {
       "kind": "op",
       "op": "CLOSE_RANGE_ATTACK",
+      "packet": "character/serverbound/CharacterAttackMeleeRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::DoActiveSkill_MesoExplosion",
         "CUserLocal::TryDoingMeleeAttack",
@@ -3306,8 +3307,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 44
         },
         "gms_v84": {
@@ -3371,16 +3371,16 @@
     {
       "kind": "op",
       "op": "RANGED_ATTACK",
+      "packet": "character/serverbound/CharacterAttackRangedRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::TryDoingShootAttack",
         "CUserLocal::TryDoingSmoothingMovingShootAttack"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 45
         },
         "gms_v84": {
@@ -3444,15 +3444,15 @@
     {
       "kind": "op",
       "op": "MAGIC_ATTACK",
+      "packet": "character/serverbound/CharacterAttackMagicRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::TryDoingMagicAttack"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 46
         },
         "gms_v84": {
@@ -3516,20 +3516,19 @@
     {
       "kind": "op",
       "op": "TOUCH_MONSTER_ATTACK",
+      "packet": "character/serverbound/CharacterAttackTouchRequest",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::TryDoingBodyAttack"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 47
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 47
         },
         "gms_v87": {

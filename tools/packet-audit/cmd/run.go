@@ -566,6 +566,28 @@ func candidatesFromFName(fname string) []candidate {
 		// dr0/dr1 (GMS>83), fieldKey, dr2/dr3 (GMS>83), crc (GMS>28), dwKey/crc32 (GMS>83)
 		// then delegates movement encoding to CMovePath::Encode/Flush (DecodeLoop).
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound}}
+	// task-092 Stage 4: the four serverbound attack requests. All share the
+	// model.AttackInfo wire structure; each links to a thin per-op wrapper in
+	// character/serverbound (AttackMeleeRequest/...Ranged/...Magic/...Touch) that
+	// embeds AttackInfo, so each registry op gets a distinct packet/evidence —
+	// mirroring how clientbound CUserRemote::OnAttack maps to the shared Attack
+	// struct. The channel handlers (CharacterMelee/Ranged/Magic/TouchAttack) decode
+	// the same model.AttackInfo directly; the wrappers are the matrix's per-op codec
+	// representation and verify the identical wire structure.
+	case "CUserLocal::TryDoingNormalAttack", "CUserLocal::TryDoingMeleeAttack":
+		// CLOSE_RANGE_ATTACK. The v83 registry primary fname is TryDoingNormalAttack
+		// (TryDoingMeleeAttack is an alt); both are basic-melee senders decoded by the
+		// same AttackInfo(AttackTypeMelee). Map either to the shared wrapper.
+		return []candidate{{name: "AttackMeleeRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TryDoingShootAttack":
+		// RANGED_ATTACK (0x2D v83). alt: TryDoingSmoothingMovingShootAttack.
+		return []candidate{{name: "AttackRangedRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TryDoingMagicAttack":
+		// MAGIC_ATTACK (0x2E v83).
+		return []candidate{{name: "AttackMagicRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::TryDoingBodyAttack":
+		// TOUCH_MONSTER_ATTACK (0x2F v83). AttackTypeEnergy variant.
+		return []candidate{{name: "AttackTouchRequest", pkg: "character", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeRequest":
 		// Struct is HealOverTime; handler constant = "CharacterHealOverTimeHandle".
 		// Client sends opcode 0x64 (100) with Encode4(updateTime)+Encode4(val)+

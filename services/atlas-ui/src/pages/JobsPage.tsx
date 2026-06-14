@@ -1,21 +1,65 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase } from "lucide-react";
+import { Briefcase, ChevronRight } from "lucide-react";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { JOB_HIERARCHY, filterHierarchy, jobNodeName } from "@/lib/jobs-hierarchy";
+import { JOB_GRAPH, childrenOf, visibleRoots } from "@/lib/jobs/job-advancement-tree";
+
+function JobTreeNode({ id, depth }: { id: number; depth: number }) {
+  const entry = JOB_GRAPH[id];
+  const name = entry?.name ?? `Job ${id}`;
+  const children = childrenOf(id);
+  const indent = { paddingLeft: depth * 16 } as const;
+
+  if (children.length === 0) {
+    return (
+      <div style={indent} className="py-1">
+        <Link
+          to={`/jobs/${id}`}
+          className="text-sm text-primary underline-offset-2 hover:underline"
+        >
+          {name}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <Collapsible defaultOpen={depth === 0}>
+      <div style={indent} className="flex items-center gap-1 py-1">
+        <CollapsibleTrigger
+          aria-label={`Toggle ${name}`}
+          className="group flex h-6 w-6 items-center justify-center rounded hover:bg-muted cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
+        </CollapsibleTrigger>
+        <Link
+          to={`/jobs/${id}`}
+          className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {name}
+        </Link>
+      </div>
+      <CollapsibleContent>
+        {children.map((childId) => (
+          <JobTreeNode key={childId} id={childId} depth={depth + 1} />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 
 export function JobsPage() {
   const { activeTenant } = useTenant();
 
-  const tree = useMemo(
-    () => (activeTenant ? filterHierarchy(JOB_HIERARCHY, activeTenant.attributes.majorVersion) : []),
+  const roots = useMemo(
+    () => (activeTenant ? visibleRoots(activeTenant.attributes.majorVersion) : []),
     [activeTenant],
   );
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
+    <div className="flex flex-col flex-1 min-h-0 space-y-6 overflow-y-auto p-10 pb-16">
       <div className="flex items-center gap-2">
         <Briefcase className="h-6 w-6" />
         <h2 className="text-2xl font-bold tracking-tight">Jobs</h2>
@@ -32,31 +76,9 @@ export function JobsPage() {
           <CardHeader>
             <CardTitle>Job Hierarchy</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {tree.map((archetype) => (
-              <Collapsible key={archetype.name} defaultOpen>
-                <CollapsibleTrigger className="text-lg font-semibold py-1">
-                  {archetype.name}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pl-4 space-y-1">
-                  {archetype.classes.map((cls) => (
-                    <Collapsible key={cls.name}>
-                      <CollapsibleTrigger className="font-medium py-1">{cls.name}</CollapsibleTrigger>
-                      <CollapsibleContent className="pl-4 flex flex-wrap gap-2 py-1">
-                        {cls.jobs.map((job) => (
-                          <Link
-                            key={job.jobId}
-                            to={`/jobs/${job.jobId}`}
-                            className="text-sm text-primary underline-offset-2 hover:underline"
-                          >
-                            {jobNodeName(job)}
-                          </Link>
-                        ))}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
+          <CardContent className="space-y-1">
+            {roots.map((rootId) => (
+              <JobTreeNode key={rootId} id={rootId} depth={0} />
             ))}
           </CardContent>
         </Card>

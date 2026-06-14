@@ -611,6 +611,15 @@ func produceWriters() []string {
 		monstercb.ResetMonsterAnimationWriter,
 		monstercb.CatchMonsterWriter,
 		monstercb.CatchMonsterWithItemWriter,
+		monstercb.IncMobChargeCountWriter,
+		monstercb.MobSkillDelayWriter,
+		monstercb.MobSpeakingWriter,
+		monstercb.MobAttackedByMobWriter,
+		monstercb.MobNextAttackWriter,
+		monstercb.MobEscortReturnBeforeWriter,
+		monstercb.MobEscortStopWriter,
+		monstercb.MobEscortStopSayWriter,
+		monstercb.MobEscortFullPathWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -717,6 +726,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc
 	handlerMap[monstersb.MobSkillDelayEndHandle] = handler.MobSkillDelayEndHandleFunc
 	handlerMap[monstersb.MobTimeBombEndHandle] = handler.MobTimeBombEndHandleFunc
+	handlerMap[monstersb.MobEscortCollisionHandle] = handler.MobEscortCollisionHandleFunc
+	handlerMap[monstersb.MobRequestEscortInfoHandle] = handler.MobRequestEscortInfoHandleFunc
+	handlerMap[monstersb.MobEscortStopEndRequestHandle] = handler.MobEscortStopEndRequestHandleFunc
 	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc

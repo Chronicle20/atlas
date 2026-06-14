@@ -1460,22 +1460,36 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MOB_SPEAKING
   direction: clientbound
-  opcode: 254
+  opcode: 259
   fname: CMob::OnMobSpeaking
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x687743
+  note: 'task-092 Cluster F: opcode corrected 254->259 (0x103). IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 259 -> sub_687743/CMob::OnMobSpeaking. The 254/255/256 triple was a stale v83-seeded copy; v84 cluster shifted to 259-262.'
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
-  opcode: 255
+  opcode: 260
   fname: CMob::OnIncMobChargeCount
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x687655
+  note: 'task-092 Cluster F: opcode corrected 255->260 (0x104). IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 260 -> sub_687655/CMob::OnIncMobChargeCount.'
 - op: MOB_SKILL_DELAY
   direction: clientbound
-  opcode: 256
+  opcode: 261
   fname: CMob::OnMobSkillDelay
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 0x688524
+  note: 'task-092 Cluster F: opcode corrected 256->261 (0x105). IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 261 -> sub_688524/CMob::OnMobSkillDelay (4x Decode4). v84 HAS skill-delay (v83 does not) — a real v84!=v83 delta.'
+- op: MOB_ATTACKED_BY_MOB
+  direction: clientbound
+  opcode: 262
+  fname: CMob::OnMobAttackedByMob
+  provenance: ida-discovered
+  ida:
+    address: 0x68749a
+  note: 'task-092 Cluster F: IDA v84 CMobPool::OnMobPacket (0x68FEF7) case 262 -> sub_68749A/CMob::OnMobAttackedByMob (0x68749A). Registry gap; applicability.md v95-only corrected by the dispatcher.'
 - op: SPAWN_NPC
   direction: clientbound
   opcode: 264

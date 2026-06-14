@@ -7797,6 +7797,187 @@
       "address": "0x6e3d2f",
       "direction": "",
       "calls": null
+    },
+    "CMob::OnMobSpeaking": {
+      "address": "0x6ee398",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnMobSkillDelay": {
+      "address": "0x6ef0d4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnMobAttackedByMob": {
+      "address": "0x6ee151",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > -2"
+        }
+      ]
+    },
+    "CMob::OnEscortFullPath": {
+      "address": "0x6efa01",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v23 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v23 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v23 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::OnEscortStopSay": {
+      "address": "0x6f0090",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2) && !v22",
+          "ref": "sub_42A9FE"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "CInPacket::Decode1(v2)",
+          "ref": "sub_4067E3"
+        }
+      ]
+    },
+    "CMob::OnEscortReturnBefore": {
+      "address": "0x6f029c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CMob::IsActive(this)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "CMob::IsActive(this) && v6 && v5 >= 0 && v7 && v5 < *(v7 - 4)",
+          "ref": "sub_40265E"
+        }
+      ]
+    },
+    "sub_42A9FE": {
+      "address": "0x42a9fe",
+      "direction": "",
+      "calls": null
     }
   }
 }

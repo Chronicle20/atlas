@@ -404,6 +404,21 @@
         "handler": "MobCrcKeyChangedReply"
       },
       {
+        "opCode": "0xCB",
+        "validator": "LoggedInValidator",
+        "handler": "MobEscortCollision"
+      },
+      {
+        "opCode": "0xCC",
+        "validator": "LoggedInValidator",
+        "handler": "MobRequestEscortInfo"
+      },
+      {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
+        "handler": "MobEscortStopEndRequest"
+      },
+      {
         "opCode": "0xAA",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle"
@@ -1469,6 +1484,30 @@
       {
         "opCode": "0x106",
         "writer": "MobAffected"
+      },
+      {
+        "opCode": "0x10E",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x10F",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x110",
+        "writer": "MobEscortFullPath"
+      },
+      {
+        "opCode": "0x112",
+        "writer": "MobEscortStopSay"
+      },
+      {
+        "opCode": "0x113",
+        "writer": "MobEscortReturnBefore"
+      },
+      {
+        "opCode": "0x114",
+        "writer": "MobAttackedByMob"
       },
       {
         "opCode": "0x107",

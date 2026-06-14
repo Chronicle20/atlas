@@ -9171,6 +9171,11 @@
       "address": "0x930710",
       "direction": "",
       "calls": null
+    },
+    "_bstr_t::_bstr_t": {
+      "address": "0x403260",
+      "direction": "",
+      "calls": null
     }
   }
 }

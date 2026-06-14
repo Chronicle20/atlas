@@ -8512,6 +8512,30 @@
       "address": "0x9e17dc",
       "direction": "",
       "calls": null
+    },
+    "CMob::OnMobAttackedByMob": {
+      "address": "0x6ac074",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 > -2"
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,11 @@
+{
+  "WriterName": "MonsterMobEscortStop",
+  "IDAName": "CMob::OnEscortStopEndPermmision",
+  "Address": "0x63b9c0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/monster/clientbound/mob_escort_stop.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

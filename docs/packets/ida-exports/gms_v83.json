@@ -7937,6 +7937,30 @@
       "address": "0x9581a9",
       "direction": "",
       "calls": null
+    },
+    "CMob::OnMobAttackedByMob": {
+      "address": "0x670f41",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v3 > -2"
+        }
+      ]
     }
   }
 }

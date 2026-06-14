@@ -2203,6 +2203,22 @@
         "writer": "MobAffected"
       },
       {
+        "opCode": "0x103",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x104",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0x105",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x106",
+        "writer": "MobAttackedByMob"
+      },
+      {
         "opCode": "0xFC",
         "writer": "MonsterDamage"
       },

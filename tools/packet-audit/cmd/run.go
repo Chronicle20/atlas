@@ -719,6 +719,57 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "MobCrcKeyChangedReply", pkg: "monster", dir: csvpkg.DirServerbound},
 		}
 
+	// --- Combat: monster version-tail (task-092 Cluster F) ---
+	case "CMob::OnIncMobChargeCount":
+		// INC_MOB_CHARGE_COUNT — atlas IncMobChargeCount. Two Decode4
+		// (chargeCount, attackReady). v83/v84/v87/v95; jms version-absent.
+		return []candidate{{name: "IncMobChargeCount", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMobSkillDelay":
+		// MOB_SKILL_DELAY — atlas MobSkillDelay. Four Decode4 (delay, skillId,
+		// skillLevel, option). v84/v87/v95/jms; v83 version-absent (no dispatcher case).
+		return []candidate{{name: "MobSkillDelay", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMobSpeaking":
+		// MOB_SPEAKING — atlas MobSpeaking. Two Decode4 forwarded to TrySpeaking.
+		// All five versions.
+		return []candidate{{name: "MobSpeaking", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnMobAttackedByMob":
+		// MOB_ATTACKED_BY_MOB — atlas MobAttackedByMob. Decode1 attackIndex +
+		// Decode4 damage, then (attackIndex>-2) Decode4 mobTemplateId + Decode1 left.
+		// All five versions.
+		return []candidate{{name: "MobAttackedByMob", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnNextAttack":
+		// MOB_NEXT_ATTACK — atlas MobNextAttack. Single Decode4. v95-only.
+		return []candidate{{name: "MobNextAttack", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortReturnBefore":
+		// MOB_ESCORT_RETURN_BEFORE — atlas MobEscortReturnBefore. Single Decode4.
+		// v95 + jms.
+		return []candidate{{name: "MobEscortReturnBefore", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortStopEndPermmision":
+		// MOB_ESCORT_STOP — atlas MobEscortStop. Empty payload (handler takes no
+		// CInPacket). v95 (jms dispatches but has no registry row).
+		return []candidate{{name: "MobEscortStop", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortStopSay":
+		// MOB_ESCORT_STOP_SAY — atlas MobEscortStopSay. Decode4 duration +
+		// Decode4 chatBalloon + Decode1 weather + Decode1 hasText (DecodeStr text +
+		// Decode4 action). v95 + jms.
+		return []candidate{{name: "MobEscortStopSay", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::OnEscortFullPath":
+		// MOB_ESCORT_FULL_PATH — atlas MobEscortFullPath. Decode4 mode + Decode4
+		// count + per-waypoint loop + tail + arrive/reset bools. v95 + jms.
+		return []candidate{{name: "MobEscortFullPath", pkg: "monster", dir: csvpkg.DirClientbound}}
+	case "CMob::SendCollisionEscort":
+		// MOB_ESCORT_COLLISION — atlas MobEscortCollision. Two Encode4 (mobCrc,
+		// dest). v95 + jms.
+		return []candidate{{name: "MobEscortCollision", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::SendRequestEscortPath":
+		// MOB_REQUEST_ESCORT_INFO — atlas MobRequestEscortInfo. Single Encode4
+		// (mobCrc). v95 + jms.
+		return []candidate{{name: "MobRequestEscortInfo", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::SendEscortStopEndRequest":
+		// MOB_ESCORT_STOP_END_REQUEST — atlas MobEscortStopEndRequest. Single
+		// Encode4 (mobCrc). v95 + jms.
+		return []candidate{{name: "MobEscortStopEndRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+
 	// --- Combat: drop (clientbound) ---
 	case "CDropPool::OnDropEnterField":
 		return []candidate{{name: "Spawn", pkg: "drop", dir: csvpkg.DirClientbound}}

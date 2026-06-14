@@ -370,6 +370,21 @@
       {
         "opCode": "0x113",
         "handler": "CashShopOperationHandle"
+      },
+      {
+        "opCode": "0xEC",
+        "validator": "LoggedInValidator",
+        "handler": "MobEscortCollision"
+      },
+      {
+        "opCode": "0xED",
+        "validator": "LoggedInValidator",
+        "handler": "MobRequestEscortInfo"
+      },
+      {
+        "opCode": "0xEE",
+        "validator": "LoggedInValidator",
+        "handler": "MobEscortStopEndRequest"
       }
     ],
     "writers": [
@@ -925,6 +940,42 @@
       {
         "opCode": "0x190",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0x12E",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "MobSkillDelay"
+      },
+      {
+        "opCode": "0x130",
+        "writer": "MobEscortFullPath"
+      },
+      {
+        "opCode": "0x131",
+        "writer": "MobEscortStop"
+      },
+      {
+        "opCode": "0x132",
+        "writer": "MobEscortStopSay"
+      },
+      {
+        "opCode": "0x133",
+        "writer": "MobEscortReturnBefore"
+      },
+      {
+        "opCode": "0x134",
+        "writer": "MobNextAttack"
+      },
+      {
+        "opCode": "0x135",
+        "writer": "MobAttackedByMob"
       }
     ]
   },

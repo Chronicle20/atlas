@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobSpeaking
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnMobSpeaking
+    address: "0x6711ea"
+    decompile_sha256: 1228a0d2c0fdcf7a9e34929ea2ce15c342373fb3188a2b0f81031b15f60285f2
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_speaking_test.go#TestMobSpeaking

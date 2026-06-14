@@ -2175,6 +2175,18 @@
         "writer": "MobAffected"
       },
       {
+        "opCode": "0xFD",
+        "writer": "MobSpeaking"
+      },
+      {
+        "opCode": "0xFE",
+        "writer": "IncMobChargeCount"
+      },
+      {
+        "opCode": "0xFF",
+        "writer": "MobAttackedByMob"
+      },
+      {
         "opCode": "0xF6",
         "writer": "MonsterDamage"
       },

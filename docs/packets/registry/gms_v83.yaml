@@ -1236,6 +1236,15 @@
   opcode: 256
   fname: CMob::OnMobSkillDelay
   provenance: csv-import
+  note: 'task-092 Cluster F: VERSION-ABSENT in v83. IDA v83 CMobPool::OnMobPacket (0x67936D) switch ENDS at case 0xFF (OnMobAttackedByMob) with no skill-delay case — MOB_SKILL_DELAY is a later-version feature (v84 case 261 onward). Row retained per registry no-delete rule; no codec/evidence for v83.'
+- op: MOB_ATTACKED_BY_MOB
+  direction: clientbound
+  opcode: 255
+  fname: CMob::OnMobAttackedByMob
+  provenance: ida-discovered
+  ida:
+    address: 0x670f41
+  note: 'task-092 Cluster F: IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFF -> CMob::OnMobAttackedByMob (0x670F41). Decode1 attackIndex + Decode4 damage, then (attackIndex>-2) Decode4 mobTemplateId + Decode1 left. Was a registry gap (the op dispatches in v83 but had no row); applicability.md v95-only is corrected by the dispatcher.'
 - op: SPAWN_NPC
   direction: clientbound
   opcode: 257

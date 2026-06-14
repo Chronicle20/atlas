@@ -1318,28 +1318,42 @@
   note: 'IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10D -> CMob::OnMobSpeaking (0x6AC31E). Registry FName was empty. NOTE: the CSV op-name labels for 0x10D-0x110 appear shifted by one vs the IDB handlers (same off-by-one as v83''s 0xFD-0xFF mob cluster); op names left unchanged, FNames realigned to IDB. Flagged for follow-up.'
 - op: MOB_SPEAKING
   direction: clientbound
-  opcode: 270
+  opcode: 269
   fname: CMob::OnMobSpeaking
-  provenance: manual
-  note: 'task-092 Stage 1: un-rotate. fname assigned by op-name. IDA v87 CMob::OnMobSpeaking (0x6AC31E), dispatched from CMobPool::OnMobPacket (0x6B4EAD) case 0x10D. Atlas op enum sits +1 vs the client case label for the 0x10D-0x110 cluster (known off-by-one, see SHOW_MAGNET note); fname tracks the op name, not the raw case.'
+  provenance: ida-discovered
+  ida:
+    address: 0x6ac31e
+  note: 'task-092 Cluster F: opcode corrected 270->269 (0x10D). IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10D -> CMob::OnMobSpeaking (0x6AC31E). Un-rotates the deliberate Stage-1 +1; the registry opcode now matches the dispatcher case.'
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
-  opcode: 271
+  opcode: 270
   fname: CMob::OnIncMobChargeCount
-  provenance: manual
-  note: 'task-092 Stage 1: un-rotate. fname assigned by op-name. IDA v87 CMob::OnIncMobChargeCount (0x6AC230), dispatched from CMobPool::OnMobPacket (0x6B4EAD) case 0x10E. See MOB_SPEAKING note re: cluster off-by-one.'
+  provenance: ida-discovered
+  ida:
+    address: 0x6ac230
+  note: 'task-092 Cluster F: opcode corrected 271->270 (0x10E). IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10E -> CMob::OnIncMobChargeCount (0x6AC230).'
 - op: MOB_SKILL_DELAY
   direction: clientbound
-  opcode: 272
+  opcode: 271
   fname: CMob::OnMobSkillDelay
-  provenance: manual
-  note: 'task-092 Stage 1: un-rotate. fname assigned by op-name. IDA v87 CMob::OnMobSkillDelay (0x6AD0E8), dispatched from CMobPool::OnMobPacket (0x6B4EAD) case 0x10F. See MOB_SPEAKING note re: cluster off-by-one.'
+  provenance: ida-discovered
+  ida:
+    address: 0x6ad0e8
+  note: 'task-092 Cluster F: opcode corrected 272->271 (0x10F). IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10F -> CMob::OnMobSkillDelay (0x6AD0E8, 4x Decode4).'
+- op: MOB_ATTACKED_BY_MOB
+  direction: clientbound
+  opcode: 272
+  fname: CMob::OnMobAttackedByMob
+  provenance: ida-discovered
+  ida:
+    address: 0x6ac074
+  note: 'task-092 Cluster F: IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x110 -> CMob::OnMobAttackedByMob (0x6AC074). Registry gap; applicability.md v95-only corrected by the dispatcher.'
 - op: MOB_ESCORT_FULL_PATH
   direction: clientbound
   opcode: 273
   fname: CMob::OnEscortFullPath
   provenance: csv-import
-  note: IDA v87 does not dispatch 0x111 (CMobPool::OnMobPacket range ends at 0x110) and no CMob::OnEscortFullPath symbol exists in the IDB; likely the tail of the 0x10D-0x110 CSV off-by-one. Row retained (never delete); see SHOW_MAGNET (0x10D) note.
+  note: 'task-092 Cluster F: VERSION-ABSENT in v87. IDA v87 CMobPool::OnMobPacket (0x6B4EAD) range ENDS at 0x110 (OnMobAttackedByMob) — 0x111 is NOT dispatched and no CMob::OnEscortFullPath symbol exists in the v87 IDB. The escort family post-dates v87 (v95 first). Row retained per no-delete rule; no codec/evidence for v87.'
 - op: SPAWN_NPC
   direction: clientbound
   opcode: 274
@@ -3117,6 +3131,7 @@
   opcode: 209
   fname: CMob::SendCollisionEscort
   provenance: csv-import
+  note: 'task-092 Cluster F: VERSION-ABSENT in v87. The escort family post-dates v87 — the v87 IDB has no CMob::SendCollisionEscort symbol and the mob dispatcher has no escort cases (ends at 0x110). Row retained per no-delete rule; no codec/evidence for v87.'
 - op: NPC_ACTION
   direction: serverbound
   opcode: 210

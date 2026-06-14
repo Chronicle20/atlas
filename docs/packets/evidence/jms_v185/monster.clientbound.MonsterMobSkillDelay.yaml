@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobSkillDelay
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnMobSkillDelay
+    address: "0x6ef0d4"
+    decompile_sha256: a9f55e126e2cada124bd310ea5f45f0cd952a1742b1d020beb68a5ef3bfe736a
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_skill_delay_test.go#TestMobSkillDelay

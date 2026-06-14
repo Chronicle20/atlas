@@ -33,4 +33,34 @@ Decide per cell at Stage 2 (codec+test+route still land; only the evidence pin i
 - Carnival ops live under new pkg `monster/carnival/{clientbound,serverbound}` (keeps `monster/` tier-1 prefix).
 - Gate rule: `MajorAtLeast(87)`, except the v84-only MOB_SKILL_DELAY delta noted above.
 
-## Next: Stage 2 (plan.md Cluster order D→A→B→C→F→E), then Stage 3 docs, Stage 4 gates+review.
+## Stage 2 progress
+
+- **Cluster D** (CRC/misc, 4 ops) — committed `95178fbdf`.
+- **Cluster A** (combat/damage, 10 ops) — committed `2db28f14c` (clientbound trio) +
+  `b4394460e` (serverbound damage). 9 of 10 ops landed; matrix --check exit 0.
+  - Clientbound: MOB_AFFECTED, MONSTER_SPECIAL_EFFECT_BY_SKILL (v95-only 3-field
+    layout, region+major gate), RESET_MONSTER_ANIMATION — ✅ all 5.
+  - Serverbound: FIELD_DAMAGE_MOB ✅5, MOB_DAMAGE_MOB ✅5, MOB_DAMAGE_MOB_FRIENDLY
+    (reconciled to pre-existing character/MonsterDamageFriendly) ✅5, MONSTER_BOMB
+    ✅4 (v84 sender unnamed), MOB_SKILL_DELAY_END ✅4 (v83 version-absent),
+    MOB_TIME_BOMB_END ✅2 (v95/jms; v83/v84/v87 inlined into CMob::Update).
+  - **2.A7 TOUCH_MONSTER_ATTACK — DEFERRED (not landed).** CUserLocal::TryDoingBodyAttack
+    is a large, branch-heavy, version-DIVERGENT attack packet, NOT byte-plumbing:
+    v83 (opcode 0x30 @0x9593f7) has two distinct serialization branches (touch vs
+    body attack) with a per-hit detail loop; v95 (opcode 0x32 @0x931a6d) is a wholly
+    different shape (field-key, _DR_INFO crypto-masked fields, GetCrc32 checksum,
+    SKILLLEVELDATA, ATTACKINFO[15] hit loop). The two are not byte-compatible. jms
+    TryDoingBodyAttack Hex-Rays decompile FAILS (per applicability.md fn9). A faithful
+    5-version codec requires modeling the full attack/hit-detail structure — out of
+    scope for this batch. Left as a follow-up; no codec/route landed (the opcode stays
+    "unhandled" rather than shipping a knowingly-wrong codec). Registry rows untouched.
+
+### v84/registry opcode corrections made in Cluster A (IDB-verified, were csv-stale)
+- clientbound: MOB_AFFECTED 245→251/0xFB; MONSTER_SPECIAL_EFFECT_BY_SKILL 247→253/0xFD
+  (CMobPool::OnMobPacket @0x68fef7 dispatcher cases).
+- serverbound: FIELD_DAMAGE_MOB 191→196/0xC4; MOB_SKILL_DELAY_END 195→200/0xC8
+  (CMob::Update @0x67dd33 / @0x67d534 COutPacket sites).
+- v83 serverbound MOB_SKILL_DELAY_END row removed (version-absent).
+
+## Next: Cluster B (catch/taming), C (monster book), F (version-tail), E (carnival);
+then Stage 3 docs, Stage 4 gates+review. Revisit TOUCH_MONSTER_ATTACK as its own task.

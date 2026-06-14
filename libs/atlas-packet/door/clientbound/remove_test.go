@@ -22,7 +22,11 @@ import (
 // NO position (8-byte body); that is modelled by RemoveTownDoor (remove_town.go),
 // NOT SpawnPortal — see remove_town_test.go for the 8-byte invariant test.
 //
-// packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v83 ida=TODO
+// IDA gms_v83: CTownPortalPool::OnTownPortalRemoved (0x7be064, dispatched from
+// CTownPortalPool::OnPacket case 0x114) reads Decode1(animate flag) →
+// Decode4(ownerId) and reads nothing further — the 5-byte layout pinned below.
+//
+// packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v83 ida=0x7be064
 func TestRemoveDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

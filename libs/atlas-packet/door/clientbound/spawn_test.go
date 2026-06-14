@@ -18,7 +18,11 @@ import (
 //
 // Total: 9 bytes. Unbranched across all versions (no structural delta known).
 //
-// packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v83 ida=TODO
+// IDA gms_v83: CTownPortalPool::OnTownPortalCreated (0x7bd6c6, dispatched from
+// CTownPortalPool::OnPacket case 0x113) reads Decode1(launched) → Decode4(ownerId)
+// → Decode2(x) → Decode2(y) — byte-for-byte the layout pinned below.
+//
+// packet-audit:verify packet=door/clientbound/SpawnDoor version=gms_v83 ida=0x7bd6c6
 func TestSpawnDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

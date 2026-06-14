@@ -23,7 +23,11 @@ import (
 // encoder. Cosmic removeDoor(town=true) omits writePos (8-byte body); this
 // encoder always writes position (12 bytes) and must NOT be used for removal.
 //
-// packet-audit:verify packet=door/clientbound/SpawnPortal version=gms_v83 ida=TODO
+// IDA gms_v83: CWvsContext::OnTownPortal (0xa226a6) reads Decode4(townId) →
+// Decode4(targetId), then Decode2(x) → Decode2(y) ONLY when neither id is
+// MapId.NONE (999999999) — so a live portal is exactly the 12-byte layout below.
+//
+// packet-audit:verify packet=door/clientbound/SpawnPortal version=gms_v83 ida=0xa226a6
 func TestSpawnPortal(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

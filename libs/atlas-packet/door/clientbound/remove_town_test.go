@@ -23,7 +23,11 @@ import (
 //
 // Unbranched across all versions (no structural delta known).
 //
-// packet-audit:verify packet=door/clientbound/RemoveTownDoor version=gms_v83 ida=TODO
+// IDA gms_v83: CWvsContext::OnTownPortal (0xa226a6) guards the x/y reads with
+// `if (townId != 999999999 && targetId != 999999999)`, so two NONE ids skip
+// Decode2(x)/Decode2(y) entirely — confirming the 8-byte removal body below.
+//
+// packet-audit:verify packet=door/clientbound/RemoveTownDoor version=gms_v83 ida=0xa226a6
 func TestRemoveTownDoor(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 

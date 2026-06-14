@@ -2469,11 +2469,11 @@
         "writer": "RemoveDoor"
       },
       {
-        "opCode": "0x043",
+        "opCode": "0x45",
         "writer": "SpawnPortal"
       },
       {
-        "opCode": "0x043",
+        "opCode": "0x45",
         "writer": "RemoveTownDoor"
       }
     ]

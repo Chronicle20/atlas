@@ -9643,11 +9643,6 @@
         {
           "op": "Decode4",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "CMapLoadable::SetObjectState"
         }
       ]
     },
@@ -9803,21 +9798,9 @@
           "comment": ""
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "get_consume_cash_item_type(m_pStr) == 20 && v4 >= 0",
-          "ref": "CItemInfo::GetItemString"
-        },
-        {
           "op": "DecodeStr",
           "comment": "",
           "guard": "get_consume_cash_item_type(m_pStr) == 20 && v4 >= 0"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "get_consume_cash_item_type(m_pStr) == 20 && v4 >= 0 && TSingleton<CUIStatusBar>::ms_pInstance._m_pStr",
-          "ref": "CUIStatusBar::ChatLogAdd"
         }
       ]
     },

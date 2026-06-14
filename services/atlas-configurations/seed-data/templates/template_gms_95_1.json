@@ -691,20 +691,48 @@
         "writer": "BlockedMap"
       },
       {
+        "opCode": "0x99",
+        "writer": "SummonItemUnavailable"
+      },
+      {
+        "opCode": "0x95",
+        "writer": "ForcedMapEquip"
+      },
+      {
+        "opCode": "0x94",
+        "writer": "BlockedServer"
+      },
+      {
         "opCode": "0x9A",
         "writer": "FieldEffect"
+      },
+      {
+        "opCode": "0x9B",
+        "writer": "FieldObstacleOnOff"
       },
       {
         "opCode": "0x9C",
         "writer": "FieldObstacleOnOffList"
       },
       {
+        "opCode": "0x9D",
+        "writer": "FieldObstacleAllReset"
+      },
+      {
         "opCode": "0x9E",
         "writer": "FieldEffectWeather"
       },
       {
+        "opCode": "0x9F",
+        "writer": "PlayJukebox"
+      },
+      {
         "opCode": "0xA1",
         "writer": "OxQuiz"
+      },
+      {
+        "opCode": "0xA2",
+        "writer": "GmEventInstructions"
       },
       {
         "opCode": "0xA3",
@@ -713,6 +741,14 @@
       {
         "opCode": "0xA5",
         "writer": "FieldTransportState"
+      },
+      {
+        "opCode": "0xA7",
+        "writer": "SetQuestTime"
+      },
+      {
+        "opCode": "0xA6",
+        "writer": "SetQuestClear"
       },
       {
         "opCode": "0xA9",

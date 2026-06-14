@@ -21671,11 +21671,6 @@
         {
           "op": "Decode4",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_65833F"
         }
       ]
     },

@@ -290,7 +290,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-summons/atlas-summons
-    newTag: main-a2207e7
+    newTag: main-240228b
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports

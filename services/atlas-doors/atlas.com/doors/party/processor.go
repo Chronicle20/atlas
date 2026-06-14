@@ -1,0 +1,32 @@
+package party
+
+import (
+	"context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/sirupsen/logrus"
+)
+
+type Processor interface {
+	GetByMemberId(characterId uint32) (Model, error)
+	GetById(partyId uint32) (Model, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+	return &ProcessorImpl{l: l, ctx: ctx}
+}
+
+func (p *ProcessorImpl) GetById(partyId uint32) (Model, error) {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(partyId), Extract)()
+}
+
+func (p *ProcessorImpl) GetByMemberId(characterId uint32) (Model, error) {
+	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(characterId), Extract, model.Filters[Model]())
+	return model.FirstProvider(rp, model.Filters[Model]())()
+}

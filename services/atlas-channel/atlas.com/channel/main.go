@@ -17,6 +17,7 @@ import (
 	"atlas-channel/kafka/consumer/compartment"
 	"atlas-channel/kafka/consumer/consumable"
 	"atlas-channel/kafka/consumer/conversation_reward_notice"
+	doorConsumer "atlas-channel/kafka/consumer/door"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
@@ -79,6 +80,7 @@ import (
 	mbsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound/monsterbook"
 	chatCB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	chatSB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
+	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	doorsb "github.com/Chronicle20/atlas/libs/atlas-packet/door/serverbound"
 	dropcb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 	dropsb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/serverbound"
@@ -179,6 +181,7 @@ func main() {
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
 	party_quest.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -446,6 +449,9 @@ func buildListener(
 		if err := register(mistConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(doorConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(conversation.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -690,6 +696,10 @@ func produceWriters() []string {
 		mbcb.MonsterBookSetCardWriter,
 		mbcb.MonsterBookSetCoverWriter,
 		charcb.SetTamingMobInfoWriter,
+		doorcb.SpawnDoorWriter,
+		doorcb.RemoveDoorWriter,
+		doorcb.SpawnPortalWriter,
+		doorcb.RemoveTownDoorWriter,
 	}
 }
 

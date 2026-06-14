@@ -112,9 +112,10 @@ func parseDBTime(s string) (time.Time, error) {
 // resolveStatusTenantId maps the ?scope= query parameter to the tenant_id the
 // ingest wrote documents under, mirroring workers.tenantFromParams: the default
 // (empty or "tenant") scope reads the active tenant's rows, while "shared" reads
-// the canonical baseline rows anchored to canonical.TenantUUID. The shared scope
-// is gated behind operator credentials, matching wzinput.ResolveScope. On an
-// invalid request it writes the HTTP error and returns ok=false.
+// the canonical baseline rows anchored to the version-scoped canonical id
+// (canonical.TenantId(region, major, minor)). The shared scope is gated behind
+// operator credentials, matching wzinput.ResolveScope. On an invalid request it
+// writes the HTTP error and returns ok=false.
 func resolveStatusTenantId(w http.ResponseWriter, r *http.Request, t tenant.Model) (string, bool) {
 	switch r.URL.Query().Get("scope") {
 	case "", "tenant":

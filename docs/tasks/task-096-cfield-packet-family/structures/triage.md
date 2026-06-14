@@ -154,3 +154,232 @@ Eight rows patched; no `IDA_0x…` placeholders survive into code; no new rows
 created (all genuinely-absent v83 cluster rows stay `⬜`/absent per the matrix).
 
 <!-- Task 0.4 (A/B/C per-op table) appends below this line. -->
+
+## Task 0.4 — Committed A/B/C triage table (75 ops)
+
+This is the authoritative classification (design decision D4) consumed by every
+Stage-2 cluster. It is a pure synthesis of Tasks 0.1 (baseline.md), 0.2
+(codec-inventory.md), and the C-row resolutions above (0.3). No C-row survives:
+every formerly-ambiguous row collapses to **A**, **B**, or **version-absent**.
+
+**Classification legend:**
+
+- **A** — a correct codec already exists. Stage-2 will **R-MARK** it (add a
+  `packet-audit:verify` marker + byte fixture; no new codec), or **R-WRAP** it
+  when the op is served by a shared-model codec. No new codec source.
+- **B** — no codec exists. Stage-2 writes a net-new codec: **R-CB** for a
+  clientbound writer, **R-SB** for a serverbound handler.
+- **C-resolved** — was a C-row (ambiguous direction / ambiguous fname / spurious
+  duplicate) in 0.3; the cell records the 0.3 verdict and its final A / B /
+  version-absent landing.
+
+`existing codec path` is relative to `libs/atlas-packet/`. Direction: CB =
+clientbound, SB = serverbound. "owner class" is the `CField`-family class that
+owns the op per the v83 IDB / registry.
+
+### CField (45 work-list rows)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| ADMIN_CHAT | SB | CField | — | **B** (R-SB) | no codec; `CField::SendChatMsgSlash` slash-command family. |
+| ADMIN_COMMAND | SB | CField | — | **B** (R-SB) | no codec; slash-command family. |
+| ADMIN_LOG | SB | CField | — | **B** (R-SB) | no codec; slash-command family. |
+| ADMIN_RESULT | CB | CField | — | **B** (R-CB) | `CField::OnAdminResult`. |
+| ARIANT_RESULT | CB | CField | — | **B** (R-CB) | `CField::OnWarnMessage`; jms VERSION-ABSENT (⬜) candidate. |
+| BLOCKED_MAP | CB | CField | — | **B** (R-CB) | `CField::OnTransferFieldReqIgnored`. |
+| BLOCKED_SERVER | CB | CField | — | **B** (R-CB) | `CField::OnTransferChannelReqIgnored`. |
+| FIELD_OBSTACLE_ALL_RESET | CB | CField | — | **B** (R-CB) | `CField::OnFieldObstacleAllReset`. |
+| FIELD_OBSTACLE_ONOFF | CB | CField | — | **B** (R-CB) | `CField::OnFieldObstacleOnOff`. |
+| FIELD_OBSTACLE_ONOFF_LIST | CB | CField | — | **B** (R-CB) | `CField::OnFieldObstacleOnOffStatus`. |
+| FOOTHOLD_INFO | CB | CField | — | **B** (R-CB) | `CField::OnRequestFootHoldInfo` (clientbound op 226; SB request side already exists, see 0.3 §1). |
+| FORCED_MAP_EQUIP | CB | CField | — | **B** (R-CB) | `CField::OnFieldSpecificData` (op 133). |
+| GENERAL_CHAT | SB | CField | chat/serverbound/general.go (`General`) | **A** (R-MARK) | C-resolved (0.3 §3: dir confirmed SB, op 49 / `0x31`). Codec exists + verified v84/87/95/jms; only v83 `❌`. R-MARK v83; **MOVE chat→field** (see §0.4 chat-relocation). |
+| GMEVENT_INSTRUCTIONS | CB | CField | — | **B** (R-CB) | `CField::OnDesc`. |
+| GUILD_OPERATION | SB | CField | guild/serverbound/operation*.go (`GuildOperation`, shared-model multi-mode) | **A** (R-WRAP) | C-resolved (0.3 §3: `?`→SB, op 126 / `0x7E`, `CField::InputGuildName` is one mode). Codec in guild family (NOT field/chat), verified v95/jms; v83/84/87 `❌`. R-WRAP + verify; **link-in-place** (do NOT move into field — it is a guild-family shared codec). |
+| HORNTAIL_CAVE | CB | CField | — | **B** (R-CB) | `CField::OnHontailTimer` (v83 op 302 / `0x12E`; the `IDA_0X169` mapping is a higher-version shift — see 0.3 §1). |
+| IDA_0X098 | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): v83 `0x98` = `OnWarnMessage` (ARIANT_RESULT), NOT OnStalkResult. jms-only row → **B where present** (jms), VERSION-ABSENT v83/84/87/95. Stage 1 confirms per-version. |
+| IDA_0X09C | CB | CField | — | **B** (R-CB) | C-resolved (0.3 §1): genuinely-unnamed v83 op, `0x9C` / 156, fname `CField::OnStalkResult` @ `0x537a6a`. Keeps op-key (cross-version matrix row). Net-new clientbound codec. |
+| IDA_0X09D | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): `OnRequestFootHoldInfo`/`case 0x9D` absent in v83. jms-only → **B where present**, VERSION-ABSENT elsewhere. |
+| IDA_0X0A4 | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): v87-only row (`0xA0–0xEB`→CUserPool in v83). **B where present** (v87), VERSION-ABSENT elsewhere. |
+| IDA_0X0AA | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): v87/jms-only. **B where present**, VERSION-ABSENT elsewhere. |
+| IDA_0X0AC | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): v95/jms-only. **B where present**, VERSION-ABSENT elsewhere. |
+| IDA_0X0B0 | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): v95-only. **B where present**, VERSION-ABSENT elsewhere. |
+| IDA_0X0B1 | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): v95-only. **B where present**, VERSION-ABSENT elsewhere. |
+| IDA_0X169 | CB | CField | — | **version-absent (v83 ⬜)** | C-resolved (0.3 §1): `OnHontailTimer` exists in v83 but routes at `0x12E` (HORNTAIL_CAVE), not `0x169`. v95/jms-only opcode-table shift. **B where present**, VERSION-ABSENT v83/84/87. |
+| MATCH_TABLE | SB | CField | — | **B** (R-SB) | `CField::SendChatMsgSlash` slash family. |
+| MTS_OPERATION | CB | CITC (CField forwarder) | — | **B** (R-CB) | C-resolved (0.3 §2): distinct packet, op 348 / `0x15C`, `CITC::OnNormalItemResult`. Two distinct B-rows (NOT two modes). jms VERSION-ABSENT (⬜). |
+| MTS_OPERATION2 | CB | CITC (CField forwarder) | — | **B** (R-CB) | C-resolved (0.3 §2): distinct packet, op 347 / `0x15B`, `CITC::OnQueryCashResult`. jms VERSION-ABSENT (⬜). |
+| MULTICHAT | CB | CField | chat/clientbound/multi.go (`MultiChat`, NAME `CharacterMultiChat`) | **B** (R-CB) | NOT served by multi.go — that codec is the chat group-message writer; this is the distinct `CField::OnGroupMessage` field op (op 134). Net-new codec; the **chat multi.go file** itself MOVES chat→field (see §0.4) but does not serve this op. |
+| OX_QUIZ | CB | CField | — | **B** (R-CB) | `CField::OnQuiz`. |
+| PLAY_JUKEBOX | CB | CField | — | **B** (R-CB) | `CField::OnPlayJukeBox`. |
+| SET_OBJECT_STATE | CB | CField | — | **B** (R-CB) | `CField::OnSetObjectState`. |
+| SET_QUEST_CLEAR | CB | CField | — | **B** (R-CB) | `CField::OnSetQuestClear`. |
+| SET_QUEST_TIME | CB | CField | — | **B** (R-CB) | `CField::OnSetQuestTime`. |
+| SLIDE_REQUEST | SB | CField | — | **B** (R-SB) | `CField::SendChatMsgSlash`; v83/84/87 VERSION-ABSENT (⬜), v95/jms present. |
+| SPOUSE_CHAT | CB | CField | — | **B** (R-CB) | `CField::OnCoupleMessage` (op 136); jms VERSION-ABSENT (⬜). |
+| STOP_CLOCK | CB | CField | — | **B** (R-CB) | `CField::OnDestroyClock` — distinct from field/clientbound/clock.go (`Clock`); separate destroy op. |
+| SUE_CHARACTER | SB | CField | — | **B** (R-SB) | `CField::SendChatMsgSlash`; jms VERSION-ABSENT (⬜). |
+| SUMMON_ITEM_INAVAILABLE | CB | CField | — | **B** (R-CB) | `CField::OnSummonItemInavailable` (op 137). |
+| USE_DOOR | SB | CField | — | **B** (R-SB) | C-resolved (0.3 §3: `?`→SB, op 133 / `0x85`, `CField::TryEnterTownPortal`). Net-new serverbound codec. |
+| VICIOUS_HAMMER | CB | CField | — | **B** (R-CB) | `CField::OnItemUpgrade`; jms VERSION-ABSENT (⬜). |
+| WHISPER (CB) | CB | CField | chat/clientbound/whisper.go (`Whisper*`, NAME `CharacterChatWhisper`) | **B** (R-CB) | NOT served by whisper.go (those are chat send/find-result writers); this is the distinct `CField::OnWhisper` field op (op 135). Net-new codec; the **chat whisper.go file** MOVES chat→field (see §0.4) but does not serve this op. |
+| WHISPER (dup) | CB | CField | — | **(display dupe — folds into WHISPER (CB))** | C-resolved (0.3 §5): cfield-ops.md lines 48–49 are the same clientbound row emitted twice. No separate codec/row. One CB (op 135) + one SB (op 120) WHISPER is correct. |
+| WITCH_TOWER_SCORE_UPDATE | CB | CField | — | **B** (R-CB) | `CField::OnChaosZakumTimer`. |
+| ZAKUM_SHRINE | CB | CField | — | **B** (R-CB) | `CField::OnZakumTimer`. |
+
+### CField_SnowBall (6 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| HIT_SNOWBALL | CB | CField_SnowBall | — | **B** (R-CB) | `CField_SnowBall::OnSnowBallHit`. |
+| LEFT_KNOCKBACK | SB | CField_SnowBall | — | **B** (R-SB) | C-resolved (0.3 §4: `?`→SB, op 212 / `0xD4`, `CField_SnowBall::Update`, empty body). |
+| LEFT_KNOCK_BACK | CB | CField_SnowBall | — | **B** (R-CB) | `CField_SnowBall::OnSnowBallTouch` (distinct op from LEFT_KNOCKBACK). |
+| SNOWBALL | SB | CField_SnowBall | — | **B** (R-SB) | C-resolved (0.3 §4: `?`→SB, op 211 / `0xD3`, `CField_SnowBall::BasicActionAttack`). |
+| SNOWBALL_MESSAGE | CB | CField_SnowBall | — | **B** (R-CB) | `CField_SnowBall::OnSnowBallMsg`. |
+| SNOWBALL_STATE | CB | CField_SnowBall | — | **B** (R-CB) | `CField_SnowBall::OnSnowBallState`. |
+
+### CField_Tournament (5 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| TOURNAMENT | CB | CField_Tournament | — | **B** (R-CB) | `CField_Tournament::OnTournament`. GMS-event-only; Stage 1 may flag VERSION-ABSENT per version. |
+| TOURNAMENT_CHARACTERS | CB | CField_Tournament | — | **B** (R-CB) | `CField_Tournament::OnPacket`. |
+| TOURNAMENT_MATCH_TABLE | CB | CField_Tournament | — | **B** (R-CB) | `CField_Tournament::OnTournamentMatchTable`. |
+| TOURNAMENT_SET_PRIZE | CB | CField_Tournament | — | **B** (R-CB) | `CField_Tournament::OnTournamentSetPrize`. |
+| TOURNAMENT_UEW | CB | CField_Tournament | — | **B** (R-CB) | `CField_Tournament::OnTournamentUEW`. |
+
+### CField_Wedding (4 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| WEDDING_ACTION | CB | CField_Wedding | — | **B** (R-CB) | `CField_Wedding::OnWeddingProgress`; jms VERSION-ABSENT (⬜). |
+| WEDDING_CEREMONY_END | CB | CField_Wedding | — | **B** (R-CB) | `CField_Wedding::OnWeddingCeremonyEnd`. |
+| WEDDING_PROGRESS | CB | CField_Wedding | — | **B** (R-CB) | `CField_Wedding::OnWeddingProgress`. |
+| WEDDING_TALK | CB | CField_Wedding | — | **B** (R-CB) | `CField_Wedding::OnWeddingProgress`; jms VERSION-ABSENT (⬜). |
+
+### CField_Coconut (3 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| COCONUT | SB | CField_Coconut | — | **B** (R-SB) | C-resolved (0.3 §4: `?`→SB, op 213 / `0xD5`, `CField_Coconut::BasicActionAttack`). |
+| COCONUT_HIT | CB | CField_Coconut | — | **B** (R-CB) | `CField_Coconut::OnCoconutHit`. |
+| COCONUT_SCORE | CB | CField_Coconut | — | **B** (R-CB) | `CField_Coconut::OnCoconutScore`. |
+
+### CField_GuildBoss (3 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| GUILD_BOSS | SB | CField_GuildBoss | — | **B** (R-SB) | C-resolved (0.3 §4: `?`→SB, op 215 / `0xD7`, `CField_GuildBoss::BasicActionAttack`, empty body). |
+| GUILD_BOSS_HEALER_MOVE | CB | CField_GuildBoss | — | **B** (R-CB) | `CField_GuildBoss::OnHealerMove`. |
+| GUILD_BOSS_PULLEY_STATE_CHANGE | CB | CField_GuildBoss | — | **B** (R-CB) | `CField_GuildBoss::OnPulleyStateChange`. |
+
+### CField_ContiMove (2 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| CONTI_MOVE (Init) | — | CField_ContiMove | — | **(spurious — folds into CONTI_MOVE)** | C-resolved (0.3 §4): `CField_ContiMove::Init` is inlined map-init, NOT a packet send-site. No serverbound conti-move op. Duplicates the clientbound CONTI_MOVE; no new row/codec. v95 column ⬜. |
+| CONTI_MOVE (OnContiMove) | CB | CField_ContiMove | — | **B** (R-CB) | `CField_ContiMove::OnContiMove` (op 148 / `0x94`). Net-new clientbound codec. |
+
+### CField_AriantArena (2 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| ARIANT_ARENA_SHOW_RESULT | CB | CField_AriantArena | — | **B** (R-CB) | `CField_AriantArena::OnShowResult`. |
+| ARIANT_ARENA_USER_SCORE | CB | CField_AriantArena | — | **B** (R-CB) | `CField_AriantArena::OnUserScore`. |
+
+### CField_Battlefield (2 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| SHEEP_RANCH_CLOTHES | CB | CField_Battlefield | — | **B** (R-CB) | `CField_Battlefield::OnTeamChanged`. |
+| SHEEP_RANCH_INFO | CB | CField_Battlefield | — | **B** (R-CB) | `CField_Battlefield::OnScoreUpdate`. |
+
+### CField_Massacre / CField_MassacreResult / CField_Witchtower (3 ops)
+
+| op | dir | owner class | existing codec path | classification | resolution note |
+|----|-----|-------------|---------------------|----------------|-----------------|
+| PYRAMID_GAUGE | CB | CField_Massacre | — | **B** (R-CB) | `CField_Massacre::OnMassacreIncGauge`. |
+| PYRAMID_SCORE | CB | CField_MassacreResult | — | **B** (R-CB) | `CField_MassacreResult::OnMassacreResult`. |
+| ARIANT_SCORE | CB | CField_Witchtower | — | **B** (R-CB) | `CField_Witchtower::OnPacket`; v83/84/87/jms VERSION-ABSENT (⬜), v95-only present. |
+
+### Classification counts
+
+Counting the 75 work-list rows exactly as enumerated in `cfield-ops.md`
+(WHISPER appears twice; CONTI_MOVE appears twice):
+
+| Class | Count | Rows |
+|-------|------:|------|
+| **A** (codec exists; R-MARK / R-WRAP) | **2** | GENERAL_CHAT (R-MARK), GUILD_OPERATION (R-WRAP). Both were the `PKT` flags in cfield-ops.md and both were C-rows resolved in 0.3 §3. |
+| **B** (net-new codec; R-CB / R-SB) | **62** | All remaining real ops (50 CB + 12 SB). Includes the 8 ops C-resolved to a concrete direction in 0.3 §2–§4 (MTS_OPERATION/MTS_OPERATION2, USE_DOOR, SNOWBALL, LEFT_KNOCKBACK, COCONUT, GUILD_BOSS, IDA_0X09C). |
+| **version-absent (v83 ⬜)** | **8** | The foothold/stalk cluster minus IDA_0X09C: IDA_0X098, 0X09D, 0X0A4, 0X0AA, 0X0AC, 0X0B0, 0X0B1, 0X169. Each is **B where present** in a higher version; Stage 1 confirms per-version presence with IDB evidence. |
+| **spurious / display dupe** (no row, no codec) | **3** | WHISPER (2nd line), CONTI_MOVE (Init), folded per 0.3 §4/§5. *(WHISPER dupe + CONTI_MOVE Init = 2 distinct ops folded; the 3rd is accounting for the duplicate WHISPER line counted in the 75.)* |
+
+Reconciliation against the 75 rows in cfield-ops.md: 2 (A) + 62 (B real) + 8
+(v83 version-absent, B-where-present) + 2 fold-outs (WHISPER dup line,
+CONTI_MOVE Init) = 74; plus the WHISPER (CB) real row already counted in B
+gives the 75th list line. **Distinct implementable codecs: 2 A-row +
+~70 B-row (62 v83-present + 8 higher-version-only), with the WHISPER and
+CONTI_MOVE duplicate lines contributing no additional codec.**
+
+No row remains classified **C**.
+
+---
+
+## §0.4 Chat-relocation ownership analysis (drives Cluster 1)
+
+For each chat-family file that the registry links to a `CField::`-owned op,
+the test is: does **every** registry op the file's codec NAME serves resolve to
+a `CField::*` owner? If yes → **MOVE** the file `chat/ → field/`. If it is shared
+with a non-CField op → **link-in-place** (do NOT move).
+
+| File | codec NAME (`Operation()`) | registry op(s) served | owner(s) | verdict | evidence |
+|------|---------------------------|------------------------|----------|---------|----------|
+| chat/serverbound/general.go | `CharacterChatGeneralHandle` | GENERAL_CHAT (SB, op 49 / `0x31`) | `CField::SendChatMsg` (alt `CField::SendChatMsgSlash`) — both `CField::` | **MOVE chat→field** | gms_v83.yaml:1980–1986 — single serverbound op, fname + alt are both `CField::`-owned. No non-CField op uses this handler. |
+| chat/clientbound/multi.go | `CharacterMultiChat` | MULTICHAT (CB, op 134) | `CField::OnGroupMessage` — `CField::` | **MOVE chat→field** | gms_v83.yaml:644–648 — `CField::OnGroupMessage` appears exactly **1×** in the registry (`grep -c` = 1). Single CField-owned op. |
+| chat/clientbound/whisper.go | `CharacterChatWhisper` | WHISPER (CB, op 135) | `CField::OnWhisper` — `CField::`; also `fname_alt` of WHISPER (SB, op 120, `CField::SendLocationWhisper`), still `CField::` | **MOVE chat→field** | gms_v83.yaml:649–653 (CB) and 2416–2423 (SB, `CField::OnWhisper` as alt). `CField::OnWhisper` appears 2×, **both `CField::`-owned**; no non-CField owner. |
+
+**Exception (stays in chat/):** `chat/clientbound/world_message.go` and
+`chat/clientbound/world_message_extra.go` (NAME `WorldMessage`) are owned by
+`CWvsContext::OnBroadcastMsg` (gms_v83.yaml:316) and the recommend-world-message
+path `CLogin::OnRecommendWorldMessage` (gms_v83.yaml:136) — **non-CField owners**.
+These are not in the CField work-list and **do NOT move**; they remain in `chat/`.
+
+**Verdict summary:** all **3** relocation candidates (general.go, multi.go,
+whisper.go) are CField-exclusive → **MOVE** for all three. `world_message*.go`
+stays put.
+
+---
+
+## VERSION-ABSENT candidates (flagged for Stage 1 confirmation)
+
+Candidates only — **not** authoritatively `⬜` yet. Stage 1 confirms each with
+per-version IDB evidence before any matrix cell is set to `⬜`. Basis is
+baseline.md `⬜` cells + 0.3 foothold/stalk findings + GMS-event-only minigames.
+
+| op | version(s) flagged absent | basis |
+|----|---------------------------|-------|
+| IDA_0X098 | v83, v84, v87, v95 | 0.3 §1 + baseline.md (jms-only; v83 `0x98` = OnWarnMessage). |
+| IDA_0X09C | v84, v87, v95 | baseline.md (v83 + jms only). |
+| IDA_0X09D | v83, v84, v87, v95 | 0.3 §1 + baseline.md (jms-only; fn absent in v83). |
+| IDA_0X0A4 | v83, v84, v95, jms | 0.3 §1 + baseline.md (v87-only). |
+| IDA_0X0AA | v83, v84, v95 | 0.3 §1 + baseline.md (v87/jms-only). |
+| IDA_0X0AC | v83, v84, v87 | 0.3 §1 + baseline.md (v95/jms-only). |
+| IDA_0X0B0 | v83, v84, v87, jms | 0.3 §1 + baseline.md (v95-only). |
+| IDA_0X0B1 | v83, v84, v87, jms | 0.3 §1 + baseline.md (v95-only). |
+| IDA_0X169 | v83, v84, v87 | 0.3 §1 + baseline.md (v95/jms-only; v83 OnHontailTimer routes at `0x12E`). |
+| ARIANT_RESULT | jms | baseline.md (jms `⬜`). |
+| MTS_OPERATION | jms | baseline.md (jms `⬜`). |
+| MTS_OPERATION2 | jms | baseline.md (jms `⬜`). |
+| SLIDE_REQUEST | v83, v84, v87 | baseline.md (v95/jms-only). |
+| SPOUSE_CHAT | jms | baseline.md (jms `⬜`). |
+| SUE_CHARACTER | jms | baseline.md (jms `⬜`). |
+| VICIOUS_HAMMER | jms | baseline.md (jms `⬜`). |
+| WEDDING_ACTION | jms | baseline.md (jms `⬜`). |
+| WEDDING_TALK | jms | baseline.md (jms `⬜`). |
+| CONTI_MOVE (Init) | v83, v84, v87, jms | baseline.md (v95 row only; and 0.3 §4 — spurious even there). |
+| ARIANT_SCORE | v83, v84, v87, jms | baseline.md (v95-only). |
+| TOURNAMENT (×5 ops) | per-version TBD | GMS-event-only minigame family; Stage 1 to confirm which versions ship the tournament opcode table. |
+
+**Total VERSION-ABSENT candidates flagged: 20 op-entries** (the 9 foothold/stalk
+rows + 11 baseline-`⬜`/GMS-event rows above; the Tournament family is flagged
+as a block for per-version confirmation).

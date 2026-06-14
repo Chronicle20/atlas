@@ -65,7 +65,7 @@ metadata:
     # from PostSync to Sync but did not pin the wave, so cold starts of any
     # PR env deadlocked the same way PostSync did. Co-locating bootstrap
     # with the Deployments restores PR 493's intended parallel-apply: the
-    # four provider services (tenants/configurations/data/wz-extractor) do
+    # three provider services (tenants/configurations/data) do
     # not need tenant config to start, so they come up; bootstrap polls
     # them via atlas-ingress, seeds config, and bumps the four panicking
     # consumer services (channel/login/world/drops) via its RBAC.

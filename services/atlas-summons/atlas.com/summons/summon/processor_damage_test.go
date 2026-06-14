@@ -73,6 +73,39 @@ func TestPuppetDamageDecrementsAndDestroysAtZero(t *testing.T) {
 	}
 }
 
+// TestAttackerImmuneToMonsterDamage guards the bug where an attacker summon
+// (HP 0) was despawned on the first monster hit: the v83 client sends a
+// DamageSummon when a mob touches a non-puppet summon (observed on Phoenix
+// 3121006), and the handler applied it unconditionally, driving HP negative.
+// Only puppets absorb monster damage; attackers must be immune.
+func TestAttackerImmuneToMonsterDamage(t *testing.T) {
+	p, captured := newPuppetProcessor(t, effectWithX(100, 60000))
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+
+	// Phoenix (3121006) is an attacker — created with HP 0.
+	m, err := p.Spawn(f, 42, 3121006, 20, 100, -50, 0, 0)
+	if err != nil {
+		t.Fatalf("Spawn returned error: %v", err)
+	}
+	if m.IsPuppet() {
+		t.Fatalf("3121006 (Phoenix) should not be a puppet")
+	}
+
+	// A monster hit must be ignored: summon survives, no DAMAGED/DESTROYED emitted.
+	if err := p.Damage(m.Id(), 42, 157, 9300018); err != nil {
+		t.Fatalf("Damage returned error: %v", err)
+	}
+	if _, err := GetRegistry().Get(p.ctx, p.t, m.Id()); err != nil {
+		t.Fatalf("attacker should survive a monster hit, but it was despawned: %v", err)
+	}
+	if got := countStatusEvents(captured, EventSummonStatusDamaged); got != 0 {
+		t.Fatalf("expected no DAMAGED event for an attacker, got %d", got)
+	}
+	if got := countStatusEvents(captured, EventSummonStatusDestroyed); got != 0 {
+		t.Fatalf("expected no DESTROYED event for an attacker, got %d", got)
+	}
+}
+
 func TestDamageByNonOwnerDropped(t *testing.T) {
 	p, captured := newPuppetProcessor(t, effectWithX(100, 60000))
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()

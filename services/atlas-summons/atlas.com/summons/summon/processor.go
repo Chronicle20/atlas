@@ -374,6 +374,14 @@ func (p *ProcessorImpl) Damage(id uint32, senderCharacterId uint32, amount int32
 	if !ok {
 		return nil // already gone / no owned summon
 	}
+	// Only puppets absorb monster damage. Attackers (hawk/phoenix/eagle/dragon/etc)
+	// and the Beholder aura are created with HP 0, so applying damage would drive HP
+	// negative and despawn them on the FIRST monster hit. The v83 client still sends
+	// a DamageSummon when a monster touches a non-puppet summon (observed on Phoenix
+	// 3121006), so guard here: non-puppets are immune.
+	if !m.IsPuppet() {
+		return nil
+	}
 	id = m.Id()
 	updated, err := GetRegistry().Update(p.ctx, p.t, id, func(cur Model) Model {
 		return cur.AddHP(-amount)

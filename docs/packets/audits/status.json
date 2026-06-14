@@ -14938,7 +14938,8 @@
           "opcode": 190
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 280
         },
         "jms_v185": {

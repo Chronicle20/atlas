@@ -11,7 +11,7 @@ import (
 
 func TestSummonMove(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
-	in := NewSummonMove(42, 1000001, 100, -50, raw)
+	in := NewSummonMove(42, 1000001, raw)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -32,12 +32,6 @@ func TestSummonMove(t *testing.T) {
 			if out.Oid() != 1000001 {
 				t.Errorf("oid = %d, want 1000001", out.Oid())
 			}
-			if out.StartX() != 100 {
-				t.Errorf("startX = %d, want 100", out.StartX())
-			}
-			if out.StartY() != -50 {
-				t.Errorf("startY = %d, want -50", out.StartY())
-			}
 			if !bytes.Equal(out.RawMovement(), raw) {
 				t.Errorf("rawMovement = %v, want %v", out.RawMovement(), raw)
 			}
@@ -45,46 +39,44 @@ func TestSummonMove(t *testing.T) {
 	}
 }
 
-// TestSummonMoveBytes pins the v83 wire: cid + oid + startX + startY + movement
-// blob. The cid is read upstream by CUserPool::OnUserCommonPacket@0x972401;
-// CSummonedPool::OnPacket@0x938dd7 then does one Decode4 = the oid before OnMove.
-// (The prior "no oid" reading missed the upstream cid read and labeled the oid as
-// the cid — see summon-wire-truth.md.) NOTE: v84/v87/jms inherit this correction
-// by the same dispatcher logic; their matrix cells need re-verification against the
-// cid-pre-reading dispatcher (the old ida= markers analyzed the wrong layer).
+// TestSummonMoveBytes pins the v83 wire: cid + oid + the raw CMovePath blob, with
+// NO separate start position. The blob already begins with start x,y (CMovePath::
+// Encode), and the client reads it via CMovePath::Decode (v83 @0x68a33c, from
+// CSummonedPool::OnMove@0x7a6861). Writing the position separately mis-aligns the
+// observer's decode by 4 bytes and crashes the client (ZException / error 38);
+// the owner renders movement locally and never receives this packet, so only
+// observers hit it. cid is read upstream by CUserPool::OnUserCommonPacket@0x972401;
+// CSummonedPool::OnPacket@0x938dd7 reads the oid before OnMove. NOTE: the summon
+// clientbound matrix cells are demoted pending a packet-verifier re-pin against
+// the corrected dispatcher (see summon-wire-truth.md).
 func TestSummonMoveBytes(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
-	in := NewSummonMove(42, 1000001, 100, -50, raw)
+	in := NewSummonMove(42, 1000001, raw)
 	ctx := test.CreateContext("GMS", 83, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, oid=1000001=0x000F4241, startX=100=0x0064, startY=-50=0xFFCE, raw blob
+	// cid=42, oid=1000001=0x000F4241, then the raw movement blob (no separate pos)
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // cid
 		0x41, 0x42, 0x0F, 0x00, // oid
-		0x64, 0x00, // startX
-		0xCE, 0xFF, // startY
-		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement
+		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement (CMovePath blob)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v83 bytes = % X, want % X", got, want)
 	}
 }
 
-// TestSummonMoveBytesV95 pins the v95+ DELTA: the oid int after cid.
-// packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v95 ida=0x759830
+// TestSummonMoveBytesV95 confirms v95 carries the same shape (cid + oid + blob) —
+// there is no v95-specific move delta beyond the (now universal) oid.
 func TestSummonMoveBytesV95(t *testing.T) {
 	raw := []byte{0x01, 0x02, 0x03, 0x04, 0x05}
-	in := NewSummonMove(42, 1000001, 100, -50, raw)
+	in := NewSummonMove(42, 1000001, raw)
 	ctx := test.CreateContext("GMS", 95, 1)
 	got := test.Encode(t, ctx, in.Encode, nil)
 
-	// cid=42, oid=0x000F4241, startX=100, startY=-50, raw blob
 	want := []byte{
 		0x2A, 0x00, 0x00, 0x00, // cid
-		0x41, 0x42, 0x0F, 0x00, // oid (v95+ only)
-		0x64, 0x00, // startX
-		0xCE, 0xFF, // startY
+		0x41, 0x42, 0x0F, 0x00, // oid
 		0x01, 0x02, 0x03, 0x04, 0x05, // rawMovement
 	}
 	if !bytes.Equal(got, want) {

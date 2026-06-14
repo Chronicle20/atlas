@@ -105,7 +105,7 @@ func handleStatusEventMoved(sc server.Model, wp writer.Producer) message.Handler
 		// the move locally, so re-sending would double-apply it.
 		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.OwnerCharacterId,
 			session.Announce(l)(ctx)(wp)(summonpkt.SummonMoveWriter)(
-				writer.SummonMoveBody(e.OwnerCharacterId, e.SummonId, e.Body.X, e.Body.Y, e.Body.RawMovement)))
+				writer.SummonMoveBody(e.OwnerCharacterId, e.SummonId, e.Body.RawMovement)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to move summon [%d] for characters in map [%d].", e.SummonId, e.MapId)
 		}

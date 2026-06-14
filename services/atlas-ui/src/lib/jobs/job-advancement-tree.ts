@@ -135,10 +135,10 @@ export function childrenOf(id: number): number[] {
 
 /** Walk parent edges to the branch root. Returns the id itself if it is a root or unknown. */
 export function rootOf(id: number): number {
-  let cur = JOB_GRAPH[id];
+  let cur: JobEntry | undefined = JOB_GRAPH[id];
   if (!cur) return id;
   while (cur.parent != null) {
-    const next = JOB_GRAPH[cur.parent];
+    const next: JobEntry | undefined = JOB_GRAPH[cur.parent];
     if (!next) break;
     cur = next;
   }

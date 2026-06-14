@@ -3,8 +3,9 @@
 //
 // Workers run inside the ingest pod (MODE=ingest). The Params (Region,
 // MajorVersion, MinorVersion, ScopeKey, ScratchDir) come from environment
-// variables set by JobCreator. ScopeKey is either "shared" (canonical sentinel
-// tenant) or "tenants/<uuid>"; workers derive a tenant.Model from this so the
+// variables set by JobCreator. ScopeKey is either "shared" (version-scoped
+// canonical id derived via canonical.TenantId(region, major, minor)) or
+// "tenants/<uuid>"; workers derive a tenant.Model from this so the
 // existing per-tenant document storage continues to work.
 package workers
 

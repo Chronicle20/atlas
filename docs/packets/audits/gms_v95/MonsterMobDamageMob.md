@@ -1,0 +1,21 @@
+# MonsterMobDamageMob (← `CMob::SetDamagedByMob`)
+
+- **IDA:** 0x64b260
+- **Atlas file:** `libs/atlas-packet/monster/serverbound/mob_damage_mob.go`
+- **Variant:** GMS/v95
+- **Branch depth:** 0
+- **Verdict:** ❌
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 6 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 7 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+

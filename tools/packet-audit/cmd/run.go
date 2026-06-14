@@ -720,6 +720,32 @@ func candidatesFromFName(fname string) []candidate {
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
 		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).
 		return []candidate{{name: "MobDropPickupRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::Update":
+		// task-092 Cluster-A: CMob::Update (the mob per-frame tick) builds THREE
+		// distinct serverbound COutPackets at distinct send-sites/opcodes:
+		// FIELD_DAMAGE_MOB (mobCrc+damage), MOB_DAMAGE_MOB_FRIENDLY (mobCrc+charId
+		// +attackerMobCrc), and MOB_SKILL_DELAY_END (mobCrc+skillId+lvl+value, absent
+		// in v83). All three share this one fname; each is its own atlas struct.
+		return []candidate{
+			{name: "FieldDamageMob", pkg: "monster", dir: csvpkg.DirServerbound},
+			// MOB_DAMAGE_MOB_FRIENDLY already exists as character/serverbound
+			// MonsterDamageFriendly (3xEncode4: attacker, observer, attacked) — reuse it.
+			{name: "MonsterDamageFriendly", pkg: "character", dir: csvpkg.DirServerbound},
+			{name: "MobSkillDelayEnd", pkg: "monster", dir: csvpkg.DirServerbound},
+		}
+	case "CMob::SetDamagedByMob":
+		// task-092 Cluster-A: MOB_DAMAGE_MOB — atlas MobDamageMob (handle =
+		// "MobDamageMob"). 3xEncode4 + Encode1 + Encode4 + Encode1 + 2xEncode2.
+		return []candidate{{name: "MobDamageMob", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::TryFirstSelfDestruction":
+		// task-092 Cluster-A: MONSTER_BOMB — atlas MonsterBomb (handle =
+		// "MonsterBomb"). Single Encode4 (mobId). v84 sender unnamed in IDB.
+		return []candidate{{name: "MonsterBomb", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::UpdateTimeBomb":
+		// task-092 Cluster-A: MOB_TIME_BOMB_END — atlas MobTimeBombEnd (handle =
+		// "MobTimeBombEnd"). mobCrc + [boss x,y] + localUser x,y. Standalone only in
+		// v95/jms (inlined into CMob::Update in v83/v84/v87).
+		return []candidate{{name: "MobTimeBombEnd", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::SendBanMapByMobRequest":
 		// task-092 Cluster-D: MOB_BANISH_PLAYER — atlas MobBanishPlayer
 		// (handle = "MobBanishPlayer"), in character/serverbound. One Encode4

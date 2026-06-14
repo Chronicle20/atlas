@@ -892,9 +892,24 @@
         "handler": "MobDropPickupRequest"
       },
       {
+        "opCode": "0xBF",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
         "opCode": "0xC0",
         "validator": "LoggedInValidator",
         "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xC1",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
+      },
+      {
+        "opCode": "0xC2",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
       },
       {
         "opCode": "0xC5",

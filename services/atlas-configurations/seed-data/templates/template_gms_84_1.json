@@ -904,9 +904,24 @@
         }
       },
       {
+        "opCode": "0xC4",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
         "opCode": "0xC5",
         "validator": "LoggedInValidator",
         "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xC7",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
+      },
+      {
+        "opCode": "0xC8",
+        "validator": "LoggedInValidator",
+        "handler": "MobSkillDelayEnd"
       },
       {
         "opCode": "0xCB",

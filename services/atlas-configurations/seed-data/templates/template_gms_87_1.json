@@ -554,6 +554,31 @@
         "handler": "MobDropPickupRequest"
       },
       {
+        "opCode": "0xCB",
+        "validator": "LoggedInValidator",
+        "handler": "FieldDamageMob"
+      },
+      {
+        "opCode": "0xCC",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb"
+      },
+      {
+        "opCode": "0xCE",
+        "validator": "LoggedInValidator",
+        "handler": "MobDamageMob"
+      },
+      {
+        "opCode": "0xCF",
+        "validator": "LoggedInValidator",
+        "handler": "MobSkillDelayEnd"
+      },
+      {
         "opCode": "0xD2",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",

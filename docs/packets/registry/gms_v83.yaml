@@ -2912,11 +2912,12 @@
   opcode: 194
   fname: CMob::SetDamagedByMob
   provenance: csv-import
-- op: MOB_SKILL_DELAY_END
-  direction: serverbound
-  opcode: 195
-  fname: CMob::Update
-  provenance: csv-import
+# MOB_SKILL_DELAY_END (serverbound) is VERSION-ABSENT in v83 (task-092 Cluster-A):
+# CMob::Update @0x6675a8 builds no COutPacket for this op — no `push 0xC3; COutPacket`
+# site exists anywhere in the v83 binary. The skill-delay-end send (4xEncode4) first
+# appears in v84/v87/v95/jms (mirroring its clientbound twin MOB_SKILL_DELAY, whose
+# v83 dispatcher case is likewise absent). The csv-import row (opcode 195/0xC3) was a
+# stale slot copied from the CSV; removed so the matrix grades v83 n/a, not conflict.
 - op: MOB_TIME_BOMB_END
   direction: serverbound
   opcode: 196

@@ -3374,10 +3374,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: FIELD_DAMAGE_MOB
   direction: serverbound
-  opcode: 191
+  opcode: 196
   fname: CMob::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from the COutPacket build site in CMob::Update (task-092 Cluster-A): @0x67dd33 pushes opcode 0xC4 (196) for the 2xEncode4 field-damage send (mobCrc+damage). The csv-import seed (191/0xBF, copied from the v83 column) was stale — the v84 mob serverbound opcode table is shifted vs v83.'
 - op: MOB_DAMAGE_MOB_FRIENDLY
   direction: serverbound
   opcode: 197
@@ -3398,10 +3398,10 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CMob::SetDamagedByMob (0x6871bc) constructs COutPacket(199). v83 194.'
 - op: MOB_SKILL_DELAY_END
   direction: serverbound
-  opcode: 195
+  opcode: 200
   fname: CMob::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'v84 opcode re-derived from the COutPacket build site in CMob::Update (task-092 Cluster-A): @0x67d534 pushes opcode 0xC8 (200) for the 4xEncode4 skill-delay-end send (mobCrc+skillId+level+value). The csv-import seed (195/0xC3, copied from the v83 column) was stale — the v84 mob serverbound opcode table is shifted vs v83. v83 itself has NO such sender (the feature post-dates v83).'
 - op: MOB_TIME_BOMB_END
   direction: serverbound
   opcode: 196

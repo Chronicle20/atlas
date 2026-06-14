@@ -709,6 +709,11 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
 	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
+	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc
+	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc
+	handlerMap[monstersb.MobSkillDelayEndHandle] = handler.MobSkillDelayEndHandleFunc
+	handlerMap[monstersb.MobTimeBombEndHandle] = handler.MobTimeBombEndHandleFunc
 	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc

@@ -1746,6 +1746,27 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::OnFieldObstacleOnOffStatus":
 		return []candidate{{name: "FieldObstacleOnOffList", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers).
+	case "CField::OnTransferChannelReqIgnored":
+		return []candidate{{name: "BlockedServer", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldSpecificData":
+		return []candidate{{name: "ForcedMapEquip", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSummonItemInavailable":
+		return []candidate{{name: "SummonItemUnavailable", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldObstacleOnOff":
+		return []candidate{{name: "FieldObstacleOnOff", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldObstacleAllReset":
+		return []candidate{{name: "FieldObstacleAllReset", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSetQuestClear":
+		return []candidate{{name: "SetQuestClear", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSetQuestTime":
+		return []candidate{{name: "SetQuestTime", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnDesc":
+		return []candidate{{name: "GmEventInstructions", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnPlayJukeBox":
+		return []candidate{{name: "PlayJukebox", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// --- World: npc (clientbound) ---
 	// Non-conversation NPC packets. FNames + addresses verified against the
 	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live

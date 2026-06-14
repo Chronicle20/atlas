@@ -3,8 +3,9 @@
 //
 // Workers run inside the ingest pod (MODE=ingest). The Params (Region,
 // MajorVersion, MinorVersion, ScopeKey, ScratchDir) come from environment
-// variables set by JobCreator. ScopeKey is either "shared" (canonical sentinel
-// tenant) or "tenants/<uuid>"; workers derive a tenant.Model from this so the
+// variables set by JobCreator. ScopeKey is either "shared" (version-scoped
+// canonical id derived via canonical.TenantId(region, major, minor)) or
+// "tenants/<uuid>"; workers derive a tenant.Model from this so the
 // existing per-tenant document storage continues to work.
 package workers
 
@@ -30,17 +31,13 @@ import (
 )
 
 // tenantFromParams derives a tenant.Model from the worker Params. For
-// scope=shared we use the canonical sentinel UUID; for tenants/<uuid> we parse
-// the suffix.
+// scope=shared we use the version-scoped canonical id (canonical.TenantId)
+// derived from region/major/minor; for tenants/<uuid> we parse the suffix.
 func tenantFromParams(p Params) (tenant.Model, error) {
 	var id uuid.UUID
 	switch {
 	case p.ScopeKey == "shared":
-		parsed, err := uuid.Parse(canonical.TenantUUID)
-		if err != nil {
-			return tenant.Model{}, fmt.Errorf("parse canonical uuid: %w", err)
-		}
-		id = parsed
+		id = canonical.TenantId(p.Region, p.MajorVersion, p.MinorVersion)
 	case strings.HasPrefix(p.ScopeKey, "tenants/"):
 		parsed, err := uuid.Parse(strings.TrimPrefix(p.ScopeKey, "tenants/"))
 		if err != nil {

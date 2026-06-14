@@ -3,6 +3,10 @@
 Operational guide for the per-PR atlas environments. PRD / design /
 implementation plan: `docs/tasks/task-063-ephemeral-pr-deployments/`.
 
+> **See also:** [canonical-version-migration.md](canonical-version-migration.md)
+> for the one-time migration that provisions per-version canonical baselines consumed
+> by the `auto`-mode bootstrap this runbook describes.
+
 ## §9.1 First-time setup: canonical WZ via MinIO
 
 The PR bootstrap Job fetches `atlas.zip` from cluster-internal MinIO into an

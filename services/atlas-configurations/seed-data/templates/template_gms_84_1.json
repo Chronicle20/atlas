@@ -2461,11 +2461,11 @@
         "writer": "CharacterKeyMapAutoMp"
       },
       {
-        "opCode": "0x113",
+        "opCode": "0x11A",
         "writer": "SpawnDoor"
       },
       {
-        "opCode": "0x114",
+        "opCode": "0x11B",
         "writer": "RemoveDoor"
       },
       {

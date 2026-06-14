@@ -2607,6 +2607,26 @@
         }
       },
       {
+        "opCode": "0x142",
+        "writer": "Tournament"
+      },
+      {
+        "opCode": "0x143",
+        "writer": "TournamentMatchTable"
+      },
+      {
+        "opCode": "0x144",
+        "writer": "TournamentSetPrize"
+      },
+      {
+        "opCode": "0x145",
+        "writer": "TournamentUew"
+      },
+      {
+        "opCode": "0x146",
+        "writer": "TournamentCharacters"
+      },
+      {
         "opCode": "0x14B",
         "writer": "CashShopCashQueryResult"
       },

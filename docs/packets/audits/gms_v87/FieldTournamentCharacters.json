@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldTournamentCharacters",
+  "IDAName": "CField_Tournament::OnPacket",
+  "Address": "0x5a9d01",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/tournament_characters.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

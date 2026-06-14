@@ -9510,12 +9510,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "CInPacket::Decode1(v2)"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "CInPacket::Decode1(v2)",
-          "ref": "sub_4292E0"
         }
       ]
     },

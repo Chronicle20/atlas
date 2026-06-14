@@ -1689,6 +1689,26 @@
         "writer": "MessengerOperation"
       },
       {
+        "opCode": "0x14C",
+        "writer": "Tournament"
+      },
+      {
+        "opCode": "0x14D",
+        "writer": "TournamentMatchTable"
+      },
+      {
+        "opCode": "0x14E",
+        "writer": "TournamentSetPrize"
+      },
+      {
+        "opCode": "0x14F",
+        "writer": "TournamentUew"
+      },
+      {
+        "opCode": "0x150",
+        "writer": "TournamentCharacters"
+      },
+      {
         "opCode": "0x155",
         "writer": "CashShopCashQueryResult"
       },

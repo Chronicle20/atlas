@@ -1842,34 +1842,34 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: TOURNAMENT
   direction: clientbound
-  opcode: 315
+  opcode: 322
   fname: CField_Tournament::OnTournament
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: live-verified v84 opcode (task-096). The v83-inherited 315 was in the ≥0x3F cumulative-shift range and was UNVERIFIED; corrected to the live-observed v84 value.
 - op: TOURNAMENT_MATCH_TABLE
   direction: clientbound
-  opcode: 316
+  opcode: 323
   fname: CField_Tournament::OnTournamentMatchTable
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: live-verified v84 opcode (task-096). The v83-inherited 316 was in the ≥0x3F cumulative-shift range and was UNVERIFIED; corrected to the live-observed v84 value.
 - op: TOURNAMENT_SET_PRIZE
   direction: clientbound
-  opcode: 317
+  opcode: 324
   fname: CField_Tournament::OnTournamentSetPrize
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: live-verified v84 opcode (task-096). The v83-inherited 317 was in the ≥0x3F cumulative-shift range and was UNVERIFIED; corrected to the live-observed v84 value.
 - op: TOURNAMENT_UEW
   direction: clientbound
-  opcode: 318
+  opcode: 325
   fname: CField_Tournament::OnTournamentUEW
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: live-verified v84 opcode (task-096). The v83-inherited 318 was in the ≥0x3F cumulative-shift range and was UNVERIFIED; corrected to the live-observed v84 value.
 - op: TOURNAMENT_CHARACTERS
   direction: clientbound
-  opcode: 319
+  opcode: 326
   fname: CField_Tournament::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: live-verified v84 opcode (task-096). The v83-inherited 319 was in the ≥0x3F cumulative-shift range and was UNVERIFIED; corrected to the live-observed v84 value.
 - op: WEDDING_PROGRESS
   direction: clientbound
   opcode: 320

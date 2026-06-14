@@ -1,11 +1,11 @@
 {
-  "toolSha": "b69376a9c2aad8bb6df929def042a34cc449027e",
+  "toolSha": "30c48ce784b70acf977b04871eac6f6aebd04930",
   "exportHashes": {
-    "gms_v83": "be95ab407e05b1227e977c3ae970ac5e05c5eb6b127ce4f23460fa7e9408bdf5",
+    "gms_v83": "c0310c662e0984070e4ff9f7464029a9ac7343bfd65cca61c02c039480863331",
     "gms_v84": "8945ccafbbd29655c8129306985ffe761d304e75702416d02271f67526b40a0f",
-    "gms_v87": "6de3c6cb1d9ab72c48323f70c1e5f4302381e14e5d9f445fe882055cb85abdf5",
+    "gms_v87": "c4d63aa89b881d0ea959e6110ffa8ae08c86e83aefb1fefccded9e38ab2bc38b",
     "gms_v95": "bd52a491679299724e30a2888ae39ccf110a3a66a6d50a76053f74e723b4ef2a",
-    "jms_v185": "ada10477f3641f8a437c62e10b999d3c297eb60daf81e74cff9e25dea7ed8b29"
+    "jms_v185": "cf6492ba4425de6a48245590921d7156263eaa895262ba034640a1e2a11f9ea1"
   },
   "rows": [
     {
@@ -24575,35 +24575,31 @@
     {
       "kind": "op",
       "op": "TOURNAMENT",
+      "packet": "field/clientbound/FieldTournament",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Tournament::OnTournament"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 315
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 315
+          "state": "verified",
+          "opcode": 322
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 332
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 374
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 340
         }
       }
@@ -24611,35 +24607,31 @@
     {
       "kind": "op",
       "op": "TOURNAMENT_MATCH_TABLE",
+      "packet": "field/clientbound/FieldTournamentMatchTable",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Tournament::OnTournamentMatchTable"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 316
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 316
+          "state": "verified",
+          "opcode": 323
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 333
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 375
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 341
         }
       }
@@ -24647,35 +24639,31 @@
     {
       "kind": "op",
       "op": "TOURNAMENT_SET_PRIZE",
+      "packet": "field/clientbound/FieldTournamentSetPrize",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Tournament::OnTournamentSetPrize"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 317
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 317
+          "state": "verified",
+          "opcode": 324
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 334
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 376
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 342
         }
       }
@@ -24683,35 +24671,31 @@
     {
       "kind": "op",
       "op": "TOURNAMENT_UEW",
+      "packet": "field/clientbound/FieldTournamentUew",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Tournament::OnTournamentUEW"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 318
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 318
+          "state": "verified",
+          "opcode": 325
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 335
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 377
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 343
         }
       }
@@ -24719,35 +24703,31 @@
     {
       "kind": "op",
       "op": "TOURNAMENT_CHARACTERS",
+      "packet": "field/clientbound/FieldTournamentCharacters",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Tournament::OnPacket"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 319
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 319
+          "state": "verified",
+          "opcode": 326
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 336
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 378
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 344
         }
       }

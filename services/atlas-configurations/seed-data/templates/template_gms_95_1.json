@@ -1083,6 +1083,26 @@
         "writer": "CharacterInteraction"
       },
       {
+        "opCode": "0x176",
+        "writer": "Tournament"
+      },
+      {
+        "opCode": "0x177",
+        "writer": "TournamentMatchTable"
+      },
+      {
+        "opCode": "0x178",
+        "writer": "TournamentSetPrize"
+      },
+      {
+        "opCode": "0x179",
+        "writer": "TournamentUew"
+      },
+      {
+        "opCode": "0x17A",
+        "writer": "TournamentCharacters"
+      },
+      {
         "opCode": "0x17F",
         "writer": "CashShopCashQueryResult"
       },

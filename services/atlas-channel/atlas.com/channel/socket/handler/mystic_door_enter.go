@@ -17,11 +17,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// doorsInFieldFunc lists doors whose AREA field matches f. This is the only
-// door lookup atlas-doors exposes over REST (GetInField is keyed on the area
-// field). Declared as a package var so tests can inject a fake.
-var doorsInFieldFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model) ([]door.Model, error) {
-	return door.NewProcessor(l, ctx).GetInField(f)
+// doorsByOwnerFunc lists the owner's live door(s) via the atlas-doors by-owner
+// REST route. Because a door is keyed on its owner (not a single field), this
+// resolves from EITHER side — the requester can be standing on the door's AREA
+// field or its TOWN map. Declared as a package var so tests can inject a fake.
+var doorsByOwnerFunc = func(l logrus.FieldLogger, ctx context.Context, ownerId uint32) ([]door.Model, error) {
+	return door.NewProcessor(l, ctx).GetByOwner(ownerId)
 }
 
 // partyMemberIdsFunc returns the character ids of the party that the given
@@ -87,35 +88,39 @@ func authorizeDoorEntry(ownerId, requesterId uint32, requesterPartyMemberIds []u
 }
 
 // findDoorOnMap locates the door owned by ownerId that the requester (standing
-// on currentField) is authorized to use, and which is present on currentField.
+// on currentField) is authorized to use, and of which currentField is a side.
 //
-// Limitation: atlas-doors only exposes GetInField (keyed on the door's AREA
-// field) over REST, so the door is resolvable only when the requester is on the
-// AREA side. Town-side resolution would require a by-owner REST route on
-// atlas-doors that does not yet exist; until then a town-side enter request
-// returns (Model{}, false) and the warp is skipped.
+// It fetches the owner's live door(s) by owner (not by field), so it resolves
+// BIDIRECTIONALLY: the requester may be on the door's AREA field (warp to town)
+// OR on its TOWN map (warp to area). A door's world/channel must match
+// currentField, and currentField's map must be either the area map (area side)
+// or the town map (town side). A character has at most one live door (recast
+// replaces), but the route returns a slice, so 0/1/many are handled by picking
+// the first door that matches the current field's world/channel + side.
 func findDoorOnMap(l logrus.FieldLogger, ctx context.Context, currentField field.Model, ownerId, requesterId uint32) (door.Model, bool) {
-	ms, err := doorsInFieldFunc(l, ctx, currentField)
+	ms, err := doorsByOwnerFunc(l, ctx, ownerId)
 	if err != nil {
-		l.WithError(err).Warnf("Unable to retrieve doors in field [%d] for mystic-door entry.", currentField.MapId())
+		l.WithError(err).Warnf("Unable to retrieve doors for owner [%d] for mystic-door entry.", ownerId)
 		return door.Model{}, false
 	}
 
 	var found door.Model
 	ok := false
 	for _, m := range ms {
-		if m.OwnerCharacterId() == ownerId {
+		af := m.Field()
+		// World/channel of the door's area field must match the requester.
+		if af.WorldId() != currentField.WorldId() || af.ChannelId() != currentField.ChannelId() {
+			continue
+		}
+		// currentField's map must be a side of this door: the area map (requester
+		// on the AREA side) or the town map (requester on the TOWN side).
+		if af.MapId() == currentField.MapId() || m.TownMapId() == currentField.MapId() {
 			found = m
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		return door.Model{}, false
-	}
-
-	// Confirm currentField is actually a side of this door.
-	if _, sideOk := linkedDestination(found, currentField); !sideOk {
 		return door.Model{}, false
 	}
 

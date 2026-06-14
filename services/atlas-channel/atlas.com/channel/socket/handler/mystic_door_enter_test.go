@@ -100,6 +100,42 @@ func TestFindDoorOnMapOwnerOnAreaSide(t *testing.T) {
 	}
 }
 
+func TestFindDoorOnMapOwnerOnTownSide(t *testing.T) {
+	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId})
+	defer restoreSeams()
+
+	// Requester standing on the TOWN map: the by-owner lookup resolves the door
+	// via its TownMapId() side, and linkedDestination warps back to the AREA map.
+	d, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testTownMapId), testOwnerId, testOwnerId)
+	if !ok {
+		t.Fatal("owner on town side: door must be found")
+	}
+	target, ok := linkedDestination(d, testField(testTownMapId))
+	if !ok || target != testAreaMapId {
+		t.Fatalf("owner on town side warps to area: got (%d,%v)", target, ok)
+	}
+}
+
+func TestFindDoorOnMapPartyMemberOnTownSide(t *testing.T) {
+	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId, testMemberId})
+	defer restoreSeams()
+
+	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(testTownMapId), testOwnerId, testMemberId); !ok {
+		t.Fatal("party member on town side: door must be found")
+	}
+}
+
+func TestFindDoorOnMapUnrelatedFieldFails(t *testing.T) {
+	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId})
+	defer restoreSeams()
+
+	// Owner has a door, but the requester is on a map that is neither the door's
+	// area nor town side -> no resolution.
+	if _, ok := findDoorOnMap(logrus.New(), context.Background(), testField(_map.Id(200000000)), testOwnerId, testOwnerId); ok {
+		t.Fatal("door must not resolve when current field is neither side")
+	}
+}
+
 func TestFindDoorOnMapPartyMemberOnAreaSide(t *testing.T) {
 	restoreSeams := installLookupSeams(t, []door.Model{testDoor(testOwnerId)}, []uint32{testOwnerId, testMemberId})
 	defer restoreSeams()
@@ -154,20 +190,21 @@ func TestMysticDoorEnterHandleFuncSymbol(t *testing.T) {
 	}
 }
 
-// installLookupSeams swaps doorsInFieldFunc + partyMemberIdsFunc for the test
-// and returns a restore func.
+// installLookupSeams swaps doorsByOwnerFunc + partyMemberIdsFunc for the test
+// and returns a restore func. The door lookup is now driven by a by-owner door
+// list (resolvable from either the area or the town side).
 func installLookupSeams(t *testing.T, doors []door.Model, members []uint32) func() {
 	t.Helper()
-	origDoors := doorsInFieldFunc
+	origDoors := doorsByOwnerFunc
 	origMembers := partyMemberIdsFunc
-	doorsInFieldFunc = func(_ logrus.FieldLogger, _ context.Context, _ field.Model) ([]door.Model, error) {
+	doorsByOwnerFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) ([]door.Model, error) {
 		return doors, nil
 	}
 	partyMemberIdsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) []uint32 {
 		return members
 	}
 	return func() {
-		doorsInFieldFunc = origDoors
+		doorsByOwnerFunc = origDoors
 		partyMemberIdsFunc = origMembers
 	}
 }

@@ -29,6 +29,16 @@ func (p *Processor) GetInField(f field.Model) ([]Model, error) {
 	return p.InFieldModelProvider(f)()
 }
 
+func (p *Processor) ByOwnerModelProvider(ownerCharacterId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwner(ownerCharacterId), Extract, model.Filters[Model]())
+}
+
+// GetByOwner returns all live doors owned by ownerCharacterId, resolved from
+// either side (area or town) via the atlas-doors by-owner route.
+func (p *Processor) GetByOwner(ownerCharacterId uint32) ([]Model, error) {
+	return p.ByOwnerModelProvider(ownerCharacterId)()
+}
+
 // GetByOwnerOnMap returns the door in the field owned by ownerCharacterId, if any.
 func (p *Processor) GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Model, bool) {
 	ms, err := p.GetInField(f)

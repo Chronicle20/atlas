@@ -10,6 +10,7 @@ import (
 const (
 	resourceById    = "doors/%s"
 	resourceInField = "worlds/%d/channels/%d/maps/%d/instances/%s/doors"
+	resourceByOwner = "characters/%d/doors"
 )
 
 func getBaseRequest() string {
@@ -22,4 +23,8 @@ func requestById(id string) requests.Request[RestModel] {
 
 func requestInField(f field.Model) requests.Request[[]RestModel] {
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+resourceInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+}
+
+func requestByOwner(ownerCharacterId uint32) requests.Request[[]RestModel] {
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+resourceByOwner, ownerCharacterId))
 }

@@ -1,10 +1,74 @@
 package skill
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"atlas-doors/data/skill/effect"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
+
+func newTestTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	return tm
+}
+
+// TestGetEffect_Served drives a real JSON:API skill document through the api2go
+// unmarshal path and asserts GetEffect returns a populated effect (duration).
+func TestGetEffect_Served(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/data/skills/2311002") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": {
+				"type": "skills",
+				"id": "2311002",
+				"attributes": {
+					"effects": [
+						{ "MPConsume": 10, "duration": 30000, "itemConsume": 4006000 },
+						{ "MPConsume": 20, "duration": 60000, "itemConsume": 0 }
+					]
+				}
+			}
+		}`))
+	}))
+	defer srv.Close()
+	defer SetBaseURLForTest(srv.URL)()
+
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	p := NewProcessor(logrus.New(), ctx)
+
+	eff, err := p.GetEffect(2311002, 2)
+	if err != nil {
+		t.Fatalf("GetEffect: %v", err)
+	}
+	if eff.Duration() != 60000 {
+		t.Fatalf("level-2 duration: want 60000, got %d", eff.Duration())
+	}
+	if eff.MPConsume() != 20 {
+		t.Fatalf("level-2 MPConsume: want 20, got %d", eff.MPConsume())
+	}
+
+	eff1, err := p.GetEffect(2311002, 1)
+	if err != nil {
+		t.Fatalf("GetEffect level 1: %v", err)
+	}
+	if eff1.Duration() != 30000 || eff1.ItemConsume() != 4006000 {
+		t.Fatalf("level-1 wrong: duration=%d itemConsume=%d", eff1.Duration(), eff1.ItemConsume())
+	}
+}
 
 // TestGetEffectLevelIndexing verifies that Extract correctly maps per-level
 // effects and that the 1-based level index (Effects()[level-1]) returns the

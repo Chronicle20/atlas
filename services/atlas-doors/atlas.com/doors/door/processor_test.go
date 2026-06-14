@@ -275,6 +275,194 @@ func TestRemoveByOwnerEmitsRemovedAndIsIdempotent(t *testing.T) {
 }
 
 // -----------------------------------------------------------------------------
+// RemoveByOwnerIfLeftField
+// -----------------------------------------------------------------------------
+
+// seedDoor is a test helper that places a door for ownerCharacterId in the
+// registry using the given field/town/oid values.  It returns the seeded Model.
+func seedDoor(t *testing.T, ctx context.Context, ten tenant.Model, areaDoorId, townDoorId, ownerCharacterId uint32, f field.Model, townMapId _map.Id) Model {
+	t.Helper()
+	m := NewBuilder().
+		SetAreaDoorId(areaDoorId).SetTownDoorId(townDoorId).
+		SetOwnerCharacterId(ownerCharacterId).SetPartyId(0).
+		SetField(f).SetTownMapId(townMapId).SetSlot(0).Build()
+	if err := GetRegistry().Put(ctx, ten, m); err != nil {
+		t.Fatalf("seedDoor Put: %v", err)
+	}
+	return m
+}
+
+// decodeReason unpacks the Reason field from a REMOVED event body captured by
+// fakeEmit.  It deserialises the raw kafka.Message value produced for a given
+// index in the emit capture slice.
+//
+// Because fakeEmit only stores the outer "type" string we cannot go back to the
+// raw bytes via em alone, so this helper re-emits through a thin capture that
+// stores the full message bytes.
+//
+// Usage: pass a *reasonCapture as the emitter and call Reason(i).
+type reasonCapture struct {
+	messages [][]byte
+}
+
+func (rc *reasonCapture) emit(topic string, p model.Provider[[]kafka.Message]) error {
+	msgs, err := p()
+	if err != nil {
+		return err
+	}
+	for _, msg := range msgs {
+		rc.messages = append(rc.messages, msg.Value)
+	}
+	return nil
+}
+
+func (rc *reasonCapture) Reason(i int) string {
+	if i >= len(rc.messages) {
+		return ""
+	}
+	var env struct {
+		Type string `json:"type"`
+		Body struct {
+			Reason string `json:"reason"`
+		} `json:"body"`
+	}
+	_ = json.Unmarshal(rc.messages[i], &env)
+	return env.Body.Reason
+}
+
+// TestRemoveByOwnerIfLeftField_LeavesToUnrelatedMap verifies that when the owner
+// moves to a map that is neither the door's source field nor its town map the
+// door is removed and a REMOVED/LEFT_FIELD event is emitted (FR-6.2).
+func TestRemoveByOwnerIfLeftField_LeavesToUnrelatedMap(t *testing.T) {
+	alloc := &counterAllocator{next: 900_001}
+	rc := &reasonCapture{}
+	ten, ctx := newTestTenant()
+	GetRegistry().Clear(ctx)
+	p := &ProcessorImpl{
+		l:     logrus.New(),
+		ctx:   ctx,
+		t:     ten,
+		emit:  rc.emit,
+		res:   fakeResolver{},
+		alloc: alloc,
+	}
+
+	srcField := field.NewBuilder(1, 2, 100000000).Build()
+	townMapId := _map.Id(104000000)
+	seedDoor(t, ctx, ten, 900_001, 900_002, 55, srcField, townMapId)
+
+	// Move to an unrelated map — should trigger removal.
+	unrelatedField := field.NewBuilder(1, 2, 999000000).Build()
+	if err := p.RemoveByOwnerIfLeftField(55, unrelatedField); err != nil {
+		t.Fatalf("RemoveByOwnerIfLeftField: %v", err)
+	}
+
+	// Exactly one REMOVED event with reason LEFT_FIELD.
+	if len(rc.messages) != 1 {
+		t.Fatalf("expected 1 emitted message, got %d", len(rc.messages))
+	}
+	if rc.Reason(0) != RemoveReasonLeftField {
+		t.Fatalf("expected reason %s, got %s", RemoveReasonLeftField, rc.Reason(0))
+	}
+
+	// Door is gone from the registry.
+	if _, err := GetRegistry().Get(ctx, ten, 900_001); err == nil {
+		t.Fatalf("door 900001 should be removed from registry")
+	}
+	byOwner, err := GetRegistry().GetByOwner(ctx, ten, 55)
+	if err != nil {
+		t.Fatalf("GetByOwner: %v", err)
+	}
+	if len(byOwner) != 0 {
+		t.Fatalf("expected no doors for owner after removal, got %d", len(byOwner))
+	}
+
+	// Both oids were released.
+	released := map[uint32]bool{}
+	for _, id := range alloc.released {
+		released[id] = true
+	}
+	if !released[900_001] || !released[900_002] {
+		t.Fatalf("expected oids 900001 and 900002 to be released, released=%v", alloc.released)
+	}
+}
+
+// TestRemoveByOwnerIfLeftField_StaysInSourceField verifies that a field-change
+// event to the exact same field as the door's source is a no-op: the door stays
+// and no event is emitted (FR-6.2 stay-in-field guard).
+func TestRemoveByOwnerIfLeftField_StaysInSourceField(t *testing.T) {
+	alloc := &counterAllocator{next: 910_001}
+	rc := &reasonCapture{}
+	ten, ctx := newTestTenant()
+	GetRegistry().Clear(ctx)
+	p := &ProcessorImpl{
+		l:     logrus.New(),
+		ctx:   ctx,
+		t:     ten,
+		emit:  rc.emit,
+		res:   fakeResolver{},
+		alloc: alloc,
+	}
+
+	srcField := field.NewBuilder(1, 2, 100000000).Build()
+	townMapId := _map.Id(104000000)
+	seedDoor(t, ctx, ten, 910_001, 910_002, 56, srcField, townMapId)
+
+	// newField == srcField → no removal.
+	if err := p.RemoveByOwnerIfLeftField(56, srcField); err != nil {
+		t.Fatalf("RemoveByOwnerIfLeftField: %v", err)
+	}
+
+	// No event emitted.
+	if len(rc.messages) != 0 {
+		t.Fatalf("expected no emit when staying in source field, got %d message(s)", len(rc.messages))
+	}
+
+	// Door still in registry.
+	if _, err := GetRegistry().Get(ctx, ten, 910_001); err != nil {
+		t.Fatalf("door should still be in registry: %v", err)
+	}
+}
+
+// TestRemoveByOwnerIfLeftField_WarpIntoTown verifies that warping into the
+// door's town map is treated as a valid transit (not abandonment) and the door
+// is preserved with no event emitted (FR-6.2 into-town guard, design §5.3).
+func TestRemoveByOwnerIfLeftField_WarpIntoTown(t *testing.T) {
+	alloc := &counterAllocator{next: 920_001}
+	rc := &reasonCapture{}
+	ten, ctx := newTestTenant()
+	GetRegistry().Clear(ctx)
+	p := &ProcessorImpl{
+		l:     logrus.New(),
+		ctx:   ctx,
+		t:     ten,
+		emit:  rc.emit,
+		res:   fakeResolver{},
+		alloc: alloc,
+	}
+
+	srcField := field.NewBuilder(1, 2, 100000000).Build()
+	townMapId := _map.Id(104000000)
+	seedDoor(t, ctx, ten, 920_001, 920_002, 57, srcField, townMapId)
+
+	// newField has the town map id → no removal.
+	townField := field.NewBuilder(1, 2, townMapId).Build()
+	if err := p.RemoveByOwnerIfLeftField(57, townField); err != nil {
+		t.Fatalf("RemoveByOwnerIfLeftField: %v", err)
+	}
+
+	// No event emitted.
+	if len(rc.messages) != 0 {
+		t.Fatalf("expected no emit when warping into town, got %d message(s)", len(rc.messages))
+	}
+
+	// Door still in registry.
+	if _, err := GetRegistry().Get(ctx, ten, 920_001); err != nil {
+		t.Fatalf("door should still be in registry: %v", err)
+	}
+}
+
+// -----------------------------------------------------------------------------
 // Reslot
 // -----------------------------------------------------------------------------
 

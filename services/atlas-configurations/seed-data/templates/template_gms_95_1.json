@@ -410,6 +410,21 @@
       {
         "opCode": "0x113",
         "handler": "CashShopOperationHandle"
+      },
+      {
+        "opCode": "0xCF",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xD0",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xD1",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
       }
     ],
     "writers": [
@@ -1033,6 +1048,30 @@
       {
         "opCode": "0x190",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x116",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0x117",
+        "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0x118",
+        "writer": "SummonMove"
+      },
+      {
+        "opCode": "0x119",
+        "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0x11B",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0x11A",
+        "writer": "SummonSkill"
       }
     ]
   },

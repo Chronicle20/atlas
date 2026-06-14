@@ -818,6 +818,21 @@
             "BUY_FRIENDSHIP": 36
           }
         }
+      },
+      {
+        "opCode": "0xB2",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xB4",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
       }
     ],
     "writers": [
@@ -1789,6 +1804,30 @@
       {
         "opCode": "0x172",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0xB6",
+        "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "SummonMove"
+      },
+      {
+        "opCode": "0xB8",
+        "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0xB9",
+        "writer": "SummonSkill"
       }
     ]
   },

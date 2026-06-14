@@ -786,6 +786,21 @@
         "handler": "PetItemExcludeHandle"
       },
       {
+        "opCode": "0xAF",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xB0",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xB1",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
+      },
+      {
         "opCode": "0xBC",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
@@ -1773,6 +1788,30 @@
       {
         "opCode": "0xAE",
         "writer": "PetCommandResponse"
+      },
+      {
+        "opCode": "0xAF",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0xB0",
+        "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "SummonMove"
+      },
+      {
+        "opCode": "0xB2",
+        "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0xB4",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "SummonSkill"
       },
       {
         "opCode": "0xB9",

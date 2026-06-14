@@ -8,9 +8,11 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
 	"atlas-channel/socket/writer"
+	summoncmd "atlas-channel/summon"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -77,6 +79,26 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		}
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
+
+		// Summon skills additionally request atlas-summons to create the
+		// owner-bound summon. This runs alongside (not instead of) the normal
+		// skill-effect application below so the buff/cooldown still apply.
+		if summon.IsSummonSkill(sui.SkillId()) {
+			// For a Beholder (1321007) the heal/buff snapshot is driven by the
+			// caster's trained AURA_OF_THE_BEHOLDER (1320008) and
+			// HEX_OF_THE_BEHOLDER (1320009) levels, read here from the caster's
+			// skill book (c.Skills() — decorated above). Non-Beholder summons
+			// send 0/0.
+			var auraLevel, hexLevel byte
+			if sui.SkillId() == uint32(skill.DarkKnightBeholderId) {
+				auraLevel = skillLevelOf(c.Skills(), skill.DarkKnightAuraOfTheBeholderId)
+				hexLevel = skillLevelOf(c.Skills(), skill.DarkKnightHexOfTheBeholderId)
+			}
+			if serr := summoncmd.NewProcessor(l, ctx).Spawn(s.Field(), s.CharacterId(), sui.SkillId(), sui.SkillLevel(), c.X(), c.Y(), auraLevel, hexLevel); serr != nil {
+				l.WithError(serr).Errorf("Unable to request summon spawn for character [%d] skill [%d].", s.CharacterId(), sui.SkillId())
+			}
+		}
+
 		err = handler.UseSkill(l)(ctx)(wp, s.Field(), s.CharacterId(), *sui, se)
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())
@@ -92,6 +114,18 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 		}
 	}
+}
+
+// skillLevelOf returns the caster's trained level in the given skill from their
+// decorated skill book, or 0 if they have not learned it. Used to resolve the
+// Beholder's aura/hex levels (1320008/1320009) for the summon snapshot.
+func skillLevelOf(skills []skill2.Model, id skill.Id) byte {
+	for _, sm := range skills {
+		if sm.Id() == id {
+			return sm.Level()
+		}
+	}
+	return 0
 }
 
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {

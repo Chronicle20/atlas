@@ -1,0 +1,57 @@
+{
+  "WriterName": "SummonMove",
+  "IDAName": "CSummonedPool::OnMove",
+  "Address": "0x7f902b",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/clientbound/move.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "cid — read by CSummonedPool::OnPacket@0x9b35f5 before dispatch (pool is cid-keyed; NO oid on v87)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "startX — CMovePath::OnMovePacket movement-blob head (CSummonedPool::OnMove@0x7f9044)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "startY — CMovePath::OnMovePacket movement-blob head",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "rawMovement blob — CMovePath::OnMovePacket@0x6c802d (variable-length movement path)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": "absorbed by trailing opaque buffer"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

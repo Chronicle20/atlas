@@ -56,7 +56,7 @@ func TestProcessor_GetById_AfterApply(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
 
 	m, err := processor.GetById(characterId)
 	assert.NoError(t, err)
@@ -76,13 +76,13 @@ func TestProcessor_Apply(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Len(t, m.Buffs(), 1)
 
-	buff := m.Buffs()[sourceId]
+	buff := m.Buffs()[srcKey(sourceId)]
 	assert.Equal(t, sourceId, buff.SourceId())
 	assert.Equal(t, duration, buff.Duration())
 }
@@ -96,9 +96,9 @@ func TestProcessor_Apply_MultipleBuffs(t *testing.T) {
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001001), byte(5), int32(60), changes)
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001002), byte(5), int32(120), changes)
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001003), byte(5), int32(180), changes)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001001), byte(5), int32(60), changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001002), byte(5), int32(120), changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001003), byte(5), int32(180), changes, false)
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
@@ -116,7 +116,7 @@ func TestProcessor_Cancel(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 1)
@@ -145,7 +145,7 @@ func TestProcessor_Cancel_WrongSourceId(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
 
 	err := processor.Cancel(worldId, characterId, int32(9999))
 	assert.NoError(t, err)
@@ -174,7 +174,7 @@ func TestProcessor_CancelByStatTypes_NoMatch(t *testing.T) {
 	worldId := world.Id(0)
 	characterId := uint32(1000)
 	holy := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy, false)
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
 	assert.NoError(t, err)
@@ -189,9 +189,9 @@ func TestProcessor_CancelByStatTypes_MultiMatch(t *testing.T) {
 	worldId := world.Id(0)
 	characterId := uint32(1000)
 
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)})
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)})
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)})
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)}, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)}, false)
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON", "CURSE", "WEAKEN", "DARKNESS", "SEAL"})
 	assert.NoError(t, err)
@@ -210,15 +210,15 @@ func TestProcessor_CancelByStatTypes_HolyShieldDoesNotBlockRemoval(t *testing.T)
 
 	// Insert a POISON buff via the registry directly so the immunity check on
 	// Apply can't refuse it once HOLY_SHIELD is present.
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)})
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)})
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false)
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)}, false)
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
 	assert.NoError(t, err)
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 1)
-	_, stillHasHolyShield := m.Buffs()[int32(2311005)]
+	_, stillHasHolyShield := m.Buffs()[srcKey(2311005)]
 	assert.True(t, stillHasHolyShield)
 }
 
@@ -239,7 +239,7 @@ func TestProcessor_TenantContext(t *testing.T) {
 
 	changes := setupProcessorTestChanges()
 
-	_ = processor1.Apply(world.Id(0), channel.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes)
+	_ = processor1.Apply(world.Id(0), channel.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes, false)
 
 	m, err := processor1.GetById(uint32(1000))
 	assert.NoError(t, err)

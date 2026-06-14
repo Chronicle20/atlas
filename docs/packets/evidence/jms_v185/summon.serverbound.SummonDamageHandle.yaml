@@ -1,0 +1,10 @@
+packet: summon/serverbound/SummonDamageHandle
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CSummoned::SetDamaged
+    address: "0x828032"
+    decompile_sha256: 2e09297906f8fe7b84f3dcb3df1d68c50f10ffc8682460cc917af04bf2046467
+verifies:
+    - libs/atlas-packet/summon/serverbound/damage_test.go#TestDamageDecodeMob

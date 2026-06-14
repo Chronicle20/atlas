@@ -1022,40 +1022,44 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
-  opcode: 175
-  fname: CSummonedPool::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 179
+  fname: CSummonedPool::OnCreated
+  fname_alts:
+    - CSummonedPool::OnPacket
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) CSummonedPool::OnPacket (sub_970201@0x970201) dispatches field op 0xB3 (179) -> spawn vtable+0x30 target sub_97038B (= CSummonedPool::OnCreated). Opcode corrected from the v83-seeded 175 to the IDA-confirmed 179 (CUserPool::OnUserCommonPacket@0x9b23a1 routes ops 0xB3..0xB8 to the summon pool). Dispatcher-level name kept as alt (parity with gms_v83/gms_v87/gms_v95 convention).
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
-  opcode: 176
-  fname: CSummonedPool::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 180
+  fname: CSummonedPool::OnRemoved
+  fname_alts:
+    - CSummonedPool::OnPacket
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) CSummonedPool::OnPacket (sub_970201@0x970201) op 0xB4 (180) -> remove path sub_7CBFA1 (= CSummonedPool::OnRemoved). Opcode corrected from the v83-seeded 176 to the IDA-confirmed 180. Dispatcher-level name kept as alt (parity with gms_v83/gms_v87/gms_v95 convention).
 - op: MOVE_SUMMON
   direction: clientbound
-  opcode: 177
+  opcode: 181
   fname: CSummonedPool::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB5 (181) -> CSummonedPool::OnMove sub_7CC317@0x7cc317. Opcode corrected from the v83-seeded 177 to the IDA-confirmed 181 (CSummonedPool::OnPacket@0x970201 switch + CUserPool::OnUserCommonPacket@0x9b23a1 range 0xB3..0xB8). Structure byte-identical to v83.
 - op: SUMMON_ATTACK
   direction: clientbound
-  opcode: 178
+  opcode: 182
   fname: CSummonedPool::OnAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB6 (182) -> CSummonedPool::OnAttack sub_7CC338@0x7cc338. Opcode corrected from the v83-seeded 178 to the IDA-confirmed 182. Structure byte-identical to v83 (no oid, no trailing byte).
 - op: DAMAGE_SUMMON
   direction: clientbound
-  opcode: 179
+  opcode: 184
   fname: CSummonedPool::OnHit
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB8 (184) -> DAMAGE behavior sub_7CC984@0x7cc984 (the OnHit fname maps to the SummonDamage writer; behavior is summon-damage, name misleading per summon-wire-truth.md). Opcode corrected from the v83-seeded 179 to the IDA-confirmed 184 (skill/damage swapped — SKILL is the LOWER opcode 0xB7, DAMAGE the HIGHER 0xB8). Structure byte-identical to v83 (stops at bLeft, no dir byte).
 - op: SUMMON_SKILL
   direction: clientbound
-  opcode: 180
+  opcode: 183
   fname: CSummonedPool::OnSkill
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB7 (183) -> SKILL behavior sub_7CC920@0x7cc920 (single byte &0x7F -> SetAttackAction; the OnSkill fname maps to the SummonSkill writer; behavior is summon-skill, name misleading per summon-wire-truth.md). Opcode corrected from the v83-seeded 180 to the IDA-confirmed 183. Structure byte-identical to v83 (just 1 byte).
 - op: SPAWN_DRAGON
   direction: clientbound
   opcode: 181
@@ -3335,25 +3339,25 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 289: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_SUMMON
   direction: serverbound
-  opcode: 175
+  opcode: 178
   fname: CVecCtrlSummoned::EndUpdateActive
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) client SEND site CVecCtrlSummoned::EndUpdateActive (CVecCtrl__EndUpdateActive_send_0xB4 @0xa0fd89) constructs COutPacket(180/0xB4) on the wire. The registry opcode here is the SERVER handler opcode the tenant template routes SummonMoveHandle at — 0xB2 (178) — corrected from the v83-seeded 175. Body byte-identical to v83 (Encode4 cid + CMovePath__Flush blob).
 - op: SUMMON_ATTACK
   direction: serverbound
-  opcode: 176
+  opcode: 179
   fname: CSummoned::AttackToTargetMob
   fname_alts:
     - CSummoned::TryDoingAttackManual
     - CSummoned::TryDoingTaslaCoilAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) client SEND site CSummoned::TryDoingAttackManual (sub_7C99CF) send block @0x7cafcd constructs COutPacket(181/0xB5) on the wire. The registry opcode here is the SERVER handler opcode the tenant template routes SummonAttackHandle at — 0xB3 (179) — corrected from the v83-seeded 176. UNLIKE v83 (lean), v84 carries the anti-hack envelope (drInfo/dwKey/crc32) — byte-for-byte the v87 layout, NO repeatSkillPoint — so the Atlas envelope gate is MajorAtLeast(84). Body shape is runtime-mob-count + per-target loop (flat-diff-invalid, tier-1; verified by byte-level decode tests).
 - op: DAMAGE_SUMMON
   direction: serverbound
-  opcode: 177
+  opcode: 180
   fname: CSummoned::SetDamaged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) client SEND site CSummoned::SetDamaged (sub_7CBAF6) constructs COutPacket(182/0xB6) on the wire. The registry opcode here is the SERVER handler opcode the tenant template routes SummonDamageHandle at — 0xB4 (180) — corrected from the v83-seeded 177. Body byte-identical to v83 (Encode4 cid + mob-path{attackIdx,damage,templateId,dir} or no-mob-path{0xFE,damage}).
 - op: BEHOLDER
   direction: serverbound
   opcode: 178

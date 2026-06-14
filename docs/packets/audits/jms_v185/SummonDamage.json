@@ -1,0 +1,66 @@
+{
+  "WriterName": "SummonDamage",
+  "IDAName": "CSummonedPool::OnHit",
+  "Address": "0x828d16",
+  "Variant": "JMS/v185",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/clientbound/damage.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "cid — read by CSummonedPool::OnPacket@0x9f7fad before dispatch (pool is cid-keyed; NO oid on jms185)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "attackIdx (signed) — damage reader @0x828d47; atlas writes fixed 12",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "damage (nDamage) — @0x828d5c",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "mobTemplateId (monsterIdFrom; only when attackIdx\u003e-2) — @0x828d6e (-\u003e GetMobTemplate@0x828d7f)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bLeft (only when attackIdx\u003e-2) — @0x828d7c; atlas writes fixed 0. NO trailing dir byte after bLeft on jms185 (the dir byte is serverbound-only).",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

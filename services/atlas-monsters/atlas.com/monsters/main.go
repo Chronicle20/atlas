@@ -60,6 +60,7 @@ func main() {
 	monster.InitAttackCooldownRegistry(rc)
 	monster.InitMonsterRegistry(rc)
 	monster.InitDropTimerRegistry(rc)
+	monster.InitPuppetRegistry(rc)
 	information.InitDataCache(rc)
 
 	tdm := service.GetTeardownManager()

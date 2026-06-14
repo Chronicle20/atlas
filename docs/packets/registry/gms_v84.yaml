@@ -764,22 +764,22 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: BLOCKED_MAP
   direction: clientbound
-  opcode: 131
+  opcode: 134
   fname: CField::OnTransferFieldReqIgnored
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 131->134 (0x86). IDA v84 CField::OnPacket (0x53D5A7) low-switch case 0x86 -> sub_53DAE2 (Decode1 reason switch, body ≡ v83 OnTransferFieldReqIgnored). CField low range is +3 vs v83; the prior csv value 131 (0x83) was the stale v83 opcode (task-085 left v84 clientbound >=0x3F unverified).'
 - op: BLOCKED_SERVER
   direction: clientbound
-  opcode: 132
+  opcode: 135
   fname: CField::OnTransferChannelReqIgnored
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 132->135 (0x87). IDA v84 CField::OnPacket (0x53D5A7) case 0x87 -> sub_53DC8E (Decode1 reason switch, body ≡ v83 OnTransferChannelReqIgnored). +3 vs v83; prior csv 132 (0x84) was stale.'
 - op: FORCED_MAP_EQUIP
   direction: clientbound
-  opcode: 133
+  opcode: 136
   fname: CField::OnFieldSpecificData
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 133->136 (0x88). IDA v84 CField::OnPacket (0x53D5A7) case 0x88 -> sub_53DE01 (vtable slot 5 + CUserLocal, body ≡ v83 OnFieldSpecificData). +3 vs v83; prior csv 133 (0x85) was stale.'
 - op: MULTICHAT
   direction: clientbound
   opcode: 137
@@ -800,10 +800,10 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SUMMON_ITEM_INAVAILABLE
   direction: clientbound
-  opcode: 137
+  opcode: 140
   fname: CField::OnSummonItemInavailable
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 137->140 (0x8C). IDA v84 CField::OnPacket (0x53D5A7) case 0x8C -> sub_53F255 (Decode1 flag, body ≡ v83 OnSummonItemInavailable). +3 vs v83; prior csv 137 (0x89) was stale.'
 - op: FIELD_EFFECT
   direction: clientbound
   opcode: 138
@@ -812,22 +812,22 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: FIELD_OBSTACLE_ONOFF
   direction: clientbound
-  opcode: 139
+  opcode: 142
   fname: CField::OnFieldObstacleOnOff
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 139->142 (0x8E). IDA v84 CField::OnPacket (0x53D5A7) case 0x8E -> sub_53F291 (str + Decode4, body ≡ v83 OnFieldObstacleOnOff). +3 vs v83; prior csv 139 (0x8B) was stale.'
 - op: FIELD_OBSTACLE_ONOFF_LIST
   direction: clientbound
-  opcode: 140
+  opcode: 143
   fname: CField::OnFieldObstacleOnOffStatus
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 140->143 (0x8F). IDA v84 CField::OnPacket (0x53D5A7) case 0x8F -> sub_53F2DD (Decode4 count + loop(str+Decode4), body ≡ v83 OnFieldObstacleOnOffStatus). +3 vs v83; prior csv 140 (0x8C) was stale.'
 - op: FIELD_OBSTACLE_ALL_RESET
   direction: clientbound
-  opcode: 141
-  fname: CField::OnFieldObstacleAllRese
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 144
+  fname: CField::OnFieldObstacleAllReset
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 141->144 (0x90) and CSV-truncated fname OnFieldObstacleAllRese -> OnFieldObstacleAllReset. IDA v84 CField::OnPacket (0x53D5A7) case 0x90 -> sub_53F33C (empty body, iterates obstacle list, ≡ v83 OnFieldObstacleAllReset). +3 vs v83; prior csv 141 (0x8D) was stale.'
 - op: BLOW_WEATHER
   direction: clientbound
   opcode: 145
@@ -836,10 +836,10 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: PLAY_JUKEBOX
   direction: clientbound
-  opcode: 143
+  opcode: 146
   fname: CField::OnPlayJukeBox
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 143->146 (0x92). IDA v84 CField::OnPacket (0x53D5A7) case 0x92 -> sub_5414AA (Decode4 + conditional DecodeStr when itemId>=0, body ≡ v83 OnPlayJukeBox). +3 vs v83; prior csv 143 (0x8F) was stale.'
 - op: ADMIN_RESULT
   direction: clientbound
   opcode: 144
@@ -848,16 +848,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: OX_QUIZ
   direction: clientbound
-  opcode: 145
+  opcode: 148
   fname: CField::OnQuiz
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 145->148 (0x94). IDA v84 CField::OnPacket (0x53D5A7) case 0x94 -> sub_541D5B (Decode1+Decode1+Decode2, body ≡ v83 OnQuiz). +3 vs v83; prior csv 145 (0x91) was stale.'
 - op: GMEVENT_INSTRUCTIONS
   direction: clientbound
-  opcode: 146
+  opcode: 149
   fname: CField::OnDesc
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 146->149 (0x95). IDA v84 CField::OnPacket (0x53D5A7) case 0x95 -> sub_5423C4 (Decode1 index, body ≡ v83 OnDesc). +3 vs v83; prior csv 146 (0x92) was stale.'
 - op: CLOCK
   direction: clientbound
   opcode: 150
@@ -878,16 +878,16 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SET_QUEST_CLEAR
   direction: clientbound
-  opcode: 150
+  opcode: 153
   fname: CField::OnSetQuestClear
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 150->153 (0x99). IDA v84 CField::OnPacket (0x53D5A7) case 0x99 -> sub_543BB8 (empty body, CQuestMan buffer free, ≡ v83 OnSetQuestClear). +3 vs v83; prior csv 150 (0x96) was stale.'
 - op: SET_QUEST_TIME
   direction: clientbound
-  opcode: 151
+  opcode: 154
   fname: CField::OnSetQuestTime
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 151->154 (0x9A). IDA v84 CField::OnPacket (0x53D5A7) case 0x9A -> sub_543BCB (Decode1 count + loop(Decode4+buf8+buf8), body ≡ v83 OnSetQuestTime). +3 vs v83; prior csv 151 (0x97) was stale.'
 - op: ARIANT_RESULT
   direction: clientbound
   opcode: 152
@@ -896,16 +896,16 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SET_OBJECT_STATE
   direction: clientbound
-  opcode: 153
+  opcode: 156
   fname: CField::OnSetObjectState
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 153->156 (0x9C). IDA v84 CField::OnPacket (0x53D5A7) case 0x9C -> sub_543D1C (str + Decode4, body ≡ v83 OnSetObjectState). +3 vs v83; prior csv 153 (0x99) was stale.'
 - op: STOP_CLOCK
   direction: clientbound
-  opcode: 154
+  opcode: 157
   fname: CField::OnDestroyClock
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: manual
+  note: 'task-096 Cluster 2: v84 opcode corrected 154->157 (0x9D). IDA v84 CField::OnPacket (0x53D5A7) case 0x9D -> sub_53DAD0 (empty body, clock destroy, ≡ v83 OnDestroyClock). +3 vs v83; prior csv 154 (0x9A) was stale.'
 - op: ARIANT_ARENA_SHOW_RESULT
   direction: clientbound
   opcode: 155

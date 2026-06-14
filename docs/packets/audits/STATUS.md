@@ -6,7 +6,7 @@
 Tool: `30c48ce784b70acf977b04871eac6f6aebd04930`
 
 - export gms_v83: `c0310c662e0984070e4ff9f7464029a9ac7343bfd65cca61c02c039480863331`
-- export gms_v84: `38a782d5849ed4b0ae6cf4a75f4847cfbce08235fba7d5b095e9e69848c2666f`
+- export gms_v84: `895ff3be6a9cf8d06c942a1fee18f72de5fc2c2ab9855f56247d3f1bd766ddce`
 - export gms_v87: `c4d63aa89b881d0ea959e6110ffa8ae08c86e83aefb1fefccded9e38ab2bc38b`
 - export gms_v95: `bd52a491679299724e30a2888ae39ccf110a3a66a6d50a76053f74e723b4ef2a`
 - export jms_v185: `cf6492ba4425de6a48245590921d7156263eaa895262ba034640a1e2a11f9ea1`
@@ -179,7 +179,7 @@ Tool: `30c48ce784b70acf977b04871eac6f6aebd04930`
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | WHISPER | CField::OnWhisper |  | 0x087 | ❌ | 0x08A | ❌ | 0x08F | ❌ | 0x097 | ❌ | 0x085 | ❌ |
 | DRAGON_BALL_BOX | CWvsContext::OnDragonBallBox |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
-| SPOUSE_CHAT | CField::OnCoupleMessage |  | 0x088 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x098 | ❌ |  | ⬜ |
+| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x088 | ✅ | 0x088 | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
 | FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | ✅ | 0x08A | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
@@ -910,10 +910,10 @@ Tool: `30c48ce784b70acf977b04871eac6f6aebd04930`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 300 | 0 | 376 | 204 | 0 | 44.4% |
-| v84 | 258 | 0 | 418 | 204 | 0 | 38.2% |
-| v87 | 317 | 0 | 396 | 167 | 0 | 44.5% |
-| v95 | 353 | 0 | 445 | 82 | 0 | 44.2% |
+| v83 | 301 | 0 | 375 | 204 | 0 | 44.5% |
+| v84 | 259 | 0 | 417 | 204 | 0 | 38.3% |
+| v87 | 318 | 0 | 395 | 167 | 0 | 44.6% |
+| v95 | 354 | 0 | 444 | 82 | 0 | 44.4% |
 | JMS185 | 302 | 0 | 408 | 170 | 0 | 42.5% |
 
 ## Conflicts

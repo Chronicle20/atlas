@@ -1120,16 +1120,14 @@ func candidatesFromFName(fname string) []candidate {
 		// Use WhisperReceive as the representative struct (mode=18 branch).
 		return []candidate{{name: "WhisperReceive", pkg: "chat", dir: csvpkg.DirClientbound}}
 
-	// CSV: SPOUSE_CHAT (0x98 / 152) → CField::OnCoupleMessage.
-	// Dispatches on a leading mode byte (Decode1 - 4): mode=4 (own message), mode=5 (partner message).
-	// Both sub-modes are parameterised; atlas world_message.go and whisper.go write mode as first byte.
-	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
-	// Note: SPOUSE_CHAT is absent in v95 template (opcode 0 in serverbound SPOUSE_CHAT for GMS). No template
-	// opcode mapping; the clientbound opcode is 0x98. Atlas has no dedicated SPOUSE_CHAT writer yet; mapping
-	// via CField::OnCoupleMessage to WhisperWeather as a placeholder for pipeline coverage.
+	// CSV: SPOUSE_CHAT → CField::OnCoupleMessage (task-096 R-CB; field/clientbound/SpouseChat).
+	// Per-version clientbound opcodes: v83 0x88, v84 0x8B, v87 0x90, v95 0x98. jms VERSION-ABSENT.
+	// Dispatches on a leading mode byte (Decode1): mode=4 (own/sender message), mode=5 (partner
+	// message). The export's flat read is the maximal mode-4 branch:
+	//   Decode1(mode) + DecodeStr(sender) + Decode1(flag) + DecodeStr(chatText).
+	// Atlas SpouseChat writes that representative shape flat.
 	case "CField::OnCoupleMessage":
-		// Use WhisperWeather as a representative sub-op struct for pipeline coverage.
-		return []candidate{{name: "WhisperWeather", pkg: "chat", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "SpouseChat", pkg: "field", dir: csvpkg.DirClientbound}}
 
 	// CSV: SERVERMESSAGE (0x47 / 71) → CWvsContext::OnBroadcastMsg.
 	// Dispatches on a leading mode byte (Decode1): multiple sub-modes for notice/megaphone/ticker/etc.

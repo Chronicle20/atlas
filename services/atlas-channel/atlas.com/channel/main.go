@@ -698,6 +698,7 @@ func produceWriters() []string {
 		fieldcb.BlockedMapWriter,
 		fieldcb.SetObjectStateWriter,
 		fieldcb.FieldObstacleOnOffListWriter,
+		fieldcb.SpouseChatWriter,
 		fieldcb.TournamentWriter,
 		fieldcb.TournamentMatchTableWriter,
 		fieldcb.TournamentSetPrizeWriter,

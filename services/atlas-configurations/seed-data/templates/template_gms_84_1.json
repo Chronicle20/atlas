@@ -1635,6 +1635,10 @@
         "writer": "CharacterChatWhisper"
       },
       {
+        "opCode": "0x8B",
+        "writer": "SpouseChat"
+      },
+      {
         "opCode": "0x8C",
         "writer": "SummonItemUnavailable"
       },

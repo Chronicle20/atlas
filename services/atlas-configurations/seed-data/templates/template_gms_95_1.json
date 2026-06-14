@@ -699,6 +699,10 @@
         "writer": "ForcedMapEquip"
       },
       {
+        "opCode": "0x98",
+        "writer": "SpouseChat"
+      },
+      {
         "opCode": "0x94",
         "writer": "BlockedServer"
       },

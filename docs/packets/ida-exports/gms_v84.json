@@ -22564,18 +22564,6 @@
           "guard": "v2"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v2",
-          "ref": "sub_417123"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v2",
-          "ref": "sub_447019"
-        },
-        {
           "op": "Decode1",
           "comment": "",
           "guard": "<default>"
@@ -22584,18 +22572,6 @@
           "op": "DecodeStr",
           "comment": "",
           "guard": "<default> && CInPacket::Decode1(v1)"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default> && CInPacket::Decode1(v1)",
-          "ref": "sub_4B1B18"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default> && CInPacket::Decode1(v1)",
-          "ref": "sub_447019"
         }
       ]
     },

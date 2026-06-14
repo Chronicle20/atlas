@@ -1033,6 +1033,10 @@
         "writer": "ForcedMapEquip"
       },
       {
+        "opCode": "0x90",
+        "writer": "SpouseChat"
+      },
+      {
         "opCode": "0x8C",
         "writer": "BlockedServer"
       },

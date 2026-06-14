@@ -2,7 +2,7 @@
   "toolSha": "30c48ce784b70acf977b04871eac6f6aebd04930",
   "exportHashes": {
     "gms_v83": "c0310c662e0984070e4ff9f7464029a9ac7343bfd65cca61c02c039480863331",
-    "gms_v84": "38a782d5849ed4b0ae6cf4a75f4847cfbce08235fba7d5b095e9e69848c2666f",
+    "gms_v84": "895ff3be6a9cf8d06c942a1fee18f72de5fc2c2ab9855f56247d3f1bd766ddce",
     "gms_v87": "c4d63aa89b881d0ea959e6110ffa8ae08c86e83aefb1fefccded9e38ab2bc38b",
     "gms_v95": "bd52a491679299724e30a2888ae39ccf110a3a66a6d50a76053f74e723b4ef2a",
     "jms_v185": "cf6492ba4425de6a48245590921d7156263eaa895262ba034640a1e2a11f9ea1"
@@ -11279,30 +11279,27 @@
     {
       "kind": "op",
       "op": "SPOUSE_CHAT",
+      "packet": "field/clientbound/FieldSpouseChat",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnCoupleMessage"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 136
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 136
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 144
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 152
         },
         "jms_v185": {

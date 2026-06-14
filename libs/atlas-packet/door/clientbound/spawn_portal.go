@@ -20,9 +20,11 @@ const SpawnPortalWriter = "SpawnPortal"
 //	p.writeInt(targetId)    — LE uint32 field (area) map id
 //	p.writePos(pos)         — writeShort(x), writeShort(y)  [ByteBufOutPacket line 85-87]
 //
-// This encoder also covers the Cosmic removeDoor town=true path, which uses
-// the SPAWN_PORTAL opcode with MapId.NONE (999999999) for both map ids and
-// no position; callers model that as NewSpawnPortal(MapNone, MapNone, 0, 0).
+// For town-side door REMOVAL, use RemoveTownDoor (remove_town.go) — Cosmic's
+// removeDoor(town=true) emits SPAWN_PORTAL with writeInt(MapId.NONE) ×2 and
+// NO writePos (8-byte body). SpawnPortal always writes position (12 bytes) and
+// must NOT be used for removal: passing MapNone/MapNone/0/0 here would emit
+// 4 spurious trailing bytes and corrupt the client read cursor.
 //
 // Total: 12 bytes. Layout is identical across all tenant versions (no
 // structural delta found); branching is deferred to Part H if one appears.

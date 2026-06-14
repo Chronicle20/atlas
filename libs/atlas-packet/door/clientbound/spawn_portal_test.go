@@ -19,9 +19,9 @@ import (
 //
 // Total: 12 bytes. Unbranched across all versions (no structural delta known).
 //
-// This encoder also covers the Cosmic removeDoor town=true path, which sends
-// SPAWN_PORTAL with writeInt(MapId.NONE=999999999), writeInt(999999999) and
-// no position. Callers model that as NewSpawnPortal(MapNone, MapNone, 0, 0).
+// For town-side door REMOVAL use RemoveTownDoor (remove_town.go), NOT this
+// encoder. Cosmic removeDoor(town=true) omits writePos (8-byte body); this
+// encoder always writes position (12 bytes) and must NOT be used for removal.
 //
 // packet-audit:verify packet=door/clientbound/SpawnPortal version=gms_v83 ida=TODO
 func TestSpawnPortal(t *testing.T) {

@@ -18,9 +18,9 @@ import (
 //
 // Total: 5 bytes. Unbranched across all versions (no structural delta known).
 //
-// The town=true path in Cosmic emits SPAWN_PORTAL with two NONE map-ids; that
-// is modelled as SpawnPortal(MapNone, MapNone, 0, 0) via the SpawnPortal
-// encoder (a different writer name → different config opcode).
+// The town=true path in Cosmic emits SPAWN_PORTAL with two NONE map-ids and
+// NO position (8-byte body); that is modelled by RemoveTownDoor (remove_town.go),
+// NOT SpawnPortal — see remove_town_test.go for the 8-byte invariant test.
 //
 // packet-audit:verify packet=door/clientbound/RemoveDoor version=gms_v83 ida=TODO
 func TestRemoveDoor(t *testing.T) {

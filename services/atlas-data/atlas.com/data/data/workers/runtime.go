@@ -36,11 +36,7 @@ func tenantFromParams(p Params) (tenant.Model, error) {
 	var id uuid.UUID
 	switch {
 	case p.ScopeKey == "shared":
-		parsed, err := uuid.Parse(canonical.TenantUUID)
-		if err != nil {
-			return tenant.Model{}, fmt.Errorf("parse canonical uuid: %w", err)
-		}
-		id = parsed
+		id = canonical.TenantId(p.Region, p.MajorVersion, p.MinorVersion)
 	case strings.HasPrefix(p.ScopeKey, "tenants/"):
 		parsed, err := uuid.Parse(strings.TrimPrefix(p.ScopeKey, "tenants/"))
 		if err != nil {

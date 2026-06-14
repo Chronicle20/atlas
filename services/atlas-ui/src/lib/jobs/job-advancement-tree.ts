@@ -4,10 +4,11 @@ export interface JobEntry {
   parent: number | null;
 }
 
-// Source of truth: libs/atlas-constants/job/constants.go::Jobs
-// Names are derived from the Go variable names + v83 conventions.
-// Order: branch leader (parent: null) -> 1st job -> 2nd job stages -> 3rd job -> 4th job
-export const JOB_TREE: Record<number, JobEntry> = {
+// Structural source of truth for the job advancement graph.
+// Ported verbatim from the former lib/utils/job-tree.ts JOB_TREE, whose ids/names
+// derive from libs/atlas-constants/job/constants.go::Jobs (v83 conventions).
+// Order per branch: branch leader (parent: null) -> 1st -> 2nd -> 3rd -> 4th.
+export const JOB_GRAPH: Record<number, JobEntry> = {
   // Beginner branch
   0: { id: 0, name: "Beginner", parent: null },
   // Warrior
@@ -56,7 +57,7 @@ export const JOB_TREE: Record<number, JobEntry> = {
   520: { id: 520, name: "Gunslinger", parent: 500 },
   521: { id: 521, name: "Outlaw", parent: 520 },
   522: { id: 522, name: "Corsair", parent: 521 },
-  // Special
+  // Special / Admin (standalone roots)
   800: { id: 800, name: "Maple Leaf Brigadier", parent: null },
   900: { id: 900, name: "GM", parent: null },
   910: { id: 910, name: "Super GM", parent: null },
@@ -102,12 +103,65 @@ export const JOB_TREE: Record<number, JobEntry> = {
   2218: { id: 2218, name: "Evan 10", parent: 2217 },
 };
 
+// Version-introduction floor per branch ROOT id. A node inherits its root's floor
+// (gating is per-branch, never per-node). This is a DISPLAY-curation choice — the
+// atlas-data /jobs/{id}/skills endpoint is NOT version-gated (live probe 2026-06-14)
+// — so floors hide classes that did not exist in the live game at the tenant's
+// version; they are not a data-availability gate.
+//   0    Adventurers          — v83 baseline
+//   800  Maple Leaf Brigadier  — v83 baseline (special)
+//   900  GM                    — admin, always present
+//   910  Super GM              — admin, always present
+//   1000 Cygnus (Noblesse)     — reference_maplestory_version_timeline: KoC exist in v83
+//   2000 Legend (Aran)         — product owner (PRD FR-8.1): Aran introduced v80
+//   2001 Evan                  — reference_maplestory_version_timeline: Evan introduced v84
+export const BRANCH_FLOORS: Record<number, number> = {
+  0: 83, 800: 83, 900: 83, 910: 83, 1000: 83, 2000: 80, 2001: 84,
+};
+
+/** Branch root ids (parent === null), ascending. */
+export const JOB_ROOTS: number[] = Object.values(JOB_GRAPH)
+  .filter((e) => e.parent === null)
+  .map((e) => e.id)
+  .sort((a, b) => a - b);
+
+/** Direct children of a node, ascending by id. */
+export function childrenOf(id: number): number[] {
+  return Object.values(JOB_GRAPH)
+    .filter((e) => e.parent === id)
+    .map((e) => e.id)
+    .sort((a, b) => a - b);
+}
+
+/** Walk parent edges to the branch root. Returns the id itself if it is a root or unknown. */
+export function rootOf(id: number): number {
+  let cur: JobEntry | undefined = JOB_GRAPH[id];
+  if (!cur) return id;
+  while (cur.parent != null) {
+    const next: JobEntry | undefined = JOB_GRAPH[cur.parent];
+    if (!next) break;
+    cur = next;
+  }
+  return cur.id;
+}
+
+/** Version floor for a node = its root's BRANCH_FLOORS entry (0 = fail-open if unfloored). */
+export function floorOf(id: number): number {
+  return BRANCH_FLOORS[rootOf(id)] ?? 0;
+}
+
+/** Root ids visible at the given tenant major version, ascending. */
+export function visibleRoots(major: number): number[] {
+  return JOB_ROOTS.filter((r) => floorOf(r) <= major);
+}
+
+/** Root -> node advancement path (inclusive), for breadcrumbs. */
 export function jobTreePath(jobId: number): JobEntry[] {
   const path: JobEntry[] = [];
-  let cur: JobEntry | undefined = JOB_TREE[jobId];
+  let cur: JobEntry | undefined = JOB_GRAPH[jobId];
   while (cur) {
     path.unshift(cur);
-    cur = cur.parent != null ? JOB_TREE[cur.parent] : undefined;
+    cur = cur.parent != null ? JOB_GRAPH[cur.parent] : undefined;
   }
   return path;
 }

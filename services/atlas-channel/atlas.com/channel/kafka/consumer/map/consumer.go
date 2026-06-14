@@ -16,7 +16,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
 	"atlas-channel/monster"
-	"atlas-channel/party"
+	"atlas-channel/party/hpsync"
 	"atlas-channel/party_quest"
 	"atlas-channel/reactor"
 	"atlas-channel/saga"
@@ -43,7 +43,6 @@ import (
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
-	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
@@ -237,26 +236,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		}()
 
 		go func() {
-			cp := character.NewProcessor(l, ctx)
-			cd, err := cp.GetById(cp.PartyDecorator)(s.CharacterId())
-			if err != nil || !cd.InParty() {
-				return
+			if err := hpsync.Sync(l, ctx, wp, s.Field(), s.CharacterId()); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to sync party member HP for character [%d].", s.CharacterId())
 			}
-			pmp := model.FixedProvider(cd.Party())
-			imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
-			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))
-			_ = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cd.Hp(), cd.MaxHp()).Encode))
-			_ = model.ForEachSlice(oip, func(oid uint32) error {
-				oc, oerr := cp.GetById()(oid)
-				if oerr != nil {
-					if errors.Is(oerr, requests.ErrNotFound) {
-						l.Warnf("SpawnForSelf: skipping party HP for stale character [%d].", oid)
-						return nil
-					}
-					return oerr
-				}
-				return session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(oid, oc.Hp(), oc.MaxHp()).Encode)(s)
-			}, model.ParallelExecute())
 		}()
 
 		go func() {

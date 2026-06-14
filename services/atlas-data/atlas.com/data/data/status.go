@@ -124,7 +124,7 @@ func resolveStatusTenantId(w http.ResponseWriter, r *http.Request, t tenant.Mode
 			http.Error(w, "operator required", http.StatusForbidden)
 			return "", false
 		}
-		return canonical.TenantUUID, true
+		return canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()).String(), true
 	default:
 		http.Error(w, "invalid scope", http.StatusBadRequest)
 		return "", false

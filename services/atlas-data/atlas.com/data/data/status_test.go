@@ -70,6 +70,58 @@ func tenantRequest(tenantId uuid.UUID) *http.Request {
 	return req
 }
 
+// TestResolveStatusTenantId exercises the resolveStatusTenantId helper directly
+// using httptest primitives (no router/DB required). The shared-scope case must
+// return the version-scoped canonical id, NOT the all-zeros sentinel.
+func TestResolveStatusTenantId(t *testing.T) {
+	tenantId := uuid.New()
+	tn, err := tenant.Create(tenantId, "GMS", 84, 1)
+	require.NoError(t, err)
+
+	t.Run("tenant scope (empty)", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/data/status", nil)
+		w := httptest.NewRecorder()
+		got, ok := resolveStatusTenantId(w, r, tn)
+		require.True(t, ok)
+		assert.Equal(t, tenantId.String(), got)
+	})
+
+	t.Run("tenant scope (explicit)", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/data/status?scope=tenant", nil)
+		w := httptest.NewRecorder()
+		got, ok := resolveStatusTenantId(w, r, tn)
+		require.True(t, ok)
+		assert.Equal(t, tenantId.String(), got)
+	})
+
+	t.Run("shared scope with operator header returns version-scoped canonical id", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/data/status?scope=shared", nil)
+		r.Header.Set("X-Atlas-Operator", "1")
+		w := httptest.NewRecorder()
+		got, ok := resolveStatusTenantId(w, r, tn)
+		require.True(t, ok)
+		want := canonical.TenantId("GMS", 84, 1).String()
+		assert.Equal(t, want, got, "shared scope must return version-scoped canonical id, not the all-zeros sentinel")
+		assert.NotEqual(t, canonical.TenantUUID, got, "must NOT return the all-zeros sentinel")
+	})
+
+	t.Run("shared scope without operator header returns 403", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/data/status?scope=shared", nil)
+		w := httptest.NewRecorder()
+		_, ok := resolveStatusTenantId(w, r, tn)
+		require.False(t, ok)
+		assert.Equal(t, http.StatusForbidden, w.Code)
+	})
+
+	t.Run("invalid scope returns 400", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/data/status?scope=bogus", nil)
+		w := httptest.NewRecorder()
+		_, ok := resolveStatusTenantId(w, r, tn)
+		require.False(t, ok)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
 func TestGetDataStatus_Empty(t *testing.T) {
 	db := setupStatusDB(t)
 	t.Cleanup(func() {
@@ -104,9 +156,10 @@ func TestGetDataStatus_SharedScope(t *testing.T) {
 		db.Exec("DELETE FROM documents")
 	})
 
-	// Canonical baseline rows are anchored to canonical.TenantUUID, exactly
-	// as a scope=shared ingest writes them.
-	canonicalId := uuid.MustParse(canonical.TenantUUID)
+	// Canonical baseline rows are anchored to the version-scoped canonical id
+	// (GMS 83.1 — matching tenantRequest), exactly as a scope=shared ingest
+	// writes them via canonical.TenantId.
+	canonicalId := canonical.TenantId("GMS", 83, 1)
 	canonicalTn, err := tenant.Create(canonicalId, "GMS", 83, 1)
 	require.NoError(t, err)
 	canonicalCtx := tenant.WithContext(context.Background(), canonicalTn)
@@ -143,7 +196,7 @@ func TestGetDataStatus_SharedScope(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(2), resp.Data.Attributes.DocumentCount)
-	assert.Equal(t, canonical.TenantUUID, resp.Data.Id)
+	assert.Equal(t, canonical.TenantId("GMS", 83, 1).String(), resp.Data.Id)
 
 	// Default (tenant) scope for the same caller sees none of them.
 	w = httptest.NewRecorder()

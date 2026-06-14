@@ -19,11 +19,11 @@ const MobBanishPlayerHandle = "MobBanishPlayer"
 // Byte layout (IDA-verified): a single Encode4(dwMobTemplateID).
 //   - mobTemplateId : uint32 — the template id of the banishing mob
 //
-// IDA basis: CUserLocal::SendBanMapByMobRequest — v87 @0x9df571, v95 @0x908d50,
-// jms @0xa28621 (COutPacket(opcode); Encode4(dwMobTemplateID); SendPacket).
-// In v83/v84 this send is INLINED into CUserLocal::Update (no standalone function
-// to pin — see structures/RESUME-STATE.md); the wire shape is byte-identical (the
-// v87/v95 standalone is a one-Encode4 wrapper), so v83/v84 take this same codec.
+// IDA basis: CUserLocal::SendBanMapByMobRequest is a discrete one-Encode4 wrapper
+// in ALL five clients — v83 @0x99b16a, v84 @0x99b173, v87 @0x9df571, v95 @0x908d50,
+// jms @0xa28621 (COutPacket(opcode); Encode4(dwMobTemplateID); SendPacket). (task-092
+// Stage 4 corrected the earlier "v83/v84 inlined" note — those were just unnamed
+// sub_XXXX functions, now named + pinned.) Wire shape is byte-identical, one codec.
 type MobBanishPlayer struct {
 	mobTemplateId uint32
 }

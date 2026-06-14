@@ -33,17 +33,16 @@ func buildSampleAttack(at model.AttackType) model.AttackInfo {
 // model/attack_info_test.go: round-trip across all types×versions + the v84 dr-block
 // boundary). RoundTrip here pins that the wrapper delegates symmetrically per version.
 //
-// Markers are pinned where the op is implemented AND routed by the tenant template
-// AND its sender resolves in the IDB:
-//   - v83/v87/v95 route all four attacks -> melee/ranged/magic/touch verified.
-//   - v84 routes all four but only TryDoingBodyAttack is named in the v84 IDB -> touch only.
-//   - jms routes all four (added this task) but only TryDoingBodyAttack is named in the
-//     jms-DEVM IDB -> touch only; jms melee/ranged/magic stay ❌ (senders unnamed there).
-// CLOSE_RANGE_ATTACK's registry-primary sender is CUserLocal::TryDoingNormalAttack.
+// All four attacks are now verified across all five versions: the senders were named
+// in every IDB (the v84/jms melee/ranged/magic senders were named this task) and the
+// ops are routed in every tenant template. CLOSE_RANGE_ATTACK's registry-primary
+// sender is CUserLocal::TryDoingNormalAttack.
 
 // packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v83 ida=0x95719b
+// packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v84 ida=0x989692
 // packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v87 ida=0x9d8efc
 // packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v95 ida=0x9123c0
+// packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=jms_v185 ida=0xa122be
 func TestAttackMeleeRequest(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -55,8 +54,10 @@ func TestAttackMeleeRequest(t *testing.T) {
 }
 
 // packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=gms_v83 ida=0x9537d5
+// packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=gms_v84 ida=0x98da5f
 // packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=gms_v87 ida=0x9d1a9c
 // packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=gms_v95 ida=0x925a00
+// packet-audit:verify packet=character/serverbound/CharacterAttackRangedRequest version=jms_v185 ida=0xa19266
 func TestAttackRangedRequest(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -68,8 +69,10 @@ func TestAttackRangedRequest(t *testing.T) {
 }
 
 // packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=gms_v83 ida=0x95571f
+// packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=gms_v84 ida=0x99137f
 // packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=gms_v87 ida=0x9d55a4
 // packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=gms_v95 ida=0x92a240
+// packet-audit:verify packet=character/serverbound/CharacterAttackMagicRequest version=jms_v185 ida=0xa1d280
 func TestAttackMagicRequest(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

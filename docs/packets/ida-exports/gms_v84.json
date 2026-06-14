@@ -21624,6 +21624,21 @@
           "guard": "<default> && <default> && <default>"
         }
       ]
+    },
+    "CUserLocal::TryDoingMagicAttack": {
+      "address": "0x99137f",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingNormalAttack": {
+      "address": "0x989692",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingShootAttack": {
+      "address": "0x98da5f",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

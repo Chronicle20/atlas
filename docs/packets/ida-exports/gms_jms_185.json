@@ -8149,6 +8149,21 @@
           "guard": "<default> && <default> && sub_4AE4F1(1) && v120"
         }
       ]
+    },
+    "CUserLocal::TryDoingMagicAttack": {
+      "address": "0xa1d280",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingNormalAttack": {
+      "address": "0xa122be",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingShootAttack": {
+      "address": "0xa19266",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

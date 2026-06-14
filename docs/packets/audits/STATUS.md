@@ -6,10 +6,10 @@
 Tool: `2a158caf3b3241148d9e36b4c95629ac7b486c25`
 
 - export gms_v83: `f3608d0712c51cd7dbadb7def455072ff05cb47143e2b1ec1d33bb214bc5b77f`
-- export gms_v84: `a0d2f88076d1fbb81bb84ca427f34f8b557a765b168b7b60d8ff73b708ffbc06`
+- export gms_v84: `c1db9c78e59795b4a061403f49275b790e0eed7cca4ac239bbc0bd5036f9b2a2`
 - export gms_v87: `1ce8952dde8bcb00e91226a7d86870d764d4e8f9f3f395413b5721a6419abd6e`
 - export gms_v95: `01f959cc3fc1440c4676e1286bd59358c32070407111993050aa8427b23488a3`
-- export jms_v185: `dc59fe870831e2888dc9dcae84555054b5885a0bbe04d94ee2e1c1c5bc750729`
+- export jms_v185: `c012a22e908b3525dd2fd7ce57bae51b80c7f22374b49696120920d474d62b54`
 
 ## Clientbound
 
@@ -530,9 +530,9 @@ Tool: `2a158caf3b3241148d9e36b4c95629ac7b486c25`
 | MOVE_PLAYER | CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive |  | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest | character/serverbound/ChairFixed (T1) | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
 | USE_CHAIR | CWvsContext::SendSitOnPortableChairRequest | character/serverbound/ChairPortable (T1) | 0x02B | ✅ | 0x02B | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x022 | ✅ |
-| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x02C | ✅ | 0x02C | ❌ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ❌ |
-| RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack | character/serverbound/CharacterAttackRangedRequest (T1) | 0x02D | ✅ | 0x02D | ❌ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ❌ |
-| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02E | ✅ | 0x02E | ❌ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ❌ |
+| CLOSE_RANGE_ATTACK | CUserLocal::DoActiveSkill_MesoExplosion; CUserLocal::TryDoingMeleeAttack; CUserLocal::TryDoingNormalAttack | character/serverbound/CharacterAttackMeleeRequest (T1) | 0x02C | ✅ | 0x02C | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x023 | ✅ |
+| RANGED_ATTACK | CUserLocal::TryDoingShootAttack; CUserLocal::TryDoingSmoothingMovingShootAttack | character/serverbound/CharacterAttackRangedRequest (T1) | 0x02D | ✅ | 0x02D | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x024 | ✅ |
+| MAGIC_ATTACK | CUserLocal::TryDoingMagicAttack | character/serverbound/CharacterAttackMagicRequest (T1) | 0x02E | ✅ | 0x02E | ✅ | 0x030 | ✅ | 0x031 | ✅ | 0x025 | ✅ |
 | TOUCH_MONSTER_ATTACK | CUserLocal::TryDoingBodyAttack | character/serverbound/CharacterAttackTouchRequest (T1) | 0x02F | ✅ | 0x02F | ✅ | 0x031 | ✅ | 0x032 | ✅ | 0x026 | ✅ |
 | TAKE_DAMAGE | CUserLocal::SetDamaged; CUserLocal::Update |  | 0x030 | ❌ | 0x030 | ❌ | 0x032 | ❌ | 0x034 | ❌ | 0x027 | ❌ |
 | GENERAL_CHAT | CField::SendChatMsg; CField::SendChatMsgSlash | chat/serverbound/ChatGeneral (T1) | 0x031 | ❌ | 0x031 | ✅ | 0x034 | ✅ | 0x036 | ✅ | 0x029 | ✅ |
@@ -910,10 +910,10 @@ Tool: `2a158caf3b3241148d9e36b4c95629ac7b486c25`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 263 | 0 | 413 | 203 | 0 | 38.9% |
-| v84 | 218 | 0 | 458 | 203 | 0 | 32.2% |
+| v84 | 221 | 0 | 455 | 203 | 0 | 32.7% |
 | v87 | 280 | 0 | 433 | 166 | 0 | 39.3% |
 | v95 | 316 | 0 | 482 | 81 | 0 | 39.6% |
-| JMS185 | 264 | 0 | 446 | 169 | 0 | 37.2% |
+| JMS185 | 267 | 0 | 443 | 169 | 0 | 37.6% |
 
 ## Conflicts
 

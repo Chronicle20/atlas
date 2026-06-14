@@ -728,6 +728,11 @@
             "BUY_FRIENDSHIP": 36
           }
         }
+      },
+      {
+        "opCode": "0x088",
+        "validator": "LoggedInValidator",
+        "handler": "EnterDoorHandle"
       }
     ],
     "writers": [
@@ -1607,6 +1612,22 @@
       {
         "opCode": "0x172",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x128",
+        "writer": "SpawnDoor"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "RemoveDoor"
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "SpawnPortal"
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "RemoveTownDoor"
       }
     ]
   },

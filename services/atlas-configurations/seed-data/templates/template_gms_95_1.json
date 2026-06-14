@@ -320,6 +320,11 @@
       {
         "opCode": "0x113",
         "handler": "CashShopOperationHandle"
+      },
+      {
+        "opCode": "0x09C",
+        "validator": "LoggedInValidator",
+        "handler": "EnterDoorHandle"
       }
     ],
     "writers": [
@@ -839,6 +844,22 @@
       {
         "opCode": "0x190",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x14A",
+        "writer": "SpawnDoor"
+      },
+      {
+        "opCode": "0x14B",
+        "writer": "RemoveDoor"
+      },
+      {
+        "opCode": "0x045",
+        "writer": "SpawnPortal"
+      },
+      {
+        "opCode": "0x045",
+        "writer": "RemoveTownDoor"
       }
     ]
   },

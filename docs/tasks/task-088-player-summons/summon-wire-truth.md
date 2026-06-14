@@ -23,6 +23,37 @@
 > re-verification against the cid-pre-reading dispatcher (`0x938dd7`/`0x972401`),
 > not the old per-handler addrs.
 
+### Cross-version dispatcher confirmation (oid is universal — IDB-verified)
+The classic-family `CSummonedPool::OnPacket` is byte-for-byte the same shape on
+every GMS/JMS version: the spawn opcode calls the spawn reader via **vtable+0x30**
+(v83 uses +0x2C) with **NO** in-pool `Decode4` (cid consumed upstream by
+`OnUserCommonPacket`), and every NON-spawn opcode does exactly **one `Decode4`**
+(the oid) before its handler. Confirmed by decompile:
+
+| version | dispatcher | spawn op (no pre-read) | non-spawn `Decode4` oid |
+|---|---|---|---|
+| v83 GMS  | `0x938dd7` | `0xAF` | yes (+ **live x32dbg**: read offset already past cid at OnCreated's 1st Decode4) |
+| v84 GMS  | `0x970201` | `179` (`0xB3`) | yes |
+| v87 GMS  | `0x9b35bf` | `0xBC` | yes |
+| jms185   | `0x9f7f6e` | `0xB5` | yes |
+| v95 GMS  | `0x75ac70` (via `CField::OnPacket@0x546d50`) | flat switch; `Decode4 charId` once up front for **every** op incl. spawn | n/a (cid up front → oid present; oid was already written pre-fix, unchanged) |
+
+So writing the oid unconditionally is correct on all versions. The remaining work
+is a formal packet-verifier matrix pass to re-pin byte fixtures against these
+dispatchers (the old per-handler `ida=` markers analyzed the layer below the cid
+read); the wire contract itself is settled.
+
+### Serverbound is NOT affected by this seam (one id, confirmed)
+The clientbound seam is specific to the client's RECEIVE path (two layers:
+`OnUserCommonPacket` cid + per-op oid). The client's SEND path has no such wrapper
+— each send site builds the whole packet with a single leading id. v83 move send
+`CVecCtrlSummoned::EndUpdateActive@0x9c84e9` = `COutPacket(0xAF)` + **one**
+`Encode4(ctrl[0x248])` + `CMovePath::Flush` (no second id); attack/damage sends are
+the same one-id shape (per-field ASM in §Serverbound). The Go serverbound decoders
+read one `summonId` + body and reconcile via `resolveOwned` (`Get(id)` else
+`GetByOwner(senderCharacterId)`), so cid-vs-oid is moot. **No serverbound change
+needed.**
+
 Dispatcher: if op==0xAF → spawn (vtable+0x2C). else `cid = Decode4`, pool-lookup by cid, then:
 - 0xB0 → remove (sub_7A64EB)
 - 0xB1 → OnMove @0x7a6861

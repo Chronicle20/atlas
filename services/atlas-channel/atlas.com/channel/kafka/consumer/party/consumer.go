@@ -2,6 +2,7 @@ package party
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/door"
 	consumer2 "atlas-channel/kafka/consumer"
 	party2 "atlas-channel/kafka/message/party"
 	"atlas-channel/listener"
@@ -12,6 +13,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	partypkt "github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -119,18 +121,39 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[party2.S
 			return
 		}
 
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
+		// Resolve the party leader's active Mystic Door (if any) so that the
+		// party-created packet can populate the minimap door indicator (FR-3.3).
+		// Cosmic partyCreated convention: townMapId = door destination (town),
+		// targetMapId = door origin (area/dungeon), x/y = area-side door position.
+		townMapId := _map.EmptyMapId
+		targetMapId := _map.EmptyMapId
+		var doorX, doorY int16
+		doors, derr := door.NewProcessor(l, ctx).GetByOwner(p.LeaderId())
+		if derr != nil {
+			l.WithError(derr).Warnf("Unable to retrieve doors for party leader [%d]; sending empty sentinel.", p.LeaderId())
+		} else if len(doors) > 0 {
+			d := doors[0]
+			townMapId = d.TownMapId()
+			targetMapId = d.Field().MapId()
+			doorX = d.AreaX()
+			doorY = d.AreaY()
+		}
+
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId, townMapId, targetMapId, doorX, doorY))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce party [%d] created to character [%d].", e.PartyId, p.LeaderId())
 		}
 	}
 }
 
-func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-			return func(partyId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyCreatedBody(partyId))
+func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+			return func(partyId uint32, townMapId _map.Id, targetMapId _map.Id, doorX int16, doorY int16) model.Operator[session.Model] {
+				if townMapId == _map.EmptyMapId {
+					return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyCreatedBody(partyId))
+				}
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyCreatedBodyWithDoor(partyId, townMapId, targetMapId, doorX, doorY))
 			}
 		}
 	}

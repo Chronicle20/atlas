@@ -143,7 +143,7 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Handle GMS-JMS ring encoding differences (`socket/writer/character_spawn.go:101`)
 - [ ] Fix crash issues in character effects (`socket/writer/character_effect.go:265,276`)
 - [ ] Quest complete communication (`socket/writer/character_effect.go:119`)
-- [ ] Write doors for party (`socket/writer/party_operation.go:32,191`)
+- [x] Write doors for party — implemented in task-093: `libs/atlas-packet/party/clientbound/created.go` (WithDoor/PartyCreatedBodyWithDoor) + `services/atlas-channel/atlas.com/channel/kafka/consumer/party/consumer.go` (handleCreated fetches leader door via GetByOwner, wires town/target/x/y into party-created packet, FR-3.3)
 - [ ] Party operation auto-reject flag (`socket/writer/party_operation.go:131`)
 - [ ] Test party operations with JMS (`socket/writer/party_operation.go:200`)
 - [ ] JMS map codes for cash shop (`socket/writer/cash_shop_operation.go:128`)

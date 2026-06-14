@@ -707,6 +707,10 @@
         "writer": "CharacterMultiChat"
       },
       {
+        "opCode": "0x97",
+        "writer": "CharacterChatWhisper"
+      },
+      {
         "opCode": "0x94",
         "writer": "BlockedServer"
       },

@@ -6,6 +6,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=jms_v185 ida=0x56f4df
 func TestWhisperSendResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -26,6 +31,11 @@ func TestWhisperSendResultRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=jms_v185 ida=0x56f4df
 func TestWhisperReceiveRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -52,6 +62,11 @@ func TestWhisperReceiveRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=jms_v185 ida=0x56f4df
 func TestWhisperFindResultCashShopRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -69,6 +84,11 @@ func TestWhisperFindResultCashShopRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=jms_v185 ida=0x56f4df
 func TestWhisperFindResultMapRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -115,6 +135,11 @@ func TestWhisperFindResultMapWithXYRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=jms_v185 ida=0x56f4df
 func TestWhisperFindResultChannelRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -135,6 +160,11 @@ func TestWhisperFindResultChannelRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=jms_v185 ida=0x56f4df
 func TestWhisperFindResultErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -152,6 +182,11 @@ func TestWhisperFindResultErrorRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=jms_v185 ida=0x56f4df
 func TestWhisperErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -172,6 +207,11 @@ func TestWhisperErrorRoundTrip(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v83 ida=0x53228e
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v84 ida=0x53e514
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v87 ida=0x559b1d
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v95 ida=0x5448a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=jms_v185 ida=0x56f4df
 func TestWhisperWeatherRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

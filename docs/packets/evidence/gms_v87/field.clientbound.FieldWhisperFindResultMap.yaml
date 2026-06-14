@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperFindResultMap
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultMap
+    address: "0x559b1d"
+    decompile_sha256: 5f7f50a28f8521d10e58ae636717a3ed8c1d3754b65a6b038a6b8921b0cdef38

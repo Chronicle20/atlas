@@ -8565,12 +8565,6 @@
           "guard": "sFormat != 10 && sFormat != 72 && sFormat != 138"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "sFormat != 10 && sFormat != 72 && sFormat != 138",
-          "ref": "sub_42A9E9"
-        },
-        {
           "op": "DecodeStr",
           "comment": "",
           "guard": "sFormat != 10"
@@ -9023,6 +9017,196 @@
           "op": "Decode4",
           "comment": "",
           "guard": "!v17 && <default>"
+        }
+      ]
+    },
+    "CField::OnWhisper#Receive": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x12 (RECEIVE). Wire version-invariant v83=v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode1",
+          "comment": "gm"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
+        }
+      ]
+    },
+    "CField::OnWhisper#SendResult": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x0A/0x8A (SEND_RESULT). Wire version-invariant v83=v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultMap": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32, IDA-confirmed v83 AND v95) when mode 0x09. Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultCashShop": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "-1"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultChannel": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=3 (FIND on channel). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channel"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultError": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=0/else (FIND not found). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "0"
+        }
+      ]
+    },
+    "CField::OnWhisper#Error": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x22 (ERROR). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersEnabled"
+        }
+      ]
+    },
+    "CField::OnWhisper#Weather": {
+      "address": "0x56f4df",
+      "direction": "clientbound",
+      "note": "mode=0x92 (WEATHER). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag (always true)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
         }
       ]
     }

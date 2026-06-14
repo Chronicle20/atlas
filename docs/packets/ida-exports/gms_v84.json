@@ -22612,24 +22612,6 @@
           "guard": "v111 == (volatile LONG *)10"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)10",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)10 && !v24",
-          "ref": "sub_4C2816"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)10 && !v24",
-          "ref": "sub_447019"
-        },
-        {
           "op": "DecodeStr",
           "comment": "",
           "guard": "v111 == (volatile LONG *)18"
@@ -22650,30 +22632,6 @@
           "guard": "v111 == (volatile LONG *)18"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)18",
-          "ref": "sub_417123"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)18 && v14",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)18 && <default>",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 == (volatile LONG *)18 && v17",
-          "ref": "sub_417123"
-        },
-        {
           "op": "DecodeStr",
           "comment": "",
           "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138"
@@ -22687,12 +22645,6 @@
           "op": "DecodeStr",
           "comment": "",
           "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && v111 != (volatile LONG *)72 && v111 != (volatile LONG *)138",
-          "ref": "sub_417123"
         },
         {
           "op": "DecodeStr",
@@ -22708,30 +22660,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v111 != (volatile LONG *)34"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 2",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 3",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 3 && <default>",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 4",
-          "ref": "sub_447019"
         },
         {
           "op": "Decode4",
@@ -22744,72 +22672,12 @@
           "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1 && v37 && v105",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0 && v30 == 1",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && ((unsigned __int8)v111 & 1) != 0",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 2",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 3 && v113",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 1 && v89 && v105",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v111 != (volatile LONG *)34 && v112 && v30 == 1",
-          "ref": "sub_447019"
-        },
-        {
           "op": "DecodeStr",
           "comment": ""
         },
         {
           "op": "Decode1",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "CInPacket::Decode1(v2)",
-          "ref": "sub_4C2816"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "CInPacket::Decode1(v2)",
-          "ref": "sub_447019"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default>",
-          "ref": "sub_447019"
         }
       ]
     },
@@ -22817,6 +22685,196 @@
       "address": "0x5383ce",
       "direction": "",
       "calls": null
+    },
+    "CField::OnWhisper#Receive": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x12 (RECEIVE). Wire version-invariant v83=v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode1",
+          "comment": "gm"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
+        }
+      ]
+    },
+    "CField::OnWhisper#SendResult": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x0A/0x8A (SEND_RESULT). Wire version-invariant v83=v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultMap": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32, IDA-confirmed v83 AND v95) when mode 0x09. Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultCashShop": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "-1"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultChannel": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=3 (FIND on channel). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channel"
+        }
+      ]
+    },
+    "CField::OnWhisper#FindResultError": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=0/else (FIND not found). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "0"
+        }
+      ]
+    },
+    "CField::OnWhisper#Error": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x22 (ERROR). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersEnabled"
+        }
+      ]
+    },
+    "CField::OnWhisper#Weather": {
+      "address": "0x53e514",
+      "direction": "clientbound",
+      "note": "mode=0x92 (WEATHER). Wire version-invariant.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag (always true)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
+        }
+      ]
     }
   }
 }

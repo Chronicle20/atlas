@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldWhisperFindResultChannel
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultChannel
+    address: "0x53e514"
+    decompile_sha256: e5e374271695a04e5d23c3072ec6654ba7093d0d3435dbb8bc8894dc08107d5e

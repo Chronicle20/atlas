@@ -1079,6 +1079,10 @@
         "writer": "CharacterMultiChat"
       },
       {
+        "opCode": "0x85",
+        "writer": "CharacterChatWhisper"
+      },
+      {
         "opCode": "0x82",
         "writer": "BlockedServer"
       },

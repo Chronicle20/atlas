@@ -1112,13 +1112,45 @@ func candidatesFromFName(fname string) []candidate {
 		// CSV: MULTICHAT — atlas MultiChat (relocated to field/clientbound/multi.go, task-096 R-MARK).
 		return []candidate{{name: "MultiChat", pkg: "field", dir: csvpkg.DirClientbound}}
 
-	// CSV: WHISPER (0x97 / 151) → CField::OnWhisper.
-	// Dispatches on a leading mode byte: 9/10=find, 18=receive-whisper, 34=blocked, 146=weather.
-	// All atlas clientbound whisper structs (WhisperSendResult, WhisperReceive, etc.) write mode as first byte — parameterised.
-	// Sub-op value space: ⚠️ deferred to _pending.md (single consolidated chat row).
-	case "CField::OnWhisper":
-		// Use WhisperReceive as the representative struct (mode=18 branch).
-		return []candidate{{name: "WhisperReceive", pkg: "chat", dir: csvpkg.DirClientbound}}
+	// CSV: WHISPER (clientbound) → CField::OnWhisper. A field-domain dispatcher
+	// (relocated chat→field, task-096 R-MARK) that branches on a leading mode
+	// byte to 8 sub-ops. Each atlas clientbound whisper struct is modelled via a
+	// #-suffixed synthetic IDA entry so the pipeline produces one report per
+	// struct (same pattern as messenger/buddy/note clientbound sub-ops). The op
+	// row grades worst-of across all 8 #-suffix writers.
+	case "CField::OnWhisper#Receive":
+		// mode=0x12 (RECEIVE): DecodeStr(from) + Decode1(channel) + Decode1(gm) + DecodeStr(msg).
+		// Atlas struct: field/clientbound/whisper.go WhisperReceive.
+		return []candidate{{name: "WhisperReceive", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#SendResult":
+		// mode=0x0A/0x8A (SEND_RESULT): DecodeStr(target) + Decode1(result).
+		// Atlas struct: field/clientbound/whisper.go WhisperSendResult.
+		return []candidate{{name: "WhisperSendResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultMap":
+		// mode=0x09/0x48 sub=1 (FIND on map): DecodeStr(target) + Decode1(=1) + Decode4(mapId) +
+		// [Decode4(x) + Decode4(y) when mode 0x09].
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultMap.
+		return []candidate{{name: "WhisperFindResultMap", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultCashShop":
+		// mode=0x09/0x48 sub=2 (FIND in cash shop): DecodeStr(target) + Decode1(=2) + Decode4(-1).
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultCashShop.
+		return []candidate{{name: "WhisperFindResultCashShop", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultChannel":
+		// mode=0x09/0x48 sub=3 (FIND on channel): DecodeStr(target) + Decode1(=3) + Decode4(channel).
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultChannel.
+		return []candidate{{name: "WhisperFindResultChannel", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#FindResultError":
+		// mode=0x09/0x48 sub=0/else (FIND not found): DecodeStr(target) + Decode1(=0) + Decode4(0).
+		// Atlas struct: field/clientbound/whisper.go WhisperFindResultError.
+		return []candidate{{name: "WhisperFindResultError", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#Error":
+		// mode=0x22 (ERROR): DecodeStr(target) + Decode1(whispersEnabled).
+		// Atlas struct: field/clientbound/whisper.go WhisperError.
+		return []candidate{{name: "WhisperError", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWhisper#Weather":
+		// mode=0x92 (WEATHER): DecodeStr(from) + Decode1 + DecodeStr(msg).
+		// Atlas struct: field/clientbound/whisper.go WhisperWeather.
+		return []candidate{{name: "WhisperWeather", pkg: "field", dir: csvpkg.DirClientbound}}
 
 	// CSV: SPOUSE_CHAT → CField::OnCoupleMessage (task-096 R-CB; field/clientbound/SpouseChat).
 	// Per-version clientbound opcodes: v83 0x88, v84 0x8B, v87 0x90, v95 0x98. jms VERSION-ABSENT.

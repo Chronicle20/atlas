@@ -904,14 +904,14 @@ Tool: `1fdbfd3f24130fcd6e10310affca7054a5c3e6dd`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
-| summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| summon/serverbound/SummonAttackHandle (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | ui/clientbound/Lock |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
 
 ## Totals
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 237 | 0 | 443 | 201 | 0 | 34.9% |
+| v83 | 238 | 0 | 442 | 201 | 0 | 35.0% |
 | v84 | 194 | 0 | 484 | 203 | 0 | 28.6% |
 | v87 | 253 | 0 | 464 | 164 | 0 | 35.3% |
 | v95 | 280 | 0 | 519 | 82 | 0 | 35.0% |

@@ -34,6 +34,7 @@ func le32(v uint32) []byte {
 // (no anti-hack envelope) and asserts the cursor ends clean with the right
 // target mob oids + damages. Confirmed against CSummoned::TryDoingAttackManual
 // send block @0x7a57dc.
+// packet-audit:verify packet=summon/serverbound/SummonAttackHandle version=gms_v83 ida=0x7a4d42
 func TestSummonAttackDecodeV83(t *testing.T) {
 	body := []byte{}
 	body = append(body, le32(1000005)...) // summonId (= owner cid on v83)

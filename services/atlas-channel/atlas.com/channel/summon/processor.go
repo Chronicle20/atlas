@@ -6,6 +6,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,6 +22,17 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 		ctx: ctx,
 	}
 	return p
+}
+
+// InMapModelProvider fetches the summons currently present in field f from
+// atlas-summons (used to replay existing summons to a character entering the map).
+func (p *Processor) InMapModelProvider(f field.Model) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
+}
+
+// ForEachInMap applies o to every summon currently in field f.
+func (p *Processor) ForEachInMap(f field.Model, o model.Operator[Model]) error {
+	return model.ForEachSlice(p.InMapModelProvider(f), o, model.ParallelExecute())
 }
 
 // Spawn emits a COMMAND_TOPIC_SUMMON SPAWN command requesting atlas-summons

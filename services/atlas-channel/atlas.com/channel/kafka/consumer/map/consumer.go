@@ -4,6 +4,7 @@ import (
 	"atlas-channel/chair"
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
+	"atlas-channel/door"
 	"atlas-channel/listener"
 	"atlas-channel/merchant"
 	"atlas-channel/character/buff"
@@ -36,11 +37,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
@@ -207,6 +210,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		go func() {
 			if err := reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn reactors for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := door.NewProcessor(l, ctx).ForEachInMap(f, spawnDoorsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn doors for character [%d].", s.CharacterId())
 			}
 		}()
 
@@ -497,6 +506,67 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 			return func(s session.Model) model.Operator[reactor.Model] {
 				return func(r reactor.Model) error {
 					return session.Announce(l)(ctx)(wp)(reactorpkt.ReactorSpawnWriter)(reactorpkt.NewReactorSpawn(r.Id(), r.Classification(), r.State(), r.X(), r.Y(), r.Direction(), r.Name()).Encode)(s)
+				}
+			}
+		}
+	}
+}
+
+// doorPartyMemberSet resolves the set of character ids eligible to see a door:
+// the owner (always included) plus every same-channel party member of the owner.
+// Held as a package-level var so tests can stub party membership without a REST
+// mock. partyId == 0 (no party) yields just the owner. Mirrors the identical seam
+// in kafka/consumer/door.
+var doorPartyMemberSet = func(l logrus.FieldLogger, ctx context.Context, ownerCharacterId, partyId uint32) map[uint32]struct{} {
+	members := map[uint32]struct{}{ownerCharacterId: {}}
+	if partyId == 0 {
+		return members
+	}
+	p, err := party.NewProcessor(l, ctx).GetById(partyId)
+	if err != nil {
+		l.WithError(err).Warnf("SpawnForSelf: unable to resolve party [%d] for door owner [%d]; restricting to owner only.", partyId, ownerCharacterId)
+		return members
+	}
+	for _, m := range p.Members() {
+		members[m.Id()] = struct{}{}
+	}
+	return members
+}
+
+// doorAnnounce is the session.Announce seam for door packets, extracted as a
+// package-level var so tests can stub it without a real socket writer. The
+// writerName parameter identifies the writer (e.g. SpawnDoorWriter) for test
+// assertions; the real implementation calls session.Announce with the given
+// writerName and body.
+var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, enc packet.Encode, s session.Model) error {
+	return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
+}
+
+// spawnDoorsForSession returns a door.Model operator that announces eligible
+// area-side doors to the arriving session (FR-3.4). A door is eligible if the
+// session's character is the owner or a same-channel party member of the owner
+// (per the G4 eligibility contract). For AREA-side doors (returned by
+// door.Processor.ForEachInMap keyed on the area field), the wire packet is
+// SpawnDoor(ownerCharacterId, areaX, areaY, launched=true).
+//
+// Town-side late-join spawn (SpawnPortal for a session entering the town field)
+// is not implemented here: GetInField is keyed on the area field, so there is no
+// by-town REST route available. Town-side late-join visibility is provided by
+// the party minimap packet emitted in Task G6.
+func spawnDoorsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[door.Model] {
+			return func(s session.Model) model.Operator[door.Model] {
+				return func(d door.Model) error {
+					members := doorPartyMemberSet(l, ctx, d.OwnerCharacterId(), d.PartyId())
+					if _, ok := members[s.CharacterId()]; !ok {
+						return nil
+					}
+					// AREA-side: announce SpawnDoor(ownerId, areaX, areaY, launched=true).
+					// launched=true marks a late-join re-spawn vs. a first deploy.
+					// The wire "oid" is the OWNER CHARACTER ID (Cosmic PacketCreator.java:1115).
+					return doorAnnounce(l, ctx, wp, doorcb.SpawnDoorWriter,
+						writer.SpawnDoorBody(d.OwnerCharacterId(), d.AreaX(), d.AreaY(), true), s)
 				}
 			}
 		}

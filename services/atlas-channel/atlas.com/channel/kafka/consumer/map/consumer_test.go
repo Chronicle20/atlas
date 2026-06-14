@@ -1,6 +1,9 @@
 package _map
 
 import (
+	"atlas-channel/door"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"fmt"
 	"net/http"
@@ -13,7 +16,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -179,5 +185,145 @@ func TestFetchOtherCharactersInMap_InfraErrorIsHardFailure(t *testing.T) {
 	_, err := fetchOtherCharactersInMap(logger, ctx, f, selfId)
 	if err == nil {
 		t.Error("expected a hard failure for infrastructure error, but got nil")
+	}
+}
+
+// ---- spawnDoorsForSession tests ----
+
+// buildTestDoor creates a door.Model for the given area field owned by
+// ownerCharacterId, with the given partyId.
+func buildTestDoor(f field.Model, ownerCharacterId, partyId uint32) door.Model {
+	rm := door.RestModel{
+		Id:               "test-door-1",
+		AreaDoorId:       100,
+		TownDoorId:       200,
+		OwnerCharacterId: ownerCharacterId,
+		PartyId:          partyId,
+		WorldId:          f.WorldId(),
+		ChannelId:        f.ChannelId(),
+		MapId:            f.MapId(),
+		Instance:         f.Instance(),
+		TownMapId:        _map.Id(104000000),
+		AreaX:            300,
+		AreaY:            400,
+		TownX:            -100,
+		TownY:            -200,
+	}
+	m, _ := door.Extract(rm)
+	return m
+}
+
+// TestSpawnDoorsForSession_EligibleOwner_SpawnDoor asserts that when the
+// arriving session IS the door owner (CharacterId in the member set), the
+// operator emits exactly one SpawnDoor announce.
+//
+// We use the zero-value session.Model (CharacterId==0) and arrange a door whose
+// ownerCharacterId is also 0. doorPartyMemberSet is stubbed to return {0: {}},
+// and doorAnnounce is stubbed to capture the writer name without a real socket.
+func TestSpawnDoorsForSession_EligibleOwner_SpawnDoor(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	// session.Model{} has CharacterId()==0; door is also owned by 0.
+	d := buildTestDoor(f, 0, 0)
+
+	// Stub party-membership seam: owner 0 only.
+	origPMS := doorPartyMemberSet
+	defer func() { doorPartyMemberSet = origPMS }()
+	doorPartyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
+		return map[uint32]struct{}{owner: {}}
+	}
+
+	// Stub announce seam; capture writer name.
+	var spawnDoorCalls int
+	origAnnounce := doorAnnounce
+	defer func() { doorAnnounce = origAnnounce }()
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		if writerName == doorcb.SpawnDoorWriter {
+			spawnDoorCalls++
+		}
+		return nil
+	}
+
+	op := spawnDoorsForSession(l)(ctx)(nil)(session.Model{})
+	if err := op(d); err != nil {
+		t.Fatalf("operator returned unexpected error: %v", err)
+	}
+	if spawnDoorCalls != 1 {
+		t.Errorf("SpawnDoor calls = %d, want 1 for eligible owner", spawnDoorCalls)
+	}
+}
+
+// TestSpawnDoorsForSession_IneligibleOwner_NoAnnounce asserts that when the
+// arriving session is NOT in the door's eligible member set, no announce is
+// emitted.
+func TestSpawnDoorsForSession_IneligibleOwner_NoAnnounce(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	// Door is owned by character 999; session is zero-value (CharacterId()==0).
+	d := buildTestDoor(f, 999, 0)
+
+	// Stub party-membership seam: only 999 is eligible, not 0.
+	origPMS := doorPartyMemberSet
+	defer func() { doorPartyMemberSet = origPMS }()
+	doorPartyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
+		return map[uint32]struct{}{owner: {}}
+	}
+
+	// Stub announce: count any calls.
+	var announceCalls int
+	origAnnounce := doorAnnounce
+	defer func() { doorAnnounce = origAnnounce }()
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ string, _ packet.Encode, _ session.Model) error {
+		announceCalls++
+		return nil
+	}
+
+	op := spawnDoorsForSession(l)(ctx)(nil)(session.Model{})
+	if err := op(d); err != nil {
+		t.Fatalf("operator returned unexpected error: %v", err)
+	}
+	if announceCalls != 0 {
+		t.Errorf("announce calls = %d, want 0 for ineligible session", announceCalls)
+	}
+}
+
+// TestSpawnDoorsForSession_PartyMember_SpawnDoor asserts that when the arriving
+// session is a same-channel party member of the door owner (not the owner
+// themselves), the operator still emits SpawnDoor.
+func TestSpawnDoorsForSession_PartyMember_SpawnDoor(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	// Door owned by 999; session (CharacterId==0) is a party member.
+	d := buildTestDoor(f, 999, 77)
+
+	// Stub party seam: both owner 999 and party member 0 are eligible.
+	origPMS := doorPartyMemberSet
+	defer func() { doorPartyMemberSet = origPMS }()
+	doorPartyMemberSet = func(_ logrus.FieldLogger, _ context.Context, owner, _ uint32) map[uint32]struct{} {
+		return map[uint32]struct{}{owner: {}, 0: {}}
+	}
+
+	var spawnDoorCalls int
+	origAnnounce := doorAnnounce
+	defer func() { doorAnnounce = origAnnounce }()
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		if writerName == doorcb.SpawnDoorWriter {
+			spawnDoorCalls++
+		}
+		return nil
+	}
+
+	op := spawnDoorsForSession(l)(ctx)(nil)(session.Model{})
+	if err := op(d); err != nil {
+		t.Fatalf("operator returned unexpected error: %v", err)
+	}
+	if spawnDoorCalls != 1 {
+		t.Errorf("SpawnDoor calls = %d, want 1 for party member", spawnDoorCalls)
 	}
 }

@@ -39,6 +39,12 @@ func (p *Processor) GetByOwner(ownerCharacterId uint32) ([]Model, error) {
 	return p.ByOwnerModelProvider(ownerCharacterId)()
 }
 
+// ForEachInMap applies op to every door in the given field (area-keyed).
+// Mirrors reactor.Processor.ForEachInMap.
+func (p *Processor) ForEachInMap(f field.Model, o model.Operator[Model]) error {
+	return model.ForEachSlice(p.InFieldModelProvider(f), o, model.ParallelExecute())
+}
+
 // GetByOwnerOnMap returns the door in the field owned by ownerCharacterId, if any.
 func (p *Processor) GetByOwnerOnMap(f field.Model, ownerCharacterId uint32) (Model, bool) {
 	ms, err := p.GetInField(f)

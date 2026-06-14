@@ -8994,6 +8994,84 @@
       "address": "0x5da128",
       "direction": "",
       "calls": null
+    },
+    "CField::OnAdminResult": {
+      "address": "0x57255f",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v2 == 15"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && v4 && v5"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && v4 && v5 && sub_486014(&sStrDefault)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && v4 && v5 && sub_486014(&sStrDefault)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && v4 && <default>"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && v4 && <default>",
+          "ref": "sub_4A586D"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && <default>"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v2 <= 0xFu && v3 && <default>",
+          "ref": "sub_4A586D"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 <= 0xFu && <default>"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v2 <= 0xFu && <default>",
+          "ref": "sub_4A586D"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v17"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v17 && CInPacket::Decode1(m_pStr)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v17 && <default>"
+        }
+      ]
     }
   }
 }

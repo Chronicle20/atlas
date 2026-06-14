@@ -21816,6 +21816,406 @@
           "comment": ""
         }
       ]
+    },
+    "CField::InputGuildName": {
+      "address": "0x53c812",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result && v3"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "result && v3"
+        }
+      ]
+    },
+    "CField::OnAdminResult": {
+      "address": "0x54156f",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 > 0x1Cu && v2 != 29 && v2 != 30 && v2 == 31"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2 > 0x1Cu && v2 != 29 && v2 != 30 && <default> && v2 <= 0x29u"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v2 > 0x1Cu && v2 != 29 && v2 != 30 && <default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && v6 && !v7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && v6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && v6 && CInPacket::Decode1(v1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && v6 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)",
+          "ref": "sub_476592"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)",
+          "ref": "sub_476592"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v3 && v4 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && v3 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default>"
+        }
+      ]
+    },
+    "CField::OnHontailTimer": {
+      "address": "0x53f829",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnItemUpgrade": {
+      "address": "0x544395",
+      "direction": "",
+      "calls": null
+    },
+    "CField::OnWarnMessage": {
+      "address": "0x5427c9",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::OnZakumTimer": {
+      "address": "0x53f702",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::TryEnterTownPortal": {
+      "address": "0x5438eb",
+      "direction": "",
+      "calls": null
+    },
+    "CField_Witchtower::OnScoreUpdate": {
+      "address": "0x594fe2",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult": {
+      "address": "0x5b47c8",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 0",
+          "ref": "sub_5B4D9F"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 1",
+          "ref": "sub_5B4D72"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 2",
+          "ref": "sub_5B4EF2"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 3",
+          "ref": "sub_5B4ED3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 8",
+          "ref": "sub_5B4B64"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 9",
+          "ref": "sub_5B4A38"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 10",
+          "ref": "sub_5B4BA2"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 11",
+          "ref": "sub_5B4BE0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 12",
+          "ref": "sub_5B4FE3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 13",
+          "ref": "sub_5B511A"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 14",
+          "ref": "sub_5B5147"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 15",
+          "ref": "sub_5B51D7"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 16",
+          "ref": "sub_5B5204"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 17",
+          "ref": "sub_5B5239"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 18",
+          "ref": "sub_5B5258"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 19",
+          "ref": "sub_5B52BF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 20",
+          "ref": "sub_5B52EC"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 21",
+          "ref": "sub_5B5321"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 22",
+          "ref": "sub_5B5356"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 23",
+          "ref": "sub_5B5381"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 24",
+          "ref": "sub_5B53B6"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 25",
+          "ref": "sub_5B54CC"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 26",
+          "ref": "sub_5B5501"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 27",
+          "ref": "sub_5B552C"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 28",
+          "ref": "sub_5B5561"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 29",
+          "ref": "sub_5B5596"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 30",
+          "ref": "sub_5B55CB"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 31",
+          "ref": "sub_5B55F6"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 32",
+          "ref": "sub_5B562B"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 33",
+          "ref": "sub_5B5656"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 34",
+          "ref": "sub_5B568B"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 35",
+          "ref": "sub_5B56C0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 39",
+          "ref": "sub_5B58FB"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 40",
+          "ref": "sub_5B56F5"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "result == 41",
+          "ref": "sub_5B5795"
+        }
+      ]
+    },
+    "CITC::OnQueryCashResult": {
+      "address": "0x5b4743",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

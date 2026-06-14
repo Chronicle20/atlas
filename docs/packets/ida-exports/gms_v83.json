@@ -9484,6 +9484,16 @@
           "comment": ""
         }
       ]
+    },
+    "CField_Witchtower::OnScoreUpdate": {
+      "address": "0x585279",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

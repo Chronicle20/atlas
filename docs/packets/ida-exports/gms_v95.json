@@ -10652,6 +10652,16 @@
           "comment": ""
         }
       ]
+    },
+    "CField_Witchtower::OnScoreUpdate": {
+      "address": "0x564ad0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

@@ -842,7 +842,7 @@
   note: 'task-096 Cluster 2: v84 opcode corrected 143->146 (0x92). IDA v84 CField::OnPacket (0x53D5A7) case 0x92 -> sub_5414AA (Decode4 + conditional DecodeStr when itemId>=0, body ≡ v83 OnPlayJukeBox). +3 vs v83; prior csv 143 (0x8F) was stale.'
 - op: ADMIN_RESULT
   direction: clientbound
-  opcode: 144
+  opcode: 147
   fname: CField::OnAdminResult
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
@@ -890,7 +890,7 @@
   note: 'task-096 Cluster 2: v84 opcode corrected 151->154 (0x9A). IDA v84 CField::OnPacket (0x53D5A7) case 0x9A -> sub_543BCB (Decode1 count + loop(Decode4+buf8+buf8), body ≡ v83 OnSetQuestTime). +3 vs v83; prior csv 151 (0x97) was stale.'
 - op: ARIANT_RESULT
   direction: clientbound
-  opcode: 152
+  opcode: 155
   fname: CField::OnWarnMessage
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
@@ -1758,7 +1758,7 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: HORNTAIL_CAVE
   direction: clientbound
-  opcode: 301
+  opcode: 309
   fname: CField::OnHontailTimer
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
@@ -1770,7 +1770,7 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: ZAKUM_SHRINE
   direction: clientbound
-  opcode: 303
+  opcode: 310
   fname: CField::OnZakumTimer
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
@@ -1999,13 +1999,13 @@
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 347
-  fname: CField::OnCharacterSale
+  fname: CITC::OnQueryCashResult
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MTS_OPERATION
   direction: clientbound
   opcode: 348
-  fname: CField::OnCharacterSale
+  fname: CITC::OnNormalItemResult
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MAPLELIFE_RESULT

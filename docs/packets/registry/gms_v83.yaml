@@ -1213,30 +1213,31 @@
   opcode: 252
   fname: CMob::OnEffectByItem
   provenance: csv-import
-- op: SHOW_MAGNET
+# SHOW_MAGNET removed task-092 Stage 4: stale CSV mislabel — a duplicate of
+# MOB_SPEAKING (same fname CMob::OnMobSpeaking). The CSV op-name labels for the
+# 0xFD-0xFF mob cluster were shifted +1 vs the IDB; SHOW_MAGNET coincidentally
+# held the real OnMobSpeaking opcode 0xFD. Folded into the corrected MOB_SPEAKING
+# row below; the off-by-one is resolved here, not left for follow-up.
+- op: MOB_SPEAKING
   direction: clientbound
   opcode: 253
   fname: CMob::OnMobSpeaking
-  provenance: manual
-  note: 'IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFD -> CMob::OnMobSpeaking (0x6711EA). Registry FName was empty. NOTE: the CSV op-name labels for 0xFD-0xFF appear shifted by one vs the IDB handlers (client handler for op-name MOB_SPEAKING actually sits at 0xFD); op names left unchanged, FNames realigned to IDB. Possible Atlas opcode-enum off-by-one in this mob cluster - flagged for follow-up.'
-- op: MOB_SPEAKING
-  direction: clientbound
-  opcode: 254
-  fname: CMob::OnMobSpeaking
-  provenance: manual
-  note: 'task-092 Stage 1: fname assigned by op-name. IDA v83 CMob::OnMobSpeaking (0x6711EA), dispatched from CMobPool::OnMobPacket (0x67936D) case 0xFD. Atlas op enum sits +1 vs the client case label for the 0xFD-0xFF cluster (known off-by-one, see SHOW_MAGNET note); fname tracks the op name, not the raw case.'
+  provenance: ida-discovered
+  ida:
+    address: 0x6711ea
+  note: 'task-092 Stage 4: off-by-one corrected. IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFD -> CMob::OnMobSpeaking (0x6711EA). Was opcode 254 (CSV off-by-one); the real dispatcher case is 0xFD/253. v83 template routes MobSpeaking at 0xFD (matches).'
 - op: INC_MOB_CHARGE_COUNT
   direction: clientbound
-  opcode: 255
+  opcode: 254
   fname: CMob::OnIncMobChargeCount
-  provenance: manual
-  note: 'task-092 Stage 1: fname assigned by op-name. IDA v83 CMob::OnIncMobChargeCount (0x6710FC), dispatched from CMobPool::OnMobPacket (0x67936D) case 0xFE. See MOB_SPEAKING note re: cluster off-by-one.'
-- op: MOB_SKILL_DELAY
-  direction: clientbound
-  opcode: 256
-  fname: CMob::OnMobSkillDelay
-  provenance: csv-import
-  note: 'task-092 Cluster F: VERSION-ABSENT in v83. IDA v83 CMobPool::OnMobPacket (0x67936D) switch ENDS at case 0xFF (OnMobAttackedByMob) with no skill-delay case — MOB_SKILL_DELAY is a later-version feature (v84 case 261 onward). Row retained per registry no-delete rule; no codec/evidence for v83.'
+  provenance: ida-discovered
+  ida:
+    address: 0x6710fc
+  note: 'task-092 Stage 4: off-by-one corrected. IDA v83 CMobPool::OnMobPacket (0x67936D) case 0xFE -> CMob::OnIncMobChargeCount (0x6710FC). Was opcode 255 (CSV off-by-one); the real dispatcher case is 0xFE/254. v83 template routes IncMobChargeCount at 0xFE (matches).'
+# MOB_SKILL_DELAY removed task-092 Stage 4: VERSION-ABSENT in v83. The v83
+# dispatcher (0x67936D) switch ENDS at case 0xFF (OnMobAttackedByMob) with no
+# skill-delay case — it is a later-version feature (v84 case 261 onward). Dropped
+# so the matrix cell reads n/a (⬜) instead of ❌, like other genuinely-absent ops.
 - op: MOB_ATTACKED_BY_MOB
   direction: clientbound
   opcode: 255

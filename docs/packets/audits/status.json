@@ -21440,39 +21440,6 @@
     },
     {
       "kind": "op",
-      "op": "SHOW_MAGNET",
-      "packet": "monster/clientbound/MonsterMobSpeaking",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::OnMobSpeaking"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 253
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 253
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 269
-        },
-        "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 270
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "MOB_SPEAKING",
       "packet": "monster/clientbound/MonsterMobSpeaking",
       "direction": "clientbound",
@@ -21483,7 +21450,7 @@
       "cells": {
         "gms_v83": {
           "state": "verified",
-          "opcode": 254
+          "opcode": 253
         },
         "gms_v84": {
           "state": "verified",
@@ -21498,8 +21465,8 @@
           "opcode": 301
         },
         "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 270
         }
       }
     },
@@ -21515,7 +21482,7 @@
       "cells": {
         "gms_v83": {
           "state": "verified",
-          "opcode": 255
+          "opcode": 254
         },
         "gms_v84": {
           "state": "verified",
@@ -21560,39 +21527,6 @@
         "gms_v95": {
           "state": "verified",
           "opcode": 309
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MOB_SKILL_DELAY",
-      "packet": "monster/clientbound/MonsterMobSkillDelay",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::OnMobSkillDelay"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 256
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 261
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 271
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 303
         },
         "jms_v185": {
           "state": "n-a",
@@ -21770,6 +21704,38 @@
           "state": "incomplete",
           "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 281
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MOB_SKILL_DELAY",
+      "packet": "monster/clientbound/MonsterMobSkillDelay",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::OnMobSkillDelay"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 261
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 271
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 303
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 271
         }
       }
     },
@@ -22374,11 +22340,9 @@
     {
       "kind": "op",
       "op": "IDA_0X10F",
-      "packet": "monster/clientbound/MonsterMobSkillDelay",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CMob::OnMobSkillDelay",
         "CUserLocal::OnVengeanceSkillApply"
       ],
       "cells": {
@@ -22400,8 +22364,8 @@
           "opcode": 271
         },
         "jms_v185": {
-          "state": "verified",
-          "opcode": 271
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },
@@ -22471,11 +22435,9 @@
     {
       "kind": "op",
       "op": "IDA_0X110",
-      "packet": "monster/clientbound/MonsterMobEscortFullPath",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CMob::OnEscortFullPath",
         "CUserLocal::OnExJablinApply"
       ],
       "cells": {
@@ -22497,8 +22459,8 @@
           "opcode": 272
         },
         "jms_v185": {
-          "state": "verified",
-          "opcode": 272
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },
@@ -22666,11 +22628,9 @@
     {
       "kind": "op",
       "op": "IDA_0X112",
-      "packet": "monster/clientbound/MonsterMobEscortStopSay",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CMob::OnEscortStopSay",
         "CUserLocal::OnQuestGuideResult"
       ],
       "cells": {
@@ -22692,8 +22652,8 @@
           "opcode": 274
         },
         "jms_v185": {
-          "state": "verified",
-          "opcode": 274
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },
@@ -22732,11 +22692,9 @@
     {
       "kind": "op",
       "op": "IDA_0X113",
-      "packet": "monster/clientbound/MonsterMobEscortReturnBefore",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CMob::OnEscortReturnBefore",
         "CUserLocal::OnDeliveryQuest"
       ],
       "cells": {
@@ -22758,8 +22716,8 @@
           "opcode": 275
         },
         "jms_v185": {
-          "state": "verified",
-          "opcode": 275
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },
@@ -24188,8 +24146,8 @@
           "opcode": 304
         },
         "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 272
         }
       }
     },
@@ -24410,8 +24368,8 @@
           "opcode": 306
         },
         "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 274
         }
       }
     },
@@ -24478,8 +24436,8 @@
           "opcode": 307
         },
         "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 275
         }
       }
     },

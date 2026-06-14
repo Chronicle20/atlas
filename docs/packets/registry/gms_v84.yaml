@@ -1452,12 +1452,10 @@
   ida:
     address: 6831263
   note: 'task-092 Cluster-B: v84 opcode corrected 252->258 (0x102). CMobPool::OnMobPacket @0x68fef7 case 258 -> OnEffectByItem (sub_683C9F). Stale csv value 252 (0xFC) was the v83 opcode.'
-- op: SHOW_MAGNET
-  direction: clientbound
-  opcode: 253
-  fname: ""
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+# SHOW_MAGNET removed task-092 Stage 4: stale CSV mislabel duplicating
+# MOB_SPEAKING (empty fname, off-by-one opcode 253). v84 dispatcher (0x68FEF7)
+# case 259 -> CMob::OnMobSpeaking; the MOB_SPEAKING row below carries the real
+# opcode. See gms_v83.yaml for the cluster off-by-one resolution.
 - op: MOB_SPEAKING
   direction: clientbound
   opcode: 259

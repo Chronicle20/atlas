@@ -1310,12 +1310,10 @@
   opcode: 268
   fname: CMob::OnEffectByItem
   provenance: csv-import
-- op: SHOW_MAGNET
-  direction: clientbound
-  opcode: 269
-  fname: CMob::OnMobSpeaking
-  provenance: manual
-  note: 'IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x10D -> CMob::OnMobSpeaking (0x6AC31E). Registry FName was empty. NOTE: the CSV op-name labels for 0x10D-0x110 appear shifted by one vs the IDB handlers (same off-by-one as v83''s 0xFD-0xFF mob cluster); op names left unchanged, FNames realigned to IDB. Flagged for follow-up.'
+# SHOW_MAGNET removed task-092 Stage 4: stale CSV mislabel duplicating
+# MOB_SPEAKING at the same opcode (269/0x10D, CMob::OnMobSpeaking). v87's
+# MOB_SPEAKING/INC_MOB_CHARGE_COUNT/MOB_SKILL_DELAY/MOB_ATTACKED_BY_MOB rows
+# already carry the correct dispatcher opcodes (0x10D-0x110). See gms_v83.yaml.
 - op: MOB_SPEAKING
   direction: clientbound
   opcode: 269

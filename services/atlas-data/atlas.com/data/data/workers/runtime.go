@@ -30,8 +30,8 @@ import (
 )
 
 // tenantFromParams derives a tenant.Model from the worker Params. For
-// scope=shared we use the canonical sentinel UUID; for tenants/<uuid> we parse
-// the suffix.
+// scope=shared we use the version-scoped canonical id (canonical.TenantId)
+// derived from region/major/minor; for tenants/<uuid> we parse the suffix.
 func tenantFromParams(p Params) (tenant.Model, error) {
 	var id uuid.UUID
 	switch {

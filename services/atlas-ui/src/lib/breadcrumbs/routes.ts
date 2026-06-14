@@ -4,6 +4,7 @@
  */
 
 import { type BreadcrumbSegment } from './utils';
+import { getJobNameById } from '@/lib/jobs';
 
 // Types for route configuration
 export interface RouteConfig {
@@ -141,6 +142,20 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: 'Item Details',
     parent: '/items',
     entityType: 'item',
+  },
+
+  // Job routes
+  {
+    pattern: '/jobs',
+    label: 'Jobs',
+    parent: '/',
+  },
+  {
+    pattern: '/jobs/[id]',
+    label: 'Job Details',
+    parent: '/jobs',
+    entityType: 'job',
+    labelResolver: (params) => getJobNameById(Number(params.id)) ?? `Job ${params.id}`,
   },
 
   // Map routes
@@ -458,6 +473,8 @@ export const ROUTE_PATTERNS = {
   MONSTER_DETAIL: '/monsters/[id]',
   ITEMS: '/items',
   ITEM_DETAIL: '/items/[id]',
+  JOBS: '/jobs',
+  JOB_DETAIL: '/jobs/[id]',
   MAPS: '/maps',
   MAP_DETAIL: '/maps/[id]',
   MAP_PORTAL_DETAIL: '/maps/[id]/portals/[portalId]',

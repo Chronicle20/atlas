@@ -127,9 +127,7 @@ func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Write
 		return fmt.Errorf("expected *stdlib.Conn, got %T", driverConn)
 	}
 	var buf bytes.Buffer
-	sql := fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY id) TO STDOUT (FORMAT binary)`,
-		table, canonical.TenantUUID)
-	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, sql); err != nil {
+	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, copyOutSQL(table)); err != nil {
 		return err
 	}
 	if err := tw.WriteHeader(&tar.Header{
@@ -141,6 +139,38 @@ func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Write
 	}
 	_, err := tw.Write(buf.Bytes())
 	return err
+}
+
+// copyOutSQL builds the binary COPY statement that dumps the canonical-tenant
+// subset of a table, ordered deterministically by a column the table actually
+// has. The documents table carries a surrogate `id`; the *_search_index tables
+// are keyed by (tenant_id, <entity>_id) with no `id`, so ordering them by `id`
+// fails with SQLSTATE 42703 — the publish-time empty-500 seen on atlas-main.
+func copyOutSQL(table string) string {
+	return fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY %s) TO STDOUT (FORMAT binary)`,
+		table, canonical.TenantUUID, orderColumn(table))
+}
+
+// orderColumn returns the column used to order a table's COPY dump. Mirrors the
+// DumpTables set; the default orders by tenant_id (present on every dumped
+// table) so an unmapped future table degrades to a stable-but-coarse order
+// rather than crashing the dump.
+func orderColumn(table string) string {
+	switch table {
+	case "documents":
+		return "id"
+	case "monster_search_index":
+		return "monster_id"
+	case "npc_search_index":
+		return "npc_id"
+	case "reactor_search_index":
+		return "reactor_id"
+	case "map_search_index":
+		return "map_id"
+	case "item_string_search_index":
+		return "item_id"
+	}
+	return "tenant_id"
 }
 
 func strReader(s string) io.Reader { return bytes.NewReader([]byte(s)) }

@@ -756,9 +756,10 @@
   direction: clientbound
   opcode: 156
   fname: CField::OnStalkResult
-  provenance: ida-discovered
+  provenance: manual
   ida:
-    address: 5444389
+    address: 5470826
+  note: 'IDA v83 CField::OnPacket (0x531325) case 0x9C -> CField::OnStalkResult (0x537a6a). Clientbound recv (reads CInPacket: Decode4 count, loop Decode4/Decode1[+DecodeStr+2x Decode4]). Address corrected from 0x531325 (the dispatcher) to 0x537a6a (the handler). task-096 0.3.'
 - op: PYRAMID_GAUGE
   direction: clientbound
   opcode: 157
@@ -2535,7 +2536,8 @@
     - CField::SendSetGradeNameMsg
     - CField::SendSetGuildNoticeMsg
     - CWvsContext::OnGuildResult
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField::InputGuildName (0x5305ae, from CWvsContext::OnGuildResult) builds COutPacket(126) Encode1(2=name-input mode)+EncodeStr(name)+SendPacket. Direction confirmed serverbound; multi-mode op (leading mode byte). Served by guild/serverbound/GuildOperation (A-row). task-096 0.3.'
 - op: DENY_GUILD_REQUEST
   direction: serverbound
   opcode: 127
@@ -2585,7 +2587,8 @@
   fname: CField::TryEnterTownPortal
   fname_alts:
     - CTownPortalPool::TryEnterTownPortal
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField::TryEnterTownPortal (0x5375ed, from CUserLocal::HandleUpKeyDown) builds COutPacket(0x85=133) Encode4(townportal id)+Encode1(1)+SendPacket. Direction confirmed serverbound. task-096 0.3.'
 - op: OPEN_GATE
   direction: serverbound
   opcode: 134
@@ -3015,17 +3018,20 @@
   direction: serverbound
   opcode: 211
   fname: CField_SnowBall::BasicActionAttack
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_SnowBall::BasicActionAttack (0x575387) builds COutPacket(0xD3=211) Encode1(attack)+Encode2(damage)+Encode2(x)+SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: LEFT_KNOCKBACK
   direction: serverbound
   opcode: 212
   fname: CField_SnowBall::Update
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_SnowBall::Update (0x574df1) builds COutPacket(0xD4=212) (empty body) on crossing the knockback boundary + SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: COCONUT
   direction: serverbound
   opcode: 213
   fname: CField_Coconut::BasicActionAttack
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_Coconut::BasicActionAttack (0x549902) builds COutPacket(0xD5=213) Encode2(attack)+Encode2(x)+SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: MATCH_TABLE
   direction: serverbound
   opcode: 214
@@ -3035,7 +3041,8 @@
   direction: serverbound
   opcode: 215
   fname: CField_GuildBoss::BasicActionAttack
-  provenance: csv-import
+  provenance: manual
+  note: 'IDA v83 CField_GuildBoss::BasicActionAttack (0x558b45) builds COutPacket(0xD7=215) (empty body) after CPulley::Hit + SendPacket. Direction confirmed serverbound; fname is the send-site. task-096 0.3.'
 - op: UNNAMED_R363
   direction: serverbound
   opcode: 216

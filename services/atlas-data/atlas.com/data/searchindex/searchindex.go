@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"atlas-data/canonical"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -88,7 +89,7 @@ func ResolveTenantId[E any](db *gorm.DB, ctx context.Context, _ QuerySpec[E]) (u
 	if dummy == 1 {
 		return t.Id(), nil
 	}
-	return uuid.Nil, nil
+	return canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()), nil
 }
 
 // QuerySpec configures Search / Count calls. IdOf has been removed; the lib

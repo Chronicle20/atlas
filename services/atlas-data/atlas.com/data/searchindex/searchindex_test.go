@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"atlas-data/canonical"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -131,12 +132,18 @@ func TestSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
 	tn := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	// Tenant has no rows; only global rows present.
-	seed(t, db, ctx, uuid.Nil, 7, "GlobalWidget", "", false)
-	seed(t, db, ctx, uuid.Nil, 8, "ExtraWidget", "", false)
+	// Seed canonical partition for the tenant's version (GMS 83.1).
+	canonicalId := canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion())
+	seed(t, db, ctx, canonicalId, 7, "CanonicalWidget", "", false)
+	seed(t, db, ctx, canonicalId, 8, "ExtraWidget", "", false)
 
-	// Caller resolves to uuid.Nil; only global rows should be visible.
-	res, err := Search(db, ctx, uuid.Nil, "widget", 0, 50, widgetSpec())
+	// ResolveTenantId must return the canonical id (not uuid.Nil) for a zero-row tenant.
+	resolved, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, canonicalId, resolved)
+
+	// Searching via the canonical id returns canonical rows.
+	res, err := Search(db, ctx, resolved, "widget", 0, 50, widgetSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 2)
 }
@@ -249,12 +256,20 @@ func TestSearchWithFilter_SinglePartition_TenantHasRows(t *testing.T) {
 func TestSearchWithFilter_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
-	seed(t, db, ctx, uuid.Nil, 1, "Global", "", false)
+	tn := tenant.MustFromContext(ctx)
+	canonicalId := canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion())
+	seed(t, db, ctx, canonicalId, 1, "Canonical", "", false)
 	spec := QuerySpec[testEntity]{EntityIdColumn: "widget_id", Order: "widget_id ASC"}
-	rows, err := SearchWithFilter(db, ctx, uuid.Nil, 0, 50, spec)
+
+	// ResolveTenantId returns the canonical id for a zero-row tenant.
+	resolved, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, canonicalId, resolved)
+
+	rows, err := SearchWithFilter(db, ctx, resolved, 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-	assert.Equal(t, "Global", rows[0].Name)
+	assert.Equal(t, "Canonical", rows[0].Name)
 }
 
 func TestUpsert_InsertThenUpdate(t *testing.T) {
@@ -331,7 +346,8 @@ func TestResolveTenantId_TenantHasZeroRows(t *testing.T) {
 
 	got, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
 	require.NoError(t, err)
-	assert.Equal(t, uuid.Nil, got)
+	// Falls back to the version-scoped canonical id, not uuid.Nil.
+	assert.Equal(t, canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion()), got)
 }
 
 func TestResolveTenantId_EmptyTable(t *testing.T) {
@@ -341,7 +357,8 @@ func TestResolveTenantId_EmptyTable(t *testing.T) {
 
 	got, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
 	require.NoError(t, err)
-	assert.Equal(t, uuid.Nil, got)
+	// Falls back to the version-scoped canonical id, not uuid.Nil.
+	assert.Equal(t, canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion()), got)
 }
 
 func TestCount_FilterOnly(t *testing.T) {
@@ -402,4 +419,55 @@ func TestCount_NumericQueryUnionedOnce(t *testing.T) {
 	got, err = Count[testEntity](db, ctx, tn.Id(), "1452002", spec)
 	require.NoError(t, err)
 	assert.Equal(t, 1, got)
+}
+
+// TestResolveTenantId_MultiVersion verifies that two zero-row tenants with
+// different client versions resolve to distinct canonical partitions and that
+// searches return only the matching version's rows. This test fails under the
+// old uuid.Nil fallback because both tenants would resolve to the same
+// partition and see each other's rows.
+func TestResolveTenantId_MultiVersion(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Build two tenant contexts: GMS v83.1 and GMS v84.1.
+	tn83, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx83 := tenant.WithContext(context.Background(), tn83)
+
+	tn84, err := tenant.Create(uuid.New(), "GMS", 84, 1)
+	require.NoError(t, err)
+	ctx84 := tenant.WithContext(context.Background(), tn84)
+
+	canonical83 := canonical.TenantId("GMS", 83, 1)
+	canonical84 := canonical.TenantId("GMS", 84, 1)
+
+	// Sanity: the two canonical ids must be distinct.
+	require.NotEqual(t, canonical83, canonical84)
+
+	// Seed v83 canonical partition with one widget.
+	seed(t, db, ctx83, canonical83, 1, "V83Widget", "", false)
+	// Seed v84 canonical partition with a different widget.
+	seed(t, db, ctx84, canonical84, 2, "V84Widget", "", false)
+
+	// A zero-row v83 tenant must resolve to canonical83.
+	resolved83, err := ResolveTenantId[testEntity](db, ctx83, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, canonical83, resolved83, "v83 tenant should resolve to the v83 canonical partition")
+
+	// A zero-row v84 tenant must resolve to canonical84.
+	resolved84, err := ResolveTenantId[testEntity](db, ctx84, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, canonical84, resolved84, "v84 tenant should resolve to the v84 canonical partition")
+
+	// Search via v83 canonical sees only v83 rows.
+	res83, err := Search(db, ctx83, resolved83, "widget", 0, 50, widgetSpec())
+	require.NoError(t, err)
+	require.Len(t, res83, 1)
+	assert.Equal(t, "V83Widget", res83[0].Name, "v83 canonical search must not bleed into v84 rows")
+
+	// Search via v84 canonical sees only v84 rows.
+	res84, err := Search(db, ctx84, resolved84, "widget", 0, 50, widgetSpec())
+	require.NoError(t, err)
+	require.Len(t, res84, 1)
+	assert.Equal(t, "V84Widget", res84[0].Name, "v84 canonical search must not bleed into v83 rows")
 }

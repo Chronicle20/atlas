@@ -20,6 +20,17 @@ example below (`MOB_CRC_KEY_CHANGED`) is a real landed op from that batch.
 
 ---
 
+## Step 0 — Confirm it isn't already implemented
+
+Before writing a codec, **check the op isn't already handled under a different name.**
+A coverage-matrix ❌ on a serverbound op frequently means an *unverified* codec, not a
+missing one — several ops can share one decoder. Grep the channel handlers and
+`libs/atlas-packet/model/` for a decoder of that opcode / fname; if one exists (e.g. the
+four attack ops all decode `model.AttackInfo`), the task is **verification**, not
+implementation — link the existing codec via a thin per-op wrapper (see
+`VERIFYING_A_PACKET.md` §9) instead of shipping a duplicate (which is easy to get subtly
+wrong). task-092 nearly shipped a duplicate `TOUCH_MONSTER_ATTACK` codec this way.
+
 ## The four steps
 
 1. **Derive** — decompile the client read/write order from the IDB.

@@ -171,6 +171,23 @@ the production handler keeps decoding the shared model directly.
   locates a send site; structure-match to a named twin in another version. Batch via
   IDA-harvest subagents, ONE IDB at a time (`select_instance` is shared global state).
 
+## Producible prerequisite vs genuine blocker (don't defer what you can produce)
+
+Most reasons a cell "can't" verify are **producible steps, not terminal blockers** —
+close them in-session rather than recording a "documented gap / follow-up":
+- sender **unnamed** in the IDB → name it (§10 byte-signature + twin match). Unnamed ≠
+  unnameable.
+- op **not routed** in a version's seed template → wire the route (with a validator).
+  Not-routed ≠ shouldn't-be-routed.
+- fname **missing/stale in the export**, or **no audit report** → splice the export /
+  generate the report (§9–10).
+
+A cell is genuinely blocked only when, after *attempting* the unblock, you hit: an
+SMC/control-flow-virtualized or otherwise undecompilable binary (e.g. the jms retail
+dump); wire content gated on runtime/server config not on the wire; an op IDA-confirmed
+version-absent; a missing IDB; or a decision that is the user's (scope/cost). Verify the
+blocker by trying — don't infer it from an absence.
+
 ## Failure modes (design §13)
 - `evidence pin` fails "not in export" → the citation is unresolvable; harvest +
   surgically splice the fname into the export (§10), or re-harvest (task-081 playbook).

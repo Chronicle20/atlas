@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Character } from "@/types/models/character";
 import type { Tenant } from "@/services/api/tenants.service";
-import { jobTreePath } from "@/lib/utils/job-tree";
+import { jobTreePath } from "@/lib/jobs/job-advancement-tree";
 import { useCharacterSkills } from "@/lib/hooks/api/useCharacterSkills";
 import { useJobSkills } from "@/lib/hooks/api/useJobSkills";
 import { SkillWidget } from "./SkillWidget";

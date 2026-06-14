@@ -1793,6 +1793,23 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField_MassacreResult::OnMassacreResult":
 		return []candidate{{name: "PyramidScore", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField_Tournament clientbound family (task-096, recipe R-CB). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers).
+	// OnTournamentSetPrize carries a trailing post-read Delegate (sub_XXXXXX in the
+	// v83/v87/jms exports) that is application logic, not a wire read; those delegate
+	// entries are stripped from the exports (and re-pinned) so Resolve yields only the
+	// wire fields. OnTournamentMatchTable and OnPacket are empty-body no-op stubs.
+	case "CField_Tournament::OnTournament":
+		return []candidate{{name: "Tournament", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnTournamentMatchTable":
+		return []candidate{{name: "TournamentMatchTable", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnTournamentSetPrize":
+		return []candidate{{name: "TournamentSetPrize", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnTournamentUEW":
+		return []candidate{{name: "TournamentUew", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Tournament::OnPacket":
+		return []candidate{{name: "TournamentCharacters", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	case "CField::OnTransferChannelReqIgnored":

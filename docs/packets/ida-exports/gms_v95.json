@@ -9169,12 +9169,304 @@
     },
     "CUserLocal::TryDoingBodyAttack": {
       "address": "0x930710",
-      "direction": "",
-      "calls": null
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default> && loop nDamagePerMob"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY) && loop nRange && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && CAntiRepeat::TryRepeat(&v124->m_antiRepeat, *v19, nY)"
+        }
+      ]
     },
     "_bstr_t::_bstr_t": {
       "address": "0x403260",
       "direction": "",
+      "calls": null
+    },
+    "CUserLocal::TryDoingMagicAttack": {
+      "address": "0x92a240",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingNormalAttack": {
+      "address": "0x9123c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && <default> && <default> && CAntiRepeat::TryRepeat(&thisa->m_antiRepeat, *v35, nFrozen)"
+        }
+      ]
+    },
+    "CUserLocal::TryDoingShootAttack": {
+      "address": "0x925a00",
+      "direction": "serverbound",
       "calls": null
     }
   }

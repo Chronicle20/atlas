@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterAttackRangedRequest
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TryDoingShootAttack
+    address: "0x9d1a9c"
+    decompile_sha256: 1768ca3383b9753c8e5940262518a133380a7435c32609ba7484dd42a8049ba5
+verifies:
+    - libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackRangedRequest

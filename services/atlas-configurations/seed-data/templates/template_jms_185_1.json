@@ -267,6 +267,26 @@
         "handler": "CharacterChairPortableHandle"
       },
       {
+        "opCode": "0x23",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMeleeAttackHandle"
+      },
+      {
+        "opCode": "0x24",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterRangedAttackHandle"
+      },
+      {
+        "opCode": "0x25",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMagicAttackHandle"
+      },
+      {
+        "opCode": "0x26",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterTouchAttackHandle"
+      },
+      {
         "opCode": "0x29",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle"

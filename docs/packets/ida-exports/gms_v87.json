@@ -8536,6 +8536,112 @@
           "guard": "v3 > -2"
         }
       ]
+    },
+    "CUserLocal::TryDoingMagicAttack": {
+      "address": "0x9d55a4",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::TryDoingNormalAttack": {
+      "address": "0x9d8efc",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && nAction >= 0 && v34 && <default>"
+        }
+      ]
+    },
+    "CUserLocal::TryDoingShootAttack": {
+      "address": "0x9d1a9c",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

@@ -7978,6 +7978,177 @@
       "address": "0x42a9fe",
       "direction": "",
       "calls": null
+    },
+    "CUserLocal::TryDoingBodyAttack": {
+      "address": "0xa2ac53",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && <default> && loop v217 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && sub_4AE4F1(1)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default> && <default> && sub_4AE4F1(1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && <default> && sub_4AE4F1(1) && v120"
+        }
+      ]
     }
   }
 }

@@ -3446,12 +3446,9 @@
   fname: CMob::Update
   provenance: manual
   note: 'v84 opcode re-derived from the COutPacket build site in CMob::Update (task-092 Cluster-A): @0x67d534 pushes opcode 0xC8 (200) for the 4xEncode4 skill-delay-end send (mobCrc+skillId+level+value). The csv-import seed (195/0xC3, copied from the v83 column) was stale — the v84 mob serverbound opcode table is shifted vs v83. v83 itself has NO such sender (the feature post-dates v83).'
-- op: MOB_TIME_BOMB_END
-  direction: serverbound
-  opcode: 196
-  fname: CMob::UpdateTimeBomb
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+# MOB_TIME_BOMB_END removed task-092 Stage 4: VERSION-ABSENT in v84 (owner-confirmed).
+# v95+ feature; no sender in the v84 client (exhaustive COutPacket scan found none).
+# Dropped so the cell reads ⬜.
 - op: NPC_ACTION
   direction: serverbound
   opcode: 203

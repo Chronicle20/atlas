@@ -3118,11 +3118,9 @@
   opcode: 207
   fname: CMob::Update
   provenance: csv-import
-- op: MOB_TIME_BOMB_END
-  direction: serverbound
-  opcode: 208
-  fname: CMob::UpdateTimeBomb
-  provenance: csv-import
+# MOB_TIME_BOMB_END removed task-092 Stage 4: VERSION-ABSENT in v87 (owner-confirmed).
+# v95+ feature; no sender in the v87 client (no UpdateTimeBomb / named TimeBomb fn).
+# Dropped so the cell reads ⬜.
 # MOB_ESCORT_COLLISION (serverbound, csv opcode 209/0xD1) removed task-092 Stage 4:
 # VERSION-ABSENT in v87 — the escort family post-dates v87. The v87 IDB has no
 # CMob::SendCollisionEscort symbol and the mob dispatcher has no escort cases

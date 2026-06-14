@@ -16379,41 +16379,6 @@
     },
     {
       "kind": "op",
-      "op": "MOB_TIME_BOMB_END",
-      "packet": "monster/serverbound/MonsterMobTimeBombEnd",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::UpdateTimeBomb"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 196
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 196
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 208
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 235
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 202
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "SHOW_CHAIR",
       "packet": "character/clientbound/CharacterChairShow",
       "direction": "clientbound",
@@ -19605,6 +19570,38 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 250
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MOB_TIME_BOMB_END",
+      "packet": "monster/serverbound/MonsterMobTimeBombEnd",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::UpdateTimeBomb"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 235
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 202
         }
       }
     },

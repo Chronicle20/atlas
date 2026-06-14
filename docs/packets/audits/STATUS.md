@@ -707,7 +707,6 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | ASK_AP_SP_EVENT | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C3 | ❌ |  | ⬜ |
 | DRAGON_BALL_BOX_REQUEST | CWvsContext::SendDragonBallBoxRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C4 | ❌ |  | ⬜ |
-| MOB_TIME_BOMB_END | CMob::UpdateTimeBomb | monster/serverbound/MonsterMobTimeBombEnd (T1) | 0x0C4 | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0EB | ✅ | 0x0CA | ✅ |
 | DRAGON_BALL_SUMMON_REQUEST | CWvsContext::SendDragonBallSummonRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
 | NPC_ACTION | CNpc::GenerateMovePath | npc/serverbound/NpcActionRequest (T1) | 0x0C5 | ❌ | 0x0CB | ✅ | 0x0D2 | ❌ | 0x0F1 | ✅ | 0x0D0 | ✅ |
 | NPC_SPECIAL_ACTION | CNpc::RequestSpecialAction |  | 0x0C6 | ❌ | 0x0C6 | ❌ | 0x0D3 | ❌ | 0x0F2 | ❌ | 0x0D1 | ❌ |
@@ -754,6 +753,7 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | UNNAMED_R388 |  |  | 0x0E8 | ❌ | 0x0E8 | ❌ | 0x0F5 | ❌ | 0x116 | ❌ | 0x0F8 | ❌ |
 | UNNAMED_R389 |  |  | 0x0E9 | ❌ | 0x0E9 | ❌ | 0x0F6 | ❌ | 0x117 | ❌ | 0x0F9 | ❌ |
 | UNNAMED_R390 |  |  | 0x0EA | ❌ | 0x0EA | ❌ | 0x0F7 | ❌ | 0x118 | ❌ | 0x0FA | ❌ |
+| MOB_TIME_BOMB_END | CMob::UpdateTimeBomb | monster/serverbound/MonsterMobTimeBombEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EB | ✅ | 0x0CA | ✅ |
 | UNNAMED_R391 |  |  | 0x0EB | ❌ | 0x0EB | ❌ | 0x0F8 | ❌ | 0x119 | ❌ | 0x0FB | ❌ |
 | MOB_ESCORT_COLLISION | CMob::SendCollisionEscort | monster/serverbound/MonsterMobEscortCollision (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EC | ✅ | 0x0CB | ✅ |
 | OPEN_ITEMUI | CUIRaiseWndBase::OnCreate |  | 0x0EC | ❌ | 0x0EC | ❌ | 0x0FA | ❌ | 0x11B | ❌ | 0x0FD | ❌ |
@@ -909,9 +909,9 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 259 | 0 | 418 | 202 | 0 | 38.3% |
-| v84 | 217 | 0 | 460 | 202 | 0 | 32.1% |
-| v87 | 276 | 0 | 438 | 165 | 0 | 38.7% |
+| v83 | 259 | 0 | 417 | 203 | 0 | 38.3% |
+| v84 | 217 | 0 | 459 | 203 | 0 | 32.1% |
+| v87 | 276 | 0 | 437 | 166 | 0 | 38.7% |
 | v95 | 312 | 0 | 486 | 81 | 0 | 39.1% |
 | JMS185 | 263 | 0 | 447 | 169 | 0 | 37.0% |
 

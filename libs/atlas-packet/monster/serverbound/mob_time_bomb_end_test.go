@@ -7,14 +7,11 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// MOB_TIME_BOMB_END. v95/jms have a discrete CMob::UpdateTimeBomb sender
-// (COutPacket(0xEB in v95); boss-conditional layout) and are pinned. v83/v84/v87
-// are NOT pinned: task-092 Stage 4 could not locate a sender in those clients — the
-// v84 IDB has no UpdateTimeBomb and an exhaustive COutPacket scan found no matching
-// send; v87/v83 have no named TimeBomb function either. Rather than fabricate a pin
-// or assert an unverified "inlined" claim, those three cells stay ❌ (the codec +
-// route still ship; the wire shape is identical where present). Resolving them needs
-// a fresh decompile pass that positively identifies the v83/v84/v87 send site.
+// MOB_TIME_BOMB_END is a v95+ feature: only v95/jms have a CMob::UpdateTimeBomb
+// sender (COutPacket(0xEB) in v95; boss-conditional layout), and both are pinned.
+// v83/v84/v87 are VERSION-ABSENT (owner-confirmed; matches the v84 exhaustive
+// COutPacket scan and the absence of any UpdateTimeBomb/TimeBomb fn in v83/v87) —
+// their registry rows were dropped in task-092 Stage 4 so those cells read ⬜.
 // packet-audit:verify packet=monster/serverbound/MonsterMobTimeBombEnd version=gms_v95 ida=0x643c30
 // packet-audit:verify packet=monster/serverbound/MonsterMobTimeBombEnd version=jms_v185 ida=0x6ef8f8
 func TestMobTimeBombEnd(t *testing.T) {

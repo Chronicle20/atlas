@@ -2928,11 +2928,9 @@
 # appears in v84/v87/v95/jms (mirroring its clientbound twin MOB_SKILL_DELAY, whose
 # v83 dispatcher case is likewise absent). The csv-import row (opcode 195/0xC3) was a
 # stale slot copied from the CSV; removed so the matrix grades v83 n/a, not conflict.
-- op: MOB_TIME_BOMB_END
-  direction: serverbound
-  opcode: 196
-  fname: CMob::UpdateTimeBomb
-  provenance: csv-import
+# MOB_TIME_BOMB_END removed task-092 Stage 4: VERSION-ABSENT in v83 (owner-confirmed).
+# The mob time-bomb-end send is a v95+ feature; no sender exists in the v83 client
+# (no UpdateTimeBomb function, no matching COutPacket). Dropped so the cell reads ⬜.
 - op: NPC_ACTION
   direction: serverbound
   opcode: 197

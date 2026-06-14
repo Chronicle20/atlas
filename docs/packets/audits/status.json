@@ -1,9 +1,9 @@
 {
-  "toolSha": "4e586c0c2faec3550e60445b79abf81693c57f61",
+  "toolSha": "203c0c8e2268720c3fd02147bdd22cafa9442334",
   "exportHashes": {
-    "gms_v83": "9fa1d0552cda674599abc75a816582580961600b546e1b8e7360d86b1288d33f",
+    "gms_v83": "c24c12492320eb0535d442097457eb81a843118ef719af60ee4d7f50fbd3776d",
     "gms_v84": "c17f59a750292e5597490f896abdab086d94998753e5e7bdc2942dd163a6518a",
-    "gms_v87": "8610e6972859863fd95edf4158c7ef0c9b1200d6ef3e7bf30e0665263fe0b505",
+    "gms_v87": "779b51b2c272d303aeccd6eaaabff419ded428151b40f4790070bd0d58621355",
     "gms_v95": "25a5ae44acc9a16f2fd9bb055e68f76e27b7dd613edff1eb1438403b5f660674",
     "jms_v185": "ba672b350a5ebefa69d3d1cb7d6a871c2d0ef78347b317eb5a72892f8ca07097"
   },
@@ -12514,30 +12514,27 @@
     {
       "kind": "op",
       "op": "ARIANT_RESULT",
+      "packet": "field/clientbound/FieldAriantResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnWarnMessage"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 152
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 155
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 160
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 168
         },
         "jms_v185": {
@@ -23844,36 +23841,31 @@
     {
       "kind": "op",
       "op": "HORNTAIL_CAVE",
+      "packet": "field/clientbound/FieldHorntailCave",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CField::OnHontailTimer",
-        "CField::OnHontaleTimer"
+        "CField::OnHontailTimer"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 301
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 309
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 318
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 359
+          "state": "verified",
+          "opcode": 361
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 325
         }
       }
@@ -24005,35 +23997,31 @@
     {
       "kind": "op",
       "op": "ZAKUM_SHRINE",
+      "packet": "field/clientbound/FieldZakumShrine",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnZakumTimer"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 303
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 310
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 320
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 362
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 328
         }
       }
@@ -25648,31 +25636,28 @@
     {
       "kind": "op",
       "op": "MTS_OPERATION2",
+      "packet": "field/clientbound/FieldMtsOperation2",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnCharacterSale",
         "CITC::OnQueryCashResult"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 347
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 347
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 368
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 411
         },
         "jms_v185": {
@@ -26103,6 +26088,38 @@
     },
     {
       "kind": "op",
+      "op": "HONTALE_TIMER",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CField::OnHontaleTimer"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 359
+        },
+        "jms_v185": {
+          "state": "n-a",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X167",
       "direction": "clientbound",
       "tier1": false,
@@ -26171,7 +26188,6 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CField::OnHontailTimer",
         "sub_48F41B"
       ],
       "cells": {
@@ -26188,9 +26204,8 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 361
+          "state": "n-a",
+          "opcode": -1
         },
         "jms_v185": {
           "state": "incomplete",

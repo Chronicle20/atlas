@@ -1746,6 +1746,18 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::OnFieldObstacleOnOffStatus":
 		return []candidate{{name: "FieldObstacleOnOffList", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField clientbound cluster 3 proof batch (task-096, recipe R-CB).
+	// Version-invariant layouts derived from IDA (addresses pinned per version
+	// in the test markers). MtsOperation2's fname is CITC:: (not CField::).
+	case "CField::OnZakumTimer":
+		return []candidate{{name: "ZakumShrine", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnHontailTimer":
+		return []candidate{{name: "HorntailCave", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnWarnMessage":
+		return []candidate{{name: "AriantResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnQueryCashResult":
+		return []candidate{{name: "MtsOperation2", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	case "CField::OnTransferChannelReqIgnored":

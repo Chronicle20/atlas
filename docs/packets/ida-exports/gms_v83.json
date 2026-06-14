@@ -8747,11 +8747,6 @@
         {
           "op": "DecodeStr",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "sub_428211"
         }
       ]
     },

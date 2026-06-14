@@ -1815,6 +1815,14 @@
         "writer": "MonsterCarnivalResult"
       },
       {
+        "opCode": "0x145",
+        "writer": "HorntailCave"
+      },
+      {
+        "opCode": "0x148",
+        "writer": "ZakumShrine"
+      },
+      {
         "opCode": "0x14A",
         "writer": "NPCShop"
       },

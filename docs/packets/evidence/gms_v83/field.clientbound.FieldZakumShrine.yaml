@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldZakumShrine
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnZakumTimer
+    address: "0x53347c"
+    decompile_sha256: 9bc23d846e6506aa2f034974facc07b6507a67742f9973f94c0647b45c028f31

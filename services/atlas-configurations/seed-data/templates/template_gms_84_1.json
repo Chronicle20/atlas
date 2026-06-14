@@ -1699,6 +1699,10 @@
         "writer": "SetQuestClear"
       },
       {
+        "opCode": "0x9B",
+        "writer": "AriantResult"
+      },
+      {
         "opCode": "0x9C",
         "writer": "SetObjectState"
       },
@@ -2473,6 +2477,14 @@
         "writer": "MonsterCarnivalResult"
       },
       {
+        "opCode": "0x135",
+        "writer": "HorntailCave"
+      },
+      {
+        "opCode": "0x136",
+        "writer": "ZakumShrine"
+      },
+      {
         "opCode": "0x137",
         "writer": "NPCConversation",
         "options": {
@@ -2626,6 +2638,10 @@
       {
         "opCode": "0x15A",
         "writer": "CharacterKeyMapAutoMp"
+      },
+      {
+        "opCode": "0x15B",
+        "writer": "MtsOperation2"
       }
     ]
   },

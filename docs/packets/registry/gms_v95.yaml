@@ -1755,14 +1755,12 @@
     - CField_Witchtower::OnPacket
   provenance: manual
   note: IDA v95 CField_Witchtower::OnPacket (0x564BA0) if-dispatches nType==358 -> CField_Witchtower::OnScoreUpdate (0x564AD0). CSV dispatcher-level name kept as alt; op name ARIANT_SCORE is a CSV label, actual payload is the witch-tower score update.
-- op: HORNTAIL_CAVE
+- op: HONTALE_TIMER
   direction: clientbound
   opcode: 359
   fname: CField::OnHontaleTimer
-  fname_alts:
-    - CField::OnHontailTimer
   provenance: manual
-  note: 'IDA v95 CField::OnPacket (0x546D50) has a four-op boss timer family 359-362: OnHontaleTimer (0x5311D0), OnChaosZakumTimer (0x531020), OnHontailTimer (0x530E70), OnZakumTimer (0x530CC0). Case 359 -> OnHontaleTimer; CSV name (the 361 handler) kept as alt.'
+  note: 'IDA v95 CField::OnPacket (0x546D50) has a four-op boss timer family 359-362: OnHontaleTimer (0x5311D0), OnChaosZakumTimer (0x531020), OnHontailTimer (0x530E70), OnZakumTimer (0x530CC0). Case 359 -> OnHontaleTimer (the Hontale boss, distinct from Horntail at 361).'
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
   opcode: 360
@@ -1771,13 +1769,14 @@
     - CField_Witchtower::OnScoreUpdate
   provenance: manual
   note: IDA v95 CField::OnPacket (0x546D50) case 360 -> CField::OnChaosZakumTimer (0x531020). CSV fname (the real witch-tower handler, which lives at opcode 358 in v95) kept as alt; op name retained pending follow-up.
-- op: IDA_0X169
+- op: HORNTAIL_CAVE
   direction: clientbound
   opcode: 361
   fname: CField::OnHontailTimer
-  provenance: ida-discovered
+  provenance: manual
+  note: 'task-096 C3: v95 HORNTAIL_CAVE realigned 359->361. The canonical horntail timer (CField::OnHontailTimer, 0x530E70) is case 361 in the 359-362 boss-timer family; case 359 is OnHontaleTimer (Hontale, now op HONTALE_TIMER). +Routes 0x169.'
   ida:
-    address: 5533008
+    address: 5443184
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 362

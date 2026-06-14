@@ -9668,12 +9668,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v4 > 0"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v4 > 0",
-          "ref": "CMapLoadable::SetObjectState"
         }
       ]
     },
@@ -9861,11 +9855,6 @@
         {
           "op": "Decode4",
           "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "ref": "CMapLoadable::SetObjectState"
         }
       ]
     },

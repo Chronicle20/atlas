@@ -1733,6 +1733,19 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::OnClock":
 		return []candidate{{name: "Clock", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField clientbound proof batch (task-096, cluster 2). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers).
+	case "CField::OnTransferFieldReqIgnored":
+		return []candidate{{name: "BlockedMap", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnQuiz":
+		return []candidate{{name: "OxQuiz", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnDestroyClock":
+		return []candidate{{name: "StopClock", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnSetObjectState":
+		return []candidate{{name: "SetObjectState", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnFieldObstacleOnOffStatus":
+		return []candidate{{name: "FieldObstacleOnOffList", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// --- World: npc (clientbound) ---
 	// Non-conversation NPC packets. FNames + addresses verified against the
 	// canonical CSV (docs/packets/MapleStory Ops - ClientBound.csv) and live

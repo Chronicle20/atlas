@@ -1615,6 +1615,10 @@
         "writer": "CashShopOpen"
       },
       {
+        "opCode": "0x86",
+        "writer": "BlockedMap"
+      },
+      {
         "opCode": "0x89",
         "writer": "CharacterMultiChat"
       },
@@ -1639,8 +1643,16 @@
         }
       },
       {
+        "opCode": "0x8F",
+        "writer": "FieldObstacleOnOffList"
+      },
+      {
         "opCode": "0x91",
         "writer": "FieldEffectWeather"
+      },
+      {
+        "opCode": "0x94",
+        "writer": "OxQuiz"
       },
       {
         "opCode": "0x96",
@@ -1649,6 +1661,14 @@
       {
         "opCode": "0x98",
         "writer": "FieldTransportState"
+      },
+      {
+        "opCode": "0x9C",
+        "writer": "SetObjectState"
+      },
+      {
+        "opCode": "0x9D",
+        "writer": "StopClock"
       },
       {
         "opCode": "0xA3",

@@ -1,0 +1,43 @@
+{
+  "service": "atlas-buffs + atlas-summons",
+  "path": "services/atlas-buffs/atlas.com/buffs, services/atlas-summons/atlas.com/summons",
+  "scope": "commit b87046430 vs parent 197abfd3 (task-088 Hex of the Beholder accumulation)",
+  "date": "2026-06-14",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "race": "pass",
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-buffs/character + kafka",
+      "type": "domain",
+      "checks": [
+        {"id": "KEY-MIGRATION", "name": "map[int32]->map[string] blast radius", "status": "pass", "evidence": "no map[int32]buff refs remain; model.go:21,28-30,52,66; registry.go:77,171,197,218,263; value-iterators resource.go:39, immunity.go:23 key-agnostic"},
+        {"id": "CONTRACT-MIRROR", "name": "ApplyCommandBody byte-identical", "status": "pass", "evidence": "buffs kafka.go:42 vs summons producer.go:57 both Accumulate bool json:accumulate,omitempty; StatChange identical"},
+        {"id": "PER-STAT-EMIT", "name": "one APPLIED per stat in accumulate, default unchanged", "status": "pass", "evidence": "processor.go:54-63 loop; registry.go:86-101 returns slice (1 default / N accumulate)"},
+        {"id": "MULTITENANCY", "name": "tenant.MustFromContext + ctx propagation", "status": "pass", "evidence": "registry.go:69; consumer.go:46,56; beholder_task.go:69 tenant.WithContext"},
+        {"id": "IMMUTABLE-MODEL", "name": "private fields + defensive copy + NewBuff", "status": "pass", "evidence": "model.go:27-33; registry.go:88,96 NewBuff with err checks"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "consumer.go:46 logrus.FieldLogger"},
+        {"id": "DOM-09", "name": "emission errors handled", "status": "pass", "evidence": "processor.go:60-62; registry.go:88-90,96-98,104-106"},
+        {"id": "DOM-20", "name": "substantive tests", "status": "pass", "evidence": "registry_test.go:424-512; beholder_task_test.go:142-166"},
+        {"id": "DOM-21", "name": "no atlas-constants duplication", "status": "pass", "evidence": "no new type/const/iota in non-test diff; srcKey/statKey produce strings, registry.go:44-55"},
+        {"id": "DOM-24", "name": "kafka producer stubbed in emitting tests", "status": "pass", "evidence": "testmain_test.go:10-13 producertest.InstallNoop no ResetInstance; buffs/character tests 0.333s"}
+      ]
+    },
+    {
+      "name": "atlas-summons/summon + buff",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "CONTRACT-MIRROR", "name": "ApplyProvider accumulate plumbed", "status": "pass", "evidence": "producer.go:69,79-92; beholder_task.go:131 passes accumulate=true"},
+        {"id": "EMPTY-POOL-GUARD", "name": "empty Hex pool skipped", "status": "pass", "evidence": "beholder_task.go:122-125 early return on len(pool)==0"},
+        {"id": "ONE-RANDOM-PER-PULSE", "name": "single random statup per pulse, injectable picker", "status": "pass", "evidence": "beholder_task.go:36-41 pick field, :46 rand.Intn default, :126-127 pick(len(pool))"},
+        {"id": "DOM-24", "name": "kafka producer stubbed in emitting tests", "status": "pass", "evidence": "beholder_task_test.go:114,209,249 inject capturing emit + deterministic pick; never reaches producer.ProviderImpl"},
+        {"id": "WIRE-ROUNDTRIP", "name": "emitted payload decoded and asserted", "status": "pass", "evidence": "beholder_task_test.go:142-166 unmarshal Command[ApplyCommandBody], assert Accumulate=true + 1 stat"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

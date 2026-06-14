@@ -35,7 +35,7 @@ type beholderCaptureEmitter struct {
 	msg []beholderCapturedMessage
 }
 
-func (c *beholderCaptureEmitter) emit(topic string, provider model.Provider[[]kafka.Message]) error {
+func (c *beholderCaptureEmitter) emit(_ context.Context, topic string, provider model.Provider[[]kafka.Message]) error {
 	msgs, err := provider()
 	if err != nil {
 		return err
@@ -153,6 +153,13 @@ func TestBeholderSweepFiresHealAndBuffWhenDue(t *testing.T) {
 	}
 	if ap.Body.SourceId != -int32(1320009) {
 		t.Fatalf("expected SourceId %d, got %d", -int32(1320009), ap.Body.SourceId)
+	}
+
+	// SKILL pulse assertion: both the heal and the buff sweep emit a SummonSkill
+	// status event so the channel plays the Beholder's cast animation map-wide.
+	skillMsgs := cap.byTopic(EnvEventTopicSummonStatus)
+	if len(skillMsgs) != 2 {
+		t.Fatalf("expected 2 SKILL pulse messages (heal + buff), got %d", len(skillMsgs))
 	}
 
 	// Timers advanced and persisted.

@@ -21,10 +21,15 @@ type BeholderTask struct {
 	l        logrus.FieldLogger
 	ctx      context.Context
 	interval time.Duration
-	// emit publishes a kafka message provider to a topic. It is a field so tests
-	// can substitute a capturing emitter and avoid a real kafka publish; production
-	// uses producer.ProviderImpl.
-	emit func(topic string, provider model.Provider[[]kafka.Message]) error
+	// emit publishes a kafka message provider to a topic using the supplied
+	// (tenant-scoped) context. The context MUST be the per-tenant context built in
+	// Run, not the task's base context: producer.ProviderImpl derives the Kafka
+	// tenant headers from it, and a tenant-less context produces the zero tenant
+	// UUID, which makes the downstream consumer (atlas-character, atlas-buffs,
+	// atlas-channel) query/route the wrong tenant and silently drop the message. It
+	// is a field so tests can substitute a capturing emitter and avoid a real kafka
+	// publish; production uses producer.ProviderImpl.
+	emit func(ctx context.Context, topic string, provider model.Provider[[]kafka.Message]) error
 }
 
 func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *BeholderTask {
@@ -32,8 +37,8 @@ func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Du
 		l:        l,
 		ctx:      ctx,
 		interval: interval,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
-			return producer.ProviderImpl(l)(ctx)(topic)(provider)
+		emit: func(emitCtx context.Context, topic string, provider model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(emitCtx)(topic)(provider)
 		},
 	}
 }
@@ -74,9 +79,20 @@ func (t *BeholderTask) sweepHeal(ctx context.Context, ten tenant.Model, m Model,
 		return
 	}
 	f := m.Field()
-	if err := t.emit(charmsg.EnvCommandTopic, charmsg.ChangeHPProvider(f.WorldId(), f.ChannelId(), m.OwnerCharacterId(), m.HealAmount())); err != nil {
+	if err := t.emit(ctx, charmsg.EnvCommandTopic, charmsg.ChangeHPProvider(f.WorldId(), f.ChannelId(), m.OwnerCharacterId(), m.HealAmount())); err != nil {
 		t.l.WithError(err).Warnf("Beholder sweep failed to heal owner [%d] of summon [%d].", m.OwnerCharacterId(), m.Id())
 		return
+	}
+	// Emit the SKILL status event so the channel rebroadcasts the SummonSkill
+	// pulse map-wide (including the owner): the periodic aura heal is a
+	// server-driven cast the owner's client did not play locally, so without this
+	// the Beholder heals silently with no on-screen animation. Mirrors the buff
+	// pulse in sweepBuff; uses the same lowest valid buff-pulse stance (6). A
+	// failure here is non-fatal: the heal already applied, so the timer must still
+	// advance.
+	const beholderHealStance = byte(6)
+	if err := t.emit(ctx, EnvEventTopicSummonStatus, skillEventProvider(m, beholderHealStance)); err != nil {
+		t.l.WithError(err).Warnf("Beholder sweep failed to emit heal skill effect for summon [%d].", m.Id())
 	}
 	next := m.NextHealAt().Add(interval)
 	if _, err := GetRegistry().Update(ctx, ten, m.Id(), func(cur Model) Model {
@@ -98,7 +114,7 @@ func (t *BeholderTask) sweepBuff(ctx context.Context, ten tenant.Model, m Model,
 	for _, c := range m.BuffChanges() {
 		changes = append(changes, buffmsg.StatChange{Type: c.Type, Amount: c.Amount})
 	}
-	if err := t.emit(buffmsg.EnvCommandTopic, buffmsg.ApplyProvider(m.Field(), m.OwnerCharacterId(), m.OwnerCharacterId(), m.BuffSourceId(), m.BuffLevel(), m.BuffDuration(), changes)); err != nil {
+	if err := t.emit(ctx, buffmsg.EnvCommandTopic, buffmsg.ApplyProvider(m.Field(), m.OwnerCharacterId(), m.OwnerCharacterId(), m.BuffSourceId(), m.BuffLevel(), m.BuffDuration(), changes)); err != nil {
 		t.l.WithError(err).Warnf("Beholder sweep failed to apply buff to owner [%d] of summon [%d].", m.OwnerCharacterId(), m.Id())
 		return
 	}
@@ -109,7 +125,7 @@ func (t *BeholderTask) sweepBuff(ctx context.Context, ten tenant.Model, m Model,
 	// uses the lowest valid buff-pulse stance (6) deterministically. A failure here
 	// is non-fatal: the buff already applied, so the timer must still advance.
 	const beholderBuffStance = byte(6)
-	if err := t.emit(EnvEventTopicSummonStatus, skillEventProvider(m, beholderBuffStance)); err != nil {
+	if err := t.emit(ctx, EnvEventTopicSummonStatus, skillEventProvider(m, beholderBuffStance)); err != nil {
 		t.l.WithError(err).Warnf("Beholder sweep failed to emit skill effect for summon [%d].", m.Id())
 	}
 	next := m.NextBuffAt().Add(interval)

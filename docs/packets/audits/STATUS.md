@@ -368,7 +368,6 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | IDA_0X110 | CMob::OnEscortFullPath; CUserLocal::OnExJablinApply | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ❌ | 0x110 | ✅ |
 | REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x110 | ✅ | 0x110 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
 | IDA_0X111 | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ❌ |  | ⬜ |
-| MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ | 0x111 | ❌ | 0x130 | ✅ |  | ⬜ |
 | SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x111 | ❌ | 0x111 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | IDA_0X112 | CMob::OnEscortStopSay; CUserLocal::OnQuestGuideResult | monster/clientbound/MonsterMobEscortStopSay (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ | 0x112 | ✅ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x112 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
@@ -407,6 +406,7 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | HORNTAIL_CAVE | CField::OnHontailTimer; CField::OnHontaleTimer |  | 0x12D | ❌ | 0x12D | ❌ | 0x13E | ❌ | 0x167 | ❌ | 0x145 | ❌ |
 | WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate |  | 0x12E | ❌ | 0x12E | ❌ | 0x13F | ❌ | 0x168 | ❌ | 0x146 | ❌ |
 | ZAKUM_SHRINE | CField::OnZakumTimer |  | 0x12F | ❌ | 0x12F | ❌ | 0x140 | ❌ | 0x16A | ❌ | 0x148 | ❌ |
+| MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ✅ |  | ⬜ |
 | NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x130 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | MOB_ESCORT_STOP | CMob::OnEscortStopEndPermmision | monster/clientbound/MonsterMobEscortStop (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x131 | ✅ |  | ⬜ |
 | OPEN_NPC_SHOP | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
@@ -723,7 +723,6 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
 | PLAYER_MAP_TRANSFER | CUserLocal::ResetNLCPQ |  | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0FB | ❌ | 0x0DA | ❌ |
 | UNNAMED_R355 |  |  | 0x0D0 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0FC | ❌ | 0x0DB | ❌ |
-| MOB_ESCORT_COLLISION | CMob::SendCollisionEscort | monster/serverbound/MonsterMobEscortCollision (T1) |  | ⬜ |  | ⬜ | 0x0D1 | ❌ | 0x0EC | ✅ | 0x0CB | ✅ |
 | UNNAMED_R356 |  |  | 0x0D1 | ❌ | 0x0D1 | ❌ | 0x0DE | ❌ | 0x0FD | ❌ | 0x0DC | ❌ |
 | UNNAMED_R357 |  |  | 0x0D2 | ❌ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0FE | ❌ | 0x0DD | ❌ |
 | SNOWBALL | CField_SnowBall::BasicActionAttack |  | 0x0D3 | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0FF | ❌ | 0x0DE | ❌ |
@@ -757,6 +756,7 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 | UNNAMED_R389 |  |  | 0x0E9 | ❌ | 0x0E9 | ❌ | 0x0F6 | ❌ | 0x117 | ❌ | 0x0F9 | ❌ |
 | UNNAMED_R390 |  |  | 0x0EA | ❌ | 0x0EA | ❌ | 0x0F7 | ❌ | 0x118 | ❌ | 0x0FA | ❌ |
 | UNNAMED_R391 |  |  | 0x0EB | ❌ | 0x0EB | ❌ | 0x0F8 | ❌ | 0x119 | ❌ | 0x0FB | ❌ |
+| MOB_ESCORT_COLLISION | CMob::SendCollisionEscort | monster/serverbound/MonsterMobEscortCollision (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EC | ✅ | 0x0CB | ✅ |
 | OPEN_ITEMUI | CUIRaiseWndBase::OnCreate |  | 0x0EC | ❌ | 0x0EC | ❌ | 0x0FA | ❌ | 0x11B | ❌ | 0x0FD | ❌ |
 | CLOSE_ITEMUI | CUIRaiseWndBase::CUIRaiseWndBase; CUIRaiseWndBase::~CUIRaiseWndBase |  | 0x0ED | ❌ | 0x0ED | ❌ | 0x0FB | ❌ | 0x11C | ❌ | 0x0FE | ❌ |
 | MOB_REQUEST_ESCORT_INFO | CMob::SendRequestEscortPath | monster/serverbound/MonsterMobRequestEscortInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0ED | ✅ | 0x0CC | ✅ |
@@ -912,7 +912,7 @@ Tool: `426af65684f35154915c007c2831053c55ffa423`
 |---------|----|----|----|----|----|-----------|
 | v83 | 259 | 0 | 420 | 201 | 0 | 38.1% |
 | v84 | 213 | 0 | 465 | 202 | 0 | 31.4% |
-| v87 | 277 | 0 | 440 | 163 | 0 | 38.6% |
+| v87 | 277 | 0 | 438 | 165 | 0 | 38.7% |
 | v95 | 312 | 0 | 486 | 82 | 0 | 39.1% |
 | JMS185 | 263 | 0 | 447 | 170 | 0 | 37.0% |
 

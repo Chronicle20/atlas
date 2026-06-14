@@ -1348,12 +1348,11 @@
   ida:
     address: 0x6ac074
   note: 'task-092 Cluster F: IDA v87 CMobPool::OnMobPacket (0x6B4EAD) case 0x110 -> CMob::OnMobAttackedByMob (0x6AC074). Registry gap; applicability.md v95-only corrected by the dispatcher.'
-- op: MOB_ESCORT_FULL_PATH
-  direction: clientbound
-  opcode: 273
-  fname: CMob::OnEscortFullPath
-  provenance: csv-import
-  note: 'task-092 Cluster F: VERSION-ABSENT in v87. IDA v87 CMobPool::OnMobPacket (0x6B4EAD) range ENDS at 0x110 (OnMobAttackedByMob) — 0x111 is NOT dispatched and no CMob::OnEscortFullPath symbol exists in the v87 IDB. The escort family post-dates v87 (v95 first). Row retained per no-delete rule; no codec/evidence for v87.'
+# MOB_ESCORT_FULL_PATH (clientbound, csv opcode 273/0x111) removed task-092 Stage 4:
+# VERSION-ABSENT in v87 — CMobPool::OnMobPacket (0x6B4EAD) cases end at 0x110
+# (OnMobAttackedByMob); 0x111 is not dispatched and no CMob::OnEscortFullPath
+# symbol exists. The escort family post-dates v87 (v95 first). Dropped so the
+# matrix cell reads n/a (⬜) like v83/v84, which also have no row.
 - op: SPAWN_NPC
   direction: clientbound
   opcode: 274
@@ -3126,12 +3125,10 @@
   opcode: 208
   fname: CMob::UpdateTimeBomb
   provenance: csv-import
-- op: MOB_ESCORT_COLLISION
-  direction: serverbound
-  opcode: 209
-  fname: CMob::SendCollisionEscort
-  provenance: csv-import
-  note: 'task-092 Cluster F: VERSION-ABSENT in v87. The escort family post-dates v87 — the v87 IDB has no CMob::SendCollisionEscort symbol and the mob dispatcher has no escort cases (ends at 0x110). Row retained per no-delete rule; no codec/evidence for v87.'
+# MOB_ESCORT_COLLISION (serverbound, csv opcode 209/0xD1) removed task-092 Stage 4:
+# VERSION-ABSENT in v87 — the escort family post-dates v87. The v87 IDB has no
+# CMob::SendCollisionEscort symbol and the mob dispatcher has no escort cases
+# (ends at 0x110). Dropped so the matrix cell reads n/a (⬜) like v83/v84.
 - op: NPC_ACTION
   direction: serverbound
   opcode: 210

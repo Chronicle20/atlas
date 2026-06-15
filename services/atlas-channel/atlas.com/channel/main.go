@@ -681,6 +681,8 @@ func produceWriters() []string {
 		charcb.CharacterSkillCooldownWriter,
 		charcb.CharacterEffectWriter,
 		charcb.CharacterEffectForeignWriter,
+		charcb.CharacterSkillPrepareForeignWriter,
+		charcb.CharacterSkillCancelForeignWriter,
 		chatCB.WorldMessageWriter,
 		monstercb.MonsterHealthWriter,
 		partycb.PartyMemberHPWriter,
@@ -786,6 +788,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[packetmodel.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
 	handlerMap[charsb.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
+	handlerMap[handler.CharacterSkillPrepareHandle] = handler.CharacterSkillPrepareHandleFunc
 	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[charsb.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc

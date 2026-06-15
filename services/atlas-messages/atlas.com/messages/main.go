@@ -12,6 +12,7 @@ import (
 	"atlas-messages/command/map"
 	"atlas-messages/command/monster"
 	party_quest "atlas-messages/command/party_quest"
+	commandpet "atlas-messages/command/pet"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
@@ -57,6 +58,7 @@ func main() {
 	command.Registry().Add(monster.MobStatusCommandProducer)
 	command.Registry().Add(monster.MobClearCommandProducer)
 	command.Registry().Add(monster.MobSpawnCommandProducer)
+	command.Registry().Add(commandpet.AwardTamenessCommandProducer)
 	command.Registry().Add(disease.DiseaseCommandProducer)
 	command.Registry().Add(party_quest.PQRegisterCommandProducer)
 	command.Registry().Add(party_quest.PQStageCommandProducer)

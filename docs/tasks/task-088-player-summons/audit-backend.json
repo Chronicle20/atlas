@@ -1,0 +1,70 @@
+{
+  "service": "atlas-summons",
+  "path": "services/atlas-summons/atlas.com/summons",
+  "date": "2026-06-12",
+  "build": "pass",
+  "vet": "pass",
+  "tests": "pass",
+  "rediskeyguard": "pass",
+  "dockerBake": "pass",
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "summon",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go", "status": "pass", "evidence": "summon/builder.go:36,53-76,78 (Build returns Model, blueprint convention)"},
+        {"id": "DOM-02", "name": "Model->storage transform", "status": "pass", "evidence": "summon/registry.go:74 toStored (no GORM entity)"},
+        {"id": "DOM-03", "name": "decode/Make", "status": "pass", "evidence": "summon/registry.go:113 fromStored returns (.,.,error)"},
+        {"id": "DOM-04", "name": "Transform", "status": "pass", "evidence": "summon/rest.go:43"},
+        {"id": "DOM-05", "name": "TransformSlice usage", "status": "pass", "evidence": "world/resource.go:46 model.SliceMap, no inline loop"},
+        {"id": "DOM-06", "name": "Processor FieldLogger", "status": "pass", "evidence": "summon/processor.go:83"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "summon/resource.go:28; world/resource.go:38"},
+        {"id": "DOM-08", "name": "POST/PATCH RegisterInputHandler", "status": "na", "evidence": "GET-only REST surface; mutations via Kafka"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "summon/resource.go:34-39; world/resource.go:47-51"},
+        {"id": "DOM-10", "name": "Test DB tenant callbacks", "status": "na", "evidence": "no GORM; miniredis tests"},
+        {"id": "DOM-11", "name": "Providers lazy", "status": "pass", "evidence": "curried requests.Request[T]; registry methods"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "only kafka/consumer/consumer.go:23, main.go, leaderconfig.go"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "handlers call only summon processor"},
+        {"id": "DOM-14", "name": "Handlers not calling providers", "status": "pass", "evidence": "processor methods only"},
+        {"id": "DOM-15", "name": "No direct entity creation", "status": "pass", "evidence": "no db.Create/Save/Delete anywhere"},
+        {"id": "DOM-16", "name": "Write ops centralized", "status": "pass", "evidence": "Registry.Put/Update/Remove via processor only"},
+        {"id": "DOM-17", "name": "Error->HTTP status", "status": "pass", "evidence": "summon/resource.go:31(404),37(500); world/resource.go:42,49(500)"},
+        {"id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "summon/rest.go:30-41"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "na", "evidence": "no POST/PATCH request models"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "ceiling_test.go/model_test.go/registry_test.go t.Run; 11 test files"},
+        {"id": "DOM-21", "name": "Reuse atlas-constants", "status": "pass", "evidence": "world/channel/_map ids, item.WeaponType/GetWeaponType/Id (ceiling.go, inventory/processor.go:43), skill consts (roster.go), shared summon roster pkg"},
+        {"id": "DOM-22", "name": "Docker build", "status": "pass", "evidence": "single root Dockerfile + services.json:432 + docker-bake.hcl:88 + go.work:76; docker buildx bake atlas-summons succeeded"},
+        {"id": "DOM-23", "name": "Kafka topic naming/configmap", "status": "pass", "evidence": "env-configmap.yaml:70,141 KEY:KEY; atlas-summons.yaml envFrom configMapRef:21-23, no literal override; puppet cmds reuse COMMAND_TOPIC_MONSTER:46"},
+        {"id": "DOM-24", "name": "Producer stubbed in tests", "status": "pass", "evidence": "emit field seam processor.go:73-81; no-op injected processor_spawn_test.go:69-70; no ResetInstance cleanup"}
+      ]
+    },
+    {
+      "name": "data/skill,effectivestats,inventory",
+      "type": "external-http-client",
+      "checks": [
+        {"id": "EXT-01", "name": "Relationship interface methods", "status": "pass", "evidence": "data/skill/rest.go:38-39; effectivestats/rest.go:31-32; inventory/rest.go:33,46-99,75"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no httptest anywhere in atlas-summons; inventory SetReferencedStructs (rest.go:83) relationship-include decode untested"},
+        {"id": "EXT-03", "name": "404 distinguished", "status": "pass", "evidence": "clients propagate original error; ErrNotFound surfaces as-is; no collapse-to-notfound"},
+        {"id": "EXT-04", "name": "RootUrl(domain)", "status": "pass", "evidence": "data/skill/requests.go:14 RootUrl(DATA); inventory/requests.go:14 RootUrl(INVENTORY); effectivestats RootUrl(EFFECTIVE_STATS)"}
+      ]
+    },
+    {
+      "name": "cross-service-envelopes",
+      "type": "verification",
+      "checks": [
+        {"id": "XS-MONSTER", "name": "COMMAND_TOPIC_MONSTER tags", "status": "pass", "evidence": "monster/producer.go vs monsters consumer kafka.go byte-identical; ADD/REMOVE_PUPPET handlers wired consumer.go:68,71"},
+        {"id": "XS-SUMMON-STATUS", "name": "EVENT_TOPIC_SUMMON_STATUS tags", "status": "pass", "evidence": "summon/kafka.go vs channel consumer; 6 bodies + handlers match"},
+        {"id": "XS-SUMMON-CMD", "name": "COMMAND_TOPIC_SUMMON tags", "status": "pass", "evidence": "channel summon/producer.go vs summons consumer; SpawnCommandBody match"},
+        {"id": "XS-CHAR-STATUS", "name": "EVENT_TOPIC_CHARACTER_STATUS tags", "status": "pass", "evidence": "atlas-character producer vs summons character/kafka.go; LOGOUT/CHANNEL_CHANGED/MAP_CHANGED match"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "EXT-02: No httptest-backed integration test for data/skill, effectivestats, inventory clients; inventory assets-include unmarshal (SetReferencedStructs) untested against a real JSON:API body.",
+    "MINOR data/skill/processor.go:41: off-by-one bounds guard (len < int(level-1)) — latent panic; copied verbatim from atlas-channel blueprint.",
+    "MINOR inventory/requests.go:18: literal inventory type 1 instead of inventory.TypeValueEquip — copied verbatim from effective-stats blueprint.",
+    "MINOR summon/builder.go:78: Build() does not validate invariants; consistent with registry-model blueprint."
+  ]
+}

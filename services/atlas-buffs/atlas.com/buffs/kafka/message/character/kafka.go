@@ -33,6 +33,12 @@ type ApplyCommandBody struct {
 	Level    byte         `json:"level"`
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
+	// Accumulate, when true, stores each change as its own independently-timed
+	// buff under the same sourceId (per-stat keying) instead of replacing the
+	// whole sourceId buff. Used by the Beholder Hex sweep so its buffs accumulate
+	// one-at-a-time (original-GMS behavior). Default false preserves the standard
+	// replace-by-sourceId semantics for every other producer.
+	Accumulate bool `json:"accumulate,omitempty"`
 }
 
 type StatChange struct {

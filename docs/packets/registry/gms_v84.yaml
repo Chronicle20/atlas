@@ -1149,51 +1149,43 @@
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 179
-  fname: CSummonedPool::OnPacket
-  provenance: ida-discovered
-  ida:
-    address: 9896449
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 179 (0xB3) -> create/spawn.'
+  fname: CSummonedPool::OnCreated
+  fname_alts:
+    - CSummonedPool::OnPacket
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) CSummonedPool::OnPacket (sub_970201@0x970201) dispatches field op 0xB3 (179) -> spawn vtable+0x30 target sub_97038B (= CSummonedPool::OnCreated). Opcode corrected from the v83-seeded 175 to the IDA-confirmed 179 (CUserPool::OnUserCommonPacket@0x9b23a1 routes ops 0xB3..0xB8 to the summon pool). Dispatcher-level name kept as alt (parity with gms_v83/gms_v87/gms_v95 convention).
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 180
-  fname: CSummonedPool::OnPacket
-  provenance: ida-discovered
-  ida:
-    address: 9896449
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 180 (0xB4) -> remove.'
+  fname: CSummonedPool::OnRemoved
+  fname_alts:
+    - CSummonedPool::OnPacket
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) CSummonedPool::OnPacket (sub_970201@0x970201) op 0xB4 (180) -> remove path sub_7CBFA1 (= CSummonedPool::OnRemoved). Opcode corrected from the v83-seeded 176 to the IDA-confirmed 180. Dispatcher-level name kept as alt (parity with gms_v83/gms_v87/gms_v95 convention).
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 181
   fname: CSummonedPool::OnMove
-  provenance: ida-discovered
-  ida:
-    address: 9896449
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 181 (0xB5) -> OnMove (sub_7CC317->CMovePath::OnMovePacket).'
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB5 (181) -> CSummonedPool::OnMove sub_7CC317@0x7cc317. Opcode corrected from the v83-seeded 177 to the IDA-confirmed 181 (CSummonedPool::OnPacket@0x970201 switch + CUserPool::OnUserCommonPacket@0x9b23a1 range 0xB3..0xB8). Structure byte-identical to v83.
 - op: SUMMON_ATTACK
   direction: clientbound
   opcode: 182
   fname: CSummonedPool::OnAttack
-  provenance: ida-discovered
-  ida:
-    address: 9896449
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 182 (0xB6) -> OnAttack (sub_7CC338).'
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB6 (182) -> CSummonedPool::OnAttack sub_7CC338@0x7cc338. Opcode corrected from the v83-seeded 178 to the IDA-confirmed 182. Structure byte-identical to v83 (no oid, no trailing byte).
 - op: DAMAGE_SUMMON
   direction: clientbound
   opcode: 184
   fname: CSummonedPool::OnHit
-  provenance: ida-discovered
-  ida:
-    address: 9896449
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 184 (0xB8) -> OnHit (sub_7CC984: Decode1 idx/Decode4 dmg/Decode4 template).'
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB8 (184) -> DAMAGE behavior sub_7CC984@0x7cc984 (the OnHit fname maps to the SummonDamage writer; behavior is summon-damage, name misleading per summon-wire-truth.md). Opcode corrected from the v83-seeded 179 to the IDA-confirmed 184 (skill/damage swapped — SKILL is the LOWER opcode 0xB7, DAMAGE the HIGHER 0xB8). Structure byte-identical to v83 (stops at bLeft, no dir byte).
 - op: SUMMON_SKILL
   direction: clientbound
   opcode: 183
   fname: CSummonedPool::OnSkill
-  provenance: ida-discovered
-  ida:
-    address: 9896449
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 183 (0xB7) -> OnSkill (sub_7CC920; v95 dispatch order Skill before Hit).'
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) op 0xB7 (183) -> SKILL behavior sub_7CC920@0x7cc920 (single byte &0x7F -> SetAttackAction; the OnSkill fname maps to the SummonSkill writer; behavior is summon-skill, name misleading per summon-wire-truth.md). Opcode corrected from the v83-seeded 180 to the IDA-confirmed 183. Structure byte-identical to v83 (just 1 byte).
 - op: SPAWN_DRAGON
   direction: clientbound
   opcode: 185
@@ -3639,31 +3631,25 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CPet::SendUpdateExceptionListRequest constructs COutPacket(177). v83 172.'
 - op: MOVE_SUMMON
   direction: serverbound
-  opcode: 180
-  fname: CVecCtrlSummoned__EndUpdateActive_send_0xB4
-  provenance: ida-discovered
-  ida:
-    address: 10550665
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlSummoned::EndUpdateActive (v84 fn 0xa0fd89) COutPacket(180,0xB4) Encode4(summonedID)+MovePath::Flush; body match v95 0x9a0700 COutPacket(207).'
+  opcode: 178
+  fname: CVecCtrlSummoned::EndUpdateActive
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) client SEND site CVecCtrlSummoned::EndUpdateActive (CVecCtrl__EndUpdateActive_send_0xB4 @0xa0fd89) constructs COutPacket(180/0xB4) on the wire. The registry opcode here is the SERVER handler opcode the tenant template routes SummonMoveHandle at — 0xB2 (178) — corrected from the v83-seeded 175. Body byte-identical to v83 (Encode4 cid + CMovePath__Flush blob).
 - op: SUMMON_ATTACK
   direction: serverbound
-  opcode: 181
-  fname: CSummoned__AttackToTargetMob_send_0xB5
+  opcode: 179
+  fname: CSummoned::AttackToTargetMob
   fname_alts:
-  - CSummoned::TryDoingAttackManual
-  - CSummoned::TryDoingTaslaCoilAttack
-  provenance: ida-discovered
-  ida:
-    address: 8165839
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::AttackToTargetMob (v84 fn 0x7c99cf) COutPacket(181,0xB5); body match v95 0x7501d0 COutPacket(208): DR_check obfuscation + per-mob attack-info loop.'
+    - CSummoned::TryDoingAttackManual
+    - CSummoned::TryDoingTaslaCoilAttack
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) client SEND site CSummoned::TryDoingAttackManual (sub_7C99CF) send block @0x7cafcd constructs COutPacket(181/0xB5) on the wire. The registry opcode here is the SERVER handler opcode the tenant template routes SummonAttackHandle at — 0xB3 (179) — corrected from the v83-seeded 176. UNLIKE v83 (lean), v84 carries the anti-hack envelope (drInfo/dwKey/crc32) — byte-for-byte the v87 layout, NO repeatSkillPoint — so the Atlas envelope gate is MajorAtLeast(84). Body shape is runtime-mob-count + per-target loop (flat-diff-invalid, tier-1; verified by byte-level decode tests).
 - op: DAMAGE_SUMMON
   direction: serverbound
-  opcode: 182
-  fname: CSummoned__SetDamaged_send_0xB6
-  provenance: ida-discovered
-  ida:
-    address: 8174326
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::SetDamaged (v84 fn 0x7cbaf6) COutPacket(182,0xB6); body match v95 0x74b730 COutPacket(209): Encode4 id, if(mob) idx/dmg/template/dir else Encode1(0xFE)/dmg.'
+  opcode: 180
+  fname: CSummoned::SetDamaged
+  provenance: manual
+  note: IDA v84 (GMS_v84.1) client SEND site CSummoned::SetDamaged (sub_7CBAF6) constructs COutPacket(182/0xB6) on the wire. The registry opcode here is the SERVER handler opcode the tenant template routes SummonDamageHandle at — 0xB4 (180) — corrected from the v83-seeded 177. Body byte-identical to v83 (Encode4 cid + mob-path{attackIdx,damage,templateId,dir} or no-mob-path{0xFE,damage}).
 - op: BEHOLDER
   direction: serverbound
   opcode: 183
@@ -3676,12 +3662,6 @@
   ida:
     address: 8173391
   note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned beholder-heal (v84 fn 0x7cb74f) COutPacket(183,0xB7) Encode4 id + Encode4 0x142449 + Encode1 action; body match v95 0x74ad90 COutPacket(210) (assistType==2, skill 1320008/9).'
-- op: UNNAMED_R296
-  direction: serverbound
-  opcode: 179
-  fname: ''
-  provenance: csv-import
-  note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Left at 179 (0xB3); free after summon/dragon reshift. v84 opcode UNVERIFIED; identity unknown.'
 - op: MOVE_DRAGON
   direction: serverbound
   opcode: 186

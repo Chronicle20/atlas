@@ -801,6 +801,21 @@
         "opCode": "0xF2",
         "validator": "LoggedInValidator",
         "handler": "CashShopOperationHandle"
+      },
+      {
+        "opCode": "0xBB",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xBC",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xBD",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
       }
     ],
     "writers": [
@@ -1900,6 +1915,30 @@
       {
         "opCode": "0x13D",
         "writer": "SheepRanchClothes"
+      },
+      {
+        "opCode": "0xBC",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0xBD",
+        "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0xBE",
+        "writer": "SummonMove"
+      },
+      {
+        "opCode": "0xBF",
+        "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0xC1",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0xC0",
+        "writer": "SummonSkill"
       }
     ]
   },

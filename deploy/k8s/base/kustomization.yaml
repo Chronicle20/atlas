@@ -57,6 +57,7 @@ resources:
   - atlas-saga-orchestrator.yaml
   - atlas-skills.yaml
   - atlas-storage.yaml
+  - atlas-summons.yaml
   - atlas-tenants.yaml
   - atlas-transports.yaml
   - atlas-ui.yaml

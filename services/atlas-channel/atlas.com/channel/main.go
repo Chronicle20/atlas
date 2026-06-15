@@ -47,6 +47,7 @@ import (
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
+	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/listener"
 	"atlas-channel/logger"
@@ -120,6 +121,8 @@ import (
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
+	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
+	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -178,6 +181,7 @@ func main() {
 	member.InitConsumers(l)(cmf)(consumerGroupId)
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	summonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
@@ -441,6 +445,9 @@ func buildListener(
 		if err := register(monster.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -607,6 +614,12 @@ func produceWriters() []string {
 		monstercb.MonsterControlWriter,
 		monstercb.MonsterMovementWriter,
 		monstercb.MonsterMovementAckWriter,
+		summoncb.SummonSpawnWriter,
+		summoncb.SummonRemoveWriter,
+		summoncb.SummonMoveWriter,
+		summoncb.SummonAttackWriter,
+		summoncb.SummonDamageWriter,
+		summoncb.SummonSkillWriter,
 		monstercb.MobCrcKeyChangedWriter,
 		monstercb.MobAffectedWriter,
 		monstercb.MonsterSpecialEffectBySkillWriter,
@@ -777,6 +790,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cashsb.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
+	handlerMap[summonsb.SummonAttackHandle] = handler.SummonAttackHandleFunc
+	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
 	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
 	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
 	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc

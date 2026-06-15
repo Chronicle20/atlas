@@ -927,13 +927,19 @@
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 188
-  fname: CSummonedPool::OnPacket
-  provenance: csv-import
+  fname: CSummonedPool::OnCreated
+  fname_alts:
+    - CSummonedPool::OnPacket
+  provenance: manual
+  note: IDA v87 CSummonedPool::OnPacket (0x9B35BF) dispatches op 0xBC (188) -> spawn vtable+0x30 target sub_9B3749 (= CSummonedPool::OnCreated). Dispatcher-level name kept as alt (parity with gms_v83/gms_v95 convention).
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 189
-  fname: CSummonedPool::OnPacket
-  provenance: csv-import
+  fname: CSummonedPool::OnRemoved
+  fname_alts:
+    - CSummonedPool::OnPacket
+  provenance: manual
+  note: IDA v87 CSummonedPool::OnPacket (0x9B35BF) op 0xBD (189) -> remove path sub_7F8CB0 (= CSummonedPool::OnRemoved). Dispatcher-level name kept as alt (parity with gms_v83/gms_v95 convention).
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 190

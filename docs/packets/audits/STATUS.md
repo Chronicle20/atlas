@@ -5,11 +5,11 @@
 
 Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 
-- export gms_v83: `aa7639f602528da4fe4d03ca6b172ab93e9c45756fe0ce2bd7c2a2e4c40981fc`
-- export gms_v84: `40b13da095c18e1d8453c31008159e404e7e34a8ac4714ab56b93ab274673ef8`
-- export gms_v87: `1246c43e946c4fef2f01ea7f33b910f30e2be4538b90cd3ded247e96ff06ed93`
-- export gms_v95: `90cfefc9d50c7cd8335d8631c24ac902109c09e284a872f91ff3c85fffbc450a`
-- export jms_v185: `bda3f6b42099cb87c84325ed4ee540543fdff66dc66d81b0521d1294e05de99a`
+- export gms_v83: `3f575df6265d69b87a4b7fb51ea9f1aa37f5752e67573b59d03ec4bb00adb5e5`
+- export gms_v84: `51765f5ed73d6193ec879f48066ec58e417d71dc87a43ba5ee66a08992338831`
+- export gms_v87: `760c738f3e6d61544175df67b0266d8091952ff1a95c707baa62451ce525164b`
+- export gms_v95: `5fdb1723784d7d0c98d2a8f90263bbfa672d8b55630e52a3a40f2fba98e77aa8`
+- export jms_v185: `9bfecb734c4c88dc874200c23f920485bf38a637697814e969c5adf981677811`
 
 ## Clientbound
 
@@ -230,13 +230,13 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket |  | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ❌ | 0x0B5 | ❌ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved |  | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ❌ | 0x0B6 | ❌ |
-| MOVE_SUMMON | CSummonedPool::OnMove |  | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | ❌ | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack |  | 0x0B2 | ❌ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ❌ | 0x0B8 | ❌ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit |  | 0x0B3 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x11B | ❌ | 0x0B9 | ❌ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket | summon/clientbound/SummonSpawn (T1) | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ✅ | 0x0B5 | ❌ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved | summon/clientbound/SummonRemove (T1) | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ✅ | 0x0B6 | ❌ |
+| MOVE_SUMMON | CSummonedPool::OnMove | summon/clientbound/SummonMove (T1) | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | 🟡 | 0x0B7 | ❌ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack | summon/clientbound/SummonAttack (T1) | 0x0B2 | ❌ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ✅ | 0x0B8 | ❌ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit | summon/clientbound/SummonDamage (T1) | 0x0B3 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x11B | ✅ | 0x0B9 | ❌ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill |  | 0x0B4 | ❌ | 0x0B7 | ❌ | 0x0C1 | ❌ | 0x11A | ❌ | 0x0BA | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill | summon/clientbound/SummonSkill (T1) | 0x0B4 | ❌ | 0x0B7 | ❌ | 0x0C1 | ❌ | 0x11A | ✅ | 0x0BA | ❌ |
 | SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
 | MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
@@ -682,14 +682,14 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | UNNAMED_R288 |  |  | 0x0AD | ❌ |  | ⬜ | 0x0B9 | ❌ | 0x0CD | ❌ | 0x0B0 | ❌ |
 | UNNAMED_R289 |  |  | 0x0AE | ❌ |  | ⬜ | 0x0BA | ❌ | 0x0CE | ❌ | 0x0B1 | ❌ |
-| MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; CVecCtrlSummoned__EndUpdateActive_send_0xB4 |  | 0x0AF | ❌ | 0x0B4 | ❌ | 0x0BB | ❌ | 0x0CF | ❌ | 0x0B2 | ❌ |
+| MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive | summon/serverbound/SummonMoveHandle | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | OP_BOARD_HAS_NEW | CWvsContext::CheckOpBoardHasNew |  |  | ⬜ |  | ⬜ | 0x0AF | ❌ | 0x0C0 | ❌ | 0x0A8 | ❌ |
 | ACCOUNT_MORE_INFO | CUIAccountMoreInfo::SendLoadAccountMoreInfoRequest; CUIAccountMoreInfo::SendSaveAccountMoreInfoRequest |  |  | ⬜ |  | ⬜ | 0x0B0 | ❌ | 0x0C1 | ❌ |  | ⬜ |
-| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; CSummoned__AttackToTargetMob_send_0xB5 |  | 0x0B0 | ❌ | 0x0B5 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
-| DAMAGE_SUMMON | CSummoned::SetDamaged; CSummoned__SetDamaged_send_0xB6 |  | 0x0B1 | ❌ | 0x0B6 | ❌ | 0x0BD | ❌ | 0x0D1 | ❌ | 0x0B4 | ❌ |
+| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack |  | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
+| DAMAGE_SUMMON | CSummoned::SetDamaged | summon/serverbound/SummonDamageHandle (T1) | 0x0B1 | ✅ | 0x0B4 | ✅ | 0x0BD | ✅ | 0x0D1 | ✅ | 0x0B4 | ✅ |
 | BEHOLDER | CSummoned::TryDoingGiveBuff; CSummoned::TryDoingHeal; CSummoned::TryDoingHealingRobot; CSummoned::TryDoingSummon; CSummoned__TryDoingHeal_send_0xB7_BEHOLDER |  | 0x0B2 | ❌ | 0x0B7 | ❌ | 0x0BE | ❌ | 0x0D2 | ❌ | 0x0B5 | ❌ |
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C6 | ❌ |  | ⬜ |
-| UNNAMED_R296 |  |  | 0x0B3 | ❌ | 0x0B3 | ❌ | 0x0BF | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
+| UNNAMED_R296 |  |  | 0x0B3 | ❌ |  | ⬜ | 0x0BF | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
 | UNNAMED_R297 |  |  | 0x0B4 | ❌ |  | ⬜ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
 | MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive; CVecCtrlDragon__EndUpdateActive_send_0xBA |  | 0x0B5 | ❌ | 0x0BA | ❌ | 0x0C1 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
 | UNNAMED_R299 |  |  | 0x0B6 | ❌ |  | ⬜ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
@@ -899,17 +899,18 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | storage/serverbound/StorageOperationMeso (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationRetrieveAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
+| summon/serverbound/SummonAttackHandle (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | ui/clientbound/Lock |  |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
 
 ## Totals
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 327 | 0 | 348 | 200 | 0 | 48.4% |
-| v84 | 282 | 0 | 373 | 220 | 0 | 43.1% |
-| v87 | 344 | 0 | 368 | 163 | 0 | 48.3% |
-| v95 | 380 | 0 | 416 | 79 | 0 | 47.7% |
-| JMS185 | 322 | 0 | 384 | 169 | 0 | 45.6% |
+| v83 | 330 | 0 | 346 | 200 | 0 | 48.8% |
+| v84 | 285 | 0 | 370 | 221 | 0 | 43.5% |
+| v87 | 347 | 0 | 366 | 163 | 0 | 48.7% |
+| v95 | 388 | 1 | 408 | 79 | 0 | 48.7% |
+| JMS185 | 325 | 0 | 382 | 169 | 0 | 46.0% |
 
 ## Conflicts
 

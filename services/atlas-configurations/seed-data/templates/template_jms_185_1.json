@@ -873,6 +873,21 @@
             "BUY_FRIENDSHIP": 36
           }
         }
+      },
+      {
+        "opCode": "0xB2",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle"
+      },
+      {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle"
+      },
+      {
+        "opCode": "0xB4",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle"
       }
     ],
     "writers": [
@@ -2020,6 +2035,30 @@
       {
         "opCode": "0x144",
         "writer": "SheepRanchClothes"
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "SummonSpawn"
+      },
+      {
+        "opCode": "0xB6",
+        "writer": "SummonRemove"
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "SummonMove"
+      },
+      {
+        "opCode": "0xB8",
+        "writer": "SummonAttack"
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "SummonDamage"
+      },
+      {
+        "opCode": "0xB9",
+        "writer": "SummonSkill"
       }
     ]
   },
@@ -2434,21 +2473,21 @@
   },
   "worlds": [
     {
-      "name": "\u304b\u3048\u3067",
+      "name": "かえで",
       "flag": "Nothing",
-      "serverMessage": "\u304b\u3048\u3067\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u304b\u3048\u3067!",
-      "whyAmIRecommended": "\u4eba\u53e3\u304c\u591a\u3044!",
+      "serverMessage": "かえでへようこそ！",
+      "eventMessage": "かえで!",
+      "whyAmIRecommended": "人口が多い!",
       "expRate": 1.0,
       "mesoRate": 1.0,
       "itemDropRate": 1.0,
       "questExpRate": 1.0
     },
     {
-      "name": "\u3082\u307f\u3058",
+      "name": "もみじ",
       "flag": "Nothing",
-      "serverMessage": "\u3082\u307f\u3058\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3082\u307f\u3058!",
+      "serverMessage": "もみじへようこそ！",
+      "eventMessage": "もみじ!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2456,10 +2495,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u3042\u3093\u305a",
+      "name": "あんず",
       "flag": "Nothing",
-      "serverMessage": "\u3042\u3093\u305a\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3042\u3093\u305a!",
+      "serverMessage": "あんずへようこそ！",
+      "eventMessage": "あんず!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2467,10 +2506,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u304b\u308a\u3093",
+      "name": "かりん",
       "flag": "Nothing",
-      "serverMessage": "\u304b\u308a\u3093\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u304b\u308a\u3093!",
+      "serverMessage": "かりんへようこそ！",
+      "eventMessage": "かりん!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2478,10 +2517,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u3055\u304f\u3089",
+      "name": "さくら",
       "flag": "Nothing",
-      "serverMessage": "\u3055\u304f\u3089\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3055\u304f\u3089!",
+      "serverMessage": "さくらへようこそ！",
+      "eventMessage": "さくら!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2489,10 +2528,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u3059\u3082\u3082",
+      "name": "すもも",
       "flag": "Nothing",
-      "serverMessage": "\u3059\u3082\u3082\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3059\u3082\u3082!",
+      "serverMessage": "すももへようこそ！",
+      "eventMessage": "すもも!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2500,10 +2539,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u307d\u3077\u3089",
+      "name": "ぽぷら",
       "flag": "Nothing",
-      "serverMessage": "\u307d\u3077\u3089\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u307d\u3077\u3089!",
+      "serverMessage": "ぽぷらへようこそ！",
+      "eventMessage": "ぽぷら!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2511,10 +2550,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u3051\u3084\u304d",
+      "name": "けやき",
       "flag": "Nothing",
-      "serverMessage": "\u3051\u3084\u304d\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3051\u3084\u304d!",
+      "serverMessage": "けやきへようこそ！",
+      "eventMessage": "けやき!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2522,10 +2561,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u3077\u3089\u3080",
+      "name": "ぷらむ",
       "flag": "Nothing",
-      "serverMessage": "\u3077\u3089\u3080\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3077\u3089\u3080!",
+      "serverMessage": "ぷらむへようこそ！",
+      "eventMessage": "ぷらむ!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2533,10 +2572,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u306a\u3064\u3081",
+      "name": "なつめ",
       "flag": "Nothing",
-      "serverMessage": "\u306a\u3064\u3081\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u306a\u3064\u3081!",
+      "serverMessage": "なつめへようこそ！",
+      "eventMessage": "なつめ!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2544,10 +2583,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u304f\u306c\u304e",
+      "name": "くぬぎ",
       "flag": "Nothing",
-      "serverMessage": "\u304f\u306c\u304e\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u304f\u306c\u304e!",
+      "serverMessage": "くぬぎへようこそ！",
+      "eventMessage": "くぬぎ!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2555,10 +2594,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u3064\u3070\u304d",
+      "name": "つばき",
       "flag": "Nothing",
-      "serverMessage": "\u3064\u3070\u304d\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u3064\u3070\u304d!",
+      "serverMessage": "つばきへようこそ！",
+      "eventMessage": "つばき!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,
@@ -2566,10 +2605,10 @@
       "questExpRate": 1.0
     },
     {
-      "name": "\u307f\u305a\u304d",
+      "name": "みずき",
       "flag": "Nothing",
-      "serverMessage": "\u307f\u305a\u304d\u3078\u3088\u3046\u3053\u305d\uff01",
-      "eventMessage": "\u307f\u305a\u304d!",
+      "serverMessage": "みずきへようこそ！",
+      "eventMessage": "みずき!",
       "whyAmIRecommended": "",
       "expRate": 1.0,
       "mesoRate": 1.0,

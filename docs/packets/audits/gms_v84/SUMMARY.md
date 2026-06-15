@@ -231,6 +231,14 @@
 | [NpcShopSell](NpcShopSell.md) | ✅ | `libs/atlas-packet/npc/serverbound/shop_sell.go` |
 | [NpcShopList](NpcShopList.md) | 🔍 | `libs/atlas-packet/npc/clientbound/shop_list.go` |
 | [FieldSetField](FieldSetField.md) | 🔍 | `libs/atlas-packet/field/clientbound/set_field.go` |
+| [SummonDamageHandle](SummonDamageHandle.md) | 🔍 | `libs/atlas-packet/summon/serverbound/damage.go` |
+| [SummonAttackHandle](SummonAttackHandle.md) | 🔍 | `libs/atlas-packet/summon/serverbound/attack.go` |
+| [SummonAttack](SummonAttack.md) | 🔍 | `libs/atlas-packet/summon/clientbound/attack.go` |
+| [SummonSpawn](SummonSpawn.md) | 🔍 | `libs/atlas-packet/summon/clientbound/spawn.go` |
+| [SummonDamage](SummonDamage.md) | 🔍 | `libs/atlas-packet/summon/clientbound/damage.go` |
+| [SummonMove](SummonMove.md) | 🔍 | `libs/atlas-packet/summon/clientbound/move.go` |
+| [SummonRemove](SummonRemove.md) | 🔍 | `libs/atlas-packet/summon/clientbound/remove.go` |
+| [SummonSkill](SummonSkill.md) | 🔍 | `libs/atlas-packet/summon/clientbound/skill.go` |
 | [InteractionOperationTradePutItem](InteractionOperationTradePutItem.md) | ❌ | `libs/atlas-packet/interaction/serverbound/operation_trade_put_item.go` |
 | [InteractionOperationTradeAddMeso](InteractionOperationTradeAddMeso.md) | 🔍 | `libs/atlas-packet/interaction/serverbound/operation_trade_add_meso.go` |
 | [InteractionOperationTradeConfirm](InteractionOperationTradeConfirm.md) | 🔍 | `libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go` |
@@ -271,6 +279,7 @@
 | [BuffCancelForeign](BuffCancelForeign.md) | ✅ | `libs/atlas-packet/character/clientbound/buff_cancel.go` |
 | [BuffGiveForeign](BuffGiveForeign.md) | 🔍 | `libs/atlas-packet/character/clientbound/buff_give.go` |
 | [PetMovementRequest](PetMovementRequest.md) | ✅ | `libs/atlas-packet/pet/serverbound/movement.go` |
+| [SummonMoveHandle](SummonMoveHandle.md) | ✅ | `libs/atlas-packet/summon/serverbound/move.go` |
 | [Move](Move.md) | 🔍 | `libs/atlas-packet/character/serverbound/move.go` |
 | [PetCashFoodResult](PetCashFoodResult.md) | ✅ | `libs/atlas-packet/pet/clientbound/cash_food_result.go` |
 | [CharacterSkillChange](CharacterSkillChange.md) | ✅ | `libs/atlas-packet/character/clientbound/skill_change.go` |

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"atlas-data/canonical"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -64,7 +65,8 @@ func DeleteAllForTenant(tx *gorm.DB, tenantId uuid.UUID, entity interface{}) err
 
 // ResolveTenantId picks the tenant_id partition this request should query.
 // Returns the active tenant id if the active tenant has any rows in the
-// resource's search-index table; otherwise returns uuid.Nil.
+// resource's search-index table; otherwise returns the version-scoped
+// canonical id (canonical.TenantId) for the tenant's region and version.
 //
 // The check is a single EXISTS lookup against the existing (tenant_id, ...)
 // PK / btree. Callers MUST resolve once per request and pass the result into
@@ -88,7 +90,7 @@ func ResolveTenantId[E any](db *gorm.DB, ctx context.Context, _ QuerySpec[E]) (u
 	if dummy == 1 {
 		return t.Id(), nil
 	}
-	return uuid.Nil, nil
+	return canonical.TenantId(t.Region(), t.MajorVersion(), t.MinorVersion()), nil
 }
 
 // QuerySpec configures Search / Count calls. IdOf has been removed; the lib

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"atlas-data/canonical"
 	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -40,6 +42,11 @@ func purgeInner(db *gorm.DB, mc *minio.Client) func(d *rest.HandlerDependency, c
 			id, err := uuid.Parse(idStr)
 			if err != nil {
 				http.Error(w, "bad tenant id", http.StatusBadRequest)
+				return
+			}
+			t := tenant.MustFromContext(r.Context())
+			if id.String() == canonical.TenantUUID || canonical.IsCanonical(id, t.Region(), t.MajorVersion(), t.MinorVersion()) {
+				http.Error(w, ErrCanonicalRefused.Error(), http.StatusForbidden)
 				return
 			}
 			if err := Purge(r.Context(), d.Logger(), db, mc, id); err != nil {

@@ -1,11 +1,11 @@
 {
   "toolSha": "6e8be69271e3b0e7df0cd704cdb5e47ac359e179",
   "exportHashes": {
-    "gms_v83": "aa7639f602528da4fe4d03ca6b172ab93e9c45756fe0ce2bd7c2a2e4c40981fc",
-    "gms_v84": "40b13da095c18e1d8453c31008159e404e7e34a8ac4714ab56b93ab274673ef8",
-    "gms_v87": "1246c43e946c4fef2f01ea7f33b910f30e2be4538b90cd3ded247e96ff06ed93",
-    "gms_v95": "90cfefc9d50c7cd8335d8631c24ac902109c09e284a872f91ff3c85fffbc450a",
-    "jms_v185": "bda3f6b42099cb87c84325ed4ee540543fdff66dc66d81b0521d1294e05de99a"
+    "gms_v83": "3f575df6265d69b87a4b7fb51ea9f1aa37f5752e67573b59d03ec4bb00adb5e5",
+    "gms_v84": "51765f5ed73d6193ec879f48066ec58e417d71dc87a43ba5ee66a08992338831",
+    "gms_v87": "760c738f3e6d61544175df67b0266d8091952ff1a95c707baa62451ce525164b",
+    "gms_v95": "5fdb1723784d7d0c98d2a8f90263bbfa672d8b55630e52a3a40f2fba98e77aa8",
+    "jms_v185": "9bfecb734c4c88dc874200c23f920485bf38a637697814e969c5adf981677811"
   },
   "rows": [
     {
@@ -14403,36 +14403,31 @@
     {
       "kind": "op",
       "op": "MOVE_SUMMON",
+      "packet": "summon/serverbound/SummonMoveHandle",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CVecCtrlSummoned::EndUpdateActive",
-        "CVecCtrlSummoned__EndUpdateActive_send_0xB4"
+        "CVecCtrlSummoned::EndUpdateActive"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 175
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 180
+          "state": "verified",
+          "opcode": 178
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 187
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 207
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 178
         }
       }
@@ -14474,8 +14469,9 @@
     {
       "kind": "op",
       "op": "SPAWN_SPECIAL_MAPOBJECT",
+      "packet": "summon/clientbound/SummonSpawn",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CSummonedPool::OnCreated",
         "CSummonedPool::OnPacket"
@@ -14483,27 +14479,26 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 175
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 179
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 188
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 278
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 181
         }
       }
@@ -14545,8 +14540,9 @@
     {
       "kind": "op",
       "op": "REMOVE_SPECIAL_MAPOBJECT",
+      "packet": "summon/clientbound/SummonRemove",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CSummonedPool::OnPacket",
         "CSummonedPool::OnRemoved"
@@ -14554,27 +14550,26 @@
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 176
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 180
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 189
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 279
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 182
         }
       }
@@ -14587,8 +14582,7 @@
       "fnames": [
         "CSummoned::AttackToTargetMob",
         "CSummoned::TryDoingAttackManual",
-        "CSummoned::TryDoingTaslaCoilAttack",
-        "CSummoned__AttackToTargetMob_send_0xB5"
+        "CSummoned::TryDoingTaslaCoilAttack"
       ],
       "cells": {
         "gms_v83": {
@@ -14599,7 +14593,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 181
+          "opcode": 179
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14621,36 +14615,31 @@
     {
       "kind": "op",
       "op": "DAMAGE_SUMMON",
+      "packet": "summon/serverbound/SummonDamageHandle",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CSummoned::SetDamaged",
-        "CSummoned__SetDamaged_send_0xB6"
+        "CSummoned::SetDamaged"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 177
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 182
+          "state": "verified",
+          "opcode": 180
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 189
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 209
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 180
         }
       }
@@ -14658,35 +14647,36 @@
     {
       "kind": "op",
       "op": "MOVE_SUMMON",
+      "packet": "summon/clientbound/SummonMove",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CSummonedPool::OnMove"
       ],
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 177
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 181
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 190
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
           "opcode": 280
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 183
         }
       }
@@ -14734,35 +14724,35 @@
     {
       "kind": "op",
       "op": "SUMMON_ATTACK",
+      "packet": "summon/clientbound/SummonAttack",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CSummonedPool::OnAttack"
       ],
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 178
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 182
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 191
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 281
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 184
         }
       }
@@ -14800,35 +14790,35 @@
     {
       "kind": "op",
       "op": "DAMAGE_SUMMON",
+      "packet": "summon/clientbound/SummonDamage",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CSummonedPool::OnHit"
       ],
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 179
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 184
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 192
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 283
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 185
         }
       }
@@ -14879,9 +14869,8 @@
           "opcode": 179
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 179
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14903,35 +14892,35 @@
     {
       "kind": "op",
       "op": "SUMMON_SKILL",
+      "packet": "summon/clientbound/SummonSkill",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CSummonedPool::OnSkill"
       ],
       "cells": {
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 180
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 183
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 193
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 282
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "tier-1 without fixture; verdict 🔍",
           "opcode": 186
         }
       }
@@ -28919,6 +28908,33 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "summon/serverbound/SummonAttackHandle",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"atlas-data/canonical"
@@ -54,12 +55,26 @@ func (p Publisher) Publish(ctx context.Context, region string, major, minor int)
 	h := sha256.New()
 	tw := tar.NewWriter(io.MultiWriter(tmp, h))
 
+	// Resolve each table's column list up front so it can be recorded in the
+	// header (written first) and reused as the COPY-out projection. The list is
+	// ordered deterministically (by column name) so the dump — and therefore
+	// its sha256 — is reproducible regardless of the table's physical order.
+	columns := make(map[string][]string, len(DumpTables))
+	for _, table := range DumpTables {
+		cols, err := tableColumns(ctx, p.DB, table)
+		if err != nil {
+			return "", fmt.Errorf("publish: columns %s: %w", table, err)
+		}
+		columns[table] = cols
+	}
+
 	hdr := Header{
 		SchemaVersion: SchemaVersion,
 		Region:        region,
 		MajorVersion:  major,
 		MinorVersion:  minor,
 		Tables:        DumpTables,
+		Columns:       columns,
 		PublishedAt:   time.Unix(0, 0).UTC(),
 	}
 	hdrBytes, err := MarshalHeader(hdr)
@@ -71,7 +86,7 @@ func (p Publisher) Publish(ctx context.Context, region string, major, minor int)
 	}
 	for _, table := range DumpTables {
 		p.L.Debugf("publish: dump-table %s", table)
-		if err := dumpTable(ctx, p.DB, table, tw); err != nil {
+		if err := dumpTable(ctx, p.DB, table, columns[table], region, major, minor, tw); err != nil {
 			return "", fmt.Errorf("publish: dump-table %s: %w", table, err)
 		}
 	}
@@ -100,7 +115,25 @@ func (p Publisher) Publish(ctx context.Context, region string, major, minor int)
 	return sum, nil
 }
 
-func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) error {
+// tableColumns returns the table's column names in a deterministic order (by
+// name). Recorded in the dump header and used as the COPY projection so restore
+// can map stream fields to columns by name rather than physical position.
+func tableColumns(ctx context.Context, db *gorm.DB, table string) ([]string, error) {
+	var cols []string
+	err := db.WithContext(ctx).Raw(
+		`SELECT column_name FROM information_schema.columns
+		 WHERE table_schema = current_schema() AND table_name = ?
+		 ORDER BY column_name`, table).Scan(&cols).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(cols) == 0 {
+		return nil, fmt.Errorf("no columns found for table %s", table)
+	}
+	return cols, nil
+}
+
+func dumpTable(ctx context.Context, db *gorm.DB, table string, cols []string, region string, major, minor int, tw *tar.Writer) error {
 	raw, err := db.DB()
 	if err != nil {
 		return err
@@ -111,7 +144,7 @@ func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) e
 	}
 	defer conn.Close()
 	return conn.Raw(func(driverConn any) error {
-		return runCopyOut(ctx, driverConn, table, tw)
+		return runCopyOut(ctx, driverConn, table, cols, region, major, minor, tw)
 	})
 }
 
@@ -121,13 +154,13 @@ func dumpTable(ctx context.Context, db *gorm.DB, table string, tw *tar.Writer) e
 // The full canonical subset of one table is buffered in memory (bounded by the
 // PRD-mandated ~150 MB cap on canonical data) so the tar entry can be written
 // with a known Size header.
-func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Writer) error {
+func runCopyOut(ctx context.Context, driverConn any, table string, cols []string, region string, major, minor int, tw *tar.Writer) error {
 	pgxConn, ok := driverConn.(*stdlib.Conn)
 	if !ok {
 		return fmt.Errorf("expected *stdlib.Conn, got %T", driverConn)
 	}
 	var buf bytes.Buffer
-	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, copyOutSQL(table)); err != nil {
+	if _, err := pgxConn.Conn().PgConn().CopyTo(ctx, &buf, copyOutSQL(table, cols, region, major, minor)); err != nil {
 		return err
 	}
 	if err := tw.WriteHeader(&tar.Header{
@@ -141,14 +174,30 @@ func runCopyOut(ctx context.Context, driverConn any, table string, tw *tar.Write
 	return err
 }
 
-// copyOutSQL builds the binary COPY statement that dumps the canonical-tenant
-// subset of a table, ordered deterministically by a column the table actually
-// has. The documents table carries a surrogate `id`; the *_search_index tables
-// are keyed by (tenant_id, <entity>_id) with no `id`, so ordering them by `id`
-// fails with SQLSTATE 42703 — the publish-time empty-500 seen on atlas-main.
-func copyOutSQL(table string) string {
-	return fmt.Sprintf(`COPY (SELECT * FROM %s WHERE tenant_id = '%s' ORDER BY %s) TO STDOUT (FORMAT binary)`,
-		table, canonical.TenantUUID, orderColumn(table))
+// copyOutSQL builds the binary COPY statement that dumps the version-scoped
+// canonical-tenant subset of a table with an EXPLICIT, ordered column list
+// (not `SELECT *`), ordered deterministically by a column the table actually
+// has. The explicit projection pins the dump's field order to the header's
+// recorded column list so restore can replay it name-keyed, immune to the
+// target's physical column order. The documents table carries a surrogate
+// `id`; the *_search_index tables are keyed by (tenant_id, <entity>_id) with
+// no `id`, so ordering them by `id` fails with SQLSTATE 42703 — the
+// publish-time empty-500 seen on atlas-main.
+func copyOutSQL(table string, cols []string, region string, major, minor int) string {
+	tenantId := canonical.TenantId(region, uint16(major), uint16(minor)).String()
+	return fmt.Sprintf(`COPY (SELECT %s FROM %s WHERE tenant_id = '%s' ORDER BY %s) TO STDOUT (FORMAT binary)`,
+		quoteCols(cols), table, tenantId, orderColumn(table))
+}
+
+// quoteCols renders a column list as a comma-separated, double-quoted
+// projection (`"a","b"`). Column names come from information_schema, but
+// quoting keeps the SQL safe against reserved words.
+func quoteCols(cols []string) string {
+	quoted := make([]string, len(cols))
+	for i, c := range cols {
+		quoted[i] = `"` + strings.ReplaceAll(c, `"`, `""`) + `"`
+	}
+	return strings.Join(quoted, ",")
 }
 
 // orderColumn returns the column used to order a table's COPY dump. Mirrors the

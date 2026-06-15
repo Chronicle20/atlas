@@ -3,99 +3,56 @@
 Operational guide for the per-PR atlas environments. PRD / design /
 implementation plan: `docs/tasks/task-063-ephemeral-pr-deployments/`.
 
-## §9.1 First-time setup: canonical WZ via MinIO
+> **See also:** [canonical-version-migration.md](canonical-version-migration.md)
+> for the one-time migration that provisions per-version canonical baselines consumed
+> by the baseline-only bootstrap this runbook describes.
 
-The PR bootstrap Job fetches `atlas.zip` from cluster-internal MinIO into an
-emptyDir via an init container. PVCs can't cross namespaces; MinIO is the
-single source of truth for the canonical zip. The Service is ClusterIP-only,
-so the blob isn't reachable from outside the cluster.
+## §9.1 Data provisioning: baseline-only
+
+Ephemeral PR envs provision game data **only** by restoring the published
+canonical baseline for their `(region, major, minor)`. There is no WZ
+re-ingest path in the bootstrap — `bootstrap.sh` calls
+`POST /api/data/baseline/restore` and nothing else. This keeps PR envs fast
+(~60s restore, no ~1 GB download, no ~10-min ingest) and guarantees no
+ephemeral env ever writes a per-tenant WZ/asset tree into shared MinIO.
+
+### Fail-fast on a missing baseline
+
+Before any data-affecting work, `bootstrap.sh` runs a read-only preflight
+that HEADs both the baseline dump and its sha256 sidecar in MinIO:
+
+```
+HEAD $MINIO_ENDPOINT/atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump
+HEAD $MINIO_ENDPOINT/atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump.sha256
+```
+
+- **Both 200** → the bootstrap proceeds.
+- **Either 404** → the Job exits non-zero with a single greppable line:
+  `no canonical baseline for <region> <major>.<minor> … publish one … before deploying this env`.
+  Argo CD surfaces the failed Job; the env does not come up half-seeded.
+- **MinIO unreachable (000)** after a bounded retry → a *distinct* `MinIO unreachable`
+  error (so a transient blip is never misread as "go publish a baseline").
+
+Cold-starting a brand-new version therefore requires publishing its baseline
+**first** — that is the [canonical-version-migration](canonical-version-migration.md)
+runbook (its step 4, `POST /api/data/baseline/publish`). Publishing the
+baseline is a prerequisite for any PR env on that version, not an optimization.
 
 ### Stand up MinIO (one-time)
 
-Apply the manifest from the cluster-infra repo, then wait for the Deployment:
+MinIO is where the canonical baselines live. Apply the manifest from the
+cluster-infra repo, then wait for the Deployment:
 
 ```sh
 kubectl apply -f <infra-repo>/minio.yml
 kubectl rollout status -n minio deployment/minio --timeout=120s
 ```
 
-### Create the bucket and upload `atlas.zip` (one-time per WZ revision)
-
-The `atlas-canonical` bucket is created once and re-populated whenever the
-canonical WZ revision changes (monthly at most). Anonymous-read policy on
-the bucket means the per-PR init container needs no credentials.
-
-Install the MinIO client (`mc`) first if you don't have it:
-<https://min.io/download> (or `brew install minio/stable/mc` on macOS).
-
-Run the block below as a single script — the `trap` cleans up the
-port-forward only when the shell that set it exits, so copy-pasting line
-by line into an interactive shell will leak the background process.
-
-```sh
-# Port-forward locally so `mc` can talk to the in-cluster MinIO.
-kubectl port-forward -n minio svc/minio 9000:9000 &
-PF_PID=$!
-trap 'kill $PF_PID 2>/dev/null' EXIT
-
-# Set up the mc alias using the root credentials from minio-root-creds.
-# (MINIO_USER instead of USER to avoid clobbering the shell's $USER.)
-MINIO_USER=$(kubectl -n minio get secret minio-root-creds -o jsonpath='{.data.MINIO_ROOT_USER}' | base64 -d)
-MINIO_PASS=$(kubectl -n minio get secret minio-root-creds -o jsonpath='{.data.MINIO_ROOT_PASSWORD}' | base64 -d)
-mc alias set bee "http://localhost:9000" "$MINIO_USER" "$MINIO_PASS"
-
-# First time only: create the bucket and set anonymous-read.
-mc mb --ignore-existing bee/atlas-canonical
-mc anonymous set download bee/atlas-canonical
-
-# Upload (or re-upload) the canonical zip.
-mc cp /path/to/atlas.zip bee/atlas-canonical/atlas.zip
-```
-
-If the bootstrap Job later fails with `curl: (22) The requested URL
-returned error: 404`, the bucket exists but the `atlas.zip` object is
-missing — re-run the `mc cp` step.
-
-The atlas-pr-bootstrap Job's init container `fetch-wz-canonical` runs:
-
-```sh
-curl -fsSL -o /opt/wz/atlas.zip \
-    http://minio.minio.svc.cluster.local:9000/atlas-canonical/atlas.zip
-```
-
-The main bootstrap container then reads `/opt/wz/atlas.zip` via the
-`WZ_CANONICAL` env (default unchanged).
-
-### Bootstrap mode (task-071: MinIO-backed ingest)
-
-As of task-071, `bootstrap.sh` runs WZ ingest entirely through atlas-data
-— the donor `atlas-wz-extractor` step is gone, and WZ assets land in
-MinIO (`atlas-canonical`, `atlas-wz`, `atlas-assets`, `atlas-renders`
-buckets) instead of an extracted XML tree on disk.
-
-The `BOOTSTRAP_MODE` env controls the data-ingest step:
-
-- `baseline` — call `POST /api/data/baseline/restore`. atlas-data pulls
-  a pre-built document dump from MinIO at
-  `atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump`
-  and replays it directly into Postgres. Fast (~60 s); requires the
-  operator to have published a baseline first via `POST /api/data/baseline/publish`.
-- `full` — `PATCH /api/data/wz` uploads the canonical zip to MinIO,
-  then `POST /api/data/process` invokes WZ ingest. ~10 minutes; used
-  when no baseline exists for the region/version pair.
-- `auto` (default) — probes
-  `HEAD $MINIO_ENDPOINT/atlas-canonical/baseline/regions/<region>/versions/<major>.<minor>/documents.dump.sha256`
-  and resolves to `baseline` on 200 or `full` on absence (with a WARN
-  log so operators can correlate slow PR envs with missing baselines).
-
-To force a particular mode, override `BOOTSTRAP_MODE` on the bootstrap
-Job (Helm value or `kubectl set env`).
-
-### Refreshing the canonical zip
-
-A re-upload (`mc cp ... atlas.zip`) is picked up by every subsequent PR sync;
-existing PR envs need a manual sync to pull the new zip (`argocd app sync
-atlas-pr-<N>` or label-toggle the PR).
+The `atlas-canonical` bucket has an anonymous-read policy (set by
+`atlas-minio-init`), so the bootstrap's preflight needs no credentials. The
+baselines themselves are produced and consumed by `baseline/publish` and
+`baseline/restore` (atlas-data) — see the migration runbook for the publish
+procedure. There is no `atlas.zip` to upload.
 
 ## §9.1b Cross-namespace Secret replication (Reflector)
 

@@ -23022,6 +23022,349 @@
           "comment": "MTS result mode byte (switch discriminator)"
         }
       ]
+    },
+    "CSummoned::SetDamaged": {
+      "address": "0x7cbaf6",
+      "direction": "serverbound",
+      "note": "DAMAGE_SUMMON send (CMSG op 0xB6/182). CSummoned::SetDamaged (v84 sub_7CBAF6): COutPacket(182)@0x7cbd38 + Encode4(summonId = this[43] = [obj+0xAC] = owner cid)@0x7cbd4d, then (mob-present path, v9!=0 @0x7cbd54) Encode1(attackIdx=a6)@0x7cbd74 + Encode4(damage=a2)@0x7cbd7d + Encode4(mobTemplateId)@0x7cbd9a + Encode1(a7<0 dir flag)@0x7cbdaa. (No-mob path: Encode1(0xFE)@0x7cbd5e + Encode4(damage)@0x7cbd67.) The trailing dir byte and the 0xFE no-mob branch BOTH exist on v84 (byte-identical body to v83/v87). v83/v84/v87 identity = owner cid; v95 = m_dwSummonedID. Atlas serverbound Damage decodes summonId+attackIdx(or 0xFE)+damage(+templateId+dir for the mob path). v84 reference (GMS_v84.1 IDB asm-confirmed; body byte-identical to v83).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "summonId (this[43] = [obj+0xAC] = owner cid on v84) — SetDamaged@0x7cbd4d"
+        },
+        {
+          "op": "Encode1",
+          "comment": "attackIdx (mob-present path; 0xFE sentinel on the no-mob path @0x7cbd5e) — SetDamaged@0x7cbd74; atlas skip1"
+        },
+        {
+          "op": "Encode4",
+          "comment": "damage (nDamage) — SetDamaged@0x7cbd7d (mob path) / @0x7cbd67 (no-mob path)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mobTemplateId (monsterIdFrom; mob-present path only) — SetDamaged@0x7cbd9a",
+          "guard": "mob present (attackIdx != 0xFE)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "dir<0 flag (mob-present path only) — SetDamaged@0x7cbdaa; atlas skip1. PRESENT on v84 (not v95-only).",
+          "guard": "mob present (attackIdx != 0xFE)"
+        }
+      ]
+    },
+    "CSummoned::TryDoingAttackManual": {
+      "address": "0x7c99cf",
+      "direction": "serverbound",
+      "note": "SUMMON_ATTACK send (CMSG op 0xB5/181). CSummoned::TryDoingAttackManual (v84 sub_7C99CF), send block @0x7cafcd: COutPacket(181)@0x7cafcd + Encode4(summonId=v87[43]=owner cid)@0x7cafe8 + Encode4(~drInfo0)@0x7caffc + Encode4(~drInfo1)@0x7cb010 + Encode4(updateTime)@0x7cb021 + Encode4(~drInfo2)@0x7cb035 + Encode4(~drInfo3)@0x7cb049 + Encode1(action&0x7F|bLeft<<7)@0x7cb069 + Encode4(dwKey)@0x7cb0c5 + Encode4(crc32)@0x7cb0ec + Encode1(nMobCount)@0x7cb0fd + Encode2(userX)@0x7cb144 + Encode2(userY)@0x7cb17a + Encode2(summonX)@0x7cb1a5 + Encode2(summonY)@0x7cb1d1 + per-mob loop{Encode4(mobId)@0x7cb256 + Encode4(templateId)@0x7cb2d9 + Encode1(hitAction)@0x7cb2f0 + Encode1(foreAction|left<<7)@0x7cb31a + Encode1(frameIdx)@0x7cb331 + Encode1(calcDmgStatIdx)@0x7cb356 + Encode2(curX)@0x7cb385 + Encode2(curY)@0x7cb3b5 + Encode2(hitX)@0x7cb3e4 + Encode2(hitY)@0x7cb414 + Encode2(tDelay)@0x7cb42c + Encode4(damage)@0x7cb440} + Encode4(skillCRC)@0x7cb485. CORRECTION to the prior \"no envelope until v87\" assumption: the anti-hack envelope (drInfo/updateTime/dwKey/crc32) is PRESENT at v84 — byte-for-byte the v87 layout — with NO repeatSkillPoint (per-mob loop starts immediately after summonY; v95 Encode4(repeatSkillPoint) is absent). Only v83 is lean. v83/v84/v87 identity = owner cid; v95 = m_dwSummonedID. Atlas serverbound Attack (corrected gate MajorAtLeast(84)) decodes this exact layout: summonId + anti-hack envelope + action + count + positions, then the per-target loop and skillCRC trailer. The envelope/position fields are consumed at their exact widths but not validated. Body shape depends on a runtime mob count + per-target loop a flat positional diff cannot fully model, so the cell is flat-diff-invalid (tier-1) and is verified by byte-level decode tests. v84 reference (GMS_v84.1 IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "summonId (v87[43] = owner cid on v84) — TryDoingAttackManual@0x7cafe8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[0] (anti-hack obfuscated) — @0x7caffc"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[1] (anti-hack obfuscated) — @0x7cb010"
+        },
+        {
+          "op": "Encode4",
+          "comment": "updateTime — @0x7cb021"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[2] (anti-hack obfuscated) — @0x7cb035"
+        },
+        {
+          "op": "Encode4",
+          "comment": "~drInfo[3] (anti-hack obfuscated) — @0x7cb049"
+        },
+        {
+          "op": "Encode1",
+          "comment": "action byte (action&0x7F | bLeft<<7) — @0x7cb069"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwKey (crc rand key) — @0x7cb0c5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "crc32 — @0x7cb0ec"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nMobCount — @0x7cb0fd"
+        },
+        {
+          "op": "Encode2",
+          "comment": "userX — @0x7cb144"
+        },
+        {
+          "op": "Encode2",
+          "comment": "userY — @0x7cb17a"
+        },
+        {
+          "op": "Encode2",
+          "comment": "summonX — @0x7cb1a5"
+        },
+        {
+          "op": "Encode2",
+          "comment": "summonY — @0x7cb1d1 (NO repeatSkillPoint follows on v84 — v95-only)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mob[i].mobId — @0x7cb256, loop nMobCount times",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mob[i].templateId — @0x7cb2d9",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].hitAction — @0x7cb2f0",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].foreAction|isLeft<<7 — @0x7cb31a",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].frameIdx — @0x7cb331",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode1",
+          "comment": "mob[i].calcDamageStatIdx — @0x7cb356",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].curX — @0x7cb385",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].curY — @0x7cb3b5",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].hitX — @0x7cb3e4",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].hitY — @0x7cb414",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode2",
+          "comment": "mob[i].tDelay — @0x7cb42c",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mob[i].damage — @0x7cb440",
+          "guard": "loop mobs"
+        },
+        {
+          "op": "Encode4",
+          "comment": "skillCRC — @0x7cb485"
+        }
+      ]
+    },
+    "CSummonedPool::OnAttack": {
+      "address": "0x7cc338",
+      "direction": "clientbound",
+      "note": "SUMMON_ATTACK (field op 0xB6/182). CSummonedPool::OnPacket@0x970201 reads Decode4(cid)@0x970237, op 0xB6 -> OnAttack sub_7CC338@0x9702c6 reads Decode1(charLevel)@0x7cc3be (-> [a1+184]) + Decode1(action: bit7=left @0x7cc3dc, &0x7F @0x7cc3e5)@0x7cc3cc + Decode1(count)@0x7cc3ed + per-target loop{Decode4(mobOid)@0x7cc41c; if mobOid!=0: Decode1@0x7cc42a + Decode4(damage)@0x7cc43d}. There is NO trailing byte after the loop on v84 (the v95 trailing Decode1 is a v95 addition) and NO oid (dispatcher consumes only cid; structure == v83). Atlas SummonAttack (gated oid >=95, trailing byte >=95) writes cid+0(charLevel)+direction+count+per{mobOid+6+damage} for v84. v84 reference (GMS_v84.1 IDB asm-confirmed; structure byte-identical to v83).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid — read by CSummonedPool::OnPacket@0x970237 before dispatch (pool is cid-keyed; NO oid on v84)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "charLevel (m_nCharLevel -> [a1+184]) — CSummonedPool::OnAttack@0x7cc3be; atlas writes fixed 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action byte (low7=action @0x7cc3e5, bit7=bLeft @0x7cc3dc) — OnAttack@0x7cc3cc; atlas 'direction'"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (mob count) — OnAttack@0x7cc3ed"
+        },
+        {
+          "op": "Decode4",
+          "comment": "target[i].monsterOid — OnAttack@0x7cc41c, loop count times",
+          "guard": "loop targets"
+        },
+        {
+          "op": "Decode1",
+          "comment": "target[i].byte (only when monsterOid!=0) — OnAttack@0x7cc42a; atlas writes fixed 6",
+          "guard": "loop targets (only when monsterOid!=0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "target[i].damage (only when monsterOid!=0) — OnAttack@0x7cc43d",
+          "guard": "loop targets (only when monsterOid!=0)"
+        }
+      ]
+    },
+    "CSummonedPool::OnCreated": {
+      "address": "0x97038b",
+      "direction": "clientbound",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (field op 0xB3/179). CSummonedPool::OnPacket@0x970201 dispatches op 0xB3 -> spawn (vtable+0x30 target = CSummonedPool::OnCreated sub_97038B). sub_97038B reads Decode4(cid)@0x9703ad then Decode4(skillId)@0x9703b7 + Decode1(charLevel)@0x9703c1 + Decode1(SLV)@0x9703d0 (passed to CSummoned ctor sub_7C7CC7@0x970440), then the Init blob via sub_7C83D7@0x97045a. There is NO oid on v84 (structure == v83) — only ONE int (skillId) sits between cid and the two bytes; v95 OnCreated inserts oid(i4) right after cid. Init blob (sub_7C83D7): Decode2(x)@0x7c83ee, Decode2(y)@0x7c83fb, Decode1(moveAction)@0x7c8408, Decode2(foothold)@0x7c8412, Decode1(moveAbility)@0x7c841f, Decode1(assistType)@0x7c8436, then [if GetFoothold(foothold)!=0: Decode1(enterType)@0x7c845d]. NO avatar-look byte (v95+ only). Atlas SummonSpawn (gated oid >=95, avatarLook >=95) writes cid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v84. v84 reference (GMS_v84.1 IDB asm-confirmed; structure byte-identical to v83 per summon-wire-truth.md).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid — read by sub_97038B@0x9703ad (consumed by spawn reader; pool is cid-keyed)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (nSkillID) — sub_97038B@0x9703b7; passed to CSummoned ctor sub_7C7CC7@0x970440. (NO oid on v84 — the int after cid is the skillId)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "charLevel (nCharLevel) — sub_97038B@0x9703c1; atlas writes fixed 0x0A (visual-only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "SLV skill level (nSLV) — sub_97038B@0x9703d0; atlas 'level'"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nX — CSummoned Init blob sub_7C83D7@0x7c83ee"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nY — sub_7C83D7@0x7c83fb"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMoveAction (stance) — sub_7C83D7@0x7c8408"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nCurFoothold — sub_7C83D7@0x7c8412; atlas writes fixed 0 (visual-only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nMoveAbility (movementType) — sub_7C83D7@0x7c841f"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nAssistType (!puppet attack flag) — sub_7C83D7@0x7c8436"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nEnterType (!animated flag; read only if GetFoothold(foothold)!=0) — sub_7C83D7@0x7c845d",
+          "guard": "GetFoothold(foothold) != 0"
+        }
+      ]
+    },
+    "CSummonedPool::OnHit": {
+      "address": "0x7cc984",
+      "direction": "clientbound",
+      "note": "DAMAGE_SUMMON (field op 0xB8/184 — the HIGHER of the swapped skill/damage opcodes). CSummonedPool::OnPacket@0x970201 reads Decode4(cid)@0x970237, op 0xB8 -> sub_7CC984@0x9702b0 which reads Decode1(attackIdx, signed)@0x7cc9b5 + Decode4(damage)@0x7cc9ca + if attackIdx>-2 (v5>-2 @0x7cc9cd): Decode4(mobTemplateId)@0x7cc9dc (-> GetMobTemplate sub_6938FA) + Decode1(bLeft)@0x7cc9ea. (On the v83/v87 line this address is the OnSkill slot but the BEHAVIOR is summon-damage; name is misleading — summon-wire-truth.md.) Stops at bLeft — NO dir byte (clientbound). NO oid (dispatcher consumes only cid; structure == v83). Atlas SummonDamage (writer 'SummonDamage', gated oid >=95) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for v84. v84 reference (GMS_v84.1 IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnHit -> SummonDamage writer; the DAMAGE behavior lives at sub_7CC984 on v84 (opcode-driven, not name-driven).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid — read by CSummonedPool::OnPacket@0x970237 before dispatch (pool is cid-keyed; NO oid on v84)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "attackIdx (signed) — sub_7CC984@0x7cc9b5; atlas writes fixed 12"
+        },
+        {
+          "op": "Decode4",
+          "comment": "damage (nDamage) — sub_7CC984@0x7cc9ca"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mobTemplateId (monsterIdFrom; only when attackIdx>-2) — sub_7CC984@0x7cc9dc (-> GetMobTemplate sub_6938FA)",
+          "guard": "attackIdx > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bLeft (only when attackIdx>-2) — sub_7CC984@0x7cc9ea; atlas writes fixed 0",
+          "guard": "attackIdx > -2"
+        }
+      ]
+    },
+    "CSummonedPool::OnMove": {
+      "address": "0x7cc317",
+      "direction": "clientbound",
+      "note": "MOVE_SUMMON (field op 0xB5/181). CSummonedPool::OnPacket@0x970201 reads Decode4(cid)@0x970237, pool-lookup by cid, op 0xB5 -> OnMove sub_7CC317@0x9702d1 which calls CMovePath__OnMovePacket@0x6a203f (the movement blob; startX/startY are its first 4 bytes). NO oid on v84 (the v95+ oid is absent; dispatcher consumes only the leading cid; structure == v83). Atlas SummonMove (gated oid >=95) writes cid+startX+startY+rawMovement for v84. v84 reference (GMS_v84.1 IDB asm-confirmed; structure byte-identical to v83).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid — read by CSummonedPool::OnPacket@0x970237 before dispatch (pool is cid-keyed; NO oid on v84)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "startX — CMovePath__OnMovePacket movement-blob head (CSummonedPool::OnMove sub_7CC317@0x7cc317 -> CMovePath__OnMovePacket@0x6a203f)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "startY — CMovePath__OnMovePacket movement-blob head"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rawMovement blob — CMovePath__OnMovePacket@0x6a203f (variable-length movement path)"
+        }
+      ]
+    },
+    "CSummonedPool::OnRemoved": {
+      "address": "0x7cbfa1",
+      "direction": "clientbound",
+      "note": "REMOVE_SPECIAL_MAPOBJECT (field op 0xB4/180). CSummonedPool::OnPacket@0x970201 reads Decode4(cid)@0x970237, pool-lookup by cid (sub_97B9D1), then op 0xB4 -> remove (sub_7CBFA1@0x97026d). sub_7CBFA1 consumes a single leading Decode1(v3)@0x7cbfb6 = leave/animated flag (0/3/4/2 branches: 4=animated leave, 1=immediate). v84 keys off the dispatcher-consumed cid and reads NO oid (the v95+ oid is absent; structure == v83). Atlas SummonRemove (gated oid >=95) writes cid + byte(4|1) for v84. v84 reference (GMS_v84.1 IDB asm-confirmed; structure byte-identical to v83).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid — read by CSummonedPool::OnPacket@0x970237 before dispatch (pool is cid-keyed; NO oid on v84)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "animated/leave flag (4=animated leave, 1=immediate) — consumed in the remove path sub_7CBFA1@0x7cbfb6; atlas writes 4 or 1"
+        }
+      ]
+    },
+    "CSummonedPool::OnSkill": {
+      "address": "0x7cc920",
+      "direction": "clientbound",
+      "note": "SUMMON_SKILL (field op 0xB7/183 — the LOWER of the swapped skill/damage opcodes). CSummonedPool::OnPacket@0x970201 reads Decode4(cid)@0x970237, op 0xB7 -> sub_7CC920@0x9702bb which reads a single Decode1(v5)@0x7cc96f, masks &0x7F @0x7cc97a, and passes it to sub_7CBAD3 (SetAttackAction) to replay the summon's skill animation. (On the v83/v87 line this address is the OnHit slot but the BEHAVIOR is summon-skill; name is misleading — summon-wire-truth.md.) Just ONE byte: NO summonSkillId int, NO oid (structure == v83). Atlas SummonSkill (writer 'SummonSkill', gated oid >=95) writes cid + byte(newStance) for v84. v84 reference (GMS_v84.1 IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnSkill -> SummonSkill writer; the SKILL behavior lives at sub_7CC920 on v84 (opcode-driven, not name-driven).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "cid — read by CSummonedPool::OnPacket@0x970237 before dispatch (pool is cid-keyed; NO oid on v84)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "action/newStance (v & 0x7F -> SetAttackAction sub_7CBAD3) — sub_7CC920@0x7cc96f (SKILL behavior). NO summonSkillId int on the wire."
+        }
+      ]
+    },
+    "CVecCtrlSummoned::EndUpdateActive": {
+      "address": "0xa0fd89",
+      "direction": "serverbound",
+      "note": "MOVE_SUMMON send (CMSG op 0xB4/180). CVecCtrlSummoned::EndUpdateActive (v84 CVecCtrl__EndUpdateActive_send_0xB4 @0xa0fd89): COutPacket(180)@0xa0fdcb + Encode4(summonId = this[146] = ctrl[0x248] = owner cid)@0xa0fddd + CMovePath__Flush movement blob (@0xa0fdec; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). v83/v84/v87 identity = owner cid (no oid concept; pool is cid-keyed); v95 = m_dwSummonedID. Atlas serverbound Move Encode writes summonId + rawMovement (the opaque blob, startX/startY being its first 4 bytes), modeled as Encode4 + EncodeBuf to match the opaque rebroadcast shape. Byte-identical to v83 (only opcode + identity semantics differ). v84 reference (GMS_v84.1 IDB asm-confirmed).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "summonId (this[146] = ctrl[0x248] = owner cid on v84) — CVecCtrlSummoned::EndUpdateActive@0xa0fddd"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "movement blob — CMovePath__Flush@0xa0fdec (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
+        }
+      ]
     }
   }
 }

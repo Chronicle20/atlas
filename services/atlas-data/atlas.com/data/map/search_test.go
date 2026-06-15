@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"atlas-data/canonical"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -114,10 +116,9 @@ func TestSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
 
 	tn := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tn)
-	_ = tn
 
-	seedIndex(t, db, ctx, uuid.Nil, 100, "GlobalMap", "GlobalStreet")
-	seedIndex(t, db, ctx, uuid.Nil, 101, "ExtraMap", "Road")
+	seedIndex(t, db, ctx, canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion()), 100, "GlobalMap", "GlobalStreet")
+	seedIndex(t, db, ctx, canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion()), 101, "ExtraMap", "Road")
 
 	res, err := SearchByQuery(l, db)(ctx)("map", 50)
 	require.NoError(t, err)

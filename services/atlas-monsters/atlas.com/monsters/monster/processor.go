@@ -213,7 +213,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	//
 	// StartControl as a public API is preserved for genuine control
 	// transfers (controller leaves, DPS-leader switch, FindNextController).
-	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
 	if err == nil {
 		p.l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 		m, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid)
@@ -243,9 +243,29 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	return m, nil
 }
 
-// getControllerCandidate finds the best character to control monsters in a field
-func (p *ProcessorImpl) getControllerCandidate(f field.Model, idp model.Provider[[]uint32]) (uint32, error) {
+// getControllerCandidate finds the best character to control monsters in a field.
+// monsterX/monsterY are the controlled monster's position; if a player's puppet
+// sits within vicinity of it (Cosmic Monster.java getNextControllerCandidate /
+// isPuppetInVicinity, distanceSq < 177777), that puppet's owner is preferred as
+// the controller over the default least-controlled candidate. When no in-vicinity
+// puppet exists the selection falls back to the unchanged least-loaded pick.
+func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, monsterY int16, idp model.Provider[[]uint32]) (uint32, error) {
 	p.l.Debugf("Identifying controller candidate for monsters in field [%s].", f.Id())
+
+	// Puppet vicinity bias: prefer the owner of an in-vicinity puppet, but only
+	// when that owner is actually a candidate in the field's character pool.
+	if pr := GetPuppetRegistry(); pr != nil {
+		if owner, ok := pr.VicinityOwner(p.ctx, p.t, f, monsterX, monsterY); ok {
+			if ids, ierr := idp(); ierr == nil {
+				for _, id := range ids {
+					if id == owner {
+						p.l.Debugf("Controller candidate biased to puppet owner [%d] in field [%s].", owner, f.Id())
+						return owner, nil
+					}
+				}
+			}
+		}
+	}
 
 	controlCounts, err := model.CollectToMap(idp, characterIdKey, zeroValue)()
 	if err != nil {
@@ -276,7 +296,7 @@ func (p *ProcessorImpl) getControllerCandidate(f field.Model, idp model.Provider
 // FindNextController returns an operator that finds and assigns the next controller for a monster
 func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.Operator[Model] {
 	return func(m Model) error {
-		cid, err := p.getControllerCandidate(m.Field(), idp)
+		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
 		if err != nil {
 			return err
 		}

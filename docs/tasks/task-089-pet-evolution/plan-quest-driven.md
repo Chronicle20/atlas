@@ -279,9 +279,19 @@ Ensure `Build()` copies `spawnedPets: b.spawnedPets`.
 Run: `cd services/atlas-query-aggregator/atlas.com/query-aggregator && GOWORK=off go test ./validation/ -run TestValidationContext_MaxPetClosenessForTemplates`
 Expected: PASS.
 
-- [ ] **Step 5: Populate spawnedPets at the fetch site (processor.go)**
+- [ ] **Step 5: Extend the pet `Model` to carry templateId + closeness**
 
-The block guarded by `if reqs.Pets && p.petCountProvider != nil` sets only the count. Add a `petsProvider func(characterId uint32) model.Provider[[]pet.Model]` field wired from `pet.NewProcessor(...).GetPets` (mirror how `petCountProvider` is constructed in the processor constructor), then replace the block body:
+**VERIFIED GAP (`pet/model.go:4-7`, `pet/rest.go:46-47`):** the `Model` holds only `id` + `slot`; `Extract` **drops** templateId/closeness (present on `RestModel` at `rest.go:12,15`). So `GetPets()` Models cannot supply closeness today — extend the Model. In `pet/model.go` add fields `templateId uint32`, `closeness uint16`, accessors `TemplateId()`/`Closeness()`, and widen:
+```go
+func NewModel(id uint32, slot int8, templateId uint32, closeness uint16) Model {
+	return Model{id: id, slot: slot, templateId: templateId, closeness: closeness}
+}
+```
+Update the 4 `NewModel` callers: `pet/rest.go:47` → `NewModel(rm.Id, rm.Slot, rm.TemplateId, rm.Closeness)`; tests `pet/processor_test.go:17,18,19,159` → add `, 0, 0` (or representative values). Use the existing `IsSpawned()` (`model.go:25`).
+
+- [ ] **Step 6: Populate spawnedPets at the fetch site (processor.go)**
+
+**VERIFIED (`processor.go:692`, `:237-239`, `:35,49`):** the block `if reqs.Pets && p.petCountProvider != nil` calls `petCountProvider` (wired from `p.petProcessor.GetSpawnedPetCount`). Add a `petsProvider func(uint32) model.Provider[[]pet.Model]` wired from `p.petProcessor.GetPets`, then replace the block body:
 ```go
 		if reqs.Pets && p.petsProvider != nil {
 			pets, err := p.petsProvider(characterId)()
@@ -291,7 +301,7 @@ The block guarded by `if reqs.Pets && p.petCountProvider != nil` sets only the c
 				detail := make([]SpawnedPet, 0, len(pets))
 				count := 0
 				for _, pt := range pets {
-					if pt.Slot() >= 0 { // spawned
+					if pt.IsSpawned() {
 						count++
 						detail = append(detail, SpawnedPet{TemplateId: pt.TemplateId(), Closeness: pt.Closeness()})
 					}
@@ -300,14 +310,17 @@ The block guarded by `if reqs.Pets && p.petCountProvider != nil` sets only the c
 			}
 		}
 ```
-Confirm `pet.Model` accessors `Slot()`/`TemplateId()`/`Closeness()` against `query-aggregator/pet/model.go`; adjust to match.
 
-- [ ] **Step 6: Set `reqs.Pets` for petTameness**
+- [ ] **Step 7: Set `reqs.Pets` for petTameness**
 
-Find where `reqs.Pets` is computed (search `reqs.` / `Pets` in `processor.go`) and add `PetTamenessCondition` to the condition types that set `reqs.Pets = true` (alongside `PetCountCondition`). Show the exact edit after reading that analysis.
+**VERIFIED (`processor.go:192-193`, unioned at `:84`):** `requirementsFor(conditionType)` returns `ContextRequirements{Pets: true}` for `PetCountCondition`. Extend that case:
+```go
+	case PetCountCondition, PetTamenessCondition:
+		return ContextRequirements{Pets: true}
+```
 
-- [ ] **Step 7: Build + tests** — `cd services/atlas-query-aggregator/atlas.com/query-aggregator && GOWORK=off go build ./... && GOWORK=off go test -race ./validation/...` → PASS.
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Build + tests** — `cd services/atlas-query-aggregator/atlas.com/query-aggregator && GOWORK=off go build ./... && GOWORK=off go test -race ./...` → PASS (includes updated `pet/processor_test.go`).
+- [ ] **Step 9: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -397,12 +410,15 @@ git commit -m "feat(query-aggregator): evaluate petTameness condition"
 
 - [ ] **Step 1: Write the failing test**
 
+**VERIFIED (`processor.go:55-56`):** `buildStartConditions(questDef dataquest.RestModel)` with `req := questDef.StartRequirements`. The package has **no fixture helper** — tests build `dataquest.RestModel` inline (`processor_test.go:18-24`). Match that:
 ```go
 func TestBuildStartConditions_PetTameness(t *testing.T) {
-	qd := questDefWithRequirements(RequirementsRestModel{
-		Pet:            []uint32{5000029},
-		PetTamenessMin: 1642,
-	})
+	qd := dataquest.RestModel{
+		StartRequirements: dataquest.RequirementsRestModel{
+			Pet:            []uint32{5000029},
+			PetTamenessMin: 1642,
+		},
+	}
 	conds := buildStartConditions(qd)
 
 	var found *ConditionInput
@@ -422,7 +438,7 @@ func TestBuildStartConditions_PetTameness(t *testing.T) {
 	}
 }
 ```
-(Read `processor_test.go` for the real fixture helper + `RequirementsRestModel` field names — `Pet`/`PetTamenessMin` per `data/quest/rest.go:62-63` — and match exactly.)
+(Field names `Pet []uint32` / `PetTamenessMin int16` VERIFIED at `data/quest/rest.go:62-63`; the wrapping `dataquest.RestModel{StartRequirements: ...}` matches the inline pattern at `processor_test.go:18-24`.)
 
 - [ ] **Step 2: Run it — expect failure**
 
@@ -485,13 +501,15 @@ direct-emit pattern: `command/monster/commands.go` `MobSpawnCommandProducer`.
 
 - [ ] **Step 1: Pet lookup in atlas-messages**
 
-Add a minimal `pet` package (processor + REST client) that returns a character's **spawned** pet id(s).
-Mirror query-aggregator's `pet` package (it calls atlas-pets and exposes `Slot()`/`TemplateId()`/`Closeness()`):
+**VERIFIED:** atlas-messages has pet *chat* handling (`message/processor.go` `HandlePet`) but **no pet
+data lookup** — add one. Mirror query-aggregator's `pet` REST client: the route is
+`GET {PETS}/characters/{characterId}/pets` (`query-aggregator/pet/requests.go:9-20`,
+`ByCharacterId = "/characters/%d/" + "pets"`), returning a list with `Id`, `Slot` (spawned = slot ≥ 0).
+Expose:
 ```go
 // GetSpawnedPetIds returns the ids of the character's spawned pets (slot >= 0).
 func (p *ProcessorImpl) GetSpawnedPetIds(characterId uint32) ([]uint32, error)
 ```
-Confirm the atlas-pets list route + owner filter against `services/atlas-query-aggregator/.../pet/requests.go`.
 
 - [ ] **Step 2: Pet command producer in atlas-messages**
 
@@ -617,6 +635,19 @@ Expected: all targets build (catches missing `COPY libs/...` for atlas-saga); gu
 
 ## Self-Review
 
-- **Spec coverage:** §4.1 → Phase B (B1–B4); §4.2 → Phase C (C2–C4); §4.3 (drop chooser) → Phase A (A2–A3) + C2 step 2 (enumerate-based target); §4.4 backout → Phase A; §4.5 retained → untouched; §2/§5 sourcing → C1. 8184 → C5. GM test command (user request) → B5–B6. Open risks (summoned-pet semantics, 8189 repeatability) → confirm-steps in C4 + B-tests.
-- **Placeholder scan:** the Cosmic-dependent dialogue in Phase C is genuinely external (not a pre-fillable placeholder) — flagged as a hard dependency (C1) and gated. All Phase A/B code steps carry real code. The GM-command framework specifics (B6) and pet-processor closeness-emitter reuse (B5) are "locate the existing pattern" steps because those frameworks weren't fully mapped during design — the executor reads them; the command/body/processor signatures are fully specified.
-- **Type consistency:** `PetTamenessCondition` is identical across `libs/atlas-saga` (value `"petTameness"`), query-aggregator (`ConditionType` alias), atlas-quest (wire string). `SpawnedPet{TemplateId, Closeness}`, `SetSpawnedPets`, `MaxPetClosenessForTemplates` consistent B2↔B3. `ConditionInput.Values` (atlas-quest) ↔ `Condition.values` (query-aggregator) carry the pet-id set; `Value` carries min closeness. GM command (B5) reuses atlas-pets `AWARD_CLOSENESS` (additive) via a new atlas-messages producer + pet lookup; no atlas-pets change.
+- **Spec coverage:** §4.1 → Phase B (B1–B4); §4.2 → Phase C (C2–C4); §4.3 (drop chooser) → Phase A (A2–A3) + C2 step 2 (enumerate-based target); §4.4 backout → Phase A; §4.5 retained → untouched; §2/§5 sourcing → C1. 8184 → C5. GM test command (user request) → B5. Open risks (summoned-pet semantics, 8189 repeatability) → confirm-steps in C4 + B-tests.
+- **Placeholder scan:** the Cosmic-dependent dialogue in Phase C is genuinely external (not a pre-fillable placeholder) — flagged as a hard dependency (C1) and gated. All Phase A/B code steps carry real code.
+- **Type consistency:** `PetTamenessCondition` is identical across `libs/atlas-saga` (value `"petTameness"`), query-aggregator (`ConditionType` alias of `sharedsaga`), atlas-quest (local wire string). `SpawnedPet{TemplateId, Closeness}`, `SetSpawnedPets`, `MaxPetClosenessForTemplates` consistent B2↔B3. atlas-quest `ConditionInput.Values` (local struct, `model.go:6-13`) ↔ query-aggregator `Condition.values` (`model.go:94`) carry the pet-id set; `Value` carries min closeness. GM command (B5) reuses atlas-pets `AWARD_CLOSENESS` (additive) via a new atlas-messages producer + pet lookup; no atlas-pets change.
+
+## Verification Status (file:line pass, 2026-06-15)
+
+Three Explore agents verified every concrete claim against source. Result:
+
+**Confirmed (grounded):** backout symbols (`model.go:47/65/364/441/464/480`, `rest.go:188/353/364/376/663`, `processor.go:359/512/520/530/544`); `splitCSV` is pickFromContext-only (safe to delete); the 3 pickfromcontext test files exist; conversation ops `evolve_pet`(2528, `petId`, ctx-subst), `enumerate_evolvable_pets`(802, the 3 context keys), `destroy_item`(1512, `itemId`/`quantity`), `complete_quest`(1801, `questId`), `start_quest`(1864, `questId`); **PetEvolution saga refund** (`saga-orchestrator/saga/compensator.go:1044-1140` — DestroyAsset→CreateItem, AwardMesos→negative refund); query-aggregator `petCount`(context.go:37), builder copies (483/505/577 + With* 335/342/371/394/417/440), `Condition.values`(model.go:94), `Evaluate`(385), known-types list(128), `sharedsaga` import(16), `requirementsFor`→Pets(192), fetch site(692), `GetPets`(processor.go:32); atlas-quest const block(model.go:16-25), `ConditionInput.Values`(6-13), `buildStart/EndConditions`(55/221) with `req := questDef.StartRequirements`(56), `Pet`/`PetTamenessMin`(rest.go:62-63); atlas-messages `AwardMesoCommandProducer`(character/commands.go:258), `c.Gm()`(63), me/map/name(69-76), registry(main.go:42-62), monster producer pattern(monster/commands.go:254, kafka/message/monster/kafka.go:14/121), pet route(query-aggregator/pet/requests.go:9-20).
+
+**Corrected after verification (were invented/wrong):**
+1. query-aggregator pet `Model` stores only `id`+`slot` and `Extract` drops templateId/closeness (`pet/model.go:4-7`, `rest.go:46-47`) — B2 Step 5 now **extends the Model** (the old code used non-existent `TemplateId()`/`Closeness()` accessors and would not compile).
+2. B4 test used an invented `questDefWithRequirements` helper — replaced with the real inline `dataquest.RestModel{StartRequirements: ...}` pattern (`processor_test.go:18-24`).
+3. B5 claimed atlas-messages had no pet awareness — it has pet *chat* handling but no pet *data* lookup; corrected to add the data lookup with the verified route.
+
+**Remaining assumptions (verify in execution, not pre-confirmable):** the Cosmic `.js` dialogue/flow (C1 — external, not in repo); 8189 repeatability semantics (C4 confirm-step); whether the `petTameness` check should target summoned-only vs owned (design open question — plan assumes summoned, slot ≥ 0).

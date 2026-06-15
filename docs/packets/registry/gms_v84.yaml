@@ -1943,10 +1943,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: NPC_TALK
   direction: clientbound
-  opcode: 304
+  opcode: 311
   fname: CScriptMan::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7767284
+  note: 'task-100 v84 IDB: CScriptMan::OnPacket @0x7684f4 checks nType==0x137 (311) -> CScriptMan::OnScriptMessage; also routed by CField::OnPacket master dispatcher (0x53d5a7) header==311 -> CScriptMan::OnPacket. v95 counterpart routes NPC_TALK at 363 (?OnPacket@CScriptMan@@ @0x6de360, nType==363). Prior csv-import 304 was the stale v83 copy.'
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 312
@@ -1961,16 +1963,20 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: ADMIN_SHOP_MESSAGE
   direction: clientbound
-  opcode: 307
+  opcode: 314
   fname: CAdminShopDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4343979
+  note: 'task-100 v84 IDB: CAdminShopDlg::OnPacket @0x4248ab case a1==0x13A (314) is the message/error path (StringPool result strings, COutPacket(68)); v95 counterpart @0x4310f0 case 0x16E (366) is byte-for-byte the same message path. Prior csv-import 307 was the stale v83 copy.'
 - op: ADMIN_SHOP
   direction: clientbound
-  opcode: 308
+  opcode: 315
   fname: CAdminShopDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4343979
+  note: 'task-100 v84 IDB: CAdminShopDlg::OnPacket @0x4248ab case a1==315 (0x13B) is the SetAdminShopDlg decode path (Decode4 npcId, Decode2 count -> sub_425239); v95 counterpart @0x4310f0 case 367 routes to SetAdminShopDlg. Prior csv-import 308 was the stale v83 copy.'
 - op: STORAGE
   direction: clientbound
   opcode: 316
@@ -1979,34 +1985,44 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: FREDRICK_MESSAGE
   direction: clientbound
-  opcode: 310
+  opcode: 317
   fname: CStoreBankDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8126919
+  note: 'task-100 v84 IDB: CStoreBankDlg::OnPacket @0x7bfdc7 case a1==0x13D (317) is the message path (Decode1 sub-op 0x1E.., StringPool result strings, CUtilDlg::Notice); v95 counterpart @0x745c60 case 369 is the same message path. Prior csv-import 310 was the stale v83 copy.'
 - op: FREDRICK
   direction: clientbound
-  opcode: 311
+  opcode: 318
   fname: CStoreBankDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8126919
+  note: 'task-100 v84 IDB: CStoreBankDlg::OnPacket @0x7bfdc7 case a1==318 (0x13E) is the data path (SetStoreBankDlg/SendGetAllRequest, Decode1 sub-op #..&); v95 counterpart @0x745c60 case 370 routes to SetStoreBankDlg/SendGetAllRequest. Prior csv-import 311 was the stale v83 copy (and collided with the new NPC_TALK@311).'
 - op: RPS_GAME
   direction: clientbound
-  opcode: 312
+  opcode: 319
   fname: CRPSGameDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7740693
+  note: 'task-100 v84 IDB: CField::OnPacket master dispatcher (0x53d5a7) case 0x13F (319) -> CRPSGameDlg::OnPacket (sub @0x761d15, named CRPSGameDlg__OnPacket_recv_0x13F). Prior csv-import 312 was the stale v83 copy.'
 - op: MESSENGER
   direction: clientbound
-  opcode: 313
+  opcode: 320
   fname: CUIMessenger::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8899032
+  note: 'task-100 v84 IDB: CField::OnPacket master dispatcher (0x53d5a7) case 0x140 (320) -> CUIMessenger::OnPacket @0x87cbd8 (Decode1 sub-op fan-out 0..8). Prior csv-import 313 was the stale v83 copy.'
 - op: PLAYER_INTERACTION
   direction: clientbound
-  opcode: 314
+  opcode: 321
   fname: CMiniRoomBaseDlg::OnPacketBase
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6766005
+  note: 'task-100 v84 IDB: CField::OnPacket master dispatcher (0x53d5a7) explicit case 0x141 (321) -> CMiniRoomBaseDlg::OnPacketBase @0x673db5. Prior csv-import 314 was the stale v83 copy (cascade: collided with the corrected ADMIN_SHOP_MESSAGE@314).'
 - op: TOURNAMENT
   direction: clientbound
   opcode: 322
@@ -2039,28 +2055,36 @@
   note: live-verified v84 opcode (task-096). The v83-inherited 319 was in the ≥0x3F cumulative-shift range and was UNVERIFIED; corrected to the live-observed v84 value.
 - op: WEDDING_PROGRESS
   direction: clientbound
-  opcode: 320
+  opcode: 327
   fname: CField_Wedding::OnWeddingProgress
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5837286
+  note: 'task-100 v84 IDB (cascade from dialog reshift): CField_Wedding::OnPacket dispatcher sub_5911A6 case a2==327 -> CField_Wedding::OnWeddingProgress @0x5911e6; v95 CField_Wedding::OnPacket @0x564940 case 0x17B -> OnWeddingProgress (v84=v95-52). Prior csv-import 320 was the stale v83 copy (collided with corrected MESSENGER@320).'
 - op: WEDDING_CEREMONY_END
   direction: clientbound
-  opcode: 321
+  opcode: 328
   fname: CField_Wedding::OnWeddingCeremonyEnd
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5838834
+  note: 'task-100 v84 IDB (cascade from dialog reshift): CField_Wedding::OnPacket dispatcher sub_5911A6 case a2==328 -> CField_Wedding::OnWeddingCeremonyEnd @0x5917f2; v95 CField_Wedding::OnPacket @0x564940 case 0x17C -> OnWeddingCeremonyEnd. Prior csv-import 321 was the stale v83 copy (collided with corrected PLAYER_INTERACTION@321).'
 - op: PARCEL
   direction: clientbound
-  opcode: 322
+  opcode: 329
   fname: CParcelDlg::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7396255
+  note: 'task-100 v84 IDB: CField::OnPacket master dispatcher (0x53d5a7) case 0x149 (329) -> CParcelDlg::OnPacket @0x70db9f (named CParcelDlg__OnPacket_recv_0x149; Decode1 sub-op switch 8/23/24/25/26/27). Prior csv-import 322 was the stale v83 copy.'
 - op: CHARGE_PARAM_RESULT
   direction: clientbound
-  opcode: 323
+  opcode: 330
   fname: CCashShop::OnChargeParamResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4702248
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 330 (0x14A) -> CCashShop__OnChargeParamResult_recv_0x14A @0x47c028; v95 CCashShop::OnPacket @0x4997e0 case 0x17E -> OnChargeParamResult (v84=v95-52, the cashshop family shift). Prior csv-import 323 was the stale v83 copy.'
 - op: QUERY_CASH_RESULT
   direction: clientbound
   opcode: 331
@@ -2075,58 +2099,74 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CASHSHOP_PURCHASE_EXP_CHANGED
   direction: clientbound
-  opcode: 326
+  opcode: 333
   fname: CCashShop::OnPurchaseExpChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4702114
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 333 (0x14D) -> CCashShop__OnPurchaseExpChanged_recv_0x14D @0x47c1a2 (size 0x1a == v95 OnPurchaseExpChanged size 0x1a, exact body match); v95 CCashShop::OnPacket case 0x181 -> OnPurchaseExpChanged. Prior csv-import 326 was the stale v83 copy.'
 - op: CASHSHOP_GIFT_INFO_RESULT
   direction: clientbound
-  opcode: 327
+  opcode: 334
   fname: CCashShop::OnGiftMateInfoResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4658958
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 334 (0x14E) -> CCashShop__OnGiftMateInfoResult_recv_0x14E @0x47170e; v95 CCashShop::OnPacket case 0x182 -> OnGiftMateInfoResult. Prior csv-import 327 was the stale v83 copy.'
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
-  opcode: 328
+  opcode: 335
   fname: CCashShop::OnCheckDuplicatedIDResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4713608
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 335 (0x14F) -> CCashShop__OnCheckDuplicatedIDResult_recv_0x14F @0x47ec88; v95 CCashShop::OnPacket case 0x183 -> OnCheckDuplicatedIDResult. Prior csv-import 328 was the stale v83 copy.'
 - op: CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT
   direction: clientbound
-  opcode: 329
+  opcode: 336
   fname: CCashShop::OnCheckNameChangePossibleResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4713812
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 336 (0x150) -> CCashShop__OnCheckNameChangePossibleResult_recv_0x150 @0x47ed54; v95 CCashShop::OnPacket case 0x184 -> OnCheckNameChangePossibleResult. Prior csv-import 329 was the stale v83 copy.'
 - op: CASHSHOP_REGISTER_NEW_CHARACTER_RESULT
   direction: clientbound
-  opcode: 330
+  opcode: 337
   fname: ""
   provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'FLAG version-absent: task-100 found NO case 337 (0x151) in the v84 CCashShop sub-dispatcher sub_47BF59, and NO case 0x185 in the v95 CCashShop::OnPacket @0x4997e0 — this op is not dispatched by the client in either build (it sits between CHECK_NAME_CHANGE_POSSIBLE and CHECK_TRANSFER, slot 337/0x185). Opcode set to its table slot 337 to clear the collision with the corrected CHARGE_PARAM_RESULT@330; fname left empty since no client handler exists. Not ida-discovered — honest table-slot placement, no handler to body-verify.'
 - op: CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT
   direction: clientbound
-  opcode: 331
+  opcode: 338
   fname: CCashShop::OnCheckTransferWorldPossibleResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4714297
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 338 (0x152) -> CCashShop__OnCheckTransferWorldPossibleResult_recv_0x152 @0x47ef39; v95 CCashShop::OnPacket case 0x186 -> OnCheckTransferWorldPossibleResult. Prior csv-import 331 was the stale v83 copy.'
 - op: CASHSHOP_GACHAPON_STAMP_RESULT
   direction: clientbound
-  opcode: 332
+  opcode: 339
   fname: CCashShop::OnCashShopGachaponStampResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4717454
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 case 339 (0x153) -> CCashShop__OnCashShopGachaponStampResult_recv_0x153 @0x47fb8e; v95 CCashShop::OnPacket case 0x187 -> OnCashShopGachaponStampResult. Prior csv-import 332 was the stale v83 copy.'
 - op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
   direction: clientbound
-  opcode: 333
+  opcode: 340
   fname: CCashShop::OnCashItemGachaponResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4716796
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 cases 340,341 (0x154,0x155) both -> CCashShop__OnCashItemGachaponResult_recv_0x154 @0x47f8fc; v95 CCashShop::OnPacket cases 0x188,0x189 both -> OnCashItemGachaponResult. This op is the lower of the pair (340). Prior csv-import 333 was the stale v83 copy.'
 - op: CASHSHOP_CASH_GACHAPON_OPEN_RESULT
   direction: clientbound
-  opcode: 334
+  opcode: 341
   fname: CCashShop::OnCashItemGachaponResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4716796
+  note: 'task-100 v84 IDB: CCashShop sub-dispatcher sub_47BF59 cases 340,341 (0x154,0x155) both -> CCashShop__OnCashItemGachaponResult_recv_0x154 @0x47f8fc; v95 CCashShop::OnPacket cases 0x188,0x189 both -> OnCashItemGachaponResult. This op is the upper of the pair (341). Prior csv-import 334 was the stale v83 copy.'
 - op: KEYMAP
   direction: clientbound
   opcode: 344
@@ -2147,22 +2187,28 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: SEND_TV
   direction: clientbound
-  opcode: 341
+  opcode: 351
   fname: CMapleTVMan::OnSetMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6605803
+  note: 'task-100 v84 IDB (cascade from cashshop reshift): CMapleTVMan dispatcher sub_64C7A4 (routed by CField::OnPacket master 0x53d5a7 range 350-355) case 351 -> sub_64C7EB @0x64C7EB (decodes AvatarLook + 7 strings = the TV message, =CMapleTVMan::OnSetMessage); v95 CMapleTVMan::OnPacket @0x60fe10 case 0x195 -> OnSetMessage (v84=v95-54). Prior csv-import 341 was the stale v83 copy (collided with corrected CASHSHOP_CASH_GACHAPON_OPEN_RESULT@341).'
 - op: REMOVE_TV
   direction: clientbound
-  opcode: 342
+  opcode: 352
   fname: CMapleTVMan::OnClearMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6605783
+  note: 'task-100 v84 IDB (cascade): CMapleTVMan dispatcher sub_64C7A4 case 352 -> sub_64C7D7 @0x64C7D7 (zeroes the TV message fields = CMapleTVMan::OnClearMessage); v95 CMapleTVMan::OnPacket case 0x196 -> OnClearMessage. Prior csv-import 342 was the stale v83 copy.'
 - op: ENABLE_TV
   direction: clientbound
-  opcode: 343
+  opcode: 353
   fname: CMapleTVMan::OnSendMessageResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6605770
+  note: 'task-100 v84 IDB (cascade): CMapleTVMan dispatcher sub_64C7A4 case 353 -> sub_64C9CA @0x64C9CA (decodes result code -> StringPool result message = CMapleTVMan::OnSendMessageResult); v95 CMapleTVMan::OnPacket case 0x197 -> OnSendMessageResult. Prior csv-import 343 was the stale v83 copy.'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 347

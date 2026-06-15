@@ -403,49 +403,49 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | HORNTAIL_CAVE | CField::OnHontailTimer | field/clientbound/FieldHorntailCave (T1) | 0x12E | ✅ | 0x135 | ✅ | 0x13F | ✅ | 0x169 | ✅ | 0x145 | ✅ |
 | ZAKUM_SHRINE | CField::OnZakumTimer | field/clientbound/FieldZakumShrine (T1) | 0x12F | ✅ | 0x136 | ✅ | 0x140 | ✅ | 0x16A | ✅ | 0x148 | ✅ |
 | MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ✅ | 0x110 | ✅ |
-| NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x130 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
+| NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x137 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | MOB_ESCORT_STOP | CMob::OnEscortStopEndPermmision | monster/clientbound/MonsterMobEscortStop (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x131 | ✅ |  | ⬜ |
 | OPEN_NPC_SHOP | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
 | CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | ✅ | 0x139 | ✅ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
 | MOB_ESCORT_STOP_SAY | CMob::OnEscortStopSay | monster/clientbound/MonsterMobEscortStopSay (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ✅ | 0x112 | ✅ |
-| ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x133 | ❌ | 0x133 | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
+| ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x133 | ❌ | 0x13A | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore | monster/clientbound/MonsterMobEscortReturnBefore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ✅ | 0x113 | ✅ |
-| ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x134 | ❌ | 0x134 | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
+| ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | MOB_NEXT_ATTACK | CMob::OnNextAttack | monster/clientbound/MonsterMobNextAttack (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x134 | ✅ |  | ⬜ |
 | STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageShow (T1) | 0x135 | ❌ | 0x13C | ❌ | 0x146 | ✅ | 0x170 | ❌ | 0x14E | ❌ |
-| FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x136 | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
-| FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x137 | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
-| RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x138 | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x139 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x13A | ❌ | 0x14B | ❌ | 0x175 | ✅ | 0x153 | ❌ |
+| FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
+| FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
+| RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x141 | ❌ | 0x14B | ❌ | 0x175 | ✅ | 0x153 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x177 | ✅ | 0x155 | ✅ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x178 | ✅ | 0x156 | ✅ |
 | TOURNAMENT_UEW | CField_Tournament::OnTournamentUEW | field/clientbound/FieldTournamentUew (T1) | 0x13E | ✅ | 0x145 | ✅ | 0x14F | ✅ | 0x179 | ✅ | 0x157 | ✅ |
 | TOURNAMENT_CHARACTERS | CField_Tournament::OnPacket | field/clientbound/FieldTournamentCharacters (T1) | 0x13F | ✅ | 0x146 | ✅ | 0x150 | ✅ | 0x17A | ✅ | 0x158 | ✅ |
-| WEDDING_PROGRESS | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x140 | ✅ | 0x140 | ✅ | 0x151 | ✅ | 0x17B | ✅ | 0x159 | ✅ |
-| WEDDING_CEREMONY_END | CField_Wedding::OnWeddingCeremonyEnd | field/clientbound/FieldWeddingCeremonyEnd (T1) | 0x141 | ✅ | 0x141 | ✅ | 0x152 | ✅ | 0x17C | ✅ | 0x15A | ✅ |
-| PARCEL | CParcelDlg::OnPacket |  | 0x142 | ❌ | 0x142 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
-| CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  | 0x143 | ❌ | 0x143 | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
+| WEDDING_PROGRESS | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x140 | ✅ | 0x147 | ✅ | 0x151 | ✅ | 0x17B | ✅ | 0x159 | ✅ |
+| WEDDING_CEREMONY_END | CField_Wedding::OnWeddingCeremonyEnd | field/clientbound/FieldWeddingCeremonyEnd (T1) | 0x141 | ✅ | 0x148 | ✅ | 0x152 | ✅ | 0x17C | ✅ | 0x15A | ✅ |
+| PARCEL | CParcelDlg::OnPacket |  | 0x142 | ❌ | 0x149 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
+| CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x17F | ✅ | 0x163 | ✅ |
 | CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashShopInventory (T1) | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
-| CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  | 0x146 | ❌ | 0x146 | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
-| CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  | 0x147 | ❌ | 0x147 | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
-| CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x148 | ❌ | 0x148 | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
-| CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | CCashShop::OnCheckNameChangePossibleResult |  | 0x149 | ❌ | 0x149 | ❌ | 0x15A | ❌ | 0x184 | ❌ |  | ⬜ |
-| CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  |  | 0x14A | ❌ | 0x14A | ❌ | 0x15B | ❌ | 0x185 | ❌ |  | ⬜ |
-| CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x14B | ❌ | 0x14B | ❌ | 0x15C | ❌ | 0x186 | ❌ | 0x16C | ❌ |
-| CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x14C | ❌ | 0x14C | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |
+| CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
+| CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
+| CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
+| CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | CCashShop::OnCheckNameChangePossibleResult |  | 0x149 | ❌ | 0x150 | ❌ | 0x15A | ❌ | 0x184 | ❌ |  | ⬜ |
+| CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  |  | 0x14A | ❌ | 0x151 | ❌ | 0x15B | ❌ | 0x185 | ❌ |  | ⬜ |
+| CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x14B | ❌ | 0x152 | ❌ | 0x15C | ❌ | 0x186 | ❌ | 0x16C | ❌ |
+| CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |
 | OPEN_GATE_CREATED | COpenGatePool::OnOpenGateCreated |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x14C | ❌ |  | ⬜ |
-| CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x14D | ❌ | 0x14D | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
+| CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | OPEN_GATE_REMOVED | COpenGatePool::OnOpenGateRemoved |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x14D | ❌ |  | ⬜ |
-| CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x14E | ❌ | 0x14E | ❌ | 0x15F | ❌ | 0x189 | ❌ |  | ⬜ |
+| CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x14E | ❌ | 0x155 | ❌ | 0x15F | ❌ | 0x189 | ❌ |  | ⬜ |
 | KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) | 0x14F | ✅ | 0x158 | ✅ | 0x163 | ✅ | 0x18E | ✅ | 0x170 | ✅ |
 | AUTO_HP_POT | CFuncKeyMappedMan::OnPetConsumeItemInit | character/clientbound/CharacterKeyMapAutoHp (T1) | 0x150 | ✅ | 0x159 | ✅ | 0x164 | ✅ | 0x18F | ✅ | 0x171 | ✅ |
 | AUTO_MP_POT | CFuncKeyMappedMan::OnPetConsumeMPItemInit | character/clientbound/CharacterKeyMapAutoMp (T1) | 0x151 | ✅ | 0x15A | ✅ | 0x165 | ✅ | 0x190 | ✅ | 0x172 | ✅ |
-| SEND_TV | CMapleTVMan::OnSetMessage |  | 0x155 | ❌ | 0x155 | ❌ | 0x16A | ❌ | 0x195 | ❌ | 0x17A | ❌ |
-| REMOVE_TV | CMapleTVMan::OnClearMessage |  | 0x156 | ❌ | 0x156 | ❌ | 0x16B | ❌ | 0x196 | ❌ | 0x17B | ❌ |
-| ENABLE_TV | CMapleTVMan::OnSendMessageResult |  | 0x157 | ❌ | 0x157 | ❌ | 0x16C | ❌ | 0x197 | ❌ | 0x17C | ❌ |
+| SEND_TV | CMapleTVMan::OnSetMessage |  | 0x155 | ❌ | 0x15F | ❌ | 0x16A | ❌ | 0x195 | ❌ | 0x17A | ❌ |
+| REMOVE_TV | CMapleTVMan::OnClearMessage |  | 0x156 | ❌ | 0x160 | ❌ | 0x16B | ❌ | 0x196 | ❌ | 0x17B | ❌ |
+| ENABLE_TV | CMapleTVMan::OnSendMessageResult |  | 0x157 | ❌ | 0x161 | ❌ | 0x16C | ❌ | 0x197 | ❌ | 0x17C | ❌ |
 | IDA_0X15A | CITC::OnChargeParamResult |  | 0x15A | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x19B | ✅ |  | ⬜ |
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |

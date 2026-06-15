@@ -155,6 +155,22 @@ func buildStartConditions(questDef dataquest.RestModel) []ConditionInput {
 		})
 	}
 
+	// Pet + tameness gate: a summoned pet of one of the listed templates must
+	// have closeness >= PetTamenessMin. Single composite condition so tameness
+	// binds to the same pet and the id set is an OR.
+	if len(req.Pet) > 0 && req.PetTamenessMin > 0 {
+		values := make([]int, 0, len(req.Pet))
+		for _, id := range req.Pet {
+			values = append(values, int(id))
+		}
+		conditions = append(conditions, ConditionInput{
+			Type:     PetTamenessCondition,
+			Operator: ">=",
+			Value:    int(req.PetTamenessMin),
+			Values:   values,
+		})
+	}
+
 	return conditions
 }
 
@@ -261,6 +277,22 @@ func buildEndConditions(questDef dataquest.RestModel) []ConditionInput {
 			Type:     MonsterBookCountCondition,
 			Operator: ">=",
 			Value:    int(req.MonsterBookCountMin),
+		})
+	}
+
+	// Pet + tameness gate: a summoned pet of one of the listed templates must
+	// have closeness >= PetTamenessMin. Single composite condition so tameness
+	// binds to the same pet and the id set is an OR.
+	if len(req.Pet) > 0 && req.PetTamenessMin > 0 {
+		values := make([]int, 0, len(req.Pet))
+		for _, id := range req.Pet {
+			values = append(values, int(id))
+		}
+		conditions = append(conditions, ConditionInput{
+			Type:     PetTamenessCondition,
+			Operator: ">=",
+			Value:    int(req.PetTamenessMin),
+			Values:   values,
 		})
 	}
 

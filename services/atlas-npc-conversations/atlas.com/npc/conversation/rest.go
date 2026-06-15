@@ -23,7 +23,6 @@ type RestStateModel struct {
 	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
 	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
 	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
-	PickFromContext            *RestPickFromContextModel            `json:"pickFromContext,omitempty"`            // Pick-from-context model (if type is pickFromContext)
 }
 
 // GetID returns the resource ID
@@ -185,16 +184,6 @@ type RestAskStyleModel struct {
 	NextState        string   `json:"nextState,omitempty"`        // Next state ID
 }
 
-// RestPickFromContextModel represents the REST model for pickFromContext states
-type RestPickFromContextModel struct {
-	Title            string `json:"title,omitempty"`            // Menu header text
-	ValuesContextKey string `json:"valuesContextKey"`           // Context key holding the comma-joined option values
-	LabelsContextKey string `json:"labelsContextKey,omitempty"` // Context key holding the parallel display labels
-	ContextKey       string `json:"contextKey,omitempty"`       // Context key the selected value is stored into (defaults to "selectedValue")
-	NextState        string `json:"nextState"`                  // Next state after a selection
-	EmptyNextState   string `json:"emptyNextState"`             // State to route to when the values list is empty
-}
-
 // RestAskSlideMenuModel represents the REST model for ask slide menu states
 type RestAskSlideMenuModel struct {
 	Title      string            `json:"title"`                 // Slide menu title
@@ -350,41 +339,9 @@ func TransformState(m StateModel) (RestStateModel, error) {
 			restAskSlideMenu := TransformAskSlideMenu(*askSlideMenu)
 			restState.AskSlideMenu = &restAskSlideMenu
 		}
-	case PickFromContextType:
-		pfc := m.PickFromContext()
-		if pfc != nil {
-			restPfc := TransformPickFromContext(*pfc)
-			restState.PickFromContext = &restPfc
-		}
 	}
 
 	return restState, nil
-}
-
-// TransformPickFromContext converts a PickFromContextModel to its REST form.
-func TransformPickFromContext(m PickFromContextModel) RestPickFromContextModel {
-	return RestPickFromContextModel{
-		Title:            m.Title(),
-		ValuesContextKey: m.ValuesContextKey(),
-		LabelsContextKey: m.LabelsContextKey(),
-		ContextKey:       m.ContextKey(),
-		NextState:        m.NextState(),
-		EmptyNextState:   m.EmptyNextState(),
-	}
-}
-
-// ExtractPickFromContext converts a RestPickFromContextModel to the domain model.
-func ExtractPickFromContext(r RestPickFromContextModel) (*PickFromContextModel, error) {
-	b := NewPickFromContextBuilder().
-		SetTitle(r.Title).
-		SetValuesContextKey(r.ValuesContextKey).
-		SetLabelsContextKey(r.LabelsContextKey).
-		SetNextState(r.NextState).
-		SetEmptyNextState(r.EmptyNextState)
-	if r.ContextKey != "" {
-		b.SetContextKey(r.ContextKey)
-	}
-	return b.Build()
 }
 
 // TransformDialogue converts a DialogueModel to a RestDialogueModel
@@ -660,15 +617,6 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetAskSlideMenu(askSlideMenu)
-	case PickFromContextType:
-		if r.PickFromContext == nil {
-			return StateModel{}, fmt.Errorf("pickFromContext is required for pickFromContext state")
-		}
-		pfc, err := ExtractPickFromContext(*r.PickFromContext)
-		if err != nil {
-			return StateModel{}, err
-		}
-		stateBuilder.SetPickFromContext(pfc)
 	default:
 		return StateModel{}, fmt.Errorf("invalid state type: %s", r.StateType)
 	}

@@ -61,7 +61,7 @@ func TestSkillPrepareInfoSwallowRoundTrip(t *testing.T) {
 // Covers one GMS pre-v95 variant (v83), GMS v95, and JMS v185 to exercise the
 // swallowMobId branch delta.
 //
-// Byte fixture: field order/opcode pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified). Coverage-matrix linkage deferred — see task-099 follow-up (prepare/cancel fnames not yet in the packet-audit IDA exports).
+// Byte fixture: field order pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified). The serverbound prepare cell is graded via the character/serverbound/CharacterSkillPrepare wrapper (which embeds this model); see that package's byte-fixture for the matrix-linked marker.
 func TestSkillPrepareInfoByteFixture(t *testing.T) {
 	// Fields for the standard case (Hurricane 3121004, no swallowMobId):
 	//   skillId=3121004 (0x002F9F6C LE = 6C 9F 2F 00), level=10, action=0x0142, actionSpeed=4

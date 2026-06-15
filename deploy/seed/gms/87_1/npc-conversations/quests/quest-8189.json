@@ -13,7 +13,10 @@
             "genericAction": {
               "operations": [],
               "outcomes": [
-                { "conditions": [], "nextState": null }
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
               ]
             }
           }
@@ -27,11 +30,26 @@
             "type": "genericAction",
             "genericAction": {
               "operations": [
-                { "type": "local:enumerate_evolvable_pets", "params": {} }
+                {
+                  "type": "local:enumerate_evolvable_pets",
+                  "params": {}
+                }
               ],
               "outcomes": [
-                { "conditions": [ { "type": "meso", "operator": "<", "value": "10000" } ], "nextState": "noMeso" },
-                { "conditions": [], "nextState": "confirm" }
+                {
+                  "conditions": [
+                    {
+                      "type": "meso",
+                      "operator": "<",
+                      "value": "10000"
+                    }
+                  ],
+                  "nextState": "noMeso"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "confirm"
+                }
               ]
             }
           },
@@ -42,8 +60,14 @@
               "dialogueType": "sendOk",
               "text": "Hey! I need #b10,000 mesos#k to do your pet's re-evolution!",
               "choices": [
-                { "text": "Ok", "nextState": null },
-                { "text": "Exit", "nextState": null }
+                {
+                  "text": "Ok",
+                  "nextState": null
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
               ]
             }
           },
@@ -54,9 +78,18 @@
               "dialogueType": "sendYesNo",
               "text": "Alright then, let's do this again, shall we? As usual, it's going to be random, and I'm going to take away one of your Rock of Evolutions. \r\n\r #r#eReady?#n#k",
               "choices": [
-                { "text": "Yes", "nextState": "hyah" },
-                { "text": "No", "nextState": null },
-                { "text": "Exit", "nextState": null }
+                {
+                  "text": "Yes",
+                  "nextState": "hyah"
+                },
+                {
+                  "text": "No",
+                  "nextState": null
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
               ]
             }
           },
@@ -67,9 +100,18 @@
               "dialogueType": "sendNextPrev",
               "text": "Then here we go...! #rHYAHH!#k",
               "choices": [
-                { "text": "Previous", "nextState": "confirm" },
-                { "text": "Next", "nextState": "doEvolve" },
-                { "text": "Exit", "nextState": null }
+                {
+                  "text": "Previous",
+                  "nextState": "confirm"
+                },
+                {
+                  "text": "Next",
+                  "nextState": "doEvolve"
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
               ]
             }
           },
@@ -78,13 +120,37 @@
             "type": "genericAction",
             "genericAction": {
               "operations": [
-                { "type": "award_mesos", "params": { "amount": "-10000" } },
-                { "type": "destroy_item", "params": { "itemId": "5380000", "quantity": "1" } },
-                { "type": "evolve_pet", "params": { "petId": "{context.firstEvolvablePet}" } },
-                { "type": "complete_quest", "params": {} }
+                {
+                  "type": "award_mesos",
+                  "params": {
+                    "amount": "-10000"
+                  }
+                },
+                {
+                  "type": "destroy_item",
+                  "params": {
+                    "itemId": "5380000",
+                    "quantity": "1"
+                  }
+                },
+                {
+                  "type": "evolve_pet",
+                  "params": {
+                    "petId": "{context.firstEvolvablePet}"
+                  }
+                },
+                {
+                  "type": "complete_quest",
+                  "params": {
+                    "force": "true"
+                  }
+                }
               ],
               "outcomes": [
-                { "conditions": [], "nextState": "success" }
+                {
+                  "conditions": [],
+                  "nextState": "success"
+                }
               ]
             }
           },
@@ -95,8 +161,14 @@
               "dialogueType": "sendOk",
               "text": "Woo! It worked again! #rYou may find your new pet under your 'CASH' inventory.#k \r\n Come back with 10,000 mesos and another Rock of Evolution if you don't like it!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#",
               "choices": [
-                { "text": "Ok", "nextState": null },
-                { "text": "Exit", "nextState": null }
+                {
+                  "text": "Ok",
+                  "nextState": null
+                },
+                {
+                  "text": "Exit",
+                  "nextState": null
+                }
               ]
             }
           }

@@ -8701,12 +8701,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v4 > 0 && <default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v4 > 0 && <default>",
-          "ref": "sub_85BBE4"
         }
       ]
     },
@@ -9760,6 +9754,16 @@
         {
           "op": "EncodeStr",
           "comment": ""
+        }
+      ]
+    },
+    "CUIFadeYesNo::OnButtonClicked": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
         }
       ]
     }

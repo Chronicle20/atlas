@@ -21897,18 +21897,6 @@
           "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)",
-          "ref": "sub_476592"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "<default> && v3 && v4 && v5 && sub_4D2468((char *)&byte_B4278C)",
-          "ref": "sub_476592"
-        },
-        {
           "op": "Decode1",
           "comment": "",
           "guard": "<default> && v3 && v4 && <default>"
@@ -23010,6 +22998,16 @@
         {
           "op": "EncodeStr",
           "comment": ""
+        }
+      ]
+    },
+    "CUIFadeYesNo::OnButtonClicked": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
         }
       ]
     }

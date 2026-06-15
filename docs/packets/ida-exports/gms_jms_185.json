@@ -8466,18 +8466,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v3 > 0 && <default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0 && <default>",
-          "ref": "CUIMiniMap::InsertStalkee"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0 && <default>",
-          "ref": "sub_4067E3"
         }
       ]
     },
@@ -8976,32 +8964,14 @@
           "guard": "v2 <= 0xFu && v3 && v4 && <default>"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v2 <= 0xFu && v3 && v4 && <default>",
-          "ref": "sub_4A586D"
-        },
-        {
           "op": "Decode1",
           "comment": "",
           "guard": "v2 <= 0xFu && v3 && <default>"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v2 <= 0xFu && v3 && <default>",
-          "ref": "sub_4A586D"
-        },
-        {
           "op": "Decode1",
           "comment": "",
           "guard": "v2 <= 0xFu && <default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v2 <= 0xFu && <default>",
-          "ref": "sub_4A586D"
         },
         {
           "op": "Decode1",

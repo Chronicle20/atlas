@@ -9903,12 +9903,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v3 > 0 && <default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0 && <default>",
-          "ref": "CUIMiniMap::InsertStalkee"
         }
       ]
     },

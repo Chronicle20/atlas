@@ -1800,6 +1800,21 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "SnowballHit", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CField_SnowBall::OnSnowBallMsg":
 		return []candidate{{name: "SnowballMessage", pkg: "field", dir: csvpkg.DirClientbound}}
+	// LEFT_KNOCK_BACK (task-096 R-CB). EMPTY body — the handler reads no bytes
+	// (SetImpact(0x12C,1) only). field/clientbound/snowball_touch.go SnowballTouch.
+	case "CField_SnowBall::OnSnowBallTouch":
+		return []candidate{{name: "SnowballTouch", pkg: "field", dir: csvpkg.DirClientbound}}
+	// IDA_0X09C / OnStalkResult (task-096 R-CB). Minimap stalkee-list update: a
+	// count-prefixed loop; the export flattens one insert iteration (count + charId
+	// + flag + name + x + y). The InsertStalkee/RemoveStalkee/_Release Delegates are
+	// UI logic. field/clientbound/stalk_result.go StalkResult. v84 VERSION-ABSENT.
+	case "CField::OnStalkResult":
+		return []candidate{{name: "StalkResult", pkg: "field", dir: csvpkg.DirClientbound}}
+	// ADMIN_RESULT (task-096 R-CB). Mode-demux flattened like SPOUSE_CHAT; the
+	// post-mode flat read order differs per version (the codec branches on tenant
+	// version). field/clientbound/admin_result.go AdminResult.
+	case "CField::OnAdminResult":
+		return []candidate{{name: "AdminResult", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CField_Coconut::OnCoconutHit":
 		return []candidate{{name: "CoconutHit", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CField_Coconut::OnCoconutScore":

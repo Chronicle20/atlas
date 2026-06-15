@@ -1646,10 +1646,12 @@
   note: 'task-096 minigame family: v84 opcode corrected 283->290 (0x122), live-verified against the v84 channel; prior csv-import value was the stale v83-inherited opcode (provenance: manual).'
 - op: LEFT_KNOCK_BACK
   direction: clientbound
-  opcode: 284
+  opcode: 291
   fname: CField_SnowBall::OnSnowBallTouch
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5786347
+  note: 'task-096: v84 opcode corrected 284->291 (0x123). IDA v84 SnowBall dispatcher sub_5849C6 case 291 -> sub_584CEB (OnSnowBallTouch, empty body). CSV has no v84 column; the prior 284 was seeded from the v83 column. Cluster: State 288 / Hit 289 / Msg 290 / Touch 291.'
 - op: COCONUT_HIT
   direction: clientbound
   opcode: 292

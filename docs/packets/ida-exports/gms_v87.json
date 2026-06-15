@@ -9054,12 +9054,6 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v2 > 0 && <default>"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v2 > 0 && <default>",
-          "ref": "CUIMiniMap::InsertStalkee"
         }
       ]
     },
@@ -10113,6 +10107,21 @@
         {
           "op": "EncodeStr",
           "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::OnSnowBallTouch": {
+      "address": "0x5a35f7",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CUIFadeYesNo::OnButtonClicked": {
+      "address": "0x0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
         }
       ]
     }

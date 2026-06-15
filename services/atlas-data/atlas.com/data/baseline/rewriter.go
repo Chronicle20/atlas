@@ -51,16 +51,30 @@ func (rw Rewriter) Stream(in io.Reader, out io.Writer) error {
 				return err
 			}
 			if int(i) == rw.TenantColIndex {
-				// Discard original, emit target uuid (16 bytes).
+				// Discard the original tenant_id and emit the target, preserving
+				// the source column's wire form. The dumped tenant_id columns are
+				// NOT uniform across DumpTables: the *_search_index tables store it
+				// as a binary `uuid` (16-byte field), while `documents` stores it
+				// as `text` (the 36-byte canonical uuid string, because its
+				// `uuid.UUID` field carries no gorm `type:uuid` tag). Emitting the
+				// wrong form makes COPY FROM reject the row: 16 raw uuid bytes fed
+				// into the text column trips "invalid byte sequence for encoding
+				// UTF8" (SQLSTATE 22021) on the first non-ASCII byte.
 				if size > 0 {
 					if _, err := io.CopyN(io.Discard, in, int64(size)); err != nil {
 						return err
 					}
 				}
-				if err := binary.Write(out, binary.BigEndian, int32(16)); err != nil {
+				payload := rw.Target[:]
+				if size != 16 {
+					// Non-16-byte tenant field => text column holding the uuid
+					// string; emit the canonical 36-byte text form to match.
+					payload = []byte(rw.Target.String())
+				}
+				if err := binary.Write(out, binary.BigEndian, int32(len(payload))); err != nil {
 					return err
 				}
-				if _, err := out.Write(rw.Target[:]); err != nil {
+				if _, err := out.Write(payload); err != nil {
 					return err
 				}
 				continue

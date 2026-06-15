@@ -785,6 +785,13 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[carnivalsb.MonsterCarnivalHandle] = handler.MonsterCarnivalHandleFunc
 	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[fieldsb.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
+	handlerMap[fieldsb.SnowballHandle] = handler.SnowballHandleFunc
+	handlerMap[fieldsb.LeftKnockbackHandle] = handler.LeftKnockbackHandleFunc
+	handlerMap[fieldsb.CoconutHandle] = handler.CoconutHandleFunc
+	handlerMap[fieldsb.GuildBossHandle] = handler.GuildBossHandleFunc
+	handlerMap[fieldsb.UseDoorHandle] = handler.UseDoorHandleFunc
+	handlerMap[fieldsb.WeddingActionHandle] = handler.WeddingActionHandleFunc
+	handlerMap[fieldsb.WeddingTalkHandle] = handler.WeddingTalkHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc

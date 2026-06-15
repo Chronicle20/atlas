@@ -639,6 +639,11 @@
         }
       },
       {
+        "opCode": "0x89",
+        "validator": "LoggedInValidator",
+        "handler": "UseDoor"
+      },
+      {
         "opCode": "0x8B",
         "validator": "LoggedInValidator",
         "handler": "CharacterKeyMapChangeHandle"
@@ -1042,6 +1047,26 @@
         "opCode": "0xD3",
         "validator": "LoggedInValidator",
         "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xD9",
+        "validator": "LoggedInValidator",
+        "handler": "Snowball"
+      },
+      {
+        "opCode": "0xDA",
+        "validator": "LoggedInValidator",
+        "handler": "LeftKnockback"
+      },
+      {
+        "opCode": "0xDB",
+        "validator": "LoggedInValidator",
+        "handler": "Coconut"
+      },
+      {
+        "opCode": "0xDD",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBoss"
       },
       {
         "opCode": "0xE0",

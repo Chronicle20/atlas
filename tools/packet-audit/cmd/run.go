@@ -1788,6 +1788,38 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::OnQueryCashResult":
 		return []candidate{{name: "MtsOperation2", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// MTS_OPERATION (task-096, recipe OP-MODE-PREFIX). CITC::OnNormalItemResult
+	// reads Decode1(mode) and switch-dispatches to one of 35 cash-shop/MTS
+	// sub-handlers (0x15..0x3E); only the leading mode byte is on the codec's
+	// wire contract. The full dispatcher entry CITC::OnNormalItemResult carries
+	// the 35 Delegate arms (left intact); a synthetic #Mode export entry whose
+	// calls = the single Decode1 is appended per version so report-gen audits
+	// only the mode byte. baseFName strips #Mode so the registry op
+	// MTS_OPERATION (fname CITC::OnNormalItemResult) links. jms VERSION-ABSENT
+	// (no CITC in jms). field/clientbound/mts_operation.go MtsOperation.
+	case "CITC::OnNormalItemResult#Mode":
+		return []candidate{{name: "MtsOperation", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// FOOTHOLD_INFO clientbound (task-096, recipe R-CB). CField::OnFootHoldInfo
+	// is version-divergent: v87 reads a single entry (name, mode, [mode==2:
+	// 8×int32 + 2×byte]); v95/jms read Decode4(count) then per entry name, mode,
+	// idCount, idCount×int32, [mode==2: 7×int32 + 2×byte]. GMS<87 VERSION-ABSENT.
+	// The CMapLoadable::FootHoldStateChange/FootHoldMove delegates are map-apply
+	// application logic (no wire bytes), stripped from the exports per §10.
+	// field/clientbound/foothold_info.go FootholdInfo.
+	case "CField::OnFootHoldInfo":
+		return []candidate{{name: "FootholdInfo", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// FOOTHOLD_INFO serverbound (task-096, recipe R-SB). CField::OnRequestFootHoldInfo
+	// is the client's REPLY to the server foothold-info request: it builds
+	// COutPacket(270 v95 / 0xED jms) appending one entry per dynamic object with
+	// NO count prefix — Encode4(nCurState) + Encode4(nCurX)+Encode4(nCurY)+
+	// Encode1(revV)+Encode1(revH) (or 4 zeros). The server decodes the stream to
+	// exhaustion. Exists only in GMS v95 (@0x52ddd0) + jms (@0x576cd2);
+	// VERSION-ABSENT in GMS v83/v84/v87. field/serverbound/request_foothold_info.go.
+	case "CField::OnRequestFootHoldInfo":
+		return []candidate{{name: "RequestFootholdInfo", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// CField clientbound minigame family (task-096, recipe R-CB). Version-invariant
 	// wire layouts derived from IDA (addresses pinned per version in the test markers).
 	// CField_ContiMove::OnContiMove and CField_AriantArena::OnUserScore carry a

@@ -711,6 +711,8 @@ func produceWriters() []string {
 		fieldcb.HorntailCaveWriter,
 		fieldcb.AriantResultWriter,
 		fieldcb.MtsOperation2Writer,
+		fieldcb.MtsOperationWriter,
+		fieldcb.FootholdInfoWriter,
 		fieldcb.SnowballStateWriter,
 		fieldcb.SnowballHitWriter,
 		fieldcb.SnowballMessageWriter,
@@ -793,6 +795,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.CoconutHandle] = handler.CoconutHandleFunc
 	handlerMap[fieldsb.GuildBossHandle] = handler.GuildBossHandleFunc
 	handlerMap[fieldsb.UseDoorHandle] = handler.UseDoorHandleFunc
+	handlerMap[fieldsb.RequestFootholdInfoHandle] = handler.RequestFootholdInfoHandleFunc
 	handlerMap[fieldsb.WeddingActionHandle] = handler.WeddingActionHandleFunc
 	handlerMap[fieldsb.WeddingTalkHandle] = handler.WeddingTalkHandleFunc
 	handlerMap[fieldsb.AdminChatHandle] = handler.AdminChatHandleFunc

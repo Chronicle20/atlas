@@ -52,6 +52,12 @@ type Inputs struct {
 	Evidence      map[EvKey]EvidenceStatus
 	Tier1         map[string]bool // packet id -> tier-1
 	Markers       map[EvKey]MarkerStatus
+	// Families is the set of base FNames that are mode-prefix DISPATCHERS
+	// (one opcode, a leading mode byte switching to many sub-handlers with
+	// distinct bodies). An op whose registry FName is in this set is capped at
+	// StateFamily and can never reach ✅ on a single sub-handler's fixture.
+	// Empty map = no family capping (every op grades normally).
+	Families map[string]bool
 }
 
 // opEntryRef carries the union-row identity being graded for one version.
@@ -78,6 +84,7 @@ type gradeArgs struct {
 	opcode                        int
 	writerName                    string
 	reportFnameClaimedByPresentOp bool // true when a PRESENT op in the same version shares this report's base FName
+	family                        bool // true when the op's FName is a mode-prefix dispatcher (cap at StateFamily)
 }
 
 // gradeOpCell evaluates design §5 in precedence order for one op×version.
@@ -125,9 +132,15 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool
 		opcode:                        ref.Opcode,
 		writerName:                    rep.WriterName,
 		reportFnameClaimedByPresentOp: reportFnameClaimedByPresentOp,
+		family:                        in.Families[baseFName(ref.FName)],
 	}
 	return gradeCore(args)
 }
+
+// familyNote explains why a dispatcher op is capped at StateFamily rather than
+// promoted to ✅: the fixture proves the leading mode byte and the one fixtured
+// sub-handler, but the remaining mode arms are neither implemented nor verified.
+const familyNote = "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)"
 
 // gradeCore implements design §5 rules given fully-resolved gradeArgs.
 func gradeCore(a gradeArgs) Cell {
@@ -171,6 +184,9 @@ func gradeCore(a gradeArgs) Cell {
 	if a.tier1 {
 		// Diff verdict is advisory; only a linked byte-fixture promotes.
 		if a.marker.Found && a.hasEvidence && a.evidence.Fresh {
+			if a.family {
+				return Cell{State: StateFamily, Note: familyNote}
+			}
 			return Cell{State: StateVerified}
 		}
 		if a.marker.Found {
@@ -184,6 +200,9 @@ func gradeCore(a gradeArgs) Cell {
 
 	// Tier 0.
 	if toolPass && a.marker.Found {
+		if a.family {
+			return Cell{State: StateFamily, Note: familyNote}
+		}
 		return Cell{State: StateVerified}
 	}
 	if toolPass {

@@ -33,6 +33,7 @@ type matrixOpts struct {
 	ExportsDir   string
 	EvidenceDir  string // consumed from Phase 2 on; empty = no evidence
 	TiersFile    string // consumed from Phase 2 on; defaults to docs/packets/evidence/tiers.yaml
+	FamiliesFile string // mode-prefix dispatcher membership; defaults to docs/packets/evidence/families.yaml
 	PacketLibDir string // consumed from Phase 3 on (marker scan); empty = no markers
 	Versions     []string
 	OutDir       string
@@ -50,6 +51,7 @@ func runMatrix(args []string, stderr io.Writer) int {
 	fs.StringVar(&o.ExportsDir, "exports-dir", "docs/packets/ida-exports", "IDA export JSON dir")
 	fs.StringVar(&o.EvidenceDir, "evidence-dir", "docs/packets/evidence", "evidence ledger dir")
 	fs.StringVar(&o.TiersFile, "tiers", "docs/packets/evidence/tiers.yaml", "tier-1 membership YAML")
+	fs.StringVar(&o.FamiliesFile, "families", "docs/packets/evidence/families.yaml", "mode-prefix dispatcher membership YAML")
 	fs.StringVar(&o.PacketLibDir, "packet-lib", "libs/atlas-packet", "atlas-packet root for marker scanning")
 	fs.StringVar(&versionsCSV, "versions", strings.Join(matrix.VersionKeys, ","), "comma-separated version keys")
 	fs.StringVar(&o.OutDir, "out-dir", "docs/packets/audits", "output dir for STATUS.md/status.json")
@@ -83,7 +85,16 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		Evidence:    map[matrix.EvKey]matrix.EvidenceStatus{},
 		Tier1:       map[string]bool{},
 		Markers:     map[matrix.EvKey]matrix.MarkerStatus{},
+		Families:    map[string]bool{},
 	}
+	// Mode-prefix dispatcher membership: caps these ops at 🧩 family so a single
+	// sub-handler's fixture can't present the whole dispatcher as ✅ verified.
+	families, err := matrix.LoadFamilies(o.FamiliesFile)
+	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit matrix: families: %v\n", err)
+		return exitRuntime
+	}
+	in.Families = families.Set()
 	hashes := map[string]string{}
 	exportPaths := map[string]string{}
 	for _, vk := range o.Versions {

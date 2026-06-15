@@ -1,0 +1,27 @@
+# Mode-prefix dispatcher membership (task-100 follow-up).
+#
+# Each entry is a base IDA function name whose client read-order is a
+# `switch(Decode<mode>)` DEMULTIPLEXER: a single opcode carries N logically
+# distinct sub-packets selected by a leading mode/discriminator byte, and each
+# arm reads a different body. A byte-fixture pointed at such a dispatcher proves
+# only the leading mode byte plus the one sub-handler it exercises — NOT the
+# remaining arms. The matrix therefore CAPS any op whose registry fname is one
+# of these at the 🧩 `family` state; it can never reach ✅ on one sub-handler.
+#
+# This is deliberately NARROW. It must list only true mode-byte demultiplexers,
+# confirmed by decompiling the function (v95 PDB) and seeing `switch(Decode1())`
+# dispatch to per-mode sub-handlers. It must NOT list:
+#   - opcode (nType) demuxers like CField::OnPacket / CSummonedPool::OnPacket /
+#     CField_Tournament::OnPacket — each leaf is its own registry op with its own
+#     opcode and body; those grade normally.
+#   - flat packets like CCashShop::OnQueryCashResult / CITC::OnQueryCashResult —
+#     no switch, fully fixturable, legitimately ✅.
+#
+# Adding/removing an entry is a reviewed edit. Verify the body first.
+dispatchers:
+  - CCashShop::OnCashItemResult   # cash-shop result; v95 0x499370 switch(Decode1) -> 57 arms (CASHSHOP_OPERATION)
+  - CITC::OnNormalItemResult      # ITC/MTS result; v95 0x5771d0 switch(Decode1) -> 35 arms (MTS_OPERATION)
+  - CShopDlg::OnPacket            # NPC shop; v95 0x6eb7d0 switch(Decode1) mode (OPEN_NPC_SHOP, CONFIRM_SHOP_TRANSACTION)
+  - CUIMessenger::OnPacket        # messenger; v95 0x7f5e40 switch(Decode1) -> 9 arms (MESSENGER clientbound)
+  - CMiniRoomBaseDlg::OnPacketBase # mini-room/player-interaction; v95 0x639e10 switch(Decode1) (PLAYER_INTERACTION)
+  - CTrunkDlg::OnPacket           # storage; v95 0x76a990 switch(Decode1) mode (STORAGE)

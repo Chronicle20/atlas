@@ -186,6 +186,44 @@ func TestGradeTier1FixturePromotes(t *testing.T) {
 	}
 }
 
+func TestGradeFamilyCapsTier0VerifiedToFamily(t *testing.T) {
+	// A would-be tier-0 ✅ (tool match + marker) is capped at 🧩 family when the
+	// op's FName is a registered mode-prefix dispatcher.
+	in := presentWithReport(t, diff.VerdictMatch, false)
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateFamily {
+		t.Errorf("dispatcher op must cap at family, not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeFamilyCapsTier1FixtureToFamily(t *testing.T) {
+	// A would-be tier-1 ✅ (marker + fresh evidence) is capped at 🧩 family for a
+	// dispatcher op — one sub-handler's fixture cannot verify the whole family.
+	in := presentWithReport(t, diff.VerdictDeferred, true)
+	in.Tier1["login/clientbound/AccountInfo"] = true
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
+	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateFamily {
+		t.Errorf("dispatcher op must cap at family, not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
+func TestGradeNonFamilyStillVerifies(t *testing.T) {
+	// Control: with a Families set that does NOT contain this op's FName, the
+	// op promotes to ✅ exactly as before (no over-capping).
+	in := presentWithReport(t, diff.VerdictMatch, false)
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	in.Families = map[string]bool{"CSomethingElse::OnPacket": true}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateVerified {
+		t.Errorf("non-dispatcher op must verify, not %v (%s)", c.State.Name(), c.Note)
+	}
+}
+
 func TestGradeEvidencePinnedDeferralIsPartial(t *testing.T) {
 	in := presentWithReport(t, diff.VerdictDeferred, false)
 	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true}

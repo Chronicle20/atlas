@@ -87,3 +87,38 @@ When updating TODO.md or other tracking docs, always use `Glob` or `Grep` to fin
 ## Test Helper Pattern
 
 - Use the project's Builder pattern for test setup. Do not create `*_testhelpers.go` files with test-only constructors.
+
+## Grounding & Honesty (No Inventing)
+
+- Never invent values, names, opcodes, command output, or behavior. If something is not verified from source, WZ data, IDA, or live output, say "unknown / unverified" — do not fill the gap with a plausible guess.
+- When reading tool output (e.g. `top`, pod metrics, decompiled code), quote the actual values before drawing a conclusion. Do not paraphrase numbers from memory or infer them — misreading and then asserting is worse than saying "let me re-check."
+- "I think it's X" is not a finding. Either verify X and state it plainly, or flag it as unverified and say what you'd need to confirm it.
+
+## No Deferring Producible Work
+
+- Do not declare a "documented gap," "follow-up task," or "out of scope" when the blocker is a prerequisite you can produce yourself (an unnamed IDB function → name it; an unrouted template → wire it; a missing export/report → generate it). Attempt the unblock before calling it terminal. The user should not have to prod you to finish bounded work.
+- Do not split work into a new task to avoid completing the current one. Keep triage and fix on the same branch/worktree; produce the clean PR branch via rebase at PR-time, not by forking partway through.
+- No `// TODO`, stubbed handlers, or 501s in landed commits. Finish the bounded work or escalate explicitly — never leave a silent stub.
+- Genuine stop-and-ask cases (a true external blocker, an ambiguous design decision, an unresolved packet-audit fname) are different: surface them and ask. The bar is "can I produce this myself right now?" — if yes, do it.
+
+## File Writing / Conventions
+
+- When writing files, always use repo-relative paths or placeholders; never write literal home/absolute paths like `/Users/<name>/...` or `/home/<name>/...` into committed files.
+
+## Reverse Engineering / IDA
+
+- For IDA Pro lookups, use the `func_query` tool with `name_regex` (the documented method); do not improvise alternate lookup approaches. See the IDA-MCP notes in project memory for the current API.
+- Confirm the IDA instance/version under investigation matches the version you're targeting before reading (use `select_instance(port)` for v83/v87/v95/jms).
+
+## Task Workflow
+
+- Before planning or designing a task, first verify the task is not already planned/implemented, and that its task number does not collide with an in-flight task. Use `tools/task-numbers.sh next` and search both `docs/tasks/` and `.worktrees/*/docs/tasks/`.
+
+## Debugging / Verification
+
+- When asked to verify or fix something, confirm the exact server/tenant version the user is testing (e.g. v83 vs v87) before investigating. Do not assume — ask or check, because the wrong version sends the whole investigation down the wrong path.
+- Do a full sweep, not spot-checking, unless explicitly told otherwise. A spot-check presented as a full sweep is a false "verified" — and live PATCHes built on it get rejected at validation time.
+
+## Debugging / Kubernetes
+
+- For diagnosing wedged deploys or runtime failures, read the relevant pod logs early (e.g. `atlas-character-factory`, `atlas-world`) via `mcp__kubernetes__pods_log` rather than starting at packet-level fixes or bare pod listings. The logs usually name the real root cause directly.

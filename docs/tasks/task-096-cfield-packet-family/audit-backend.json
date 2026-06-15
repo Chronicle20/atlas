@@ -1,0 +1,70 @@
+{
+  "service": "task-096-cfield-packet-family",
+  "path": "libs/atlas-packet/field; services/atlas-channel/atlas.com/channel; tools/packet-audit",
+  "date": "2026-06-15",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": "all (field/..., channel socket/..., packet-audit/...)",
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "scopeNote": "Packet-codec + socket-wiring change. No DDD domain (model.go) or sub-domain (resource.go action-event) packages introduced; most DOM-* items are N/A by construction.",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/field",
+      "type": "codec-package",
+      "checks": [
+        {"id": "DOM-06", "name": "Codec accepts FieldLogger", "status": "pass", "evidence": "field/clientbound/foothold_info.go:89,130; whisper.go:34,44 — no *logrus.Logger"},
+        {"id": "DOM-12", "name": "No os.Getenv", "status": "pass", "evidence": "grep new codecs+handlers: 0 matches"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "50/50 clientbound + 15/15 serverbound have sibling _test.go with version-table RoundTrip + packet-audit:verify markers"},
+        {"id": "DOM-21", "name": "No atlas-constants duplication", "status": "pass", "evidence": "no new shared-type decl; raw uint32/byte at wire boundary (whisper.go:56,140) per existing field-codec convention; ClockType/KiteDestroyAnimationType pre-existing/out-of-scope"},
+        {"id": "DOM-01..05,11,18,19,22,23", "name": "DDD domain items", "status": "warn", "evidence": "N/A — no domain/REST surface in codec package"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/socket/handler",
+      "type": "socket-handler",
+      "checks": [
+        {"id": "SUB-01", "name": "Logic not in handler", "status": "pass", "evidence": "decode-and-log only by design D2: request_foothold_info.go:13-19, admin_command.go:13-19"},
+        {"id": "SUB-02", "name": "No db.Create/db.Save in handler", "status": "pass", "evidence": "grep 14 new handlers: 0 matches"},
+        {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "grep json.NewDecoder/Unmarshal/io.ReadAll: 0 matches"},
+        {"id": "LOG", "name": "FieldLogger / no StandardLogger", "status": "pass", "evidence": "handlers take logrus.FieldLogger; grep StandardLogger: 0"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/socket/writer + main.go",
+      "type": "socket-writer/wiring",
+      "checks": [
+        {"id": "WIRE-1", "name": "writers registered (not dead)", "status": "pass", "evidence": "main.go:702-715"},
+        {"id": "WIRE-2", "name": "handlers registered (not dead)", "status": "pass", "evidence": "main.go:798-802"},
+        {"id": "SEAM", "name": "uncalled Body() helpers are documented seams", "status": "pass", "evidence": "snowball_touch.go:8-15 explicit seam comment"}
+      ]
+    },
+    {
+      "name": "relocation chat->field",
+      "type": "move-hygiene",
+      "checks": [
+        {"id": "MOVE-multi", "name": "multi pure move", "status": "pass", "evidence": "R100"},
+        {"id": "MOVE-general", "name": "general pure move", "status": "pass", "evidence": "R100"},
+        {"id": "MOVE-whisper", "name": "whisper pure move", "status": "fail", "evidence": "R097 — x/y widened int16->int32, WriteShort->WriteInt (whisper.go:142-190); mislabeled as move-not-rewrite. Test+evidence backed (whisper_test.go:87-133), non-blocking"},
+        {"id": "DEAD", "name": "no dead code after move", "status": "pass", "evidence": "moved files Deleted; remaining chat files still referenced"}
+      ]
+    },
+    {
+      "name": "tools/packet-audit matrix grader",
+      "type": "tool",
+      "checks": [
+        {"id": "GRADE-logic", "name": "op-identity routedElsewhere guard correct", "status": "pass", "evidence": "build.go:80-100, grade.go:157-159; package tests pass"},
+        {"id": "GRADE-test", "name": "regression test for new RoutedNames branch", "status": "fail", "evidence": "no *_test.go added/changed; grade_test.go/matrix_test.go do not populate Inputs.RoutedNames. Known gap, non-blocking"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "FINDING-1: libs/atlas-packet/field/clientbound/whisper.go:142-190 — whisper relocation is R097 not a pure move; WhisperFindResultMap x/y widened int16->int32. Test+evidence backed but should be documented as a wire-format change, not 'move-not-rewrite'.",
+    "FINDING-2: tools/packet-audit/internal/matrix/build.go:80-100 — new op-identity RoutedNames guard has no regression test; add a grade_test.go case populating RoutedNames with a colliding opcode."
+  ],
+  "informational": [
+    "INFO-1: new codecs use raw uint32/byte for mapId/channelId at the wire boundary (whisper.go:56,140) rather than _map.Id/channel.Id; not a DOM-21 violation — matches existing field-codec convention, no shared type redeclared."
+  ]
+}
+</content>

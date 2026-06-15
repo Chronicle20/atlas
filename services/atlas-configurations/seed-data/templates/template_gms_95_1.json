@@ -247,6 +247,7 @@
       },
       {
         "opCode": "0x68",
+        "validator": "LoggedInValidator",
         "handler": "CharacterBuffCancel"
       },
       {

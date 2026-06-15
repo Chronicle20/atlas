@@ -86,10 +86,10 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
-| INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x045 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
+| INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
 | SHOP_SCANNER_RESULT | CWvsContext::OnShopScannerResult |  | 0x046 | ❌ | 0x046 | ❌ | 0x048 | ❌ | 0x049 | ❌ | 0x040 | ❌ |
-| SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult |  | 0x047 | ❌ | 0x047 | ❌ | 0x049 | ❌ | 0x04A | ❌ | 0x041 | ❌ |
+| SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult |  | 0x047 | ❌ | 0x049 | ❌ | 0x049 | ❌ | 0x04A | ❌ | 0x041 | ❌ |
 | MARRIAGE_REQUEST | CWvsContext::OnMarriageRequest |  | 0x048 | ❌ | 0x048 | ❌ | 0x04A | ❌ | 0x04B | ❌ | 0x042 | ❌ |
 | MARRIAGE_RESULT | CWvsContext::OnMarriageResult |  | 0x049 | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04C | ❌ | 0x043 | ❌ |
 | WEDDING_GIFT_RESULT | CWvsContext::OnWeddingGiftResult |  | 0x04A | ❌ | 0x04A | ❌ | 0x04C | ❌ | 0x04D | ❌ | 0x044 | ❌ |
@@ -108,7 +108,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | IDA_0X051 | sub_B1135F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ |
 | IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_AEC92E |  | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
 | IDA_0X052 | sub_B113C8 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ |
-| LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  | 0x052 | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
+| LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  | 0x052 | ❌ | 0x054 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
 | IDA_0X053 | sub_B11485 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ |
 | MONSTER_BOOK_SET_CARD | CWvsContext::OnMonsterBookSetCard | character/clientbound/monsterbook/CharacterSetCard (T1) | 0x053 | ✅ | 0x055 | ✅ | 0x055 | ✅ | 0x056 | ✅ | 0x057 | ✅ |
 | IDA_0X054 | sub_AEC922 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ |
@@ -118,10 +118,10 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  | 0x057 | ❌ | 0x059 | ❌ | 0x059 | ❌ | 0x05A | ❌ | 0x05E | ❌ |
 | CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  | 0x058 | ❌ | 0x05A | ❌ | 0x05A | ❌ | 0x05B | ❌ | 0x05F | ❌ |
 | IDA_0X059 | CWvsContext::OnMapleTVUseRes |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ |
-| WEB_BOARD_AUTHKEY_UPDATE | CWvsContext::OnWebBoardAuthkeyUpdate |  | 0x059 | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05C | ❌ | 0x060 | ❌ |
-| SESSION_VALUE | CWvsContext::OnSessionValue |  | 0x05A | ❌ | 0x05A | ❌ | 0x05C | ❌ | 0x05D | ❌ | 0x061 | ❌ |
-| PARTY_VALUE | CWvsContext::OnPartyValue |  | 0x05B | ❌ | 0x05B | ❌ | 0x05D | ❌ | 0x05E | ❌ | 0x062 | ❌ |
-| FIELD_SET_VARIABLE | CWvsContext::OnFieldSetVariable |  | 0x05C | ❌ | 0x05C | ❌ | 0x05E | ❌ | 0x05F | ❌ | 0x063 | ❌ |
+| WEB_BOARD_AUTHKEY_UPDATE | CWvsContext::OnWebBoardAuthkeyUpdate |  | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05C | ❌ | 0x060 | ❌ |
+| SESSION_VALUE | CWvsContext::OnSessionValue |  | 0x05A | ❌ | 0x05C | ❌ | 0x05C | ❌ | 0x05D | ❌ | 0x061 | ❌ |
+| PARTY_VALUE | CWvsContext::OnPartyValue |  | 0x05B | ❌ | 0x05D | ❌ | 0x05D | ❌ | 0x05E | ❌ | 0x062 | ❌ |
+| FIELD_SET_VARIABLE | CWvsContext::OnFieldSetVariable |  | 0x05C | ❌ | 0x05E | ❌ | 0x05E | ❌ | 0x05F | ❌ | 0x063 | ❌ |
 | IDA_0X05C | sub_AEC8D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05C | ❌ |
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  | 0x05D | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
 | FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  | 0x05E | ❌ | 0x05E | ❌ | 0x061 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
@@ -164,7 +164,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | SET_ITC | CStage::OnSetITC |  | 0x07E | ❌ | 0x07E | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
 | SET_CASH_SHOP | CStage::OnSetCashShop |  | 0x07F | ❌ | 0x07F | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
-| SET_BACK_EFFECT | CMapLoadable::OnSetBackEffect |  | 0x080 | ❌ | 0x080 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x07E | ❌ |
+| SET_BACK_EFFECT | CMapLoadable::OnSetBackEffect |  | 0x080 | ❌ | 0x083 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x07E | ❌ |
 | UPDATE_GM_BOARD | CWvsContext::OnUpdateGMBoard |  |  | ⬜ |  | ⬜ | 0x080 | ❌ | 0x082 | ❌ |  | ⬜ |
 | SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible |  | 0x081 | ❌ | 0x081 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
 | SHOW_SLOT_MESSAGE | CWvsContext::OnShowSlotMessage |  |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x083 | ❌ |  | ⬜ |
@@ -616,11 +616,11 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | WHISPER | CField::OnWhisper; CField::SendChatMsgWhisper; CField::SendLocationWhisper |  | 0x078 | ❌ | 0x07A | ❌ | 0x07E | ❌ | 0x08D | ❌ | 0x07A | ❌ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage |  | 0x079 | ❌ | 0x079 | ❌ | 0x07F | ❌ | 0x08E | ❌ |  | ⬜ |
-| MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07A | ✅ | 0x07A | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
+| MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07A | ✅ | 0x07C | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
 | REPAIR_DURABILITY | CRepairDurabilityDlg::SendRepairDurability |  |  | ⬜ |  | ⬜ | 0x07A | ❌ | 0x083 | ❌ | 0x06E | ❌ |
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest |  | 0x07B | ❌ | 0x07B | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
-| PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperation (T1) | 0x07C | ✅ | 0x07C | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
+| PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperation (T1) | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
 | DENY_PARTY_REQUEST |  |  | 0x07D | ❌ | 0x07D | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x07E | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
 | DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07F | ✅ | 0x07F | ❌ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
@@ -645,11 +645,11 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  | 0x08A | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
 | WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
-| BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  | 0x08D | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
+| BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  | 0x08D | ❌ | 0x091 | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
 | ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x08E | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x0A7 | ✅ | 0x091 | ✅ |
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x08F | ✅ | 0x093 | ✅ | 0x097 | ✅ | 0x0A8 | ✅ | 0x092 | ✅ |
 | DENY_ALLIANCE_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult |  | 0x090 | ❌ | 0x094 | ❌ | 0x098 | ❌ |  | ⬜ |  | ⬜ |
-| OPEN_FAMILY_PEDIGREE | CWvsContext::SendFamilyChartRequest |  | 0x091 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x0A9 | ❌ | 0x093 | ❌ |
+| OPEN_FAMILY_PEDIGREE | CWvsContext::SendFamilyChartRequest |  | 0x091 | ❌ | 0x095 | ❌ | 0x099 | ❌ | 0x0A9 | ❌ | 0x093 | ❌ |
 | OPEN_FAMILY | CWvsContext::SendFamilyInfoRequest |  | 0x092 | ❌ | 0x092 | ❌ | 0x09A | ❌ | 0x0AA | ❌ | 0x094 | ❌ |
 | ADD_FAMILY | CWvsContext::SendRegisterJunior |  | 0x093 | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0AB | ❌ | 0x095 | ❌ |
 | SEPARATE_FAMILY_BY_SENIOR | CWvsContext::SendUnregisterJunior |  | 0x094 | ❌ | 0x098 | ❌ | 0x09C | ❌ | 0x0AC | ❌ | 0x096 | ❌ |
@@ -659,8 +659,8 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  | 0x098 | ❌ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  | 0x099 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
 | UNNAMED_R245 |  |  | 0x09A | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
-| BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ✅ | 0x09B | ❌ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |
-| ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  | 0x09C | ❌ | 0x09C | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
+| BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ✅ | 0x09F | ❌ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |
+| ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  | 0x09C | ❌ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
 | USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  | 0x09D | ❌ | 0x09D | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x089 | ✅ |
 | USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  | 0x09E | ❌ | 0x09E | ❌ | 0x0A6 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |

@@ -396,10 +396,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: INCUBATOR_RESULT
   direction: clientbound
-  opcode: 69
+  opcode: 71
   fname: CWvsContext::OnIncubatorResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E: v84 clientbound opcode corrected 0x45->0x47 by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x47 -> CWvsContext::OnIncubatorResult (v84 fn 0xa73a5b renamed+saved). Body match v95 OnIncubatorResult @0xa00380: Decode4(itemID)+Decode2(count)+Decode4(gachaponItemID)+Decode4(bonusItemID)+Decode4(bonusCount), GetGachaponMsg + CUtilDlgEx gachapon-success dialog, fallback Notice string. v95 dispatch case=72; v84 lacks OnOpenGate so numbering compresses by 1 -> 0x47. Stale 0x45 was v83 carryover (now owned by TOWN_PORTAL/OnTownPortal).'
 - op: SHOP_SCANNER_RESULT
   direction: clientbound
   opcode: 70
@@ -408,10 +410,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SHOP_LINK_RESULT
   direction: clientbound
-  opcode: 71
+  opcode: 73
   fname: CWvsContext::OnShopLinkResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E cascade (revealed by INCUBATOR_RESULT moving to 0x47): v84 clientbound opcode corrected 0x47->0x49 by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x49 -> OnShopLinkResult (v84 fn 0xa747d6 renamed+saved): CUniqueModeless RTTI==CUIShopScanResult guard then forwards to CUIShopScanResult::OnShopLinkResult. Body match v95 OnShopLinkResult @0x9f0c40 (dispatch case 74). v84 dispatcher: 0x47 Incubator, 0x48 ShopScanner, 0x49 ShopLink. Stale 0x47 was v83 carryover (now owned by INCUBATOR_RESULT).'
 - op: MARRIAGE_REQUEST
   direction: clientbound
   opcode: 72
@@ -482,10 +486,12 @@
   note: 'task-100 cluster-C: v84 opcode corrected 0x51->0x53 by READING the v84 dispatcher. CNpcPool::OnPacket @0x6f08d4 case 0x53 -> OnNpcImitateData (0x6f0966: Decode1 count + loop{Decode4 templateID + DecodeStr + AvatarLook::Decode + SetImitatedLook}). v95 PDB OnNpcImitateData @0x679500 is dispatcher case 84, same body (identity). v84 fn renamed+saved. Stale 0x51 was v83 carryover (now owned by BRIDLE_MOB_CATCH_FAIL).'
 - op: LIMITED_NPC_DISABLE_INFO
   direction: clientbound
-  opcode: 82
+  opcode: 84
   fname: CNpcPool::OnUpdateLimitedDisableInfo
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E: v84 clientbound opcode corrected 0x52->0x54 by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x54 -> CNpcPool::OnPacket(84) @0x6f08d4 case 0x54 -> CNpcPool::OnUpdateLimitedDisableInfo (v84 fn 0x6f0a3c renamed+saved): Decode1(count)+RemoveAll(m_mDisabledNpc)+loop{Decode4 npcId; Insert}. Body match v95 CNpcPool::OnUpdateLimitedDisableInfo @0x679210 (CWvsContext dispatch case 85 -> OnLimitedNPCDisableInfo forwarder -> CNpcPool::OnPacket(85)). Stale 0x52 was v83 carryover (now owned by IMITATED_NPC_RESULT/OnImitatedNPCResult).'
 - op: MONSTER_BOOK_SET_CARD
   direction: clientbound
   opcode: 85
@@ -536,28 +542,36 @@
   note: 'task-100 cluster A: v84 CWvsContext::OnPacket (0xa51cd0) case 0x5A -> OnClassCompetitionAuthkeyUpdate (0xa5cedd); body-verified vs v95 (0x9e4000) — identical DecodeStr+MBToWC+timeGetTime, stores the ClassCompetition authkey/timestamp (this[3126] vs Consult this[3124]). Was stale v83 0x58 colliding with MINIMAP_ON_OFF.'
 - op: WEB_BOARD_AUTHKEY_UPDATE
   direction: clientbound
-  opcode: 89
+  opcode: 91
   fname: CWvsContext::OnWebBoardAuthkeyUpdate
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E: v84 clientbound opcode corrected 0x59->0x5B by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x5B -> OnWebBoardAuthkeyUpdate (v84 fn 0xa5cf6c renamed+saved): Decode1(idx); if(!idx) DecodeStr + MultiByteToWideChar + store authkey + timeGetTime at this[idx+3128]. Body match v95 OnWebBoardAuthkeyUpdate @0x9e40d0 (dispatch case 92). v84 dispatcher order: 0x59 Consult, 0x5A ClassCompetition, 0x5B WebBoard, 0x5C SessionValue. Stale 0x59 was v83 carryover (now owned by CONSULT_AUTHKEY_UPDATE/OnConsultAuthkeyUpdate).'
 - op: SESSION_VALUE
   direction: clientbound
-  opcode: 90
+  opcode: 92
   fname: CWvsContext::OnSessionValue
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E: v84 clientbound opcode corrected 0x5A->0x5C by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x5C -> OnSessionValue (v84 fn 0xa5d013 renamed+saved): DecodeStr(sKey)+DecodeStr(sVal) then a chain of StringPool::GetString + operator== comparisons writing this[3604/3645/3646/3647/3648/3649], Effect_Cool/Effect_General + CStage update. Body match v95 OnSessionValue @0x9e41b0 (dispatch case 93; member offsets m_pStr+4148/4189/4190/4191/4192/4193 mirror the v84 this[3604..3649] set). StringPool IDs differ by version (expected); structural match conclusive. Stale 0x5A was v83 carryover (now owned by CLASS_COMPETITION_AUTHKEY_UPDATE/OnClassCompetitionAuthkeyUpdate).'
 - op: PARTY_VALUE
   direction: clientbound
-  opcode: 91
+  opcode: 93
   fname: CWvsContext::OnPartyValue
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E cascade (revealed by WEB_BOARD/SESSION_VALUE moving to 0x5B/0x5C): v84 clientbound opcode corrected 0x5B->0x5D by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x5D -> OnPartyValue (v84 fn 0xa5d3f1 renamed+saved): DecodeStr(sKey)+DecodeStr(sVal), GetString 5719 compare -> this[3652]=atoi (m_nPartyRaidPoint), CStage Init vtable. Body match v95 OnPartyValue @0x9e4720 (dispatch case 94). Stale 0x5B was v83 carryover (now owned by WEB_BOARD_AUTHKEY_UPDATE).'
 - op: FIELD_SET_VARIABLE
   direction: clientbound
-  opcode: 92
+  opcode: 94
   fname: CWvsContext::OnFieldSetVariable
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster-E cascade (revealed by SESSION_VALUE moving to 0x5C): v84 clientbound opcode corrected 0x5C->0x5E by READING the v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x5E -> OnFieldSetVariable (v84 fn 0xa5d4c6 renamed+saved): DecodeStr(sKey)+DecodeStr(sVal), three GetString compares (5472/5473/5500) with PartyRaid-team logic on this[3649] -> this[3650/3651/3655], CStage Close vtable. Body match v95 OnFieldSetVariable @0x9e4870 (dispatch case 95). Stale 0x5C was v83 carryover (now owned by SESSION_VALUE).'
 - op: BONUS_EXP_CHANGED
   direction: clientbound
   opcode: 93
@@ -766,10 +780,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SET_BACK_EFFECT
   direction: clientbound
-  opcode: 128
+  opcode: 131
   fname: CMapLoadable::OnSetBackEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5494183
+  note: 'task-100 cluster-E: v84 clientbound opcode corrected 0x80->0x83 by READING the v84 field router CField::OnPacket (0x53d5a7): header 131-133 -> CMapLoadable::OnPacket (0x659cbd: 131 SetBackEffect, 132 SetMapObjectVisible, 133 ClearBackEffect). v84 SetBackEffect = case 131 -> OnSetBackEffect (v84 fn 0x659e3c renamed+saved): BackEffect::Decode + two near-identical branches (state 0/1) each ZMap GetAt layer map + get_update_time + walk IWzGr2DLayer ZList + Getalpha/RelMove (alpha 255 vs 0). Body match v95 CMapLoadable::OnSetBackEffect @0x612850 (CMapLoadable::OnPacket case 144). Stale 0x80 was v83 carryover (now owned by SET_FIELD/CStage::OnSetField, which CField::OnPacket routes via CStage::OnPacket headers 128-130).'
 - op: SET_MAP_OBJECT_VISIBLE
   direction: clientbound
   opcode: 129
@@ -3099,7 +3115,7 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: MESSENGER
   direction: serverbound
-  opcode: 122
+  opcode: 124
   fname: CFadeWnd::SendCloseMessage
   fname_alts:
     - CUIMessenger::OnDestroy
@@ -3108,8 +3124,10 @@
     - CUIMessenger::SendInviteMsg
     - CUIMessenger::OnCreate
     - CUIMessenger::ProcessChat
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5420119
+  note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x7A->0x7C by READING the v84 send-site CFadeWnd::SendCloseMessage (v84 fn 0x52b457 renamed+saved). FNAME SURFACED: CFadeWnd::SendCloseMessage is a MULTIPLEXED send keyed on m_nType — its case-0 path builds the MESSENGER invite-response packet: COutPacket(124)/0x7C + Encode1(5) + EncodeStr(inviter) + EncodeStr(myName) + Encode1(0); other cases of the same fn send DIFFERENT opcodes (case5 party 0x7F, case6 alliance 0x94, case8 0x83). The registry fname is correct (this IS the function that emits MESSENGER) but it is a shared send-site, not a messenger-only fn. Body match: v83 case-0 COutPacket(0x7A) Encode1(5) (=the stale value, confirming v83 carryover), v95 case-0 COutPacket(0x8F) Encode1(5). v84 shift +2 vs v83 (0x7A->0x7C). Stale 0x7A now owned by WHISPER-sb/CField::SendLocationWhisper. NOTE: clientbound MESSENGER (0x140/CUIMessenger::OnPacket) is unaffected.'
 - op: PLAYER_INTERACTION
   direction: serverbound
   opcode: 123
@@ -3180,7 +3198,7 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: PARTY_OPERATION
   direction: serverbound
-  opcode: 124
+  opcode: 126
   fname: CField::SendCreateNewPartyMsg
   fname_alts:
     - CField::SendWithdrawPartyMsg
@@ -3188,8 +3206,10 @@
     - CField::SendChangePartyBossMsg
     - CField::SendJoinPartyMsg
     - CWvsContext::OnPartyResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5488183
+  note: 'task-100 cluster-E cascade (revealed by MESSENGER-sb moving to 0x7C): v84 serverbound opcode corrected 0x7C->0x7E by READING the v84 send-site CField::SendCreateNewPartyMsg (0x53be37, already named; idb saved): job/level guard then COutPacket(126)/0x7E + Encode1(1) + SendPacket. Body match v95 SendCreateNewPartyMsg @0x52ebc0 (COutPacket(145) + Encode1(1)) and v83 (COutPacket(0x7C) + Encode1(1) = the stale value). Shift +2 vs v83 (0x7C->0x7E). Stale 0x7C was v83 carryover (now owned by MESSENGER-sb/CFadeWnd::SendCloseMessage).'
 - op: DENY_PARTY_REQUEST
   direction: serverbound
   opcode: 125
@@ -3339,10 +3359,12 @@
   note: 'task-096 IDA re-harvest: v84 opcode corrected 140->144 (0x90) by READING the real send-site. v84 CField_Wedding::OnWeddingProgress @0x5911e6 emits COutPacket(144) with no body (header only) on the YESNO confirm (sub_4F61C5==6) branch. Distinct serverbound op emitted by OnWeddingProgress. Prior value 140 was the stale v83 opcode.'
 - op: BOOBY_TRAP_ALERT
   direction: serverbound
-  opcode: 141
+  opcode: 145
   fname: CWvsContext::SendBoobyTrapAlert
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11002304
+  note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x8D->0x91 by READING the v84 send-site CWvsContext::SendBoobyTrapAlert (v84 fn 0xa7e1c0 renamed+saved): COutPacket(145)/0x91 + Encode4(nTrapType) + SendPacket. Identified via its sole caller CDropPool::BoobyTrapCheckPickupItem (v84 fn 0x510ff0 renamed+saved): rect ±25/-50/+10 PtInRect over the recent-pickup ZList<tagPOINT>, calls SendBoobyTrapAlert(1)/(1)/(2) — byte-for-byte the v83 BoobyTrapCheckPickupItem @0x5081b0 and v95 @0x5104e0. Shift: v83 SendBoobyTrapAlert COutPacket(0x8D) (=the stale value, v83 carryover), v84 0x91, v95 0xA5; +4 vs v83. Stale 0x8D now owned by RING_ACTION/CEngageDlg::SetRet.'
 - op: ALLIANCE_REQUEST
   direction: serverbound
   opcode: 142
@@ -3381,10 +3403,12 @@
   note: 'task-096 IDA re-harvest: v84 opcode corrected 144->148 (0x94) by READING the real send-site. v84 CFadeWnd::SendCloseMessage (sub_52B457) m_nType==6 branch @0x52B639 builds COutPacket(148) + Encode1(0x16) + EncodeStr(inviter) + EncodeStr(guildName). This is the structural twin of the v83 PDB-named CFadeWnd::SendCloseMessage @0x5200a0 case 6 which builds COutPacket(144/0x90) with the same Encode1(0x16)+two-EncodeStr body, and of the v95 same case-6 (opcode 168). v84 shift is +4 vs v83 (144->148). Prior value 144 was the stale v83 opcode (now owned by WEDDING_TALK). NOTE: 147/148 currently also held by stale csv-import family rows (ADD_FAMILY/SEPARATE_FAMILY_BY_SENIOR) — that is the broader non-CField serverbound reshift debt, tracked separately; these alliance values are the IDA-read truth.'
 - op: OPEN_FAMILY_PEDIGREE
   direction: serverbound
-  opcode: 145
+  opcode: 149
   fname: CWvsContext::SendFamilyChartRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11008454
+  note: 'task-100 cluster-E cascade (revealed by BOOBY_TRAP_ALERT moving to 0x91): v84 serverbound opcode corrected 0x91->0x95 by READING the v84 send-site CWvsContext::SendFamilyChartRequest (v84 fn 0xa7f9c6 renamed+saved): COutPacket(149)/0x95 + EncodeStr(characterName) + SendPacket. Body match v95 SendFamilyChartRequest @0xa09d20 (COutPacket(169) + EncodeStr) and v83 (COutPacket(0x91) + EncodeStr = the stale value). Family-region shift +4 vs v83 (0x91->0x95). Stale 0x91 was v83 carryover (now owned by BOOBY_TRAP_ALERT). NOTE: the adjacent family serverbound rows (OPEN_FAMILY@146 etc.) are likely also stale v83 carryovers in the same +4 family cascade — see cluster-E report cross-region list.'
 - op: OPEN_FAMILY
   direction: serverbound
   opcode: 146
@@ -3449,7 +3473,7 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 245: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: BBS_OPERATION
   direction: serverbound
-  opcode: 155
+  opcode: 159
   fname: CUIGuildBBS::SendLoadListRequest
   fname_alts:
     - CUIGuildBBS::SendViewEntryRequest
@@ -3457,14 +3481,18 @@
     - CUIGuildBBS::OnRegister
     - CUIGuildBBS::OnComment
     - CUIGuildBBS::OnDelete
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8658432
+  note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x9B->0x9F by READING the v84 send-site CUIGuildBBS::SendLoadListRequest (v84 fn 0x841e00 renamed+saved): COutPacket(159)/0x9F + Encode1(2) + Encode4(m_nEntryListStart) + SendPacket. Body match v95 SendLoadListRequest @0x7c3680 (COutPacket(179) + Encode1(2) + Encode4). Confirmed by adjacent sibling SendViewEntryRequest (v84 fn 0x841e61 renamed): same COutPacket(0x9F) + Encode1(3) then calls SendLoadListRequest — BBS_OPERATION is one opcode 0x9F with Encode1 subtype demuxing (2=load list, 3=view entry, etc). Receiver dispatcher CUIGuildBBS::OnGuildBBSPacket (v84 0x841ec9). Stale 0x9B now owned by USE_FAMILY/SendUseFamilyPrivilege.'
 - op: ENTER_MTS
   direction: serverbound
-  opcode: 156
+  opcode: 160
   fname: CWvsContext::SendMigrateToITCRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10864991
+  note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x9C->0xA0 by READING the v84 send-site CWvsContext::SendMigrateToITCRequest (v84 fn 0xa5c95f, already named; idb saved): guest-account guard (same "MapleStory Trading System...Guest ID" string) + dialog guards + get_update_time-tExclRequestSent>=500 check, then COutPacket(160)/0xA0 (no payload) + SendPacket + SetExclRequestSent(1). Body match v95 SendMigrateToITCRequest @0x9def50 (COutPacket(180)). Shift: v83 SendMigrateToITCRequest COutPacket(0x9C) (=stale value, v83 carryover), v84 0xA0, v95 0xB4; +4 vs v83. Stale 0x9C now owned by CHANGE_FAMILY_MESSAGE/SendSetFamilyPrecept.'
 - op: USE_SOLOMON_ITEM
   direction: serverbound
   opcode: 157

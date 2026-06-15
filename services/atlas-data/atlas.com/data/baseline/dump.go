@@ -7,7 +7,14 @@ import (
 )
 
 // SchemaVersion bumps in lockstep with the schema-version fingerprint check.
-const SchemaVersion = "v1"
+//
+// v2: dumps record an explicit per-table column list in the header and use
+// name-keyed COPY (`COPY t (cols) FROM`) on restore instead of positional
+// `SELECT *`. This makes restore robust to physical column-order drift between
+// the publish source (atlas-main, columns appended via ALTER over time) and a
+// freshly-AutoMigrated restore target (columns in struct order). v1 dumps are
+// positional and are rejected by the restore schema gate.
+const SchemaVersion = "v2"
 
 // DumpTables is the ordered list of tables included in a baseline dump.
 var DumpTables = []string{
@@ -20,13 +27,19 @@ var DumpTables = []string{
 }
 
 // Header is the deterministic JSON entry written as the first tar entry.
+//
+// Columns records, per table, the exact ordered column list the dump's binary
+// COPY stream was produced with. Restore replays it as `COPY <table> (cols)
+// FROM STDIN` so Postgres maps stream fields to columns by NAME, immune to the
+// target table's physical column order.
 type Header struct {
-	SchemaVersion string    `json:"schemaVersion"`
-	Region        string    `json:"region"`
-	MajorVersion  int       `json:"majorVersion"`
-	MinorVersion  int       `json:"minorVersion"`
-	Tables        []string  `json:"tables"`
-	PublishedAt   time.Time `json:"publishedAt"`
+	SchemaVersion string              `json:"schemaVersion"`
+	Region        string              `json:"region"`
+	MajorVersion  int                 `json:"majorVersion"`
+	MinorVersion  int                 `json:"minorVersion"`
+	Tables        []string            `json:"tables"`
+	Columns       map[string][]string `json:"columns"`
+	PublishedAt   time.Time           `json:"publishedAt"`
 }
 
 // MarshalHeader encodes the header as canonical JSON.

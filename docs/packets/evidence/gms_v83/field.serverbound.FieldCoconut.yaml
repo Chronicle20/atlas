@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldCoconut
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_Coconut::BasicActionAttack#Coconut
+    address: "0x549902"
+    decompile_sha256: adef3e7567f8d457a3d246bebf39385490cd563645344b69f8c70b96f30911e0

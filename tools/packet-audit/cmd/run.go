@@ -1823,6 +1823,22 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField_MassacreResult::OnMassacreResult":
 		return []candidate{{name: "PyramidScore", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField serverbound minigame/door send-sites (task-096, recipe R-SB). These
+	// are the client BasicActionAttack / Update / TryEnterTownPortal send-site
+	// FNames (#suffix tags appended in the export so each maps to a distinct op,
+	// since several share a base send-site). The codecs live under
+	// field/serverbound; addresses are pinned per version in the test markers.
+	case "CField_SnowBall::BasicActionAttack#Snowball":
+		return []candidate{{name: "Snowball", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_SnowBall::Update#LeftKnockback":
+		return []candidate{{name: "LeftKnockback", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_Coconut::BasicActionAttack#Coconut":
+		return []candidate{{name: "Coconut", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_GuildBoss::BasicActionAttack#GuildBoss":
+		return []candidate{{name: "GuildBoss", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::TryEnterTownPortal#UseDoor":
+		return []candidate{{name: "UseDoor", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// CField_Tournament clientbound family (task-096, recipe R-CB). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	// OnTournamentSetPrize carries a trailing post-read Delegate (sub_XXXXXX in the
@@ -1850,6 +1866,14 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "WeddingProgress", pkg: "field", dir: csvpkg.DirClientbound}}
 	case "CField_Wedding::OnWeddingCeremonyEnd":
 		return []candidate{{name: "WeddingCeremonyEnd", pkg: "field", dir: csvpkg.DirClientbound}}
+	// Serverbound wedding send-sites (task-096, recipe R-SB). OnWeddingProgress
+	// both reads the clientbound progress packet and emits these serverbound
+	// replies; the #Action / #Talk export suffixes disambiguate them from the
+	// base clientbound case above. jms-absent (no jms registry rows / markers).
+	case "CField_Wedding::OnWeddingProgress#Action":
+		return []candidate{{name: "WeddingAction", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField_Wedding::OnWeddingProgress#Talk":
+		return []candidate{{name: "WeddingTalk", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// CField witch-tower / item-upgrade clientbound family (task-096). The
 	// OnScoreUpdate handler is shared by two ops that differ by version: it backs

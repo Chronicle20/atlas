@@ -10896,36 +10896,32 @@
     {
       "kind": "op",
       "op": "USE_DOOR",
+      "packet": "field/serverbound/FieldUseDoor",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::TryEnterTownPortal",
         "CTownPortalPool::TryEnterTownPortal"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 133
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 137
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 141
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 156
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 136
         }
       }
@@ -11641,7 +11637,7 @@
     {
       "kind": "op",
       "op": "WEDDING_ACTION",
-      "packet": "field/clientbound/FieldWeddingProgress",
+      "packet": "field/serverbound/FieldWeddingAction",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -11705,7 +11701,7 @@
     {
       "kind": "op",
       "op": "WEDDING_TALK",
-      "packet": "field/clientbound/FieldWeddingProgress",
+      "packet": "field/serverbound/FieldWeddingAction",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -17361,35 +17357,31 @@
     {
       "kind": "op",
       "op": "SNOWBALL",
+      "packet": "field/serverbound/FieldSnowball",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_SnowBall::BasicActionAttack"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 211
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 217
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 224
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 255
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 222
         }
       }
@@ -17498,35 +17490,31 @@
     {
       "kind": "op",
       "op": "LEFT_KNOCKBACK",
+      "packet": "field/serverbound/FieldLeftKnockback",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_SnowBall::Update"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 212
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 218
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 225
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 256
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 223
         }
       }
@@ -17534,35 +17522,31 @@
     {
       "kind": "op",
       "op": "COCONUT",
+      "packet": "field/serverbound/FieldCoconut",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Coconut::BasicActionAttack"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 213
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 219
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 226
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 257
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 224
         }
       }
@@ -17638,35 +17622,31 @@
     {
       "kind": "op",
       "op": "GUILD_BOSS",
+      "packet": "field/serverbound/FieldGuildBoss",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_GuildBoss::BasicActionAttack"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 215
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 221
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 228
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 259
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 226
         }
       }
@@ -24713,7 +24693,7 @@
     {
       "kind": "op",
       "op": "WEDDING_PROGRESS",
-      "packet": "field/clientbound/FieldWeddingProgress",
+      "packet": "field/serverbound/FieldWeddingAction",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [

@@ -3048,12 +3048,6 @@
     - CWvsContext::OnMemoNotify_Receive
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: UNNAMED_R221
-  direction: serverbound
-  opcode: 132
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 221: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: USE_DOOR
   direction: serverbound
   opcode: 137
@@ -3154,18 +3148,24 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: ALLIANCE_OPERATION
   direction: serverbound
-  opcode: 143
+  opcode: 147
+  fname: CUIFadeYesNo::OnButtonClicked
+  fname_alts:
+    - CWvsContext::OnAllianceResult
+  provenance: ida-discovered
+  ida:
+    address: 5430817
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 143->147 (0x93) by READING the real send-site. v84 CUIFadeYesNo::OnButtonClicked (sub_52DC20) jumptable case 6 @0x52DE21 builds COutPacket(147) + Encode1(mode) + Encode4(allianceId). This is the structural twin of the v83 PDB-named CUIFadeYesNo::OnButtonClicked @0x522722 which builds COutPacket(143/0x8F) with the same Encode1+Encode4 body, and of the v95 ALLIANCE_OPERATION send-site (opcode 168). v84 shift is +4 vs v83 (143->147) in this neighborhood (wedding is also +4). Prior value 143 was the stale v83 opcode (now owned by WEDDING_ACTION).'
+- op: DENY_ALLIANCE_REQUEST
+  direction: serverbound
+  opcode: 148
   fname: CFadeWnd::SendCloseMessage
   fname_alts:
     - CWvsContext::OnAllianceResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: DENY_ALLIANCE_REQUEST
-  direction: serverbound
-  opcode: 144
-  fname: ""
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5420601
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 144->148 (0x94) by READING the real send-site. v84 CFadeWnd::SendCloseMessage (sub_52B457) m_nType==6 branch @0x52B639 builds COutPacket(148) + Encode1(0x16) + EncodeStr(inviter) + EncodeStr(guildName). This is the structural twin of the v83 PDB-named CFadeWnd::SendCloseMessage @0x5200a0 case 6 which builds COutPacket(144/0x90) with the same Encode1(0x16)+two-EncodeStr body, and of the v95 same case-6 (opcode 168). v84 shift is +4 vs v83 (144->148). Prior value 144 was the stale v83 opcode (now owned by WEDDING_TALK). NOTE: 147/148 currently also held by stale csv-import family rows (ADD_FAMILY/SEPARATE_FAMILY_BY_SENIOR) — that is the broader non-CField serverbound reshift debt, tracked separately; these alliance values are the IDA-read truth.'
 - op: OPEN_FAMILY_PEDIGREE
   direction: serverbound
   opcode: 145
@@ -3341,18 +3341,6 @@
   fname: CPet::SendUpdateExceptionListRequest
   provenance: manual
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CPet::SendUpdateExceptionListRequest constructs COutPacket(177). v83 172.'
-- op: UNNAMED_R288
-  direction: serverbound
-  opcode: 173
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 288: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: UNNAMED_R289
-  direction: serverbound
-  opcode: 174
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 289: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: MOVE_SUMMON
   direction: serverbound
   opcode: 175
@@ -3481,18 +3469,6 @@
   fname: CNpc::RequestSpecialAction
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: UNNAMED_R344
-  direction: serverbound
-  opcode: 199
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 344: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: UNNAMED_R345
-  direction: serverbound
-  opcode: 200
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 345: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: UNNAMED_R346
   direction: serverbound
   opcode: 201
@@ -3505,12 +3481,6 @@
   fname: CWvsContext::SendDropPickUpRequest
   provenance: manual
   note: 'v84 serverbound opcode verified from IDB COutPacket send-site (task-085)'
-- op: UNNAMED_R348
-  direction: serverbound
-  opcode: 203
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 348: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: UNNAMED_R349
   direction: serverbound
   opcode: 204
@@ -3537,12 +3507,6 @@
   fname: CUserLocal::ResetNLCPQ
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: UNNAMED_R355
-  direction: serverbound
-  opcode: 208
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 355: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: UNNAMED_R356
   direction: serverbound
   opcode: 209
@@ -3601,12 +3565,6 @@
   fname: ""
   provenance: csv-import
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 363: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: UNNAMED_R364
-  direction: serverbound
-  opcode: 217
-  fname: ""
-  provenance: csv-import
-  note: 'STALE PHANTOM (task-096 IDA re-harvest): this is a v83-inherited CSV n/a slot with no fname and no v84 send-site. In v84 opcode 217 (0xD9) is IDA-verified to belong to SNOWBALL (CField_SnowBall::BasicActionAttack @0x584d00), whose v84 opcode shifted +6 (211->217) onto this slot. SNOWBALL is the authoritative owner; this phantom is retained per the existing v84 real-op+phantom convention (cf. MONSTER_CARNIVAL/UNNAMED_R372 at 224) but carries no semantics. Original seed note: CSV serverbound row 364, op name unknown.'
 - op: MONSTER_CARNIVAL
   direction: serverbound
   opcode: 224
@@ -3615,18 +3573,6 @@
   ida:
     address: 9027034
   note: 'ida-verified: CUIMonsterCarnival::RequestSend @0x89bdda COutPacket(224/0xE0) (task-092 Cluster-E). v84 serverbound opcode is +6 vs v83 (0xE0 vs 0xDA); the csv-import value was stale v83.'
-- op: UNNAMED_R366
-  direction: serverbound
-  opcode: 219
-  fname: ""
-  provenance: csv-import
-  note: 'STALE PHANTOM (task-096 IDA re-harvest): v83-inherited CSV n/a slot with no fname and no v84 send-site. In v84 opcode 219 (0xDB) is IDA-verified to belong to COCONUT (CField_Coconut::BasicActionAttack @0x556075), whose v84 opcode shifted +6 (213->219) onto this slot. COCONUT is the authoritative owner; this phantom is retained per the existing v84 real-op+phantom convention but carries no semantics. Original seed note: CSV serverbound row 366, op name unknown.'
-- op: UNNAMED_R369
-  direction: serverbound
-  opcode: 221
-  fname: ""
-  provenance: csv-import
-  note: 'STALE PHANTOM (task-096 IDA re-harvest): v83-inherited CSV n/a slot with no fname and no v84 send-site. In v84 opcode 221 (0xDD) is IDA-verified to belong to GUILD_BOSS (CField_GuildBoss::BasicActionAttack @0x5655e8), whose v84 opcode shifted +6 (215->221) onto this slot. GUILD_BOSS is the authoritative owner; this phantom is retained per the existing v84 real-op+phantom convention but carries no semantics. Original seed note: CSV serverbound row 369, op name unknown.'
 - op: PARTY_SEARCH_START
   direction: serverbound
   opcode: 222
@@ -3639,12 +3585,6 @@
   fname: CWvsContext::SendCancelPartyWanted
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: UNNAMED_R372
-  direction: serverbound
-  opcode: 224
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 372: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: REQUEST_FOOTHOLD_INFO
   direction: serverbound
   opcode: 225
@@ -3721,18 +3661,6 @@
   fname: ""
   provenance: csv-import
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 389: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: UNNAMED_R390
-  direction: serverbound
-  opcode: 234
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 390: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: UNNAMED_R391
-  direction: serverbound
-  opcode: 235
-  fname: ""
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 391: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: OPEN_ITEMUI
   direction: serverbound
   opcode: 236

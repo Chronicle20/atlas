@@ -669,6 +669,16 @@
         "handler": "CharacterKeyMapChangeHandle"
       },
       {
+        "opCode": "0x8F",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingAction"
+      },
+      {
+        "opCode": "0x90",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingTalk"
+      },
+      {
         "opCode": "0x9B",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",

@@ -51,7 +51,7 @@ Per-version added-entry counts (from the diff):
 | version   | new handlers | new writers |
 |-----------|-------------:|------------:|
 | gms_v83   | 12 | 46 |
-| gms_v84   | 10 | 45 |
+| gms_v84   | 12 | 45 |
 | gms_v87   | 13 | 49 |
 | gms_v95   | 14 | 50 |
 | jms_v185  | 11 | 44 |
@@ -138,13 +138,13 @@ Per-version added-entry counts (from the diff):
 | 0x84 | AdminCommand |
 | 0x85 | AdminLog |
 | 0x89 | UseDoor |
+| 0x8F | WeddingAction |
+| 0x90 | WeddingTalk |
 | 0xD9 | Snowball |
 | 0xDA | LeftKnockback |
 | 0xDB | Coconut |
 | 0xDC | MatchTable |
 | 0xDD | GuildBoss |
-
-> **v84 has NO `WeddingAction`/`WeddingTalk` handler rows** — see caveat #1.
 
 ### Clientbound — `socket.writers[]`
 | opCode | writer |
@@ -444,45 +444,55 @@ Per-version added-entry counts (from the diff):
 
 ---
 
+## Resolved (fixed in commit `fa2fd9bbf`)
+
+- **`WEDDING_ACTION`/`WEDDING_TALK` v84 routing — RESOLVED.** The stale v84
+  `ALLIANCE_OPERATION` (143→**147 / 0x93**) and `DENY_ALLIANCE_REQUEST`
+  (144→**148 / 0x94**) opcodes were re-derived from the v84 IDB (cross-ref v83
+  PDB + v95), freeing 0x8F/0x90. `WeddingAction` (0x8F) and `WeddingTalk` (0x90)
+  are now routed in `template_gms_84_1.json` `socket.handlers` (each with
+  `LoggedInValidator`) — both cells ✅ via a **real route**, not opcode-occupancy.
+  The two handler rows are now reflected in the v84 PATCH table above.
+- **v84 UNNAMED phantom rows — RESOLVED.** 13 stale csv `n/a` placeholder rows
+  (incl. `UNNAMED_R364` / `UNNAMED_R366` / `UNNAMED_R369`) were removed from
+  `gms_v84.yaml`.
+- **matrix-grader regression test — RESOLVED.** A regression test was added
+  (commit `de8859a59`) covering the op-identity-aware `routedElsewhere` change
+  (`tools/packet-audit`, commit `baa937176`).
+
 ## Known caveats / follow-ups (document honestly; do not block rollout)
 
-1. **`WEDDING_ACTION`/`WEDDING_TALK` v84 handler routes are NOT in
-   `template_gms_84_1.json`.** Their correct v84 opcodes (0x8F/0x90) collide
-   with stale `ALLIANCE_OPERATION` / `DENY_ALLIANCE_REQUEST` v84 registry rows
-   (143/144 — leftover from an incomplete v84 opcode-table reshift). The matrix
-   cells grade ✅ via opcode-occupancy, but the **v84 channel will NOT dispatch
-   inbound wedding packets** until the stale v84 ALLIANCE opcodes are
-   re-derived. This is a v84-registry-maintenance follow-up, **out of task-096
-   scope**. (v83/v87/v95 DO ship the wedding handler rows; v84 and jms do not.)
-
-2. **2 out-of-scope serverbound ops remain ❌:**
+1. **2 out-of-scope serverbound ops remain ❌:**
    - `CField::SendLocationWhisper` / `CField::SendChatMsgWhisper` (serverbound
      WHISPER), and
    - `CUIStatusBar::SendCoupleMessage` (serverbound SPOUSE_CHAT).
    They share op-NAMES with the verified **clientbound** WHISPER / SPOUSE_CHAT
    ops but were not in the 75-op work-list. Follow-up candidates.
 
-3. **v84 `UNNAMED_R364` / `UNNAMED_R366` / `UNNAMED_R369`** — stale phantom
-   registry rows (no fname) that coexist with the SnowBall serverbound ops at
-   the same opcode. Documented stale; cleanup deferred.
-
-4. **CSV transposition** — `docs/packets/MapleStory Ops - ClientBound.csv` has
+2. **CSV transposition** — `docs/packets/MapleStory Ops - ClientBound.csv` has
    `HORNTAIL_CAVE` ↔ `WITCH_TOWER_SCORE_UPDATE` swapped in its GMS v83 + v87
    columns. The **registries were corrected** (IDB-verified, commit 44488a7db);
    the CSV (a reference resource) was left as-is. The tables in this doc reflect
    the corrected registry opcodes.
 
-5. **matrix grader change** — `tools/packet-audit` `routedElsewhere` was made
-   op-identity-aware (commit `baa937176`) to avoid raw-opcode-coincidence false
-   conflicts. **No regression test was added for this change** (flag).
+3. **Broader repo-wide v84 opcode-table reshift debt (NON-CField).** Freeing
+   0x8F/0x90 for wedding moved ALLIANCE to 147/148, but the v84 opcode-table
+   reshift is still incomplete repo-wide: ~8 serverbound + ~35 clientbound
+   duplicate `(opcode, direction)` pairs remain in `gms_v84.yaml` where a real
+   op shares an opcode with a stale csv-import row of a **different (non-CField)**
+   family (e.g. ALLIANCE now at 147/148 sits on stale
+   `ADD_FAMILY` / `SEPARATE_FAMILY_BY_SENIOR`). `matrix --check` does **not**
+   flag these — no task-096 cell is mis-graded, and **no task-096 CField op is
+   in any remaining duplicate** — but they should be closed by a dedicated
+   repo-wide "complete the gms_v84 reshift" follow-up task.
 
 ---
 
 ## Verification state
 
 - All 75 work-list ops are ✅ / ⬜ (no work-list op left ❌; the 2 ❌ ops in
-  caveat #2 are out-of-scope, not work-list rows).
-- **1227 total verified cells** across the matrix.
+  caveat #1 are out-of-scope, not work-list rows).
+- **1228 total verified cells** across the matrix.
 - `tools/packet-audit matrix --check` exits **0**.
 - `go test -race ./...`, `go vet ./...`, `go build ./...` clean in the changed
   modules.

@@ -382,10 +382,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SPAWN_PORTAL
   direction: clientbound
-  opcode: 67
+  opcode: 69
   fname: CWvsContext::OnTownPortal
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster A: v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x45 -> CWvsContext::OnTownPortal (0xa6dbb8); body-verified vs v95 OnTownPortal (0x9f1330, Decode4 townID/fieldID + 999999999 sentinel + OnTownPortalChanged). Was stale v83 0x43 colliding with GUILD_OPERATION.'
 - op: SERVERMESSAGE
   direction: clientbound
   opcode: 68
@@ -464,10 +466,12 @@
   note: 'task-092 Cluster-B: v84 opcode corrected 79->81 (0x51). CWvsContext::OnPacket @0xa51cd0 case 0x51 -> OnBridleMobCatchFail (sub_A522FC). The v84 CWvsContext sub-table is +2 shifted vs v83 (two NPC forwarders inserted). The prior csv-import value 79 (0x4F) was the stale v83 opcode.'
 - op: IMITATED_NPC_RESULT
   direction: clientbound
-  opcode: 80
+  opcode: 82
   fname: CWvsContext::OnImitatedNPCResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster A: v84 CWvsContext::OnPacket (0xa51cd0) case 0x52 -> OnImitatedNPCResult (0xa52630); body-verified vs v95 (0x9cfb30) — both single CInPacket::Decode1 stub (v84 size 0xc == v95 0xc). Was stale v83 0x50 colliding with SET_POTION_DISCOUNT_RATE.'
 - op: IMITATED_NPC_DATA
   direction: clientbound
   opcode: 81
@@ -514,16 +518,20 @@
   note: 'task-100 cluster-1: v84 opcode corrected 86->88 (0x58) by READING the v84 dispatcher. CWvsContext::OnPacket @0xa51cd0 case 0x58 -> sub_A5CE2A (renamed OnMiniMapOnOff); body Decode1 -> store + minimap reload, structural twin of v95 OnMiniMapOnOff (dispatcher case 89). +2 shift vs v83. Prior csv value 86 (0x56) was the stale v83 opcode (now owned by MONSTER_BOOK_SET_COVER @case 0x56).'
 - op: CONSULT_AUTHKEY_UPDATE
   direction: clientbound
-  opcode: 87
+  opcode: 89
   fname: CWvsContext::OnConsultAuthkeyUpdate
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster A: v84 CWvsContext::OnPacket (0xa51cd0) case 0x59 -> OnConsultAuthkeyUpdate (0xa5ce4e); body-verified vs v95 (0x9e3f30) — DecodeStr + MultiByteToWideChar + timeGetTime store m_sConsultAuthkey/m_dwConsultAuthkeyLastUpdated. Was stale v83 0x57 colliding with HOUR_CHANGED.'
 - op: CLASS_COMPETITION_AUTHKEY_UPDATE
   direction: clientbound
-  opcode: 88
+  opcode: 90
   fname: CWvsContext::OnClassCompetitionAuthkeyUpdate
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10820816
+  note: 'task-100 cluster A: v84 CWvsContext::OnPacket (0xa51cd0) case 0x5A -> OnClassCompetitionAuthkeyUpdate (0xa5cedd); body-verified vs v95 (0x9e4000) — identical DecodeStr+MBToWC+timeGetTime, stores the ClassCompetition authkey/timestamp (this[3126] vs Consult this[3124]). Was stale v83 0x58 colliding with MINIMAP_ON_OFF.'
 - op: WEB_BOARD_AUTHKEY_UPDATE
   direction: clientbound
   opcode: 89
@@ -736,10 +744,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SET_FIELD
   direction: clientbound
-  opcode: 125
+  opcode: 128
   fname: CStage::OnSetField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7965003
+  note: 'task-100 cluster A: v84 CStage::OnPacket dispatcher (0x79894b) case 0x80 -> CStage::OnSetField (0x798987); body-verified vs v95 OnSetField (0x71a0a0) — Decode4 field id + portal/notice + DecodeStr loop + CharacterData::Decode / set_stage. Matches template SetField writer route 0x80. Was stale v83 0x7D colliding with SCRIPT_PROGRESS_MESSAGE.'
 - op: SET_ITC
   direction: clientbound
   opcode: 126
@@ -802,10 +812,12 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CField::OnWhisper = CField low-dispatch case 0x8A (find-friend location modes). v83 0x87 shifted +3.'
 - op: SPOUSE_CHAT
   direction: clientbound
-  opcode: 136
+  opcode: 139
   fname: CField::OnCoupleMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5494183
+  note: 'task-100 cluster A: v84 CField::OnPacket dispatcher (0x53d5a7) case 0x8B -> CField::OnCoupleMessage (0x53e30d); body-verified vs v95 OnCoupleMessage (0x5357f0) — Decode1 mode + DecodeStr + StringPool 1797 couple-message format. Matches template SpouseChat writer route 0x8B. Was stale v83 0x88 colliding with FORCED_MAP_EQUIP.'
 - op: SUMMON_ITEM_INAVAILABLE
   direction: clientbound
   opcode: 140
@@ -814,10 +826,12 @@
   note: 'task-096 Cluster 2: v84 opcode corrected 137->140 (0x8C). IDA v84 CField::OnPacket (0x53D5A7) case 0x8C -> sub_53F255 (Decode1 flag, body ≡ v83 OnSummonItemInavailable). +3 vs v83; prior csv 137 (0x89) was stale.'
 - op: FIELD_EFFECT
   direction: clientbound
-  opcode: 138
+  opcode: 141
   fname: CField::OnFieldEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5494183
+  note: 'task-100 cluster A: v84 CField::OnPacket dispatcher (0x53d5a7) case 0x8D -> CField::OnFieldEffect (0x53f37d); body-verified vs v95 OnFieldEffect (0x53b790) — Decode1 switch cases 0-7 (SUMMON/TREMBLE/OBJECT/SCREEN...), matching template FieldEffect writer route 0x8D options. Was stale v83 0x8A colliding with WHISPER.'
 - op: FIELD_OBSTACLE_ONOFF
   direction: clientbound
   opcode: 142
@@ -2964,13 +2978,15 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: WHISPER
   direction: serverbound
-  opcode: 120
+  opcode: 122
   fname: CField::SendLocationWhisper
   fname_alts:
     - CField::SendChatMsgWhisper
     - CField::OnWhisper
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5487388
+  note: 'task-100 cluster A: v84 COutPacket opcode read at CField::SendLocationWhisper send-site (0x53bb1c) -> COutPacket(122)/0x7A, Encode1((tab?64:1)|4)+EncodeStr; body-verified vs v83 SendLocationWhisper (0x52f9c6, COutPacket 0x78) and v95 (0x534150, COutPacket 141). Matches template CharacterChatWhisperHandle route 0x7A. Was stale v83 0x78 colliding with ADMIN_CHAT.'
 - op: SPOUSE_CHAT
   direction: serverbound
   opcode: 121
@@ -3178,7 +3194,7 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: RING_ACTION
   direction: serverbound
-  opcode: 137
+  opcode: 141
   fname: CEngageDlg::SetRet
   fname_alts:
     - CWvsContext::SendRingDropRequest
@@ -3187,8 +3203,10 @@
     - CWvsContext::SendSendInvitaionRequest
     - CWvsContext::SendWishListInput
     - CWvsContext::OnMarriageRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5371126
+  note: 'task-100 cluster A: v84 COutPacket opcode read at CEngageDlg::SetRet send-site (0x51f4f6) -> if(nRet==2){COutPacket(141)/0x8D, Encode1(1u)}; body-verified vs v95 CEngageDlg::SetRet (0x51a680, COutPacket 161, Encode1(1) on nRet==2). Was stale v83 0x89 colliding with USE_DOOR.'
 - op: WEDDING_WISH_LIST_REQUEST
   direction: serverbound
   opcode: 138
@@ -3299,16 +3317,20 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: USE_FAMILY
   direction: serverbound
-  opcode: 151
+  opcode: 155
   fname: CWvsContext::SendUseFamilyPrivilege
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11009024
+  note: 'task-100 cluster A: v84 COutPacket opcode read at CWvsContext::SendUseFamilyPrivilege send-site (0xa7fc00) -> COutPacket(155)/0x9B, Encode4(privIdx)+CUtilDlgEx input+EncodeStr, guarded by m_FamilyInfo.bInitialized; body-verified vs v95 (0xa09ee0, COutPacket 175). Relative offset SendRegisterJunior+4 matches v95 (171->175). Was stale v83 0x97 colliding with ADD_FAMILY.'
 - op: CHANGE_FAMILY_MESSAGE
   direction: serverbound
-  opcode: 152
+  opcode: 156
   fname: CWvsContext::SendSetFamilyPrecept
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11009429
+  note: 'task-100 cluster A: v84 COutPacket opcode read at CWvsContext::SendSetFamilyPrecept send-site (0xa7fd95) -> COutPacket(156)/0x9C, EncodeStr(precept), guarded by m_FamilyInfo.bInitialized; body-verified vs v95 (0xa0a0d0, COutPacket 176). Relative offset SendRegisterJunior+5 matches v95 (171->176). Was stale v83 0x98 colliding with SEPARATE_FAMILY_BY_SENIOR.'
 - op: FAMILY_SUMMON_RESPONSE
   direction: serverbound
   opcode: 153

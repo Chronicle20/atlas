@@ -84,7 +84,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
-| SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
+| SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x045 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
@@ -104,7 +104,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | BRIDLE_MOB_CATCH_FAIL | CWvsContext::OnBridleMobCatchFail | character/clientbound/CharacterBridleMobCatchFail (T1) | 0x04F | ✅ | 0x051 | ✅ | 0x051 | ✅ | 0x052 | ✅ | 0x049 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | IDA_0X050 | sub_AF879C |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ |
-| IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult |  | 0x050 | ❌ | 0x050 | ❌ | 0x052 | ❌ | 0x053 | ❌ |  | ⬜ |
+| IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult |  | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x053 | ❌ |  | ⬜ |
 | IDA_0X051 | sub_B1135F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ |
 | IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_AEC92E |  | 0x051 | ❌ | 0x051 | ❌ | 0x053 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
 | IDA_0X052 | sub_B113C8 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ |
@@ -115,8 +115,8 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | MONSTER_BOOK_SET_COVER | CWvsContext::OnMonsterBookSetCover | character/clientbound/monsterbook/CharacterSetCover (T1) | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x057 | ✅ | 0x058 | ✅ |
 | HOUR_CHANGED | CWvsContext::OnHourChanged |  | 0x055 | ❌ | 0x057 | ❌ | 0x057 | ❌ | 0x058 | ❌ |  | ⬜ |
 | MINIMAP_ON_OFF | CWvsContext::OnMiniMapOnOff |  | 0x056 | ❌ | 0x058 | ❌ | 0x058 | ❌ | 0x059 | ❌ | 0x05D | ❌ |
-| CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  | 0x057 | ❌ | 0x057 | ❌ | 0x059 | ❌ | 0x05A | ❌ | 0x05E | ❌ |
-| CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  | 0x058 | ❌ | 0x058 | ❌ | 0x05A | ❌ | 0x05B | ❌ | 0x05F | ❌ |
+| CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  | 0x057 | ❌ | 0x059 | ❌ | 0x059 | ❌ | 0x05A | ❌ | 0x05E | ❌ |
+| CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  | 0x058 | ❌ | 0x05A | ❌ | 0x05A | ❌ | 0x05B | ❌ | 0x05F | ❌ |
 | IDA_0X059 | CWvsContext::OnMapleTVUseRes |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ |
 | WEB_BOARD_AUTHKEY_UPDATE | CWvsContext::OnWebBoardAuthkeyUpdate |  | 0x059 | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05C | ❌ | 0x060 | ❌ |
 | SESSION_VALUE | CWvsContext::OnSessionValue |  | 0x05A | ❌ | 0x05A | ❌ | 0x05C | ❌ | 0x05D | ❌ | 0x061 | ❌ |
@@ -159,7 +159,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | SCRIPT_PROGRESS_MESSAGE | CWvsContext::OnScriptProgressMessage | quest/clientbound/ScriptProgress | 0x07A | ✅ | 0x07D | ✅ | 0x07D | ✅ | 0x07F | ✅ | 0x076 | ✅ |
 | DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  | 0x07B | ❌ | 0x07B | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
 | MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  | 0x07C | ❌ | 0x07C | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x07A | ❌ |
-| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x07D | ✅ | 0x07D | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
+| SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
 | SET_ITC | CStage::OnSetITC |  | 0x07E | ❌ | 0x07E | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
@@ -179,10 +179,10 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | STAGE_CHANGE | CWvsContext::OnStageChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | DRAGON_BALL_BOX | CWvsContext::OnDragonBallBox |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
-| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x088 | ✅ | 0x088 | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
+| SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x098 | ✅ |  | ⬜ |
 | ASK_WHETHER_USE_PAMS_SONG | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | SUMMON_ITEM_INAVAILABLE | CField::OnSummonItemInavailable | field/clientbound/FieldSummonItemUnavailable (T1) | 0x089 | ✅ | 0x08C | ✅ | 0x091 | ✅ | 0x099 | ✅ | 0x086 | ✅ |
-| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | ✅ | 0x08A | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
+| FIELD_EFFECT | CField::OnFieldEffect | field/clientbound/FieldEffectBossHp (T1) | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ONOFF | CField::OnFieldObstacleOnOff | field/clientbound/FieldFieldObstacleOnOff (T1) | 0x08B | ✅ | 0x08E | ✅ | 0x093 | ✅ | 0x09B | ✅ | 0x088 | ✅ |
@@ -613,7 +613,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage |  | 0x077 | ❌ | 0x077 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
-| WHISPER | CField::OnWhisper; CField::SendChatMsgWhisper; CField::SendLocationWhisper |  | 0x078 | ❌ | 0x078 | ❌ | 0x07E | ❌ | 0x08D | ❌ | 0x07A | ❌ |
+| WHISPER | CField::OnWhisper; CField::SendChatMsgWhisper; CField::SendLocationWhisper |  | 0x078 | ❌ | 0x07A | ❌ | 0x07E | ❌ | 0x08D | ❌ | 0x07A | ❌ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage |  | 0x079 | ❌ | 0x079 | ❌ | 0x07F | ❌ | 0x08E | ❌ |  | ⬜ |
 | MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07A | ✅ | 0x07A | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
@@ -640,7 +640,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | PQ_SELECT_REWARD | CUIPQReward::SelectReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  | 0x088 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
 | PQ_REQUEST_REWARD | CUIPQReward::RequestReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
-| RING_ACTION | CEngageDlg::SetRet; CWvsContext::OnMarriageRequest; CWvsContext::SendEngagementRequest; CWvsContext::SendInvitationQuery; CWvsContext::SendRingDropRequest; CWvsContext::SendSendInvitaionRequest; CWvsContext::SendWishListInput |  | 0x089 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x0A1 | ❌ | 0x08C | ❌ |
+| RING_ACTION | CEngageDlg::SetRet; CWvsContext::OnMarriageRequest; CWvsContext::SendEngagementRequest; CWvsContext::SendInvitationQuery; CWvsContext::SendRingDropRequest; CWvsContext::SendSendInvitaionRequest; CWvsContext::SendWishListInput |  | 0x089 | ❌ | 0x08D | ❌ | 0x091 | ❌ | 0x0A1 | ❌ | 0x08C | ❌ |
 | FOLLOW_REQUEST_APPLY | CWvsContext::OnSetPassenserRequest; CWvsContext::SendFollowRequestApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x076 | ❌ |
 | WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  | 0x08A | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
 | WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
@@ -655,8 +655,8 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | SEPARATE_FAMILY_BY_SENIOR | CWvsContext::SendUnregisterJunior |  | 0x094 | ❌ | 0x098 | ❌ | 0x09C | ❌ | 0x0AC | ❌ | 0x096 | ❌ |
 | SEPARATE_FAMILY_BY_JUNIOR | CWvsContext::SendUnregisterParent |  | 0x095 | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x0AD | ❌ | 0x097 | ❌ |
 | ACCEPT_FAMILY | CWvsContext::SendFamilyInviteResult |  | 0x096 | ❌ | 0x096 | ❌ | 0x09E | ❌ | 0x0AE | ❌ | 0x098 | ❌ |
-| USE_FAMILY | CWvsContext::SendUseFamilyPrivilege |  | 0x097 | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x0AF | ❌ | 0x099 | ❌ |
-| CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  | 0x098 | ❌ | 0x098 | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
+| USE_FAMILY | CWvsContext::SendUseFamilyPrivilege |  | 0x097 | ❌ | 0x09B | ❌ | 0x09F | ❌ | 0x0AF | ❌ | 0x099 | ❌ |
+| CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  | 0x098 | ❌ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
 | FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  | 0x099 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
 | UNNAMED_R245 |  |  | 0x09A | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
 | BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ✅ | 0x09B | ❌ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |

@@ -208,7 +208,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-51e01d6
+    newTag: main-bdeed8c
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops

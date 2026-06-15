@@ -7,11 +7,10 @@ func TestCreatePetName(t *testing.T) {
 	if got := createPetName("Fluffy"); got != "Fluffy" {
 		t.Fatalf("createPetName(\"Fluffy\") = %q, want %q", got, "Fluffy")
 	}
-	// An empty name (e.g. a pet granted via the inventory/award path, which
-	// supplies no name) falls back to "Pet" so atlas-pets' "name is required"
-	// check passes. A new pet's name would normally be the item's WZ name, but
-	// atlas-data does not serve pet names today, so "Pet" is the effective
-	// default (matching the cash-shop path).
+	// An empty name (e.g. a pet granted via the generic inventory/award path,
+	// which supplies no name) falls back to "Pet" so the model's "name is
+	// required" check passes. The player-facing cash-shop path resolves the WZ
+	// name from atlas-data explicitly; the generic award path does not.
 	if got := createPetName(""); got != "Pet" {
 		t.Fatalf("createPetName(\"\") = %q, want %q", got, "Pet")
 	}

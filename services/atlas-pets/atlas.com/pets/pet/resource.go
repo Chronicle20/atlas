@@ -62,11 +62,11 @@ func handleGetPetsForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext
 	})
 }
 
-// createPetName defaults a missing pet name. Pets granted through the
-// inventory/award path supply no name, but the model requires one ("name is
-// required"). A new pet's name would normally be the item's WZ name; atlas-data
-// does not serve pet names today, so an empty name falls back to "Pet" (the
-// same effective result as the cash-shop path).
+// createPetName defaults a missing pet name. Pets granted through the generic
+// inventory/award path (e.g. the GM @award item command) supply no name, but the
+// model requires one ("name is required"). The player-facing cash-shop path
+// resolves the WZ name from atlas-data and passes it explicitly; the generic
+// award path does not, so an empty name falls back to "Pet".
 func createPetName(provided string) string {
 	if provided != "" {
 		return provided

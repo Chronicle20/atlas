@@ -37,14 +37,16 @@ For each quest, `Quest.wz` carries four parallel trees, all keyed by quest id:
 | `QuestInfo.img` | Metadata (name, area) | names below |
 | `Check.img` | Start (`0`) / complete (`1`) **requirements** + `startscript`/`endscript` names + `npc` | pet id, `pettamenessmin`, item, prereq quest |
 | `Act.img` | Start/complete **rewards/effects** | **empty** for the script quests; populated for 8184 |
-| `Say.img` | **Dialogue** the NPC speaks (`0`=start convo, `1`=complete convo; `yes`/`no`/`stop`/`ask` branches) | fully populated for all four |
+| `Say.img` | Partial/fallback **dialogue** (`0`=start, `1`=complete; `yes`/`no`/`stop`/`ask`) | **incomplete** for these script quests — fragments only |
 
 Key facts established from the v83 WZ:
 
-- **`Say.img` is the dialogue source.** e.g. `8185/0/0` = *"I can see that you truly care for
-  your Dragon. Now, shall I help you with your Baby Dragon's evolution?"*, with a `yes` branch
-  referencing `#t5380000#` (Rock of Evolution). The dialogue is **not** invented by us — it is
-  authoritative per-version WZ text.
+- **`Say.img` carries only fragments for script quests; it is NOT the authoritative dialogue
+  source.** It does hold some text — e.g. `8185/0/0` = *"I can see that you truly care for your
+  Dragon. Now, shall I help you with your Baby Dragon's evolution?"* — but research shows the full
+  conversation/flow lives in the Cosmic **`q{id}s.js`/`q{id}e.js`** scripts; `Say.img` is a
+  fallback the script may or may not use. **Dialogue is sourced from the Cosmic `.js`** (§4.2), with
+  `Say.img` only as a secondary cross-reference for version-appropriate phrasing.
 - **`startscript`/`endscript` are just names** (`q8185s`, `q8185e`). They flag the quest as
   script-driven so the client emits the script action; **atlas keys everything by `questId`, not
   by the script name** — there is no name→handler table to build.
@@ -88,9 +90,10 @@ The quest-conversation subsystem already implements the startscript/endscript mo
 > **Caveat (per the user): the ~219 inherited quest conversations were converted from Cosmic and
 > are NOT a verified correctness oracle.** Use them only as a **structural/mechanical template**
 > (JSON shape, how dialogue and operation states wire together). For *content* faithfulness, source
-> from authoritative inputs and verify: **Say.img** (dialogue, per-version), **Check.img/Act.img**
-> (requirements/rewards), and the **Cosmic `.js`** (script logic — present for 8185/8189/4659,
-> absent for 8184), cross-checked against the actual evolution mechanic. This is the project's
+> from authoritative inputs and verify: the **Cosmic `q{id}s.js`/`q{id}e.js` scripts** (the
+> **primary** source for both dialogue/flow **and** logic — present for 8185/8189/4659, absent for
+> 8184), **Check.img/Act.img** (requirements/rewards), with **`Say.img` only as a secondary
+> cross-reference** (it is incomplete for these script quests — §2). This is the project's
 > "Verification Over Memory" rule applied to quest data.
 
 ---
@@ -137,19 +140,24 @@ pet-A (right id, low tameness) + pet-B (wrong id, high tameness). **Confirm** Co
 
 Author `quest-{id}.json` for **8185, 8189, 4659** (8184 needs none — see 4.4). Each:
 
-- **`startStateMachine`** — dialogue from `Say.img/{id}/0` (the offer + yes/no). On accept, a
-  `start_quest` operation transitions the quest to STARTED in atlas-quest. (For these quests the
-  start machine is mostly dialogue; the real requirement gating is enforced by atlas-quest 4.1.)
-- **`endStateMachine`** — dialogue from `Say.img/{id}/1`, then the operation chain that *is* the
-  endscript:
+- **`startStateMachine`** — dialogue + branch structure from the Cosmic **`q{id}s.js`** start
+  script. On accept, a `start_quest` operation transitions the quest to STARTED in atlas-quest.
+  (For these quests the start machine is mostly dialogue; the real requirement gating is enforced
+  by atlas-quest 4.1.)
+- **`endStateMachine`** — dialogue + branch structure from the Cosmic **`q{id}e.js`** end script,
+  then the operation chain that *is* the endscript:
   1. `destroy_item` Rock `5380000` (and for 4659, `destroy_item` 50× `4000111`),
   2. `evolve_pet` targeting the qualifying pet (see 4.3),
   3. `complete_quest` → atlas-quest COMPLETED.
   All three are saga-backed; the `PetEvolution` saga already compensates (refund) on failure.
 
-Dialogue text is taken verbatim from the version's `Say.img`; operation logic is cross-checked
-against the Cosmic `q8185e.js` / `q8189e.js` / `q4659e.js` for faithfulness, **not** copied blindly
-from the inherited conversions.
+**Dialogue source = Cosmic `.js`, not `Say.img`.** Research shows `Say.img` is **incomplete** for
+these script quests (the canonical script supplies the real conversation text and flow; `Say.img`
+holds only fragments / a fallback) — so the Cosmic `q{id}s.js` / `q{id}e.js` scripts are the
+**primary** dialogue and logic source. Use `Say.img`/`String.wz` only as a secondary cross-reference
+for version-appropriate phrasing of lines the script reuses. Do **not** copy from the inherited
+atlas conversions (structure-only template). Cosmic has scripts for **8185/8189/4659**; if a start
+script (`q{id}s.js`) is absent for a given quest, the start machine is a minimal accept dialogue.
 
 Seed across all supported GMS versions (`12_1/83_1/84_1/87_1/92_1/95_1`), matching how the existing
 quest conversations are distributed. Confirm each version's WZ actually defines the quest +
@@ -204,8 +212,10 @@ works through normal quest mechanics.
 3. **Quest availability/offer** — how the player initiates: does Garnox auto-offer the quest when
    conditions are met, and does clicking him emit `QuestActionScriptStart`? Verify the channel
    path actually fires for a quest NPC (distinct from the shop/generic path we saw).
-4. **Faithfulness** — dialogue from Say.img is authoritative; script logic from Cosmic `.js` for
-   8185/8189/4659 (none for 8184). Inherited conversions are structure-only references.
+4. **Faithfulness** — dialogue **and** logic from the Cosmic `q{id}s.js`/`q{id}e.js` scripts
+   (primary) for 8185/8189/4659 (none for 8184); `Say.img` is incomplete and only a secondary
+   cross-reference; inherited atlas conversions are structure-only references. **Need:** locate the
+   Cosmic script files for these quests (the actual `.js` text) during planning.
 5. **Per-version WZ drift** — confirm each GMS version defines these quests + Say.img before
    seeding; don't blanket-seed.
 6. **Re-evolution (8189)** repeatability — quests are normally one-shot; re-evolution implies the

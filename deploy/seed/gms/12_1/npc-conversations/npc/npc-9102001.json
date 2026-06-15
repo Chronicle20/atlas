@@ -1,7 +1,7 @@
 {
   "data": {
     "attributes": {
-      "npcId": 1032102,
+      "npcId": 9102001,
       "startState": "start",
       "states": [
         {
@@ -146,7 +146,7 @@
         }
       ]
     },
-    "id": "1032102",
+    "id": "9102001",
     "type": "npc-conversation"
   }
 }

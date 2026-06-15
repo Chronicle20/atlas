@@ -44,7 +44,7 @@ func TestPickFromContextEmptyRoutesToEmptyNextState(t *testing.T) {
 	ctx := NewConversationContextBuilder().
 		SetField(f).
 		SetCharacterId(7).
-		SetNpcId(1032102).
+		SetNpcId(9102001).
 		SetCurrentState("pick").
 		SetConversation(container).
 		AddContextValue("evolvablePets", ""). // empty list → must route to emptyNextState

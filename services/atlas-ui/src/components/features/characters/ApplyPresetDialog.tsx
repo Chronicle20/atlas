@@ -152,11 +152,25 @@ export function ApplyPresetDialog({
     }
   }, [open, form]);
 
+  // Read isValid unconditionally (not inside the short-circuiting `||` chain
+  // below) so react-hook-form's formState proxy subscribes to it from mount.
+  // Otherwise, while `validity` is undefined the `||` short-circuits before
+  // reaching `form.formState.isValid`, RHF never tracks/recomputes isValid, and
+  // by the time the async name check resolves it reads a stale `false` — leaving
+  // Apply permanently disabled.
+  // Read isValid unconditionally (not inside the short-circuiting `||` chain
+  // below) so react-hook-form's formState proxy subscribes to it from mount.
+  // Otherwise, while `validity` is undefined the `||` short-circuits before
+  // reaching `form.formState.isValid`, RHF never tracks/recomputes isValid, and
+  // by the time the async name check resolves it reads a stale `false` — leaving
+  // Apply permanently disabled.
+  const isFormValid = form.formState.isValid;
+
   const submitDisabled =
     mutation.isPending ||
     !validity ||
     !validity.valid ||
-    !form.formState.isValid;
+    !isFormValid;
 
   const onSubmit = form.handleSubmit((values) => {
     mutation.mutate(

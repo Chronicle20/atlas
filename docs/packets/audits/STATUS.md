@@ -88,17 +88,17 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
-| SHOP_SCANNER_RESULT | CWvsContext::OnShopScannerResult |  | 0x046 | ❌ | 0x046 | ❌ | 0x048 | ❌ | 0x049 | ❌ | 0x040 | ❌ |
+| SHOP_SCANNER_RESULT | CWvsContext::OnShopScannerResult |  | 0x046 | ❌ | 0x048 | ❌ | 0x048 | ❌ | 0x049 | ❌ | 0x040 | ❌ |
 | SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult |  | 0x047 | ❌ | 0x049 | ❌ | 0x049 | ❌ | 0x04A | ❌ | 0x041 | ❌ |
-| MARRIAGE_REQUEST | CWvsContext::OnMarriageRequest |  | 0x048 | ❌ | 0x048 | ❌ | 0x04A | ❌ | 0x04B | ❌ | 0x042 | ❌ |
-| MARRIAGE_RESULT | CWvsContext::OnMarriageResult |  | 0x049 | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04C | ❌ | 0x043 | ❌ |
-| WEDDING_GIFT_RESULT | CWvsContext::OnWeddingGiftResult |  | 0x04A | ❌ | 0x04A | ❌ | 0x04C | ❌ | 0x04D | ❌ | 0x044 | ❌ |
+| MARRIAGE_REQUEST | CWvsContext::OnMarriageRequest |  | 0x048 | ❌ | 0x04A | ❌ | 0x04A | ❌ | 0x04B | ❌ | 0x042 | ❌ |
+| MARRIAGE_RESULT | CWvsContext::OnMarriageResult |  | 0x049 | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04C | ❌ | 0x043 | ❌ |
+| WEDDING_GIFT_RESULT | CWvsContext::OnWeddingGiftResult |  | 0x04A | ❌ | 0x04C | ❌ | 0x04C | ❌ | 0x04D | ❌ | 0x044 | ❌ |
 | MINIGAME_PACHINKO_UPDATE_DAMA | sub_B06318 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04B | ❌ |
-| NOTIFY_MARRIED_PARTNER_MAP_TRANSFER | CWvsContext::OnNotifyMarriedPartnerMapTransfer |  | 0x04B | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04E | ❌ | 0x045 | ❌ |
+| NOTIFY_MARRIED_PARTNER_MAP_TRANSFER | CWvsContext::OnNotifyMarriedPartnerMapTransfer |  | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x04E | ❌ | 0x045 | ❌ |
 | CASH_PET_FOOD_RESULT | CWvsContext::OnCashPetFoodResult | pet/clientbound/PetCashFoodResult (T1) | 0x04C | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x04F | ✅ | 0x046 | ✅ |
 | IDA_0X04C | sub_AF8F08 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04C | ❌ |
 | IDA_0X04D | sub_AECC23 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04D | ❌ |
-| SET_WEEK_EVENT_MESSAGE | CWvsContext::OnSetWeekEventMessage |  | 0x04D | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x050 | ❌ | 0x047 | ❌ |
+| SET_WEEK_EVENT_MESSAGE | CWvsContext::OnSetWeekEventMessage |  | 0x04D | ❌ | 0x04F | ❌ | 0x04F | ❌ | 0x050 | ❌ | 0x047 | ❌ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
 | SET_POTION_DISCOUNT_RATE | CWvsContext::OnSetPotionDiscountRate |  | 0x04E | ❌ | 0x050 | ❌ | 0x050 | ❌ | 0x051 | ❌ | 0x048 | ❌ |
 | BRIDLE_MOB_CATCH_FAIL | CWvsContext::OnBridleMobCatchFail | character/clientbound/CharacterBridleMobCatchFail (T1) | 0x04F | ✅ | 0x051 | ✅ | 0x051 | ✅ | 0x052 | ✅ | 0x049 | ✅ |
@@ -123,53 +123,53 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | PARTY_VALUE | CWvsContext::OnPartyValue |  | 0x05B | ❌ | 0x05D | ❌ | 0x05D | ❌ | 0x05E | ❌ | 0x062 | ❌ |
 | FIELD_SET_VARIABLE | CWvsContext::OnFieldSetVariable |  | 0x05C | ❌ | 0x05E | ❌ | 0x05E | ❌ | 0x05F | ❌ | 0x063 | ❌ |
 | IDA_0X05C | sub_AEC8D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05C | ❌ |
-| BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  | 0x05D | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
-| FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  | 0x05E | ❌ | 0x05E | ❌ | 0x061 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
-| FAMILY_INFO_RESULT | CWvsContext::OnFamilyInfoResult |  | 0x05F | ❌ | 0x05F | ❌ | 0x062 | ❌ | 0x063 | ❌ | 0x066 | ❌ |
-| FAMILY_RESULT | CWvsContext::OnFamilyResult |  | 0x060 | ❌ | 0x060 | ❌ | 0x063 | ❌ | 0x064 | ❌ | 0x067 | ❌ |
-| POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x060 | ❌ | 0x061 | ❌ |  | ⬜ |
-| FAMILY_JOIN_REQUEST | CWvsContext::OnFamilyJoinRequest |  | 0x061 | ❌ | 0x061 | ❌ | 0x064 | ❌ | 0x065 | ❌ | 0x068 | ❌ |
-| FAMILY_JOIN_REQUEST_RESULT | CWvsContext::OnFamilyJoinRequestResult |  | 0x062 | ❌ | 0x062 | ❌ | 0x065 | ❌ | 0x066 | ❌ | 0x069 | ❌ |
-| FAMILY_JOIN_ACCEPTED | CWvsContext::OnFamilyJoinAccepted |  | 0x063 | ❌ | 0x063 | ❌ | 0x066 | ❌ | 0x067 | ❌ | 0x06A | ❌ |
-| FAMILY_PRIVILEGE_LIST | CWvsContext::OnFamilyPrivilegeList |  | 0x064 | ❌ | 0x064 | ❌ | 0x067 | ❌ | 0x068 | ❌ | 0x06B | ❌ |
-| FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x069 | ❌ | 0x06C | ❌ |
-| FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x06A | ❌ | 0x06D | ❌ |
-| FAMILY_SET_PRIVILEGE | CWvsContext::OnFamilySetPrivilege |  | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x06B | ❌ | 0x06E | ❌ |
-| FAMILY_SUMMON_REQUEST | CWvsContext::OnFamilySummonRequest |  | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x06C | ❌ | 0x06F | ❌ |
-| NOTIFY_LEVELUP | CWvsContext::OnNotifyLevelUp |  | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x06D | ❌ | 0x070 | ❌ |
-| NOTIFY_MARRIAGE | CWvsContext::OnNotifyWedding |  | 0x06A | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x06E | ❌ | 0x071 | ❌ |
-| NOTIFY_JOB_CHANGE | CWvsContext::OnNotifyJobChange |  | 0x06B | ❌ | 0x06B | ❌ | 0x06E | ❌ | 0x06F | ❌ | 0x072 | ❌ |
-| MAPLE_TV_USE_RES | CWvsContext::OnMapleTVUseRes |  | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x071 | ❌ |  | ⬜ |
-| AVATAR_MEGAPHONE_RESULT | CWvsContext::OnAvatarMegaphoneRes |  | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x072 | ❌ |  | ⬜ |
-| SET_AVATAR_MEGAPHONE | CWvsContext::OnSetAvatarMegaphone |  | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x05A | ❌ |
-| CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone |  | 0x070 | ❌ | 0x070 | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x05B | ❌ |
-| CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
-| CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  | 0x072 | ❌ | 0x072 | ❌ | 0x075 | ❌ | 0x076 | ❌ |  | ⬜ |
-| DESTROY_SHOP_RESULT | CWvsContext::OnDestroyShopResult |  | 0x073 | ❌ | 0x073 | ❌ | 0x076 | ❌ | 0x077 | ❌ |  | ⬜ |
+| BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
+| FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  | 0x05E | ❌ | 0x061 | ❌ | 0x061 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
+| FAMILY_INFO_RESULT | CWvsContext::OnFamilyInfoResult |  | 0x05F | ❌ | 0x062 | ❌ | 0x062 | ❌ | 0x063 | ❌ | 0x066 | ❌ |
+| FAMILY_RESULT | CWvsContext::OnFamilyResult |  | 0x060 | ❌ | 0x063 | ❌ | 0x063 | ❌ | 0x064 | ❌ | 0x067 | ❌ |
+| POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x061 | ❌ |  | ⬜ |
+| FAMILY_JOIN_REQUEST | CWvsContext::OnFamilyJoinRequest |  | 0x061 | ❌ | 0x064 | ❌ | 0x064 | ❌ | 0x065 | ❌ | 0x068 | ❌ |
+| FAMILY_JOIN_REQUEST_RESULT | CWvsContext::OnFamilyJoinRequestResult |  | 0x062 | ❌ | 0x065 | ❌ | 0x065 | ❌ | 0x066 | ❌ | 0x069 | ❌ |
+| FAMILY_JOIN_ACCEPTED | CWvsContext::OnFamilyJoinAccepted |  | 0x063 | ❌ | 0x066 | ❌ | 0x066 | ❌ | 0x067 | ❌ | 0x06A | ❌ |
+| FAMILY_PRIVILEGE_LIST | CWvsContext::OnFamilyPrivilegeList |  | 0x064 | ❌ | 0x067 | ❌ | 0x067 | ❌ | 0x068 | ❌ | 0x06B | ❌ |
+| FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  | 0x065 | ❌ | 0x068 | ❌ | 0x068 | ❌ | 0x069 | ❌ | 0x06C | ❌ |
+| FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  | 0x066 | ❌ | 0x069 | ❌ | 0x069 | ❌ | 0x06A | ❌ | 0x06D | ❌ |
+| FAMILY_SET_PRIVILEGE | CWvsContext::OnFamilySetPrivilege |  | 0x067 | ❌ | 0x06A | ❌ | 0x06A | ❌ | 0x06B | ❌ | 0x06E | ❌ |
+| FAMILY_SUMMON_REQUEST | CWvsContext::OnFamilySummonRequest |  | 0x068 | ❌ | 0x06B | ❌ | 0x06B | ❌ | 0x06C | ❌ | 0x06F | ❌ |
+| NOTIFY_LEVELUP | CWvsContext::OnNotifyLevelUp |  | 0x069 | ❌ | 0x06C | ❌ | 0x06C | ❌ | 0x06D | ❌ | 0x070 | ❌ |
+| NOTIFY_MARRIAGE | CWvsContext::OnNotifyWedding |  | 0x06A | ❌ | 0x06D | ❌ | 0x06D | ❌ | 0x06E | ❌ | 0x071 | ❌ |
+| NOTIFY_JOB_CHANGE | CWvsContext::OnNotifyJobChange |  | 0x06B | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x06F | ❌ | 0x072 | ❌ |
+| MAPLE_TV_USE_RES | CWvsContext::OnMapleTVUseRes |  | 0x06D | ❌ | 0x070 | ❌ | 0x070 | ❌ | 0x071 | ❌ |  | ⬜ |
+| AVATAR_MEGAPHONE_RESULT | CWvsContext::OnAvatarMegaphoneRes |  | 0x06E | ❌ | 0x071 | ❌ | 0x071 | ❌ | 0x072 | ❌ |  | ⬜ |
+| SET_AVATAR_MEGAPHONE | CWvsContext::OnSetAvatarMegaphone |  | 0x06F | ❌ | 0x072 | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x05A | ❌ |
+| CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone |  | 0x070 | ❌ | 0x073 | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x05B | ❌ |
+| CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
+| CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  | 0x072 | ❌ | 0x075 | ❌ | 0x075 | ❌ | 0x076 | ❌ |  | ⬜ |
+| DESTROY_SHOP_RESULT | CWvsContext::OnDestroyShopResult |  | 0x073 | ❌ | 0x076 | ❌ | 0x076 | ❌ | 0x077 | ❌ |  | ⬜ |
 | IDA_0X073 | sub_AF7C61 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
-| FAKE_GM_NOTICE | CWvsContext::OnFakeGMNotice; sub_AC26E5 |  | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x078 | ❌ |  | ⬜ |
+| FAKE_GM_NOTICE | CWvsContext::OnFakeGMNotice; sub_AC26E5 |  | 0x074 | ❌ | 0x077 | ❌ | 0x077 | ❌ | 0x078 | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
-| SUCCESS_IN_USE_GACHAPON_BOX | CWvsContext::OnSuccessInUsegachaponBox |  | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x079 | ❌ | 0x075 | ❌ |
-| NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  | 0x076 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x07A | ❌ |  | ⬜ |
-| RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  | 0x077 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07B | ❌ |  | ⬜ |
-| CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  | 0x078 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07C | ❌ |  | ⬜ |
+| SUCCESS_IN_USE_GACHAPON_BOX | CWvsContext::OnSuccessInUsegachaponBox |  | 0x075 | ❌ | 0x078 | ❌ | 0x078 | ❌ | 0x079 | ❌ | 0x075 | ❌ |
+| NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07A | ❌ |  | ⬜ |
+| RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07B | ❌ |  | ⬜ |
+| CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07C | ❌ |  | ⬜ |
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
 | IDA_0X079 | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ |
-| SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt |  | 0x079 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07D | ❌ |  | ⬜ |
+| SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt |  | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07D | ❌ |  | ⬜ |
 | SCRIPT_PROGRESS_MESSAGE | CWvsContext::OnScriptProgressMessage | quest/clientbound/ScriptProgress | 0x07A | ✅ | 0x07D | ✅ | 0x07D | ✅ | 0x07F | ✅ | 0x076 | ✅ |
-| DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  | 0x07B | ❌ | 0x07B | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
-| MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  | 0x07C | ❌ | 0x07C | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x07A | ❌ |
+| DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  | 0x07B | ❌ | 0x07E | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
+| MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  | 0x07C | ❌ | 0x07F | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x07A | ❌ |
 | SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08D | ✅ | 0x07B | ✅ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
-| SET_ITC | CStage::OnSetITC |  | 0x07E | ❌ | 0x07E | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
+| SET_ITC | CStage::OnSetITC |  | 0x07E | ❌ | 0x081 | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x07C | ❌ |
 | CAKE_PIE_EVENT_RESULT | CWvsContext::OnCakePieEventResult |  |  | ⬜ |  | ⬜ | 0x07F | ❌ | 0x081 | ❌ |  | ⬜ |
-| SET_CASH_SHOP | CStage::OnSetCashShop |  | 0x07F | ❌ | 0x07F | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
+| SET_CASH_SHOP | CStage::OnSetCashShop |  | 0x07F | ❌ | 0x082 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x07D | ❌ |
 | SET_BACK_EFFECT | CMapLoadable::OnSetBackEffect |  | 0x080 | ❌ | 0x083 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x07E | ❌ |
 | UPDATE_GM_BOARD | CWvsContext::OnUpdateGMBoard |  |  | ⬜ |  | ⬜ | 0x080 | ❌ | 0x082 | ❌ |  | ⬜ |
-| SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible |  | 0x081 | ❌ | 0x081 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
+| SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible |  | 0x081 | ❌ | 0x084 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
 | SHOW_SLOT_MESSAGE | CWvsContext::OnShowSlotMessage |  |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x083 | ❌ |  | ⬜ |
 | ACCOUNT_MORE_INFO | CWvsContext::OnAccountMoreInfo |  |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ |  | ⬜ |
-| CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  | 0x082 | ❌ | 0x082 | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x080 | ❌ |
+| CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x080 | ❌ |
 | BLOCKED_MAP | CField::OnTransferFieldReqIgnored | field/clientbound/FieldBlockedMap (T1) | 0x083 | ✅ | 0x086 | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x081 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ |  | ⬜ |
 | BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x094 | ✅ | 0x082 | ✅ |
@@ -906,7 +906,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 327 | 0 | 348 | 200 | 0 | 48.4% |
-| v84 | 284 | 0 | 377 | 214 | 0 | 43.0% |
+| v84 | 284 | 0 | 378 | 213 | 0 | 42.9% |
 | v87 | 344 | 0 | 368 | 163 | 0 | 48.3% |
 | v95 | 380 | 0 | 416 | 79 | 0 | 47.7% |
 | JMS185 | 322 | 0 | 384 | 169 | 0 | 45.6% |

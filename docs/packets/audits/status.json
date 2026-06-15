@@ -5158,7 +5158,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 70
+          "opcode": 72
         },
         "gms_v87": {
           "state": "incomplete",
@@ -5296,7 +5296,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 72
+          "opcode": 74
         },
         "gms_v87": {
           "state": "incomplete",
@@ -5396,7 +5396,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 73
+          "opcode": 75
         },
         "gms_v87": {
           "state": "incomplete",
@@ -5468,7 +5468,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 74
+          "opcode": 76
         },
         "gms_v87": {
           "state": "incomplete",
@@ -5536,7 +5536,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 75
+          "opcode": 77
         },
         "gms_v87": {
           "state": "incomplete",
@@ -5736,7 +5736,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 77
+          "opcode": 79
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7194,7 +7194,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 93
+          "opcode": 95
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7266,7 +7266,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 94
+          "opcode": 97
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7367,7 +7367,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 95
+          "opcode": 98
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7468,7 +7468,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 96
+          "opcode": 99
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7501,8 +7501,9 @@
           "opcode": -1
         },
         "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 96
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7634,7 +7635,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 97
+          "opcode": 100
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7703,7 +7704,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 98
+          "opcode": 101
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7809,7 +7810,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 99
+          "opcode": 102
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7882,7 +7883,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 100
+          "opcode": 103
         },
         "gms_v87": {
           "state": "incomplete",
@@ -7918,7 +7919,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 101
+          "opcode": 104
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8022,7 +8023,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 102
+          "opcode": 105
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8130,7 +8131,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 103
+          "opcode": 106
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8202,7 +8203,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 104
+          "opcode": 107
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8275,7 +8276,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 105
+          "opcode": 108
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8347,7 +8348,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 106
+          "opcode": 109
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8383,7 +8384,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 107
+          "opcode": 110
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8525,7 +8526,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 109
+          "opcode": 112
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8560,7 +8561,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 110
+          "opcode": 113
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8667,7 +8668,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 111
+          "opcode": 114
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8703,7 +8704,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 112
+          "opcode": 115
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8775,7 +8776,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 113
+          "opcode": 116
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8846,7 +8847,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 114
+          "opcode": 117
         },
         "gms_v87": {
           "state": "incomplete",
@@ -8913,7 +8914,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 115
+          "opcode": 118
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9046,7 +9047,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 116
+          "opcode": 119
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9177,7 +9178,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 117
+          "opcode": 120
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9280,7 +9281,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 118
+          "opcode": 121
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9351,7 +9352,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 119
+          "opcode": 122
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9386,7 +9387,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 120
+          "opcode": 123
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9557,7 +9558,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 121
+          "opcode": 124
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9732,7 +9733,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 123
+          "opcode": 126
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9899,7 +9900,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 124
+          "opcode": 127
         },
         "gms_v87": {
           "state": "incomplete",
@@ -10108,7 +10109,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 126
+          "opcode": 129
         },
         "gms_v87": {
           "state": "incomplete",
@@ -10211,7 +10212,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 127
+          "opcode": 130
         },
         "gms_v87": {
           "state": "incomplete",
@@ -10382,7 +10383,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 129
+          "opcode": 132
         },
         "gms_v87": {
           "state": "incomplete",
@@ -10519,7 +10520,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 130
+          "opcode": 133
         },
         "gms_v87": {
           "state": "incomplete",

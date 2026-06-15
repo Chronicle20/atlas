@@ -223,11 +223,10 @@ Tool: `479f986833b7056d10dbad2bb7e309fc83d85f25`
 | EVOLVE_PET | CUser::OnPetPacket |  | 0x0A9 | ❌ | 0x0A9 | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
 | FOOTHOLD_INFO | CField::OnFootHoldInfo | field/clientbound/FieldFootholdInfo (T1) |  | ⬜ |  | ⬜ | 0x0AA | ✅ | 0x0B0 | ✅ | 0x09C | ✅ |
-| IDA_0X0AA | sub_9F1DBC |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ❌ |
 | MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x0AA | ✅ | 0x0AA | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
 | IDA_0X0AB | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ |
 | PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0AB | ✅ | 0x0AB | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
-| IDA_0X0AC | CField::OnStalkResult; CUser::ShowRecoverUpgradeCountEffect | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AC | ✅ | 0x0AC | ❌ |
+| IDA_0X0AC | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AC | ✅ |  | ⬜ |
 | PET_NAMECHANGE | CPet::OnNameChanged |  | 0x0AC | ❌ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0AD | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0AE | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
@@ -465,7 +464,6 @@ Tool: `479f986833b7056d10dbad2bb7e309fc83d85f25`
 | HONTALE_TIMER | CField::OnHontaleTimer |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |  | ⬜ |
 | IDA_0X167 | sub_48F8E3 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x167 | ❌ |
 | IDA_0X168 | sub_48F4E7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x168 | ❌ |
-| IDA_0X169 | sub_48F41B |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x169 | ❌ |
 | IDA_0X16A | sub_48F701 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x16A | ❌ |
 | IDA_0X16E | sub_48FA44 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x16E | ❌ |
 | IDA_0X16F | CITC::OnChargeParamResult; sub_48F168 |  |  | ⬜ |  | ⬜ | 0x16F | ❌ |  | ⬜ | 0x16F | ❌ |
@@ -778,7 +776,6 @@ Tool: `479f986833b7056d10dbad2bb7e309fc83d85f25`
 | ITC_QUERY_CASH_REQUEST | CITC::TrySendQueryCashRequest |  | 0x0FC | ❌ | 0x0FC | ❌ | 0x10A | ❌ | 0x133 | ❌ | 0x10B | ❌ |
 | ITC_OPERATION | CITC::OnBuy; CITC::OnBuyAuctionImm; CITC::OnBuyWish; CITC::OnBuyZzim; CITC::OnCancelSaleItem; CITC::OnCancelWish; CITC::OnChangedCategory; CITC::OnChangedCategorySub; CITC::OnChangedPage; CITC::OnDeleteZzim; CITC::OnMoveITCPurchaseItemLtoS; CITC::OnRegisterSaleEntry; CITC::OnRegisterWishEntry; CITC::OnSaleCurrentItem; CITC::OnSetZzim; CITC::OnViewWish; CITCBidAuctionDlg::OnButtonClicked; CITCWnd_Tab::OnButtonClicked |  | 0x0FD | ❌ | 0x0FD | ❌ | 0x10B | ❌ | 0x134 | ❌ | 0x10C | ❌ |
 | ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update |  | 0x104 | ❌ | 0x104 | ❌ | 0x112 | ❌ | 0x128 | ❌ | 0x114 | ❌ |
-| CONTI_MOVE | CField_ContiMove::Init |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x108 | ❌ |  | ⬜ |
 | UNNAMED_R419 |  |  |  | ⬜ |  | ⬜ | 0x10C | ❌ | 0x135 | ❌ | 0x10D | ❌ |
 | UNNAMED_R420 |  |  |  | ⬜ |  | ⬜ | 0x10D | ❌ | 0x136 | ❌ | 0x10E | ❌ |
 | FOOTHOLD_INFO | CField::OnRequestFootHoldInfo | field/serverbound/FieldRequestFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ✅ | 0x0ED | ✅ |
@@ -908,11 +905,11 @@ Tool: `479f986833b7056d10dbad2bb7e309fc83d85f25`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 327 | 0 | 348 | 203 | 0 | 48.4% |
-| v84 | 283 | 0 | 392 | 203 | 0 | 41.9% |
-| v87 | 344 | 0 | 368 | 166 | 0 | 48.3% |
-| v95 | 380 | 0 | 417 | 81 | 0 | 47.7% |
-| JMS185 | 322 | 0 | 387 | 169 | 0 | 45.4% |
+| v83 | 327 | 0 | 348 | 200 | 0 | 48.4% |
+| v84 | 283 | 0 | 392 | 200 | 0 | 41.9% |
+| v87 | 344 | 0 | 368 | 163 | 0 | 48.3% |
+| v95 | 380 | 0 | 416 | 79 | 0 | 47.7% |
+| JMS185 | 322 | 0 | 384 | 169 | 0 | 45.6% |
 
 ## Conflicts
 

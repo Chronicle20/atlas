@@ -13976,38 +13976,6 @@
     },
     {
       "kind": "op",
-      "op": "IDA_0X0AA",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "sub_9F1DBC"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 170
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "MOVE_PET",
       "packet": "pet/clientbound/PetMovement",
       "direction": "clientbound",
@@ -14207,8 +14175,7 @@
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField::OnStalkResult",
-        "CUser::ShowRecoverUpgradeCountEffect"
+        "CField::OnStalkResult"
       ],
       "cells": {
         "gms_v83": {
@@ -14228,9 +14195,8 @@
           "opcode": 172
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 172
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },
@@ -21572,38 +21538,6 @@
     },
     {
       "kind": "op",
-      "op": "CONTI_MOVE",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CField_ContiMove::Init"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 264
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "SPAWN_HIRED_MERCHANT",
       "direction": "clientbound",
       "tier1": false,
@@ -25938,38 +25872,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 360
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "IDA_0X169",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "sub_48F41B"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 361
         }
       }
     },

@@ -858,24 +858,10 @@
   provenance: ida-discovered
   ida:
     address: 10764503
-- op: IDA_0X0AA
-  direction: clientbound
-  opcode: 170
-  fname: sub_9F1DBC
-  provenance: ida-discovered
-  ida:
-    address: 10427836
 - op: IDA_0X0AB
   direction: clientbound
   opcode: 171
   fname: CUser::OnFollowCharacter
-  provenance: ida-discovered
-  ida:
-    address: 10764503
-- op: IDA_0X0AC
-  direction: clientbound
-  opcode: 172
-  fname: CUser::ShowRecoverUpgradeCountEffect
   provenance: ida-discovered
   ida:
     address: 10764503
@@ -1846,13 +1832,6 @@
   provenance: ida-discovered
   ida:
     address: 4781287
-- op: IDA_0X169
-  direction: clientbound
-  opcode: 361
-  fname: sub_48F41B
-  provenance: ida-discovered
-  ida:
-    address: 4781083
 - op: IDA_0X16A
   direction: clientbound
   opcode: 362

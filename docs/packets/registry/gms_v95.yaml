@@ -3638,11 +3638,6 @@
   fname: ""
   provenance: csv-import
   note: 'CSV serverbound row 366: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: CONTI_MOVE
-  direction: serverbound
-  opcode: 264
-  fname: CField_ContiMove::Init
-  provenance: csv-import
 - op: UNNAMED_R369
   direction: serverbound
   opcode: 265

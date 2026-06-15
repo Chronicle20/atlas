@@ -1,3 +1,6 @@
+> **SUPERSEDED (2026-06-15)** by `design-quest-driven.md` / `plan-quest-driven.md`. Pet evolution
+> is quest-driven; the multi-pet chooser (`pickFromContext`) was backed out. Kept for history.
+
 ## Multi-Pet Evolution Chooser Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

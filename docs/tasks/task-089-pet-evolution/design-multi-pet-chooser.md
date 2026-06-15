@@ -1,3 +1,6 @@
+> **SUPERSEDED (2026-06-15)** by `design-quest-driven.md` / `plan-quest-driven.md`. Pet evolution
+> is quest-driven; the multi-pet chooser (`pickFromContext`) was backed out. Kept for history.
+
 # Design — Multi-Pet Evolution Chooser (task-089 extension)
 
 > Extends the Pet Evolution feature (see `design.md`, `plan.md`). The base feature evolves a single eligible summoned pet via the Garnox NPC; when a character has **more than one** eligible pet, the conversation could not present a chooser because the npc-conversation engine had no way to (a) source menu options from a runtime-computed list or (b) branch on it. This design adds a small, reusable engine capability — a context-sourced selection state — that closes that gap and wires it into the Garnox conversation.

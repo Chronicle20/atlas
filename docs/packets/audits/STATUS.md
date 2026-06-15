@@ -622,53 +622,53 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | USER_QUEST_RECORD_SET_STATE | CDamageMeter::SaveDamageInfo |  |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x084 | ❌ | 0x06F | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperation (T1) | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
 | DENY_PARTY_REQUEST |  |  | 0x07D | ❌ | 0x07D | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
-| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x07E | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
-| DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07F | ✅ | 0x07F | ❌ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
+| GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x07E | ✅ | 0x082 | ❌ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
+| DENY_GUILD_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnGuildResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07F | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x096 | ✅ | 0x082 | ✅ |
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey | field/serverbound/FieldAdminChat (T1) | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x097 | ✅ | 0x083 | ✅ |
 | ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x098 | ✅ | 0x084 | ✅ |
-| BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationDelete (T1) | 0x082 | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
-| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationSend (T1) | 0x083 | ✅ | 0x083 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
+| BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationDelete (T1) | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x099 | ✅ | 0x085 | ✅ |
+| NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationSend (T1) | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x09A | ✅ | 0x086 | ✅ |
 | PARTY_RESULT | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnPartyResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ | 0x083 | ✅ | 0x092 | ✅ | 0x07E | ✅ |
 | EXPEDITION_OPERATION | ExpeditionIntermediary::OnPacketExpNoti_Invite; ExpeditionIntermediary::SendExpChangeBossPacket; ExpeditionIntermediary::SendExpChangeMasterPacket; ExpeditionIntermediary::SendExpCreatePacket; ExpeditionIntermediary::SendExpInvitePacket; ExpeditionIntermediary::SendExpKickPacket; ExpeditionIntermediary::SendExpRelocatePartyPacket; ExpeditionIntermediary::SendResponseInvitePacket; ExpeditionIntermediary::SendWithdrawPacket |  |  | ⬜ |  | ⬜ | 0x084 | ❌ | 0x093 | ❌ | 0x07F | ❌ |
 | UNNAMED_R221 |  |  | 0x084 | ❌ |  | ⬜ | 0x08C | ❌ | 0x09B | ❌ | 0x087 | ❌ |
 | UPDATE_CLIENT_TIMER | CUserLocal::UpdateClientTimer |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x085 | ❌ | 0x070 | ❌ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal | field/serverbound/FieldUseDoor (T1) | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x09C | ✅ | 0x088 | ✅ |
 | FOLLOW_CHARACTER_REQUEST | CWvsContext::SendFollowCharacterRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x086 | ❌ | 0x074 | ❌ |
-| OPEN_GATE | COpenGatePool::TryEnterOpenGate |  | 0x086 | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x09D | ❌ | 0x0A2 | ❌ |
-| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap |  | 0x087 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x09F | ❌ | 0x08A | ❌ |
+| OPEN_GATE | COpenGatePool::TryEnterOpenGate |  | 0x086 | ❌ |  | ⬜ | 0x08E | ❌ | 0x09D | ❌ | 0x0A2 | ❌ |
+| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x087 | ❌ | 0x08B | ✅ | 0x08F | ❌ | 0x09F | ❌ | 0x08A | ❌ |
 | UNNAMED_R190 |  |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x087 | ❌ |  | ⬜ |
 | PQ_SELECT_REWARD | CUIPQReward::SelectReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x088 | ❌ |  | ⬜ |
-| RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  | 0x088 | ❌ | 0x088 | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
+| RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update |  | 0x088 | ❌ | 0x08C | ❌ | 0x090 | ❌ | 0x0A0 | ❌ | 0x08B | ❌ |
 | PQ_REQUEST_REWARD | CUIPQReward::RequestReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x089 | ❌ |  | ⬜ |
 | RING_ACTION | CEngageDlg::SetRet; CWvsContext::OnMarriageRequest; CWvsContext::SendEngagementRequest; CWvsContext::SendInvitationQuery; CWvsContext::SendRingDropRequest; CWvsContext::SendSendInvitaionRequest; CWvsContext::SendWishListInput |  | 0x089 | ❌ | 0x08D | ❌ | 0x091 | ❌ | 0x0A1 | ❌ | 0x08C | ❌ |
 | FOLLOW_REQUEST_APPLY | CWvsContext::OnSetPassenserRequest; CWvsContext::SendFollowRequestApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x076 | ❌ |
-| WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  | 0x08A | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
+| WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  | 0x08A | ❌ | 0x08E | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
 | WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
 | BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  | 0x08D | ❌ | 0x091 | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
-| ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x08E | ✅ | 0x08E | ✅ | 0x096 | ✅ | 0x0A7 | ✅ | 0x091 | ✅ |
+| ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x08E | ✅ |  | ⬜ | 0x096 | ✅ | 0x0A7 | ✅ | 0x091 | ✅ |
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x08F | ✅ | 0x093 | ✅ | 0x097 | ✅ | 0x0A8 | ✅ | 0x092 | ✅ |
 | DENY_ALLIANCE_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult |  | 0x090 | ❌ | 0x094 | ❌ | 0x098 | ❌ |  | ⬜ |  | ⬜ |
 | OPEN_FAMILY_PEDIGREE | CWvsContext::SendFamilyChartRequest |  | 0x091 | ❌ | 0x095 | ❌ | 0x099 | ❌ | 0x0A9 | ❌ | 0x093 | ❌ |
-| OPEN_FAMILY | CWvsContext::SendFamilyInfoRequest |  | 0x092 | ❌ | 0x092 | ❌ | 0x09A | ❌ | 0x0AA | ❌ | 0x094 | ❌ |
+| OPEN_FAMILY | CWvsContext::SendFamilyInfoRequest |  | 0x092 | ❌ | 0x096 | ❌ | 0x09A | ❌ | 0x0AA | ❌ | 0x094 | ❌ |
 | ADD_FAMILY | CWvsContext::SendRegisterJunior |  | 0x093 | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0AB | ❌ | 0x095 | ❌ |
 | SEPARATE_FAMILY_BY_SENIOR | CWvsContext::SendUnregisterJunior |  | 0x094 | ❌ | 0x098 | ❌ | 0x09C | ❌ | 0x0AC | ❌ | 0x096 | ❌ |
-| SEPARATE_FAMILY_BY_JUNIOR | CWvsContext::SendUnregisterParent |  | 0x095 | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x0AD | ❌ | 0x097 | ❌ |
-| ACCEPT_FAMILY | CWvsContext::SendFamilyInviteResult |  | 0x096 | ❌ | 0x096 | ❌ | 0x09E | ❌ | 0x0AE | ❌ | 0x098 | ❌ |
+| SEPARATE_FAMILY_BY_JUNIOR | CWvsContext::SendUnregisterParent |  | 0x095 | ❌ | 0x099 | ❌ | 0x09D | ❌ | 0x0AD | ❌ | 0x097 | ❌ |
+| ACCEPT_FAMILY | CWvsContext::SendFamilyInviteResult |  | 0x096 | ❌ | 0x09A | ❌ | 0x09E | ❌ | 0x0AE | ❌ | 0x098 | ❌ |
 | USE_FAMILY | CWvsContext::SendUseFamilyPrivilege |  | 0x097 | ❌ | 0x09B | ❌ | 0x09F | ❌ | 0x0AF | ❌ | 0x099 | ❌ |
 | CHANGE_FAMILY_MESSAGE | CWvsContext::SendSetFamilyPrecept |  | 0x098 | ❌ | 0x09C | ❌ | 0x0A0 | ❌ | 0x0B0 | ❌ | 0x09A | ❌ |
-| FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  | 0x099 | ❌ | 0x099 | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
-| UNNAMED_R245 |  |  | 0x09A | ❌ | 0x09A | ❌ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
+| FAMILY_SUMMON_RESPONSE | CWvsContext::OnFamilySummonRequest |  | 0x099 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0B1 | ❌ | 0x09B | ❌ |
+| UNNAMED_R245 |  |  | 0x09A | ❌ |  | ⬜ | 0x0A2 | ❌ | 0x0B2 | ❌ |  | ⬜ |
 | BBS_OPERATION | CUIGuildBBS::OnComment; CUIGuildBBS::OnCommentDelete; CUIGuildBBS::OnDelete; CUIGuildBBS::OnRegister; CUIGuildBBS::SendLoadListRequest; CUIGuildBBS::SendViewEntryRequest | guild/serverbound/GuildBBSListThreads (T1) | 0x09B | ✅ | 0x09F | ❌ | 0x0A3 | ✅ | 0x0B3 | ✅ |  | ⬜ |
 | ENTER_MTS | CWvsContext::SendMigrateToITCRequest |  | 0x09C | ❌ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0B4 | ❌ | 0x0A6 | ❌ |
-| USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  | 0x09D | ❌ | 0x09D | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
+| USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  | 0x09D | ❌ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x089 | ✅ |
-| USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  | 0x09E | ❌ | 0x09E | ❌ | 0x0A6 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
-| NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildOperation (T1) | 0x09F | ✅ | 0x09F | ✅ | 0x0A7 | ✅ | 0x0B7 | ✅ |  | ⬜ |
-| MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard |  | 0x0A0 | ❌ | 0x0A0 | ❌ | 0x0A8 | ❌ | 0x0B8 | ❌ |  | ⬜ |
-| CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  | 0x0A1 | ❌ | 0x0A1 | ❌ | 0x0A9 | ❌ | 0x0B9 | ❌ |  | ⬜ |
-| CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  | 0x0A2 | ❌ | 0x0A2 | ❌ | 0x0AC | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
-| ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  | 0x0A3 | ❌ | 0x0A3 | ❌ | 0x0AD | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
+| USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  | 0x09E | ❌ | 0x0A2 | ❌ | 0x0A6 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
+| NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildOperation (T1) | 0x09F | ✅ | 0x0A3 | ❌ | 0x0A7 | ✅ | 0x0B7 | ✅ |  | ⬜ |
+| MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B8 | ❌ |  | ⬜ |
+| CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0A9 | ❌ | 0x0B9 | ❌ |  | ⬜ |
+| CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
+| ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
 | JMS_CONSUME_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ |
 | MOB_CRC_KEY_CHANGED_REPLY | CMobPool::OnMobCrcKeyChanged | monster/clientbound/MonsterMobCrcKeyChanged (T1) | 0x0A4 | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0BE | ✅ | 0x09E | ✅ |
 | FIND_FRIEND | CUIFindFriend::SendMyInfoRequest; CUIFindFriend::SendSearchRequest; CUIFindFriendDetail::SetDetailInfo |  | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0C2 | ❌ |  | ⬜ |
@@ -690,9 +690,9 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | BEHOLDER | CSummoned::TryDoingGiveBuff; CSummoned::TryDoingHeal; CSummoned::TryDoingHealingRobot; CSummoned::TryDoingSummon; CSummoned__TryDoingHeal_send_0xB7_BEHOLDER |  | 0x0B2 | ❌ | 0x0B7 | ❌ | 0x0BE | ❌ | 0x0D2 | ❌ | 0x0B5 | ❌ |
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  | 0x0B3 | ❌ | 0x0B3 | ❌ | 0x0BF | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
-| UNNAMED_R297 |  |  | 0x0B4 | ❌ | 0x0B4 | ❌ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
+| UNNAMED_R297 |  |  | 0x0B4 | ❌ |  | ⬜ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
 | MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive; CVecCtrlDragon__EndUpdateActive_send_0xBA |  | 0x0B5 | ❌ | 0x0BA | ❌ | 0x0C1 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
-| UNNAMED_R299 |  |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
+| UNNAMED_R299 |  |  | 0x0B6 | ❌ |  | ⬜ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
 | AUTO_AGGRO | CMob::ApplyControl |  | 0x0BD | ❌ | 0x0BD | ❌ | 0x0C9 | ❌ | 0x0E4 | ❌ | 0x0C3 | ❌ |
@@ -713,7 +713,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | UNNAMED_R346 |  |  | 0x0C9 | ❌ | 0x0C9 | ❌ | 0x0D6 | ❌ | 0x0F5 | ❌ | 0x0D4 | ❌ |
 | ITEM_PICKUP | CWvsContext::SendDropPickUpRequest | drop/serverbound/DropPickUp | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0F6 | ✅ | 0x0D5 | ✅ |
 | UNNAMED_R348 |  |  | 0x0CB | ❌ |  | ⬜ | 0x0D8 | ❌ | 0x0F7 | ❌ | 0x0D6 | ❌ |
-| UNNAMED_R349 |  |  | 0x0CC | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
+| UNNAMED_R349 |  |  | 0x0CC | ❌ |  | ⬜ | 0x0D9 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
 | DAMAGE_REACTOR | CReactorPool::FindHitReactor; CReactorPool::FindSkillReactor | reactor/serverbound/ReactorHitRequest | 0x0CD | ✅ | 0x0D3 | ✅ | 0x0DA | ✅ | 0x0F9 | ✅ | 0x0D8 | ✅ |
 | TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
 | PLAYER_MAP_TRANSFER | CUserLocal::ResetNLCPQ |  | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0FB | ❌ | 0x0DA | ❌ |
@@ -817,7 +817,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| character/serverbound/KeyMapChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| character/serverbound/KeyMapChange (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/clientbound/GuildBBSThread (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -906,7 +906,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 327 | 0 | 348 | 200 | 0 | 48.4% |
-| v84 | 284 | 0 | 378 | 213 | 0 | 42.9% |
+| v84 | 282 | 0 | 373 | 220 | 0 | 43.1% |
 | v87 | 344 | 0 | 368 | 163 | 0 | 48.3% |
 | v95 | 380 | 0 | 416 | 79 | 0 | 47.7% |
 | JMS185 | 322 | 0 | 384 | 169 | 0 | 45.6% |

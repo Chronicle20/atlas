@@ -128,14 +128,12 @@
   direction: clientbound
   opcode: 22
   fname: ''
-  fname_alt: sub_610B5B
   provenance: manual
   note: discover-ops vs v84 IDB — login range (0x00-0x1C) is byte-identical to v83. CLogin::OnPacket case 0x16 dispatches to unnamed sub_610B5B (0x610B5B); registry fname left empty, IDA handler recorded as fname_alt (same adjudication v83 received).
 - op: LOGIN_AUTH
   direction: clientbound
   opcode: 23
   fname: CLogin::OnEnableSPWResult
-  fname_alt: sub_610C6E
   provenance: manual
   note: discover-ops vs v84 IDB — login range unshifted. CLogin::OnPacket case 0x17 dispatches to sub_610C6E (0x610C6E), which decodes the SPW/PIN-enable flags (= CLogin::OnEnableSPWResult, the v83 adjudication). 0x15 HACKSHIELD is not dispatched in v84 (matches v83).
 - op: CHECK_CRC_RESULT
@@ -389,9 +387,9 @@
   opcode: 72
   fname: CWvsContext::OnShopScannerResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x46->0x48 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x48 -> handler 0xa743ec; body-matched to v95 SHOP_SCANNER_RESULT (v95 OnPacket case 73). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x46->0x48 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x48 -> handler 0xa743ec; body-matched to v95 SHOP_SCANNER_RESULT (v95 OnPacket case 73). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SHOP_LINK_RESULT
   direction: clientbound
   opcode: 73
@@ -405,33 +403,33 @@
   opcode: 74
   fname: CWvsContext::OnMarriageRequest
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x48->0x4a by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4a -> handler 0xa75049; body-matched to v95 MARRIAGE_REQUEST (v95 OnPacket case 75). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x48->0x4a by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4a -> handler 0xa75049; body-matched to v95 MARRIAGE_REQUEST (v95 OnPacket case 75). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: MARRIAGE_RESULT
   direction: clientbound
   opcode: 75
   fname: CWvsContext::OnMarriageResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x49->0x4b by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4b -> handler 0xa751ae; body-matched to v95 MARRIAGE_RESULT (v95 OnPacket case 76). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x49->0x4b by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4b -> handler 0xa751ae; body-matched to v95 MARRIAGE_RESULT (v95 OnPacket case 76). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: WEDDING_GIFT_RESULT
   direction: clientbound
   opcode: 76
   fname: CWvsContext::OnWeddingGiftResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x4a->0x4c by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4c -> handler 0xa75846; body-matched to v95 WEDDING_GIFT_RESULT (v95 OnPacket case 77). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x4a->0x4c by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4c -> handler 0xa75846; body-matched to v95 WEDDING_GIFT_RESULT (v95 OnPacket case 77). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: NOTIFY_MARRIED_PARTNER_MAP_TRANSFER
   direction: clientbound
   opcode: 77
   fname: CWvsContext::OnNotifyMarriedPartnerMapTransfer
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x4b->0x4d by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4d -> handler 0xa5260b; body-matched to v95 NOTIFY_MARRIED_PARTNER_MAP_TRANSFER (v95 OnPacket case 78). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x4b->0x4d by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4d -> handler 0xa5260b; body-matched to v95 NOTIFY_MARRIED_PARTNER_MAP_TRANSFER (v95 OnPacket case 78). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: CASH_PET_FOOD_RESULT
   direction: clientbound
   opcode: 78
@@ -443,9 +441,9 @@
   opcode: 79
   fname: CWvsContext::OnSetWeekEventMessage
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x4d->0x4f by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4f -> handler 0xa69ccd; body-matched to v95 SET_WEEK_EVENT_MESSAGE (v95 OnPacket case 80). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x4d->0x4f by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x4f -> handler 0xa69ccd; body-matched to v95 SET_WEEK_EVENT_MESSAGE (v95 OnPacket case 80). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SET_POTION_DISCOUNT_RATE
   direction: clientbound
   opcode: 80
@@ -571,225 +569,225 @@
   opcode: 95
   fname: CWvsContext::OnBonusExpRateChanged
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x5d->0x5f by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x5f -> handler 0xa5dabb; body-matched to v95 BONUS_EXP_CHANGED (v95 OnPacket case 96). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x5d->0x5f by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x5f -> handler 0xa5dabb; body-matched to v95 BONUS_EXP_CHANGED (v95 OnPacket case 96). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_CHART_RESULT
   direction: clientbound
   opcode: 97
   fname: CWvsContext::OnFamilyChartResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x5e->0x61 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x61 -> handler 0xa7fe0f; body-matched to v95 FAMILY_CHART_RESULT (v95 OnPacket case 98). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x5e->0x61 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x61 -> handler 0xa7fe0f; body-matched to v95 FAMILY_CHART_RESULT (v95 OnPacket case 98). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_INFO_RESULT
   direction: clientbound
   opcode: 98
   fname: CWvsContext::OnFamilyInfoResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x5f->0x62 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x62 -> handler 0xa7fe25; body-matched to v95 FAMILY_INFO_RESULT (v95 OnPacket case 99). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x5f->0x62 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x62 -> handler 0xa7fe25; body-matched to v95 FAMILY_INFO_RESULT (v95 OnPacket case 99). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_RESULT
   direction: clientbound
   opcode: 99
   fname: CWvsContext::OnFamilyResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x60->0x63 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x63 -> handler 0xa7ff81; body-matched to v95 FAMILY_RESULT (v95 OnPacket case 100). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x60->0x63 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x63 -> handler 0xa7ff81; body-matched to v95 FAMILY_RESULT (v95 OnPacket case 100). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_JOIN_REQUEST
   direction: clientbound
   opcode: 100
   fname: CWvsContext::OnFamilyJoinRequest
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x61->0x64 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x64 -> handler 0xa80331; body-matched to v95 FAMILY_JOIN_REQUEST (v95 OnPacket case 101). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x61->0x64 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x64 -> handler 0xa80331; body-matched to v95 FAMILY_JOIN_REQUEST (v95 OnPacket case 101). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_JOIN_REQUEST_RESULT
   direction: clientbound
   opcode: 101
   fname: CWvsContext::OnFamilyJoinRequestResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x62->0x65 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x65 -> handler 0xa8043a; body-matched to v95 FAMILY_JOIN_REQUEST_RESULT (v95 OnPacket case 102). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x62->0x65 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x65 -> handler 0xa8043a; body-matched to v95 FAMILY_JOIN_REQUEST_RESULT (v95 OnPacket case 102). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_JOIN_ACCEPTED
   direction: clientbound
   opcode: 102
   fname: CWvsContext::OnFamilyJoinAccepted
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x63->0x66 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x66 -> handler 0xa80530; body-matched to v95 FAMILY_JOIN_ACCEPTED (v95 OnPacket case 103). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x63->0x66 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x66 -> handler 0xa80530; body-matched to v95 FAMILY_JOIN_ACCEPTED (v95 OnPacket case 103). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_PRIVILEGE_LIST
   direction: clientbound
   opcode: 103
   fname: CWvsContext::OnFamilyPrivilegeList
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x64->0x67 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x67 -> handler 0xa805be; body-matched to v95 FAMILY_PRIVILEGE_LIST (v95 OnPacket case 104). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x64->0x67 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x67 -> handler 0xa805be; body-matched to v95 FAMILY_PRIVILEGE_LIST (v95 OnPacket case 104). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_REP_GAIN
   direction: clientbound
   opcode: 104
   fname: CWvsContext::OnFamilyFamousPointIncResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x65->0x68 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x68 -> handler 0xa8077a; body-matched to v95 FAMILY_REP_GAIN (v95 OnPacket case 105). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x65->0x68 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x68 -> handler 0xa8077a; body-matched to v95 FAMILY_REP_GAIN (v95 OnPacket case 105). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_NOTIFY_LOGIN_OR_LOGOUT
   direction: clientbound
   opcode: 105
   fname: CWvsContext::OnFamilyNotifyLoginOrLogout
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x66->0x69 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x69 -> handler 0xa8087e; body-matched to v95 FAMILY_NOTIFY_LOGIN_OR_LOGOUT (v95 OnPacket case 106). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x66->0x69 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x69 -> handler 0xa8087e; body-matched to v95 FAMILY_NOTIFY_LOGIN_OR_LOGOUT (v95 OnPacket case 106). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_SET_PRIVILEGE
   direction: clientbound
   opcode: 106
   fname: CWvsContext::OnFamilySetPrivilege
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x67->0x6a by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6a -> handler 0xa80947; body-matched to v95 FAMILY_SET_PRIVILEGE (v95 OnPacket case 107). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x67->0x6a by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6a -> handler 0xa80947; body-matched to v95 FAMILY_SET_PRIVILEGE (v95 OnPacket case 107). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAMILY_SUMMON_REQUEST
   direction: clientbound
   opcode: 107
   fname: CWvsContext::OnFamilySummonRequest
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x68->0x6b by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6b -> handler 0xa80a6b; body-matched to v95 FAMILY_SUMMON_REQUEST (v95 OnPacket case 108). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x68->0x6b by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6b -> handler 0xa80a6b; body-matched to v95 FAMILY_SUMMON_REQUEST (v95 OnPacket case 108). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: NOTIFY_LEVELUP
   direction: clientbound
   opcode: 108
   fname: CWvsContext::OnNotifyLevelUp
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x69->0x6c by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6c -> handler 0xa5ddc6; body-matched to v95 NOTIFY_LEVELUP (v95 OnPacket case 109). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x69->0x6c by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6c -> handler 0xa5ddc6; body-matched to v95 NOTIFY_LEVELUP (v95 OnPacket case 109). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: NOTIFY_MARRIAGE
   direction: clientbound
   opcode: 109
   fname: CWvsContext::OnNotifyWedding
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6a->0x6d by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6d -> handler 0xa5df53; body-matched to v95 NOTIFY_MARRIAGE (v95 OnPacket case 110). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6a->0x6d by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6d -> handler 0xa5df53; body-matched to v95 NOTIFY_MARRIAGE (v95 OnPacket case 110). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: NOTIFY_JOB_CHANGE
   direction: clientbound
   opcode: 110
   fname: CWvsContext::OnNotifyJobChange
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6b->0x6e by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6e -> handler 0xa5e07e; body-matched to v95 NOTIFY_JOB_CHANGE (v95 OnPacket case 111). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6b->0x6e by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x6e -> handler 0xa5e07e; body-matched to v95 NOTIFY_JOB_CHANGE (v95 OnPacket case 111). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: MAPLE_TV_USE_RES
   direction: clientbound
   opcode: 112
   fname: CWvsContext::OnMapleTVUseRes
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6d->0x70 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x70 -> handler 0xa75b16; body-matched to v95 MAPLE_TV_USE_RES (v95 OnPacket case 113). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6d->0x70 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x70 -> handler 0xa75b16; body-matched to v95 MAPLE_TV_USE_RES (v95 OnPacket case 113). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: AVATAR_MEGAPHONE_RESULT
   direction: clientbound
   opcode: 113
   fname: CWvsContext::OnAvatarMegaphoneRes
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6e->0x71 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x71 -> handler 0xa75b7f; body-matched to v95 AVATAR_MEGAPHONE_RESULT (v95 OnPacket case 114). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6e->0x71 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x71 -> handler 0xa75b7f; body-matched to v95 AVATAR_MEGAPHONE_RESULT (v95 OnPacket case 114). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SET_AVATAR_MEGAPHONE
   direction: clientbound
   opcode: 114
   fname: CWvsContext::OnSetAvatarMegaphone
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6f->0x72 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x72 -> handler 0xa75c49; body-matched to v95 SET_AVATAR_MEGAPHONE (v95 OnPacket case 115). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x6f->0x72 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x72 -> handler 0xa75c49; body-matched to v95 SET_AVATAR_MEGAPHONE (v95 OnPacket case 115). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: CLEAR_AVATAR_MEGAPHONE
   direction: clientbound
   opcode: 115
   fname: CWvsContext::OnClearAvatarMegaphone
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x70->0x73 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x73 -> handler 0xa75e1e; body-matched to v95 CLEAR_AVATAR_MEGAPHONE (v95 OnPacket case 116). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x70->0x73 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x73 -> handler 0xa75e1e; body-matched to v95 CLEAR_AVATAR_MEGAPHONE (v95 OnPacket case 116). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: CANCEL_NAME_CHANGE_RESULT
   direction: clientbound
   opcode: 116
   fname: CWvsContext::OnCancelNameChangeResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x71->0x74 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x74 -> handler 0xa75e3a; body-matched to v95 CANCEL_NAME_CHANGE_RESULT (v95 OnPacket case 117). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x71->0x74 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x74 -> handler 0xa75e3a; body-matched to v95 CANCEL_NAME_CHANGE_RESULT (v95 OnPacket case 117). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: CANCEL_TRANSFER_WORLD_RESULT
   direction: clientbound
   opcode: 117
   fname: CWvsContext::OnCancelTransferWorldResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x72->0x75 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x75 -> handler 0xa75ff0; body-matched to v95 CANCEL_TRANSFER_WORLD_RESULT (v95 OnPacket case 118). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x72->0x75 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x75 -> handler 0xa75ff0; body-matched to v95 CANCEL_TRANSFER_WORLD_RESULT (v95 OnPacket case 118). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: DESTROY_SHOP_RESULT
   direction: clientbound
   opcode: 118
   fname: CWvsContext::OnDestroyShopResult
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x73->0x76 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x76 -> handler 0xa76160; body-matched to v95 DESTROY_SHOP_RESULT (v95 OnPacket case 119). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x73->0x76 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x76 -> handler 0xa76160; body-matched to v95 DESTROY_SHOP_RESULT (v95 OnPacket case 119). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: FAKE_GM_NOTICE
   direction: clientbound
   opcode: 119
   fname: CWvsContext::OnFakeGMNotice
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x74->0x77 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x77 -> handler 0xa7620c; body-matched to v95 FAKE_GM_NOTICE (v95 OnPacket case 120). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x74->0x77 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x77 -> handler 0xa7620c; body-matched to v95 FAKE_GM_NOTICE (v95 OnPacket case 120). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SUCCESS_IN_USE_GACHAPON_BOX
   direction: clientbound
   opcode: 120
   fname: CWvsContext::OnSuccessInUsegachaponBox
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x75->0x78 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x78 -> handler 0xa764ac; body-matched to v95 SUCCESS_IN_USE_GACHAPON_BOX (v95 OnPacket case 121). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x75->0x78 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x78 -> handler 0xa764ac; body-matched to v95 SUCCESS_IN_USE_GACHAPON_BOX (v95 OnPacket case 121). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: NEW_YEAR_CARD_RES
   direction: clientbound
   opcode: 121
   fname: CWvsContext::OnNewYearCardRes
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x76->0x79 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x79 -> handler 0xa76548; body-matched to v95 NEW_YEAR_CARD_RES (v95 OnPacket case 122). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x76->0x79 by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x79 -> handler 0xa76548; body-matched to v95 NEW_YEAR_CARD_RES (v95 OnPacket case 122). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: RANDOM_MORPH_RES
   direction: clientbound
   opcode: 122
   fname: CWvsContext::OnRandomMorphRes
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x77->0x7a by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7a -> handler 0xa76b5d; body-matched to v95 RANDOM_MORPH_RES (v95 OnPacket case 123). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x77->0x7a by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7a -> handler 0xa76b5d; body-matched to v95 RANDOM_MORPH_RES (v95 OnPacket case 123). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: CANCEL_NAME_CHANGE_BY_OTHER
   direction: clientbound
   opcode: 123
   fname: CWvsContext::OnCancelNameChangebyOther
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x78->0x7b by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7b -> handler 0xa75fa9; body-matched to v95 CANCEL_NAME_CHANGE_BY_OTHER (v95 OnPacket case 124). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x78->0x7b by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7b -> handler 0xa75fa9; body-matched to v95 CANCEL_NAME_CHANGE_BY_OTHER (v95 OnPacket case 124). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SET_EXTRA_PENDANT_SLOT
   direction: clientbound
   opcode: 124
   fname: CWvsContext::OnSetBuyEquipExt
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x79->0x7c by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7c -> handler 0xa5e1ca; body-matched to v95 SET_EXTRA_PENDANT_SLOT (v95 OnPacket case 125). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x79->0x7c by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7c -> handler 0xa5e1ca; body-matched to v95 SET_EXTRA_PENDANT_SLOT (v95 OnPacket case 125). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SCRIPT_PROGRESS_MESSAGE
   direction: clientbound
   opcode: 125
@@ -801,17 +799,17 @@
   opcode: 126
   fname: CWvsContext::OnDataCRCCheckFailed
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x7b->0x7e by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7e -> handler 0xa5e4eb; body-matched to v95 DATA_CRC_CHECK_FAILED (v95 OnPacket case 128). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x7b->0x7e by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7e -> handler 0xa5e4eb; body-matched to v95 DATA_CRC_CHECK_FAILED (v95 OnPacket case 128). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: MACRO_SYS_DATA_INIT
   direction: clientbound
   opcode: 127
   fname: CWvsContext::OnMacroSysDataInit
   provenance: ida-discovered
-  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x7c->0x7f by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7f -> handler 0xa748bb; body-matched to v95 MACRO_SYS_DATA_INIT (v95 OnPacket case 140). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
   ida:
     address: 10820816
+  note: 'task-100 cluster-F comprehensive reshift: v84 clientbound 0x7c->0x7f by READING v84 CWvsContext::OnPacket dispatcher (0xa51cd0) case 0x7f -> handler 0xa748bb; body-matched to v95 MACRO_SYS_DATA_INIT (v95 OnPacket case 140). The whole CWvsContext clientbound run was stale v83 carryover; v95-only op POTION_DISCOUNT_RATE_CHANGED@0x60 grows the table. v84 fn renamed+idb_saved.'
 - op: SET_FIELD
   direction: clientbound
   opcode: 128
@@ -825,17 +823,17 @@
   opcode: 129
   fname: CStage::OnSetITC
   provenance: ida-discovered
-  note: 'task-100 cluster-F cascade: v84 clientbound 0x7e->0x81 by READING CStage::OnPacket case 0x81 -> CStage::OnSetITC (0x799e7a: CharacterData::Decode + set_stage). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
   ida:
     address: 7965003
+  note: 'task-100 cluster-F cascade: v84 clientbound 0x7e->0x81 by READING CStage::OnPacket case 0x81 -> CStage::OnSetITC (0x799e7a: CharacterData::Decode + set_stage). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
 - op: SET_CASH_SHOP
   direction: clientbound
   opcode: 130
   fname: CStage::OnSetCashShop
   provenance: ida-discovered
-  note: 'task-100 cluster-F cascade: v84 clientbound 0x7f->0x82 by READING CStage::OnPacket case 0x82 -> CStage::OnSetCashShop (0x7993b6). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
   ida:
     address: 7965003
+  note: 'task-100 cluster-F cascade: v84 clientbound 0x7f->0x82 by READING CStage::OnPacket case 0x82 -> CStage::OnSetCashShop (0x7993b6). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
 - op: SET_BACK_EFFECT
   direction: clientbound
   opcode: 131
@@ -849,17 +847,17 @@
   opcode: 132
   fname: CMapLoadable::OnSetMapObjectVisible
   provenance: ida-discovered
-  note: 'task-100 cluster-F cascade: v84 clientbound 0x81->0x84 by READING CMapLoadable::OnPacket case 0x84 -> CMapLoadable::OnSetMapObjectVisible (0x65a249: Decode1 count, per-name DecodeStr+Decode1 visibility). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
   ida:
     address: 6659261
+  note: 'task-100 cluster-F cascade: v84 clientbound 0x81->0x84 by READING CMapLoadable::OnPacket case 0x84 -> CMapLoadable::OnSetMapObjectVisible (0x65a249: Decode1 count, per-name DecodeStr+Decode1 visibility). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
 - op: CLEAR_BACK_EFFECT
   direction: clientbound
   opcode: 133
   fname: CMapLoadable::OnClearBackEffect
   provenance: ida-discovered
-  note: 'task-100 cluster-F cascade: v84 clientbound 0x82->0x85 by READING CMapLoadable::OnPacket case 0x85 -> CMapLoadable::OnClearBackEffect (0x65a241 thunk -> 0x659d08). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
   ida:
     address: 6659261
+  note: 'task-100 cluster-F cascade: v84 clientbound 0x82->0x85 by READING CMapLoadable::OnPacket case 0x85 -> CMapLoadable::OnClearBackEffect (0x65a241 thunk -> 0x659d08). Stale slot was v83 carryover displaced by the CWvsContext reshift. v84 fn renamed+idb_saved.'
 - op: BLOCKED_MAP
   direction: clientbound
   opcode: 134
@@ -1097,129 +1095,129 @@
   opcode: 171
   fname: CUser::OnPetPacket
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher CUserPool__OnPetActionPacket_recv_0xAB_0xB2 case 171 (0xAB) -> OnPetActivated+PetInterAct.'
   ida:
     address: 9896284
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher CUserPool__OnPetActionPacket_recv_0xAB_0xB2 case 171 (0xAB) -> OnPetActivated+PetInterAct.'
 - op: EVOLVE_PET
   direction: clientbound
   opcode: 172
   fname: CUser::OnPetPacket
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 172 (0xAC) -> OnPetEvol.'
   ida:
     address: 9896284
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 172 (0xAC) -> OnPetEvol.'
 - op: MOVE_PET
   direction: clientbound
   opcode: 174
   fname: CPet::OnMove
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 174 (0xAE) -> CPet::OnMove (case 173=PET_ACTIVATED unused -> +4 vs v83).'
   ida:
     address: 9896284
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 174 (0xAE) -> CPet::OnMove (case 173=PET_ACTIVATED unused -> +4 vs v83).'
 - op: PET_CHAT
   direction: clientbound
   opcode: 175
   fname: CPet::OnAction
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 175 (0xAF) -> CPet::OnAction.'
   ida:
     address: 9896284
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 175 (0xAF) -> CPet::OnAction.'
 - op: PET_NAMECHANGE
   direction: clientbound
   opcode: 176
   fname: CPet__OnNameChanged_recv_0xB0
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003).'
   ida:
     address: 7474982
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003).'
 - op: PET_EXCEPTION_LIST
   direction: clientbound
   opcode: 177
   fname: CPet::OnLoadExceptionList
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 177 (0xB1) -> CPet::OnLoadExceptionList.'
   ida:
     address: 9896284
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 177 (0xB1) -> CPet::OnLoadExceptionList.'
 - op: PET_COMMAND
   direction: clientbound
   opcode: 178
   fname: CPet::OnActionCommand
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 178 (0xB2) -> CPet::OnActionCommand.'
   ida:
     address: 9896284
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 178 (0xB2) -> CPet::OnActionCommand.'
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 179
   fname: CSummonedPool::OnPacket
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 179 (0xB3) -> create/spawn.'
   ida:
     address: 9896449
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 179 (0xB3) -> create/spawn.'
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 180
   fname: CSummonedPool::OnPacket
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 180 (0xB4) -> remove.'
   ida:
     address: 9896449
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 180 (0xB4) -> remove.'
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 181
   fname: CSummonedPool::OnMove
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 181 (0xB5) -> OnMove (sub_7CC317->CMovePath::OnMovePacket).'
   ida:
     address: 9896449
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 181 (0xB5) -> OnMove (sub_7CC317->CMovePath::OnMovePacket).'
 - op: SUMMON_ATTACK
   direction: clientbound
   opcode: 182
   fname: CSummonedPool::OnAttack
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 182 (0xB6) -> OnAttack (sub_7CC338).'
   ida:
     address: 9896449
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 182 (0xB6) -> OnAttack (sub_7CC338).'
 - op: DAMAGE_SUMMON
   direction: clientbound
   opcode: 184
   fname: CSummonedPool::OnHit
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 184 (0xB8) -> OnHit (sub_7CC984: Decode1 idx/Decode4 dmg/Decode4 template).'
   ida:
     address: 9896449
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 184 (0xB8) -> OnHit (sub_7CC984: Decode1 idx/Decode4 dmg/Decode4 template).'
 - op: SUMMON_SKILL
   direction: clientbound
   opcode: 183
   fname: CSummonedPool::OnSkill
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 183 (0xB7) -> OnSkill (sub_7CC920; v95 dispatch order Skill before Hit).'
   ida:
     address: 9896449
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 183 (0xB7) -> OnSkill (sub_7CC920; v95 dispatch order Skill before Hit).'
 - op: SPAWN_DRAGON
   direction: clientbound
   opcode: 185
   fname: CDragon::OnCreated
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 185 (0xB9) -> spawn (sub_506F85); v95 CUser::OnDragonPacket 206.'
   ida:
     address: 9897145
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 185 (0xB9) -> spawn (sub_506F85); v95 CUser::OnDragonPacket 206.'
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 186
   fname: CDragon::OnMove
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 186 (0xBA) -> CDragon::OnMove (sub_507AC6); v95 OnDragonPacket 207.'
   ida:
     address: 9897145
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 186 (0xBA) -> CDragon::OnMove (sub_507AC6); v95 OnDragonPacket 207.'
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 187
   fname: CUser::OnDragonPacket
   provenance: ida-discovered
-  note: 'v84 opcode 187 (0xBB) READ from the v84 IDB dispatch range (task-100 correction of a cluster-B guess). CUserPool::OnUserCommonPacket (sub_9B23A1) routes the dragon family with an explicit range check: at 0x9B2443 it tests v6 >= 185 && v6 <= 187 and at 0x9B244B calls sub_9704B9; opcode 187 is therefore explicitly inside the dragon dispatch range. sub_9704B9 (= CUser::OnDragonPacket) has cases only for 185 (spawn, sub_506F85) and 186 (move, sub_507AC6); 187 is routed-but-unhandled (no remove body). Body-identical to v95 CUser::OnDragonPacket @0x8e5c00, which handles only 206 (spawn) + 207 (move); its outer dispatcher CUserPool::OnUserCommonPacket @0x94cdb0 routes if((v6-206)<=2) -> OnDragonPacket i.e. 206/207/208, so v95 REMOVE_DRAGON=208 is likewise routed-but-unhandled. Opcode verified from the dispatch-range upper bound; remove logic itself is absent in both v84 and v95.'
   ida:
     address: 10167363
+  note: 'v84 opcode 187 (0xBB) READ from the v84 IDB dispatch range (task-100 correction of a cluster-B guess). CUserPool::OnUserCommonPacket (sub_9B23A1) routes the dragon family with an explicit range check: at 0x9B2443 it tests v6 >= 185 && v6 <= 187 and at 0x9B244B calls sub_9704B9; opcode 187 is therefore explicitly inside the dragon dispatch range. sub_9704B9 (= CUser::OnDragonPacket) has cases only for 185 (spawn, sub_506F85) and 186 (move, sub_507AC6); 187 is routed-but-unhandled (no remove body). Body-identical to v95 CUser::OnDragonPacket @0x8e5c00, which handles only 206 (spawn) + 207 (move); its outer dispatcher CUserPool::OnUserCommonPacket @0x94cdb0 routes if((v6-206)<=2) -> OnDragonPacket i.e. 206/207/208, so v95 REMOVE_DRAGON=208 is likewise routed-but-unhandled. Opcode verified from the dispatch-range upper bound; remove logic itself is absent in both v84 and v95.'
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 189
@@ -3267,8 +3265,8 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: GUILD_OPERATION
   direction: serverbound
-  opcode: 126
-  fname: CUIFadeYesNo::OnButtonClicked
+  opcode: 130
+  fname: CField::SendSetGuildMarkMsg
   fname_alts:
   - CField::SendCreateGuildAgreeMsg
   - CField::SendSetMemberGradeMsg
@@ -3280,16 +3278,20 @@
   - CField::SendSetGradeNameMsg
   - CField::SendSetGuildNoticeMsg
   - CWvsContext::OnGuildResult
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: registry fname CUIFadeYesNo::OnButtonClicked is WRONG. GUILD_OPERATION is sent from CField guild methods (SendWithdrawGuildMsg/SendInviteGuildMsg/SendKickGuildMsg/SendSetGuildNoticeMsg); v95 CField::SendWithdrawGuildMsg @0x534ad0 builds COutPacket(149)=0x95. This is a CField-family serverbound op (task-096 territory), not CWvsContext; its v84 sender is unnamed and its offset differs from the CWvsContext -20. Left honest-stale at 0x7e (dup with PARTY_OPERATION which IS real@0x7e). NOT guessed; needs CField-family serverbound reshift.'
+  provenance: ida-discovered
+  ida:
+    address: 5493163
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). GUILD family @0x53d1ab pushes COutPacket(130)=0x82 (Encode1(0xF)+Encode2+Encode1+Encode2+Encode1); v95 SendSetGuildMarkMsg @0x52d8c0 = COutPacket(149)=0x95. Whole guild family (InputGuildName/SendInvite/SendKick) sends 0x82. Prior 0x7e was stale v83 (collided with PARTY_OPERATION which IS real@0x7e).'
 - op: DENY_GUILD_REQUEST
   direction: serverbound
-  opcode: 127
-  fname: CFadeWnd::SendCloseMessage
+  opcode: 131
+  fname: CWvsContext::OnGuildResult
   fname_alts:
   - CWvsContext::OnGuildResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11021867
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). guild-result/FadeWnd-close family sends COutPacket(131)=0x83 (v95 0x96, OnGuildResult/FadeWnd close). -19 vs v95 like the buddy/note block. Prior 0x7f stale.'
 - op: ADMIN_COMMAND
   direction: serverbound
   opcode: 132
@@ -3311,23 +3313,27 @@
   note: task-096 — real v84 COutPacket opcode read from CField::SendChatMsgSlash send-site 0x53a38e (was stale csv-import 129 seeded from the v83 column; v84 serverbound opcode table shifted vs v83).
 - op: BUDDYLIST_MODIFY
   direction: serverbound
-  opcode: 130
+  opcode: 134
   fname: CField::SendDeleteFriendMsg
   fname_alts:
   - CField::SendAcceptFriendMsg
   - CField::SendSetFriendMsg
   - CWvsContext::LoadFriend
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5493827
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SendDeleteFriendMsg @0x53d443 + SendAcceptFriendMsg @0x53d4f2 + SendSetFriendMsg @0x53d2a3 push COutPacket(134)=0x86; v95 SendDeleteFriendMsg @0x52f170 = COutPacket(153)=0x99 (-19). Prior 0x82 stale (now owned by GUILD).'
 - op: NOTE_ACTION
   direction: serverbound
-  opcode: 131
+  opcode: 135
   fname: CCashShop::OnCashItemResLoadGiftDone
   fname_alts:
   - CMemoListDlg::SetRet
   - CWvsContext::OnMemoNotify_Receive
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4704060
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). OnCashItemResLoadGiftDone @0x47c73c + CMemoListDlg::SetRet @0x6606a0 + OnMemoNotify_Receive @0xa708ea push COutPacket(135)=0x87; v95 = COutPacket(154)=0x9a (-19). Prior 0x83 stale.'
 - op: USE_DOOR
   direction: serverbound
   opcode: 137
@@ -3338,33 +3344,31 @@
   ida:
     address: 5519595
   note: 'task-096 IDA re-harvest: v84 opcode corrected 133->137 (0x89) by READING the real send-site. CField::TryEnterTownPortal @0x5438eb builds COutPacket(137) Encode4(townportal id)+Encode1(1)+SendPacket. v84 CField low-range serverbound is +4 vs v83 (133); the prior csv-import value 133 was the stale v83 opcode.'
-- op: OPEN_GATE
-  direction: serverbound
-  opcode: 134
-  fname: COpenGatePool::TryEnterOpenGate
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: CHANGE_KEYMAP
   direction: serverbound
-  opcode: 135
-  fname: CFuncKeyMappedMan::ChangePetConsumeItemID
+  opcode: 139
+  fname: CFuncKeyMappedMan::SaveFuncKeyMap
   fname_alts:
   - CFuncKeyMappedMan::ChangePetConsumeMPItemID
   - CFuncKeyMappedMan::SaveFuncKeyMap
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5889826
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SaveFuncKeyMap @0x59df22 pushes COutPacket(139)=0x8b (Encode4(0)+keymap entries); v95 SaveFuncKeyMap/ChangePetConsumeItemID = COutPacket(159)=0x9f (-20). Prior 0x87 stale (now owned by NOTE_ACTION). v84 0x88 has NO send-site.'
 - op: RPS_ACTION
   direction: serverbound
-  opcode: 136
-  fname: CRPSGameDlg::OnBtStart
+  opcode: 140
+  fname: CRPSGameDlg::Update
   fname_alts:
   - CRPSGameDlg::OnBtContinue
   - CRPSGameDlg::OnBtRetry
   - CRPSGameDlg::OnBtExit
   - CRPSGameDlg::SendSelection
   - CRPSGameDlg::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7736932
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). CRPSGameDlg::Update @0x760e64 pushes COutPacket(140)=0x8c (Encode1(2) give-up); v95 RPS family (OnBtStart/Update) = COutPacket(160)=0xa0 (-20). Prior 0x88 stale (and 0x88 has no v84 send-site).'
 - op: RING_ACTION
   direction: serverbound
   opcode: 141
@@ -3382,14 +3386,16 @@
   note: 'task-100 cluster A: v84 COutPacket opcode read at CEngageDlg::SetRet send-site (0x51f4f6) -> if(nRet==2){COutPacket(141)/0x8D, Encode1(1u)}; body-verified vs v95 CEngageDlg::SetRet (0x51a680, COutPacket 161, Encode1(1) on nRet==2). Was stale v83 0x89 colliding with USE_DOOR.'
 - op: WEDDING_WISH_LIST_REQUEST
   direction: serverbound
-  opcode: 138
-  fname: CWishListGiveDlg::SetRet
+  opcode: 142
+  fname: CWishListGiveDlg::SendPutItemRequest
   fname_alts:
   - CWishListRecvDlg::SetRet
   - CWishListGiveDlg::SendPutItemRequest
   - CWishListRecvDlg::SendGetItemRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10622114
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). wishlist sender @0xa214a2 pushes COutPacket(142)=0x8e (Encode1 sub-action); v95 WISHLIST family (SendPutItemRequest/SetRet) = COutPacket(162)=0xa2 (-20). Prior 0x8a stale.'
 - op: WEDDING_ACTION
   direction: serverbound
   opcode: 143
@@ -3414,22 +3420,6 @@
   ida:
     address: 11002304
   note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x8D->0x91 by READING the v84 send-site CWvsContext::SendBoobyTrapAlert (v84 fn 0xa7e1c0 renamed+saved): COutPacket(145)/0x91 + Encode4(nTrapType) + SendPacket. Identified via its sole caller CDropPool::BoobyTrapCheckPickupItem (v84 fn 0x510ff0 renamed+saved): rect ±25/-50/+10 PtInRect over the recent-pickup ZList<tagPOINT>, calls SendBoobyTrapAlert(1)/(1)/(2) — byte-for-byte the v83 BoobyTrapCheckPickupItem @0x5081b0 and v95 @0x5104e0. Shift: v83 SendBoobyTrapAlert COutPacket(0x8D) (=the stale value, v83 carryover), v84 0x91, v95 0xA5; +4 vs v83. Stale 0x8D now owned by RING_ACTION/CEngageDlg::SetRet.'
-- op: ALLIANCE_REQUEST
-  direction: serverbound
-  opcode: 142
-  fname: CUIFadeYesNo::OnButtonClicked
-  fname_alts:
-  - CTabGuildAlliance::OnGradeChange
-  - CTabGuildAlliance::OnChangeMaster
-  - CTabGuildAlliance::OnWithdraw
-  - CTabGuildAlliance::OnKick
-  - CTabGuildAlliance::OnInvite
-  - CTabGuildAlliance::OnSetNotice
-  - CWndAllianceGrade::OnSaveGradeName
-  - CWvsContext::OnGuildResult
-  - CWvsContext::OnAllianceResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: ALLIANCE_OPERATION
   direction: serverbound
   opcode: 147
@@ -3460,10 +3450,12 @@
   note: 'task-100 cluster-E cascade (revealed by BOOBY_TRAP_ALERT moving to 0x91): v84 serverbound opcode corrected 0x91->0x95 by READING the v84 send-site CWvsContext::SendFamilyChartRequest (v84 fn 0xa7f9c6 renamed+saved): COutPacket(149)/0x95 + EncodeStr(characterName) + SendPacket. Body match v95 SendFamilyChartRequest @0xa09d20 (COutPacket(169) + EncodeStr) and v83 (COutPacket(0x91) + EncodeStr = the stale value). Family-region shift +4 vs v83 (0x91->0x95). Stale 0x91 was v83 carryover (now owned by BOOBY_TRAP_ALERT). NOTE: the adjacent family serverbound rows (OPEN_FAMILY@146 etc.) are likely also stale v83 carryovers in the same +4 family cascade — see cluster-E report cross-region list.'
 - op: OPEN_FAMILY
   direction: serverbound
-  opcode: 146
+  opcode: 150
   fname: CWvsContext::SendFamilyInfoRequest
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: v84 serverbound send-site VERIFIED at opcode 0x96 (read v84 COutPacket(150) at fn 0xa7fa37; body-matched v95 sender COutPacket(170); v84 CWvsContext family/exp serverbound run is -20 vs v95; v84 fn renamed+idb_saved). Opcode LEFT at stale v83 0x92 because the real slot is occupied by an adjacent OUT-OF-SCOPE stale csv-import op (the whole serverbound 0x92-0xa9 run is stale v83 carryover spanning CUserLocal/CUICashItemGachapon/CUIFindFriend/UNNAMED-phantom families). Reshifting requires the full contiguous serverbound block; deferred to a dedicated follow-up to avoid a half-resolved cascade / guessed opcodes.'
+  provenance: ida-discovered
+  ida:
+    address: 11008567
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SendFamilyInfoRequest @0xa7fa37 pushes COutPacket(150)=0x96; v95 @0xaa (-20). cluster-F verified; now placeable (slot freed).'
 - op: ADD_FAMILY
   direction: serverbound
   opcode: 151
@@ -3482,16 +3474,20 @@
   note: 'task-100 cluster-1: v84 opcode corrected 148->152 (0x98) by READING the real send-site. v84 sub_A7FB57 (renamed SendUnregisterJunior) m_FamilyInfo guard (this[3625]) + COutPacket(152) + Encode4(charID) — structural twin of v83 sub_A341D1 (COutPacket(0x94=148)+Encode4) and v95 SendUnregisterJunior @0xa099e0 (COutPacket(172)+Encode4). Family serverbound block is +4 vs v83. Prior csv value 148 (0x94) was the stale v83 opcode (now owned by DENY_ALLIANCE_REQUEST / the alliance reshift).'
 - op: SEPARATE_FAMILY_BY_JUNIOR
   direction: serverbound
-  opcode: 149
+  opcode: 153
   fname: CWvsContext::SendUnregisterParent
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: v84 serverbound send-site VERIFIED at opcode 0x99 (read v84 COutPacket(153), m_FamilyInfo.bInitialized guard at fn 0xa7fbb2; body-matched v95 sender COutPacket(173); v84 CWvsContext family/exp serverbound run is -20 vs v95; v84 fn renamed+idb_saved). Opcode LEFT at stale v83 0x95 because the real slot is occupied by an adjacent OUT-OF-SCOPE stale csv-import op (the whole serverbound 0x92-0xa9 run is stale v83 carryover spanning CUserLocal/CUICashItemGachapon/CUIFindFriend/UNNAMED-phantom families). Reshifting requires the full contiguous serverbound block; deferred to a dedicated follow-up to avoid a half-resolved cascade / guessed opcodes.'
+  provenance: ida-discovered
+  ida:
+    address: 11008946
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SendUnregisterParent @0xa7fbb2 pushes COutPacket(153)=0x99; v95 @0xad (-20). cluster-F verified. Prior 0x95 stale (collided with OPEN_FAMILY_PEDIGREE which IS real@0x95).'
 - op: ACCEPT_FAMILY
   direction: serverbound
-  opcode: 150
+  opcode: 154
   fname: CWvsContext::SendFamilyInviteResult
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: v84 serverbound send-site VERIFIED at opcode 0x9a (read v84 COutPacket(154), Encode4+EncodeStr+Encode1 at fn 0xa7f936; body-matched v95 sender COutPacket(174); v84 CWvsContext family/exp serverbound run is -20 vs v95; v84 fn renamed+idb_saved). Opcode LEFT at stale v83 0x96 because the real slot is occupied by an adjacent OUT-OF-SCOPE stale csv-import op (the whole serverbound 0x92-0xa9 run is stale v83 carryover spanning CUserLocal/CUICashItemGachapon/CUIFindFriend/UNNAMED-phantom families). Reshifting requires the full contiguous serverbound block; deferred to a dedicated follow-up to avoid a half-resolved cascade / guessed opcodes.'
+  provenance: ida-discovered
+  ida:
+    address: 11008310
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SendFamilyInviteResult @0xa7f936 pushes COutPacket(154)=0x9a (ONLY sender at 0x9a); v95 @0xae (-20). cluster-F verified.'
 - op: USE_FAMILY
   direction: serverbound
   opcode: 155
@@ -3510,16 +3506,12 @@
   note: 'task-100 cluster A: v84 COutPacket opcode read at CWvsContext::SendSetFamilyPrecept send-site (0xa7fd95) -> COutPacket(156)/0x9C, EncodeStr(precept), guarded by m_FamilyInfo.bInitialized; body-verified vs v95 (0xa0a0d0, COutPacket 176). Relative offset SendRegisterJunior+5 matches v95 (171->176). Was stale v83 0x98 colliding with SEPARATE_FAMILY_BY_SENIOR.'
 - op: FAMILY_SUMMON_RESPONSE
   direction: serverbound
-  opcode: 153
+  opcode: 157
   fname: CWvsContext::OnFamilySummonRequest
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: v84 serverbound send-site VERIFIED at opcode 0x9d (read v84 COutPacket(157) YesNo reply built in clientbound OnFamilySummonRequest at fn 0xa80a6b; body-matched v95 sender COutPacket(177); v84 CWvsContext family/exp serverbound run is -20 vs v95; v84 fn renamed+idb_saved). Opcode LEFT at stale v83 0x99 because the real slot is occupied by an adjacent OUT-OF-SCOPE stale csv-import op (the whole serverbound 0x92-0xa9 run is stale v83 carryover spanning CUserLocal/CUICashItemGachapon/CUIFindFriend/UNNAMED-phantom families). Reshifting requires the full contiguous serverbound block; deferred to a dedicated follow-up to avoid a half-resolved cascade / guessed opcodes.'
-- op: UNNAMED_R245
-  direction: serverbound
-  opcode: 154
-  fname: ''
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 245: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  provenance: ida-discovered
+  ida:
+    address: 11012715
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). OnFamilySummonRequest reply @0xa80a6b pushes COutPacket(157)=0x9d; v95 @0xb1 (-20). cluster-F verified.'
 - op: BBS_OPERATION
   direction: serverbound
   opcode: 159
@@ -3544,48 +3536,54 @@
   note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x9C->0xA0 by READING the v84 send-site CWvsContext::SendMigrateToITCRequest (v84 fn 0xa5c95f, already named; idb saved): guest-account guard (same "MapleStory Trading System...Guest ID" string) + dialog guards + get_update_time-tExclRequestSent>=500 check, then COutPacket(160)/0xA0 (no payload) + SendPacket + SetExclRequestSent(1). Body match v95 SendMigrateToITCRequest @0x9def50 (COutPacket(180)). Shift: v83 SendMigrateToITCRequest COutPacket(0x9C) (=stale value, v83 carryover), v84 0xA0, v95 0xB4; +4 vs v83. Stale 0x9C now owned by CHANGE_FAMILY_MESSAGE/SendSetFamilyPrecept.'
 - op: USE_SOLOMON_ITEM
   direction: serverbound
-  opcode: 157
+  opcode: 161
   fname: CWvsContext::SendExpUpItemUseRequest
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: v84 serverbound send-site VERIFIED at opcode 0xa1 (read v84 COutPacket(161), Encode4 time+Encode2 pos+Encode4 item at fn 0xa5cac2; body-matched v95 sender COutPacket(181); v84 CWvsContext family/exp serverbound run is -20 vs v95; v84 fn renamed+idb_saved). Opcode LEFT at stale v83 0x9d because the real slot is occupied by an adjacent OUT-OF-SCOPE stale csv-import op (the whole serverbound 0x92-0xa9 run is stale v83 carryover spanning CUserLocal/CUICashItemGachapon/CUIFindFriend/UNNAMED-phantom families). Reshifting requires the full contiguous serverbound block; deferred to a dedicated follow-up to avoid a half-resolved cascade / guessed opcodes.'
+  provenance: ida-discovered
+  ida:
+    address: 10865346
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SendExpUpItemUseRequest @0xa5cac2 pushes COutPacket(161)=0xa1; v95 @0xb5 (-20). cluster-F verified.'
 - op: USE_GACHA_EXP
   direction: serverbound
-  opcode: 158
+  opcode: 162
   fname: CWvsContext::SendTempExpUseRequest
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: v84 serverbound send-site VERIFIED at opcode 0xa2 (read v84 COutPacket(162), Encode4 time at fn 0xa5cccc; body-matched v95 sender COutPacket(182); v84 CWvsContext family/exp serverbound run is -20 vs v95; v84 fn renamed+idb_saved). Opcode LEFT at stale v83 0x9e because the real slot is occupied by an adjacent OUT-OF-SCOPE stale csv-import op (the whole serverbound 0x92-0xa9 run is stale v83 carryover spanning CUserLocal/CUICashItemGachapon/CUIFindFriend/UNNAMED-phantom families). Reshifting requires the full contiguous serverbound block; deferred to a dedicated follow-up to avoid a half-resolved cascade / guessed opcodes.'
+  provenance: ida-discovered
+  ida:
+    address: 10865868
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). SendTempExpUseRequest @0xa5cccc pushes COutPacket(162)=0xa2 (ONLY sender at 0xa2); v95 @0xb6 (-20). cluster-F verified.'
 - op: NEW_YEAR_CARD_REQUEST
   direction: serverbound
-  opcode: 159
-  fname: CUIFadeYesNo::OnButtonClicked
+  opcode: 163
+  fname: CUINewYearCardSenderDlg::_SendNewYearCard
   fname_alts:
   - CUINewYearCardSenderDlg::_SendNewYearCard
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: real sender is CUINewYearCardSenderDlg::_SendNewYearCard (registry fname CUIFadeYesNo::OnButtonClicked is WRONG). v95 _SendNewYearCard @0xa1d2a0 builds COutPacket(183)=0xb7 (Encode1(0)+Encode2 pos+Encode4 item+EncodeStr target+EncodeStr memo); v84 CWvsContext family/dialog serverbound run is -20 vs v95 => derived v84 0xa3, BUT the v84 dialog _Send method is UNNAMED and could not be located in budget (no RTTI strings, CCtrl getters unnamed, opcode immediate drowned in UI-coordinate noise). Left honest-stale at 0x9f (dup with BBS_OPERATION which IS real@0x9f) pending a direct read of the v84 send-site. NOT guessed.'
+  provenance: ida-discovered
+  ida:
+    address: 11130819
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). NewYearCard sender @0xa9d7c3 pushes COutPacket(163)=0xa3 (Encode1(0)+Encode2(pos)+Encode4(item)+EncodeStr(target)+EncodeStr(memo)); body == v95 _SendNewYearCard @0xa1d2a0 COutPacket(183)=0xb7 (-20). v84 fn renamed+idb_saved. Prior fname CUIFadeYesNo::OnButtonClicked was WRONG; prior 0x9f stale (collided with BBS_OPERATION which IS real@0x9f).'
 - op: MORPH_REQUEST
   direction: serverbound
-  opcode: 160
-  fname: CUINewYearCardSenderDlg::_SendNewYearCard
-  provenance: csv-import
-  note: 'FLAG task-100 cluster-F: registry fname CUINewYearCardSenderDlg::_SendNewYearCard is WRONG (that fname belongs to NEW_YEAR_CARD_REQUEST). Real sender is CUIRandomMorphDlg::_SendMorphRequest. v95 _SendMorphRequest @0xa1ec70 builds COutPacket(184)=0xb8 (Encode4 time+Encode2 pos+Encode4 item+EncodeStr target); -20 => derived v84 0xa4, BUT the v84 dialog _Send method is UNNAMED and unlocatable in budget. Left honest-stale at 0xa0 (dup with ENTER_MTS which IS real@0xa0, verified COutPacket(160) at 0xa5c95f). NOT guessed.'
+  opcode: 164
+  fname: CUIRandomMorphDlg::_SendMorphRequest
+  provenance: ida-discovered
+  ida:
+    address: 11138162
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). Morph sender @0xa9f472 pushes COutPacket(164)=0xa4 (Encode4(get_update_time)+Encode2(pos)+Encode4(item)+EncodeStr(target)); body == v95 _SendMorphRequest @0xa1ec70 COutPacket(184)=0xb8 (-20). v84 fn renamed+idb_saved. Prior fname CUINewYearCardSenderDlg::_SendNewYearCard was WRONG; prior 0xa0 stale (collided with ENTER_MTS which IS real@0xa0).'
 - op: CASH_ITEM_GACHAPON_BUTTON
   direction: serverbound
-  opcode: 161
+  opcode: 165
   fname: CUICashItemGachapon::OnButtonClicked
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: CLICK_GUIDE
-  direction: serverbound
-  opcode: 162
-  fname: CUserLocal::HandleLButtonDblClk
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10336301
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). Gachapon sender @0x9db82d pushes COutPacket(165)=0xa5 (EncodeBuffer(itemSN,8), nId==2000/2001); body == v95 OnButtonClicked @0x96aa40 COutPacket(185)=0xb9 (-20). v84 fn renamed+idb_saved. Prior 0xa1 stale.'
 - op: ARAN_COMBO_COUNTER
   direction: serverbound
-  opcode: 163
+  opcode: 169
   fname: CUserLocal::RequestIncCombo
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10089286
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). RequestIncCombo @0x99f346 pushes COutPacket(169)=0xa9 (no body, m_bHoldCombo guard); body == v95 RequestIncCombo @0x909070 COutPacket(189)=0xbd (-20). v84 fn renamed+idb_saved. Prior 0xa3 stale (freed for NEW_YEAR_CARD_REQUEST).'
 - op: MOB_CRC_KEY_CHANGED_REPLY
   direction: serverbound
   opcode: 170
@@ -3644,9 +3642,9 @@
   opcode: 180
   fname: CVecCtrlSummoned__EndUpdateActive_send_0xB4
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlSummoned::EndUpdateActive (v84 fn 0xa0fd89) COutPacket(180,0xB4) Encode4(summonedID)+MovePath::Flush; body match v95 0x9a0700 COutPacket(207).'
   ida:
     address: 10550665
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlSummoned::EndUpdateActive (v84 fn 0xa0fd89) COutPacket(180,0xB4) Encode4(summonedID)+MovePath::Flush; body match v95 0x9a0700 COutPacket(207).'
 - op: SUMMON_ATTACK
   direction: serverbound
   opcode: 181
@@ -3655,17 +3653,17 @@
   - CSummoned::TryDoingAttackManual
   - CSummoned::TryDoingTaslaCoilAttack
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::AttackToTargetMob (v84 fn 0x7c99cf) COutPacket(181,0xB5); body match v95 0x7501d0 COutPacket(208): DR_check obfuscation + per-mob attack-info loop.'
   ida:
     address: 8165839
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::AttackToTargetMob (v84 fn 0x7c99cf) COutPacket(181,0xB5); body match v95 0x7501d0 COutPacket(208): DR_check obfuscation + per-mob attack-info loop.'
 - op: DAMAGE_SUMMON
   direction: serverbound
   opcode: 182
   fname: CSummoned__SetDamaged_send_0xB6
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::SetDamaged (v84 fn 0x7cbaf6) COutPacket(182,0xB6); body match v95 0x74b730 COutPacket(209): Encode4 id, if(mob) idx/dmg/template/dir else Encode1(0xFE)/dmg.'
   ida:
     address: 8174326
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::SetDamaged (v84 fn 0x7cbaf6) COutPacket(182,0xB6); body match v95 0x74b730 COutPacket(209): Encode4 id, if(mob) idx/dmg/template/dir else Encode1(0xFE)/dmg.'
 - op: BEHOLDER
   direction: serverbound
   opcode: 183
@@ -3675,43 +3673,31 @@
   - CSummoned::TryDoingHealingRobot
   - CSummoned::TryDoingSummon
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned beholder-heal (v84 fn 0x7cb74f) COutPacket(183,0xB7) Encode4 id + Encode4 0x142449 + Encode1 action; body match v95 0x74ad90 COutPacket(210) (assistType==2, skill 1320008/9).'
   ida:
     address: 8173391
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned beholder-heal (v84 fn 0x7cb74f) COutPacket(183,0xB7) Encode4 id + Encode4 0x142449 + Encode1 action; body match v95 0x74ad90 COutPacket(210) (assistType==2, skill 1320008/9).'
 - op: UNNAMED_R296
   direction: serverbound
   opcode: 179
   fname: ''
   provenance: csv-import
   note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Left at 179 (0xB3); free after summon/dragon reshift. v84 opcode UNVERIFIED; identity unknown.'
-- op: UNNAMED_R297
-  direction: serverbound
-  opcode: 180
-  fname: ''
-  provenance: csv-import
-  note: 'FLAG/version-uncertain (task-100 correction of a cluster-B free-slot guess). Reverted from the invented free slot 184 (0xB8) back to the honest stale v83 value 180 (0xB3 family). No v84 IDB evidence supports any opcode for this op: a full scan of all 514 COutPacket(long) ctor call sites @0x703cfa in GMS_v84.1_U_DEVM.i64 found NO send site at 184; the only serverbound summon/dragon-family sends are 180 MOVE_SUMMON, 181 SUMMON_ATTACK, 182 DAMAGE_SUMMON, 183 BEHOLDER, 186 MOVE_DRAGON, 188 CHANGE_QUICKSLOT. The same is true in v95 (597 ctor sites @0x68d090: no send at v95 R297=213). R297 has an empty fname in v83/v84/v95 and is a CSV-derived phantom with no client-send body in any version; it is likely version-absent in v84. Opcode UNVERIFIED; left at the stale v83 value rather than guessing a free slot. NOTE: 180 collides with the IDA-verified MOVE_SUMMON; this honest collision is preferred over a fabricated free-slot value.'
 - op: MOVE_DRAGON
   direction: serverbound
   opcode: 186
   fname: CVecCtrlDragon__EndUpdateActive_send_0xBA
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlDragon::EndUpdateActive (v84 fn 0x9ff057) COutPacket(186,0xBA)+MovePath::Flush; body match v95 0x996570 COutPacket(214). Displaced from stale 181 by serverbound summon reshift.'
   ida:
     address: 10481751
-- op: UNNAMED_R299
-  direction: serverbound
-  opcode: 182
-  fname: ''
-  provenance: csv-import
-  note: 'FLAG/version-uncertain (task-100 correction of a cluster-B free-slot guess). Reverted from the invented free slot 185 (0xB9) back to the honest stale v83 value 182 (0xB6 family). No v84 IDB evidence supports any opcode for this op: the full scan of all 514 COutPacket(long) ctor call sites @0x703cfa in GMS_v84.1_U_DEVM.i64 found NO send site at 185; the serverbound summon/dragon-family sends are 180/181/182/183/186/188 only. Same in v95 (no send at v95 R299=215). R299 has an empty fname in v83/v84/v95 and is a CSV-derived phantom with no client-send body in any version; likely version-absent in v84. Opcode UNVERIFIED; left at the stale v83 value rather than guessing a free slot. NOTE: 182 collides with the IDA-verified DAMAGE_SUMMON; this honest collision is preferred over a fabricated free-slot value.'
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlDragon::EndUpdateActive (v84 fn 0x9ff057) COutPacket(186,0xBA)+MovePath::Flush; body match v95 0x996570 COutPacket(214). Displaced from stale 181 by serverbound summon reshift.'
 - op: CHANGE_QUICKSLOT
   direction: serverbound
   opcode: 188
   fname: CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CQuickslotKeyMappedMan::SaveQuickslotKeyMap (v84 fn 0x748c53, was mislabeled CMob__send_0xBC_cachedMove) COutPacket(188,0xBC) EncodeBuffer 0x20; body match v95 0x6c60a0 COutPacket(216). Displaced from stale 183.'
   ida:
     address: 7638099
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CQuickslotKeyMappedMan::SaveQuickslotKeyMap (v84 fn 0x748c53, was mislabeled CMob__send_0xBC_cachedMove) COutPacket(188,0xBC) EncodeBuffer 0x20; body match v95 0x6c60a0 COutPacket(216). Displaced from stale 183.'
 - op: MOVE_LIFE
   direction: serverbound
   opcode: 193
@@ -3790,12 +3776,6 @@
   fname: CWvsContext::SendDropPickUpRequest
   provenance: manual
   note: v84 serverbound opcode verified from IDB COutPacket send-site (task-085)
-- op: UNNAMED_R349
-  direction: serverbound
-  opcode: 204
-  fname: ''
-  provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 349: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: DAMAGE_REACTOR
   direction: serverbound
   opcode: 211

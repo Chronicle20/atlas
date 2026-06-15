@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSkillCancelForeign
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSkillCancel
+    address: "0x980bf5"
+    decompile_sha256: e977e50784084162f8ca4d83e52d67aa396aea2420693d547efa5f512d16fca3
+verifies:
+    - libs/atlas-packet/character/clientbound/skill_cancel_foreign_test.go#TestSkillCancelForeignByteFixture

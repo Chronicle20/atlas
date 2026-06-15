@@ -49,7 +49,12 @@ func TestSkillPrepareForeignOperation(t *testing.T) {
 // wire-spec §3 field order: charId u32 LE, skillId u32 LE, level u8, action u16 LE, actionSpeed u8.
 // All five versions encode identically (no version delta for clientbound prepare).
 //
-// Byte fixture: field order/opcode pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified). Coverage-matrix linkage deferred — see task-099 follow-up (prepare/cancel fnames not yet in the packet-audit IDA exports).
+// Byte fixture: field order/opcode pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified).
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v83 ida=0x980a81
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v84 ida=0x9c0c5f
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v87 ida=0xa06135
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=gms_v95 ida=0x953a30
+// packet-audit:verify packet=character/clientbound/CharacterSkillPrepareForeign version=jms_v185 ida=0xa53f49
 func TestSkillPrepareForeignByteFixture(t *testing.T) {
 	// charId=1001 (0x000003E9 LE = E9 03 00 00)
 	// skillId=3121004 (0x002F9F6C LE = 6C 9F 2F 00)

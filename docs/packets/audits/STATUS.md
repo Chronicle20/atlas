@@ -106,7 +106,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | IDA_0X050 | sub_AF879C |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ |
 | IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult |  | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x053 | ❌ |  | ⬜ |
 | IDA_0X051 | sub_B1135F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ |
-| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_AEC92E |  | 0x051 | ❌ | 0x051 | ❌ | 0x053 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
+| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_AEC92E |  | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
 | IDA_0X052 | sub_B113C8 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ |
 | LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  | 0x052 | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
 | IDA_0X053 | sub_B11485 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x053 | ❌ |
@@ -326,7 +326,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x124 | ✅ | 0x105 | ✅ |
 | IDA_0X0F5 | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F5 | ❌ |
 | MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
-| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0F6 | ✅ | 0x0F6 | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
+| DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x126 | ✅ | 0x107 | ✅ |
 | IDA_0X0F6 | CUserLocal::OnChatMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F6 | ❌ |
 | IDA_0X0F7 | CUserLocal::OnBuffzoneEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x127 | ✅ | 0x108 | ✅ |
@@ -341,18 +341,18 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | INC_MOB_CHARGE_COUNT | CMob::OnIncMobChargeCount | monster/clientbound/MonsterIncMobChargeCount (T1) | 0x0FE | ✅ | 0x104 | ✅ | 0x10E | ✅ | 0x12E | ✅ |  | ⬜ |
 | MOB_ATTACKED_BY_MOB | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) | 0x0FF | ✅ | 0x106 | ✅ | 0x110 | ✅ | 0x135 | ✅ |  | ⬜ |
 | SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x101 | ✅ | 0x108 | ✅ | 0x112 | ✅ | 0x137 | ✅ | 0x116 | ✅ |
-| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x102 | ❌ | 0x102 | ❌ | 0x113 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
+| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x102 | ❌ | 0x109 | ❌ | 0x113 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x139 | ✅ | 0x118 | ✅ |
 | NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x13A | ❌ | 0x119 | ❌ |
 | MOB_SKILL_DELAY | CMob::OnMobSkillDelay | monster/clientbound/MonsterMobSkillDelay (T1) |  | ⬜ | 0x105 | ✅ | 0x10F | ✅ | 0x12F | ✅ | 0x10F | ✅ |
-| UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  | 0x105 | ❌ | 0x105 | ❌ | 0x116 | ❌ | 0x13B | ❌ |  | ⬜ |
-| NPC_SPECIAL_ACTION | CNpc::OnSetSpecialAction |  | 0x106 | ❌ | 0x106 | ❌ | 0x117 | ❌ | 0x13C | ❌ |  | ⬜ |
+| UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  | 0x105 | ❌ | 0x10C | ❌ | 0x116 | ❌ | 0x13B | ❌ |  | ⬜ |
+| NPC_SPECIAL_ACTION | CNpc::OnSetSpecialAction |  | 0x106 | ❌ | 0x10D | ❌ | 0x117 | ❌ | 0x13C | ❌ |  | ⬜ |
 | SET_NPC_SCRIPTABLE | CNpcTemplate::OnSetNpcScript |  | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x13D | ❌ | 0x11C | ❌ |
-| SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  | 0x109 | ❌ | 0x109 | ❌ | 0x11A | ❌ | 0x13F | ❌ | 0x11E | ❌ |
-| DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  | 0x10A | ❌ | 0x10A | ❌ | 0x11B | ❌ | 0x140 | ❌ | 0x11F | ❌ |
+| SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  | 0x109 | ❌ | 0x110 | ❌ | 0x11A | ❌ | 0x13F | ❌ | 0x11E | ❌ |
+| DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  | 0x10A | ❌ | 0x111 | ❌ | 0x11B | ❌ | 0x140 | ❌ | 0x11F | ❌ |
 | IDA_0X10A | CUserLocal::OnGoToCommoditySN |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ |  | ⬜ |
 | IDA_0X10B | CUserLocal::OnDamageMeter |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10B | ❌ |  | ⬜ |
-| UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  | 0x10B | ❌ | 0x10B | ❌ | 0x11C | ❌ | 0x141 | ❌ | 0x120 | ❌ |
+| UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  | 0x10B | ❌ | 0x112 | ❌ | 0x11C | ❌ | 0x141 | ❌ | 0x120 | ❌ |
 | DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
 | IDA_0X10C | CUserLocal::OnTimeBombAttack |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ |  | ⬜ |
 | IDA_0X10D | CUser::OnPassiveMove |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ |  | ⬜ |
@@ -362,15 +362,15 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | IDA_0X10F | CUserLocal::OnVengeanceSkillApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ |
 | SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x146 | ✅ | 0x124 | ✅ |
 | IDA_0X110 | CUserLocal::OnExJablinApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ❌ |  | ⬜ |
-| REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x110 | ✅ | 0x110 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
+| REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
 | IDA_0X111 | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ❌ |  | ⬜ |
-| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x111 | ❌ | 0x111 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
+| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
-| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x112 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
+| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated |  | 0x113 | ❌ | 0x113 | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated |  | 0x113 | ❌ | 0x11A | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
-| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved |  | 0x114 | ❌ | 0x114 | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
+| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved |  | 0x114 | ❌ | 0x11B | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
 | REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
@@ -706,7 +706,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | DRAGON_BALL_BOX_REQUEST | CWvsContext::SendDragonBallBoxRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C4 | ❌ |  | ⬜ |
 | DRAGON_BALL_SUMMON_REQUEST | CWvsContext::SendDragonBallSummonRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
 | NPC_ACTION | CNpc::GenerateMovePath | npc/serverbound/NpcActionRequest (T1) | 0x0C5 | ❌ | 0x0CB | ✅ | 0x0D2 | ❌ | 0x0F1 | ✅ | 0x0D0 | ✅ |
-| NPC_SPECIAL_ACTION | CNpc::RequestSpecialAction |  | 0x0C6 | ❌ | 0x0C6 | ❌ | 0x0D3 | ❌ | 0x0F2 | ❌ | 0x0D1 | ❌ |
+| NPC_SPECIAL_ACTION | CNpc::RequestSpecialAction |  | 0x0C6 | ❌ | 0x0CC | ❌ | 0x0D3 | ❌ | 0x0F2 | ❌ | 0x0D1 | ❌ |
 | UNNAMED_R344 |  |  | 0x0C7 | ❌ |  | ⬜ | 0x0D4 | ❌ | 0x0F3 | ❌ | 0x0D2 | ❌ |
 | MOB_SKILL_DELAY_END | CMob::Update | character/serverbound/CharacterMonsterDamageFriendly (T1) |  | ⬜ | 0x0C8 | ✅ | 0x0CF | ✅ | 0x0EA | ✅ | 0x0C9 | ✅ |
 | UNNAMED_R345 |  |  | 0x0C8 | ❌ |  | ⬜ | 0x0D5 | ❌ | 0x0F4 | ❌ | 0x0D3 | ❌ |

@@ -474,10 +474,12 @@
   note: 'task-100 cluster A: v84 CWvsContext::OnPacket (0xa51cd0) case 0x52 -> OnImitatedNPCResult (0xa52630); body-verified vs v95 (0x9cfb30) — both single CInPacket::Decode1 stub (v84 size 0xc == v95 0xc). Was stale v83 0x50 colliding with SET_POTION_DISCOUNT_RATE.'
 - op: IMITATED_NPC_DATA
   direction: clientbound
-  opcode: 81
+  opcode: 83
   fname: CNpcPool::OnNpcImitateData
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7276891
+  note: 'task-100 cluster-C: v84 opcode corrected 0x51->0x53 by READING the v84 dispatcher. CNpcPool::OnPacket @0x6f08d4 case 0x53 -> OnNpcImitateData (0x6f0966: Decode1 count + loop{Decode4 templateID + DecodeStr + AvatarLook::Decode + SetImitatedLook}). v95 PDB OnNpcImitateData @0x679500 is dispatcher case 84, same body (identity). v84 fn renamed+saved. Stale 0x51 was v83 carryover (now owned by BRIDLE_MOB_CATCH_FAIL).'
 - op: LIMITED_NPC_DISABLE_INFO
   direction: clientbound
   opcode: 82
@@ -1549,10 +1551,12 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-092 Cluster-A): CMobPool::OnMobPacket (0x68fef7) case 251 -> sub_682977 = OnAffected @0x682977. The csv-import seed (245, copied from the v83 column) was stale — the v84 mob-cluster opcode table is shifted vs v83 (see header VERDICT + bug_v84_opcode_table_shifted_vs_v83). Layout Decode4+Decode2, identical to v83.'
 - op: DAMAGE_MONSTER
   direction: clientbound
-  opcode: 246
+  opcode: 252
   fname: CMob::OnDamaged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6881110
+  note: 'task-100 cluster-C: v84 opcode corrected 0xF6->0xFC by READING the v84 dispatcher. CMobPool::OnMobPacket @0x68fef7 case 252 -> CMob::OnDamaged (0x6829c4: Decode1 + Decode4 mobId + HP-ratio 100*cur/max). v95 PDB CMob::OnDamaged @0x64ecb0 is dispatcher case 294, same body (identity). Stale 0xF6 was v83 carryover (now owned by MOVE_MONSTER_RESPONSE/OnCtrlAck).'
 - op: MONSTER_SPECIAL_EFFECT_BY_SKILL
   direction: clientbound
   opcode: 253
@@ -1633,10 +1637,12 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: REMOVE_NPC
   direction: clientbound
-  opcode: 258
+  opcode: 265
   fname: CNpcPool::OnNpcLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7276855
+  note: 'task-100 cluster-C: v84 opcode corrected 0x102->0x109 by READING the v84 dispatcher. CNpcPool::OnPacket @0x6f08d4 case 0x109 -> OnNpcLeaveField (0x6f0bc8: Decode4 npcId + remove from pool). v95 PDB OnNpcLeaveField @0x6792c0 is dispatcher case 312, same body (identity). v84 fn renamed+saved. Stale 0x102 was v83 carryover (now owned by CATCH_MONSTER_WITH_ITEM/OnEffectByItem).'
 - op: SPAWN_NPC_REQUEST_CONTROLLER
   direction: clientbound
   opcode: 266
@@ -1651,16 +1657,20 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: UPDATE_LIMITED_INFO
   direction: clientbound
-  opcode: 261
+  opcode: 268
   fname: CNpc::OnUpdateLimitedInfo
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7277237
+  note: 'task-100 cluster-C: v84 opcode corrected 0x105->0x10C by READING the v84 dispatcher. CNpcPool::OnNpcPacket @0x6f0a7e (Decode4 npcId + GetNpc) case 268 -> CNpc::OnUpdateLimitedInfo (0x6eca9f). v95 PDB CNpc::OnUpdateLimitedInfo @0x676340 is OnNpcPacket case 315, same identity. v84 fn renamed+saved. Stale 0x105 was v83 carryover (now owned by MOB_SKILL_DELAY/OnMobSkillDelay).'
 - op: NPC_SPECIAL_ACTION
   direction: clientbound
-  opcode: 262
+  opcode: 269
   fname: CNpc::OnSetSpecialAction
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7277229
+  note: 'task-100 cluster-C: v84 opcode corrected 0x106->0x10D by READING the v84 dispatcher. CNpcPool::OnNpcPacket @0x6f0a7e (Decode4 npcId + GetNpc) case 269 -> CNpc::OnSetSpecialAction (0x6ec9fc: DecodeStr + GenerateMovePath loop). v95 PDB CNpc::OnSetSpecialAction @0x6750f0 is OnNpcPacket case 316, same identity. v84 fn renamed+saved. Stale 0x106 was v83 carryover (now owned by MOB_ATTACKED_BY_MOB/OnMobAttackedByMob).'
 - op: SET_NPC_SCRIPTABLE
   direction: clientbound
   opcode: 263
@@ -1669,22 +1679,28 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SPAWN_HIRED_MERCHANT
   direction: clientbound
-  opcode: 265
+  opcode: 272
   fname: CEmployeePool::OnEmployeeEnterField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5348860
+  note: 'task-100 cluster-C: v84 opcode corrected 0x109->0x110 by READING the v84 dispatcher. CEmployeePool::OnPacket @0x519dd1 case 272 -> OnEmployeeEnterField (0x519e04: Decode4 + create employee). v95 PDB OnEmployeeEnterField @0x518f70 is dispatcher case 319, same identity. v84 fn renamed+saved. Stale 0x109 was v83 carryover (slot now owned by REMOVE_NPC).'
 - op: DESTROY_HIRED_MERCHANT
   direction: clientbound
-  opcode: 266
+  opcode: 273
   fname: CEmployeePool::OnEmployeeLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5348849
+  note: 'task-100 cluster-C: v84 opcode corrected 0x10A->0x111 by READING the v84 dispatcher. CEmployeePool::OnPacket @0x519dd1 case 273 -> OnEmployeeLeaveField (0x519ea1: Decode4 + remove from pool). v95 PDB OnEmployeeLeaveField @0x518d10 is dispatcher case 320, same body (identity). v84 fn renamed+saved. Stale 0x10A was v83 carryover (now owned by SPAWN_NPC_REQUEST_CONTROLLER/OnNpcChangeController).'
 - op: UPDATE_HIRED_MERCHANT
   direction: clientbound
-  opcode: 267
+  opcode: 274
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5348838
+  note: 'task-100 cluster-C: v84 opcode corrected 0x10B->0x112 by READING the v84 dispatcher. CEmployeePool::OnPacket @0x519dd1 case 274 -> OnEmployeeMiniRoomBalloon (0x519eff: Decode4 + SetBalloon). v95 PDB OnEmployeeMiniRoomBalloon @0x5187d0 is dispatcher case 321, same body (identity). v84 fn renamed+saved. Stale 0x10B was v83 carryover (now owned by NPC_ACTION/OnMove).'
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound
   opcode: 275
@@ -1711,34 +1727,44 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: REMOVE_KITE
   direction: clientbound
-  opcode: 272
+  opcode: 279
   fname: CMessageBoxPool::OnMessageBoxLeaveField
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6752887
+  note: 'task-100 cluster-C cascade (CMessageBoxPool, foreign cluster): v84 opcode corrected 0x110->0x117 by READING the v84 dispatcher. CMessageBoxPool::OnPacket @0x670a62 case 279 -> OnMessageBoxLeaveField (0x6710ab). Moved off 0x110 because the IDB-correct SPAWN_HIRED_MERCHANT now owns 0x110. NOTE: sibling CANNOT_SPAWN_KITE (0x115) and SPAWN_KITE (0x116) remain stale csv-import — pushed to the CMessageBoxPool cluster.'
 - op: SPAWN_MIST
   direction: clientbound
-  opcode: 273
+  opcode: 280
   fname: CAffectedAreaPool::OnAffectedAreaCreated
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4400834
+  note: 'task-100 cluster-C cascade (CAffectedAreaPool, foreign cluster): v84 opcode corrected 0x111->0x118 by READING the v84 dispatcher. CAffectedAreaPool::OnPacket @0x4326a5 case 280 -> OnAffectedAreaCreated (0x4326ca). Moved off 0x111 because the IDB-correct DESTROY_HIRED_MERCHANT now owns 0x111.'
 - op: REMOVE_MIST
   direction: clientbound
-  opcode: 274
+  opcode: 281
   fname: CAffectedAreaPool::OnAffectedAreaRemoved
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 4400823
+  note: 'task-100 cluster-C cascade (CAffectedAreaPool, foreign cluster): v84 opcode corrected 0x112->0x119 by READING the v84 dispatcher. CAffectedAreaPool::OnPacket @0x4326a5 case 281 -> OnAffectedAreaRemoved (0x432fb4). Moved off 0x112 because the IDB-correct UPDATE_HIRED_MERCHANT now owns 0x112.'
 - op: SPAWN_DOOR
   direction: clientbound
-  opcode: 275
+  opcode: 282
   fname: CTownPortalPool::OnTownPortalCreated
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8271672
+  note: 'task-100 cluster-C: v84 opcode corrected 0x113->0x11A by READING the v84 dispatcher. CTownPortalPool::OnPacket @0x7e371b case 282 -> OnTownPortalCreated (0x7e3740: Decode1+Decode4 + town-portal create effect strings 2715/2716/2717). v95 PDB OnTownPortalCreated @0x762c00 is dispatcher case 330, same identity. v84 fn renamed+saved. Stale 0x113 was v83 carryover (now owned by DROP_ITEM_FROM_MAPOBJECT/OnDropEnterField).'
 - op: REMOVE_DOOR
   direction: clientbound
-  opcode: 276
+  opcode: 283
   fname: CTownPortalPool::OnTownPortalRemoved
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 8271661
+  note: 'task-100 cluster-C: v84 opcode corrected 0x114->0x11B by READING the v84 dispatcher. CTownPortalPool::OnPacket @0x7e371b case 283 -> OnTownPortalRemoved (0x7e40de: Decode1+Decode4 + remove town-portal). v95 PDB OnTownPortalRemoved @0x761920 is dispatcher case 331, same identity. v84 fn renamed+saved. Stale 0x114 was v83 carryover (now owned by REMOVE_ITEM_FROM_MAP/OnDropLeaveField).'
 - op: REACTOR_HIT
   direction: clientbound
   opcode: 284
@@ -3626,10 +3652,12 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CNpc::GenerateMovePath constructs COutPacket(203). v83 NPC_ACTION 197 shifted.'
 - op: NPC_SPECIAL_ACTION
   direction: serverbound
-  opcode: 198
+  opcode: 204
   fname: CNpc::RequestSpecialAction
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7254591
+  note: 'task-100 cluster-C: v84 serverbound opcode corrected 0xC6->0xCC by READING the v84 send-site. CNpc::RequestSpecialAction (0x6eb223) builds COutPacket(204) @0x6eb23f + Encode4 npcId + EncodeStr action + SendPacket. v95 PDB CNpc::RequestSpecialAction @0x673bc0 also COutPacket(... mapped) — same body (identity). v84 fn renamed+saved. Stale 0xC6 was v83 carryover (now owned by MONSTER_BOMB/TryFirstSelfDestruction). FLAG: 0xCC (204) sb is still also held by placeholder UNNAMED_R349 (empty fname, no IDB identity, v83 carryover) — left honest-stale per task rule 2 (cannot relocate without IDB evidence); residual (0xCC,serverbound) dup is this placeholder, not a fabrication.'
 - op: UNNAMED_R346
   direction: serverbound
   opcode: 201

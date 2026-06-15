@@ -318,6 +318,22 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::OnSkillCooltimeSet":
 		// Struct is CharacterSkillCooldown.
 		return []candidate{{name: "CharacterSkillCooldown", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnSkillPrepare":
+		// Foreign skill-prepare relay. Struct is SkillPrepareForeign
+		// (character/clientbound; writer = "CharacterSkillPrepareForeign").
+		// charId u32 + skillId u32 + level u8 + action u16 + actionSpeed u8.
+		return []candidate{{name: "SkillPrepareForeign", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnSkillCancel":
+		// Foreign skill-cancel relay. Struct is SkillCancelForeign
+		// (character/clientbound; writer = "CharacterSkillCancelForeign").
+		// charId u32 + skillId u32.
+		return []candidate{{name: "SkillCancelForeign", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::DoActiveSkill_Prepare":
+		// Serverbound skill-prepare. Struct is the SkillPrepare wrapper
+		// (character/serverbound) embedding model.SkillPrepareInfo: skillId u32 +
+		// level u8 + action u16 + actionSpeed u8 [, swallowMobId u32 on GMS v95+/JMS
+		// for skillId 33101005]. The channel handler decodes the same model directly.
+		return []candidate{{name: "SkillPrepare", pkg: "character", dir: csvpkg.DirServerbound}}
 	case "CUserRemote::OnAvatarModified":
 		// Struct is CharacterAppearanceUpdate.
 		return []candidate{{name: "CharacterAppearanceUpdate", dir: csvpkg.DirClientbound}}

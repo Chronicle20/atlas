@@ -7,15 +7,15 @@ import (
 )
 
 // TestSkillPrepareForeignRoundTrip exercises Encode/Decode symmetry for
-// CharacterSkillPrepareForeign across all tenant variants. Wire-spec §3:
+// SkillPrepareForeign across all tenant variants. Wire-spec §3:
 // charId u32, skillId u32, level u8, action u16, actionSpeed u8. Field order
 // is identical across all five versions.
 func TestSkillPrepareForeignRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCharacterSkillPrepareForeign(1001, 3121004, 10, 0x0142, 4)
-			output := CharacterSkillPrepareForeign{}
+			input := NewSkillPrepareForeign(1001, 3121004, 10, 0x0142, 4)
+			output := SkillPrepareForeign{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
 				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
@@ -39,7 +39,7 @@ func TestSkillPrepareForeignRoundTrip(t *testing.T) {
 // TestSkillPrepareForeignOperation verifies Operation() returns the foreign writer
 // const (not the bug pattern where foreign structs return the non-foreign const).
 func TestSkillPrepareForeignOperation(t *testing.T) {
-	m := NewCharacterSkillPrepareForeign(1, 3121004, 1, 0x0001, 1)
+	m := NewSkillPrepareForeign(1, 3121004, 1, 0x0001, 1)
 	if got := m.Operation(); got != CharacterSkillPrepareForeignWriter {
 		t.Errorf("Operation() = %q, want %q", got, CharacterSkillPrepareForeignWriter)
 	}
@@ -79,7 +79,7 @@ func TestSkillPrepareForeignByteFixture(t *testing.T) {
 	for _, v := range versions {
 		t.Run(v.name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.region, v.major, 1)
-			input := NewCharacterSkillPrepareForeign(1001, 3121004, 10, 0x0142, 4)
+			input := NewSkillPrepareForeign(1001, 3121004, 10, 0x0142, 4)
 			got := pt.Encode(t, ctx, input.Encode, nil)
 			if len(got) != len(expected) {
 				t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X",

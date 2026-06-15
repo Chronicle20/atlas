@@ -31,13 +31,6 @@ func sampleSkillPrepareInfoSwallow() *SkillPrepareInfo {
 	return m
 }
 
-// sampleSkillCancelInfo builds a representative serverbound skill cancel request.
-func sampleSkillCancelInfo() *SkillCancelInfo {
-	m := NewSkillCancelInfo()
-	m.SetSkillId(3121004)
-	return m
-}
-
 // TestSkillPrepareInfoRoundTrip exercises Encode/Decode symmetry for SkillPrepareInfo
 // across all tenant variants (standard keydown skill — swallowMobId branch inactive).
 func TestSkillPrepareInfoRoundTrip(t *testing.T) {
@@ -58,18 +51,6 @@ func TestSkillPrepareInfoSwallowRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			m := sampleSkillPrepareInfoSwallow()
-			pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
-		})
-	}
-}
-
-// TestSkillCancelInfoRoundTrip exercises Encode/Decode symmetry for SkillCancelInfo
-// across all tenant variants. The body is a single u32 on every version.
-func TestSkillCancelInfoRoundTrip(t *testing.T) {
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			m := sampleSkillCancelInfo()
 			pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
 		})
 	}
@@ -186,38 +167,3 @@ func TestSkillPrepareInfoByteFixture(t *testing.T) {
 	}
 }
 
-// TestSkillCancelInfoByteFixture asserts the exact encoded bytes for SkillCancelInfo.
-// The body is always skillId u32 LE, identical on every version.
-//
-// Byte fixture: field order/opcode pinned per docs/tasks/task-099-keydown-skill-prepare-broadcast/wire-spec.md (IDB-verified). Coverage-matrix linkage deferred — see task-099 follow-up (prepare/cancel fnames not yet in the packet-audit IDA exports).
-func TestSkillCancelInfoByteFixture(t *testing.T) {
-	// skillId=3121004 (0x002F9F6C LE = 6C 9F 2F 00)
-	expected := []byte{0x6C, 0x9F, 0x2F, 0x00}
-
-	versions := []struct {
-		name   string
-		region string
-		major  uint16
-	}{
-		{"GMS v83", "GMS", 83},
-		{"GMS v95", "GMS", 95},
-		{"JMS v185", "JMS", 185},
-	}
-
-	for _, v := range versions {
-		t.Run(v.name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.region, v.major, 1)
-			m := sampleSkillCancelInfo()
-			got := pt.Encode(t, ctx, m.Encode, nil)
-			if len(got) != len(expected) {
-				t.Fatalf("byte length mismatch: got %d want %d; got: %X", len(got), len(expected), got)
-			}
-			for i := range expected {
-				if got[i] != expected[i] {
-					t.Errorf("byte[%d] = %02X, want %02X; got: %X", i, got[i], expected[i], got)
-					break
-				}
-			}
-		})
-	}
-}

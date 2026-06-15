@@ -7,14 +7,14 @@ import (
 )
 
 // TestSkillCancelForeignRoundTrip exercises Encode/Decode symmetry for
-// CharacterSkillCancelForeign across all tenant variants. Wire-spec §4:
+// SkillCancelForeign across all tenant variants. Wire-spec §4:
 // charId u32, skillId u32. Identical across all five versions.
 func TestSkillCancelForeignRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCharacterSkillCancelForeign(1001, 3121004)
-			output := CharacterSkillCancelForeign{}
+			input := NewSkillCancelForeign(1001, 3121004)
+			output := SkillCancelForeign{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
 				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
@@ -29,7 +29,7 @@ func TestSkillCancelForeignRoundTrip(t *testing.T) {
 // TestSkillCancelForeignOperation verifies Operation() returns the foreign writer
 // const (not the bug pattern where foreign structs return the non-foreign const).
 func TestSkillCancelForeignOperation(t *testing.T) {
-	m := NewCharacterSkillCancelForeign(1, 3121004)
+	m := NewSkillCancelForeign(1, 3121004)
 	if got := m.Operation(); got != CharacterSkillCancelForeignWriter {
 		t.Errorf("Operation() = %q, want %q", got, CharacterSkillCancelForeignWriter)
 	}
@@ -63,7 +63,7 @@ func TestSkillCancelForeignByteFixture(t *testing.T) {
 	for _, v := range versions {
 		t.Run(v.name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.region, v.major, 1)
-			input := NewCharacterSkillCancelForeign(1001, 3121004)
+			input := NewSkillCancelForeign(1001, 3121004)
 			got := pt.Encode(t, ctx, input.Encode, nil)
 			if len(got) != len(expected) {
 				t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X",

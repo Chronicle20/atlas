@@ -14,7 +14,7 @@ import (
 // The opcode is NOT encoded here — it is config-resolved by the caller.
 func CharacterSkillPrepareForeignBody(characterId uint32, info model.SkillPrepareInfo) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		m := clientbound.NewCharacterSkillPrepareForeign(
+		m := clientbound.NewSkillPrepareForeign(
 			characterId,
 			info.SkillId(),
 			info.Level(),
@@ -30,7 +30,7 @@ func CharacterSkillPrepareForeignBody(characterId uint32, info model.SkillPrepar
 // The opcode is NOT encoded here — it is config-resolved by the caller.
 func CharacterSkillCancelForeignBody(characterId uint32, skillId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		m := clientbound.NewCharacterSkillCancelForeign(characterId, skillId)
+		m := clientbound.NewSkillCancelForeign(characterId, skillId)
 		return m.Encode(l, ctx)
 	}
 }

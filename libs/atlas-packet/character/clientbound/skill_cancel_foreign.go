@@ -11,33 +11,33 @@ import (
 
 const CharacterSkillCancelForeignWriter = "CharacterSkillCancelForeign"
 
-// CharacterSkillCancelForeign encodes/decodes the clientbound remote skill-cancel
+// SkillCancelForeign encodes/decodes the clientbound remote skill-cancel
 // packet (OnSkillCancel). Wire-spec §4: the dispatcher reads charId u32 first;
 // the relay packet must therefore lead with charId before the handler body fields.
 //
 // Full wire order: charId u32, skillId u32.
 // Field order and widths are identical across all five versions (v83/v84/v87/v95/jms185).
-type CharacterSkillCancelForeign struct {
+type SkillCancelForeign struct {
 	characterId uint32
 	skillId     uint32
 }
 
-func NewCharacterSkillCancelForeign(characterId uint32, skillId uint32) CharacterSkillCancelForeign {
-	return CharacterSkillCancelForeign{
+func NewSkillCancelForeign(characterId uint32, skillId uint32) SkillCancelForeign {
+	return SkillCancelForeign{
 		characterId: characterId,
 		skillId:     skillId,
 	}
 }
 
-func (m CharacterSkillCancelForeign) CharacterId() uint32 { return m.characterId }
-func (m CharacterSkillCancelForeign) SkillId() uint32    { return m.skillId }
-func (m CharacterSkillCancelForeign) Operation() string  { return CharacterSkillCancelForeignWriter }
+func (m SkillCancelForeign) CharacterId() uint32 { return m.characterId }
+func (m SkillCancelForeign) SkillId() uint32    { return m.skillId }
+func (m SkillCancelForeign) Operation() string  { return CharacterSkillCancelForeignWriter }
 
-func (m CharacterSkillCancelForeign) String() string {
+func (m SkillCancelForeign) String() string {
 	return fmt.Sprintf("foreign skill cancel characterId [%d] skillId [%d]", m.characterId, m.skillId)
 }
 
-func (m CharacterSkillCancelForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m SkillCancelForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
@@ -46,7 +46,7 @@ func (m CharacterSkillCancelForeign) Encode(l logrus.FieldLogger, _ context.Cont
 	}
 }
 
-func (m *CharacterSkillCancelForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *SkillCancelForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.skillId = r.ReadUint32()

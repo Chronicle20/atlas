@@ -274,8 +274,8 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0CF | ❌ | 0x0D3 | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
 | LUCKSACK_PASS | CUserLocal::OnMesoGive_Succeeded |  | 0x0D0 | ❌ | 0x0D5 | ❌ | 0x0DE | ❌ | 0x0EC | ❌ | 0x0D8 | ❌ |
 | LUCKSACK_FAIL | CUserLocal::OnMesoGive_Failed |  | 0x0D1 | ❌ | 0x0D6 | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0D9 | ❌ |
-| MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  | 0x0D2 | ❌ | 0x0D7 | ❌ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
-| UPDATE_QUEST_INFO | CUserLocal::OnQuestResult |  | 0x0D3 | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0F2 | ❌ | 0x0DC | ❌ |
+| MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
+| UPDATE_QUEST_INFO | CUserLocal::OnQuestResult |  | 0x0D3 | ❌ | 0x0D7 | ❌ | 0x0E0 | ❌ | 0x0F2 | ❌ | 0x0DC | ❌ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
 | PLAYER_HINT | CUserLocal::OnBalloonMsg | character/clientbound/CharacterHint (T1) | 0x0D6 | ✅ | 0x0DA | ✅ | 0x0E3 | ✅ | 0x0F5 | ✅ | 0x0DF | ✅ |
 | PLAY_EVENT_SOUND | CUserLocal::OnPlayEventSound |  | 0x0D7 | ❌ | 0x0DB | ❌ | 0x0E4 | ❌ | 0x0F6 | ❌ | 0x0E0 | ❌ |
@@ -906,7 +906,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
 | v83 | 327 | 0 | 348 | 200 | 0 | 48.4% |
-| v84 | 284 | 0 | 378 | 213 | 0 | 42.9% |
+| v84 | 284 | 0 | 377 | 214 | 0 | 43.0% |
 | v87 | 344 | 0 | 368 | 163 | 0 | 48.3% |
 | v95 | 380 | 0 | 416 | 79 | 0 | 47.7% |
 | JMS185 | 322 | 0 | 384 | 169 | 0 | 45.6% |

@@ -17167,9 +17167,8 @@
           "opcode": 210
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 215
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v87": {
           "state": "incomplete",
@@ -17302,7 +17301,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 211
+          "opcode": 215
         },
         "gms_v87": {
           "state": "incomplete",

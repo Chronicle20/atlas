@@ -1161,11 +1161,11 @@
 - op: SHOW_ITEM_EFFECT
   direction: clientbound
   opcode: 198
-  fname: CUserRemote::OnSetActiveEffectItem
+  fname: CUser::SetActiveEffectItem
   provenance: ida-discovered
   ida:
     address: 9906971
-  note: CUserPool::OnUserRemotePacket @0x9B2518 case 198 -> CUserRemote::OnSetActiveEffectItem (sub_972B1B, renamed). v83 inherited 194 was stale.
+  note: 'task-100 re-audit (body-verified): CUserPool::OnUserRemotePacket @0x9B2518 case 198 -> v6=Decode4; CUser::SetActiveEffectItem(v6) (sub_972B1B @0x972b1b, 0x801 bytes — renamed from the prior mistaken CUserRemote::OnSetActiveEffectItem). The v84 dispatcher inlines the Decode4 and calls the effect-apply WORKER directly; the worker body-matches v95 CUser::SetActiveEffectItem @0x8f5500 (0x96d bytes), NOT the v95 thin wrapper CUserRemote::OnSetActiveEffectItem @0x949220 (0x18 bytes). Opcode 198 unchanged; v83 inherited 194 was stale.'
 - op: SHOW_UPGRADE_TOMB_EFFECT
   direction: clientbound
   opcode: 199
@@ -1282,20 +1282,23 @@
   ida:
     address: 10058780
   note: CUserLocal dispatch sub_988561 @0x988561 case 214 -> CUserLocal::OnMesoGive_Failed (sub_997C1C, renamed). v83 inherited 209 was stale.
-- op: MESO_BAG_MESSAGE
+# MESO_BAG_MESSAGE removed (task-100 re-audit): VERSION-ABSENT in v84. The v84
+# CUserLocal dispatch sub_988561 @0x988561 has NO OnRandomMesobag_Succeeded case
+# (its case 215 is OnQuestResult; cases jump 214 OnMesoGive_Failed -> 215
+# OnQuestResult -> 216 OnNotifyHPDecByField). The CUIRandomMesoBag dialog class
+# does not exist in the v84 binary (lookup: Not found) — random-mesobag is a v95+
+# feature (v95 CUserLocal::OnPacket case 238 -> OnRandomMesobag_Succeeded @0x90fa30,
+# 0x158 bytes). The prior cluster-2 row wrongly pointed 215 at this op after
+# mis-naming the 0xea8-byte OnQuestResult (sub_997C48) as OnRandomMesobag_Succeeded
+# (an 11x size mismatch). Dropped so the matrix cell reads ⬜ n/a, not ❌.
+- op: UPDATE_QUEST_INFO
   direction: clientbound
   opcode: 215
-  fname: CUserLocal::OnRandomMesobag_Succeeded
+  fname: CUserLocal::OnQuestResult
   provenance: ida-discovered
   ida:
     address: 10058824
-  note: CUserLocal dispatch sub_988561 @0x988561 case 215 -> CUserLocal::OnRandomMesobag_Succeeded (sub_997C48, renamed). v83 inherited 210 was stale.
-- op: UPDATE_QUEST_INFO
-  direction: clientbound
-  opcode: 211
-  fname: CUserLocal::OnQuestResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  note: 'task-100 re-audit (body-verified): CUserLocal dispatch sub_988561 @0x988561 case 215 -> CUserLocal::OnQuestResult (sub_997C48 @0x997c48, 0xea8 bytes — renamed from the prior mistaken OnRandomMesobag_Succeeded). Body = CInPacket::Decode1 then 11-case quest-record mode switch (cases 6/7/8/9/10/11/13/14/15/16: AddQuestTimer/RemoveQuestTimer/job-advance dialog via DoModal+DeleteFadeWnd(7)+StartQuest), structural twin of v95 CUserLocal::OnQuestResult @0x914080 (0x121e bytes, dispatcher case 242). v83 inherited 211 was the stale v83 opcode; the +4 shift puts it on 215 (0xD7).'
 - op: PLAYER_HINT
   direction: clientbound
   opcode: 218

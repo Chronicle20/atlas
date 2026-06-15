@@ -1110,16 +1110,24 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SKILL_EFFECT
   direction: clientbound
-  opcode: 190
+  opcode: 194
   fname: CUserRemote::OnSkillPrepare
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname_alts:
+    - sub_9C0C5F
+  provenance: ida-discovered
+  ida:
+    address: 10226783
+  note: 'ida-verified (task-099): v84 clientbound opcode table is shifted vs v83 (attack writers occupy 0xBE–0xC1); CUserPool::OnUserRemotePacket @0x9B2518 dispatches prepare at case 194 (0xC2) -> unnamed sub_9C0C5F (0x9C0C5F), recorded as alt. The csv-import value (190/0xBE) was the stale v83 opcode. IDA-verified at :13337.'
 - op: CANCEL_SKILL_EFFECT
   direction: clientbound
-  opcode: 191
+  opcode: 195
   fname: CUserRemote::OnSkillCancel
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname_alts:
+    - sub_9C0DD3
+  provenance: ida-discovered
+  ida:
+    address: 10227155
+  note: 'ida-verified (task-099): v84 clientbound opcode table is shifted vs v83 (attack writers occupy 0xBE–0xC1); CUserPool::OnUserRemotePacket @0x9B2518 dispatches cancel at case 195 (0xC3) -> unnamed sub_9C0DD3 (0x9C0DD3), recorded as alt. The csv-import value (191/0xBF) was the stale v83 opcode. IDA-verified at :13337.'
 - op: DAMAGE_PLAYER
   direction: clientbound
   opcode: 192

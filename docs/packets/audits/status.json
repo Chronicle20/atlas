@@ -15762,7 +15762,8 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CUserRemote::OnSkillPrepare"
+        "CUserRemote::OnSkillPrepare",
+        "sub_9C0C5F"
       ],
       "cells": {
         "gms_v83": {
@@ -15773,7 +15774,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 190
+          "opcode": 194
         },
         "gms_v87": {
           "state": "incomplete",
@@ -15799,7 +15800,8 @@
       "tier1": false,
       "fnames": [
         "CUserRemote::OnSkillCancel",
-        "sub_980BF5"
+        "sub_980BF5",
+        "sub_9C0DD3"
       ],
       "cells": {
         "gms_v83": {
@@ -15810,7 +15812,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 191
+          "opcode": 195
         },
         "gms_v87": {
           "state": "incomplete",

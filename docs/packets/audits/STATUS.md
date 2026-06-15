@@ -251,8 +251,8 @@ Tool: `2feb82e6c76b4a3c7b512af0e9e41ba376c80770`
 | ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BD | ✅ | 0x0BD | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
 | SHOW_ITEM_UNRELEASE_EFFECT | CUser::ShowItemUnreleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BE | ❌ |  | ⬜ |
-| SKILL_EFFECT | CUserRemote::OnSkillPrepare |  | 0x0BE | ❌ | 0x0BE | ❌ | 0x0CB | ❌ | 0x0D7 | ❌ | 0x0C4 | ❌ |
-| CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 |  | 0x0BF | ❌ | 0x0BF | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0C5 | ❌ |
+| SKILL_EFFECT | CUserRemote::OnSkillPrepare; sub_9C0C5F |  | 0x0BE | ❌ | 0x0C2 | ❌ | 0x0CB | ❌ | 0x0D7 | ❌ | 0x0C4 | ❌ |
+| CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5; sub_9C0DD3 |  | 0x0BF | ❌ | 0x0C3 | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0C5 | ❌ |
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ |  | ⬜ |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0C0 | ✅ | 0x0C0 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
 | TESLA_TRIANGLE | CUser::OnTeslaTriangle |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C0 | ❌ |  | ⬜ |

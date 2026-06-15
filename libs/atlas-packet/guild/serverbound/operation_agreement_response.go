@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendCreateGuildAgreeMsg
 type AgreementResponse struct {
 	unk    uint32
 	agreed bool

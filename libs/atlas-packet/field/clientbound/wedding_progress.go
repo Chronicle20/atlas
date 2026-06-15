@@ -12,6 +12,7 @@ import (
 
 const WeddingProgressWriter = "WeddingProgress"
 
+// packet-audit:fname CField_Wedding::OnWeddingProgress
 type WeddingProgress struct {
 	step    byte
 	groomId uint32

@@ -18,6 +18,7 @@ const SnowballTouchWriter = "SnowballTouch"
 // CUserLocal::SetImpact(0x12C, 1) (confirmed by disasm: push 1; push 12Ch;
 // call SetImpact; retn — v84 @0x584ceb, v87 @0x5a35f7). All five versions
 // share the empty body; only the opcode shifts.
+// packet-audit:fname CField_SnowBall::OnSnowBallTouch
 type SnowballTouch struct {
 }
 

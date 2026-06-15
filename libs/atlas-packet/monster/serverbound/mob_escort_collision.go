@@ -23,6 +23,8 @@ const MobEscortCollisionHandle = "MobEscortCollision"
 // (opcode 0xCB/203): `COutPacket(op); Encode4(SecureFuse(mobId)); Encode4(nDest)`.
 // v95/jms only — the escort family is absent in v83/v84/v87 (no SendCollisionEscort
 // symbol, no escort dispatcher cases).
+//
+// packet-audit:fname CMob::SendCollisionEscort
 type MobEscortCollision struct {
 	mobCrc uint32
 	dest   uint32

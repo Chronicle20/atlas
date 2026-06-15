@@ -32,6 +32,7 @@ const (
 	NpcConversationMessageTypeAskSlideMenu        NpcConversationMessageType = "ASK_SLIDE_MENU"
 )
 
+// packet-audit:fname CScriptMan::OnScriptMessage
 type NpcConversation struct {
 	speakerTypeId          byte
 	speakerTemplateId      uint32

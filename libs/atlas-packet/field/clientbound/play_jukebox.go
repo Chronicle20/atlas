@@ -16,6 +16,7 @@ const PlayJukeboxWriter = "PlayJukebox"
 // cash-item guard: a real item is playing rather than a stop signal) does it read
 // the trailing player name string. A negative id stops the jukebox and carries no
 // name. itemId is modelled as int32 to preserve that signed guard exactly.
+// packet-audit:fname CField::OnPlayJukeBox
 type PlayJukebox struct {
 	itemId     int32
 	playerName string

@@ -15,6 +15,7 @@ const TournamentSetPrizeWriter = "TournamentSetPrize"
 // shape is two leading bytes (Decode1) followed by two ints (Decode4). The
 // trailing client-side Delegate (sub_XXXXXX in the v83/v87/jms exports) is
 // post-read application logic, not a wire read, and is excluded.
+// packet-audit:fname CField_Tournament::OnTournamentSetPrize
 type TournamentSetPrize struct {
 	slot   byte
 	flag   byte

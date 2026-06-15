@@ -14,6 +14,7 @@ const AdminChatHandle = "AdminChat"
 // AdminChat - CField::SendChatMsgSlash#AdminChat (opcode varies per version).
 // Sent by the /-command parser for admin chat commands. Body (uniform across
 // every send-site and version): byte type, byte flag, string message.
+// packet-audit:fname CField::SendChatMsgSlash#AdminChat
 type AdminChat struct {
 	chatType byte
 	flag     byte

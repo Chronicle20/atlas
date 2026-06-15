@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnCreate
 type OperationAnswerInvite struct {
 	messengerId uint32
 }

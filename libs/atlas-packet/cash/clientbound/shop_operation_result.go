@@ -12,6 +12,7 @@ import (
 const CashShopOperationWriter = "CashShopOperation"
 
 // OperationError - mode + error code byte
+// packet-audit:fname CCashShop::OnCashItemResult#OperationError  (dispatcher family — see docs/packets/evidence/families.yaml)
 type OperationError struct {
 	mode      byte
 	errorCode byte
@@ -46,6 +47,7 @@ func (m *OperationError) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 }
 
 // InventoryCapacitySuccess - mode, inventoryType, capacity
+// packet-audit:fname CCashShop::OnCashItemResult#InventoryCapacitySuccess  (dispatcher family — see docs/packets/evidence/families.yaml)
 type InventoryCapacitySuccess struct {
 	mode          byte
 	inventoryType byte
@@ -84,6 +86,7 @@ func (m *InventoryCapacitySuccess) Decode(_ logrus.FieldLogger, _ context.Contex
 }
 
 // InventoryCapacityFailed - mode, errorCode
+// packet-audit:fname CCashShop::OnCashItemResult#InventoryCapacityFailed  (dispatcher family — see docs/packets/evidence/families.yaml)
 type InventoryCapacityFailed struct {
 	mode      byte
 	errorCode byte
@@ -118,6 +121,7 @@ func (m *InventoryCapacityFailed) Decode(_ logrus.FieldLogger, _ context.Context
 }
 
 // WishList - mode, items (padded to 10 uint32s)
+// packet-audit:fname CCashShop::OnCashItemResult#WishList  (dispatcher family — see docs/packets/evidence/families.yaml)
 type WishList struct {
 	mode  byte
 	items []uint32

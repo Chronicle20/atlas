@@ -26,6 +26,8 @@ const FieldDamageMobHandle = "FieldDamageMob"
 //	COutPacket(op); Encode4(SecureFuse(m_dwMobID)); Encode4(nFieldDamage); SendPacket
 //
 // v84 emits this at opcode 0xC4 @0x67dd33 (registry was csv-import-stale at 0xBF).
+//
+// packet-audit:fname CMob::Update
 type FieldDamageMob struct {
 	mobCrc uint32
 	damage uint32

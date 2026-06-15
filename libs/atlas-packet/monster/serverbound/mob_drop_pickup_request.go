@@ -22,6 +22,8 @@ const MobDropPickupRequestHandle = "MobDropPickupRequest"
 // IDA basis: CMob::SendDropPickUpRequest — v83 @0x66e91f, v87 @0x6a98ae,
 // v95 @0x644450:
 //   COutPacket(opcode); Encode4(_ZtlSecureFuse(m_dwMobID, m_dwMobID_CS)); Encode4(dwDropID)
+//
+// packet-audit:fname CMob::SendDropPickUpRequest
 type MobDropPickupRequest struct {
 	mobCrc uint32
 	dropId uint32

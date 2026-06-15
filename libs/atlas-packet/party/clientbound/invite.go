@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CWvsContext::OnPartyResult#Invite
 type Invite struct {
 	mode              byte
 	partyId           uint32

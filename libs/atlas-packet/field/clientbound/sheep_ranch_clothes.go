@@ -11,6 +11,7 @@ import (
 
 const SheepRanchClothesWriter = "SheepRanchClothes"
 
+// packet-audit:fname CField_Battlefield::OnTeamChanged
 type SheepRanchClothes struct {
 	characterId uint32
 	team        byte

@@ -13,6 +13,7 @@ import (
 
 const MonsterSpawnWriter = "SpawnMonster"
 
+// packet-audit:fname CMobPool::OnMobEnterField
 type Spawn struct {
 	uniqueId   uint32
 	controlled bool

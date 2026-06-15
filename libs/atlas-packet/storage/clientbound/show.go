@@ -38,6 +38,7 @@ var showTabs = []showTab{
 }
 
 // Show - mode, npcId, slots, flags, meso, assets
+// packet-audit:fname CTrunkDlg::OnPacket#Show  (dispatcher family — see docs/packets/evidence/families.yaml)
 type Show struct {
 	mode   byte
 	npcId  uint32

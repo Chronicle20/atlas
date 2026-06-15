@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnPacket#InviteDeclined  (dispatcher family — see docs/packets/evidence/families.yaml)
 type InviteDeclined struct {
 	mode        byte
 	message     string

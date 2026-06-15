@@ -11,6 +11,7 @@ import (
 
 const NPCShopHandle = "NPCShopHandle"
 
+// packet-audit:fname CShopDlg::OnPacket#ShopDispatch  (dispatcher family — see docs/packets/evidence/families.yaml)
 type Shop struct {
 	op byte
 }

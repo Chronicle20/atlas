@@ -21,6 +21,8 @@ const MobEscortStopEndRequestHandle = "MobEscortStopEndRequest"
 // IDA basis: CMob::SendEscortStopEndRequest — v95 @0x641290 (opcode 238), jms
 // @0x6effcd (opcode 0xCD/205): `if (IsActive) { COutPacket(op);
 // Encode4(SecureFuse(mobId)) }`. v95/jms only — escort family absent in v83/v84/v87.
+//
+// packet-audit:fname CMob::SendEscortStopEndRequest
 type MobEscortStopEndRequest struct {
 	mobCrc uint32
 }

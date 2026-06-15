@@ -12,6 +12,7 @@ import (
 
 const FieldEffectWeatherWriter = "FieldEffectWeather"
 
+// packet-audit:fname CField::OnBlowWeather
 type EffectWeather struct {
 	active   bool
 	itemId   uint32

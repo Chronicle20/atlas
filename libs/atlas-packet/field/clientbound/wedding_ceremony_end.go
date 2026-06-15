@@ -10,6 +10,7 @@ import (
 
 const WeddingCeremonyEndWriter = "WeddingCeremonyEnd"
 
+// packet-audit:fname CField_Wedding::OnWeddingCeremonyEnd
 type WeddingCeremonyEnd struct {
 }
 

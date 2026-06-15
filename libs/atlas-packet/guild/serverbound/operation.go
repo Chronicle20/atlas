@@ -11,6 +11,7 @@ import (
 
 const GuildOperationHandle = "GuildOperationHandle"
 
+// packet-audit:fname CUIFadeYesNo::OnButtonClicked
 type Operation struct {
 	op byte
 }

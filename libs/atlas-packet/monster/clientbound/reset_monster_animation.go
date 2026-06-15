@@ -24,6 +24,8 @@ const ResetMonsterAnimationWriter = "ResetMonsterAnimation"
 // { … SetLayerZ; PrepareActionLayer; m_nSuspended=0; m_bDoFirstAttack=1; }`),
 // v84 @0x682802, v87 @0x6a73cb, v95 @0x64acb0, jms @0x6e9c8d — every version reads
 // exactly one Decode1 and no further wire bytes.
+//
+// packet-audit:fname CMob::OnSuspendReset
 type ResetMonsterAnimation struct {
 	animate bool
 }

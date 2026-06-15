@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CTrunkDlg::SendPutItemRequest
 type OperationStoreAsset struct {
 	slot     int16
 	itemId   uint32

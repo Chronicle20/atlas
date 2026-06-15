@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CCashShop::OnCashItemResLoadGiftDone
 type OperationSend struct {
 	toName  string
 	message string

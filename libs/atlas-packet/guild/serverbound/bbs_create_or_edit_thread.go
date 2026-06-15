@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIGuildBBS::OnRegister
 type BBSCreateOrEditThread struct {
 	modify     bool
 	threadId   uint32

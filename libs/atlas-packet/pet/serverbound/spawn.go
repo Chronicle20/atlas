@@ -11,6 +11,7 @@ import (
 
 const PetSpawnHandle = "PetSpawnHandle"
 
+// packet-audit:fname CWvsContext::SendActivatePetRequest
 type Spawn struct {
 	updateTime uint32
 	slot       int16

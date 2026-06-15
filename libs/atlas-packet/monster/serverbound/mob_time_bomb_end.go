@@ -39,6 +39,8 @@ const MobTimeBombEndHandle = "MobTimeBombEnd"
 // symbol (see structures/applicability.md / RESUME-STATE.md). The wire shape is the
 // same; the route still lands so the handler is wired, but evidence is pinned only
 // for v95/jms where the standalone function exists.
+//
+// packet-audit:fname CMob::UpdateTimeBomb
 type MobTimeBombEnd struct {
 	boss   bool
 	mobCrc uint32

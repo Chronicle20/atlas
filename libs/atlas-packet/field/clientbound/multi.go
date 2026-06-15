@@ -11,6 +11,7 @@ import (
 
 const MultiChatWriter = "CharacterMultiChat"
 
+// packet-audit:fname CField::OnGroupMessage
 type MultiChat struct {
 	mode    byte
 	from    string

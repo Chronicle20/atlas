@@ -24,6 +24,8 @@ const MobAffectedWriter = "MobAffected"
 // entry->nSkillID = v4; entry->tStart = v5 + get_update_time()`), v84 @0x682977,
 // v87 @0x6a7540, v95 @0x644400, jms @0x6e9df6 — every version reads exactly one
 // Decode4 then one Decode2.
+//
+// packet-audit:fname CMob::OnAffected
 type MobAffected struct {
 	skillId int32
 	delay   uint16

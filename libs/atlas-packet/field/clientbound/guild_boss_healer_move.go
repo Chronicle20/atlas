@@ -11,6 +11,7 @@ import (
 
 const GuildBossHealerMoveWriter = "GuildBossHealerMove"
 
+// packet-audit:fname CField_GuildBoss::OnHealerMove
 type GuildBossHealerMove struct {
 	moveAction uint16
 }

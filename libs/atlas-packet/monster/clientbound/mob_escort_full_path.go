@@ -53,6 +53,8 @@ func (w MobEscortWaypoint) Extra() int32 { return w.extra }
 // 2-waypoint path (mode + count + 2×(x,y,kind) = 8 Decode4, then tail Decode4,
 // arrive Decode1+Decode4, reset Decode1). v95/jms only — escort family absent in
 // v83/v84/v87.
+//
+// packet-audit:fname CMob::OnEscortFullPath
 type MobEscortFullPath struct {
 	mode        int32
 	waypoints   []MobEscortWaypoint

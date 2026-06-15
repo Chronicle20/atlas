@@ -11,6 +11,7 @@ import (
 
 const GuideTalkWriter = "GuideTalk"
 
+// packet-audit:fname CUserLocal::OnTutorMsg#Message
 type GuideTalkMessage struct {
 	message  string
 	width    uint32
@@ -48,6 +49,7 @@ func (m *GuideTalkMessage) Decode(_ logrus.FieldLogger, _ context.Context) func(
 	}
 }
 
+// packet-audit:fname CUserLocal::OnTutorMsg#Idx
 type GuideTalkIdx struct {
 	hintId   uint32
 	duration uint32

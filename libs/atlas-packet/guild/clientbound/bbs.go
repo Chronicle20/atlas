@@ -28,6 +28,7 @@ type BBSReply struct {
 }
 
 // BBSThreadList - thread listing
+// packet-audit:fname CUIGuildBBS::OnGuildBBSPacket#BBSThreadList
 type BBSThreadList struct {
 	hasNotice  bool
 	notice     BBSThreadSummary
@@ -140,6 +141,7 @@ func (m *BBSThreadList) Decode(_ logrus.FieldLogger, _ context.Context) func(r *
 }
 
 // BBSThread - single thread detail
+// packet-audit:fname CUIGuildBBS::OnGuildBBSPacket#BBSThread
 type BBSThread struct {
 	id         uint32
 	posterId   uint32

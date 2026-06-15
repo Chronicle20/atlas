@@ -11,6 +11,7 @@ import (
 
 const PyramidScoreWriter = "PyramidScore"
 
+// packet-audit:fname CField_MassacreResult::OnMassacreResult
 type PyramidScore struct {
 	rank  byte
 	score uint32

@@ -23,6 +23,8 @@ const IncMobChargeCountWriter = "IncMobChargeCount"
 // v87 @0x6ac230, v95 @0x63d500 (`m_nMobChargeCount = Decode4; m_bAttackReady =
 // Decode4`). jms has NO INC_MOB_CHARGE_COUNT dispatcher case (CMobPool::OnMobPacket
 // @0x6f8732 has no such case) → version-absent there.
+//
+// packet-audit:fname CMob::OnIncMobChargeCount
 type IncMobChargeCount struct {
 	chargeCount int32
 	attackReady int32

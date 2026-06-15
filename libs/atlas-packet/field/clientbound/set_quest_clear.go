@@ -12,6 +12,7 @@ const SetQuestClearWriter = "SetQuestClear"
 
 // SetQuestClear is the clientbound CField::OnSetQuestClear packet.
 // It carries no payload.
+// packet-audit:fname CField::OnSetQuestClear
 type SetQuestClear struct {
 }
 

@@ -11,6 +11,7 @@ import (
 
 const SetObjectStateWriter = "SetObjectState"
 
+// packet-audit:fname CField::OnSetObjectState
 type SetObjectState struct {
 	name  string
 	state uint32

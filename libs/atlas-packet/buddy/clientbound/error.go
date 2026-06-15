@@ -11,6 +11,7 @@ import (
 
 const BuddyErrorWriter = "BuddyError"
 
+// packet-audit:fname CWvsContext::OnFriendResult#Error
 type Error struct {
 	mode     byte
 	hasExtra bool

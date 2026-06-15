@@ -11,6 +11,7 @@ import (
 
 const GuildInviteRejectHandle = "GuildInviteRejectHandle"
 
+// packet-audit:fname CFadeWnd::SendCloseMessage#DenyGuildRequest
 type InviteReject struct {
 	unk  byte
 	from string

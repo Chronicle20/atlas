@@ -10,6 +10,7 @@ import (
 
 const KiteErrorWriter = "SpawnKiteError"
 
+// packet-audit:fname CMessageBoxPool::OnCreateFailed
 type KiteError struct{}
 
 func NewKiteError() KiteError {

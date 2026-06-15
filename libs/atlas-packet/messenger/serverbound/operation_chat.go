@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::ProcessChat
 type OperationChat struct {
 	msg string
 }

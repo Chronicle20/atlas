@@ -14,6 +14,7 @@ const AriantScoreWriter = "AriantScore"
 // AriantScore is v95-only (opcode 358). v95 CField_Witchtower::OnPacket dispatches
 // nType==358 to CField_Witchtower::OnScoreUpdate, which reads a single score byte.
 // The op is absent from the v83/v84/v87/jms registries.
+// packet-audit:fname CField_Witchtower::OnScoreUpdate
 type AriantScore struct {
 	score byte
 }

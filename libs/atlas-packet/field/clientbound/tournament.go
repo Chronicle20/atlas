@@ -14,6 +14,7 @@ const TournamentWriter = "Tournament"
 // Tournament mirrors CField_Tournament::OnTournament. The client dispatches on a
 // leading mode byte (Decode1) into a switch whose branches each read one further
 // Decode1; the flat wire shape is three sequential bytes (mode + two operands).
+// packet-audit:fname CField_Tournament::OnTournament
 type Tournament struct {
 	mode byte
 	arg0 byte

@@ -13,6 +13,7 @@ const SnowballHandle = "Snowball"
 
 // Snowball - CField_SnowBall::BasicActionAttack
 // Sent when the player attacks a snowball. Body: attack byte, damage uint16, x uint16.
+// packet-audit:fname CField_SnowBall::BasicActionAttack#Snowball
 type Snowball struct {
 	attack byte
 	damage uint16

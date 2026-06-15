@@ -12,6 +12,7 @@ import (
 const CompartmentMergeRequestHandle = "CompartmentMergeHandle"
 
 // CompartmentMergeRequest - CField::SendCompartmentMergeRequest
+// packet-audit:fname CWvsContext::SendGatherItemRequest
 type CompartmentMergeRequest struct {
 	updateTime      uint32
 	compartmentType byte

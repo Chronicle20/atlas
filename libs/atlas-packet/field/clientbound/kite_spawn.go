@@ -11,6 +11,7 @@ import (
 
 const KiteSpawnWriter = "SpawnKite"
 
+// packet-audit:fname CMessageBoxPool::OnMessageBoxEnterField
 type KiteSpawn struct {
 	id         uint32
 	templateId uint32

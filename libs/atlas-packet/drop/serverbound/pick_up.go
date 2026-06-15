@@ -12,6 +12,7 @@ import (
 const DropPickUpHandle = "DropPickUpHandle"
 
 // PickUp - CUser::SendDropPickUpRequest
+// packet-audit:fname CWvsContext::SendDropPickUpRequest
 type PickUp struct {
 	fieldKey   byte
 	updateTime uint32

@@ -11,6 +11,7 @@ import (
 
 const MtsOperation2Writer = "MtsOperation2"
 
+// packet-audit:fname CITC::OnQueryCashResult
 type MtsOperation2 struct {
 	cash        uint32
 	maplePoints uint32

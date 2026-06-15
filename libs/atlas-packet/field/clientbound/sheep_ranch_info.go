@@ -11,6 +11,7 @@ import (
 
 const SheepRanchInfoWriter = "SheepRanchInfo"
 
+// packet-audit:fname CField_Battlefield::OnScoreUpdate
 type SheepRanchInfo struct {
 	wolfCount          byte
 	wolfDisguisedCount byte

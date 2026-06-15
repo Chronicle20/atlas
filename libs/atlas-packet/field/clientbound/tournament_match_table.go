@@ -13,6 +13,7 @@ const TournamentMatchTableWriter = "TournamentMatchTable"
 // TournamentMatchTable mirrors CField_Tournament::OnTournamentMatchTable. The
 // client handler has an empty body in every audited version (no Decode calls);
 // the packet carries no payload beyond its opcode.
+// packet-audit:fname CField_Tournament::OnTournamentMatchTable
 type TournamentMatchTable struct {
 }
 

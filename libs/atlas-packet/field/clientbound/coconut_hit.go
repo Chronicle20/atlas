@@ -11,6 +11,7 @@ import (
 
 const CoconutHitWriter = "CoconutHit"
 
+// packet-audit:fname CField_Coconut::OnCoconutHit
 type CoconutHit struct {
 	id     uint16
 	action uint16

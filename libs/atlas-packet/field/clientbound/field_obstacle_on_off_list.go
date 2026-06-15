@@ -23,6 +23,7 @@ func NewObstacleState(name string, state uint32) ObstacleState {
 func (o ObstacleState) Name() string  { return o.name }
 func (o ObstacleState) State() uint32 { return o.state }
 
+// packet-audit:fname CField::OnFieldObstacleOnOffStatus
 type FieldObstacleOnOffList struct {
 	obstacles []ObstacleState
 }

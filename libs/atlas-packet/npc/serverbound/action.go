@@ -12,6 +12,7 @@ import (
 
 const NPCActionHandle = "NPCActionHandle"
 
+// packet-audit:fname CNpc::GenerateMovePath
 type ActionRequest struct {
 	objectId    uint32
 	unk         byte

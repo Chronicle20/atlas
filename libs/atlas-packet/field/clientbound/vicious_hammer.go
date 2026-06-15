@@ -13,6 +13,7 @@ const ViciousHammerWriter = "ViciousHammer"
 // ViciousHammer has an empty body. CField::OnItemUpgrade is a vtable forwarder
 // (delegates the opcode to the item-upgrade dialog) and reads no wire fields of
 // its own. The op is absent from the jms registry.
+// packet-audit:fname CField::OnItemUpgrade
 type ViciousHammer struct {
 }
 

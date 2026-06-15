@@ -16,6 +16,7 @@ const (
 )
 
 // ItemUse - CUser::SendItemUseRequest
+// packet-audit:fname CWvsContext::SendStatChangeItemUseRequest
 type ItemUse struct {
 	operation  string
 	updateTime uint32

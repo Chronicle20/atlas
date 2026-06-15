@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendDeleteFriendMsg
 type OperationDelete struct {
 	buddyCharacterId uint32
 }

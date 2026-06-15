@@ -11,6 +11,7 @@ import (
 
 const ZakumShrineWriter = "ZakumShrine"
 
+// packet-audit:fname CField::OnZakumTimer
 type ZakumShrine struct {
 	state   byte
 	seconds uint32

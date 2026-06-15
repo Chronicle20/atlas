@@ -11,6 +11,7 @@ import (
 
 const BlockedMapWriter = "BlockedMap"
 
+// packet-audit:fname CField::OnTransferFieldReqIgnored
 type BlockedMap struct {
 	reason byte
 }

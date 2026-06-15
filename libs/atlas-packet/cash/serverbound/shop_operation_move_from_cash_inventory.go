@@ -12,6 +12,7 @@ import (
 const CashShopOperationMoveFromCashInventoryHandle = "CashShopOperationMoveFromCashInventoryHandle"
 
 // ShopOperationMoveFromCashInventory - CCashShop::SendTransferFromCashInventory
+// packet-audit:fname CCashShop::OnMoveCashItemLtoS
 type ShopOperationMoveFromCashInventory struct {
 	serialNumber  uint64
 	inventoryType byte

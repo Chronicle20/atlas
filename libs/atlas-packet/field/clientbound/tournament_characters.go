@@ -13,6 +13,7 @@ const TournamentCharactersWriter = "TournamentCharacters"
 // TournamentCharacters mirrors CField_Tournament::OnPacket (op
 // TOURNAMENT_CHARACTERS). The handler is a no-op stub with an empty body in the
 // audited versions; the packet carries no payload beyond its opcode.
+// packet-audit:fname CField_Tournament::OnPacket
 type TournamentCharacters struct {
 }
 

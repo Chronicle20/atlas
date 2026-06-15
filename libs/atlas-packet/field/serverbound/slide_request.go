@@ -14,6 +14,7 @@ const SlideRequestHandle = "SlideRequest"
 // SlideRequest - CField::SendChatMsgSlash#SlideRequest (v95 0x09E, jms 0x089).
 // Sent by the /-command parser for the slide request (v95+jms only; absent in
 // v83/v84/v87). Body: a single byte.
+// packet-audit:fname CField::SendChatMsgSlash#SlideRequest
 type SlideRequest struct {
 	value byte
 }

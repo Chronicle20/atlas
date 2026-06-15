@@ -12,6 +12,7 @@ const LeftKnockbackHandle = "LeftKnockback"
 
 // LeftKnockback - CField_SnowBall::Update
 // Sent when the snowball crosses the knockback boundary. Empty body (header only).
+// packet-audit:fname CField_SnowBall::Update#LeftKnockback
 type LeftKnockback struct {
 }
 

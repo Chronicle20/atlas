@@ -14,6 +14,7 @@ import (
 
 const BuddyInviteWriter = "BuddyInvite"
 
+// packet-audit:fname CWvsContext::OnFriendResult#Invite
 type Invite struct {
 	mode           byte
 	actorId        uint32

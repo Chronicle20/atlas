@@ -11,6 +11,7 @@ import (
 
 const HorntailCaveWriter = "HorntailCave"
 
+// packet-audit:fname CField::OnHontailTimer
 type HorntailCave struct {
 	state   byte
 	seconds uint32

@@ -11,6 +11,7 @@ import (
 
 const PetCashFoodResultWriter = "PetCashFoodResult"
 
+// packet-audit:fname CWvsContext::OnCashPetFoodResult
 type CashFoodResult struct {
 	failure bool
 	index   byte

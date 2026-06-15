@@ -11,6 +11,7 @@ import (
 
 const PetCommandHandle = "PetCommandHandle"
 
+// packet-audit:fname CPet::ParseCommand
 type Command struct {
 	petId   uint64
 	byName  bool

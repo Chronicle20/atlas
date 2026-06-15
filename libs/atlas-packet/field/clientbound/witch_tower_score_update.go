@@ -16,6 +16,7 @@ const WitchTowerScoreUpdateWriter = "WitchTowerScoreUpdate"
 // single score byte via CField_Witchtower::OnScoreUpdate. GMS v95 routes this op
 // (opcode 360) to CField::OnChaosZakumTimer, which reads the score byte followed
 // by a uint32 seconds value. The trailing int is emitted only for GMS>=95.
+// packet-audit:fname CField::OnChaosZakumTimer
 type WitchTowerScoreUpdate struct {
 	score   byte
 	seconds uint32

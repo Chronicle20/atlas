@@ -11,6 +11,7 @@ import (
 
 const ContiMoveWriter = "ContiMove"
 
+// packet-audit:fname CField_ContiMove::OnContiMove
 type ContiMove struct {
 	state byte
 }

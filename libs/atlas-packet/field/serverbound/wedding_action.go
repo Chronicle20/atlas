@@ -13,6 +13,7 @@ const WeddingActionHandle = "WeddingAction"
 
 // WeddingAction - CField_Wedding::OnWeddingProgress#Action
 // Emitted when the groom/bride confirms a cathedral step. Body: step byte.
+// packet-audit:fname CField_Wedding::OnWeddingProgress#Action
 type WeddingAction struct {
 	step byte
 }

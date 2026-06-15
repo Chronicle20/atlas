@@ -12,6 +12,7 @@ import (
 const NPCShopOperationWriter = "NPCShopOperation"
 
 // ShopOperationSimple - mode only (OK, OutOfStock, NotEnoughMoney, etc.)
+// packet-audit:fname CShopDlg::OnPacket#Simple  (dispatcher family — see docs/packets/evidence/families.yaml)
 type ShopOperationSimple struct {
 	mode byte
 }
@@ -38,6 +39,7 @@ func (m *ShopOperationSimple) Decode(_ logrus.FieldLogger, _ context.Context) fu
 }
 
 // ShopOperationGenericError - mode, hasReason, reason
+// packet-audit:fname CShopDlg::OnPacket#GenericError  (dispatcher family — see docs/packets/evidence/families.yaml)
 type ShopOperationGenericError struct {
 	mode      byte
 	hasReason bool
@@ -80,6 +82,7 @@ func (m *ShopOperationGenericError) Decode(_ logrus.FieldLogger, _ context.Conte
 }
 
 // ShopOperationLevelRequirement - mode, levelLimit
+// packet-audit:fname CShopDlg::OnPacket#LevelRequirement  (dispatcher family — see docs/packets/evidence/families.yaml)
 type ShopOperationLevelRequirement struct {
 	mode       byte
 	levelLimit uint32

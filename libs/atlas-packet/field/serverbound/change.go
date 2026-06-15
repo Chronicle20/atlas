@@ -13,6 +13,7 @@ import (
 const MapChangeHandle = "MapChangeHandle"
 
 // Change - CField::SendTransferFieldPacket
+// packet-audit:fname CField::SendTransferFieldRequest
 type Change struct {
 	cashShopReturn bool
 	fieldKey       byte

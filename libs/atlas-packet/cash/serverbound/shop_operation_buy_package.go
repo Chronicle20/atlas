@@ -12,6 +12,7 @@ import (
 const CashShopOperationBuyPackageHandle = "CashShopOperationBuyPackageHandle"
 
 // ShopOperationBuyPackage - CCashShop::SendBuyPackage
+// packet-audit:fname CCashShop::OnBuyPackage
 type ShopOperationBuyPackage struct {
 	pointType    bool
 	option       uint32

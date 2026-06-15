@@ -11,6 +11,7 @@ import (
 
 const AriantArenaUserScoreWriter = "AriantArenaUserScore"
 
+// packet-audit:fname CField_AriantArena::OnUserScore
 type AriantArenaUserScore struct {
 	count byte
 	name  string

@@ -15,6 +15,7 @@ import (
 
 const SetFieldWriter = "SetField"
 
+// packet-audit:fname CStage::OnSetField#WarpToMap
 type WarpToMap struct {
 	channelId channel.Id
 	mapId     _map.Id

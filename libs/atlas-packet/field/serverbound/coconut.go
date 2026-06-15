@@ -13,6 +13,7 @@ const CoconutHandle = "Coconut"
 
 // Coconut - CField_Coconut::BasicActionAttack
 // Sent when the player attacks a coconut. Body: attack uint16, x uint16.
+// packet-audit:fname CField_Coconut::BasicActionAttack#Coconut
 type Coconut struct {
 	attack uint16
 	x      uint16

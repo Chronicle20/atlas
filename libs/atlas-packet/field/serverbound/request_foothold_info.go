@@ -65,6 +65,7 @@ func (e FootholdInfoEntry) ReverseHorizontal() byte  { return e.reverseHorizonta
 // function exists only in GMS v95 (@0x52ddd0) and jms v185 (@0x576cd2); it is
 // VERSION-ABSENT in GMS v83/v84/v87. The wire shape is identical between v95 and
 // jms, so the codec is version-invariant.
+// packet-audit:fname CField::OnRequestFootHoldInfo
 type RequestFootholdInfo struct {
 	entries []FootholdInfoEntry
 }

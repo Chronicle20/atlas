@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CScriptMan::OnAskMenu#Selection
 type ContinueConversationSelection struct {
 	selection int32
 	wide      bool

@@ -17,6 +17,7 @@ const SueCharacterHandle = "SueCharacter"
 // is version-branched: v83/v84/v87 lead with the accused character id (int32);
 // v95 leads with a sub-command string. Both forms follow with a byte and a
 // string. jms is version-absent (no send-site).
+// packet-audit:fname CField::SendChatMsgSlash#SueCharacter
 type SueCharacter struct {
 	characterId uint32 // v83/v84/v87 leading field
 	subCommand  string // v95 leading field

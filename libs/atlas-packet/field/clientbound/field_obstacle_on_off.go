@@ -13,6 +13,7 @@ const FieldObstacleOnOffWriter = "FieldObstacleOnOff"
 
 // FieldObstacleOnOff is the clientbound CField::OnFieldObstacleOnOff packet.
 // It toggles a single named field obstacle to the given state.
+// packet-audit:fname CField::OnFieldObstacleOnOff
 type FieldObstacleOnOff struct {
 	name  string
 	state uint32

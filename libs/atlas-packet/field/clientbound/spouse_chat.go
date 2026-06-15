@@ -27,6 +27,7 @@ const SpouseChatWriter = "SpouseChat"
 // positionally with that flattened read order. A concrete send populates the arm
 // for its mode; the representative fixture exercises the full union (mode-4 sender
 // segment + mode-5 partner segment) so the round-trip closes for the modeled shape.
+// packet-audit:fname CField::OnCoupleMessage
 type SpouseChat struct {
 	mode        byte
 	sender      string

@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIMessenger::OnPacket#InviteSent  (dispatcher family — see docs/packets/evidence/families.yaml)
 type InviteSent struct {
 	mode    byte
 	message string

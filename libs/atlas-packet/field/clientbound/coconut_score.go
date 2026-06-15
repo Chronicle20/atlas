@@ -11,6 +11,7 @@ import (
 
 const CoconutScoreWriter = "CoconutScore"
 
+// packet-audit:fname CField_Coconut::OnCoconutScore
 type CoconutScore struct {
 	mapleScore uint16
 	storyScore uint16

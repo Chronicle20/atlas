@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CField::SendSetGuildNoticeMsg
 type SetNotice struct {
 	notice string
 }

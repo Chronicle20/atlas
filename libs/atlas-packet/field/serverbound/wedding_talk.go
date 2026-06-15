@@ -12,6 +12,7 @@ const WeddingTalkHandle = "WeddingTalk"
 
 // WeddingTalk - CField_Wedding::OnWeddingProgress#Talk
 // Emitted on the bless YESNO confirm (witness path). Empty body (header only).
+// packet-audit:fname CField_Wedding::OnWeddingProgress#Talk
 type WeddingTalk struct {
 }
 

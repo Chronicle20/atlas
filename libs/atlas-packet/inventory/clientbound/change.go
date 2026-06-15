@@ -15,6 +15,7 @@ import (
 const InventoryChangeWriter = "CharacterInventoryChange"
 
 // QuantityUpdate - silent, single quantity update
+// packet-audit:fname CWvsContext::OnInventoryOperation#QuantityUpdate
 type QuantityUpdate struct {
 	silent        bool
 	inventoryType byte
@@ -60,6 +61,7 @@ func (m *QuantityUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 }
 
 // ChangeMove - silent, single move operation
+// packet-audit:fname CWvsContext::OnInventoryOperation#ChangeMove
 type ChangeMove struct {
 	silent        bool
 	inventoryType byte
@@ -117,6 +119,7 @@ func (m *ChangeMove) Decode(_ logrus.FieldLogger, _ context.Context) func(r *req
 }
 
 // Remove - silent, single remove operation
+// packet-audit:fname CWvsContext::OnInventoryOperation#Remove
 type Remove struct {
 	silent        bool
 	inventoryType byte
@@ -164,6 +167,7 @@ func (m *Remove) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request
 }
 
 // Add - silent, single add operation with an asset
+// packet-audit:fname CWvsContext::OnInventoryOperation#Add
 type Add struct {
 	silent        bool
 	inventoryType byte

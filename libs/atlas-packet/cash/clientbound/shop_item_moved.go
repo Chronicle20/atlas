@@ -49,6 +49,7 @@ func (m *CashItemMovedToInventory) Decode(l logrus.FieldLogger, ctx context.Cont
 }
 
 // CashItemMovedToCashInventory - mode, item
+// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToCashInventory  (dispatcher family — see docs/packets/evidence/families.yaml)
 type CashItemMovedToCashInventory struct {
 	mode byte
 	item CashInventoryItem

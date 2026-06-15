@@ -13,6 +13,7 @@ const BlockedServerWriter = "BlockedServer"
 
 // BlockedServer is the clientbound CField::OnTransferChannelReqIgnored packet.
 // A single byte reason for why a channel-transfer request was ignored.
+// packet-audit:fname CField::OnTransferChannelReqIgnored
 type BlockedServer struct {
 	reason byte
 }

@@ -13,6 +13,7 @@ const TournamentUewWriter = "TournamentUew"
 
 // TournamentUew mirrors CField_Tournament::OnTournamentUEW. The client reads a
 // single byte (Decode1).
+// packet-audit:fname CField_Tournament::OnTournamentUEW
 type TournamentUew struct {
 	effect byte
 }

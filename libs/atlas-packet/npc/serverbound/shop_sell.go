@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CShopDlg::SendSellRequest
 type ShopSell struct {
 	slot     int16
 	itemId   uint32

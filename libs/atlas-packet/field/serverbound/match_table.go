@@ -14,6 +14,7 @@ const MatchTableHandle = "MatchTable"
 // MatchTable - CField::SendChatMsgSlash#MatchTable (opcode varies per version).
 // Sent by the /-command parser for the match-table request. Body: a single byte
 // (a bool flag).
+// packet-audit:fname CField::SendChatMsgSlash#MatchTable
 type MatchTable struct {
 	flag byte
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// packet-audit:fname CUIGuildBBS::OnComment
 type BBSReplyThread struct {
 	threadId uint32
 	message  string

@@ -12,6 +12,7 @@ import (
 const ReactorHitHandle = "ReactorHitHandle"
 
 // HitRequest - CReactorPool::OnHitReactor
+// packet-audit:fname CReactorPool::FindHitReactor
 type HitRequest struct {
 	oid          uint32
 	isSkill      bool

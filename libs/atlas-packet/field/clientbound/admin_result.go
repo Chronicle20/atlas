@@ -49,6 +49,7 @@ const AdminResultWriter = "AdminResult"
 //	jms @0x57255f: b,s,s,s,b,b,b,b,b,i
 //
 // The model holds the union of byte/string/int payloads (indexed positionally).
+// packet-audit:fname CField::OnAdminResult
 type AdminResult struct {
 	mode  byte
 	b     []byte

@@ -13,6 +13,7 @@ const SummonItemUnavailableWriter = "SummonItemUnavailable"
 
 // SummonItemUnavailable is the clientbound CField::OnSummonItemInavailable packet.
 // A single byte message/reason code shown when a summon item cannot be used.
+// packet-audit:fname CField::OnSummonItemInavailable
 type SummonItemUnavailable struct {
 	message byte
 }

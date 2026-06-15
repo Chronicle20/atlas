@@ -13,6 +13,7 @@ const ForcedMapEquipWriter = "ForcedMapEquip"
 // ForcedMapEquip is the clientbound CField::OnFieldSpecificData packet.
 // The v83 handler decodes no fields (the client vtable-forwards to field-specific
 // data handling), so the wire payload is empty.
+// packet-audit:fname CField::OnFieldSpecificData
 type ForcedMapEquip struct {
 }
 

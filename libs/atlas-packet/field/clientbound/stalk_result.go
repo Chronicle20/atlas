@@ -31,6 +31,7 @@ const StalkResultWriter = "StalkResult"
 // order; this model carries that representative shape (count + one stalkee's
 // insert fields) so the wire-level diff aligns positionally with the flattened
 // read order and the round-trip closes. Layout is version-invariant.
+// packet-audit:fname CField::OnStalkResult
 type StalkResult struct {
 	count  uint32
 	charId uint32

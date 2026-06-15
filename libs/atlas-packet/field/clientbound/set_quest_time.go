@@ -29,6 +29,7 @@ func (q QuestTime) EndTime() uint64   { return q.endTime }
 
 // SetQuestTime is the clientbound CField::OnSetQuestTime packet. A count byte
 // followed by that many {questId, startTime(FILETIME), endTime(FILETIME)} entries.
+// packet-audit:fname CField::OnSetQuestTime
 type SetQuestTime struct {
 	quests []QuestTime
 }

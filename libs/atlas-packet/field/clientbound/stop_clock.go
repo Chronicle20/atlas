@@ -10,6 +10,7 @@ import (
 
 const StopClockWriter = "StopClock"
 
+// packet-audit:fname CField::OnDestroyClock
 type StopClock struct {
 }
 

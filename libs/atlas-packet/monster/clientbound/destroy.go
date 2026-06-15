@@ -23,6 +23,7 @@ const (
 	DestroyTypeSwallow DestroyType = 4
 )
 
+// packet-audit:fname CMobPool::OnMobLeaveField
 type Destroy struct {
 	uniqueId           uint32
 	destroyType        DestroyType

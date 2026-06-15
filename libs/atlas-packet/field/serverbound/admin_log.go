@@ -14,6 +14,7 @@ const AdminLogHandle = "AdminLog"
 // AdminLog - CField::SendChatMsgSlash#AdminLog (opcode varies per version).
 // Sent by the /-command parser to record an admin-command log line. Body: a
 // single string (the log message).
+// packet-audit:fname CField::SendChatMsgSlash#AdminLog
 type AdminLog struct {
 	message string
 }

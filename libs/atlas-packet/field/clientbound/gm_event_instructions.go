@@ -13,6 +13,7 @@ const GmEventInstructionsWriter = "GmEventInstructions"
 
 // GmEventInstructions is the clientbound CField::OnDesc packet.
 // A single byte index selecting which GM-event instruction text to display.
+// packet-audit:fname CField::OnDesc
 type GmEventInstructions struct {
 	index byte
 }

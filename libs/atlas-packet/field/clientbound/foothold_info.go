@@ -65,6 +65,8 @@ func (e FootholdEntry) ReverseHorizontal() byte   { return e.reverseHorizontal }
 // The CMapLoadable::FootHoldStateChange / FootHoldMove delegates are application
 // logic (they apply the state to the loaded map), not wire reads, and carry no
 // bytes.
+//
+// packet-audit:fname CField::OnFootHoldInfo
 type FootholdInfo struct {
 	entries []FootholdEntry
 }

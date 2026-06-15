@@ -10,6 +10,7 @@ import (
 
 const AriantArenaShowResultWriter = "AriantArenaShowResult"
 
+// packet-audit:fname CField_AriantArena::OnShowResult
 type AriantArenaShowResult struct {
 }
 

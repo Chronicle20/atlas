@@ -16,6 +16,7 @@ const AdminCommandHandle = "AdminCommand"
 // leads with a single sub-command byte; the remaining payload is variable per
 // sub-command (string/scalar combos), so only the stable leading sub-command
 // byte is modeled here (decode-and-log).
+// packet-audit:fname CField::SendChatMsgSlash#AdminCommand
 type AdminCommand struct {
 	subCommand byte
 }

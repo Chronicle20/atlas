@@ -11,6 +11,7 @@ import (
 
 const PyramidGaugeWriter = "PyramidGauge"
 
+// packet-audit:fname CField_Massacre::OnMassacreIncGauge
 type PyramidGauge struct {
 	gauge uint32
 }

@@ -11,6 +11,7 @@ import (
 
 const SnowballStateWriter = "SnowballState"
 
+// packet-audit:fname CField_SnowBall::OnSnowBallState
 type SnowballState struct {
 	state     byte
 	leftSnow  uint32

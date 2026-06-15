@@ -13,6 +13,7 @@ const FieldObstacleAllResetWriter = "FieldObstacleAllReset"
 // FieldObstacleAllReset is the clientbound CField::OnFieldObstacleAllReset packet.
 // It carries no payload; the client resets all field obstacles to their default
 // state on receipt.
+// packet-audit:fname CField::OnFieldObstacleAllReset
 type FieldObstacleAllReset struct {
 }
 

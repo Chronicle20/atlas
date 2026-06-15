@@ -12,6 +12,7 @@ import (
 
 const CharacterChatGeneralHandle = "CharacterChatGeneralHandle"
 
+// packet-audit:fname CField::SendChatMsg
 type General struct {
 	updateTime  uint32
 	msg         string

@@ -19,6 +19,7 @@ const (
 	DropEnterTypeDisappear DropEnterType = 3
 )
 
+// packet-audit:fname CDropPool::OnDropEnterField
 type Spawn struct {
 	enterType     DropEnterType
 	dropId        uint32

@@ -11,6 +11,7 @@ import (
 
 const SnowballHitWriter = "SnowballHit"
 
+// packet-audit:fname CField_SnowBall::OnSnowBallHit
 type SnowballHit struct {
 	position byte
 	damage   uint16

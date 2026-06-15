@@ -11,6 +11,7 @@ import (
 
 const NpcSpawnWriter = "SpawnNPC"
 
+// packet-audit:fname CNpcPool::OnNpcEnterField
 type Spawn struct {
 	id       uint32
 	template uint32

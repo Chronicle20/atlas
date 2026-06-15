@@ -12,6 +12,7 @@ import (
 const WhisperWriter = "CharacterChatWhisper"
 
 // WhisperSendResult - result of attempting to send a whisper
+// packet-audit:fname CField::OnWhisper#SendResult
 type WhisperSendResult struct {
 	mode       byte
 	targetName string
@@ -50,6 +51,7 @@ func (m *WhisperSendResult) Decode(_ logrus.FieldLogger, _ context.Context) func
 }
 
 // WhisperReceive - incoming whisper from another character
+// packet-audit:fname CField::OnWhisper#Receive
 type WhisperReceive struct {
 	mode      byte
 	fromName  string
@@ -96,6 +98,7 @@ func (m *WhisperReceive) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 }
 
 // WhisperFindResultCashShop - target is in cash shop
+// packet-audit:fname CField::OnWhisper#FindResultCashShop
 type WhisperFindResultCashShop struct {
 	mode       byte
 	targetName string
@@ -134,6 +137,7 @@ func (m *WhisperFindResultCashShop) Decode(_ logrus.FieldLogger, _ context.Conte
 }
 
 // WhisperFindResultMap - target is on a map; optionally includes x/y coordinates
+// packet-audit:fname CField::OnWhisper#FindResultMap
 type WhisperFindResultMap struct {
 	mode       byte
 	targetName string
@@ -192,6 +196,7 @@ func (m *WhisperFindResultMap) Decode(_ logrus.FieldLogger, _ context.Context) f
 }
 
 // WhisperFindResultChannel - target is on a different channel
+// packet-audit:fname CField::OnWhisper#FindResultChannel
 type WhisperFindResultChannel struct {
 	mode       byte
 	targetName string
@@ -232,6 +237,7 @@ func (m *WhisperFindResultChannel) Decode(_ logrus.FieldLogger, _ context.Contex
 }
 
 // WhisperFindResultError - target not found
+// packet-audit:fname CField::OnWhisper#FindResultError
 type WhisperFindResultError struct {
 	mode       byte
 	targetName string
@@ -270,6 +276,7 @@ func (m *WhisperFindResultError) Decode(_ logrus.FieldLogger, _ context.Context)
 }
 
 // WhisperError - whisper blocked/disabled
+// packet-audit:fname CField::OnWhisper#Error
 type WhisperError struct {
 	mode             byte
 	targetName       string
@@ -308,6 +315,7 @@ func (m *WhisperError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 }
 
 // WhisperWeather - GM weather message
+// packet-audit:fname CField::OnWhisper#Weather
 type WhisperWeather struct {
 	mode     byte
 	fromName string

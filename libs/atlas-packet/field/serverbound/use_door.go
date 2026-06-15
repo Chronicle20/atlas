@@ -13,6 +13,7 @@ const UseDoorHandle = "UseDoor"
 
 // UseDoor - CField::TryEnterTownPortal
 // Sent when the player enters a town portal. Body: portalFieldId uint32, flag byte.
+// packet-audit:fname CField::TryEnterTownPortal#UseDoor
 type UseDoor struct {
 	portalFieldId uint32
 	flag          byte

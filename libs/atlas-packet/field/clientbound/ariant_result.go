@@ -11,6 +11,7 @@ import (
 
 const AriantResultWriter = "AriantResult"
 
+// packet-audit:fname CField::OnWarnMessage
 type AriantResult struct {
 	message string
 }

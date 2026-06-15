@@ -11,6 +11,7 @@ import (
 
 const GuildBossPulleyStateChangeWriter = "GuildBossPulleyStateChange"
 
+// packet-audit:fname CField_GuildBoss::OnPulleyStateChange
 type GuildBossPulleyStateChange struct {
 	state byte
 }

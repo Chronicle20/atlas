@@ -17,6 +17,7 @@ type TransactionEntry struct {
 func (e TransactionEntry) Data() uint32 { return e.data }
 func (e TransactionEntry) Crc() uint32  { return e.crc }
 
+// packet-audit:fname CCashTradingRoomDlg::Trade
 type OperationTransaction struct {
 	entries []TransactionEntry
 }

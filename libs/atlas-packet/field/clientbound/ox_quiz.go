@@ -11,6 +11,7 @@ import (
 
 const OxQuizWriter = "OxQuiz"
 
+// packet-audit:fname CField::OnQuiz
 type OxQuiz struct {
 	enabled  byte
 	category byte

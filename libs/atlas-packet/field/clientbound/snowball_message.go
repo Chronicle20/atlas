@@ -11,6 +11,7 @@ import (
 
 const SnowballMessageWriter = "SnowballMessage"
 
+// packet-audit:fname CField_SnowBall::OnSnowBallMsg
 type SnowballMessage struct {
 	team    byte
 	message byte

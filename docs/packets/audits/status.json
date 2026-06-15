@@ -13792,7 +13792,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 168
+          "opcode": 171
         },
         "gms_v87": {
           "state": "incomplete",
@@ -13828,7 +13828,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 169
+          "opcode": 172
         },
         "gms_v87": {
           "state": "incomplete",
@@ -13993,7 +13993,7 @@
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 170
+          "opcode": 174
         },
         "gms_v87": {
           "state": "verified",
@@ -14155,7 +14155,7 @@
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 171
+          "opcode": 175
         },
         "gms_v87": {
           "state": "verified",
@@ -14241,7 +14241,8 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CPet::OnNameChanged"
+        "CPet::OnNameChanged",
+        "CPet__OnNameChanged_recv_0xB0"
       ],
       "cells": {
         "gms_v83": {
@@ -14252,7 +14253,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 172
+          "opcode": 176
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14287,7 +14288,7 @@
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 173
+          "opcode": 177
         },
         "gms_v87": {
           "state": "verified",
@@ -14351,7 +14352,7 @@
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 174
+          "opcode": 178
         },
         "gms_v87": {
           "state": "verified",
@@ -14405,7 +14406,8 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CVecCtrlSummoned::EndUpdateActive"
+        "CVecCtrlSummoned::EndUpdateActive",
+        "CVecCtrlSummoned__EndUpdateActive_send_0xB4"
       ],
       "cells": {
         "gms_v83": {
@@ -14416,7 +14418,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 175
+          "opcode": 180
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14487,7 +14489,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 175
+          "opcode": 179
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14558,7 +14560,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 176
+          "opcode": 180
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14585,7 +14587,8 @@
       "fnames": [
         "CSummoned::AttackToTargetMob",
         "CSummoned::TryDoingAttackManual",
-        "CSummoned::TryDoingTaslaCoilAttack"
+        "CSummoned::TryDoingTaslaCoilAttack",
+        "CSummoned__AttackToTargetMob_send_0xB5"
       ],
       "cells": {
         "gms_v83": {
@@ -14596,7 +14599,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 176
+          "opcode": 181
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14621,7 +14624,8 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CSummoned::SetDamaged"
+        "CSummoned::SetDamaged",
+        "CSummoned__SetDamaged_send_0xB6"
       ],
       "cells": {
         "gms_v83": {
@@ -14632,7 +14636,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 177
+          "opcode": 182
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14668,7 +14672,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 177
+          "opcode": 181
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14696,7 +14700,8 @@
         "CSummoned::TryDoingGiveBuff",
         "CSummoned::TryDoingHeal",
         "CSummoned::TryDoingHealingRobot",
-        "CSummoned::TryDoingSummon"
+        "CSummoned::TryDoingSummon",
+        "CSummoned__TryDoingHeal_send_0xB7_BEHOLDER"
       ],
       "cells": {
         "gms_v83": {
@@ -14707,7 +14712,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 178
+          "opcode": 183
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14743,7 +14748,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 178
+          "opcode": 182
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14809,7 +14814,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 179
+          "opcode": 184
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14912,7 +14917,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 180
+          "opcode": 183
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14945,7 +14950,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 180
+          "opcode": 184
         },
         "gms_v87": {
           "state": "incomplete",
@@ -14970,7 +14975,8 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CVecCtrlDragon::EndUpdateActive"
+        "CVecCtrlDragon::EndUpdateActive",
+        "CVecCtrlDragon__EndUpdateActive_send_0xBA"
       ],
       "cells": {
         "gms_v83": {
@@ -14981,7 +14987,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 181
+          "opcode": 186
         },
         "gms_v87": {
           "state": "incomplete",
@@ -15017,7 +15023,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 181
+          "opcode": 185
         },
         "gms_v87": {
           "state": "incomplete",
@@ -15053,7 +15059,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 182
+          "opcode": 186
         },
         "gms_v87": {
           "state": "incomplete",
@@ -15086,7 +15092,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 182
+          "opcode": 185
         },
         "gms_v87": {
           "state": "incomplete",
@@ -15111,7 +15117,8 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CQuickslotKeyMappedMan::SaveQuickslotKeyMap"
+        "CQuickslotKeyMappedMan::SaveQuickslotKeyMap",
+        "CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC"
       ],
       "cells": {
         "gms_v83": {
@@ -15122,7 +15129,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 183
+          "opcode": 188
         },
         "gms_v87": {
           "state": "incomplete",
@@ -15158,7 +15165,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 183
+          "opcode": 187
         },
         "gms_v87": {
           "state": "incomplete",

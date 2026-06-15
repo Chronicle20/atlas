@@ -219,27 +219,27 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
 | SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x0A7 | ✅ | 0x0AA | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | ⬜ |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
-| SPAWN_PET | CUser::OnPetPacket |  | 0x0A8 | ❌ | 0x0A8 | ❌ | 0x0B4 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
-| EVOLVE_PET | CUser::OnPetPacket |  | 0x0A9 | ❌ | 0x0A9 | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
+| SPAWN_PET | CUser::OnPetPacket |  | 0x0A8 | ❌ | 0x0AB | ❌ | 0x0B4 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
+| EVOLVE_PET | CUser::OnPetPacket |  | 0x0A9 | ❌ | 0x0AC | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
 | FOOTHOLD_INFO | CField::OnFootHoldInfo | field/clientbound/FieldFootholdInfo (T1) |  | ⬜ |  | ⬜ | 0x0AA | ✅ | 0x0B0 | ✅ | 0x09C | ✅ |
-| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x0AA | ✅ | 0x0AA | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
+| MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) | 0x0AA | ✅ | 0x0AE | ✅ | 0x0B7 | ✅ | 0x0C9 | ✅ | 0x0B0 | ✅ |
 | IDA_0X0AB | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AB | ❌ |
-| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0AB | ✅ | 0x0AB | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
+| PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | IDA_0X0AC | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AC | ✅ |  | ⬜ |
-| PET_NAMECHANGE | CPet::OnNameChanged |  | 0x0AC | ❌ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
-| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0AD | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
-| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0AE | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
-| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket |  | 0x0AF | ❌ | 0x0AF | ❌ | 0x0BC | ❌ | 0x116 | ❌ | 0x0B5 | ❌ |
-| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved |  | 0x0B0 | ❌ | 0x0B0 | ❌ | 0x0BD | ❌ | 0x117 | ❌ | 0x0B6 | ❌ |
-| MOVE_SUMMON | CSummonedPool::OnMove |  | 0x0B1 | ❌ | 0x0B1 | ❌ | 0x0BE | ❌ | 0x118 | ❌ | 0x0B7 | ❌ |
-| SUMMON_ATTACK | CSummonedPool::OnAttack |  | 0x0B2 | ❌ | 0x0B2 | ❌ | 0x0BF | ❌ | 0x119 | ❌ | 0x0B8 | ❌ |
-| DAMAGE_SUMMON | CSummonedPool::OnHit |  | 0x0B3 | ❌ | 0x0B3 | ❌ | 0x0C0 | ❌ | 0x11B | ❌ | 0x0B9 | ❌ |
+| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
+| PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0CC | ✅ | 0x0B3 | ✅ |
+| PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CD | ✅ | 0x0B4 | ✅ |
+| SPAWN_SPECIAL_MAPOBJECT | CSummonedPool::OnCreated; CSummonedPool::OnPacket |  | 0x0AF | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x116 | ❌ | 0x0B5 | ❌ |
+| REMOVE_SPECIAL_MAPOBJECT | CSummonedPool::OnPacket; CSummonedPool::OnRemoved |  | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0BD | ❌ | 0x117 | ❌ | 0x0B6 | ❌ |
+| MOVE_SUMMON | CSummonedPool::OnMove |  | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0BE | ❌ | 0x118 | ❌ | 0x0B7 | ❌ |
+| SUMMON_ATTACK | CSummonedPool::OnAttack |  | 0x0B2 | ❌ | 0x0B6 | ❌ | 0x0BF | ❌ | 0x119 | ❌ | 0x0B8 | ❌ |
+| DAMAGE_SUMMON | CSummonedPool::OnHit |  | 0x0B3 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x11B | ❌ | 0x0B9 | ❌ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0BB | ❌ |  | ⬜ |
-| SUMMON_SKILL | CSummonedPool::OnSkill |  | 0x0B4 | ❌ | 0x0B4 | ❌ | 0x0C1 | ❌ | 0x11A | ❌ | 0x0BA | ❌ |
-| SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B5 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
-| MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
-| REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0B7 | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
+| SUMMON_SKILL | CSummonedPool::OnSkill |  | 0x0B4 | ❌ | 0x0B7 | ❌ | 0x0C1 | ❌ | 0x11A | ❌ | 0x0BA | ❌ |
+| SPAWN_DRAGON | CDragon::OnCreated |  | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
+| MOVE_DRAGON | CDragon::OnMove |  | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
+| REMOVE_DRAGON | CUser::OnDragonPacket |  | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) | 0x0B9 | ✅ | 0x0BD | ❌ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ❌ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
 | RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ✅ |
@@ -682,18 +682,18 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | UNNAMED_R288 |  |  | 0x0AD | ❌ |  | ⬜ | 0x0B9 | ❌ | 0x0CD | ❌ | 0x0B0 | ❌ |
 | UNNAMED_R289 |  |  | 0x0AE | ❌ |  | ⬜ | 0x0BA | ❌ | 0x0CE | ❌ | 0x0B1 | ❌ |
-| MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive |  | 0x0AF | ❌ | 0x0AF | ❌ | 0x0BB | ❌ | 0x0CF | ❌ | 0x0B2 | ❌ |
+| MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; CVecCtrlSummoned__EndUpdateActive_send_0xB4 |  | 0x0AF | ❌ | 0x0B4 | ❌ | 0x0BB | ❌ | 0x0CF | ❌ | 0x0B2 | ❌ |
 | OP_BOARD_HAS_NEW | CWvsContext::CheckOpBoardHasNew |  |  | ⬜ |  | ⬜ | 0x0AF | ❌ | 0x0C0 | ❌ | 0x0A8 | ❌ |
 | ACCOUNT_MORE_INFO | CUIAccountMoreInfo::SendLoadAccountMoreInfoRequest; CUIAccountMoreInfo::SendSaveAccountMoreInfoRequest |  |  | ⬜ |  | ⬜ | 0x0B0 | ❌ | 0x0C1 | ❌ |  | ⬜ |
-| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack |  | 0x0B0 | ❌ | 0x0B0 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
-| DAMAGE_SUMMON | CSummoned::SetDamaged |  | 0x0B1 | ❌ | 0x0B1 | ❌ | 0x0BD | ❌ | 0x0D1 | ❌ | 0x0B4 | ❌ |
-| BEHOLDER | CSummoned::TryDoingGiveBuff; CSummoned::TryDoingHeal; CSummoned::TryDoingHealingRobot; CSummoned::TryDoingSummon |  | 0x0B2 | ❌ | 0x0B2 | ❌ | 0x0BE | ❌ | 0x0D2 | ❌ | 0x0B5 | ❌ |
+| SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; CSummoned__AttackToTargetMob_send_0xB5 |  | 0x0B0 | ❌ | 0x0B5 | ❌ | 0x0BC | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
+| DAMAGE_SUMMON | CSummoned::SetDamaged; CSummoned__SetDamaged_send_0xB6 |  | 0x0B1 | ❌ | 0x0B6 | ❌ | 0x0BD | ❌ | 0x0D1 | ❌ | 0x0B4 | ❌ |
+| BEHOLDER | CSummoned::TryDoingGiveBuff; CSummoned::TryDoingHeal; CSummoned::TryDoingHealingRobot; CSummoned::TryDoingSummon; CSummoned__TryDoingHeal_send_0xB7_BEHOLDER |  | 0x0B2 | ❌ | 0x0B7 | ❌ | 0x0BE | ❌ | 0x0D2 | ❌ | 0x0B5 | ❌ |
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  | 0x0B3 | ❌ | 0x0B3 | ❌ | 0x0BF | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
-| UNNAMED_R297 |  |  | 0x0B4 | ❌ | 0x0B4 | ❌ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
-| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive |  | 0x0B5 | ❌ | 0x0B5 | ❌ | 0x0C1 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
-| UNNAMED_R299 |  |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
-| CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap |  | 0x0B7 | ❌ | 0x0B7 | ❌ | 0x0C3 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
+| UNNAMED_R297 |  |  | 0x0B4 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
+| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive; CVecCtrlDragon__EndUpdateActive_send_0xBA |  | 0x0B5 | ❌ | 0x0BA | ❌ | 0x0C1 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
+| UNNAMED_R299 |  |  | 0x0B6 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
+| CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
 | AUTO_AGGRO | CMob::ApplyControl |  | 0x0BD | ❌ | 0x0BD | ❌ | 0x0C9 | ❌ | 0x0E4 | ❌ | 0x0C3 | ❌ |
 | MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest | monster/serverbound/MonsterMobDropPickupRequest (T1) | 0x0BE | ✅ | 0x0C3 | ✅ | 0x0CA | ✅ | 0x0E5 | ✅ | 0x0C4 | ✅ |

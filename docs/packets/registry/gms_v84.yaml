@@ -1014,100 +1014,132 @@
   note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xAA (170) -> CUser::ShowItemUpgradeEffect. v83 inherited 167 was stale.
 - op: SPAWN_PET
   direction: clientbound
-  opcode: 168
+  opcode: 171
   fname: CUser::OnPetPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher CUserPool__OnPetActionPacket_recv_0xAB_0xB2 case 171 (0xAB) -> OnPetActivated+PetInterAct.'
+  ida:
+    address: 9896284
 - op: EVOLVE_PET
   direction: clientbound
-  opcode: 169
+  opcode: 172
   fname: CUser::OnPetPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 172 (0xAC) -> OnPetEvol.'
+  ida:
+    address: 9896284
 - op: MOVE_PET
   direction: clientbound
-  opcode: 170
+  opcode: 174
   fname: CPet::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 174 (0xAE) -> CPet::OnMove (case 173=PET_ACTIVATED unused -> +4 vs v83).'
+  ida:
+    address: 9896284
 - op: PET_CHAT
   direction: clientbound
-  opcode: 171
+  opcode: 175
   fname: CPet::OnAction
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 175 (0xAF) -> CPet::OnAction.'
+  ida:
+    address: 9896284
 - op: PET_NAMECHANGE
   direction: clientbound
-  opcode: 172
-  fname: CPet::OnNameChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 176
+  fname: CPet__OnNameChanged_recv_0xB0
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003).'
+  ida:
+    address: 7474982
 - op: PET_EXCEPTION_LIST
   direction: clientbound
-  opcode: 173
+  opcode: 177
   fname: CPet::OnLoadExceptionList
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 177 (0xB1) -> CPet::OnLoadExceptionList.'
+  ida:
+    address: 9896284
 - op: PET_COMMAND
   direction: clientbound
-  opcode: 174
+  opcode: 178
   fname: CPet::OnActionCommand
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 178 (0xB2) -> CPet::OnActionCommand.'
+  ida:
+    address: 9896284
 - op: SPAWN_SPECIAL_MAPOBJECT
   direction: clientbound
-  opcode: 175
+  opcode: 179
   fname: CSummonedPool::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 179 (0xB3) -> create/spawn.'
+  ida:
+    address: 9896449
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
-  opcode: 176
+  opcode: 180
   fname: CSummonedPool::OnPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 180 (0xB4) -> remove.'
+  ida:
+    address: 9896449
 - op: MOVE_SUMMON
   direction: clientbound
-  opcode: 177
+  opcode: 181
   fname: CSummonedPool::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 181 (0xB5) -> OnMove (sub_7CC317->CMovePath::OnMovePacket).'
+  ida:
+    address: 9896449
 - op: SUMMON_ATTACK
   direction: clientbound
-  opcode: 178
+  opcode: 182
   fname: CSummonedPool::OnAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 182 (0xB6) -> OnAttack (sub_7CC338).'
+  ida:
+    address: 9896449
 - op: DAMAGE_SUMMON
   direction: clientbound
-  opcode: 179
+  opcode: 184
   fname: CSummonedPool::OnHit
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 184 (0xB8) -> OnHit (sub_7CC984: Decode1 idx/Decode4 dmg/Decode4 template).'
+  ida:
+    address: 9896449
 - op: SUMMON_SKILL
   direction: clientbound
-  opcode: 180
+  opcode: 183
   fname: CSummonedPool::OnSkill
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummonedPool dispatcher sub_970201 case 183 (0xB7) -> OnSkill (sub_7CC920; v95 dispatch order Skill before Hit).'
+  ida:
+    address: 9896449
 - op: SPAWN_DRAGON
   direction: clientbound
-  opcode: 181
+  opcode: 185
   fname: CDragon::OnCreated
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 185 (0xB9) -> spawn (sub_506F85); v95 CUser::OnDragonPacket 206.'
+  ida:
+    address: 9897145
 - op: MOVE_DRAGON
   direction: clientbound
-  opcode: 182
+  opcode: 186
   fname: CDragon::OnMove
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 186 (0xBA) -> CDragon::OnMove (sub_507AC6); v95 OnDragonPacket 207.'
+  ida:
+    address: 9897145
 - op: REMOVE_DRAGON
   direction: clientbound
-  opcode: 183
+  opcode: 187
   fname: CUser::OnDragonPacket
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. reserved third dragon slot 187 (0xBB) in outer dispatcher CUserPool::OnUserCommonPacket range 185-187 (sub_9704B9 handles 185/186 only; v95 has no distinct remove opcode) — opcode inferred from reserved range, identity UNVERIFIED.'
+  ida:
+    address: 10167201
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 189
@@ -3460,65 +3492,77 @@
   note: 'v84 send-opcode verified from IDB COutPacket literal (task-085 reconcile): CPet::SendUpdateExceptionListRequest constructs COutPacket(177). v83 172.'
 - op: MOVE_SUMMON
   direction: serverbound
-  opcode: 175
-  fname: CVecCtrlSummoned::EndUpdateActive
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 180
+  fname: CVecCtrlSummoned__EndUpdateActive_send_0xB4
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlSummoned::EndUpdateActive (v84 fn 0xa0fd89) COutPacket(180,0xB4) Encode4(summonedID)+MovePath::Flush; body match v95 0x9a0700 COutPacket(207).'
+  ida:
+    address: 10550665
 - op: SUMMON_ATTACK
   direction: serverbound
-  opcode: 176
-  fname: CSummoned::AttackToTargetMob
+  opcode: 181
+  fname: CSummoned__AttackToTargetMob_send_0xB5
   fname_alts:
     - CSummoned::TryDoingAttackManual
     - CSummoned::TryDoingTaslaCoilAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::AttackToTargetMob (v84 fn 0x7c99cf) COutPacket(181,0xB5); body match v95 0x7501d0 COutPacket(208): DR_check obfuscation + per-mob attack-info loop.'
+  ida:
+    address: 8165839
 - op: DAMAGE_SUMMON
   direction: serverbound
-  opcode: 177
-  fname: CSummoned::SetDamaged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 182
+  fname: CSummoned__SetDamaged_send_0xB6
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned::SetDamaged (v84 fn 0x7cbaf6) COutPacket(182,0xB6); body match v95 0x74b730 COutPacket(209): Encode4 id, if(mob) idx/dmg/template/dir else Encode1(0xFE)/dmg.'
+  ida:
+    address: 8174326
 - op: BEHOLDER
   direction: serverbound
-  opcode: 178
-  fname: CSummoned::TryDoingHeal
+  opcode: 183
+  fname: CSummoned__TryDoingHeal_send_0xB7_BEHOLDER
   fname_alts:
     - CSummoned::TryDoingGiveBuff
     - CSummoned::TryDoingHealingRobot
     - CSummoned::TryDoingSummon
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CSummoned beholder-heal (v84 fn 0x7cb74f) COutPacket(183,0xB7) Encode4 id + Encode4 0x142449 + Encode1 action; body match v95 0x74ad90 COutPacket(210) (assistType==2, skill 1320008/9).'
+  ida:
+    address: 8173391
 - op: UNNAMED_R296
   direction: serverbound
   opcode: 179
   fname: ""
   provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 296: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Left at 179 (0xB3); free after summon/dragon reshift. v84 opcode UNVERIFIED; identity unknown.'
 - op: UNNAMED_R297
   direction: serverbound
-  opcode: 180
+  opcode: 184
   fname: ""
   provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 297: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Displaced from 180 (now MOVE_SUMMON) to free slot 184 (0xB8). v84 opcode UNVERIFIED; placeholder slot only.'
 - op: MOVE_DRAGON
   direction: serverbound
-  opcode: 181
-  fname: CVecCtrlDragon::EndUpdateActive
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 186
+  fname: CVecCtrlDragon__EndUpdateActive_send_0xBA
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlDragon::EndUpdateActive (v84 fn 0x9ff057) COutPacket(186,0xBA)+MovePath::Flush; body match v95 0x996570 COutPacket(214). Displaced from stale 181 by serverbound summon reshift.'
+  ida:
+    address: 10481751
 - op: UNNAMED_R299
   direction: serverbound
-  opcode: 182
+  opcode: 185
   fname: ""
   provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 299: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Displaced from 182 (now DAMAGE_SUMMON) to free slot 185 (0xB9). v84 opcode UNVERIFIED; placeholder slot only.'
 - op: CHANGE_QUICKSLOT
   direction: serverbound
-  opcode: 183
-  fname: CQuickslotKeyMappedMan::SaveQuickslotKeyMap
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 188
+  fname: CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC
+  provenance: ida-discovered
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CQuickslotKeyMappedMan::SaveQuickslotKeyMap (v84 fn 0x748c53, was mislabeled CMob__send_0xBC_cachedMove) COutPacket(188,0xBC) EncodeBuffer 0x20; body match v95 0x6c60a0 COutPacket(216). Displaced from stale 183.'
+  ida:
+    address: 7638099
 - op: MOVE_LIFE
   direction: serverbound
   opcode: 193

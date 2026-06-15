@@ -1816,7 +1816,7 @@
         }
       },
       {
-        "opCode": "0xAD",
+        "opCode": "0xAE",
         "writer": "PetMovement",
         "options": {
           "types": [
@@ -1920,15 +1920,15 @@
         }
       },
       {
-        "opCode": "0xAE",
+        "opCode": "0xAF",
         "writer": "PetChat"
       },
       {
-        "opCode": "0xB0",
+        "opCode": "0xB1",
         "writer": "PetExcludeResponse"
       },
       {
-        "opCode": "0xB1",
+        "opCode": "0xB2",
         "writer": "PetCommandResponse"
       },
       {

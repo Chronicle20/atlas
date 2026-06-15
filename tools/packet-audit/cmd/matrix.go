@@ -77,11 +77,12 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		return exitRuntime
 	}
 	in := matrix.Inputs{Registry: reg,
-		Reports:  map[string]map[string]matrix.LoadedReport{},
-		Routed:   map[string]map[matrix.RouteKey]bool{},
-		Evidence: map[matrix.EvKey]matrix.EvidenceStatus{},
-		Tier1:    map[string]bool{},
-		Markers:  map[matrix.EvKey]matrix.MarkerStatus{},
+		Reports:     map[string]map[string]matrix.LoadedReport{},
+		Routed:      map[string]map[matrix.RouteKey]bool{},
+		RoutedNames: map[string]map[matrix.RouteKey]string{},
+		Evidence:    map[matrix.EvKey]matrix.EvidenceStatus{},
+		Tier1:       map[string]bool{},
+		Markers:     map[matrix.EvKey]matrix.MarkerStatus{},
 	}
 	hashes := map[string]string{}
 	exportPaths := map[string]string{}
@@ -102,13 +103,16 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "packet-audit matrix: error loading template for %s: %v\n", vk, err)
 			return exitRuntime
 		} else {
-			for op := range t.Writers() {
+			in.RoutedNames[vk] = map[matrix.RouteKey]string{}
+			for op, name := range t.Writers() {
 				k := matrix.RouteKey{Opcode: op, Dir: opregistry.DirClientbound}
 				in.Routed[vk][k] = true
+				in.RoutedNames[vk][k] = name
 			}
-			for op := range t.Handlers() {
+			for op, name := range t.Handlers() {
 				k := matrix.RouteKey{Opcode: op, Dir: opregistry.DirServerbound}
 				in.Routed[vk][k] = true
+				in.RoutedNames[vk][k] = name
 			}
 		}
 		ep := exportPathIn(o.ExportsDir, vk)

@@ -42,6 +42,13 @@ type Inputs struct {
 	Reports       map[string]map[string]LoadedReport // version -> WriterName -> report
 	FNameToWriter map[string]map[string]string       // version -> FName -> WriterName (built from Reports)
 	Routed        map[string]map[RouteKey]bool       // version -> routed (opcode, dir)
+	// RoutedNames carries the writer/handler NAME a template routes each
+	// (opcode, dir) to. Used to make the cross-version routedElsewhere signal
+	// op-identity-aware: an opcode coincidentally occupied by a DIFFERENT op in
+	// another version must not count as routing this op (design §10.1: avoid
+	// raw-opcode-coincidence false conflicts). May be empty; when a key is
+	// absent the routedElsewhere check falls back to opcode-occupancy.
+	RoutedNames map[string]map[RouteKey]string
 	Evidence      map[EvKey]EvidenceStatus
 	Tier1         map[string]bool // packet id -> tier-1
 	Markers       map[EvKey]MarkerStatus

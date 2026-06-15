@@ -7,6 +7,16 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
+// contains reports whether s is present in xs.
+func contains(xs []string, s string) bool {
+	for _, x := range xs {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
 // baseFName strips the per-case suffix: "CWvsContext::OnFriendResult#Invite"
 // -> "CWvsContext::OnFriendResult".
 func baseFName(idaName string) string {
@@ -66,9 +76,28 @@ func Build(in Inputs, versionKeys []string) Matrix {
 			if !ok {
 				continue // op absent in this version → not routed here
 			}
-			if in.Routed[vk][RouteKey{e.Opcode, od.Dir}] {
-				routedVersions[vk] = true
+			rk := RouteKey{e.Opcode, od.Dir}
+			if !in.Routed[vk][rk] {
+				continue
 			}
+			// Op-identity guard: when the template's name at this opcode is known
+			// AND this version maps the op's FName to a specific writer (i.e. Atlas
+			// implements the op here), require the routed name to be that writer.
+			// This rejects raw-opcode coincidences where the opcode is occupied by a
+			// DIFFERENT op in this version (e.g. a serverbound WEDDING_ACTION opcode
+			// that happens to equal a CharacterKeyMapChange handler slot in v84),
+			// which would otherwise fabricate a routedElsewhere → template-wiring
+			// conflict for the unrelated versions. Falls back to opcode-occupancy
+			// when either name is unknown, preserving prior behavior for every op
+			// that does not have this collision.
+			if rn, hasRN := in.RoutedNames[vk]; hasRN {
+				if want, okW := fnameWriters[vk][e.FName]; okW && len(want) > 0 {
+					if got := rn[rk]; got != "" && !contains(want, got) {
+						continue // opcode routed to a different op — not this one
+					}
+				}
+			}
+			routedVersions[vk] = true
 		}
 
 		for _, vk := range versionKeys {

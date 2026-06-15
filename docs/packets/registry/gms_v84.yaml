@@ -368,10 +368,12 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: GUILD_OPERATION
   direction: clientbound
-  opcode: 65
+  opcode: 67
   fname: CWvsContext::OnGuildResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11021867
+  note: 'task-100 cluster-1: v84 opcode corrected 65->67 (0x43) by READING the v84 dispatcher. CWvsContext::OnPacket @0xa51cd0 case 0x43 -> OnGuildResult (0xa82e2b). v95 PDB has OnGuildResult at dispatcher case 67 (same identity). Prior csv value 65 (0x41) was the stale v83 opcode (now owned by BUDDYLIST/OnFriendResult @case 0x41).'
 - op: ALLIANCE_OPERATION
   direction: clientbound
   opcode: 66
@@ -446,10 +448,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: SET_POTION_DISCOUNT_RATE
   direction: clientbound
-  opcode: 78
+  opcode: 80
   fname: CWvsContext::OnSetPotionDiscountRate
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10919286
+  note: 'task-100 cluster-1: v84 opcode corrected 78->80 (0x50) by READING the v84 dispatcher. CWvsContext::OnPacket @0xa51cd0 case 0x50 -> sub_A69D76 (renamed OnSetPotionDiscountRate); body Decode1 -> store, structural twin of v95 OnSetPotionDiscountRate (dispatcher case 81). +2 shift vs v83 in this neighborhood. Prior csv value 78 (0x4E) was the stale v83 opcode (now owned by CASH_PET_FOOD_RESULT @case 0x4E).'
 - op: BRIDLE_MOB_CATCH_FAIL
   direction: clientbound
   opcode: 81
@@ -494,16 +498,20 @@
   note: 'task-092 Cluster-C: v84 opcode corrected 84->86 (0x56). CWvsContext::OnPacket @0xa51cd0 case 0x56 -> OnMonsterBookSetCover (sub_A525C3). +2 shift vs v83. Stale csv value 84 (0x54) was the v83 opcode.'
 - op: HOUR_CHANGED
   direction: clientbound
-  opcode: 85
+  opcode: 87
   fname: CWvsContext::OnHourChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10823141
+  note: 'task-100 cluster-1: v84 opcode corrected 85->87 (0x57) by READING the v84 dispatcher. CWvsContext::OnPacket @0xa51cd0 case 0x57 -> sub_A525E5 (renamed OnHourChanged); body Decode2;Decode2 -> CDayOfWeek singleton SetCurrentDay, structural twin of v95 OnHourChanged (dispatcher case 88). +2 shift vs v83. Prior csv value 85 (0x55) was the stale v83 opcode (now owned by MONSTER_BOOK_SET_CARD @case 0x55).'
 - op: MINIMAP_ON_OFF
   direction: clientbound
-  opcode: 86
+  opcode: 88
   fname: CWvsContext::OnMiniMapOnOff
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10866218
+  note: 'task-100 cluster-1: v84 opcode corrected 86->88 (0x58) by READING the v84 dispatcher. CWvsContext::OnPacket @0xa51cd0 case 0x58 -> sub_A5CE2A (renamed OnMiniMapOnOff); body Decode1 -> store + minimap reload, structural twin of v95 OnMiniMapOnOff (dispatcher case 89). +2 shift vs v83. Prior csv value 86 (0x56) was the stale v83 opcode (now owned by MONSTER_BOOK_SET_COVER @case 0x56).'
 - op: CONSULT_AUTHKEY_UPDATE
   direction: clientbound
   opcode: 87
@@ -3180,16 +3188,20 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: ADD_FAMILY
   direction: serverbound
-  opcode: 147
+  opcode: 151
   fname: CWvsContext::SendRegisterJunior
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11008636
+  note: 'task-100 cluster-1: v84 opcode corrected 147->151 (0x97) by READING the real send-site. v84 sub_A7FA7C (renamed SendRegisterJunior) m_FamilyInfo guard (this[3625]) + strcmp(name) + COutPacket(151) + EncodeStr(name), else StringPool::GetString(4602) Notice — structural twin of v83 SendRegisterJunior @0xa340f6 (COutPacket(0x93=147)) and v95 SendRegisterJunior @0xa09dd0 (COutPacket(171)). Family serverbound block is +4 vs v83 (149/151/152/153 = ChartRequest/RegisterJunior/UnregisterJunior/UnregisterParent). Prior csv value 147 (0x93) was the stale v83 opcode (now owned by ALLIANCE_OPERATION send-site).'
 - op: SEPARATE_FAMILY_BY_SENIOR
   direction: serverbound
-  opcode: 148
+  opcode: 152
   fname: CWvsContext::SendUnregisterJunior
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 11008855
+  note: 'task-100 cluster-1: v84 opcode corrected 148->152 (0x98) by READING the real send-site. v84 sub_A7FB57 (renamed SendUnregisterJunior) m_FamilyInfo guard (this[3625]) + COutPacket(152) + Encode4(charID) — structural twin of v83 sub_A341D1 (COutPacket(0x94=148)+Encode4) and v95 SendUnregisterJunior @0xa099e0 (COutPacket(172)+Encode4). Family serverbound block is +4 vs v83. Prior csv value 148 (0x94) was the stale v83 opcode (now owned by DENY_ALLIANCE_REQUEST / the alliance reshift).'
 - op: SEPARATE_FAMILY_BY_JUNIOR
   direction: serverbound
   opcode: 149

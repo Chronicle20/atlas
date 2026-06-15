@@ -82,7 +82,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyChangeLeader (T1) | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
 | BUDDYLIST | CWvsContext::OnFriendResult | buddy/clientbound/BuddyCapacityUpdate (T1) | 0x03F | ✅ | 0x041 | ❌ | 0x041 | ✅ | 0x041 | ✅ | 0x039 | ✅ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
-| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
+| GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
@@ -100,7 +100,7 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | IDA_0X04D | sub_AECC23 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04D | ❌ |
 | SET_WEEK_EVENT_MESSAGE | CWvsContext::OnSetWeekEventMessage |  | 0x04D | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x050 | ❌ | 0x047 | ❌ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
-| SET_POTION_DISCOUNT_RATE | CWvsContext::OnSetPotionDiscountRate |  | 0x04E | ❌ | 0x04E | ❌ | 0x050 | ❌ | 0x051 | ❌ | 0x048 | ❌ |
+| SET_POTION_DISCOUNT_RATE | CWvsContext::OnSetPotionDiscountRate |  | 0x04E | ❌ | 0x050 | ❌ | 0x050 | ❌ | 0x051 | ❌ | 0x048 | ❌ |
 | BRIDLE_MOB_CATCH_FAIL | CWvsContext::OnBridleMobCatchFail | character/clientbound/CharacterBridleMobCatchFail (T1) | 0x04F | ✅ | 0x051 | ✅ | 0x051 | ✅ | 0x052 | ✅ | 0x049 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | IDA_0X050 | sub_AF879C |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ |
@@ -113,8 +113,8 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | MONSTER_BOOK_SET_CARD | CWvsContext::OnMonsterBookSetCard | character/clientbound/monsterbook/CharacterSetCard (T1) | 0x053 | ✅ | 0x055 | ✅ | 0x055 | ✅ | 0x056 | ✅ | 0x057 | ✅ |
 | IDA_0X054 | sub_AEC922 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ |
 | MONSTER_BOOK_SET_COVER | CWvsContext::OnMonsterBookSetCover | character/clientbound/monsterbook/CharacterSetCover (T1) | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x057 | ✅ | 0x058 | ✅ |
-| HOUR_CHANGED | CWvsContext::OnHourChanged |  | 0x055 | ❌ | 0x055 | ❌ | 0x057 | ❌ | 0x058 | ❌ |  | ⬜ |
-| MINIMAP_ON_OFF | CWvsContext::OnMiniMapOnOff |  | 0x056 | ❌ | 0x056 | ❌ | 0x058 | ❌ | 0x059 | ❌ | 0x05D | ❌ |
+| HOUR_CHANGED | CWvsContext::OnHourChanged |  | 0x055 | ❌ | 0x057 | ❌ | 0x057 | ❌ | 0x058 | ❌ |  | ⬜ |
+| MINIMAP_ON_OFF | CWvsContext::OnMiniMapOnOff |  | 0x056 | ❌ | 0x058 | ❌ | 0x058 | ❌ | 0x059 | ❌ | 0x05D | ❌ |
 | CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  | 0x057 | ❌ | 0x057 | ❌ | 0x059 | ❌ | 0x05A | ❌ | 0x05E | ❌ |
 | CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  | 0x058 | ❌ | 0x058 | ❌ | 0x05A | ❌ | 0x05B | ❌ | 0x05F | ❌ |
 | IDA_0X059 | CWvsContext::OnMapleTVUseRes |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x059 | ❌ |
@@ -651,8 +651,8 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | DENY_ALLIANCE_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult |  | 0x090 | ❌ | 0x094 | ❌ | 0x098 | ❌ |  | ⬜ |  | ⬜ |
 | OPEN_FAMILY_PEDIGREE | CWvsContext::SendFamilyChartRequest |  | 0x091 | ❌ | 0x091 | ❌ | 0x099 | ❌ | 0x0A9 | ❌ | 0x093 | ❌ |
 | OPEN_FAMILY | CWvsContext::SendFamilyInfoRequest |  | 0x092 | ❌ | 0x092 | ❌ | 0x09A | ❌ | 0x0AA | ❌ | 0x094 | ❌ |
-| ADD_FAMILY | CWvsContext::SendRegisterJunior |  | 0x093 | ❌ | 0x093 | ❌ | 0x09B | ❌ | 0x0AB | ❌ | 0x095 | ❌ |
-| SEPARATE_FAMILY_BY_SENIOR | CWvsContext::SendUnregisterJunior |  | 0x094 | ❌ | 0x094 | ❌ | 0x09C | ❌ | 0x0AC | ❌ | 0x096 | ❌ |
+| ADD_FAMILY | CWvsContext::SendRegisterJunior |  | 0x093 | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0AB | ❌ | 0x095 | ❌ |
+| SEPARATE_FAMILY_BY_SENIOR | CWvsContext::SendUnregisterJunior |  | 0x094 | ❌ | 0x098 | ❌ | 0x09C | ❌ | 0x0AC | ❌ | 0x096 | ❌ |
 | SEPARATE_FAMILY_BY_JUNIOR | CWvsContext::SendUnregisterParent |  | 0x095 | ❌ | 0x095 | ❌ | 0x09D | ❌ | 0x0AD | ❌ | 0x097 | ❌ |
 | ACCEPT_FAMILY | CWvsContext::SendFamilyInviteResult |  | 0x096 | ❌ | 0x096 | ❌ | 0x09E | ❌ | 0x0AE | ❌ | 0x098 | ❌ |
 | USE_FAMILY | CWvsContext::SendUseFamilyPrivilege |  | 0x097 | ❌ | 0x097 | ❌ | 0x09F | ❌ | 0x0AF | ❌ | 0x099 | ❌ |

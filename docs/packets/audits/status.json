@@ -1,11 +1,11 @@
 {
-  "toolSha": "205f0d23af55f109c372527e51aabdda3d5ee10d",
+  "toolSha": "e2e12c65dd33a0c58ed192860f1892e9b4aa4a80",
   "exportHashes": {
-    "gms_v83": "bb4ff520e23e28c58e3f7c3bd1c86417e2f8b363a08234338c2b608cb299aa0a",
-    "gms_v84": "4548e1a3e627309d2907771a90fdfe0fbd5560cb7510d926300f5b3e5533b5b7",
-    "gms_v87": "5038b5034bbb53cdf67a3a331604feedd6311fbfc08bbce52f00b69ecd5cbd0f",
-    "gms_v95": "2ff604e6a3ad081618cd0ba9d79434fc9f9905574de9813ac87c3489b526b629",
-    "jms_v185": "7778baeff40ccf5b0d4cb6f36df5b07c0ac4bdd47c3e15810af16852cb08a8e0"
+    "gms_v83": "4f3a6be73d33bf81675884da16da3dc366dcee3bb055bf82b14a9c78fec0c65a",
+    "gms_v84": "062e0c075a5ab844824bed6a8aaf656d544c14dbc1ca9bd3e9ca3d83b10361e4",
+    "gms_v87": "a980a39965a5374cac982ba658f40f673344e04708fd55315054a0dcaa3e7486",
+    "gms_v95": "7761b4882585ddf881bc700e184ab263ad8b47096da910131d9eb41fb89f22fa",
+    "jms_v185": "e496295ef1872beddbb11c0d6bac3fea53f91fd41e77f6f22aafd527e0c4135a"
   },
   "rows": [
     {
@@ -10038,18 +10038,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 126
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 126
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 134
         },
         "gms_v95": {
@@ -11803,18 +11800,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 142
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 142
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 150
         },
         "gms_v95": {
@@ -11929,36 +11923,32 @@
     {
       "kind": "op",
       "op": "ADMIN_RESULT",
+      "packet": "field/clientbound/FieldAdminResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnAdminResult",
         "sub_57255F"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 144
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 147
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 152
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 160
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 141
         }
       }
@@ -12541,8 +12531,9 @@
     {
       "kind": "op",
       "op": "IDA_0X098",
+      "packet": "field/clientbound/FieldStalkResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnStalkResult"
       ],
@@ -12564,8 +12555,7 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 152
         }
       }
@@ -12811,16 +12801,16 @@
     {
       "kind": "op",
       "op": "IDA_0X09C",
+      "packet": "field/clientbound/FieldStalkResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnFootHoldInfo",
         "CField::OnStalkResult"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 156
         },
         "gms_v84": {
@@ -13054,18 +13044,15 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 159
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 159
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 167
         },
         "gms_v95": {
@@ -13455,8 +13442,9 @@
     {
       "kind": "op",
       "op": "IDA_0X0A4",
+      "packet": "field/clientbound/FieldStalkResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnStalkResult"
       ],
@@ -13470,8 +13458,7 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 164
         },
         "gms_v95": {
@@ -14220,8 +14207,9 @@
     {
       "kind": "op",
       "op": "IDA_0X0AC",
+      "packet": "field/clientbound/FieldStalkResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnStalkResult",
         "CUser::ShowRecoverUpgradeCountEffect"
@@ -14240,8 +14228,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 172
         },
         "jms_v185": {
@@ -22996,35 +22983,31 @@
     {
       "kind": "op",
       "op": "LEFT_KNOCK_BACK",
+      "packet": "field/clientbound/FieldSnowballTouch",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_SnowBall::OnSnowBallTouch"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 284
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 284
+          "state": "verified",
+          "opcode": 291
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 301
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 341
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 308
         }
       }

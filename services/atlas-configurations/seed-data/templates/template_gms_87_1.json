@@ -1677,7 +1677,7 @@
         "writer": "MonsterCarnivalResult"
       },
       {
-        "opCode": "0x13E",
+        "opCode": "0x13F",
         "writer": "HorntailCave"
       },
       {
@@ -1729,7 +1729,7 @@
         "writer": "WeddingCeremonyEnd"
       },
       {
-        "opCode": "0x13F",
+        "opCode": "0x13E",
         "writer": "WitchTowerScoreUpdate"
       },
       {

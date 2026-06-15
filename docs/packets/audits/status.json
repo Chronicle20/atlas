@@ -23766,38 +23766,6 @@
     },
     {
       "kind": "op",
-      "op": "HORNTAIL_CAVE",
-      "packet": "field/clientbound/FieldHorntailCave",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnHontailTimer"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 301
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 309
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 318
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 361
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 325
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "UNNAMED_R411",
       "direction": "serverbound",
       "tier1": false,
@@ -23827,6 +23795,71 @@
     },
     {
       "kind": "op",
+      "op": "WITCH_TOWER_SCORE_UPDATE",
+      "packet": "field/clientbound/FieldWitchTowerScoreUpdate",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnChaosZakumTimer",
+        "CField_Witchtower::OnScoreUpdate"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 301
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 308
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 318
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 360
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 326
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "HORNTAIL_CAVE",
+      "packet": "field/clientbound/FieldHorntailCave",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnHontailTimer"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 302
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 309
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 319
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 361
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 325
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "UNNAMED_R412",
       "direction": "serverbound",
       "tier1": false,
@@ -23851,39 +23884,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "WITCH_TOWER_SCORE_UPDATE",
-      "packet": "field/clientbound/FieldWitchTowerScoreUpdate",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnChaosZakumTimer",
-        "CField_Witchtower::OnScoreUpdate"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 302
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 308
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 319
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 360
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 326
         }
       }
     },

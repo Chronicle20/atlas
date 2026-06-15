@@ -402,8 +402,8 @@ Tool: `143b45c92a0cf95588ef49e60d5acba848ddef24`
 | SHEEP_RANCH_INFO | CField_Battlefield::OnScoreUpdate | field/clientbound/FieldSheepRanchInfo (T1) | 0x12B | ✅ | 0x132 | ✅ | 0x13C | ✅ | 0x164 | ✅ | 0x143 | ✅ |
 | IDA_0X12C | sub_5FDCF1 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12C | ❌ |
 | SHEEP_RANCH_CLOTHES | CField_Battlefield::OnTeamChanged | field/clientbound/FieldSheepRanchClothes (T1) | 0x12C | ✅ | 0x133 | ✅ | 0x13D | ✅ | 0x165 | ✅ | 0x144 | ✅ |
-| HORNTAIL_CAVE | CField::OnHontailTimer | field/clientbound/FieldHorntailCave (T1) | 0x12D | ✅ | 0x135 | ✅ | 0x13E | ✅ | 0x169 | ✅ | 0x145 | ✅ |
-| WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) | 0x12E | ✅ | 0x134 | ✅ | 0x13F | ✅ | 0x168 | ✅ | 0x146 | ✅ |
+| WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x168 | ✅ | 0x146 | ✅ |
+| HORNTAIL_CAVE | CField::OnHontailTimer | field/clientbound/FieldHorntailCave (T1) | 0x12E | ✅ | 0x135 | ✅ | 0x13F | ✅ | 0x169 | ✅ | 0x145 | ✅ |
 | ZAKUM_SHRINE | CField::OnZakumTimer | field/clientbound/FieldZakumShrine (T1) | 0x12F | ✅ | 0x136 | ✅ | 0x140 | ✅ | 0x16A | ✅ | 0x148 | ✅ |
 | MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ✅ | 0x110 | ✅ |
 | NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x130 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |

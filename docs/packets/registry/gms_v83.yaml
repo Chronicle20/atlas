@@ -1459,14 +1459,20 @@
   provenance: csv-import
 - op: HORNTAIL_CAVE
   direction: clientbound
-  opcode: 301
+  opcode: 302
   fname: CField::OnHontailTimer
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5453731
+  note: 'task-096: CSV-import swap corrected 301->302 (0x12E). IDA v83 CField::OnPacket (0x531325) routes nType==0x12E -> CField::OnHontailTimer (0x5335a3). The CSV GMS v83 column had HORNTAIL/WITCH transposed (HORNTAIL listed at 0x12D, the witch-tower opcode).'
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
-  opcode: 302
+  opcode: 301
   fname: CField_Witchtower::OnScoreUpdate
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 5788281
+  note: 'task-096: CSV-import swap corrected 302->301 (0x12D). IDA v83 CField_Witchtower::OnPacket (0x585255) if-dispatches a2==0x12D -> CField_Witchtower::OnScoreUpdate (0x585279). The CSV GMS v83 column had HORNTAIL/WITCH transposed.'
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 303

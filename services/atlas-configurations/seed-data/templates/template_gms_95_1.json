@@ -295,9 +295,24 @@
         "handler": "NoteOperationHandle"
       },
       {
+        "opCode": "0x9C",
+        "validator": "LoggedInValidator",
+        "handler": "UseDoor"
+      },
+      {
         "opCode": "0x9F",
         "validator": "LoggedInValidator",
         "handler": "CharacterKeyMapChangeHandle"
+      },
+      {
+        "opCode": "0xA3",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingAction"
+      },
+      {
+        "opCode": "0xA4",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingTalk"
       },
       {
         "opCode": "0xB3",
@@ -397,6 +412,26 @@
       {
         "opCode": "0xF9",
         "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xFF",
+        "validator": "LoggedInValidator",
+        "handler": "Snowball"
+      },
+      {
+        "opCode": "0x100",
+        "validator": "LoggedInValidator",
+        "handler": "LeftKnockback"
+      },
+      {
+        "opCode": "0x101",
+        "validator": "LoggedInValidator",
+        "handler": "Coconut"
+      },
+      {
+        "opCode": "0x103",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBoss"
       },
       {
         "opCode": "0x106",

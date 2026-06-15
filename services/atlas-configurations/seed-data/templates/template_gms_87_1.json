@@ -425,6 +425,21 @@
         "handler": "NoteOperationHandle"
       },
       {
+        "opCode": "0x8D",
+        "validator": "LoggedInValidator",
+        "handler": "UseDoor"
+      },
+      {
+        "opCode": "0x93",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingAction"
+      },
+      {
+        "opCode": "0x94",
+        "validator": "LoggedInValidator",
+        "handler": "WeddingTalk"
+      },
+      {
         "opCode": "0xA3",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle"
@@ -721,6 +736,26 @@
         "opCode": "0xDA",
         "validator": "LoggedInValidator",
         "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xE0",
+        "validator": "LoggedInValidator",
+        "handler": "Snowball"
+      },
+      {
+        "opCode": "0xE1",
+        "validator": "LoggedInValidator",
+        "handler": "LeftKnockback"
+      },
+      {
+        "opCode": "0xE2",
+        "validator": "LoggedInValidator",
+        "handler": "Coconut"
+      },
+      {
+        "opCode": "0xE4",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBoss"
       },
       {
         "opCode": "0xE7",

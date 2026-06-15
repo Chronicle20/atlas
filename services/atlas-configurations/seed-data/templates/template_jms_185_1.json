@@ -419,6 +419,11 @@
         "handler": "NoteOperationHandle"
       },
       {
+        "opCode": "0x88",
+        "validator": "LoggedInValidator",
+        "handler": "UseDoor"
+      },
+      {
         "opCode": "0x9E",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply"
@@ -794,6 +799,26 @@
         "opCode": "0xD8",
         "validator": "LoggedInValidator",
         "handler": "ReactorHitHandle"
+      },
+      {
+        "opCode": "0xDE",
+        "validator": "LoggedInValidator",
+        "handler": "Snowball"
+      },
+      {
+        "opCode": "0xDF",
+        "validator": "LoggedInValidator",
+        "handler": "LeftKnockback"
+      },
+      {
+        "opCode": "0xE0",
+        "validator": "LoggedInValidator",
+        "handler": "Coconut"
+      },
+      {
+        "opCode": "0xE2",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBoss"
       },
       {
         "opCode": "0xE5",

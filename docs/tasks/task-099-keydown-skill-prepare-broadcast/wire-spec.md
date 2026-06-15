@@ -34,19 +34,16 @@ by the dispatcher, not by `OnSkillPrepare`'s body. Same for cancel.
 |----|-----|-----|-----|-----|--------|
 | serverbound prepare (`DoActiveSkill_Prepare`) | `0x5D` | `0x5D` | `0x60` | `0x69` | `0x58` |
 | serverbound cancel (`SendSkillCancelRequest`) | `0x5C` | `0x5C` | `0x5F` | `0x68` | `0x57` |
-| clientbound prepare (`OnSkillPrepare`, nType) | `0xBE` | `0xBE` | `0xCB` | `0xD7` | `0xC4` |
-| clientbound cancel (`OnSkillCancel`, nType) | `0xBF` | `0xBF` | `0xCC` | `0xD9` | `0xC5` |
+| clientbound prepare (`OnSkillPrepare`, nType) | `0xBE` | `0xC2` | `0xCB` | `0xD7` | `0xC4` |
+| clientbound cancel (`OnSkillCancel`, nType) | `0xBF` | `0xC3` | `0xCC` | `0xD9` | `0xC5` |
 
-Decimal cross-check vs registry: v83 (93/92/190/191), v84 (93/92/190/191),
+Decimal cross-check vs registry: v83 (93/92/190/191), v84 (93/92/194/195),
 v87 (96/95/203/204), v95 (105/104/215/217), jms185 (88/87/196/197). All match.
 
-> Note on the clientbound opcodes: the table lists the `nType` dispatch case
-> value, which is what the registry records and what selects the handler. v84's
-> dispatch table is internally shifted vs v83 (v84 attack = 190–193, prepare
-> nType = 194, cancel = 195 in `OnUserRemotePacket`), but the registry/CSV
-> opcode for v84 clientbound prepare/cancel is still 190/191 — i.e. the wire
-> opcode the server emits is `0xBE`/`0xBF`, identical to v83. The internal
-> dispatch-case renumber is a client-side detail, not the emitted opcode.
+> Note on v84 clientbound opcodes: the v84 clientbound opcode table is shifted
+> vs v83 (attacks occupy 0xBE–0xC1); prepare/cancel are 0xC2/0xC3 —
+> IDA-verified at :13337 (OnUserRemotePacket cases 194/195). Serverbound is
+> unshifted (0x5D/0x5C, v83-identical).
 
 ---
 
@@ -95,7 +92,7 @@ Wire = `charId u32` (read by `OnUserRemotePacket`) then the handler reads:
 | ver | nType/opcode | handler reads | source fname @ addr |
 |-----|--------------|---------------|---------------------|
 | v83 | `0xBE` | skillId u32, level u8, action u16, actionSpeed u8 | `CUserRemote::OnSkillPrepare` @ `0x980A81` |
-| v84 | `0xBE` (dispatch case 194) | skillId u32, level u8, action u16, actionSpeed u8 | `sub_9C0C5F` @ `0x9C0C5F` |
+| v84 | `0xC2` (dispatch case 194) | skillId u32, level u8, action u16, actionSpeed u8 | `sub_9C0C5F` @ `0x9C0C5F` |
 | v87 | `0xCB` | skillId u32, level u8, action u16, actionSpeed u8 | `CUserRemote::OnSkillPrepare` @ `0xA06135` |
 | v95 | `0xD7` | skillId u32, level u8, action u16, actionSpeed u8 | `CUserRemote::OnSkillPrepare` @ `0x953A30` |
 | jms185 | `0xC4` | skillId u32, level u8, action u16, actionSpeed u8 | `CUserRemote::OnSkillPrepare` @ `0xA53F49` |
@@ -112,7 +109,7 @@ Wire = `charId u32` (dispatcher) then handler reads:
 | ver | nType/opcode | handler reads | source fname @ addr |
 |-----|--------------|---------------|---------------------|
 | v83 | `0xBF` | skillId u32 | unnamed `sub_980BF5` @ `0x980BF5` (IDB left handler unnamed; registry records it as `OnSkillCancel` w/ alt `sub_980BF5`) |
-| v84 | `0xBF` (dispatch case 195) | skillId u32 | unnamed `sub_9C0DD3` @ `0x9C0DD3` |
+| v84 | `0xC3` (dispatch case 195) | skillId u32 | unnamed `sub_9C0DD3` @ `0x9C0DD3` |
 | v87 | `0xCC` | skillId u32 | `CUserRemote::OnSkillCancel` @ `0xA062B1` |
 | v95 | `0xD9` | skillId u32 | `CUserRemote::OnSkillCancel` @ `0x954600` |
 | jms185 | `0xC5` | skillId u32 | `CUserRemote::OnSkillCancel` @ `0xA540C4` |
@@ -130,8 +127,9 @@ op. There are no width changes and no field reordering. The only differences are
 1. **Opcode values shift per version** (see summary table). The serverbound and
    clientbound opcodes are version-specific and must be looked up per tenant;
    they are NOT derivable from one another.
-   - v83 == v84 for all four ops (`0x5D`/`0x5C`/`0xBE`/`0xBF`). Consistent with
-     task-083's "v84 ≡ v83" finding for this opcode region.
+   - v83 serverbound matches v84 (`0x5D`/`0x5C`). v84 clientbound is shifted
+     vs v83: prepare `0xC2` / cancel `0xC3` (v83 has `0xBE`/`0xBF`); the v84
+     opcode table is shifted by the attack-writer insertions at 0xBE–0xC1.
    - v87 sits at `0x60`/`0x5F`/`0xCB`/`0xCC`.
    - v95 sits at `0x69`/`0x68`/`0xD7`/`0xD9`.
    - jms185 sits at `0x58`/`0x57`/`0xC4`/`0xC5` (lower than the GMS line).
@@ -147,10 +145,11 @@ op. There are no width changes and no field reordering. The only differences are
    is uniform across all versions; the relay packet the server emits must lead
    with `charId u32`.
 
-4. **v84 internal dispatch-case renumber.** v84's `OnUserRemotePacket` uses case
-   labels 194/195 for prepare/cancel (vs v83's 190/191), but the emitted wire
-   opcode for v84 clientbound prepare/cancel is still `0xBE`/`0xBF` per the
-   registry. The internal case value is a client decode detail; emit `0xBE`/`0xBF`.
+4. **v84 clientbound opcode shift.** v84's `OnUserRemotePacket` uses case
+   labels 194/195 for prepare/cancel (vs v83's 190/191), and the emitted wire
+   opcodes are `0xC2`/`0xC3` — not `0xBE`/`0xBF` as in v83. The shift is due
+   to attack-writer insertions at 0xBE–0xC1 in the v84 clientbound table
+   (IDA-verified at :13337). Emit `0xC2`/`0xC3` for v84 prepare/cancel.
 
 No version diverges in a way that breaks the plan's "single relay shape +
 per-version opcode table" assumption. A shared codec parameterized by

@@ -731,6 +731,8 @@ func produceWriters() []string {
 		fieldcb.SetQuestTimeWriter,
 		fieldcb.GmEventInstructionsWriter,
 		fieldcb.PlayJukeboxWriter,
+		fieldcb.WeddingProgressWriter,
+		fieldcb.WeddingCeremonyEndWriter,
 		fieldcb.FieldTransportStateWriter,
 		storagecb.StorageOperationWriter,
 		charcb.CharacterHintWriter,

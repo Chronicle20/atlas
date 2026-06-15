@@ -1840,6 +1840,17 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField_Tournament::OnPacket":
 		return []candidate{{name: "TournamentCharacters", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField_Wedding clientbound family (task-096, recipe R-CB). Version-invariant
+	// layouts derived from IDA (addresses pinned per version in the test markers),
+	// except WeddingProgress which is version-branched: jms drops the leading step
+	// byte (groomId + brideId only). The OnWeddingProgress fname is also used by
+	// serverbound WEDDING action/talk ops (different direction); only the clientbound
+	// candidate is declared here. OnWeddingCeremonyEnd is an empty-body no-op stub.
+	case "CField_Wedding::OnWeddingProgress":
+		return []candidate{{name: "WeddingProgress", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField_Wedding::OnWeddingCeremonyEnd":
+		return []candidate{{name: "WeddingCeremonyEnd", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	case "CField::OnTransferChannelReqIgnored":

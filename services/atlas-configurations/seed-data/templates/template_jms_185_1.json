@@ -1863,6 +1863,14 @@
         "writer": "TournamentCharacters"
       },
       {
+        "opCode": "0x159",
+        "writer": "WeddingProgress"
+      },
+      {
+        "opCode": "0x15A",
+        "writer": "WeddingCeremonyEnd"
+      },
+      {
         "opCode": "0x163",
         "writer": "CashShopCashQueryResult"
       },

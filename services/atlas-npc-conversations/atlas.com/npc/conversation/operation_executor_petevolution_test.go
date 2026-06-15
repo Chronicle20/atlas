@@ -130,6 +130,16 @@ func TestEnumerateEvolvablePets(t *testing.T) {
 	if labels != "Alpha (Baby Dragon)" {
 		t.Errorf("evolvablePetLabels = %q, want %q", labels, "Alpha (Baby Dragon)")
 	}
+
+	// The first eligible pet id is also exposed as a single value (default key
+	// "firstEvolvablePet") so operations like evolve_pet get one id, not the CSV.
+	first, err := executor.getContextValue(characterId, "firstEvolvablePet")
+	if err != nil {
+		t.Fatalf("failed to read firstEvolvablePet: %v", err)
+	}
+	if first != "1" {
+		t.Errorf("firstEvolvablePet = %q, want %q", first, "1")
+	}
 }
 
 func TestEvolvePetBuildsStep(t *testing.T) {

@@ -819,6 +819,10 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		if countKey == "" {
 			countKey = "evolvableCount"
 		}
+		firstKey := operation.Params()["firstContextKey"]
+		if firstKey == "" {
+			firstKey = "firstEvolvablePet"
+		}
 
 		pets, err := e.petP.GetPets(characterId)()
 		if err != nil {
@@ -853,9 +857,19 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 		if err := e.setContextValue(characterId, countKey, strconv.Itoa(len(eligible))); err != nil {
 			return err
 		}
+		// Expose the first eligible pet id as a single value so operations that
+		// need one id (e.g. evolve_pet) can reference it without parsing the CSV.
+		// Mirrors the upstream scripts, which evolve the first matching summoned pet.
+		first := ""
+		if len(eligible) > 0 {
+			first = eligible[0]
+		}
+		if err := e.setContextValue(characterId, firstKey, first); err != nil {
+			return err
+		}
 
-		e.l.Infof("Enumerated %d evolvable pet(s) for character [%d], stored in context keys [%s, %s, %s]",
-			len(eligible), characterId, outputKey, labelKey, countKey)
+		e.l.Infof("Enumerated %d evolvable pet(s) for character [%d], stored in context keys [%s, %s, %s, %s]",
+			len(eligible), characterId, outputKey, labelKey, countKey, firstKey)
 		return nil
 
 	default:

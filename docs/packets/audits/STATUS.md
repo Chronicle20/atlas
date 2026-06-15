@@ -209,15 +209,15 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
 | SPAWN_PLAYER | CUserPool::OnUserEnterField | character/clientbound/CharacterSpawn (T1) | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B3 | ✅ | 0x09E | ❌ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField | character/clientbound/CharacterDespawn (T1) | 0x0A1 | ✅ | 0x0A4 | ✅ | 0x0AC | ✅ | 0x0B4 | ✅ | 0x09F | ✅ |
-| CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A2 | ❌ | 0x0A2 | ❌ | 0x0AD | ❌ | 0x0B5 | ✅ | 0x0A0 | ✅ |
-| CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A3 | ❌ | 0x0A3 | ❌ | 0x0AE | ❌ | 0x0B6 | ✅ | 0x0A1 | ✅ |
-| CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x0A4 | ✅ | 0x0A4 | ✅ | 0x0AF | ✅ | 0x0B7 | ✅ | 0x0A2 | ✅ |
+| CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A2 | ❌ | 0x0A5 | ❌ | 0x0AD | ❌ | 0x0B5 | ✅ | 0x0A0 | ✅ |
+| CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat | 0x0A3 | ❌ | 0x0A6 | ❌ | 0x0AE | ❌ | 0x0B6 | ✅ | 0x0A1 | ✅ |
+| CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) | 0x0A4 | ✅ | 0x0A7 | ✅ | 0x0AF | ✅ | 0x0B7 | ✅ | 0x0A2 | ✅ |
 | IDA_0X0A4 | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ | 0x0A4 | ✅ |  | ⬜ |  | ⬜ |
-| UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  | 0x0A5 | ❌ | 0x0A5 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
+| UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  | 0x0A5 | ❌ | 0x0A8 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
 | IDA_0X0A6 | sub_9F1663 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ |
-| SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
+| SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  | 0x0A6 | ❌ | 0x0A9 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
-| SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x0A7 | ✅ | 0x0A7 | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
+| SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) | 0x0A7 | ✅ | 0x0AA | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | ⬜ |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
 | SPAWN_PET | CUser::OnPetPacket |  | 0x0A8 | ❌ | 0x0A8 | ❌ | 0x0B4 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
 | EVOLVE_PET | CUser::OnPetPacket |  | 0x0A9 | ❌ | 0x0A9 | ❌ | 0x0B5 | ❌ | 0x0C7 | ❌ |  | ⬜ |
@@ -245,66 +245,66 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ✅ |
 | MAGIC_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0C9 | ✅ | 0x0D5 | ✅ | 0x0C2 | ✅ |
 | SHOW_ITEM_OPTION_UPGRADE_EFFECT | CUser::ShowItemOptionUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ |  | ⬜ |
-| ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BD | ✅ | 0x0BD | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
+| ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) | 0x0BD | ✅ | 0x0C1 | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
 | SHOW_ITEM_RELEASE_EFFECT | CUser::ShowItemReleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ |  | ⬜ |
 | SHOW_ITEM_UNRELEASE_EFFECT | CUser::ShowItemUnreleaseEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BE | ❌ |  | ⬜ |
-| SKILL_EFFECT | CUserRemote::OnSkillPrepare |  | 0x0BE | ❌ | 0x0BE | ❌ | 0x0CB | ❌ | 0x0D7 | ❌ | 0x0C4 | ❌ |
-| CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 |  | 0x0BF | ❌ | 0x0BF | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0C5 | ❌ |
+| SKILL_EFFECT | CUserRemote::OnSkillPrepare |  | 0x0BE | ❌ | 0x0C2 | ❌ | 0x0CB | ❌ | 0x0D7 | ❌ | 0x0C4 | ❌ |
+| CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 |  | 0x0BF | ❌ | 0x0C3 | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0C5 | ❌ |
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ |  | ⬜ |
-| DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0C0 | ✅ | 0x0C0 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
+| DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
 | TESLA_TRIANGLE | CUser::OnTeslaTriangle |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C0 | ❌ |  | ⬜ |
-| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0C1 | ❌ | 0x0C1 | ❌ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
+| FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) | 0x0C1 | ❌ | 0x0C5 | ❌ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
 | FOLLOW_CHARACTER | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C1 | ❌ |  | ⬜ |
-| SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x0C2 | ❌ | 0x0C2 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
+| SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  | 0x0C2 | ❌ | 0x0C6 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | ⬜ |
 | SET_PHASE | CUser::OnSetPhase |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C3 | ❌ |  | ⬜ |
-| SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  | 0x0C3 | ❌ | 0x0C3 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
-| SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ❌ | 0x0C4 | ❌ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ❌ |
+| SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  | 0x0C3 | ❌ | 0x0C7 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
+| SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) | 0x0C4 | ❌ | 0x0C8 | ❌ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ❌ |
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
-| UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0C5 | ❌ | 0x0C5 | ❌ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0CB | ❌ |
+| UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) | 0x0C5 | ❌ | 0x0C9 | ❌ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0CB | ❌ |
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0C6 | ❌ | 0x0CA | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0CC | ❌ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ❌ |
-| CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | ✅ | 0x0C8 | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
-| UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ✅ | 0x0C9 | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
-| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ❌ | 0x0CA | ❌ | 0x0D7 | ❌ | 0x0E4 | ✅ | 0x0D0 | ✅ |
-| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ❌ | 0x0CB | ❌ | 0x0D8 | ❌ | 0x0E5 | ✅ | 0x0D1 | ✅ |
-| THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0CC | ❌ | 0x0CC | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
-| CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0CD | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
-| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0E9 | ❌ | 0x0D5 | ❌ |
-| DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
-| LUCKSACK_PASS | CUserLocal::OnMesoGive_Succeeded |  | 0x0D0 | ❌ | 0x0D0 | ❌ | 0x0DE | ❌ | 0x0EC | ❌ | 0x0D8 | ❌ |
-| LUCKSACK_FAIL | CUserLocal::OnMesoGive_Failed |  | 0x0D1 | ❌ | 0x0D1 | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0D9 | ❌ |
-| MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  | 0x0D2 | ❌ | 0x0D2 | ❌ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
+| CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
+| UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
+| GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) | 0x0CA | ❌ | 0x0CE | ❌ | 0x0D7 | ❌ | 0x0E4 | ✅ | 0x0D0 | ✅ |
+| GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) | 0x0CB | ❌ | 0x0CF | ❌ | 0x0D8 | ❌ | 0x0E5 | ✅ | 0x0D1 | ✅ |
+| THROW_GRENADE | CUserRemote::OnThrowGrenade |  | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
+| CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E7 | ✅ | 0x0D3 | ✅ |
+| SHOW_ITEM_GAIN_INCHAT | CUser::OnEffect | character/clientbound/EffectQuest (T1) | 0x0CE | ❌ | 0x0D2 | ❌ | 0x0DB | ❌ | 0x0E9 | ❌ | 0x0D5 | ❌ |
+| DOJO_WARP_UP | CUserLocal::OnTeleport |  | 0x0CF | ❌ | 0x0D3 | ❌ | 0x0DC | ❌ | 0x0EA | ❌ | 0x0D6 | ❌ |
+| LUCKSACK_PASS | CUserLocal::OnMesoGive_Succeeded |  | 0x0D0 | ❌ | 0x0D5 | ❌ | 0x0DE | ❌ | 0x0EC | ❌ | 0x0D8 | ❌ |
+| LUCKSACK_FAIL | CUserLocal::OnMesoGive_Failed |  | 0x0D1 | ❌ | 0x0D6 | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0D9 | ❌ |
+| MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  | 0x0D2 | ❌ | 0x0D7 | ❌ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
 | UPDATE_QUEST_INFO | CUserLocal::OnQuestResult |  | 0x0D3 | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0F2 | ❌ | 0x0DC | ❌ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
 | PLAYER_HINT | CUserLocal::OnBalloonMsg | character/clientbound/CharacterHint (T1) | 0x0D6 | ✅ | 0x0DA | ✅ | 0x0E3 | ✅ | 0x0F5 | ✅ | 0x0DF | ✅ |
-| PLAY_EVENT_SOUND | CUserLocal::OnPlayEventSound |  | 0x0D7 | ❌ | 0x0D7 | ❌ | 0x0E4 | ❌ | 0x0F6 | ❌ | 0x0E0 | ❌ |
+| PLAY_EVENT_SOUND | CUserLocal::OnPlayEventSound |  | 0x0D7 | ❌ | 0x0DB | ❌ | 0x0E4 | ❌ | 0x0F6 | ❌ | 0x0E0 | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserRemote::OnMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D8 | ❌ |  | ⬜ |
-| PLAY_MINI_GAME_SOUND | CUserLocal::OnPlayMinigameSound |  | 0x0D8 | ❌ | 0x0D8 | ❌ | 0x0E5 | ❌ | 0x0F7 | ❌ | 0x0E1 | ❌ |
-| MAKER_RESULT | CUserLocal::OnMakerResult |  | 0x0D9 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x0F8 | ❌ | 0x0E2 | ❌ |
+| PLAY_MINI_GAME_SOUND | CUserLocal::OnPlayMinigameSound |  | 0x0D8 | ❌ | 0x0DC | ❌ | 0x0E5 | ❌ | 0x0F7 | ❌ | 0x0E1 | ❌ |
+| MAKER_RESULT | CUserLocal::OnMakerResult |  | 0x0D9 | ❌ | 0x0DD | ❌ | 0x0E6 | ❌ | 0x0F8 | ❌ | 0x0E2 | ❌ |
 | IDA_0X0DA | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DA | ❌ |
 | IDA_0X0DB | CUserLocal::OnRandomMesobag_Failed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DB | ❌ |
-| KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  | 0x0DB | ❌ | 0x0DB | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
+| KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  | 0x0DB | ❌ | 0x0DF | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | OPEN_UI | CUserLocal::OnOpenUI | ui/clientbound/Open | 0x0DC | ✅ | 0x0E0 | ✅ | 0x0E9 | ✅ | 0x0FB | ✅ | 0x0E5 | ✅ |
 | IDA_0X0DD | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DD | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock | 0x0DD | ❌ | 0x0E2 | ❌ | 0x0EB | ❌ | 0x0FD | ✅ | 0x0E7 | ❌ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode | ui/clientbound/Disable | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
 | IDA_0X0DE | sub_A26957 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DE | ❌ |
-| SPAWN_GUIDE | CUserLocal::OnHireTutor |  | 0x0DF | ❌ | 0x0DF | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
+| SPAWN_GUIDE | CUserLocal::OnHireTutor |  | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | IDA_0X0E1 | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ |  | ⬜ | 0x0E1 | ❌ |  | ⬜ |  | ⬜ |
-| SHOW_COMBO | CUserLocal::OnIncComboResponse |  | 0x0E1 | ❌ | 0x0E1 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
-| RANDOM_EMOTION | CUser::OnRandomEmotion |  | 0x0E2 | ❌ | 0x0E2 | ❌ | 0x0F0 | ❌ | 0x102 | ❌ |  | ⬜ |
-| RESIGN_QUEST_RETURN | CUserLocal::OnResignQuestReturn |  | 0x0E3 | ❌ | 0x0E3 | ❌ | 0x0F1 | ❌ | 0x103 | ❌ |  | ⬜ |
+| SHOW_COMBO | CUserLocal::OnIncComboResponse |  | 0x0E1 | ❌ | 0x0E6 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
+| RANDOM_EMOTION | CUser::OnRandomEmotion |  | 0x0E2 | ❌ | 0x0E7 | ❌ | 0x0F0 | ❌ | 0x102 | ❌ |  | ⬜ |
+| RESIGN_QUEST_RETURN | CUserLocal::OnResignQuestReturn |  | 0x0E3 | ❌ | 0x0E8 | ❌ | 0x0F1 | ❌ | 0x103 | ❌ |  | ⬜ |
 | IDA_0X0E4 | sub_A2CEF5 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E4 | ❌ |
-| PASS_MATE_NAME | CUserLocal::OnPassMateName |  | 0x0E4 | ❌ | 0x0E4 | ❌ | 0x0F2 | ❌ | 0x104 | ❌ |  | ⬜ |
-| RADIO_SCHEDULE | CUserLocal::OnRadioSchedule |  | 0x0E5 | ❌ | 0x0E5 | ❌ | 0x0F3 | ❌ | 0x105 | ❌ |  | ⬜ |
+| PASS_MATE_NAME | CUserLocal::OnPassMateName |  | 0x0E4 | ❌ | 0x0E9 | ❌ | 0x0F2 | ❌ | 0x104 | ❌ |  | ⬜ |
+| RADIO_SCHEDULE | CUserLocal::OnRadioSchedule |  | 0x0E5 | ❌ | 0x0EA | ❌ | 0x0F3 | ❌ | 0x105 | ❌ |  | ⬜ |
 | IDA_0X0E6 | CUserLocal::OnOpenUIWithOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | ❌ |
-| OPEN_SKILL_GUIDE | CUserLocal::OnOpenSkillGuide |  | 0x0E6 | ❌ | 0x0E6 | ❌ | 0x0F4 | ❌ | 0x106 | ❌ |  | ⬜ |
-| NOTICE_MSG | CUserLocal::OnNoticeMsg |  | 0x0E7 | ❌ | 0x0E7 | ❌ | 0x0F5 | ❌ | 0x107 | ❌ |  | ⬜ |
-| CHAT_MSG | CUserLocal::OnChatMsg |  | 0x0E8 | ❌ | 0x0E8 | ❌ | 0x0F6 | ❌ | 0x108 | ❌ |  | ⬜ |
+| OPEN_SKILL_GUIDE | CUserLocal::OnOpenSkillGuide |  | 0x0E6 | ❌ | 0x0EB | ❌ | 0x0F4 | ❌ | 0x106 | ❌ |  | ⬜ |
+| NOTICE_MSG | CUserLocal::OnNoticeMsg |  | 0x0E7 | ❌ | 0x0EC | ❌ | 0x0F5 | ❌ | 0x107 | ❌ |  | ⬜ |
+| CHAT_MSG | CUserLocal::OnChatMsg |  | 0x0E8 | ❌ | 0x0ED | ❌ | 0x0F6 | ❌ | 0x108 | ❌ |  | ⬜ |
 | IDA_0X0E8 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E8 | ✅ |  | ⬜ |
-| BUFFZONE_EFFECT/SAY_IMAGE | CUserLocal::OnBuffzoneEffect |  | 0x0E9 | ❌ | 0x0E9 | ❌ | 0x0F7 | ❌ | 0x109 | ❌ |  | ⬜ |
+| BUFFZONE_EFFECT/SAY_IMAGE | CUserLocal::OnBuffzoneEffect |  | 0x0E9 | ❌ | 0x0EE | ❌ | 0x0F7 | ❌ | 0x109 | ❌ |  | ⬜ |
 | COOLDOWN | CUserLocal::OnSkillCooltimeSet | character/clientbound/CharacterSkillCooldown (T1) | 0x0EA | ✅ | 0x0F0 | ✅ | 0x0FA | ✅ | 0x114 | ✅ | 0x0FB | ✅ |
 | OPEN_UI_WITH_OPTION | CUserLocal::OnOpenUIWithOption |  |  | ⬜ |  | ⬜ | 0x0EA | ❌ | 0x0FC | ❌ |  | ⬜ |
 | IDA_0X0EC | sub_A2F4B7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EC | ❌ |

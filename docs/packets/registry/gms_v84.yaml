@@ -952,40 +952,52 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CHATTEXT
   direction: clientbound
-  opcode: 162
+  opcode: 165
   fname: CUser::OnChat
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10167201
+  note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xA5 (165) -> CUser::OnChat(pkt,0). v83 inherited 162 was stale; the v84 CUser-common block is shifted +3 (SPAWN_PLAYER 163/REMOVE_PLAYER 164 precede it).
 - op: CHATTEXT1
   direction: clientbound
-  opcode: 163
+  opcode: 166
   fname: CUser::OnChat
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10167201
+  note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xA6 (166) -> CUser::OnChat(pkt,1). v83 inherited 163 was stale (collided with SPAWN_PLAYER).
 - op: CHALKBOARD
   direction: clientbound
-  opcode: 164
+  opcode: 167
   fname: CUser::OnADBoard
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10167201
+  note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xA7 (167) -> CUser::OnADBoard. v83 inherited 164 was stale (collided with REMOVE_PLAYER_FROM_MAP).
 - op: UPDATE_CHAR_BOX
   direction: clientbound
-  opcode: 165
+  opcode: 168
   fname: CUser::OnMiniRoomBalloon
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9895862
+  note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xA8 (168) -> CUser::OnMiniRoomBalloon (sub_96FFB6, renamed). v83 inherited 165 was stale.
 - op: SHOW_CONSUME_EFFECT
   direction: clientbound
-  opcode: 166
+  opcode: 169
   fname: CUser::SetConsumeItemEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9904180
+  note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xA9 (169) -> CUser::SetConsumeItemEffect (sub_972034, renamed). v83 inherited 166 was stale.
 - op: SHOW_SCROLL_EFFECT
   direction: clientbound
-  opcode: 167
+  opcode: 170
   fname: CUser::ShowItemUpgradeEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10167201
+  note: CUserPool::OnUserCommonPacket @0x9B23A1 case 0xAA (170) -> CUser::ShowItemUpgradeEffect. v83 inherited 167 was stale.
 - op: SPAWN_PET
   direction: clientbound
   opcode: 168
@@ -1108,58 +1120,76 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: ENERGY_ATTACK
   direction: clientbound
-  opcode: 189
+  opcode: 193
   fname: CUserRemote::OnAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10225010
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 193 -> CUserRemote::OnAttack (4th attack subtype). v83 inherited 189 was stale (collided with MOVE_PLAYER).
 - op: SKILL_EFFECT
   direction: clientbound
-  opcode: 190
+  opcode: 194
   fname: CUserRemote::OnSkillPrepare
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10226783
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 194 -> CUserRemote::OnSkillPrepare (sub_9C0C5F, renamed). v83 inherited 190 was stale (collided with CLOSE_RANGE_ATTACK). Body verified vs v95 OnSkillPrepare.
 - op: CANCEL_SKILL_EFFECT
   direction: clientbound
-  opcode: 191
+  opcode: 195
   fname: CUserRemote::OnSkillCancel
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10227155
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 195 -> CUserRemote::OnSkillCancel (sub_9C0DD3, renamed). v83 inherited 191 was stale. v84 has no separate OnMovingShootAttackPrepare case (v95+ only).
 - op: DAMAGE_PLAYER
   direction: clientbound
-  opcode: 192
+  opcode: 196
   fname: CUserRemote::OnHit
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10237569
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 196 -> CUserRemote::OnHit. v83 inherited 192 was stale (collided with MAGIC_ATTACK).
 - op: FACIAL_EXPRESSION
   direction: clientbound
-  opcode: 193
+  opcode: 197
   fname: CUser::OnEmotion
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10167576
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 197 -> CUser::OnEmotion (Decode4 + SetEmotion). v83 inherited 193 was stale.
 - op: SHOW_ITEM_EFFECT
   direction: clientbound
-  opcode: 194
+  opcode: 198
   fname: CUserRemote::OnSetActiveEffectItem
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9906971
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 198 -> CUserRemote::OnSetActiveEffectItem (sub_972B1B, renamed). v83 inherited 194 was stale.
 - op: SHOW_UPGRADE_TOMB_EFFECT
   direction: clientbound
-  opcode: 195
+  opcode: 199
   fname: CUserRemote::OnShowUpgradeTombEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10240518
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 199 -> CUserRemote::OnShowUpgradeTombEffect (sub_9C4206, renamed). v83 inherited 195 was stale.
 - op: SHOW_CHAIR
   direction: clientbound
-  opcode: 196
+  opcode: 200
   fname: CUserRemote::OnSetActivePortableChair
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10167576
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 200 -> CUserRemote::OnSetActivePortableChair (Decode4 chair id). v83 inherited 196 was stale.
 - op: UPDATE_CHAR_LOOK
   direction: clientbound
-  opcode: 197
+  opcode: 201
   fname: CUserRemote::OnAvatarModified
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10238492
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 201 -> CUserRemote::OnAvatarModified. v83 inherited 197 was stale.
 - op: SHOW_FOREIGN_EFFECT
   direction: clientbound
   opcode: 202
@@ -1174,70 +1204,92 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: CANCEL_FOREIGN_BUFF
   direction: clientbound
-  opcode: 200
+  opcode: 204
   fname: CUserRemote::OnResetTemporaryStat
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10239167
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 204 -> CUserRemote::OnResetTemporaryStat. v83 inherited 200 was stale.
 - op: UPDATE_PARTYMEMBER_HP
   direction: clientbound
-  opcode: 201
+  opcode: 205
   fname: CUserRemote::OnReceiveHP
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10239368
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 205 -> CUserRemote::OnReceiveHP. v83 inherited 201 was stale.
 - op: GUILD_NAME_CHANGED
   direction: clientbound
-  opcode: 202
+  opcode: 206
   fname: CUserRemote::OnGuildNameChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10239496
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 206 -> CUserRemote::OnGuildNameChanged (sub_9C3E08, renamed). v83 inherited 202 was stale (collided with SHOW_FOREIGN_EFFECT). Body verified vs v95 (DecodeStr + RedrawGuildNameTag).
 - op: GUILD_MARK_CHANGED
   direction: clientbound
-  opcode: 203
+  opcode: 207
   fname: CUserRemote::OnGuildMarkChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10239571
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 207 -> CUserRemote::OnGuildMarkChanged (sub_9C3E53, renamed). v83 inherited 203 was stale (collided with GIVE_FOREIGN_BUFF). Body verified vs v95 (Decode2/1/2/1 mark bg/bgcolor/mark/markcolor).
 - op: THROW_GRENADE
   direction: clientbound
-  opcode: 204
+  opcode: 208
   fname: CUserRemote::OnThrowGrenade
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10239846
+  note: CUserPool::OnUserRemotePacket @0x9B2518 case 208 -> CUserRemote::OnThrowGrenade (sub_9C3F66, renamed). v83 inherited 204 was stale.
 - op: CANCEL_CHAIR
   direction: clientbound
-  opcode: 205
+  opcode: 209
   fname: CUserLocal::OnSitResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9995617
+  note: CUserLocal dispatch sub_988561 @0x988561 case 209 -> CUserLocal::OnSitResult. v83 inherited 205 was stale.
 - op: SHOW_ITEM_GAIN_INCHAT
   direction: clientbound
-  opcode: 206
+  opcode: 210
   fname: CUser::OnEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9995617
+  note: CUserLocal dispatch sub_988561 @0x988561 case 210 -> CUser::OnEffect. v83 inherited 206 was stale.
 - op: DOJO_WARP_UP
   direction: clientbound
-  opcode: 207
+  opcode: 211
   fname: CUserLocal::OnTeleport
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10057979
+  note: CUserLocal dispatch sub_988561 @0x988561 case 211 -> CUserLocal::OnTeleport (sub_9978FB, renamed). v83 inherited 207 was stale.
 - op: LUCKSACK_PASS
   direction: clientbound
-  opcode: 208
+  opcode: 213
   fname: CUserLocal::OnMesoGive_Succeeded
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10058640
+  note: CUserLocal dispatch sub_988561 @0x988561 case 213 -> CUserLocal::OnMesoGive_Succeeded (sub_997B90, renamed). v83 inherited 208 was stale.
 - op: LUCKSACK_FAIL
   direction: clientbound
-  opcode: 209
+  opcode: 214
   fname: CUserLocal::OnMesoGive_Failed
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10058780
+  note: CUserLocal dispatch sub_988561 @0x988561 case 214 -> CUserLocal::OnMesoGive_Failed (sub_997C1C, renamed). v83 inherited 209 was stale.
 - op: MESO_BAG_MESSAGE
   direction: clientbound
-  opcode: 210
+  opcode: 215
   fname: CUserLocal::OnRandomMesobag_Succeeded
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10058824
+  note: CUserLocal dispatch sub_988561 @0x988561 case 215 -> CUserLocal::OnRandomMesobag_Succeeded (sub_997C48, renamed). v83 inherited 210 was stale.
 - op: UPDATE_QUEST_INFO
   direction: clientbound
   opcode: 211
@@ -1252,28 +1304,36 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085)'
 - op: PLAY_EVENT_SOUND
   direction: clientbound
-  opcode: 215
+  opcode: 219
   fname: CUserLocal::OnPlayEventSound
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10075392
+  note: CUserLocal dispatch sub_988561 @0x988561 case 219 -> CUserLocal::OnPlayEventSound (sub_99BD00, renamed). v83 inherited 215 was stale.
 - op: PLAY_MINI_GAME_SOUND
   direction: clientbound
-  opcode: 216
+  opcode: 220
   fname: CUserLocal::OnPlayMinigameSound
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10075486
+  note: CUserLocal dispatch sub_988561 @0x988561 case 220 -> CUserLocal::OnPlayMinigameSound (sub_99BD5E, renamed). v83 inherited 216 was stale.
 - op: MAKER_RESULT
   direction: clientbound
-  opcode: 217
+  opcode: 221
   fname: CUserLocal::OnMakerResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10075580
+  note: CUserLocal dispatch sub_988561 @0x988561 case 221 -> CUserLocal::OnMakerResult (sub_99BDBC, renamed). v83 inherited 217 was stale.
 - op: KOREAN_EVENT
   direction: clientbound
-  opcode: 219
+  opcode: 223
   fname: CUserLocal::OnOpenClassCompetitionPage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10088037
+  note: CUserLocal dispatch sub_988561 @0x988561 case 223 -> CUserLocal::OnOpenClassCompetitionPage (sub_99EE65, renamed). v83 inherited 219 was stale.
 - op: OPEN_UI
   direction: clientbound
   opcode: 224
@@ -1294,10 +1354,12 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CUserLocal::OnSetStandAloneMode = sub_988561 case 227 (named). Earlier manual 226 was wrong (226=SetDirectionMode).'
 - op: SPAWN_GUIDE
   direction: clientbound
-  opcode: 223
+  opcode: 228
   fname: CUserLocal::OnHireTutor
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10088855
+  note: CUserLocal dispatch sub_988561 @0x988561 case 228 -> CUserLocal::OnHireTutor (sub_99F197, renamed). v83 inherited 223 was stale.
 - op: TALK_GUIDE
   direction: clientbound
   opcode: 229
@@ -1306,58 +1368,76 @@
   note: 'v84 opcode re-derived from IDB dispatcher case label (task-085 reconcile): CUserLocal::OnTutorMsg = sub_988561 case 229 (named). v83 TALK_GUIDE 224.'
 - op: SHOW_COMBO
   direction: clientbound
-  opcode: 225
+  opcode: 230
   fname: CUserLocal::OnIncComboResponse
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10089246
+  note: CUserLocal dispatch sub_988561 @0x988561 case 230 -> CUserLocal::OnIncComboResponse (sub_99F31E, renamed). v83 inherited 225 was stale.
 - op: RANDOM_EMOTION
   direction: clientbound
-  opcode: 226
+  opcode: 231
   fname: CUser::OnRandomEmotion
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9895759
+  note: CUserLocal dispatch sub_988561 @0x988561 case 231 -> CUser::OnRandomEmotion (sub_96FF4F, renamed). v83 inherited 226 was stale (collided with LOCK_UI).
 - op: RESIGN_QUEST_RETURN
   direction: clientbound
-  opcode: 227
+  opcode: 232
   fname: CUserLocal::OnResignQuestReturn
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10092910
+  note: CUserLocal dispatch sub_988561 @0x988561 case 232 -> CUserLocal::OnResignQuestReturn (sub_9A016E, renamed). v83 inherited 227 was stale (collided with DISABLE_UI). Body verified vs v95 (Decode2 + TryRegisterAutoStartQuest).
 - op: PASS_MATE_NAME
   direction: clientbound
-  opcode: 228
+  opcode: 233
   fname: CUserLocal::OnPassMateName
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10093010
+  note: CUserLocal dispatch sub_988561 @0x988561 case 233 -> CUserLocal::OnPassMateName (sub_9A01D2, renamed). v83 inherited 228 was stale.
 - op: RADIO_SCHEDULE
   direction: clientbound
-  opcode: 229
+  opcode: 234
   fname: CUserLocal::OnRadioSchedule
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10092579
+  note: CUserLocal dispatch sub_988561 @0x988561 case 234 -> CUserLocal::OnRadioSchedule (sub_9A0023, renamed). v83 inherited 229 was stale (collided with TALK_GUIDE). Body verified vs v95 (DecodeStr + Decode4 + CRadioManager::Play).
 - op: OPEN_SKILL_GUIDE
   direction: clientbound
-  opcode: 230
+  opcode: 235
   fname: CUserLocal::OnOpenSkillGuide
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10092688
+  note: CUserLocal dispatch sub_988561 @0x988561 case 235 -> CUserLocal::OnOpenSkillGuide (sub_9A0090, renamed). v83 inherited 230 was stale.
 - op: NOTICE_MSG
   direction: clientbound
-  opcode: 231
+  opcode: 236
   fname: CUserLocal::OnNoticeMsg
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10092829
+  note: CUserLocal dispatch sub_988561 @0x988561 case 236 -> CUserLocal::OnNoticeMsg (sub_9A011D, renamed). v83 inherited 231 was stale.
 - op: CHAT_MSG
   direction: clientbound
-  opcode: 232
+  opcode: 237
   fname: CUserLocal::OnChatMsg
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10093186
+  note: CUserLocal dispatch sub_988561 @0x988561 case 237 -> CUserLocal::OnChatMsg (sub_9A0282, renamed). v83 inherited 232 was stale. Body matches v83 OnChatMsg (DecodeStr + CHATLOG_ADD,0xC).
 - op: BUFFZONE_EFFECT/SAY_IMAGE
   direction: clientbound
-  opcode: 233
+  opcode: 238
   fname: CUserLocal::OnBuffzoneEffect
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10093262
+  note: CUserLocal dispatch sub_988561 @0x988561 case 238 -> CUserLocal::OnBuffzoneEffect (sub_9A02CE, renamed). v83 inherited 233 was stale. Body verified vs v95 (Decode4 itemprop + MakeIncDecHPEffect).
 - op: COOLDOWN
   direction: clientbound
   opcode: 240

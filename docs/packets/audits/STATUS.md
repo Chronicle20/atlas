@@ -690,9 +690,9 @@ Tool: `6e8be69271e3b0e7df0cd704cdb5e47ac359e179`
 | BEHOLDER | CSummoned::TryDoingGiveBuff; CSummoned::TryDoingHeal; CSummoned::TryDoingHealingRobot; CSummoned::TryDoingSummon; CSummoned__TryDoingHeal_send_0xB7_BEHOLDER |  | 0x0B2 | ❌ | 0x0B7 | ❌ | 0x0BE | ❌ | 0x0D2 | ❌ | 0x0B5 | ❌ |
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  | 0x0B3 | ❌ | 0x0B3 | ❌ | 0x0BF | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
-| UNNAMED_R297 |  |  | 0x0B4 | ❌ | 0x0B8 | ❌ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
+| UNNAMED_R297 |  |  | 0x0B4 | ❌ | 0x0B4 | ❌ | 0x0C0 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
 | MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive; CVecCtrlDragon__EndUpdateActive_send_0xBA |  | 0x0B5 | ❌ | 0x0BA | ❌ | 0x0C1 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
-| UNNAMED_R299 |  |  | 0x0B6 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
+| UNNAMED_R299 |  |  | 0x0B6 | ❌ | 0x0B6 | ❌ | 0x0C2 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MOVE_LIFE | CMob::GenerateMovePath | monster/serverbound/MonsterMovementRequest (T1) | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0E3 | ✅ | 0x0C2 | ✅ |
 | AUTO_AGGRO | CMob::ApplyControl |  | 0x0BD | ❌ | 0x0BD | ❌ | 0x0C9 | ❌ | 0x0E4 | ❌ | 0x0C3 | ❌ |

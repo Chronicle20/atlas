@@ -1137,9 +1137,9 @@
   opcode: 187
   fname: CUser::OnDragonPacket
   provenance: ida-discovered
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. reserved third dragon slot 187 (0xBB) in outer dispatcher CUserPool::OnUserCommonPacket range 185-187 (sub_9704B9 handles 185/186 only; v95 has no distinct remove opcode) — opcode inferred from reserved range, identity UNVERIFIED.'
+  note: 'v84 opcode 187 (0xBB) READ from the v84 IDB dispatch range (task-100 correction of a cluster-B guess). CUserPool::OnUserCommonPacket (sub_9B23A1) routes the dragon family with an explicit range check: at 0x9B2443 it tests v6 >= 185 && v6 <= 187 and at 0x9B244B calls sub_9704B9; opcode 187 is therefore explicitly inside the dragon dispatch range. sub_9704B9 (= CUser::OnDragonPacket) has cases only for 185 (spawn, sub_506F85) and 186 (move, sub_507AC6); 187 is routed-but-unhandled (no remove body). Body-identical to v95 CUser::OnDragonPacket @0x8e5c00, which handles only 206 (spawn) + 207 (move); its outer dispatcher CUserPool::OnUserCommonPacket @0x94cdb0 routes if((v6-206)<=2) -> OnDragonPacket i.e. 206/207/208, so v95 REMOVE_DRAGON=208 is likewise routed-but-unhandled. Opcode verified from the dispatch-range upper bound; remove logic itself is absent in both v84 and v95.'
   ida:
-    address: 10167201
+    address: 10167363
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 189
@@ -3537,10 +3537,10 @@
   note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Left at 179 (0xB3); free after summon/dragon reshift. v84 opcode UNVERIFIED; identity unknown.'
 - op: UNNAMED_R297
   direction: serverbound
-  opcode: 184
+  opcode: 180
   fname: ""
   provenance: csv-import
-  note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Displaced from 180 (now MOVE_SUMMON) to free slot 184 (0xB8). v84 opcode UNVERIFIED; placeholder slot only.'
+  note: 'FLAG/version-uncertain (task-100 correction of a cluster-B free-slot guess). Reverted from the invented free slot 184 (0xB8) back to the honest stale v83 value 180 (0xB3 family). No v84 IDB evidence supports any opcode for this op: a full scan of all 514 COutPacket(long) ctor call sites @0x703cfa in GMS_v84.1_U_DEVM.i64 found NO send site at 184; the only serverbound summon/dragon-family sends are 180 MOVE_SUMMON, 181 SUMMON_ATTACK, 182 DAMAGE_SUMMON, 183 BEHOLDER, 186 MOVE_DRAGON, 188 CHANGE_QUICKSLOT. The same is true in v95 (597 ctor sites @0x68d090: no send at v95 R297=213). R297 has an empty fname in v83/v84/v95 and is a CSV-derived phantom with no client-send body in any version; it is likely version-absent in v84. Opcode UNVERIFIED; left at the stale v83 value rather than guessing a free slot. NOTE: 180 collides with the IDA-verified MOVE_SUMMON; this honest collision is preferred over a fabricated free-slot value.'
 - op: MOVE_DRAGON
   direction: serverbound
   opcode: 186
@@ -3551,10 +3551,10 @@
     address: 10481751
 - op: UNNAMED_R299
   direction: serverbound
-  opcode: 185
+  opcode: 182
   fname: ""
   provenance: csv-import
-  note: 'v84 opcode-table reshift (task-100): unidentified placeholder (no fname). Displaced from 182 (now DAMAGE_SUMMON) to free slot 185 (0xB9). v84 opcode UNVERIFIED; placeholder slot only.'
+  note: 'FLAG/version-uncertain (task-100 correction of a cluster-B free-slot guess). Reverted from the invented free slot 185 (0xB9) back to the honest stale v83 value 182 (0xB6 family). No v84 IDB evidence supports any opcode for this op: the full scan of all 514 COutPacket(long) ctor call sites @0x703cfa in GMS_v84.1_U_DEVM.i64 found NO send site at 185; the serverbound summon/dragon-family sends are 180/181/182/183/186/188 only. Same in v95 (no send at v95 R299=215). R299 has an empty fname in v83/v84/v95 and is a CSV-derived phantom with no client-send body in any version; likely version-absent in v84. Opcode UNVERIFIED; left at the stale v83 value rather than guessing a free slot. NOTE: 182 collides with the IDA-verified DAMAGE_SUMMON; this honest collision is preferred over a fabricated free-slot value.'
 - op: CHANGE_QUICKSLOT
   direction: serverbound
   opcode: 188

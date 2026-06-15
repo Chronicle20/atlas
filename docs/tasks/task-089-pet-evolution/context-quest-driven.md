@@ -27,7 +27,7 @@ is retained.
   - query-aggregator eval `validation/model.go` (`Evaluate` ~385; PetCount case ~719; `Condition.values` field :94); context `validation/context.go:37` (`petCount` → add `spawnedPets`); fetch site `validation/processor.go` (`reqs.Pets` block).
   - query-aggregator already fetches per-pet closeness: `pet/processor.go:32` `GetPets`, `pet/rest.go:12-19` (`Closeness`, `TemplateId`, `Slot`).
   - atlas-quest emission `data/validation/processor.go` `buildStartConditions`/`buildEndConditions`; const `data/validation/model.go:16-25`; requirements parsed `data/quest/rest.go:62-63` (`Pet []uint32`, `PetTamenessMin int16`).
-- **GM test command (NEW):** atlas-pets `kafka/message/pet/kafka.go` (has `AWARD_CLOSENESS`; add `SET_CLOSENESS`), `kafka/consumer/pet/consumer.go` (`handleAwardClosenessCommand` pattern), pet processor (`AwardClosenessWithTransactionAndEmit` → add `SetClosenessWithTransactionAndEmit`). Channel GM command framework: locate via grep in `services/atlas-channel/atlas.com/channel`.
+- **GM test command (NEW):** GM commands live in **atlas-messages** (`messages/command/<domain>/commands.go`) — `@`-phrase regexp, GM-gated (`c.Gm()`), `me`/`map`/`<name>` targeting, direct producer emit, registered in `messages/main.go`. Add `command/pet/commands.go` `AwardTamenessCommandProducer` for `@award <target> tameness <amount>`, reusing atlas-pets' existing `AWARD_CLOSENESS` (additive — `kafka/message/pet/kafka.go:CommandAwardCloseness`, body `{Amount uint16}`). Needs a new atlas-messages `pet` lookup (spawned pet id, slot≥0) + `kafka/message/pet` producer. Reference cmds: `command/character/commands.go` `AwardMesoCommandProducer` (target resolution), `command/monster/commands.go` `MobSpawnCommandProducer` (direct emit). **No atlas-pets/atlas-channel change.**
 - **Backout surface:** seeds `deploy/seed/gms/*/npc-conversations/npc/npc-9102001.json` (6); backend `conversation/{model,rest,processor}.go` + 3 `pickfromcontext_*_test.go`; UI `conversation.ts`, `stateMeta.ts`, `transitions.ts` (revert commit `81f57e4e8`).
 
 ## Decisions (locked)
@@ -40,7 +40,7 @@ is retained.
 
 ## Dependencies / blockers
 - **Phase C blocked** on obtaining the Cosmic `.js` scripts (not in repo). Phases A, B unblocked.
-- Live test needs: tenant re-ingest + `atlas-data` REST restart (stale in-memory cache — confirmed this session); the `!settameness` GM command (Task B6).
+- Live test needs: tenant re-ingest + `atlas-data` REST restart (stale in-memory cache — confirmed this session); the `@award me tameness <amount>` GM command (Task B5).
 
 ## Verification gotchas (from this session)
 - Worktree `go.work` is unreliable for `./...`; run Go checks from the module's go.mod dir with `GOWORK=off`.

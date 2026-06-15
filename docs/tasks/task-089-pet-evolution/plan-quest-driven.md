@@ -4,9 +4,9 @@
 
 **Goal:** Replace the synthetic Garnox free-conversation with the canonical quest-driven path: enforce the pet/tameness quest gate, author the Garnox quest conversations whose end-state-machine performs the evolution, and back out the synthetic conversation + `pickFromContext`.
 
-**Architecture:** The startscript/endscript mechanism already exists (quest conversations keyed by `questId`, start/end state machines, `QuestActionScriptStart/End` trigger). Workstreams: (A) **back out** the synthetic layer; (B) add a contained **`petTameness`** validation condition (query-aggregator already fetches per-pet closeness — it's just discarded) plus a GM **set-tameness** test command; (C) **author** quest conversations `8185/8189/4659` from the Cosmic `.js` via `/convert-quest`, end machine running `destroy_item` → `evolve_pet` → `complete_quest`. The evolution engine (atlas-pets EVOLVE, saga PetEvolution, inventory CHANGE_TEMPLATE, atlas-data evol parsing, egg fix) is retained unchanged.
+**Architecture:** The startscript/endscript mechanism already exists (quest conversations keyed by `questId`, start/end state machines, `QuestActionScriptStart/End` trigger). Workstreams: (A) **back out** the synthetic layer; (B) add a contained **`petTameness`** validation condition (query-aggregator already fetches per-pet closeness — it's just discarded) plus a GM `@award <target> tameness <amount>` test command (atlas-messages, reusing atlas-pets `AWARD_CLOSENESS`); (C) **author** quest conversations `8185/8189/4659` from the Cosmic `.js` via `/convert-quest`, end machine running `destroy_item` → `evolve_pet` → `complete_quest`. The evolution engine (atlas-pets EVOLVE, saga PetEvolution, inventory CHANGE_TEMPLATE, atlas-data evol parsing, egg fix) is retained unchanged.
 
-**Tech Stack:** Go (atlas-quest, atlas-query-aggregator, atlas-npc-conversations, atlas-pets, atlas-channel), `libs/atlas-saga` (shared condition constants), TypeScript/React (atlas-ui backout), JSON seed data, Kafka, GORM/JSON:API.
+**Tech Stack:** Go (atlas-quest, atlas-query-aggregator, atlas-npc-conversations, atlas-messages), `libs/atlas-saga` (shared condition constants), TypeScript/React (atlas-ui backout), JSON seed data, Kafka, GORM/JSON:API.
 
 **Spec:** `docs/tasks/task-089-pet-evolution/design-quest-driven.md`. Supersedes `design.md`/`plan.md` (free-conversation) for the trigger/UX layer; the engine plan there still stands.
 
@@ -33,8 +33,7 @@ Per-module checks: `GOWORK=off go test -race ./...`, `GOWORK=off go vet ./...`, 
 | `services/atlas-query-aggregator/.../validation/processor.go` | Builds the context (fetches pets) | populate pet detail; gate on `reqs.Pets` |
 | `services/atlas-quest/.../data/validation/model.go` | atlas-quest wire condition constants | add `PetTamenessCondition` |
 | `services/atlas-quest/.../data/validation/processor.go` | `buildStartConditions`/`buildEndConditions` | emit `petTameness` from `req.Pet`+`req.PetTamenessMin` |
-| `services/atlas-pets/.../kafka/message/pet/kafka.go` + `kafka/consumer/pet/consumer.go` + pet processor | pet commands | add `SET_CLOSENESS` test command |
-| `services/atlas-channel/.../` (GM command handler) | GM chat command | add `!settameness` → emit SET_CLOSENESS |
+| `services/atlas-messages/.../command/pet/commands.go` + `messages/pet/` lookup + `kafka/message/pet/` producer + `messages/main.go` | GM `@award <target> tameness <amount>` command (reuses atlas-pets `AWARD_CLOSENESS`) | **create** |
 | `services/atlas-npc-conversations/.../conversation/{model,rest,processor}.go` + 3 `pickfromcontext_*_test.go` | pickFromContext state type | **remove** |
 | `services/atlas-ui/src/types/models/conversation.ts`, `.../conversation/stateMeta.ts`, `transitions.ts` | UI pickFromContext support | **revert** |
 | `deploy/seed/gms/*/npc-conversations/npc/npc-9102001.json` (6) | synthetic free conversation | **delete** |
@@ -467,93 +466,82 @@ git add services/atlas-quest
 git commit -m "feat(atlas-quest): enforce pet + pettamenessmin quest checks via petTameness"
 ```
 
-### Task B5: atlas-pets `SET_CLOSENESS` command (GM test support — set absolute tameness)
+### Task B5: GM command `@award <target> tameness <amount>` (test support)
 
-atlas-pets already has `AWARD_CLOSENESS` (delta). Add an absolute `SET_CLOSENESS` so a GM can put a pet at exactly ≥ 1642 for testing.
+GM commands live in **atlas-messages**, not atlas-channel: each is an `@`-phrase regexp matcher in
+`messages/command/<domain>/commands.go`, GM-gated via `c.Gm()`, targeting `me`/`map`/`<name>`,
+returning a `command.Executor`, emitting directly via `producer.ProviderImpl(l)(ctx)(<topic>.EnvCommandTopic)(...)`,
+and registered in `messages/main.go`. This command follows the exact `@award <target> <thing> <amount>`
+family (`@award me meso 5000`) and **reuses atlas-pets' existing `AWARD_CLOSENESS`** command (additive)
+— no atlas-pets change. Reference implementation: `command/character/commands.go` `AwardMesoCommandProducer`;
+direct-emit pattern: `command/monster/commands.go` `MobSpawnCommandProducer`.
 
 **Files:**
-- Modify: `services/atlas-pets/.../kafka/message/pet/kafka.go` (command const + body)
-- Modify: `services/atlas-pets/.../kafka/consumer/pet/consumer.go` (register + handle)
-- Modify: pet processor (the file with `AwardClosenessWithTransactionAndEmit`) — add `SetClosenessAndEmit`
-- Test: the pet processor test file (append)
+- Create: `services/atlas-messages/atlas.com/messages/command/pet/commands.go`
+- Create: `services/atlas-messages/atlas.com/messages/pet/{processor.go,rest.go,requests.go}` (resolve a character's spawned pet id)
+- Create: `services/atlas-messages/atlas.com/messages/kafka/message/pet/{kafka.go,producer.go}` (AWARD_CLOSENESS command to the pet command topic)
+- Modify: `services/atlas-messages/atlas.com/messages/main.go` (register the producer)
+- Test: `services/atlas-messages/atlas.com/messages/command/pet/commands_test.go`
 
-- [ ] **Step 1: Write the failing processor test**
+- [ ] **Step 1: Pet lookup in atlas-messages**
 
-Mirror the existing closeness/award test (read it first for the in-memory GORM + builder setup):
+Add a minimal `pet` package (processor + REST client) that returns a character's **spawned** pet id(s).
+Mirror query-aggregator's `pet` package (it calls atlas-pets and exposes `Slot()`/`TemplateId()`/`Closeness()`):
 ```go
-func TestSetCloseness_SetsAbsoluteValue(t *testing.T) {
-	// arrange: a pet with closeness 10 persisted via the project Builder
-	// act:
-	updated, err := proc.SetCloseness(petId, 1642)
-	if err != nil {
-		t.Fatalf("SetCloseness: %v", err)
-	}
-	// assert:
-	if updated.Closeness() != 1642 {
-		t.Fatalf("Closeness() = %d, want 1642", updated.Closeness())
-	}
+// GetSpawnedPetIds returns the ids of the character's spawned pets (slot >= 0).
+func (p *ProcessorImpl) GetSpawnedPetIds(characterId uint32) ([]uint32, error)
+```
+Confirm the atlas-pets list route + owner filter against `services/atlas-query-aggregator/.../pet/requests.go`.
+
+- [ ] **Step 2: Pet command producer in atlas-messages**
+
+`kafka/message/pet/kafka.go`: the pet command **env topic** const + the command envelope (`PetId`,
+`Type`, `Body`) + `AwardClosenessCommandBody{ Amount uint16 }` (match atlas-pets' wire shape:
+`CommandAwardCloseness = "AWARD_CLOSENESS"`). `kafka/message/pet/producer.go`:
+```go
+func AwardClosenessCommandProvider(petId uint32, amount uint16) model.Provider[[]kafka.Message]
+```
+Mirror `kafka/message/monster` producers in atlas-messages.
+
+- [ ] **Step 3: Write the failing command test**
+
+Mirror `command/character/commands_test.go`:
+```go
+func TestAwardTamenessCommand_MatchesAndGmGated(t *testing.T) {
+	// GM character + message "@award me tameness 2000" → Executor returned, found == true
+	// non-GM character → found == false
+	// non-matching message "@award me meso 5" → found == false
 }
 ```
-(Use the project's pet Builder for setup — no test-only constructors, per CLAUDE.md.)
 
-- [ ] **Step 2: Run — expect failure** — `cd services/atlas-pets/atlas.com/pets && GOWORK=off go test ./... -run TestSetCloseness` → FAIL (`SetCloseness` undefined).
+- [ ] **Step 4: Run — expect failure** — `cd services/atlas-messages/atlas.com/messages && GOWORK=off go test ./command/pet/...` → FAIL (`AwardTamenessCommandProducer` undefined).
 
-- [ ] **Step 3: Implement the processor method** — alongside `AwardCloseness*`, add a `SetCloseness(petId, value)` (pure update of the closeness column to the absolute value) and `SetClosenessWithTransactionAndEmit(txId, petId, value)` that persists and emits `CLOSENESS_CHANGED` (reuse the existing closeness administrator/emitter; set absolute instead of add).
+- [ ] **Step 5: Implement `AwardTamenessCommandProducer`** in `command/pet/commands.go`:
+  - regexp ``^@award\s+(\w+)\s+tameness\s+(\d+)$``;
+  - `if !c.Gm() { return nil, false }`;
+  - resolve target character ids (`me`/`map`/`<name>`) exactly as `AwardExperienceCommandProducer` does;
+  - Executor: for each target character, `GetSpawnedPetIds`, and for each pet id emit
+    `AwardClosenessCommandProvider(petId, uint16(amount))` to the pet command topic.
 
-- [ ] **Step 4: Run — expect pass**.
+- [ ] **Step 6: Register** in `messages/main.go`: `command.Registry().Add(pet.AwardTamenessCommandProducer)` (alongside the other `command.Registry().Add(...)` calls ~line 42-51).
 
-- [ ] **Step 5: Wire the Kafka command** — in `kafka/message/pet/kafka.go`:
-```go
-	CommandSetCloseness = "SET_CLOSENESS"
-```
-```go
-type SetClosenessCommandBody struct {
-	Closeness uint16 `json:"closeness"`
-}
-```
-In `kafka/consumer/pet/consumer.go`, register a handler (mirror `handleAwardClosenessCommand`) that, on `CommandSetCloseness`, calls `SetClosenessWithTransactionAndEmit(c.TransactionId, c.PetId, c.Body.Closeness)`.
+- [ ] **Step 7: Module checks** — `cd services/atlas-messages/atlas.com/messages && GOWORK=off go build ./... && GOWORK=off go vet ./... && GOWORK=off go test -race ./...` → PASS.
 
-- [ ] **Step 6: Module checks** — `GOWORK=off go build ./... && GOWORK=off go vet ./... && GOWORK=off go test -race ./...` → PASS.
-
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-git add services/atlas-pets
-git commit -m "feat(atlas-pets): SET_CLOSENESS command to set absolute pet tameness (GM/test)"
+git add services/atlas-messages
+git commit -m "feat(atlas-messages): @award <target> tameness <amount> GM command (test support)"
 ```
 
-### Task B6: Channel GM command `!settameness`
-
-**Files:**
-- Modify: the atlas-channel GM command registry + a new handler (locate the existing GM command pattern first)
-
-- [ ] **Step 1: Locate the GM command framework**
-
-```bash
-grep -rniE 'gm command|adminCommand|!\w+|chatCommand|CommandHandler' services/atlas-channel/atlas.com/channel --include='*.go' | grep -viE '_test' | head
-```
-Identify how existing GM/admin chat commands are registered and how they resolve the acting character + summoned pet.
-
-- [ ] **Step 2: Add `!settameness <value>`** — resolves the character's summoned pet (slot ≥ 0; if multiple, the first or the one named in an optional arg) and emits the `SET_CLOSENESS` command (Task B5) to the pet command topic with `{petId, closeness: <value>}`. Follow the producer pattern used by the existing pet commands (`producer.ProviderImpl(...)(pet command topic)(...)`). Gate behind the same GM-level check other admin commands use.
-
-- [ ] **Step 3: Module checks** — `cd services/atlas-channel/atlas.com/channel && GOWORK=off go build ./... && GOWORK=off go vet ./... && GOWORK=off go test -race ./...` → PASS.
-
-- [ ] **Step 4: Commit**
-
-```bash
-cd "$(git rev-parse --show-toplevel)"
-git add services/atlas-channel
-git commit -m "feat(atlas-channel): !settameness GM command (set summoned pet tameness)"
-```
-
-### Task B7: Bake the touched services
+### Task B6: Bake the touched services
 
 - [ ] **Step 1: Bake + redis guard**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
-docker buildx bake atlas-query-aggregator atlas-quest atlas-pets atlas-channel
+docker buildx bake atlas-query-aggregator atlas-quest atlas-messages
 tools/redis-key-guard.sh
 ```
 Expected: all targets build (catches missing `COPY libs/...` for atlas-saga); guard clean.
@@ -612,8 +600,8 @@ Expected: all targets build (catches missing `COPY libs/...` for atlas-saga); gu
 
 ### Task D1: Full local verification
 
-- [ ] **Step 1: Per-module Go checks** — atlas-quest, atlas-query-aggregator, atlas-npc-conversations, atlas-pets, atlas-channel, libs/atlas-saga: `GOWORK=off go test -race ./...`, `go vet ./...`, `go build ./...` — all clean.
-- [ ] **Step 2: Bake + redis guard** — `docker buildx bake atlas-quest atlas-query-aggregator atlas-npc-conversations atlas-pets atlas-channel` and `tools/redis-key-guard.sh` → all build; guard clean.
+- [ ] **Step 1: Per-module Go checks** — atlas-quest, atlas-query-aggregator, atlas-npc-conversations, atlas-messages, libs/atlas-saga: `GOWORK=off go test -race ./...`, `go vet ./...`, `go build ./...` — all clean.
+- [ ] **Step 2: Bake + redis guard** — `docker buildx bake atlas-quest atlas-query-aggregator atlas-npc-conversations atlas-messages` and `tools/redis-key-guard.sh` → all build; guard clean.
 - [ ] **Step 3: UI build** — `cd services/atlas-ui && npm run build` → green, no `pickFromContext` references.
 
 ### Task D2: Live ephemeral validation
@@ -622,7 +610,7 @@ Expected: all targets build (catches missing `COPY libs/...` for atlas-saga); gu
 
 - [ ] **Step 1: Re-ingest + refresh atlas-data** — trigger the tenant ingest; when complete, `kubectl -n <ns> rollout restart deploy/atlas-data` (clears the REST in-memory cache — confirmed-needed this session).
 - [ ] **Step 2: Confirm seeding** — `GET /api/quests/8185/conversation` returns the authored machine; `GET /api/npcs/9102001/conversations` is now **empty** (free conversation gone).
-- [ ] **Step 3: In-game smoke test** — use `!settameness 1642` (Task B6) on a summoned baby dragon, hold a Rock, talk to Garnox (9102001) → quest 8185 offers/completes → pet evolves in place (random adult), Rock consumed. Set tameness below 1642 or drop the Rock → quest refuses; nothing consumed. Repeat for 4659 (robo) and 8189 (re-evolution).
+- [ ] **Step 3: In-game smoke test** — as a GM, summon a baby dragon, run `@award me tameness 2000` (Task B5) to push closeness over 1642, hold a Rock, talk to Garnox (9102001) → quest 8185 offers/completes → pet evolves in place (random adult), Rock consumed. With low tameness or no Rock → quest refuses; nothing consumed. Repeat for 4659 (robo) and 8189 (re-evolution).
 - [ ] **Step 4: Watch services** (Loki/k8s) — saga `PetEvolution` completes/compensates; no "unhandled message" or validation errors.
 
 ---
@@ -631,4 +619,4 @@ Expected: all targets build (catches missing `COPY libs/...` for atlas-saga); gu
 
 - **Spec coverage:** §4.1 → Phase B (B1–B4); §4.2 → Phase C (C2–C4); §4.3 (drop chooser) → Phase A (A2–A3) + C2 step 2 (enumerate-based target); §4.4 backout → Phase A; §4.5 retained → untouched; §2/§5 sourcing → C1. 8184 → C5. GM test command (user request) → B5–B6. Open risks (summoned-pet semantics, 8189 repeatability) → confirm-steps in C4 + B-tests.
 - **Placeholder scan:** the Cosmic-dependent dialogue in Phase C is genuinely external (not a pre-fillable placeholder) — flagged as a hard dependency (C1) and gated. All Phase A/B code steps carry real code. The GM-command framework specifics (B6) and pet-processor closeness-emitter reuse (B5) are "locate the existing pattern" steps because those frameworks weren't fully mapped during design — the executor reads them; the command/body/processor signatures are fully specified.
-- **Type consistency:** `PetTamenessCondition` is identical across `libs/atlas-saga` (value `"petTameness"`), query-aggregator (`ConditionType` alias), atlas-quest (wire string). `SpawnedPet{TemplateId, Closeness}`, `SetSpawnedPets`, `MaxPetClosenessForTemplates` consistent B2↔B3. `ConditionInput.Values` (atlas-quest) ↔ `Condition.values` (query-aggregator) carry the pet-id set; `Value` carries min closeness. `SET_CLOSENESS`/`SetClosenessCommandBody.Closeness`/`SetCloseness(petId, value)` consistent B5↔B6.
+- **Type consistency:** `PetTamenessCondition` is identical across `libs/atlas-saga` (value `"petTameness"`), query-aggregator (`ConditionType` alias), atlas-quest (wire string). `SpawnedPet{TemplateId, Closeness}`, `SetSpawnedPets`, `MaxPetClosenessForTemplates` consistent B2↔B3. `ConditionInput.Values` (atlas-quest) ↔ `Condition.values` (query-aggregator) carry the pet-id set; `Value` carries min closeness. GM command (B5) reuses atlas-pets `AWARD_CLOSENESS` (additive) via a new atlas-messages producer + pet lookup; no atlas-pets change.

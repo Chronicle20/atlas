@@ -38,7 +38,9 @@ func TestSueCharacterRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			var input SueCharacter
-			if v.Region == "GMS" && v.MajorVersion >= 95 {
+			// Mirror the codec's version branch: string-lead from v95 onward
+			// (jms is SUE-absent in practice; its branch choice is moot here).
+			if v.MajorVersion >= 95 {
 				input = NewSueCharacterV95("alice", 0x05, "spamming")
 			} else {
 				input = NewSueCharacterLegacy(0x01020304, 0x05, "spamming")

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldMatchTable
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#MatchTable
+    address: "0x53ad6d"
+    decompile_sha256: b45f953f19649a5ef64abe4df5815017bc8d8dc00358ea906619de17cc1b1066

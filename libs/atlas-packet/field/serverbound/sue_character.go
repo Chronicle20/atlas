@@ -45,17 +45,19 @@ func (m SueCharacter) String() string {
 	return fmt.Sprintf("characterId [%d], subCommand [%s], flag [%d], reason [%s]", m.characterId, m.subCommand, m.flag, m.reason)
 }
 
-// usesStringLead reports whether this version leads SUE_CHARACTER with a string
-// (v95+) instead of the int32 character id (v83/v84/v87).
-func usesStringLead(t tenant.Model) bool {
-	return t.IsRegion("GMS") && t.MajorAtLeast(95)
-}
+// SUE_CHARACTER leads with a sub-command string from v95 onward; v83/v84/v87
+// lead with the accused character id (int32). The boundary is between 87 and 95
+// (v87 uses the legacy form, v95 the new). The guard is written as an inline
+// MajorVersion comparison so the packet-audit Atlas analyzer can evaluate it
+// per-version (its guard DSL parses t.MajorVersion()-vs-N but not the
+// MajorAtLeast/IsRegion helpers). jms is version-absent (no send-site), so its
+// branch choice is moot.
 
 func (m SueCharacter) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		if usesStringLead(t) {
+		if t.MajorVersion() >= 95 {
 			w.WriteAsciiString(m.subCommand)
 		} else {
 			w.WriteInt(m.characterId)
@@ -69,7 +71,7 @@ func (m SueCharacter) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 func (m *SueCharacter) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if usesStringLead(t) {
+		if t.MajorVersion() >= 95 {
 			m.subCommand = r.ReadAsciiString()
 		} else {
 			m.characterId = r.ReadUint32()

@@ -271,6 +271,16 @@
         "handler": "QuestActionHandle"
       },
       {
+        "opCode": "0x7E",
+        "validator": "LoggedInValidator",
+        "handler": "SueCharacter"
+      },
+      {
+        "opCode": "0x8B",
+        "validator": "LoggedInValidator",
+        "handler": "AdminChat"
+      },
+      {
         "opCode": "0x8F",
         "handler": "MessengerOperationHandle"
       },
@@ -287,6 +297,16 @@
         "handler": "GuildInviteRejectHandle"
       },
       {
+        "opCode": "0x97",
+        "validator": "LoggedInValidator",
+        "handler": "AdminCommand"
+      },
+      {
+        "opCode": "0x98",
+        "validator": "LoggedInValidator",
+        "handler": "AdminLog"
+      },
+      {
         "opCode": "0x99",
         "handler": "BuddyOperationHandle"
       },
@@ -298,6 +318,11 @@
         "opCode": "0x9C",
         "validator": "LoggedInValidator",
         "handler": "UseDoor"
+      },
+      {
+        "opCode": "0x9E",
+        "validator": "LoggedInValidator",
+        "handler": "SlideRequest"
       },
       {
         "opCode": "0x9F",
@@ -427,6 +452,11 @@
         "opCode": "0x101",
         "validator": "LoggedInValidator",
         "handler": "Coconut"
+      },
+      {
+        "opCode": "0x102",
+        "validator": "LoggedInValidator",
+        "handler": "MatchTable"
       },
       {
         "opCode": "0x103",

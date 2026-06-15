@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldAdminCommand
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#AdminCommand
+    address: "0x568ac2"
+    decompile_sha256: 743fdb5ff3ad8152b5a453103ecba431427384d88d3f8db15c10c508d337b2ec

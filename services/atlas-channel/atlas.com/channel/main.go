@@ -792,6 +792,12 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.UseDoorHandle] = handler.UseDoorHandleFunc
 	handlerMap[fieldsb.WeddingActionHandle] = handler.WeddingActionHandleFunc
 	handlerMap[fieldsb.WeddingTalkHandle] = handler.WeddingTalkHandleFunc
+	handlerMap[fieldsb.AdminChatHandle] = handler.AdminChatHandleFunc
+	handlerMap[fieldsb.AdminCommandHandle] = handler.AdminCommandHandleFunc
+	handlerMap[fieldsb.AdminLogHandle] = handler.AdminLogHandleFunc
+	handlerMap[fieldsb.MatchTableHandle] = handler.MatchTableHandleFunc
+	handlerMap[fieldsb.SlideRequestHandle] = handler.SlideRequestHandleFunc
+	handlerMap[fieldsb.SueCharacterHandle] = handler.SueCharacterHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc

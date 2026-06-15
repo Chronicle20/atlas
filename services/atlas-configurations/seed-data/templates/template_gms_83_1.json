@@ -487,6 +487,16 @@
         "handler": "CharacterSkillMacroHandle"
       },
       {
+        "opCode": "0x72",
+        "validator": "LoggedInValidator",
+        "handler": "SueCharacter"
+      },
+      {
+        "opCode": "0x76",
+        "validator": "LoggedInValidator",
+        "handler": "AdminChat"
+      },
+      {
         "opCode": "0x77",
         "validator": "LoggedInValidator",
         "handler": "CharacterMultiChatHandle"
@@ -608,6 +618,16 @@
         "opCode": "0x7F",
         "validator": "LoggedInValidator",
         "handler": "GuildInviteRejectHandle"
+      },
+      {
+        "opCode": "0x80",
+        "validator": "LoggedInValidator",
+        "handler": "AdminCommand"
+      },
+      {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "AdminLog"
       },
       {
         "opCode": "0x82",
@@ -1051,6 +1071,11 @@
         "opCode": "0xD5",
         "validator": "LoggedInValidator",
         "handler": "Coconut"
+      },
+      {
+        "opCode": "0xD6",
+        "validator": "LoggedInValidator",
+        "handler": "MatchTable"
       },
       {
         "opCode": "0xD7",

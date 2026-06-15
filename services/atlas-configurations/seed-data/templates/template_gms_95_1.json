@@ -250,6 +250,11 @@
         "handler": "CharacterBuffCancel"
       },
       {
+        "opCode": "0x69",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillPrepareHandle"
+      },
+      {
         "opCode": "0x6A",
         "validator": "LoggedInValidator",
         "handler": "CharacterDropMesoHandle"
@@ -776,6 +781,14 @@
       {
         "opCode": "0xD6",
         "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xD7",
+        "writer": "CharacterSkillPrepareForeign"
+      },
+      {
+        "opCode": "0xD9",
+        "writer": "CharacterSkillCancelForeign"
       },
       {
         "opCode": "0xDA",

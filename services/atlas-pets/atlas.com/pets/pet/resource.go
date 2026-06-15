@@ -62,9 +62,22 @@ func handleGetPetsForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext
 	})
 }
 
+// createPetName defaults a missing pet name. Pets granted through the
+// inventory/award path supply no name, but the model requires one ("name is
+// required"). A new pet's name would normally be the item's WZ name; atlas-data
+// does not serve pet names today, so an empty name falls back to "Pet" (the
+// same effective result as the cash-shop path).
+func createPetName(provided string) string {
+	if provided != "" {
+		return provided
+	}
+	return "Pet"
+}
+
 func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
+		i.Name = createPetName(i.Name)
 		ip, err := model.Map(Extract)(model.FixedProvider(i))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model from input.")

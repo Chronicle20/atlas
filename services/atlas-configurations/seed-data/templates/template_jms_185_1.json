@@ -439,6 +439,11 @@
         "handler": "UseDoor"
       },
       {
+        "opCode": "0xED",
+        "validator": "LoggedInValidator",
+        "handler": "RequestFootholdInfo"
+      },
+      {
         "opCode": "0x89",
         "validator": "LoggedInValidator",
         "handler": "SlideRequest"
@@ -1203,6 +1208,10 @@
       {
         "opCode": "0x134",
         "writer": "SnowballTouch"
+      },
+      {
+        "opCode": "0x9C",
+        "writer": "FootholdInfo"
       },
       {
         "opCode": "0x9E",

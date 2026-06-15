@@ -9700,12 +9700,6 @@
           "guard": "v4 > 0 && v6 && v8 > 0"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v4 > 0 && v6",
-          "ref": "CMapLoadable::FootHoldStateChange"
-        },
-        {
           "op": "Decode4",
           "comment": "",
           "guard": "v4 > 0 && v6 && v5 == 2"
@@ -9750,7 +9744,8 @@
           "comment": "",
           "guard": "v4 > 0 && v6 && v5 == 2"
         }
-      ]
+      ],
+      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md §10."
     },
     "CField::OnGroupMessage": {
       "address": "0x535490",
@@ -9824,8 +9819,30 @@
     },
     "CField::OnRequestFootHoldInfo": {
       "address": "0x52ddd0",
-      "direction": "",
-      "calls": null
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nCurState"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCurX (0 when no moving info)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCurY (0 when no moving info)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bReverseVertical (0 when no moving info)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bReverseHorizontal (0 when no moving info)"
+        }
+      ],
+      "notes": "task-096: COutPacket builder reply to REQUEST_FOOTHOLD_INFO. Loops m_lDynamicObjs with NO count prefix; one representative entry flattened here (nCurState + nCurX/nCurY + 2 reverse flag bytes, or zeros)."
     },
     "CField::OnSetObjectState": {
       "address": "0x539890",
@@ -10973,6 +10990,18 @@
         {
           "op": "EncodeStr",
           "comment": ""
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#Mode": {
+      "address": "0x5771d0",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic OP-MODE-PREFIX entry (task-096): CITC::OnNormalItemResult reads Decode1(mode) then switch-dispatches to 35 cash-shop/MTS sub-handlers (0x15-0x3E). Only the leading mode byte is on the wire contract; per-mode tails are mode-opaque.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator)"
         }
       ]
     }

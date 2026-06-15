@@ -777,20 +777,19 @@
   opcode: 155
   fname: CQuickslotKeyMappedMan::OnInit
   provenance: csv-import
-- op: IDA_0X09C
+- op: FOOTHOLD_INFO
   direction: clientbound
   opcode: 156
   fname: CField::OnFootHoldInfo
-  provenance: ida-discovered
+  provenance: manual
+  note: 'task-096: renamed from placeholder IDA_0X09C (jms uses op label 0x09C for OnFootHoldInfo; v83 uses the same label for OnStalkResult — distinct packets). CField::OnFootHoldInfo @0x576a89 is the clientbound FOOTHOLD_INFO handler (v95/jms count-prefixed id-list form).'
   ida:
     address: 5695265
-- op: IDA_0X09D
-  direction: clientbound
-  opcode: 157
-  fname: CField::OnRequestFootHoldInfo
-  provenance: ida-discovered
-  ida:
-    address: 5695265
+# task-096: removed spurious clientbound IDA_0X09D (jms opcode 157). Its fname
+# CField::OnRequestFootHoldInfo is the SERVERBOUND foothold-info reply builder
+# (COutPacket @0x576cd2), not a clientbound packet — the discovery pass mislabeled
+# the opcode slot (it shared the OnFootHoldInfo discovery address). The serverbound
+# FOOTHOLD_INFO row (opcode 0xED) carries this function. VERSION-ABSENT (⬜) clientbound.
 - op: SPAWN_PLAYER
   direction: clientbound
   opcode: 158

@@ -833,11 +833,12 @@
   provenance: ida-discovered
   ida:
     address: 5637631
-- op: IDA_0X0AA
+- op: FOOTHOLD_INFO
   direction: clientbound
   opcode: 170
   fname: CField::OnFootHoldInfo
-  provenance: ida-discovered
+  provenance: manual
+  note: 'task-096: renamed from placeholder IDA_0X0AA. CField::OnFootHoldInfo @0x560fec is the clientbound FOOTHOLD_INFO handler (v87 single-entry form). Shared op label with v95/jms FOOTHOLD_INFO clientbound (different opcode per version).'
   ida:
     address: 5606216
 - op: SPAWN_PLAYER
@@ -3293,11 +3294,9 @@
   opcode: 238
   fname: CStage::OnSetField
   provenance: csv-import
-- op: FOOTHOLD_INFO
-  direction: serverbound
-  opcode: 239
-  fname: CField::OnRequestFootHoldInfo
-  provenance: csv-import
+# task-096: FOOTHOLD_INFO serverbound (opcode 239) removed — CField::OnRequestFootHoldInfo
+# is IDA-confirmed ABSENT in GMS v87 (the reply-builder only appears in GMS v95 + jms).
+# VERSION-ABSENT (⬜).
 - op: UNNAMED_R377
   direction: serverbound
   opcode: 240

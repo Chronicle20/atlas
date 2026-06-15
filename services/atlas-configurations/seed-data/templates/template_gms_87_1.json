@@ -1186,6 +1186,10 @@
         "writer": "StopClock"
       },
       {
+        "opCode": "0xAA",
+        "writer": "FootholdInfo"
+      },
+      {
         "opCode": "0xAB",
         "writer": "CharacterSpawn"
       },
@@ -1836,6 +1840,10 @@
       {
         "opCode": "0x170",
         "writer": "MtsOperation2"
+      },
+      {
+        "opCode": "0x171",
+        "writer": "MtsOperation"
       },
       {
         "opCode": "0x9C",

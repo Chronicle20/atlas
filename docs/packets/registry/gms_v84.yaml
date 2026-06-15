@@ -3651,12 +3651,9 @@
   fname: CStage::OnSetField
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: FOOTHOLD_INFO
-  direction: serverbound
-  opcode: 226
-  fname: CField::OnRequestFootHoldInfo
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+# task-096: FOOTHOLD_INFO serverbound (opcode 226) removed — CField::OnRequestFootHoldInfo
+# is IDA-confirmed ABSENT in GMS v84 (byte-identical to v83; the reply-builder only
+# appears in GMS v95 + jms). VERSION-ABSENT (⬜).
 - op: UNNAMED_R377
   direction: serverbound
   opcode: 227

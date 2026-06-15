@@ -3107,11 +3107,9 @@
   opcode: 225
   fname: CStage::OnSetField
   provenance: csv-import
-- op: FOOTHOLD_INFO
-  direction: serverbound
-  opcode: 226
-  fname: CField::OnRequestFootHoldInfo
-  provenance: csv-import
+# task-096: FOOTHOLD_INFO serverbound (opcode 226) removed — CField::OnRequestFootHoldInfo
+# is IDA-confirmed ABSENT in GMS v83 (the CSV allocated the opcode but no handler
+# function exists; the reply-builder only appears in GMS v95 + jms). VERSION-ABSENT (⬜).
 - op: UNNAMED_R377
   direction: serverbound
   opcode: 227

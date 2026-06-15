@@ -8258,12 +8258,6 @@
           "guard": "v3 > 0 && sub_577C42(&iPacket, v29) && v6 > 0"
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0 && sub_577C42(&iPacket, v29)",
-          "ref": "sub_6B85CE"
-        },
-        {
           "op": "Decode4",
           "comment": "",
           "guard": "v3 > 0 && sub_577C42(&iPacket, v29)"
@@ -8307,14 +8301,9 @@
           "op": "Decode1",
           "comment": "",
           "guard": "v3 > 0 && sub_577C42(&iPacket, v29)"
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0",
-          "ref": "sub_4067E3"
         }
-      ]
+      ],
+      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md §10."
     },
     "CField::OnGroupMessage": {
       "address": "0x56f286",
@@ -8387,8 +8376,30 @@
     },
     "CField::OnRequestFootHoldInfo": {
       "address": "0x576cd2",
-      "direction": "",
-      "calls": null
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nCurState"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCurX (0 when no moving info)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCurY (0 when no moving info)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bReverseVertical (0 when no moving info)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bReverseHorizontal (0 when no moving info)"
+        }
+      ],
+      "notes": "task-096: COutPacket builder reply to REQUEST_FOOTHOLD_INFO. Loops m_lDynamicObjs with NO count prefix; one representative entry flattened here (nCurState + nCurX/nCurY + 2 reverse flag bytes, or zeros)."
     },
     "CField::OnSetObjectState": {
       "address": "0x574c57",

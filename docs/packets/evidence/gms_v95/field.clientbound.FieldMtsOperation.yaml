@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsOperation
+direction: clientbound
+version: gms_v95
+category: OP-MODE-PREFIX
+ida:
+    function: CITC::OnNormalItemResult#Mode
+    address: "0x5771d0"
+    decompile_sha256: cf17ea23bb0a0f826290ee7e36d3798699fef87c272917bb89426a7620e9af74
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsOperationRoundTrip

@@ -1,11 +1,11 @@
 {
-  "toolSha": "e2e12c65dd33a0c58ed192860f1892e9b4aa4a80",
+  "toolSha": "479f986833b7056d10dbad2bb7e309fc83d85f25",
   "exportHashes": {
-    "gms_v83": "4f3a6be73d33bf81675884da16da3dc366dcee3bb055bf82b14a9c78fec0c65a",
-    "gms_v84": "062e0c075a5ab844824bed6a8aaf656d544c14dbc1ca9bd3e9ca3d83b10361e4",
-    "gms_v87": "a980a39965a5374cac982ba658f40f673344e04708fd55315054a0dcaa3e7486",
-    "gms_v95": "7761b4882585ddf881bc700e184ab263ad8b47096da910131d9eb41fb89f22fa",
-    "jms_v185": "e496295ef1872beddbb11c0d6bac3fea53f91fd41e77f6f22aafd527e0c4135a"
+    "gms_v83": "aa7639f602528da4fe4d03ca6b172ab93e9c45756fe0ce2bd7c2a2e4c40981fc",
+    "gms_v84": "40b13da095c18e1d8453c31008159e404e7e34a8ac4714ab56b93ab274673ef8",
+    "gms_v87": "1246c43e946c4fef2f01ea7f33b910f30e2be4538b90cd3ded247e96ff06ed93",
+    "gms_v95": "90cfefc9d50c7cd8335d8631c24ac902109c09e284a872f91ff3c85fffbc450a",
+    "jms_v185": "bda3f6b42099cb87c84325ed4ee540543fdff66dc66d81b0521d1294e05de99a"
   },
   "rows": [
     {
@@ -12805,7 +12805,6 @@
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField::OnFootHoldInfo",
         "CField::OnStalkResult"
       ],
       "cells": {
@@ -12826,41 +12825,8 @@
           "opcode": -1
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 156
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "IDA_0X09D",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CField::OnRequestFootHoldInfo"
-      ],
-      "cells": {
-        "gms_v83": {
           "state": "n-a",
           "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 157
         }
       }
     },
@@ -13978,11 +13944,42 @@
     },
     {
       "kind": "op",
+      "op": "FOOTHOLD_INFO",
+      "packet": "field/clientbound/FieldFootholdInfo",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnFootHoldInfo"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 170
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 176
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 156
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X0AA",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CField::OnFootHoldInfo",
         "sub_9F1DBC"
       ],
       "cells": {
@@ -13995,9 +13992,8 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 170
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v95": {
           "state": "n-a",
@@ -14579,38 +14575,6 @@
     },
     {
       "kind": "op",
-      "op": "IDA_0X0B0",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CField::OnFootHoldInfo"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 176
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "REMOVE_SPECIAL_MAPOBJECT",
       "direction": "clientbound",
       "tier1": false,
@@ -14717,38 +14681,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 180
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "IDA_0X0B1",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CField::OnRequestFootHoldInfo"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 177
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
         }
       }
     },
@@ -18616,42 +18548,6 @@
     },
     {
       "kind": "op",
-      "op": "FOOTHOLD_INFO",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CField::OnRequestFootHoldInfo"
-      ],
-      "cells": {
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 226
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 226
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 239
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 270
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 237
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "RANDOM_EMOTION",
       "direction": "clientbound",
       "tier1": false,
@@ -22134,6 +22030,38 @@
     },
     {
       "kind": "op",
+      "op": "FOOTHOLD_INFO",
+      "packet": "field/serverbound/FieldRequestFootholdInfo",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnRequestFootHoldInfo"
+      ],
+      "cells": {
+        "gms_v83": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 270
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 237
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "JMS_SLASH_COMMAND",
       "direction": "serverbound",
       "tier1": false,
@@ -25535,31 +25463,28 @@
     {
       "kind": "op",
       "op": "MTS_OPERATION",
+      "packet": "field/clientbound/FieldMtsOperation",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnCharacterSale",
         "CITC::OnNormalItemResult"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 348
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 348
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 369
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 412
         },
         "jms_v185": {

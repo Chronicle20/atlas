@@ -8851,12 +8851,6 @@
           "comment": ""
         },
         {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "ZMap<ZXString<char>,ZRef<DYNAMIC_OBJ_INFO>,ZXString<char>>::GetAt(this + 148, &iPacket, v18)",
-          "ref": "CMapLoadable::FootHoldStateChange"
-        },
-        {
           "op": "Decode4",
           "comment": "",
           "guard": "v4 == 2"
@@ -8906,7 +8900,8 @@
           "comment": "",
           "guard": "v4 == 2"
         }
-      ]
+      ],
+      "notes": "task-096: stripped FootHoldStateChange/FootHoldMove map-apply Delegate(s) (application logic, no wire bytes) per VERIFYING_A_PACKET.md §10."
     },
     "CField::OnGroupMessage": {
       "address": "0x5596b1",
@@ -10122,6 +10117,18 @@
         {
           "op": "Encode1",
           "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#Mode": {
+      "address": "0x5d43d0",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic OP-MODE-PREFIX entry (task-096): CITC::OnNormalItemResult reads Decode1(mode) then switch-dispatches to 35 cash-shop/MTS sub-handlers (0x15-0x3E). Only the leading mode byte is on the wire contract; per-mode tails are mode-opaque.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator)"
         }
       ]
     }

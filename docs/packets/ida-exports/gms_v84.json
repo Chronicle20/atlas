@@ -23010,6 +23010,18 @@
           "comment": "op byte (sub-op dispatcher for GUILD_OPERATION serverbound)"
         }
       ]
+    },
+    "CITC::OnNormalItemResult#Mode": {
+      "address": "0x5b47c8",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic OP-MODE-PREFIX entry (task-096): CITC::OnNormalItemResult reads Decode1(mode) then switch-dispatches to 35 cash-shop/MTS sub-handlers (0x15-0x3E). Only the leading mode byte is on the wire contract; per-mode tails are mode-opaque.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator)"
+        }
+      ]
     }
   }
 }

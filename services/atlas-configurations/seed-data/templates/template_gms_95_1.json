@@ -320,6 +320,11 @@
         "handler": "UseDoor"
       },
       {
+        "opCode": "0x10E",
+        "validator": "LoggedInValidator",
+        "handler": "RequestFootholdInfo"
+      },
+      {
         "opCode": "0x9E",
         "validator": "LoggedInValidator",
         "handler": "SlideRequest"
@@ -852,6 +857,10 @@
         "writer": "StopClock"
       },
       {
+        "opCode": "0xB0",
+        "writer": "FootholdInfo"
+      },
+      {
         "opCode": "0xB3",
         "writer": "CharacterSpawn"
       },
@@ -1234,6 +1243,10 @@
       {
         "opCode": "0x19B",
         "writer": "MtsOperation2"
+      },
+      {
+        "opCode": "0x19C",
+        "writer": "MtsOperation"
       },
       {
         "opCode": "0xA4",

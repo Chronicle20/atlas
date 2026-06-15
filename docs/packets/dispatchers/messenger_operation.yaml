@@ -1,0 +1,28 @@
+# MessengerOperation — CUIMessenger::OnPacket mode enumeration (PER-VERSION).
+#
+# Clientbound dispatcher (registry op MESSENGER): Decode1(mode) → switch.
+# Unlike CashShopOperation, the messenger mode enum is VERSION-STABLE: cases 0..8
+# are byte-identical in gms_v83 (0x8511fc), gms_v87 (0x8b978f), and gms_v95
+# (0x7f5e40) — IDA-verified. So one table serves every version; the gms_83/gms_84
+# table can be copied verbatim to gms_87/gms_95/jms_185 (which currently lack it).
+#
+# `key` = Atlas semantic operation key; `handler` = v95 PDB sub-handler;
+# `mode` = the byte (same on all versions). See bug_operations_mode_tables_
+# missing_v87_v95_jms.
+
+fname: CUIMessenger::OnPacket
+op: MESSENGER
+direction: clientbound
+discriminator: Decode1
+version_stable: true   # modes identical across gms_v83/v87/v95 (verified)
+
+operations:
+  - { key: ADD,             handler: OnEnter,            mode: 0 }   # slot, AvatarLook, id, byte, byte
+  - { key: JOIN,            handler: OnSelfEnterResult,  mode: 1 }   # 1 byte
+  - { key: REMOVE,          handler: OnLeave,            mode: 2 }   # 1 byte (slot)
+  - { key: REQUEST_INVITE,  handler: OnInvite,           mode: 3 }   # str, byte, int, byte
+  - { key: INVITE_SENT,     handler: OnInviteResult,     mode: 4 }   # str name, byte result
+  - { key: INVITE_DECLINED, handler: OnBlocked,          mode: 5 }   # str user, byte flag (Atlas reuses the "blocked" arm for declined)
+  - { key: CHAT,            handler: OnChat,             mode: 6 }   # str chat line
+  - { key: UPDATE,          handler: OnAvatar,           mode: 7 }   # slot, AvatarLook
+  # mode 8 (OnMigrated) — channel-migration roster; Atlas does not emit it (n/a).

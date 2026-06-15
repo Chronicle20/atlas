@@ -113,6 +113,15 @@ export interface GachaponActionState {
   failureState: string;
 }
 
+export interface PickFromContextState {
+  title?: string;
+  valuesContextKey: string;
+  labelsContextKey?: string;
+  contextKey?: string;
+  nextState: string;
+  emptyNextState: string;
+}
+
 export type ConversationStateType =
   | "dialogue"
   | "genericAction"
@@ -124,7 +133,8 @@ export type ConversationStateType =
   | "transportAction"
   | "partyQuestAction"
   | "partyQuestBonusAction"
-  | "gachaponAction";
+  | "gachaponAction"
+  | "pickFromContext";
 
 export interface ConversationState {
   id: string;
@@ -140,6 +150,7 @@ export interface ConversationState {
   partyQuestAction?: PartyQuestActionState;
   partyQuestBonusAction?: PartyQuestBonusActionState;
   gachaponAction?: GachaponActionState;
+  pickFromContext?: PickFromContextState;
 }
 
 export interface ConversationAttributes {

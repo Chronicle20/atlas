@@ -1851,6 +1851,23 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField_Wedding::OnWeddingCeremonyEnd":
 		return []candidate{{name: "WeddingCeremonyEnd", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// CField witch-tower / item-upgrade clientbound family (task-096). The
+	// OnScoreUpdate handler is shared by two ops that differ by version: it backs
+	// WITCH_TOWER_SCORE_UPDATE on v83/v84/v87/jms and ARIANT_SCORE on v95 (where
+	// v95 routes WITCH_TOWER_SCORE_UPDATE to OnChaosZakumTimer instead). Both
+	// clientbound candidates are returned; the matrix resolves them per op-identity
+	// via the registry op->fname mapping. OnItemUpgrade is an empty-body vtable
+	// forwarder backing VICIOUS_HAMMER (absent from the jms registry).
+	case "CField_Witchtower::OnScoreUpdate":
+		return []candidate{
+			{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound},
+			{name: "AriantScore", pkg: "field", dir: csvpkg.DirClientbound},
+		}
+	case "CField::OnChaosZakumTimer":
+		return []candidate{{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnItemUpgrade":
+		return []candidate{{name: "ViciousHammer", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	case "CField::OnTransferChannelReqIgnored":

@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldViciousHammer",
+  "IDAName": "CField::OnItemUpgrade",
+  "Address": "0x52a430",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

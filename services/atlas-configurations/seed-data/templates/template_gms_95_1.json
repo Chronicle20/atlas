@@ -1123,6 +1123,18 @@
         "writer": "WeddingCeremonyEnd"
       },
       {
+        "opCode": "0x166",
+        "writer": "AriantScore"
+      },
+      {
+        "opCode": "0x168",
+        "writer": "WitchTowerScoreUpdate"
+      },
+      {
+        "opCode": "0x1A9",
+        "writer": "ViciousHammer"
+      },
+      {
         "opCode": "0x17F",
         "writer": "CashShopCashQueryResult"
       },

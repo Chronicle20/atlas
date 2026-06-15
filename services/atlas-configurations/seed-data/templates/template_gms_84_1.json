@@ -2639,6 +2639,14 @@
         "writer": "WeddingCeremonyEnd"
       },
       {
+        "opCode": "0x134",
+        "writer": "WitchTowerScoreUpdate"
+      },
+      {
+        "opCode": "0x169",
+        "writer": "ViciousHammer"
+      },
+      {
         "opCode": "0x14B",
         "writer": "CashShopCashQueryResult"
       },

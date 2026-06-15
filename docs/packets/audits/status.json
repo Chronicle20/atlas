@@ -1,11 +1,11 @@
 {
-  "toolSha": "75b0fb64e85be19571695f28fa371c4700f504b1",
+  "toolSha": "143b45c92a0cf95588ef49e60d5acba848ddef24",
   "exportHashes": {
     "gms_v83": "110e92c18d0461156d3a73af69eb533c401b28d9a860a010fd2a97505f1fc3e3",
     "gms_v84": "55ee2bc60335a61ba5fa39ac119a93522f96611c126ed7914e2047f71c8e4196",
     "gms_v87": "c75db0d1861a9857d6b8a189b389de20a6d2abd0b3820e18075c91d1a58f6cec",
     "gms_v95": "b3528078b25e9bd92ae823a2892fbfecf38c8cac873d99ac7cf861fe357610cb",
-    "jms_v185": "d95c5614c60dfe1f29012b5b68a68968512bd9229f6c5eee81f2a1d9d9328b5a"
+    "jms_v185": "8671c1838dc786f50300d5d62e9c4fafdd8e9a790ebb62832443b0fcfdb374be"
   },
   "rows": [
     {
@@ -23857,36 +23857,32 @@
     {
       "kind": "op",
       "op": "WITCH_TOWER_SCORE_UPDATE",
+      "packet": "field/clientbound/FieldWitchTowerScoreUpdate",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnChaosZakumTimer",
         "CField_Witchtower::OnScoreUpdate"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 302
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 302
+          "state": "verified",
+          "opcode": 308
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 319
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 360
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 326
         }
       }
@@ -25883,30 +25879,27 @@
     {
       "kind": "op",
       "op": "VICIOUS_HAMMER",
+      "packet": "field/clientbound/FieldViciousHammer",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField::OnItemUpgrade"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 354
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 354
+          "state": "verified",
+          "opcode": 361
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 375
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 425
         },
         "jms_v185": {
@@ -25918,8 +25911,9 @@
     {
       "kind": "op",
       "op": "ARIANT_SCORE",
+      "packet": "field/clientbound/FieldAriantScore",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CField_Witchtower::OnPacket",
         "CField_Witchtower::OnScoreUpdate"
@@ -25938,8 +25932,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 358
         },
         "jms_v185": {

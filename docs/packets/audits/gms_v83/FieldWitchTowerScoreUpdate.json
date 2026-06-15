@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldWitchTowerScoreUpdate",
+  "IDAName": "CField_Witchtower::OnScoreUpdate",
+  "Address": "0x585279",
+  "Variant": "GMS/v83",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/witch_tower_score_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

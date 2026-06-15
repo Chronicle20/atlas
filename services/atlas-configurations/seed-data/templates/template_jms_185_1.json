@@ -1871,6 +1871,10 @@
         "writer": "WeddingCeremonyEnd"
       },
       {
+        "opCode": "0x146",
+        "writer": "WitchTowerScoreUpdate"
+      },
+      {
         "opCode": "0x163",
         "writer": "CashShopCashQueryResult"
       },

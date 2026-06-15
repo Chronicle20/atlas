@@ -1764,10 +1764,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
-  opcode: 302
+  opcode: 308
   fname: CField_Witchtower::OnScoreUpdate
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5853154
+  note: 'task-096 IDA v84: CField_Witchtower::OnPacket (sub_594FBE @0x594fbe) dispatches a2==308 (0x134) -> CField_Witchtower::OnScoreUpdate (0x594fe2). The CSV has no v84 column; the prior csv-import value 302 was a v83 copy and was never actually corrected. v84 opcode-table shift puts it at 308.'
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 310
@@ -2022,10 +2024,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: VICIOUS_HAMMER
   direction: clientbound
-  opcode: 354
+  opcode: 361
   fname: CField::OnItemUpgrade
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5522325
+  note: 'task-096 IDA v84: CField::OnPacket (0x53d5a7) routes headers [359,362] (0x167-0x16A) to the OnItemUpgrade vtable forwarder (sub_544395 @0x544395). v83 CSV VICIOUS_HAMMER=354; applying the v84 opcode-table +7 region shift (matches ZAKUM_SHRINE 303->310 and WITCH_TOWER_SCORE_UPDATE) gives 361, which falls inside the confirmed forwarding range. The prior csv-import value 354 was a v83 copy.'
 - op: VEGA_SCROLL
   direction: clientbound
   opcode: 358

@@ -9209,6 +9209,16 @@
           "comment": "msg"
         }
       ]
+    },
+    "CField_Witchtower::OnScoreUpdate": {
+      "address": "0x5da14c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

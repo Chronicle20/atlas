@@ -1181,43 +1181,11 @@
       },
       {
         "opCode": "0x16D",
-        "writer": "NPCShopOperation",
-        "options": {
-          "operations": {
-            "OK": 0,
-            "OUT_OF_STOCK": 1,
-            "NOT_ENOUGH_MONEY": 2,
-            "INVENTORY_FULL": 3,
-            "OUT_OF_STOCK_2": 5,
-            "OUT_OF_STOCK_3": 9,
-            "NOT_ENOUGH_MONEY_2": 10,
-            "NEED_MORE_ITEMS": 13,
-            "OVER_LEVEL_REQUIREMENT": 14,
-            "UNDER_LEVEL_REQUIREMENT": 15,
-            "TRADE_LIMIT": 16,
-            "GENERIC_ERROR": 17,
-            "GENERIC_ERROR_WITH_REASON": 17
-          }
-        }
+        "writer": "NPCShopOperation"
       },
       {
         "opCode": "0x170",
-        "writer": "StorageOperation",
-        "options": {
-          "operations": {
-            "RETRIEVE_ASSETS": 9,
-            "INVENTORY_FULL": 10,
-            "NOT_ENOUGH_MESOS": 11,
-            "ONE_OF_A_KIND": 12,
-            "STORE_ASSETS": 13,
-            "NOT_ENOUGH_MESOS_2": 16,
-            "UNKNOWN": 17,
-            "UPDATE_MESO": 19,
-            "SHOW": 22,
-            "UNKNOWN_2": 23,
-            "ERROR_MESSAGE": 24
-          }
-        }
+        "writer": "StorageOperation"
       },
       {
         "opCode": "0x174",
@@ -1237,19 +1205,7 @@
       },
       {
         "opCode": "0x175",
-        "writer": "CharacterInteraction",
-        "options": {
-          "operations": {
-            "INVITE": 2,
-            "INVITE_RESULT": 3,
-            "ENTER": 4,
-            "ENTER_RESULT": 5,
-            "CHAT": 6,
-            "CHAT_THING": 8,
-            "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
-          }
-        }
+        "writer": "CharacterInteraction"
       },
       {
         "opCode": "0x176",

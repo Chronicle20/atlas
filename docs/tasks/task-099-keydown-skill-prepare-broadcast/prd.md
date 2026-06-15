@@ -62,8 +62,8 @@ Non-goals:
 - FR-5.1 If the caster leaves the map, disconnects, or dies while a keydown is active, observers must not be left with a stuck aura. Define and implement the chosen mechanism (e.g., synthesize a remote-cancel broadcast on field-leave/cleanup). The exact trigger set is an open question (§9) to resolve in design.
 
 ### 4.6 Version coverage & verification
-- FR-6.1 All four packets (serverbound prepare, clientbound prepare, serverbound cancel, clientbound cancel) are implemented for **every supported version**: GMS v83, v84, v87, v92, v95, JMS v185.
-- FR-6.2 For each version, the opcode and the exact read/write order are **verified against that version's IDB** (ida-pro instances: v83 :13342, v84 :13337, v87 :13341, v95 :13340, JMS185 :13339; v92 has no IDB — see §9). The registry `fname`/opcode is a starting hint only.
+- FR-6.1 All four packets (serverbound prepare, clientbound prepare, serverbound cancel, clientbound cancel) are implemented for the **IDB-backed supported versions**: GMS v83, v84, v87, v95, JMS v185. **v92 is DEFERRED** (no IDB — see OQ-2/design D7); parked as a follow-up.
+- FR-6.2 For each version, the opcode and the exact read/write order are **verified against that version's IDB** (ida-pro instances: v83 :13342, v84 :13337, v87 :13341, v95 :13340, JMS185 :13339). The registry `fname`/opcode is a starting hint only.
 - FR-6.3 Each packet × version cell is promoted in `docs/packets/audits/STATUS.md` from ❌ to verified, backed by a byte-fixture test following the `verify-packet` / `VERIFYING_A_PACKET` playbook.
 
 ### 4.7 Tenant config wiring
@@ -108,7 +108,7 @@ No `go.mod` changes anticipated (no new modules), so the docker-bake gate does n
 ## 9. Open Questions
 
 - **OQ-1 (per-version cancel opcode):** the serverbound keyup/cancel opcode must be read from each IDB. v95 = dedicated `0x068`; v83/84/87/jms185 unknown (Cosmic's `CANCEL_BUFF` overload is explicitly NOT to be trusted). Resolve during design/verification.
-- **OQ-2 (v92 has no IDB):** there is no v92 client IDB available. How do we verify v92 opcodes/read-order — port from the nearest verified version (v95?) and banner as unverified, or defer v92 wiring until an IDB exists? (Cf. the parked v92 mount-food precedent.)
+- **OQ-2 (v92 has no IDB): RESOLVED → DEFERRED.** No v92 client IDB exists; we will not port assumptions into a wire-format packet. v92 keydown prepare/cancel is parked as a documented follow-up until a v92 IDB exists. (Design D7.)
 - **OQ-3 (read-order drift across versions):** v95 reads `action(int16)+actionSpeed`; confirm whether v83/84/87/jms differ (field widths, extra crc/dr blocks, v95+-only fields) as the attack-info decode does.
 - **OQ-4 (termination triggers):** which server-side events must synthesize a remote-cancel — map change, disconnect, death, debuff/stun? Minimum viable = field-leave/disconnect; confirm death/stun in design.
 - **OQ-5 (MovingShootAttackPrepare):** v95 has a separate `OnMovingShootAttackPrepare` (nType 216 / `MOVING_SHOOT_ATTACK_PREPARE` ~0x0D8) for moving-shoot keydown. Is it required for any in-scope skill (e.g. Rapid Fire / Hurricane while moving), or is the standard prepare sufficient? Determine in design; may expand the packet set.
@@ -118,7 +118,7 @@ No `go.mod` changes anticipated (no new modules), so the docker-bake gate does n
 
 - [ ] In a live env, with two characters in one map, a Bowmaster casting Hurricane shows the looping cast aura on the observer's client; the aura stops promptly on key release.
 - [ ] The same holds for a representative sample across keydown families: a Monster Magnet (warrior), a BigBang (mage), Rapid Fire (corsair), Piercing Arrow (marksman).
-- [ ] Serverbound prepare and cancel handlers are registered and decode correctly for v83/v84/v87/v92/v95/jms185 (per-version read order verified against IDB; v92 per OQ-2 resolution).
+- [ ] Serverbound prepare and cancel handlers are registered and decode correctly for v83/v84/v87/v95/jms185 (per-version read order verified against IDB). v92 deferred (OQ-2).
 - [ ] Clientbound remote-prepare and remote-cancel are broadcast to all other map sessions excluding the caster, encoded per IDB-verified write order for each version.
 - [ ] Broadcast is gated to `skill.IsKeyDownSkill` and to skills the caster actually owns; non-keydown/unowned skills are dropped (covered by tests).
 - [ ] No stuck aura: caster key-release, map change, and disconnect all clear the observer's aura (per OQ-4 resolution).

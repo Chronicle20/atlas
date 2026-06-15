@@ -5,11 +5,11 @@
 
 Tool: `143b45c92a0cf95588ef49e60d5acba848ddef24`
 
-- export gms_v83: `110e92c18d0461156d3a73af69eb533c401b28d9a860a010fd2a97505f1fc3e3`
-- export gms_v84: `55ee2bc60335a61ba5fa39ac119a93522f96611c126ed7914e2047f71c8e4196`
-- export gms_v87: `c75db0d1861a9857d6b8a189b389de20a6d2abd0b3820e18075c91d1a58f6cec`
-- export gms_v95: `b3528078b25e9bd92ae823a2892fbfecf38c8cac873d99ac7cf861fe357610cb`
-- export jms_v185: `8671c1838dc786f50300d5d62e9c4fafdd8e9a790ebb62832443b0fcfdb374be`
+- export gms_v83: `16e132b9965e6fbf71f52fa2da1257ab86a5c93a197f1be8db2fe0dba0b6eb0d`
+- export gms_v84: `9b32003e507d26fabc2b6ac5159c34c0de6a1f43dab57e3d7b18c582c8c478a9`
+- export gms_v87: `d1d40b52f90630c9e538515753926d316fe15aaeae1799173c2d31118e515a0d`
+- export gms_v95: `1589847676ac53a84e77dc915dbd515f07731c7251d631e8c7a9246b7154c5f2`
+- export jms_v185: `6f7c168041d23d03ca733c9f36a5972a79efbcbb568d3b77d3d2d10bc2414dc8`
 
 ## Clientbound
 
@@ -636,7 +636,7 @@ Tool: `143b45c92a0cf95588ef49e60d5acba848ddef24`
 | EXPEDITION_OPERATION | ExpeditionIntermediary::OnPacketExpNoti_Invite; ExpeditionIntermediary::SendExpChangeBossPacket; ExpeditionIntermediary::SendExpChangeMasterPacket; ExpeditionIntermediary::SendExpCreatePacket; ExpeditionIntermediary::SendExpInvitePacket; ExpeditionIntermediary::SendExpKickPacket; ExpeditionIntermediary::SendExpRelocatePartyPacket; ExpeditionIntermediary::SendResponseInvitePacket; ExpeditionIntermediary::SendWithdrawPacket |  |  | ⬜ |  | ⬜ | 0x084 | ❌ | 0x093 | ❌ | 0x07F | ❌ |
 | UNNAMED_R221 |  |  | 0x084 | ❌ | 0x084 | ❌ | 0x08C | ❌ | 0x09B | ❌ | 0x087 | ❌ |
 | UPDATE_CLIENT_TIMER | CUserLocal::UpdateClientTimer |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x085 | ❌ | 0x070 | ❌ |
-| USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal |  | 0x085 | ❌ | 0x085 | ❌ | 0x08D | ❌ | 0x09C | ❌ | 0x088 | ❌ |
+| USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal |  | 0x085 | ❌ | 0x089 | ❌ | 0x08D | ❌ | 0x09C | ❌ | 0x088 | ❌ |
 | FOLLOW_CHARACTER_REQUEST | CWvsContext::SendFollowCharacterRequest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x086 | ❌ | 0x074 | ❌ |
 | OPEN_GATE | COpenGatePool::TryEnterOpenGate |  | 0x086 | ❌ | 0x086 | ❌ | 0x08E | ❌ | 0x09D | ❌ | 0x0A2 | ❌ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap |  | 0x087 | ❌ | 0x087 | ❌ | 0x08F | ❌ | 0x09F | ❌ | 0x08A | ❌ |
@@ -647,8 +647,8 @@ Tool: `143b45c92a0cf95588ef49e60d5acba848ddef24`
 | RING_ACTION | CEngageDlg::SetRet; CWvsContext::OnMarriageRequest; CWvsContext::SendEngagementRequest; CWvsContext::SendInvitationQuery; CWvsContext::SendRingDropRequest; CWvsContext::SendSendInvitaionRequest; CWvsContext::SendWishListInput |  | 0x089 | ❌ | 0x089 | ❌ | 0x091 | ❌ | 0x0A1 | ❌ | 0x08C | ❌ |
 | FOLLOW_REQUEST_APPLY | CWvsContext::OnSetPassenserRequest; CWvsContext::SendFollowRequestApply |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x076 | ❌ |
 | WEDDING_WISH_LIST_REQUEST | CWishListGiveDlg::SendPutItemRequest; CWishListGiveDlg::SetRet; CWishListRecvDlg::SendGetItemRequest; CWishListRecvDlg::SetRet |  | 0x08A | ❌ | 0x08A | ❌ | 0x092 | ❌ | 0x0A2 | ❌ | 0x08D | ❌ |
-| WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/clientbound/FieldWeddingProgress (T1) | 0x08B | ✅ | 0x08B | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
-| WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/clientbound/FieldWeddingProgress (T1) | 0x08C | ✅ | 0x08C | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
+| WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/clientbound/FieldWeddingProgress (T1) | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A3 | ✅ |  | ⬜ |
+| WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/clientbound/FieldWeddingProgress (T1) | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
 | BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  | 0x08D | ❌ | 0x08D | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
 | ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildOperation (T1) | 0x08E | ❌ | 0x08E | ❌ | 0x096 | ❌ | 0x0A7 | ✅ | 0x091 | ✅ |
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x08F | ✅ | 0x08F | ❌ | 0x097 | ✅ | 0x0A8 | ✅ | 0x092 | ✅ |
@@ -724,12 +724,12 @@ Tool: `143b45c92a0cf95588ef49e60d5acba848ddef24`
 | UNNAMED_R355 |  |  | 0x0D0 | ❌ | 0x0D0 | ❌ | 0x0DD | ❌ | 0x0FC | ❌ | 0x0DB | ❌ |
 | UNNAMED_R356 |  |  | 0x0D1 | ❌ | 0x0D1 | ❌ | 0x0DE | ❌ | 0x0FD | ❌ | 0x0DC | ❌ |
 | UNNAMED_R357 |  |  | 0x0D2 | ❌ | 0x0D2 | ❌ | 0x0DF | ❌ | 0x0FE | ❌ | 0x0DD | ❌ |
-| SNOWBALL | CField_SnowBall::BasicActionAttack |  | 0x0D3 | ❌ | 0x0D3 | ❌ | 0x0E0 | ❌ | 0x0FF | ❌ | 0x0DE | ❌ |
+| SNOWBALL | CField_SnowBall::BasicActionAttack |  | 0x0D3 | ❌ | 0x0D9 | ❌ | 0x0E0 | ❌ | 0x0FF | ❌ | 0x0DE | ❌ |
 | SUMMON_REMOVE | CSummoned::SendRemove |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D3 | ❌ | 0x0B6 | ❌ |
-| LEFT_KNOCKBACK | CField_SnowBall::Update |  | 0x0D4 | ❌ | 0x0D4 | ❌ | 0x0E1 | ❌ | 0x100 | ❌ | 0x0DF | ❌ |
-| COCONUT | CField_Coconut::BasicActionAttack |  | 0x0D5 | ❌ | 0x0D5 | ❌ | 0x0E2 | ❌ | 0x101 | ❌ | 0x0E0 | ❌ |
+| LEFT_KNOCKBACK | CField_SnowBall::Update |  | 0x0D4 | ❌ | 0x0DA | ❌ | 0x0E1 | ❌ | 0x100 | ❌ | 0x0DF | ❌ |
+| COCONUT | CField_Coconut::BasicActionAttack |  | 0x0D5 | ❌ | 0x0DB | ❌ | 0x0E2 | ❌ | 0x101 | ❌ | 0x0E0 | ❌ |
 | MATCH_TABLE | CField::SendChatMsgSlash |  | 0x0D6 | ❌ | 0x0D6 | ❌ | 0x0E3 | ❌ | 0x102 | ❌ | 0x0E1 | ❌ |
-| GUILD_BOSS | CField_GuildBoss::BasicActionAttack |  | 0x0D7 | ❌ | 0x0D7 | ❌ | 0x0E4 | ❌ | 0x103 | ❌ | 0x0E2 | ❌ |
+| GUILD_BOSS | CField_GuildBoss::BasicActionAttack |  | 0x0D7 | ❌ | 0x0DD | ❌ | 0x0E4 | ❌ | 0x103 | ❌ | 0x0E2 | ❌ |
 | UNNAMED_R363 |  |  | 0x0D8 | ❌ | 0x0D8 | ❌ | 0x0E5 | ❌ | 0x104 | ❌ | 0x0E3 | ❌ |
 | UNNAMED_R364 |  |  | 0x0D9 | ❌ | 0x0D9 | ❌ | 0x0E6 | ❌ | 0x105 | ❌ | 0x0E4 | ❌ |
 | MONSTER_CARNIVAL | CUIMonsterCarnival::RequestSend | monster/carnival/serverbound/MonsterCarnival (T1) | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0E7 | ✅ | 0x106 | ✅ | 0x0E5 | ✅ |

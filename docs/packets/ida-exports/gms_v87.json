@@ -9978,6 +9978,77 @@
           "comment": "msg"
         }
       ]
+    },
+    "CField_SnowBall::BasicActionAttack#Snowball": {
+      "address": "0x5a360c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::Update#LeftKnockback": {
+      "address": "0x5a307b",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField_Coconut::BasicActionAttack#Coconut": {
+      "address": "0x5735b7",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_GuildBoss::BasicActionAttack#GuildBoss": {
+      "address": "0x58319f",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField::TryEnterTownPortal#UseDoor": {
+      "address": "0x55ef62",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Wedding::OnWeddingProgress#Action": {
+      "address": "0x5b012e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_Wedding::OnWeddingProgress#Talk": {
+      "address": "0x5b012e",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

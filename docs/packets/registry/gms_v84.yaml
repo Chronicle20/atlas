@@ -3046,12 +3046,14 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 221: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: USE_DOOR
   direction: serverbound
-  opcode: 133
+  opcode: 137
   fname: CField::TryEnterTownPortal
   fname_alts:
     - CTownPortalPool::TryEnterTownPortal
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5519595
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 133->137 (0x89) by READING the real send-site. CField::TryEnterTownPortal @0x5438eb builds COutPacket(137) Encode4(townportal id)+Encode1(1)+SendPacket. v84 CField low-range serverbound is +4 vs v83 (133); the prior csv-import value 133 was the stale v83 opcode.'
 - op: OPEN_GATE
   direction: serverbound
   opcode: 134
@@ -3104,22 +3106,20 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: WEDDING_ACTION
   direction: serverbound
-  opcode: 139
+  opcode: 143
   fname: CField_Wedding::OnWeddingProgress
-  provenance: manual
-  note: 'v84 byte-identical to v83 (task-083). Per IDA v83 CField_Wedding::OnWeddingProgress
-    @0x58153d: emits COutPacket(139) + Encode1(m_nCurrentStep). Body = { byte currentStep }.
-    Distinct serverbound op (NOT a mode of clientbound WEDDING_PROGRESS=320); shares the
-    fname only because OnWeddingProgress both reads the clientbound progress and emits this
-    serverbound reply.'
+  provenance: ida-discovered
+  ida:
+    address: 5837286
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 139->143 (0x8F) by READING the real send-site. v84 CField_Wedding::OnWeddingProgress @0x5911e6 emits COutPacket(143) + Encode1(*((_BYTE *)this+2088)) on the bless confirm branch. Body = { byte }. Distinct serverbound op (NOT a mode of clientbound WEDDING_PROGRESS); shares the fname only because OnWeddingProgress both reads the clientbound progress and emits this serverbound reply. Prior value 139 was the stale v83 opcode.'
 - op: WEDDING_TALK
   direction: serverbound
-  opcode: 140
+  opcode: 144
   fname: CField_Wedding::OnWeddingProgress
-  provenance: manual
-  note: 'v84 byte-identical to v83 (task-083). Per IDA v83 CField_Wedding::OnWeddingProgress
-    @0x58153d: emits COutPacket(0x8C=140) with no body (header only). Sent on the bless YESNO
-    confirm. Distinct serverbound op emitted by OnWeddingProgress.'
+  provenance: ida-discovered
+  ida:
+    address: 5837286
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 140->144 (0x90) by READING the real send-site. v84 CField_Wedding::OnWeddingProgress @0x5911e6 emits COutPacket(144) with no body (header only) on the YESNO confirm (sub_4F61C5==6) branch. Distinct serverbound op emitted by OnWeddingProgress. Prior value 140 was the stale v83 opcode.'
 - op: BOOBY_TRAP_ALERT
   direction: serverbound
   opcode: 141
@@ -3547,22 +3547,28 @@
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 357: op name unknown — rename via discover-ops adjudication (provenance: manual)'
 - op: SNOWBALL
   direction: serverbound
-  opcode: 211
+  opcode: 217
   fname: CField_SnowBall::BasicActionAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5786880
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 211->217 (0xD9) by READING the real send-site. CField_SnowBall::BasicActionAttack @0x584d00 builds COutPacket(217) Encode1(attack)+Encode2(damage)+Encode2(x)+SendPacket. v84 minigame serverbound family is +6 vs v83 (211); the prior csv value 211 was the stale v83 opcode. Opcode 217 was previously held by the stale phantom UNNAMED_R364 (v83-inherited CSV n/a slot) — SNOWBALL is the real IDA-verified owner.'
 - op: LEFT_KNOCKBACK
   direction: serverbound
-  opcode: 212
+  opcode: 218
   fname: CField_SnowBall::Update
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5785455
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 212->218 (0xDA) by READING the real send-site. CField_SnowBall::Update @0x58476f builds COutPacket(218) (empty body) on crossing the knockback boundary + SendPacket. +6 vs v83 (212); prior csv value 212 was the stale v83 opcode.'
 - op: COCONUT
   direction: serverbound
-  opcode: 213
+  opcode: 219
   fname: CField_Coconut::BasicActionAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5595253
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 213->219 (0xDB) by READING the real send-site. CField_Coconut::BasicActionAttack @0x556075 builds COutPacket(219) Encode2(attack)+Encode2(x)+SendPacket. +6 vs v83 (213); prior csv value 213 was the stale v83 opcode. Opcode 219 was previously held by the stale phantom UNNAMED_R366 — COCONUT is the real IDA-verified owner.'
 - op: MATCH_TABLE
   direction: serverbound
   opcode: 214
@@ -3571,10 +3577,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: GUILD_BOSS
   direction: serverbound
-  opcode: 215
+  opcode: 221
   fname: CField_GuildBoss::BasicActionAttack
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5658088
+  note: 'task-096 IDA re-harvest: v84 opcode corrected 215->221 (0xDD) by READING the real send-site. CField_GuildBoss::BasicActionAttack @0x5655e8 builds COutPacket(221) (empty body) after the reactor hit-check + SendPacket. +6 vs v83 (215); prior csv value 215 was the stale v83 opcode. Opcode 221 was previously held by the stale phantom UNNAMED_R369 — GUILD_BOSS is the real IDA-verified owner.'
 - op: UNNAMED_R363
   direction: serverbound
   opcode: 216
@@ -3586,7 +3594,7 @@
   opcode: 217
   fname: ""
   provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 364: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  note: 'STALE PHANTOM (task-096 IDA re-harvest): this is a v83-inherited CSV n/a slot with no fname and no v84 send-site. In v84 opcode 217 (0xD9) is IDA-verified to belong to SNOWBALL (CField_SnowBall::BasicActionAttack @0x584d00), whose v84 opcode shifted +6 (211->217) onto this slot. SNOWBALL is the authoritative owner; this phantom is retained per the existing v84 real-op+phantom convention (cf. MONSTER_CARNIVAL/UNNAMED_R372 at 224) but carries no semantics. Original seed note: CSV serverbound row 364, op name unknown.'
 - op: MONSTER_CARNIVAL
   direction: serverbound
   opcode: 224
@@ -3600,13 +3608,13 @@
   opcode: 219
   fname: ""
   provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 366: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  note: 'STALE PHANTOM (task-096 IDA re-harvest): v83-inherited CSV n/a slot with no fname and no v84 send-site. In v84 opcode 219 (0xDB) is IDA-verified to belong to COCONUT (CField_Coconut::BasicActionAttack @0x556075), whose v84 opcode shifted +6 (213->219) onto this slot. COCONUT is the authoritative owner; this phantom is retained per the existing v84 real-op+phantom convention but carries no semantics. Original seed note: CSV serverbound row 366, op name unknown.'
 - op: UNNAMED_R369
   direction: serverbound
   opcode: 221
   fname: ""
   provenance: csv-import
-  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB. CSV serverbound row 369: op name unknown — rename via discover-ops adjudication (provenance: manual)'
+  note: 'STALE PHANTOM (task-096 IDA re-harvest): v83-inherited CSV n/a slot with no fname and no v84 send-site. In v84 opcode 221 (0xDD) is IDA-verified to belong to GUILD_BOSS (CField_GuildBoss::BasicActionAttack @0x5655e8), whose v84 opcode shifted +6 (215->221) onto this slot. GUILD_BOSS is the authoritative owner; this phantom is retained per the existing v84 real-op+phantom convention but carries no semantics. Original seed note: CSV serverbound row 369, op name unknown.'
 - op: PARTY_SEARCH_START
   direction: serverbound
   opcode: 222

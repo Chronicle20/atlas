@@ -9219,6 +9219,62 @@
           "comment": ""
         }
       ]
+    },
+    "CField_SnowBall::BasicActionAttack#Snowball": {
+      "address": "0x5c9881",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_SnowBall::Update#LeftKnockback": {
+      "address": "0x5c92fb",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField_Coconut::BasicActionAttack#Coconut": {
+      "address": "0x589bd1",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": ""
+        },
+        {
+          "op": "Encode2",
+          "comment": ""
+        }
+      ]
+    },
+    "CField_GuildBoss::BasicActionAttack#GuildBoss": {
+      "address": "0x59f885",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CField::TryEnterTownPortal#UseDoor": {
+      "address": "0x574826",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

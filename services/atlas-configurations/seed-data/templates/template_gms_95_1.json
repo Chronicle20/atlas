@@ -1181,19 +1181,75 @@
       },
       {
         "opCode": "0x16D",
-        "writer": "NPCShopOperation"
+        "writer": "NPCShopOperation",
+        "options": {
+          "operations": {
+            "OK": 0,
+            "OUT_OF_STOCK": 1,
+            "NOT_ENOUGH_MONEY": 2,
+            "INVENTORY_FULL": 3,
+            "OUT_OF_STOCK_2": 5,
+            "OUT_OF_STOCK_3": 9,
+            "NOT_ENOUGH_MONEY_2": 10,
+            "NEED_MORE_ITEMS": 13,
+            "OVER_LEVEL_REQUIREMENT": 14,
+            "UNDER_LEVEL_REQUIREMENT": 15,
+            "TRADE_LIMIT": 16,
+            "GENERIC_ERROR": 17,
+            "GENERIC_ERROR_WITH_REASON": 17
+          }
+        }
       },
       {
         "opCode": "0x170",
-        "writer": "StorageOperation"
+        "writer": "StorageOperation",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSETS": 9,
+            "INVENTORY_FULL": 10,
+            "NOT_ENOUGH_MESOS": 11,
+            "ONE_OF_A_KIND": 12,
+            "STORE_ASSETS": 13,
+            "NOT_ENOUGH_MESOS_2": 16,
+            "UNKNOWN": 17,
+            "UPDATE_MESO": 19,
+            "SHOW": 22,
+            "UNKNOWN_2": 23,
+            "ERROR_MESSAGE": 24
+          }
+        }
       },
       {
         "opCode": "0x174",
-        "writer": "MessengerOperation"
+        "writer": "MessengerOperation",
+        "options": {
+          "operations": {
+            "ADD": 0,
+            "JOIN": 1,
+            "REMOVE": 2,
+            "REQUEST_INVITE": 3,
+            "INVITE_SENT": 4,
+            "INVITE_DECLINED": 5,
+            "CHAT": 6,
+            "UPDATE": 7
+          }
+        }
       },
       {
         "opCode": "0x175",
-        "writer": "CharacterInteraction"
+        "writer": "CharacterInteraction",
+        "options": {
+          "operations": {
+            "INVITE": 2,
+            "INVITE_RESULT": 3,
+            "ENTER": 4,
+            "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
+            "LEAVE": 10,
+            "UPDATE_MERCHANT": 25
+          }
+        }
       },
       {
         "opCode": "0x176",
@@ -1241,7 +1297,20 @@
       },
       {
         "opCode": "0x180",
-        "writer": "CashShopOperation"
+        "writer": "CashShopOperation",
+        "options": {
+          "operations": {
+            "LOAD_INVENTORY_SUCCESS": 88,
+            "LOAD_INVENTORY_FAILURE": 89,
+            "LOAD_WISHLIST": 92,
+            "UPDATE_WISHLIST": 98,
+            "PURCHASE_SUCCESS": 100,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 109,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 110,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 119,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 121
+          }
+        }
       },
       {
         "opCode": "0x18E",

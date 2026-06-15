@@ -50,10 +50,6 @@ export const STATE_TYPE_META: Record<ConversationStateType, StateTypeMeta> = {
     label: "Gachapon",
     accent: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30",
   },
-  pickFromContext: {
-    label: "Pick",
-    accent: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
-  },
 };
 
 function truncate(text: string, max = 120): string {
@@ -122,13 +118,6 @@ export function describeState(state: ConversationState): string {
       return state.gachaponAction
         ? `${state.gachaponAction.gachaponId} · ticket ${state.gachaponAction.ticketItemId}`
         : "";
-    case "pickFromContext": {
-      const p = state.pickFromContext;
-      if (!p) return "";
-      return p.title
-        ? `${truncate(p.title, 90)} · from ${p.valuesContextKey}`
-        : `from ${p.valuesContextKey}`;
-    }
     default:
       return "";
   }

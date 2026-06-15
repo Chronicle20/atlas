@@ -230,22 +230,6 @@ export function getTransitions(state: ConversationState): Transition[] {
         });
       }
       break;
-    case "pickFromContext":
-      if (state.pickFromContext) {
-        push({
-          target: normalizeTarget(state.pickFromContext.nextState),
-          label: "selection",
-          kind: "selection",
-          ordinal: 0,
-        });
-        push({
-          target: normalizeTarget(state.pickFromContext.emptyNextState),
-          label: "no options",
-          kind: "outcome",
-          ordinal: 1,
-        });
-      }
-      break;
     case "genericAction":
       if (state.genericAction) {
         const outcomes = state.genericAction.outcomes ?? [];

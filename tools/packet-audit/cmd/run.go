@@ -1839,6 +1839,27 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField::TryEnterTownPortal#UseDoor":
 		return []candidate{{name: "UseDoor", pkg: "field", dir: csvpkg.DirServerbound}}
 
+	// CField admin/slash serverbound family (task-096, recipe R-SB). The client
+	// /-command parser CField::SendChatMsgSlash builds several distinct COutPacket
+	// opcodes — one per command class — so each maps to a distinct op via a
+	// #suffix export entry (the base CField::SendChatMsgSlash entry is untouched).
+	// Layouts IDA-derived per version (v95 authoritative); addresses pinned per
+	// version in the test markers. SLIDE_REQUEST is v95+jms only; SUE_CHARACTER is
+	// jms-absent. SUE_CHARACTER version-branches its leading field (v83/v84/v87
+	// int32 char id, v95 sub-command string).
+	case "CField::SendChatMsgSlash#AdminChat":
+		return []candidate{{name: "AdminChat", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#AdminCommand":
+		return []candidate{{name: "AdminCommand", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#AdminLog":
+		return []candidate{{name: "AdminLog", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#MatchTable":
+		return []candidate{{name: "MatchTable", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#SlideRequest":
+		return []candidate{{name: "SlideRequest", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CField::SendChatMsgSlash#SueCharacter":
+		return []candidate{{name: "SueCharacter", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// CField_Tournament clientbound family (task-096, recipe R-CB). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
 	// OnTournamentSetPrize carries a trailing post-read Delegate (sub_XXXXXX in the

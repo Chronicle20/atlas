@@ -9275,6 +9275,64 @@
           "comment": ""
         }
       ]
+    },
+    "CField::SendChatMsgSlash#AdminChat": {
+      "address": "0x5685b0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#AdminCommand": {
+      "address": "0x568ac2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#AdminLog": {
+      "address": "0x56a838",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#MatchTable": {
+      "address": "0x56b971",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#SlideRequest": {
+      "address": "0x5687f8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

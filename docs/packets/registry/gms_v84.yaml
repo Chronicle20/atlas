@@ -2833,8 +2833,10 @@
   direction: serverbound
   opcode: 114
   fname: CField::SendChatMsgSlash
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5475456
+  note: task-096 — confirmed v84 COutPacket opcode 114 by READING CField::SendChatMsgSlash send-site 0x538c80 (matches the v83 value; SUE_CHARACTER opcode did not shift in v84).
 - op: USE_GACHAPON_BOX_ITEM
   direction: serverbound
   opcode: 115
@@ -2855,10 +2857,12 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: ADMIN_CHAT
   direction: serverbound
-  opcode: 118
+  opcode: 120
   fname: CField::SendChatMsgSlash
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5480298
+  note: task-096 — real v84 COutPacket opcode read from CField::SendChatMsgSlash send-site 0x539f6a (was stale csv-import 118 seeded from the v83 column; v84 serverbound opcode table shifted vs v83).
 - op: MULTI_CHAT
   direction: serverbound
   opcode: 119
@@ -3006,19 +3010,23 @@
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: ADMIN_COMMAND
   direction: serverbound
-  opcode: 128
+  opcode: 132
   fname: CField::SendChatMsgSlash
   fname_alts:
     - CStage::OnSetField
     - CUserLocal::OnKey
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5474586
+  note: task-096 — real v84 COutPacket opcode read from CField::SendChatMsgSlash send-site 0x53891a (was stale csv-import 128 seeded from the v83 column; v84 serverbound opcode table shifted vs v83).
 - op: ADMIN_LOG
   direction: serverbound
-  opcode: 129
+  opcode: 133
   fname: CField::SendChatMsgSlash
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5481358
+  note: task-096 — real v84 COutPacket opcode read from CField::SendChatMsgSlash send-site 0x53a38e (was stale csv-import 129 seeded from the v83 column; v84 serverbound opcode table shifted vs v83).
 - op: BUDDYLIST_MODIFY
   direction: serverbound
   opcode: 130
@@ -3571,10 +3579,12 @@
   note: 'task-096 IDA re-harvest: v84 opcode corrected 213->219 (0xDB) by READING the real send-site. CField_Coconut::BasicActionAttack @0x556075 builds COutPacket(219) Encode2(attack)+Encode2(x)+SendPacket. +6 vs v83 (213); prior csv value 213 was the stale v83 opcode. Opcode 219 was previously held by the stale phantom UNNAMED_R366 — COCONUT is the real IDA-verified owner.'
 - op: MATCH_TABLE
   direction: serverbound
-  opcode: 214
+  opcode: 220
   fname: CField::SendChatMsgSlash
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 5483885
+  note: task-096 — real v84 COutPacket opcode read from CField::SendChatMsgSlash send-site 0x53ad6d (was stale csv-import 214 seeded from the v83 column; v84 serverbound opcode table shifted vs v83).
 - op: GUILD_BOSS
   direction: serverbound
   opcode: 221

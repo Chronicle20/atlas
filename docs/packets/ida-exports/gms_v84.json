@@ -22946,6 +22946,72 @@
       "address": "0x5911e6",
       "direction": "serverbound",
       "calls": []
+    },
+    "CField::SendChatMsgSlash#AdminChat": {
+      "address": "0x539f6a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#AdminCommand": {
+      "address": "0x53891a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#AdminLog": {
+      "address": "0x53a38e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#MatchTable": {
+      "address": "0x53ad6d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendChatMsgSlash#SueCharacter": {
+      "address": "0x538c80",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode1",
+          "comment": ""
+        },
+        {
+          "op": "EncodeStr",
+          "comment": ""
+        }
+      ]
     }
   }
 }

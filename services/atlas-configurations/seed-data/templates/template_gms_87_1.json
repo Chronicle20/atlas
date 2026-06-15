@@ -16,6 +16,11 @@
         "handler": "ServerListRequestHandle"
       },
       {
+        "opCode": "0x86",
+        "validator": "LoggedInValidator",
+        "handler": "GuildOperationHandle"
+      },
+      {
         "opCode": "0x05",
         "validator": "LoggedInValidator",
         "handler": "CharacterListWorldHandle"
@@ -1095,6 +1100,18 @@
       {
         "opCode": "0x90",
         "writer": "SpouseChat"
+      },
+      {
+        "opCode": "0x98",
+        "writer": "AdminResult"
+      },
+      {
+        "opCode": "0xA4",
+        "writer": "StalkResult"
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "SnowballTouch"
       },
       {
         "opCode": "0x8E",

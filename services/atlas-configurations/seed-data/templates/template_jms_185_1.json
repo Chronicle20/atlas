@@ -1193,6 +1193,18 @@
         "writer": "StopClock"
       },
       {
+        "opCode": "0x8D",
+        "writer": "AdminResult"
+      },
+      {
+        "opCode": "0x98",
+        "writer": "StalkResult"
+      },
+      {
+        "opCode": "0x134",
+        "writer": "SnowballTouch"
+      },
+      {
         "opCode": "0x9E",
         "writer": "CharacterSpawn"
       },

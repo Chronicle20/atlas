@@ -768,6 +768,18 @@
         "writer": "SpouseChat"
       },
       {
+        "opCode": "0xA0",
+        "writer": "AdminResult"
+      },
+      {
+        "opCode": "0xAC",
+        "writer": "StalkResult"
+      },
+      {
+        "opCode": "0x155",
+        "writer": "SnowballTouch"
+      },
+      {
         "opCode": "0x96",
         "writer": "CharacterMultiChat"
       },

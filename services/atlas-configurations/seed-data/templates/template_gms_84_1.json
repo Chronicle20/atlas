@@ -1689,6 +1689,14 @@
         "writer": "SpouseChat"
       },
       {
+        "opCode": "0x93",
+        "writer": "AdminResult"
+      },
+      {
+        "opCode": "0x123",
+        "writer": "SnowballTouch"
+      },
+      {
         "opCode": "0x8C",
         "writer": "SummonItemUnavailable"
       },

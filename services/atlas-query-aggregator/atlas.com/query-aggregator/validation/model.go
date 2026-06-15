@@ -57,6 +57,7 @@ const (
 	PartySizeCondition              ConditionType = ConditionType(sharedsaga.PartySizeCondition)
 	PqCustomDataCondition           ConditionType = ConditionType(sharedsaga.PqCustomDataCondition)
 	MonsterBookCountCondition       ConditionType = ConditionType(sharedsaga.MonsterBookCountCondition)
+	PetTamenessCondition            ConditionType = ConditionType(sharedsaga.PetTamenessCondition)
 )
 
 // Operator represents the comparison operator in a condition
@@ -125,7 +126,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -269,6 +270,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	case PqCustomDataCondition:
 		if input.Step == "" {
 			b.err = fmt.Errorf("step (custom data key) is required for pqCustomData conditions")
+		}
+	case PetTamenessCondition:
+		if len(input.Values) == 0 {
+			b.err = fmt.Errorf("values (pet template ids) required for petTameness conditions")
 		}
 	}
 
@@ -720,6 +725,10 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		actualValue = ctx.PetCount()
 		description = fmt.Sprintf("Pet Count %s %d", c.operator, c.value)
 
+	case PetTamenessCondition:
+		actualValue = ctx.MaxPetClosenessForTemplates(uint32Slice(c.values))
+		description = fmt.Sprintf("Pet Tameness (templates %v) %s %d", c.values, c.operator, c.value)
+
 	case MapCapacityCondition:
 		// Get player count for the specified map using worldId/channelId from condition
 		f := field.NewBuilder(c.worldId, c.channelId, _map.Id(c.referenceId)).Build()
@@ -899,6 +908,15 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		ItemId:      itemId,
 		ActualValue: actualValue,
 	}
+}
+
+// uint32Slice converts a slice of ints to a slice of uint32.
+func uint32Slice(in []int) []uint32 {
+	out := make([]uint32, 0, len(in))
+	for _, v := range in {
+		out = append(out, uint32(v))
+	}
+	return out
 }
 
 // ValidationResult represents the result of a validation

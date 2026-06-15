@@ -70,23 +70,21 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				})
 			}
 
-			it, err := exml.ChildByName("interact")
-			if err != nil {
-				return model.ErrorProvider[RestModel](err)
-			}
-
-			for _, s := range it.ChildNodes {
-				var sid int
-				sid, err = strconv.Atoi(s.Name)
-				if err != nil {
-					return model.ErrorProvider[RestModel](err)
+			// interact is optional: eggs (and other skill-less pets) carry no
+			// interact node. When absent, the pet simply has no interact skills.
+			if it, ierr := exml.ChildByName("interact"); ierr == nil {
+				for _, s := range it.ChildNodes {
+					sid, serr := strconv.Atoi(s.Name)
+					if serr != nil {
+						return model.ErrorProvider[RestModel](serr)
+					}
+					sm := SkillRestModel{
+						Id:          fmt.Sprintf("%d-%d", petId, sid),
+						Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
+						Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
+					}
+					m.Skills = append(m.Skills, sm)
 				}
-				sm := SkillRestModel{
-					Id:          fmt.Sprintf("%d-%d", petId, sid),
-					Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
-					Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
-				}
-				m.Skills = append(m.Skills, sm)
 			}
 			return model.FixedProvider(m)
 		}

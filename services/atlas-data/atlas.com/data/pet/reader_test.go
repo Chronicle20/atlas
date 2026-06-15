@@ -1198,3 +1198,41 @@ func TestReadEvolutionGapTolerance(t *testing.T) {
 		t.Fatalf("Evolutions[1].TemplateId = %d, want 5000032", rm.Evolutions[1].TemplateId)
 	}
 }
+
+// eggPetXML mirrors a Dragon/Robo egg: it carries hatch data in info (evol1 →
+// baby form) but has NO interact node, because an egg has no pet skills.
+const eggPetXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5000028.img">
+  <imgdir name="info">
+    <int name="life" value="90"/>
+    <int name="evol" value="1"/>
+    <int name="evolNo" value="1"/>
+    <int name="evol1" value="5000029"/>
+  </imgdir>
+</imgdir>
+`
+
+func TestReadPetWithoutInteract(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(eggPetXML)))()
+	if err != nil {
+		t.Fatalf("Read errored on a pet without an interact node (egg): %v", err)
+	}
+	if len(rm.Skills) != 0 {
+		t.Fatalf("len(Skills) = %d, want 0", len(rm.Skills))
+	}
+	if len(rm.Evolutions) != 1 {
+		t.Fatalf("len(Evolutions) = %d, want 1", len(rm.Evolutions))
+	}
+	if rm.Evolutions[0].TemplateId != 5000029 {
+		t.Fatalf("Evolutions[0].TemplateId = %d, want 5000029", rm.Evolutions[0].TemplateId)
+	}
+}

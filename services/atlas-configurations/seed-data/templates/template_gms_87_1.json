@@ -1794,7 +1794,19 @@
       },
       {
         "opCode": "0x14A",
-        "writer": "MessengerOperation"
+        "writer": "MessengerOperation",
+        "options": {
+          "operations": {
+            "ADD": 0,
+            "JOIN": 1,
+            "REMOVE": 2,
+            "REQUEST_INVITE": 3,
+            "INVITE_SENT": 4,
+            "INVITE_DECLINED": 5,
+            "CHAT": 6,
+            "UPDATE": 7
+          }
+        }
       },
       {
         "opCode": "0x14C",
@@ -1838,7 +1850,20 @@
       },
       {
         "opCode": "0x156",
-        "writer": "CashShopOperation"
+        "writer": "CashShopOperation",
+        "options": {
+          "operations": {
+            "LOAD_INVENTORY_SUCCESS": 80,
+            "LOAD_INVENTORY_FAILURE": 81,
+            "LOAD_WISHLIST": 84,
+            "UPDATE_WISHLIST": 90,
+            "PURCHASE_SUCCESS": 92,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 101,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 102,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 109,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 111
+          }
+        }
       },
       {
         "opCode": "0x163",

@@ -5806,6 +5806,28 @@
         }
       ]
     },
+    "CUserLocal::DoActiveSkill_Prepare": {
+      "address": "0x96a86e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to prepare)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nSLV (skill level / action arg, a2)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "action ((bMoveAction << 15) | (nOneTimeAction & 0x7FFF))"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nActionSpeed (v49)"
+        }
+      ]
+    },
     "CUserLocal::HandleLButtonClk": {
       "address": "0x94fa8e",
       "direction": "serverbound",
@@ -6714,6 +6736,39 @@
         {
           "op": "Decode2",
           "comment": "tDelay"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillCancel": {
+      "address": "0x980bf5",
+      "direction": "clientbound",
+      "notes": "v83 handler left unnamed in IDB (sub_980BF5); resolved via OnUserRemotePacket@0x9724F9 case 0xBF. Reads one Decode4 (nSkillID); remainder is local prepare-animation cleanup, no further wire reads.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill to cancel)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillPrepare": {
+      "address": "0x980a81",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "action (bit15 = move-action, low15 = one-time-action)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nActionSpeed"
         }
       ]
     },

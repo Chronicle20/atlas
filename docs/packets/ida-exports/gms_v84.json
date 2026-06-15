@@ -7614,6 +7614,29 @@
         }
       ]
     },
+    "CUserLocal::DoActiveSkill_Prepare": {
+      "address": "0x9a9761",
+      "direction": "serverbound",
+      "notes": "v84 handler unnamed in IDB (sub_9A9761); resolved via opcode COutPacket::COutPacket(...,93)=0x5D. No swallow branch (skill 33101005 absent in v84).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to prepare)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nSLV (skill level / action arg, Value)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "action ((bMoveAction << 15) | (nOneTimeAction & 0x7FFF))"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nActionSpeed (v46)"
+        }
+      ]
+    },
     "CUserLocal::HandleLButtonClk": {
       "address": "0x987824",
       "direction": "serverbound",
@@ -8539,6 +8562,40 @@
           "op": "Decode2",
           "comment": "",
           "guard": "!this[346]"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillCancel": {
+      "address": "0x9c0dd3",
+      "direction": "clientbound",
+      "notes": "v84 handler unnamed in IDB (sub_9C0DD3); resolved via OnUserRemotePacket@0x9B2518 case 195 (0xC3). Reads one Decode4 (nSkillID).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill to cancel)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillPrepare": {
+      "address": "0x9c0c5f",
+      "direction": "clientbound",
+      "notes": "v84 handler unnamed in IDB (sub_9C0C5F); resolved via OnUserRemotePacket@0x9B2518 case 194 (0xC2).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "action (bit15 = move-action, low15 = one-time-action)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nActionSpeed"
         }
       ]
     },

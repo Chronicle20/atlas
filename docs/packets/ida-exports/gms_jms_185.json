@@ -5545,6 +5545,34 @@
         }
       ]
     },
+    "CUserLocal::DoActiveSkill_Prepare": {
+      "address": "0xa39cfd",
+      "direction": "serverbound",
+      "notes": "opcode COutPacket::COutPacket(...,0x58)=88. Trailing Encode4(m_dwSwallowMobID) is gated on skillId==33101005 (Dragon Knight swallow).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to prepare)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nSLV (skill level, nSLV)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "action ((m_nMoveAction << 15) | (m_nOneTimeAction & 0x7FFF))"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nActionSpeed (v59)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwSwallowMobID (only when nSkillID == 33101005)",
+          "guard": "nSkillID == 33101005"
+        }
+      ]
+    },
     "CUserLocal::HandleLButtonClk": {
       "address": "0xa10f9c",
       "direction": "serverbound",
@@ -6340,6 +6368,40 @@
           "op": "Decode2",
           "comment": "",
           "guard": "!*&this[1104]"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillCancel": {
+      "address": "0xa540c4",
+      "direction": "clientbound",
+      "notes": "nType 0xC5. Reads one Decode4 (nSkillID); remainder is local cleanup (iPacket reused as scratch for GetVecCtrl, not a further wire read).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID (skill to cancel)"
+        }
+      ]
+    },
+    "CUserRemote::OnSkillPrepare": {
+      "address": "0xa53f49",
+      "direction": "clientbound",
+      "notes": "nType 0xC4.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nSkillID"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV (skill level)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "action (bit15 = move-action, low15 = one-time-action)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nActionSpeed"
         }
       ]
     },

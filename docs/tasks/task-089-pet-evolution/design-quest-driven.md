@@ -102,22 +102,36 @@ The quest-conversation subsystem already implements the startscript/endscript mo
 atlas-quest **parses** `Pet []uint32` and `PetTamenessMin int16` (`data/quest/rest.go:62-63`) but
 **never enforces** them — they are absent from `buildStartConditions`/`buildEndConditions`
 (`data/validation/processor.go`), and `validation/model.go:16-25` has no corresponding condition
-constants. Add two **general** condition types (pet evolution is just the first consumer):
+constants. Add one **general** composite condition type (pet evolution is just the first consumer).
 
-1. `validation/model.go`: `PetCondition = "pet"`, `PetTamenessMinCondition = "petTamenessMin"`.
-2. `validation/processor.go`: emit these conditions from `req.Pet` (character must own/has-summoned
-   one of the listed pet ids) and `req.PetTamenessMin` (the qualifying pet's tameness ≥ N) in both
-   `buildStartConditions` and `buildEndConditions` (these quests gate on both start and complete).
-3. **query-aggregator** must be able to evaluate the new condition types — i.e. resolve a
-   character's pets and their tameness/closeness. **OPEN:** confirm atlas-pets exposes pet
-   closeness and that query-aggregator can read it (the `closeness` grep on `pets/model.go` came
-   back empty — verify in planning; closeness is referenced elsewhere in the evolution engine, so
-   the field exists somewhere, but the read path for query-aggregator must be confirmed).
-4. Tests for both condition types (start and complete), following the existing validation tests.
+**The data pipeline already exists (verified) — this is contained, not a cross-service build:**
 
-**Semantics decision to confirm:** "tameness" here is the *summoned* pet's tameness (the quest
-checks the active pet). Whether the check targets the summoned pet or any owned pet affects the
-query-aggregator query — confirm against Cosmic behavior.
+- query-aggregator already fetches the **full per-pet list** from atlas-pets via
+  `pet.Processor.GetPets(characterId) → []Model` (`pet/processor.go:32`); each pet model carries
+  **`Closeness uint16`, `TemplateId`, `Level`, `Slot`** (`pet/rest.go:12-19`). atlas-pets owns
+  closeness (`CLOSENESS_CHANGED` events, `AwardCloseness`).
+- `GetSpawnedPetCount` (`pet/processor.go:44`) **already iterates that list** and reduces it to a
+  count; the `ValidationContext` keeps only `petCount` (`validation/context.go:37,697`;
+  `processor.go:238`). So closeness/templateId is fetched today and then **discarded** — no new
+  atlas-pets plumbing is needed.
+
+Work (no new service integration):
+1. **Retain per-pet detail in `ValidationContext`** — store the spawned-pet list (templateId +
+   closeness + slot) instead of only the count, at the existing fetch site.
+2. **Add `PetTamenessCondition = "petTameness"`** in `libs/atlas-saga` (the shared `sharedsaga`
+   constants), the query-aggregator eval switch (`validation/model.go`), and atlas-quest's
+   `validation/model.go`. Evaluate as: *a **spawned** pet exists whose `templateId ∈ Values` and
+   `closeness ≥ Value`*. Reuse `ConditionInput.Values` for the pet-id set and `Value` for min
+   closeness — this cleanly handles 8189's multi-id adult set (OR over ids) inside one AND-conjunct.
+3. **atlas-quest `buildStartConditions`/`buildEndConditions`**: emit one `petTameness` condition
+   from `req.Pet` (id set) + `req.PetTamenessMin` (these quests gate on both start and complete).
+4. Tests in both services.
+
+**Why one composite condition, not separate `pet` + `petTameness`:** the gate is "own a *summoned*
+pet that is one of {ids} **and** has tameness ≥ N" — tameness binds to the *same* pet, and the id
+requirement is an OR over the set. Two independent AND-conjuncts would wrongly pass if you had
+pet-A (right id, low tameness) + pet-B (wrong id, high tameness). **Confirm** Cosmic checks the
+*summoned* pet (slot ≥ 0), not merely owned.
 
 ### 4.2 Author the quest conversations (data)
 
@@ -180,10 +194,13 @@ works through normal quest mechanics.
 
 ## 5. Open questions / risks
 
-1. **query-aggregator pet/closeness support (4.1.3)** — biggest unknown. If it can't read pet
-   closeness, enforcing `pettamenessmin` needs additional plumbing (atlas-pets read path).
-2. **Tameness vs level** — confirm 1642 closeness is the gate (it is, per WZ) and that atlas tracks
-   closeness on the live pet.
+1. ~~query-aggregator pet/closeness support~~ — **RESOLVED** (verified 2026-06-15): query-aggregator
+   already fetches per-pet `closeness` + `templateId` from atlas-pets (`pet/processor.go:32`,
+   `pet/rest.go:12-19`) and just discards all but the count. No new atlas-pets plumbing — enforcing
+   `pettamenessmin` only needs the ValidationContext to retain the per-pet list + the new
+   `petTameness` condition (4.1). Contained to query-aggregator + atlas-quest.
+2. **Tameness vs level** — confirmed 1642 closeness is the gate (per WZ); atlas-pets tracks closeness
+   (`CLOSENESS_CHANGED`). Remaining: confirm the check targets the *summoned* pet (slot ≥ 0).
 3. **Quest availability/offer** — how the player initiates: does Garnox auto-offer the quest when
    conditions are met, and does clicking him emit `QuestActionScriptStart`? Verify the channel
    path actually fires for a quest NPC (distinct from the shop/generic path we saw).

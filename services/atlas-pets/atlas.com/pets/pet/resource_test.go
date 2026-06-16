@@ -1,6 +1,26 @@
 package pet
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
+
+func TestCreatePetExpiration(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	// A zero/epoch expiration (the bare inventory/award path) defaults to
+	// now + the standard pet lifespan, so the pet is not created already-expired
+	// ("dried up").
+	got := createPetExpiration(time.Time{}, now)
+	want := now.Add(petLifespan)
+	if !got.Equal(want) {
+		t.Fatalf("createPetExpiration(zero) = %v, want %v", got, want)
+	}
+	// A provided (non-zero) expiration is preserved.
+	future := now.Add(24 * time.Hour)
+	if got := createPetExpiration(future, now); !got.Equal(future) {
+		t.Fatalf("createPetExpiration(future) = %v, want %v", got, future)
+	}
+}
 
 func TestCreatePetName(t *testing.T) {
 	// A provided name is preserved.

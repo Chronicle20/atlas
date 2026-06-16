@@ -3,6 +3,7 @@ package pet
 import (
 	"atlas-pets/rest"
 	"net/http"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -85,11 +86,27 @@ func createPetLevel(provided byte) byte {
 	return provided
 }
 
+// petLifespan is the standard pet lifespan (90 days), matching NewModelBuilder's
+// default and the evolution reset.
+const petLifespan = 2160 * time.Hour
+
+// createPetExpiration defaults a pet's expiration for creation. The generic
+// inventory/award path POSTs a bare pet with a zero/epoch expiration, which would
+// create the pet already-expired ("dried up"). A zero expiration becomes
+// now + the standard lifespan; a provided expiration is preserved.
+func createPetExpiration(provided time.Time, now time.Time) time.Time {
+	if provided.IsZero() {
+		return now.Add(petLifespan)
+	}
+	return provided
+}
+
 func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 		i.Name = createPetName(i.Name)
 		i.Level = createPetLevel(i.Level)
+		i.Expiration = createPetExpiration(i.Expiration, time.Now())
 		ip, err := model.Map(Extract)(model.FixedProvider(i))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model from input.")

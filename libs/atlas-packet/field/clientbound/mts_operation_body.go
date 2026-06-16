@@ -46,18 +46,31 @@ import (
 // store, not a wire read):
 //
 //	0x25 CancelSaleItemDone      v83 0x5a4d14 / v84 0x5b5204 / v87 0x5d4e04 / v95 0x576030
-//	0x2B DeleteZzimDone          v83 0x5a4e66 / v84 0x5b5501 / v87 0x5d4f59 / v95 0x5761c0
-//	0x2C DeleteZzimFailed        v83 0x5a4e91 / v84 0x5b552c / v87 0x5d4f84 / v95 0x5761f0
-//	0x2E LoadWishSaleListFailed  v83 0x5a4fdc / v84 0x5b5596 / v87 0x5d50cf / v95 0x576230
-//	0x2F BuyWishDone             v83 0x5a5011 / v84 0x5b55cb / v87 0x5d5104 / v95 0x576270
-//	0x30 BuyWishFailed           v83 0x5a503c / v84 0x5b55f6 / v87 0x5d512f / v95 0x5762a0
+//	0x2B DeleteZzimDone          v83 0x5a4e66 / v84 0x5b5356 / v87 0x5d4f59 / v95 0x5761c0
+//	0x2C DeleteZzimFailed        v83 0x5a4e91 / v84 0x5b5381 / v87 0x5d4f84 / v95 0x5761f0
+//	0x2E LoadWishSaleListFailed  v83 0x5a4fdc / v84 0x5b54cc / v87 0x5d50cf / v95 0x576230
+//	0x2F BuyWishDone             v83 0x5a5011 / v84 0x5b5501 / v87 0x5d5104 / v95 0x576270
+//	0x30 BuyWishFailed           v83 0x5a503c / v84 0x5b552c / v87 0x5d512f / v95 0x5762a0
 //
-// Additional Empty-shape arms decompile-confirmed in gms_v95 but not yet pinned
-// (later iterations): 0x31 CancelWishDone @0x5762e0, 0x32 CancelWishFailed
-// @0x576320, 0x33 BuyItemDone @0x576360, 0x34 BuyItemFailed @0x576390,
-// 0x35 BuyZzimItemDone @0x5763d0, 0x36 BuyZzimItemFailed @0x576400,
-// 0x37 RegisterWishItemDone @0x576440, 0x38 RegisterWishItemFailed @0x576480,
-// 0x3C BidAuctionFailed @0x5764c0.
+// (v84 sub-handler addresses are case = Decode1-21 in the v84 dispatcher
+// sub_5B47C8; the iteration-2 v84 column was corrected in iteration 3 after
+// re-deriving each case label.)
+//
+// VERIFIED iteration 3 (task-096), six more Empty-shape arms, each decompiled in
+// ALL FOUR versions and confirmed StringPool::GetString + CUtilDlg::Notice with
+// a trailing this[6]/m_bITCRequestSent=0 member store and NO CInPacket::Decode*
+// after the dispatcher's Decode1:
+//
+//	0x31 CancelWishDone          v83 0x5a5071 / v84 0x5b5561 / v87 0x5d5164 / v95 0x5762e0
+//	0x32 CancelWishFailed        v83 0x5a50df / v84 0x5b5596 / v87 0x5d5199 / v95 0x576320
+//	0x34 BuyItemFailed           v83 0x5a513f / v84 0x5b55f6 / v87 0x5d51f9 / v95 0x576390
+//	0x36 BuyZzimItemFailed       v83 0x5a519f / v84 0x5b5656 / v87 0x5d5259 / v95 0x576400
+//	0x38 RegisterWishItemFailed  v83 0x5a5209 / v84 0x5b56c0 / v87 0x5d52c3 / v95 0x576480
+//	0x3C BidAuctionFailed        v83 0x5a5444 / v84 0x5b58fb / v87 0x5d54fe / v95 0x5764c0
+//
+// Remaining Empty-shape arms decompile-confirmed in gms_v95 but not yet pinned
+// (later iterations): 0x33 BuyItemDone @0x576360, 0x35 BuyZzimItemDone @0x5763d0,
+// 0x37 RegisterWishItemDone @0x576440.
 //
 // packet-audit:fname CITC::OnNormalItemResult#Empty  (dispatcher family — see docs/packets/evidence/families.yaml)
 type MtsResultEmpty struct {

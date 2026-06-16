@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CITC::OnNormalItemResult#Empty
     address: "0x5a4674"
-    decompile_sha256: d518cac0ff34facad0d2d0fd40ce07b00a2417a8facde86e8a3266c1f84d55de
+    decompile_sha256: 3eca1d0b014f9d55c5a8c272f4e45d89c7d9cd8f875cadbf789f7edd408928f2

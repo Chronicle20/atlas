@@ -35,7 +35,8 @@ func TestMtsResultEmptyGolden(t *testing.T) {
 	// CUtilDlg::Notice, zero CInPacket::Decode* after the dispatcher Decode1) in
 	// ALL FOUR versions; the per-version sub-handler addresses are in
 	// mts_operation_body.go. iteration 1: 0x1D/0x1F/0x29/0x2A. iteration 2:
-	// 0x25/0x2B/0x2C/0x2E/0x2F/0x30.
+	// 0x25/0x2B/0x2C/0x2E/0x2F/0x30. iteration 3:
+	// 0x31/0x32/0x34/0x36/0x38/0x3C.
 	cases := []struct {
 		name string
 		mode byte
@@ -45,13 +46,22 @@ func TestMtsResultEmptyGolden(t *testing.T) {
 		{"SaleCurrentItemToWishDone", 0x1F},
 		{"SetZzimDone", 0x29},
 		{"SetZzimFailed", 0x2A},
-		// iteration 2 (this batch)
+		// iteration 2
 		{"CancelSaleItemDone", 0x25},     // v83 0x5a4d14 / v84 0x5b5204 / v87 0x5d4e04 / v95 0x576030
-		{"DeleteZzimDone", 0x2B},         // v83 0x5a4e66 / v84 0x5b5501 / v87 0x5d4f59 / v95 0x5761c0
-		{"DeleteZzimFailed", 0x2C},       // v83 0x5a4e91 / v84 0x5b552c / v87 0x5d4f84 / v95 0x5761f0
-		{"LoadWishSaleListFailed", 0x2E}, // v83 0x5a4fdc / v84 0x5b5596 / v87 0x5d50cf / v95 0x576230
-		{"BuyWishDone", 0x2F},            // v83 0x5a5011 / v84 0x5b55cb / v87 0x5d5104 / v95 0x576270
-		{"BuyWishFailed", 0x30},          // v83 0x5a503c / v84 0x5b55f6 / v87 0x5d512f / v95 0x5762a0
+		{"DeleteZzimDone", 0x2B},         // v83 0x5a4e66 / v84 0x5b5356 / v87 0x5d4f59 / v95 0x5761c0
+		{"DeleteZzimFailed", 0x2C},       // v83 0x5a4e91 / v84 0x5b5381 / v87 0x5d4f84 / v95 0x5761f0
+		{"LoadWishSaleListFailed", 0x2E}, // v83 0x5a4fdc / v84 0x5b54cc / v87 0x5d50cf / v95 0x576230
+		{"BuyWishDone", 0x2F},            // v83 0x5a5011 / v84 0x5b5501 / v87 0x5d5104 / v95 0x576270
+		{"BuyWishFailed", 0x30},          // v83 0x5a503c / v84 0x5b552c / v87 0x5d512f / v95 0x5762a0
+		// iteration 3 (this batch) — all decompile-confirmed Empty-shape in
+		// v83/v84/v87/v95 (StringPool::GetString + CUtilDlg::Notice + this[6]=0
+		// member store; NO CInPacket::Decode* after the dispatcher Decode1).
+		{"CancelWishDone", 0x31},         // v83 0x5a5071 / v84 0x5b5561 / v87 0x5d5164 / v95 0x5762e0
+		{"CancelWishFailed", 0x32},       // v83 0x5a50df / v84 0x5b5596 / v87 0x5d5199 / v95 0x576320
+		{"BuyItemFailed", 0x34},          // v83 0x5a513f / v84 0x5b55f6 / v87 0x5d51f9 / v95 0x576390
+		{"BuyZzimItemFailed", 0x36},      // v83 0x5a519f / v84 0x5b5656 / v87 0x5d5259 / v95 0x576400
+		{"RegisterWishItemFailed", 0x38}, // v83 0x5a5209 / v84 0x5b56c0 / v87 0x5d52c3 / v95 0x576480
+		{"BidAuctionFailed", 0x3C},       // v83 0x5a5444 / v84 0x5b58fb / v87 0x5d54fe / v95 0x5764c0
 	}
 	ctx := test.CreateContext("GMS", 95, 0)
 	for _, c := range cases {

@@ -11,7 +11,7 @@ import (
 // Processor defines the interface for pet lookups against the pets service.
 type Processor interface {
 	GetPets(characterId uint32) ([]Model, error)
-	GetSpawnedPetIds(characterId uint32) ([]uint32, error)
+	GetPetIdsByName(characterId uint32, name string) ([]uint32, error)
 }
 
 // ProcessorImpl implements the Processor interface.
@@ -38,15 +38,17 @@ func (p *ProcessorImpl) GetPets(characterId uint32) ([]Model, error) {
 	return pets, nil
 }
 
-// GetSpawnedPetIds returns the ids of the character's spawned pets (slot >= 0).
-func (p *ProcessorImpl) GetSpawnedPetIds(characterId uint32) ([]uint32, error) {
+// GetPetIdsByName returns the ids of the character's pets whose name matches the
+// given name (case-sensitive). Used to target a single named pet rather than all
+// of a character's pets.
+func (p *ProcessorImpl) GetPetIdsByName(characterId uint32, name string) ([]uint32, error) {
 	pets, err := p.GetPets(characterId)
 	if err != nil {
 		return nil, err
 	}
 	ids := make([]uint32, 0, len(pets))
 	for _, pet := range pets {
-		if pet.IsSpawned() {
+		if pet.Name() == name {
 			ids = append(ids, pet.Id())
 		}
 	}

@@ -55,6 +55,12 @@ func TestAwardTamenessCommand_MatchesAndGmGated(t *testing.T) {
 			message:     "@award me meso 5",
 			expectFound: false,
 		},
+		{
+			name:        "GM tameness for a multi-word pet name",
+			isGm:        true,
+			message:     "@award Baby Dragon tameness 2000",
+			expectFound: true,
+		},
 	}
 
 	for _, tc := range testCases {

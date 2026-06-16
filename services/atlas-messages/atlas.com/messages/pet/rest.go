@@ -44,5 +44,5 @@ func (r *RestModel) SetID(strId string) error {
 
 // Extract converts a RestModel to a domain Model.
 func Extract(rm RestModel) (Model, error) {
-	return NewModel(rm.Id, rm.Slot), nil
+	return NewModel(rm.Id, rm.Slot, rm.Name), nil
 }

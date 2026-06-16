@@ -11,6 +11,7 @@ import {
   type SetupData,
   type EtcData,
   type CashItemData,
+  type PetData,
 } from "@/types/models/item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/common/PageLoader";
@@ -219,6 +220,7 @@ function renderTypeSpecificSection(type: ItemType, detail: ItemDetailData) {
     case "Setup": return <SetupSection data={detail as SetupData} />;
     case "Etc": return <EtcSection data={detail as EtcData} />;
     case "Cash": return <CashSection data={detail as CashItemData} />;
+    case "Pet": return <PetSection data={detail as PetData} />;
     default: return null;
   }
 }
@@ -392,5 +394,23 @@ function CashSection({ data }: { data: CashItemData }) {
         </Card>
       )}
     </>
+  );
+}
+
+function PetSection({ data }: { data: PetData }) {
+  const a = data.attributes;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Properties</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-3">
+          <InfoField label="Hunger" value={a.hungry} />
+          <InfoField label="Life (days)" value={a.life} />
+          <InfoField label="Cash" value={a.cash} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

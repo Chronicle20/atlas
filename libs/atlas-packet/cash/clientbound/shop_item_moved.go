@@ -11,6 +11,7 @@ import (
 )
 
 // CashItemMovedToInventory - mode, slot, asset
+// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToInventory  (dispatcher family — see docs/packets/evidence/families.yaml)
 type CashItemMovedToInventory struct {
 	mode  byte
 	slot  uint16

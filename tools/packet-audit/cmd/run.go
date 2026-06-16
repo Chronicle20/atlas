@@ -1686,7 +1686,11 @@ func candidatesFromFName(fname string) []candidate {
 	case "CCashShop::OnCashItemResult#CashShopPurchaseSuccess":
 		return []candidate{{name: "CashShopPurchaseSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CashItemMovedToCashInventory":
+		// case 0x79 MOVE_S_TO_L_DONE (OnCashItemResMoveStoLDone): mode + 55-byte GW_CashItemInfo.
 		return []candidate{{name: "CashItemMovedToCashInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CashItemMovedToInventory":
+		// case 0x77 MOVE_L_TO_S_DONE (OnCashItemResMoveLtoSDone): mode + Decode2(slot) + GW_ItemSlotBase (model.Asset).
+		return []candidate{{name: "CashItemMovedToInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

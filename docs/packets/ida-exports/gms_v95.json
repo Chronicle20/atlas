@@ -2027,23 +2027,36 @@
       ]
     },
     "CCashShop::OnCashItemResult#CashItemMovedToCashInventory": {
-      "address": "0x495050",
+      "address": "0x4948d0",
       "direction": "clientbound",
-      "dispatch": [
-        {
-          "case": 0,
-          "guard": "v6"
-        }
-      ],
-      "notes": "inferred-high-confidence (1.00) @0x495050",
+      "notes": "CCashShop::OnCashItemResMoveStoLDone@0x4948d0 (case 0x79 MOVE_S_TO_L_DONE = item moved storage->locker = cash inventory). Body after mode byte: DecodeBuffer(v6, 0x37) = 55-byte GW_CashItemInfo.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (0x77 MOVE_L_TO_S_DONE; op-byte consumed by dispatcher)"
+          "comment": "mode (0x79 MOVE_S_TO_L_DONE; op-byte consumed by OnCashItemResult dispatcher)"
         },
         {
           "op": "DecodeBuffer",
-          "comment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes)"
+          "comment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes); CInPacket::DecodeBuffer(iPacket, v6, 0x37u)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashItemMovedToInventory": {
+      "address": "0x495050",
+      "direction": "clientbound",
+      "notes": "CCashShop::OnCashItemResMoveLtoSDone@0x495050 (case 0x77 MOVE_L_TO_S_DONE = item moved locker->slot = player inventory). Body after mode byte: Decode2(nPOS) then GW_ItemSlotBase::Decode(pItem).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x77 MOVE_L_TO_S_DONE; op-byte consumed by OnCashItemResult dispatcher)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS (inventory slot); nPOS = CInPacket::Decode2(iPacket)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(&pItem, iPacket) = item slot payload (model.Asset)"
         }
       ]
     },

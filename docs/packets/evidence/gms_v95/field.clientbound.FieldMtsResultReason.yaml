@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CITC::OnNormalItemResult#Reason
     address: "0x575f70"
-    decompile_sha256: 584ae873074a93c020faedcea73da99cace57d52060c6bbdbeb2cb9ce074b4dc
+    decompile_sha256: 6fcbb5e50a47ed0d786622387aaa0b335f647c5a803f852534e6f03b4bd2eaa9
 verifies:
   - libs/atlas-packet/field/clientbound/mts_operation_body_test.go#TestMtsResultReasonGolden

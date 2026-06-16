@@ -1887,11 +1887,15 @@ func candidatesFromFName(fname string) []candidate {
 	//              0x2E LoadWishSaleListFailed, 0x2F BuyWishDone, 0x30 BuyWishFailed;
 	//              iteration 3: 0x31 CancelWishDone, 0x32 CancelWishFailed,
 	//              0x34 BuyItemFailed, 0x36 BuyZzimItemFailed,
-	//              0x38 RegisterWishItemFailed, 0x3C BidAuctionFailed
+	//              0x38 RegisterWishItemFailed, 0x3C BidAuctionFailed;
+	//              iteration 4: 0x33 BuyItemDone, 0x35 BuyZzimItemDone,
+	//              0x37 RegisterWishItemDone
 	//              (all decompile-confirmed Empty-shape in v83/v84/v87/v95).
 	//   #Reason -> MtsResultReason (sub-handlers that read a single Decode1
-	//              fail-reason byte). Covers, this batch: 0x16 GetITCListFailed,
-	//              0x20 SaleCurrentItemToWishFailed.
+	//              fail-reason byte). Covers: 0x16 GetITCListFailed,
+	//              0x20 SaleCurrentItemToWishFailed; iteration 4
+	//              0x18 GetSearchITCListFailed, 0x22 GetUserPurchaseItemFailed,
+	//              0x24 GetUserSaleItemFailed.
 	//
 	// Body shapes are version-stable (gms_v83/v84/v87/v95 IDA-confirmed identical;
 	// jms VERSION-ABSENT — no CITC). The remaining arms (list/item-blob, two-int,

@@ -68,9 +68,14 @@ import (
 //	0x38 RegisterWishItemFailed  v83 0x5a5209 / v84 0x5b56c0 / v87 0x5d52c3 / v95 0x576480
 //	0x3C BidAuctionFailed        v83 0x5a5444 / v84 0x5b58fb / v87 0x5d54fe / v95 0x5764c0
 //
-// Remaining Empty-shape arms decompile-confirmed in gms_v95 but not yet pinned
-// (later iterations): 0x33 BuyItemDone @0x576360, 0x35 BuyZzimItemDone @0x5763d0,
-// 0x37 RegisterWishItemDone @0x576440.
+// VERIFIED iteration 4 (task-096), three more Empty-shape arms, each decompiled
+// in ALL FOUR versions and confirmed StringPool::GetString + CUtilDlg::Notice
+// (RegisterWishItemDone also stores this[6]/m_bITCRequestSent=0) with NO
+// CInPacket::Decode* after the dispatcher's Decode1:
+//
+//	0x33 BuyItemDone           v83 0x5a5114 / v84 0x5b55cb / v87 0x5d51ce / v95 0x576360
+//	0x35 BuyZzimItemDone       v83 0x5a5174 / v84 0x5b562b / v87 0x5d522e / v95 0x5763d0
+//	0x37 RegisterWishItemDone  v83 0x5a51d4 / v84 0x5b568b / v87 0x5d528e / v95 0x576440
 //
 // packet-audit:fname CITC::OnNormalItemResult#Empty  (dispatcher family — see docs/packets/evidence/families.yaml)
 type MtsResultEmpty struct {
@@ -113,10 +118,20 @@ func (m *MtsResultEmpty) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 //
 // Both read exactly Decode1(reason) on the wire after the dispatcher mode byte
 // (the downstream StringPool selection uses the reason value but reads no more
-// bytes). Additional Reason-shape arms decompile-confirmed in gms_v95 but not
-// yet pinned (later iterations): 0x18 GetSearchITCListFailed @0x575fa0,
-// 0x22 GetUserPurchaseItemFailed @0x575fd0, 0x24 GetUserSaleItemFailed @0x576000,
-// 0x26 CancelSaleItemFailed @0x576070, 0x28 MoveITCPurchaseItemLtoSFailed @0x576110.
+// bytes).
+//
+// VERIFIED iteration 4 (task-096), three more Reason-shape arms, each decompiled
+// in ALL FOUR versions and confirmed Decode1(reason) -> NoticeFailReason (the
+// GetUser*Failed arms additionally re-send the transfer-field packet when
+// reason==73, which reads NO further bytes):
+//
+//	0x18 GetSearchITCListFailed    v83 0x5a49e3 / v84 0x5b4ed3 / v87 0x5d4ad3 / v95 0x575fa0
+//	0x22 GetUserPurchaseItemFailed v83 0x5a4c2a / v84 0x5b511a / v87 0x5d4d1a / v95 0x575fd0
+//	0x24 GetUserSaleItemFailed     v83 0x5a4ce7 / v84 0x5b51d7 / v87 0x5d4dd7 / v95 0x576000
+//
+// Additional Reason-shape arms decompile-confirmed in gms_v95 but not yet pinned
+// (later iterations): 0x26 CancelSaleItemFailed @0x576070,
+// 0x28 MoveITCPurchaseItemLtoSFailed @0x576110.
 //
 // packet-audit:fname CITC::OnNormalItemResult#Reason  (dispatcher family — see docs/packets/evidence/families.yaml)
 type MtsResultReason struct {

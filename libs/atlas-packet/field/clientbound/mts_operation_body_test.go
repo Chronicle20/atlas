@@ -62,6 +62,13 @@ func TestMtsResultEmptyGolden(t *testing.T) {
 		{"BuyZzimItemFailed", 0x36},      // v83 0x5a519f / v84 0x5b5656 / v87 0x5d5259 / v95 0x576400
 		{"RegisterWishItemFailed", 0x38}, // v83 0x5a5209 / v84 0x5b56c0 / v87 0x5d52c3 / v95 0x576480
 		{"BidAuctionFailed", 0x3C},       // v83 0x5a5444 / v84 0x5b58fb / v87 0x5d54fe / v95 0x5764c0
+		// iteration 4 (this batch) — all decompile-confirmed Empty-shape in
+		// v83/v84/v87/v95 (StringPool::GetString + CUtilDlg::Notice [+ this[6]=0
+		// member store on RegisterWishItemDone]; NO CInPacket::Decode* after the
+		// dispatcher Decode1).
+		{"BuyItemDone", 0x33},          // v83 0x5a5114 / v84 0x5b55cb / v87 0x5d51ce / v95 0x576360
+		{"BuyZzimItemDone", 0x35},      // v83 0x5a5174 / v84 0x5b562b / v87 0x5d522e / v95 0x5763d0
+		{"RegisterWishItemDone", 0x37}, // v83 0x5a51d4 / v84 0x5b568b / v87 0x5d528e / v95 0x576440
 	}
 	ctx := test.CreateContext("GMS", 95, 0)
 	for _, c := range cases {
@@ -111,6 +118,13 @@ func TestMtsResultReasonGolden(t *testing.T) {
 	}{
 		{"GetITCListFailed", 0x16, 0x49}, // reason 73 = the transfer-field branch value
 		{"SaleCurrentItemToWishFailed", 0x20, 0x50},
+		// iteration 4 (this batch) — all decompile-confirmed Reason-shape in
+		// v83/v84/v87/v95 (Decode1(reason) -> NoticeFailReason; the GetUser*Failed
+		// arms additionally re-send the transfer-field packet when reason==73, which
+		// reads NO further bytes).
+		{"GetSearchITCListFailed", 0x18, 0x51},     // v83 0x5a49e3 / v84 0x5b4ed3 / v87 0x5d4ad3 / v95 0x575fa0
+		{"GetUserPurchaseItemFailed", 0x22, 0x49},  // v83 0x5a4c2a / v84 0x5b511a / v87 0x5d4d1a / v95 0x575fd0
+		{"GetUserSaleItemFailed", 0x24, 0x49},      // v83 0x5a4ce7 / v84 0x5b51d7 / v87 0x5d4dd7 / v95 0x576000
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

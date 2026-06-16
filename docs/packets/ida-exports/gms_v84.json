@@ -23226,7 +23226,7 @@
       "address": "0x5b4b64",
       "region": "GMS",
       "direction": "clientbound",
-      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1+2+3): Empty-shape arms of CITC::OnNormalItemResult that read NOTHING after the dispatcher Decode1(mode) (StringPool notice only; the trailing m_bITCRequestSent=0 store on the *Failed/CancelSaleItemDone arms is not a wire read). Covered modes: iter 1 0x1D RegisterSaleEntryDone / 0x1F SaleCurrentItemToWishDone / 0x29 SetZzimDone / 0x2A SetZzimFailed; iter 2 0x25 CancelSaleItemDone / 0x2B DeleteZzimDone / 0x2C DeleteZzimFailed / 0x2E LoadWishSaleListFailed / 0x2F BuyWishDone / 0x30 BuyWishFailed; iter 3 0x31 CancelWishDone / 0x32 CancelWishFailed / 0x34 BuyItemFailed / 0x36 BuyZzimItemFailed / 0x38 RegisterWishItemFailed / 0x3C BidAuctionFailed. Address pins 0x1D (RegisterSaleEntryDone) as the per-version representative. Maps atlas field/clientbound MtsResultEmpty.",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1+2+3+4): Empty-shape arms of CITC::OnNormalItemResult that read NOTHING after the dispatcher Decode1(mode) (StringPool notice only; the trailing m_bITCRequestSent=0 store on the *Failed/CancelSaleItemDone/RegisterWishItemDone arms is not a wire read). Covered modes: iter 1 0x1D RegisterSaleEntryDone / 0x1F SaleCurrentItemToWishDone / 0x29 SetZzimDone / 0x2A SetZzimFailed; iter 2 0x25 CancelSaleItemDone / 0x2B DeleteZzimDone / 0x2C DeleteZzimFailed / 0x2E LoadWishSaleListFailed / 0x2F BuyWishDone / 0x30 BuyWishFailed; iter 3 0x31 CancelWishDone / 0x32 CancelWishFailed / 0x34 BuyItemFailed / 0x36 BuyZzimItemFailed / 0x38 RegisterWishItemFailed / 0x3C BidAuctionFailed; iter 4 0x33 BuyItemDone / 0x35 BuyZzimItemDone / 0x37 RegisterWishItemDone. Address pins 0x1D (RegisterSaleEntryDone) as the per-version representative. Maps atlas field/clientbound MtsResultEmpty.",
       "calls": [
         {
           "op": "Decode1",
@@ -23238,7 +23238,7 @@
       "address": "0x5b4d72",
       "region": "GMS",
       "direction": "clientbound",
-      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1): Reason-shape arms of CITC::OnNormalItemResult that read a single Decode1 fail-reason byte after the dispatcher mode byte. Covered modes 0x16 GetITCListFailed / 0x20 SaleCurrentItemToWishFailed. Address pins 0x16 (GetITCListFailed) as the per-version representative. Maps atlas field/clientbound MtsResultReason.",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1+4): Reason-shape arms of CITC::OnNormalItemResult that read a single Decode1 fail-reason byte after the dispatcher mode byte. Covered modes: iter 1 0x16 GetITCListFailed / 0x20 SaleCurrentItemToWishFailed; iter 4 0x18 GetSearchITCListFailed / 0x22 GetUserPurchaseItemFailed / 0x24 GetUserSaleItemFailed. Address pins 0x16 (GetITCListFailed) as the per-version representative. Maps atlas field/clientbound MtsResultReason.",
       "calls": [
         {
           "op": "Decode1",

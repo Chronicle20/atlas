@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultTwoInts
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#TwoInts
+    address: "0x5d4e58"
+    decompile_sha256: bc528cfd9415ea37ce2162ff898d37b9091264b40649974e7ccdb0b6677fcc0a
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_body_test.go#TestMtsResultTwoIntsGolden

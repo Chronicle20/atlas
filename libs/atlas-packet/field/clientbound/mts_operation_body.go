@@ -129,9 +129,14 @@ func (m *MtsResultEmpty) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 //	0x22 GetUserPurchaseItemFailed v83 0x5a4c2a / v84 0x5b511a / v87 0x5d4d1a / v95 0x575fd0
 //	0x24 GetUserSaleItemFailed     v83 0x5a4ce7 / v84 0x5b51d7 / v87 0x5d4dd7 / v95 0x576000
 //
-// Additional Reason-shape arms decompile-confirmed in gms_v95 but not yet pinned
-// (later iterations): 0x26 CancelSaleItemFailed @0x576070,
-// 0x28 MoveITCPurchaseItemLtoSFailed @0x576110.
+// VERIFIED iteration 5 (task-096), two more Reason-shape arms, each decompiled in
+// ALL FOUR versions and confirmed Decode1(reason) -> NoticeFailReason with NO
+// further CInPacket::Decode* (CancelSaleItemFailed reads exactly one byte;
+// MoveITCPurchaseItemLtoSFailed's reason==65 branch re-sends the transfer-field
+// packet, which reads no bytes):
+//
+//	0x26 CancelSaleItemFailed         v83 0x5a4d49 / v84 0x5b5239 / v87 0x5d4e39 / v95 0x576070
+//	0x28 MoveITCPurchaseItemLtoSFailed v83 0x5a4dcf / v84 0x5b52bf / v87 0x5d4ec2 / v95 0x576110
 //
 // packet-audit:fname CITC::OnNormalItemResult#Reason  (dispatcher family — see docs/packets/evidence/families.yaml)
 type MtsResultReason struct {
@@ -166,19 +171,20 @@ func (m *MtsResultReason) Decode(_ logrus.FieldLogger, _ context.Context) func(r
 	}
 }
 
-// MtsResultTwoInts — arms whose sub-handler reads two Decode4 ints. Covers,
-// decompile-confirmed in gms_v95:
+// MtsResultTwoInts — arms whose sub-handler reads exactly two Decode4 ints after
+// the dispatcher mode byte. Covers, VERIFIED iteration 5 in ALL FOUR versions
+// (decompiled; identical Decode4 then Decode4 read order):
 //
-//	0x27 MoveITCPurchaseItemLtoSDone (CITC::OnMoveITCPurchaseItemLtoSDone @0x5760a0 —
-//	     Decode4 v3 (tab+1), Decode4 v4 (selectedNo))
-//	0x3D NotifyCancelWishResult      (CITC::OnNotifyCancelWishResult @0x576f00 —
-//	     Decode4 v3 (count d), Decode4 v5 (count x))
+//	0x27 MoveITCPurchaseItemLtoSDone  v83 0x5a4d68 / v84 0x5b5258 / v87 0x5d4e58 / v95 0x5760a0
+//	     (Decode4 v3 (tab+1 -> CCtrlTab::SetTab), Decode4 v4 (selectedNo))
+//	0x3D NotifyCancelWishResult       v83 0x5a523e / v84 0x5b56f5 / v87 0x5d52f8 / v95 0x576f00
+//	     (Decode4 v1 (count d), Decode4 v2 (count x); both >0 guards a notice)
 //
 // The sub-handler's downstream use differs (tab vs notice count) but the wire
-// read order is identical: Decode4 then Decode4. Version-stable: v83
-// OnMoveITCPurchaseItemLtoSDone @0x5a4d68 and sub_5A523E both read Decode4×2.
+// read order is identical: Decode4 then Decode4. The trailing this[6]=0 store on
+// the LtoSDone arm is a member write, not a wire read.
 //
-// packet-audit:fname CITC::OnNormalItemResult#TwoInts
+// packet-audit:fname CITC::OnNormalItemResult#TwoInts  (dispatcher family — see docs/packets/evidence/families.yaml)
 type MtsResultTwoInts struct {
 	mode byte
 	a    uint32
@@ -210,5 +216,133 @@ func (m *MtsResultTwoInts) Decode(_ logrus.FieldLogger, _ context.Context) func(
 		m.mode = r.ReadByte()
 		m.a = r.ReadUint32()
 		m.b = r.ReadUint32()
+	}
+}
+
+// mtsRegisterSaleEntryFailedSaleLimitReason is the only reason value of the
+// 0x1E RegisterSaleEntryFailed arm whose sub-handler reads a trailing Decode2
+// short (the per-account sale-limit count). All other reasons route a plain
+// NoticeFailReason with no trailing read.
+//
+//	v83 sub_5A4581:  if ( v3 == 72 ) { v4 = CInPacket::Decode2(a2); ... }
+//	v84 sub_5B4A38:  if ( v3 == 72 ) { v4 = CInPacket::Decode2(a2); ... }
+//	v87 OnNormalItemResRegisterSaleEntryFailed@0x5d4640: if (v3==72) Decode2
+//	v95 OnNormalItemResRegisterSaleEntryFailed@0x576b80: if (v3==72) Decode2
+const mtsRegisterSaleEntryFailedSaleLimitReason byte = 0x48 // 72
+
+// MtsResultRegisterSaleEntryFailed — the 0x1E RegisterSaleEntryFailed arm
+// (CITC::OnNormalItemResRegisterSaleEntryFailed). The sub-handler reads
+// Decode1(reason) -> NoticeFailReason, EXCEPT when reason==0x48 (sale-limit
+// reached) where it then reads a single Decode2 short (the limit count, used to
+// Format the StringPool 0x12BB notice). The codec writes the mode byte, the
+// Decode1 reason byte, and — ONLY when reason==0x48 — the Decode2 limit short.
+//
+// VERIFIED iteration 5 (task-096), decompiled in ALL FOUR versions (identical
+// gate + read order; the trailing m_bITCRequestSent=0 store is not a wire read):
+//
+//	v83 sub_5A4581          / v84 sub_5B4A38
+//	v87 0x5d4640            / v95 0x576b80
+//
+// packet-audit:fname CITC::OnNormalItemResult#RegisterSaleEntryFailed  (dispatcher family — see docs/packets/evidence/families.yaml)
+type MtsResultRegisterSaleEntryFailed struct {
+	mode      byte
+	reason    byte
+	saleLimit uint16 // Decode2; present on the wire only when reason==0x48
+}
+
+func NewMtsResultRegisterSaleEntryFailed(reason byte, saleLimit uint16) MtsResultRegisterSaleEntryFailed {
+	return MtsResultRegisterSaleEntryFailed{mode: 0x1E, reason: reason, saleLimit: saleLimit}
+}
+
+func (m MtsResultRegisterSaleEntryFailed) Mode() byte        { return m.mode }
+func (m MtsResultRegisterSaleEntryFailed) Reason() byte      { return m.reason }
+func (m MtsResultRegisterSaleEntryFailed) SaleLimit() uint16 { return m.saleLimit }
+func (m MtsResultRegisterSaleEntryFailed) Operation() string { return MtsOperationWriter }
+func (m MtsResultRegisterSaleEntryFailed) String() string {
+	return fmt.Sprintf("mts register sale entry failed mode [%d] reason [%d] saleLimit [%d]", m.mode, m.reason, m.saleLimit)
+}
+
+func (m MtsResultRegisterSaleEntryFailed) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)   // dispatcher mode byte (0x1E)
+		w.WriteByte(m.reason) // Decode1 fail reason -> NoticeFailReason
+		if m.reason == mtsRegisterSaleEntryFailedSaleLimitReason {
+			w.WriteShort(m.saleLimit) // Decode2 sale-limit count (reason==0x48 branch only)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *MtsResultRegisterSaleEntryFailed) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.reason = r.ReadByte()
+		if m.reason == mtsRegisterSaleEntryFailedSaleLimitReason {
+			m.saleLimit = r.ReadUint16()
+		}
+	}
+}
+
+// MtsResultSuccessBidInfo — the 0x3E SuccessBidInfoResult arm
+// (CITC::OnSuccessBidInfoResult). The sub-handler reads Decode1(soldFlag) +
+// Decode4(itemId); when itemId>0 it then reads Decode4(price) and an 8-byte
+// FILETIME contract date via DecodeBuffer(8). When itemId<=0 the body ends after
+// the leading byte+int (no notice shown). The codec writes the mode byte, the
+// Decode1 soldFlag, the Decode4 itemId, and — ONLY when itemId>0 — the Decode4
+// price followed by the 8-byte contract-date buffer.
+//
+// VERIFIED iteration 5 (task-096), decompiled in ALL FOUR versions (identical
+// read order: Decode1, Decode4, [itemId>0: Decode4 + DecodeBuffer(8)]):
+//
+//	v83 sub_5A52DE          / v84 sub_5B5795
+//	v87 OnSuccessBidInfoResult@0x5d5398 / v95 OnSuccessBidInfoResult@0x577000
+//
+// packet-audit:fname CITC::OnNormalItemResult#SuccessBidInfo  (dispatcher family — see docs/packets/evidence/families.yaml)
+type MtsResultSuccessBidInfo struct {
+	mode         byte
+	soldFlag     byte     // Decode1: 1=sold (StringPool 0x12AA), else bought (0x12AB)
+	itemId       uint32   // Decode4: ITC item id; <=0 ends the body
+	price        uint32   // Decode4: meso price (itemId>0 only)
+	contractDate [8]byte  // DecodeBuffer(8): FILETIME (itemId>0 only)
+}
+
+func NewMtsResultSuccessBidInfo(soldFlag byte, itemId uint32, price uint32, contractDate [8]byte) MtsResultSuccessBidInfo {
+	return MtsResultSuccessBidInfo{mode: 0x3E, soldFlag: soldFlag, itemId: itemId, price: price, contractDate: contractDate}
+}
+
+func (m MtsResultSuccessBidInfo) Mode() byte             { return m.mode }
+func (m MtsResultSuccessBidInfo) SoldFlag() byte         { return m.soldFlag }
+func (m MtsResultSuccessBidInfo) ItemId() uint32         { return m.itemId }
+func (m MtsResultSuccessBidInfo) Price() uint32          { return m.price }
+func (m MtsResultSuccessBidInfo) ContractDate() [8]byte  { return m.contractDate }
+func (m MtsResultSuccessBidInfo) Operation() string      { return MtsOperationWriter }
+func (m MtsResultSuccessBidInfo) String() string {
+	return fmt.Sprintf("mts success bid info mode [%d] soldFlag [%d] itemId [%d] price [%d]", m.mode, m.soldFlag, m.itemId, m.price)
+}
+
+func (m MtsResultSuccessBidInfo) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)     // dispatcher mode byte (0x3E)
+		w.WriteByte(m.soldFlag) // Decode1 sold/bought flag
+		w.WriteInt(m.itemId)    // Decode4 ITC item id
+		if m.itemId > 0 {
+			w.WriteInt(m.price)              // Decode4 meso price (itemId>0 branch)
+			w.WriteByteArray(m.contractDate[:]) // DecodeBuffer(8) FILETIME contract date
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *MtsResultSuccessBidInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.soldFlag = r.ReadByte()
+		m.itemId = r.ReadUint32()
+		if m.itemId > 0 {
+			m.price = r.ReadUint32()
+			copy(m.contractDate[:], r.ReadBytes(8))
+		}
 	}
 }

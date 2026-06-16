@@ -11040,6 +11040,74 @@
         }
       ]
     },
+    "CITC::OnNormalItemResult#TwoInts": {
+      "address": "0x5760a0",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): TwoInts-shape arms of CITC::OnNormalItemResult that read exactly Decode4 then Decode4 after the dispatcher Decode1(mode). Covered modes: 0x27 MoveITCPurchaseItemLtoSDone (tab+1, selectedNo), 0x3D NotifyCancelWishResult (count d, count x). Address pins 0x27 (MoveITCPurchaseItemLtoSDone) as the per-version representative. Maps atlas field/clientbound MtsResultTwoInts.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator; e.g. 0x27 MoveITCPurchaseItemLtoSDone)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "first int (e.g. tab index +1 / cancel count d)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "second int (e.g. selectedNo / cancel count x)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#RegisterSaleEntryFailed": {
+      "address": "0x576b80",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x1E RegisterSaleEntryFailed arm of CITC::OnNormalItemResult. Reads Decode1(reason) -> NoticeFailReason; ONLY when reason==0x48 (sale-limit) it then reads a trailing Decode2 sale-limit short (Format StringPool 0x12BB). The trailing Decode2 is the maximal (reason==0x48) read shape the codec encodes; the cell is byte-fixture verified for both the plain and sale-limit reasons. Maps atlas field/clientbound MtsResultRegisterSaleEntryFailed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1E RegisterSaleEntryFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "fail reason byte -> NoticeFailReason"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sale-limit count (reason==0x48 branch only)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#SuccessBidInfo": {
+      "address": "0x577000",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x3E SuccessBidInfoResult arm of CITC::OnNormalItemResult. Reads Decode1(soldFlag) + Decode4(itemId); ONLY when itemId>0 it then reads Decode4(price) + DecodeBuffer(8) FILETIME contract date. The trailing Decode4+DecodeBuffer(8) is the maximal (itemId>0) read shape the codec encodes; the cell is byte-fixture verified for both the no-item and with-item paths. Maps atlas field/clientbound MtsResultSuccessBidInfo.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3E SuccessBidInfoResult)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sold(1)/bought flag -> StringPool 0x12AA/0x12AB"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ITC item id; <=0 ends the body"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso price (itemId>0 branch only)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "8-byte FILETIME contract date (itemId>0 branch only)"
+        }
+      ]
+    },
     "CSummoned::SetDamaged": {
       "address": "0x74b730",
       "direction": "serverbound",

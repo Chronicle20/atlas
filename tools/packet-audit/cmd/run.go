@@ -1905,6 +1905,26 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::OnNormalItemResult#Reason":
 		return []candidate{{name: "MtsResultReason", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	//   #TwoInts -> MtsResultTwoInts (sub-handlers that read exactly Decode4 then
+	//              Decode4 after the dispatcher mode byte). Covers, iteration 5:
+	//              0x27 MoveITCPurchaseItemLtoSDone (tab+1, selectedNo),
+	//              0x3D NotifyCancelWishResult (count d, count x). The downstream
+	//              use differs but the wire read order is identical Decode4×2.
+	//   #RegisterSaleEntryFailed -> MtsResultRegisterSaleEntryFailed
+	//              (0x1E; Decode1(reason) then, ONLY when reason==0x48, a trailing
+	//              Decode2 short). The conditional tail makes it its own shape.
+	//   #SuccessBidInfo -> MtsResultSuccessBidInfo (0x3E; Decode1(soldFlag) +
+	//              Decode4(itemId) then, ONLY when itemId>0, Decode4(price) +
+	//              DecodeBuffer(8) FILETIME contract date).
+	//
+	// All decompile-confirmed version-stable in gms_v83/v84/v87/v95 (iteration 5).
+	case "CITC::OnNormalItemResult#TwoInts":
+		return []candidate{{name: "MtsResultTwoInts", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#RegisterSaleEntryFailed":
+		return []candidate{{name: "MtsResultRegisterSaleEntryFailed", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#SuccessBidInfo":
+		return []candidate{{name: "MtsResultSuccessBidInfo", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// FOOTHOLD_INFO clientbound (task-096, recipe R-CB). CField::OnFootHoldInfo
 	// is version-divergent: v87 reads a single entry (name, mode, [mode==2:
 	// 8×int32 + 2×byte]); v95/jms read Decode4(count) then per entry name, mode,

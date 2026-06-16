@@ -189,11 +189,12 @@ func expectedTable(d dispatcherDoc, version string) map[string]int {
 // ---- order-preserving recursive JSON node ----
 
 type node struct {
-	kind byte // 'o' object, 'a' array, 's' scalar
-	keys []string
-	obj  map[string]*node
-	arr  []*node
-	raw  json.RawMessage // scalars (string/number/bool/null)
+	kind  byte // 'o' object, 'a' array, 's' scalar
+	keys  []string
+	obj   map[string]*node
+	arr   []*node
+	raw   json.RawMessage // scalars: the value bytes; composites: original bytes (verbatim emit when clean)
+	dirty bool            // this composite was modified and must be re-indented
 }
 
 func parseNode(b []byte) (*node, error) {
@@ -208,9 +209,10 @@ func readNode(raw json.RawMessage) (*node, error) {
 	if len(trimmed) == 0 {
 		return nil, fmt.Errorf("empty JSON value")
 	}
+	orig := append(json.RawMessage{}, trimmed...)
 	switch trimmed[0] {
 	case '{':
-		n := &node{kind: 'o', obj: map[string]*node{}}
+		n := &node{kind: 'o', obj: map[string]*node{}, raw: orig}
 		dec := json.NewDecoder(bytes.NewReader(trimmed))
 		if _, err := dec.Token(); err != nil { // opening {
 			return nil, err
@@ -234,7 +236,7 @@ func readNode(raw json.RawMessage) (*node, error) {
 		}
 		return n, nil
 	case '[':
-		n := &node{kind: 'a'}
+		n := &node{kind: 'a', raw: orig}
 		dec := json.NewDecoder(bytes.NewReader(trimmed))
 		if _, err := dec.Token(); err != nil { // opening [
 			return nil, err
@@ -252,45 +254,70 @@ func readNode(raw json.RawMessage) (*node, error) {
 		}
 		return n, nil
 	default:
-		return &node{kind: 's', raw: append(json.RawMessage{}, trimmed...)}, nil
+		return &node{kind: 's', raw: orig}, nil
 	}
 }
 
-func (n *node) writeCompact(buf *bytes.Buffer) {
+// subtreeDirty reports whether n or any descendant was modified.
+func subtreeDirty(n *node) bool {
+	if n.dirty {
+		return true
+	}
+	for _, c := range n.obj {
+		if subtreeDirty(c) {
+			return true
+		}
+	}
+	for _, c := range n.arr {
+		if subtreeDirty(c) {
+			return true
+		}
+	}
+	return false
+}
+
+// emit writes n at the given indentation. A clean subtree (no modified
+// descendant) is written from its original bytes VERBATIM, preserving the
+// template's hand formatting (compact inline arrays/objects, \uXXXX escapes).
+// Only nodes on a path to a modification are re-indented.
+func (n *node) emit(buf *bytes.Buffer, indent string) {
+	if n.kind == 's' || !subtreeDirty(n) {
+		buf.Write(n.raw) // scalar value, or verbatim clean composite
+		return
+	}
+	child := indent + "  "
 	switch n.kind {
 	case 'o':
-		buf.WriteByte('{')
+		buf.WriteString("{\n")
 		for i, k := range n.keys {
-			if i > 0 {
-				buf.WriteByte(',')
-			}
+			buf.WriteString(child)
 			kb, _ := json.Marshal(k)
 			buf.Write(kb)
-			buf.WriteByte(':')
-			n.obj[k].writeCompact(buf)
-		}
-		buf.WriteByte('}')
-	case 'a':
-		buf.WriteByte('[')
-		for i, c := range n.arr {
-			if i > 0 {
+			buf.WriteString(": ")
+			n.obj[k].emit(buf, child)
+			if i < len(n.keys)-1 {
 				buf.WriteByte(',')
 			}
-			c.writeCompact(buf)
+			buf.WriteByte('\n')
 		}
-		buf.WriteByte(']')
-	default:
-		buf.Write(n.raw)
+		buf.WriteString(indent + "}")
+	case 'a':
+		buf.WriteString("[\n")
+		for i, c := range n.arr {
+			buf.WriteString(child)
+			c.emit(buf, child)
+			if i < len(n.arr)-1 {
+				buf.WriteByte(',')
+			}
+			buf.WriteByte('\n')
+		}
+		buf.WriteString(indent + "]")
 	}
 }
 
 func encodeNode(n *node) ([]byte, error) {
-	var compact bytes.Buffer
-	n.writeCompact(&compact)
 	var out bytes.Buffer
-	if err := json.Indent(&out, compact.Bytes(), "", "  "); err != nil {
-		return nil, err
-	}
+	n.emit(&out, "")
 	out.WriteByte('\n')
 	return out.Bytes(), nil
 }
@@ -366,7 +393,7 @@ func setOperations(w *node, doc dispatcherDoc, expected map[string]int) bool {
 		w.keys = append(w.keys, "options")
 		w.obj["options"] = opts
 	}
-	ops := &node{kind: 'o', obj: map[string]*node{}}
+	ops := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
 	for _, op := range doc.Operations {
 		v, ok := expected[op.Key]
 		if !ok {
@@ -382,8 +409,38 @@ func setOperations(w *node, doc dispatcherDoc, expected map[string]int) bool {
 	return !bytes.Equal(before, nodeBytes(w))
 }
 
+// nodeBytes is a deterministic compact serialization used only for change
+// detection (order-sensitive; values from raw or recursively).
 func nodeBytes(n *node) []byte {
 	var b bytes.Buffer
-	n.writeCompact(&b)
+	writeCanon(&b, n)
 	return b.Bytes()
+}
+
+func writeCanon(buf *bytes.Buffer, n *node) {
+	switch n.kind {
+	case 'o':
+		buf.WriteByte('{')
+		for i, k := range n.keys {
+			if i > 0 {
+				buf.WriteByte(',')
+			}
+			kb, _ := json.Marshal(k)
+			buf.Write(kb)
+			buf.WriteByte(':')
+			writeCanon(buf, n.obj[k])
+		}
+		buf.WriteByte('}')
+	case 'a':
+		buf.WriteByte('[')
+		for i, c := range n.arr {
+			if i > 0 {
+				buf.WriteByte(',')
+			}
+			writeCanon(buf, c)
+		}
+		buf.WriteByte(']')
+	default:
+		buf.Write(bytes.TrimSpace(n.raw))
+	}
 }

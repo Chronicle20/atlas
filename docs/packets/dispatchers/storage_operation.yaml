@@ -1,0 +1,33 @@
+# StorageOperation — CTrunkDlg::OnPacket per-version mode table.
+#
+# SOURCE OF TRUTH for the StorageOperation writer. Inline mode switch
+# (SetGetItems arms + StringPool-notice arms + a Decode1+DecodeStr error arm).
+# IDA-verified via NAMED StringPool constants in the v83 build (port 13342,
+# 0x7c8a4c), v87 (0x81c336), v95 (0x76a990).
+#
+# CORRECTION: the seeded gms_83/gms_84 tables had ERROR_MESSAGE=24 and
+# UNKNOWN_2=23 — WRONG. The v83/v87 client reads the error string at mode 23
+# (mode 24 does not exist → falls to the generic SP_855 notice). v95 inserts a
+# notice at 23 and moves the error string to 24. So ERROR_MESSAGE is 23 in
+# v83/v84/v87 and 24 in v95. UNKNOWN_2 has no distinct client mode (23 is the
+# error arm) and Atlas never emits it (no WithResolvedCode("operations","UNKNOWN_2"))
+# — dropped. gms_v84: stable = v83 (storage did not shift in v84; only cash did);
+# the v84 DEVM build leaves CTrunkDlg unnamed so this column is inferred.
+# jms_185: the StorageOperation writer is absent from that template (Atlas does
+# not wire storage on jms) — no jms column.
+
+writer: StorageOperation
+fname: CTrunkDlg::OnPacket
+op: STORAGE
+direction: clientbound
+operations:
+  - { key: RETRIEVE_ASSETS,    modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9  } }
+  - { key: INVENTORY_FULL,     modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10 } }
+  - { key: NOT_ENOUGH_MESOS,   modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11 } }
+  - { key: ONE_OF_A_KIND,      modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12 } }
+  - { key: STORE_ASSETS,       modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13 } }
+  - { key: NOT_ENOUGH_MESOS_2, modes: { gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16 } }
+  - { key: UNKNOWN,            modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17 } }
+  - { key: UPDATE_MESO,        modes: { gms_v83: 19, gms_v84: 19, gms_v87: 19, gms_v95: 19 } }
+  - { key: SHOW,               modes: { gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22 } }
+  - { key: ERROR_MESSAGE,      modes: { gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v95: 24 } }

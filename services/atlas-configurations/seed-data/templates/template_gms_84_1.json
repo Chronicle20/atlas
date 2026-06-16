@@ -2632,8 +2632,7 @@
             "UNKNOWN": 17,
             "UPDATE_MESO": 19,
             "SHOW": 22,
-            "UNKNOWN_2": 23,
-            "ERROR_MESSAGE": 24
+            "ERROR_MESSAGE": 23
           }
         }
       },

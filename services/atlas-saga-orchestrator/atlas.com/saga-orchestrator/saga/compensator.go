@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ type Compensator interface {
 	compensateStorageOperation(s Saga, failedStep Step[any]) error
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
+	compensatePetEvolution(s Saga, failedStep Step[any]) error
 
 	// DispatchCharacterCreationRollbacks is the dispatch half of the reverse-walk
 	// compensator. It fires the inverse commands (DestroyItem / DeleteSkill /
@@ -46,6 +48,12 @@ type Compensator interface {
 	// handle those. Used both by the step-driven compensator and by the timer-
 	// fire path in saga/timer.go (PRD §4.3 / plan Phase 4.3).
 	DispatchCharacterCreationRollbacks(s Saga)
+
+	// DispatchPetEvolutionRollbacks reverse-walks the completed steps of a
+	// PetEvolution saga, refunding the destroyed Rock (DestroyAsset → CreateItem)
+	// and the deducted mesos (AwardMesos → inverse credit). No lifecycle
+	// transitions, no Failed emission, no cache eviction — callers handle those.
+	DispatchPetEvolutionRollbacks(s Saga)
 }
 
 type CompensatorImpl struct {
@@ -179,6 +187,13 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// than only compensating the failing step.
 	if s.SagaType() == CharacterCreation {
 		return c.compensateCharacterCreation(s, failedStep)
+	}
+
+	// Pet-evolution reverse-walk (plan Task 18). A failed evolve_pet must refund
+	// the already-completed destroy_item (the Rock) and award_mesos (the cost)
+	// rather than only compensating the failed step.
+	if s.SagaType() == PetEvolution {
+		return c.compensatePetEvolution(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -1022,6 +1037,104 @@ func (c *CompensatorImpl) DispatchCharacterCreationRollbacks(s Saga) {
 				"step_id":        deleteCharacterStep.StepId(),
 				"character_id":   characterId,
 			}).Error("Reverse-walk: CreateCharacter → DeleteCharacter dispatch failed; continuing chain.")
+		}
+	}
+}
+
+// compensatePetEvolution is the pet-evolution reverse-walk compensator (plan
+// Task 18). On a failed evolve_pet it walks the saga's completed steps in
+// reverse and refunds the destroyed Rock (DestroyAsset → CreateItem) and the
+// deducted mesos (AwardMesos → inverse credit), emits exactly one
+// StatusEventTypeFailed, cancels the Phase-4 timer, and evicts the saga.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if the
+// timer already emitted Failed, the transition is refused and this function
+// returns without re-emitting. Mirrors compensateCharacterCreation.
+func (c *CompensatorImpl) compensatePetEvolution(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("PetEvolution saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchPetEvolutionRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Pet evolution failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after pet-evolution compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Pet-evolution reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchPetEvolutionRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. This is the pure
+// "dispatch" half — no lifecycle transitions, no event emission, no cache
+// eviction. Callers are responsible for those.
+//
+// Inverses:
+//   - DestroyAsset (Rock destroyed)  → CreateItem (refund the Rock).
+//   - AwardMesos   (negative cost)   → AwardMesos with -Amount (re-credit the
+//     player so they net back to even). The consume step deducts with a
+//     negative amount; negating it restores the mesos.
+//
+// evolve_pet produced no committed mutation on failure, so it has no inverse.
+// An error refunding one step does not abort the chain.
+func (c *CompensatorImpl) DispatchPetEvolutionRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case DestroyAsset:
+			if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+				qty := payload.Quantity
+				if qty == 0 {
+					qty = 1
+				}
+				if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.TemplateId,
+					}).Error("Reverse-walk: DestroyAsset → CreateItem dispatch failed; continuing chain.")
+				}
+			}
+		case AwardMesos:
+			if payload, ok := step.Payload().(AwardMesosPayload); ok {
+				ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+				if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"amount":         payload.Amount,
+					}).Error("Reverse-walk: AwardMesos refund dispatch failed; continuing chain.")
+				}
+			}
 		}
 	}
 }

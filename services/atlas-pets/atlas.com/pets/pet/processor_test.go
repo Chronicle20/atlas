@@ -16,6 +16,7 @@ import (
 	"atlas-pets/pet/exclude"
 	sm "atlas-pets/skill/mock"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -1216,5 +1217,385 @@ func TestProcessor_SetExclude(t *testing.T) {
 	}
 	if len(o1.Excludes()) != 3 {
 		t.Fatalf("Failed to expected excludes for pet. Length mismatch")
+	}
+}
+
+// fakeInventoryProcessor captures ChangeTemplate cascade calls so evolution
+// tests can assert the in-place inventory asset swap was buffered.
+type fakeInventoryProcessor struct {
+	called          bool
+	transactionId   uuid.UUID
+	characterId     uint32
+	petId           uint32
+	newTemplateId   uint32
+}
+
+func (f *fakeInventoryProcessor) ByCharacterIdProvider(characterId uint32) model.Provider[inventory.Model] {
+	return model.ErrorProvider[inventory.Model](errors.New("not implemented"))
+}
+
+func (f *fakeInventoryProcessor) GetByCharacterId(characterId uint32) (inventory.Model, error) {
+	return inventory.Model{}, errors.New("not implemented")
+}
+
+func (f *fakeInventoryProcessor) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+		f.called = true
+		f.transactionId = transactionId
+		f.characterId = characterId
+		f.petId = petId
+		f.newTemplateId = newTemplateId
+		return nil
+	}
+}
+
+// evolvableDragonData returns evolvable baby-dragon pet data: reqItemId set,
+// reqPetLevel 15, and four evolution candidates with arbitrary (non-percent)
+// weights summing to 100.
+func evolvableDragonData() data2.Model {
+	return data2.NewModelBuilder().
+		SetReqItemId(5380000).
+		SetReqPetLevel(15).
+		SetEvolutions([]data2.EvolutionModel{
+			data2.NewEvolutionModel(5000030, 33),
+			data2.NewEvolutionModel(5000031, 33),
+			data2.NewEvolutionModel(5000032, 33),
+			data2.NewEvolutionModel(5000033, 1),
+		}).
+		Build()
+}
+
+func TestEvolveRollsAndPreservesIdentity(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return evolvableDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		// Deterministically pick index 2 -> templateId 5000032.
+		pet.WithRollEvolution(func(_ []uint32) int { return 2 }),
+	)
+
+	// A baby dragon (5000029) at level 20 (>= reqPetLevel 15), not summoned.
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000029, "Draco", 1).
+		SetLevel(20).
+		SetCloseness(1234).
+		SetSlot(-1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	oldExpiration := i.Expiration()
+	transactionId := uuid.New()
+
+	mb := message.NewBuffer()
+	err = p.Evolve(mb)(transactionId, i.Id())
+	if err != nil {
+		t.Fatalf("Failed to evolve pet: %v", err)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet after evolution: %v", err)
+	}
+	if o.TemplateId() != 5000032 {
+		t.Fatalf("Evolution rolled wrong template. Expected 5000032, got %d", o.TemplateId())
+	}
+	// Identity / stats preserved.
+	if o.Id() != i.Id() {
+		t.Fatalf("Evolution mutated Id. Expected %d, got %d", i.Id(), o.Id())
+	}
+	if o.CashId() != i.CashId() {
+		t.Fatalf("Evolution mutated CashId. Expected %d, got %d", i.CashId(), o.CashId())
+	}
+	if o.Level() != i.Level() {
+		t.Fatalf("Evolution mutated Level. Expected %d, got %d", i.Level(), o.Level())
+	}
+	if o.Closeness() != i.Closeness() {
+		t.Fatalf("Evolution mutated Closeness. Expected %d, got %d", i.Closeness(), o.Closeness())
+	}
+	if o.Name() != i.Name() {
+		t.Fatalf("Evolution mutated Name. Expected %s, got %s", i.Name(), o.Name())
+	}
+	if o.Slot() != i.Slot() {
+		t.Fatalf("Evolution mutated Slot. Expected %d, got %d", i.Slot(), o.Slot())
+	}
+	if !o.Expiration().After(oldExpiration) {
+		t.Fatalf("Evolution did not reset expiration. old=%v new=%v", oldExpiration, o.Expiration())
+	}
+
+	// The inventory CHANGE_TEMPLATE cascade was buffered with the right args.
+	if !fip.called {
+		t.Fatalf("Evolution did not cascade ChangeTemplate to inventory")
+	}
+	if fip.transactionId != transactionId || fip.characterId != i.OwnerId() || fip.petId != i.Id() || fip.newTemplateId != 5000032 {
+		t.Fatalf("ChangeTemplate received wrong args: tx=%v char=%d pet=%d tmpl=%d",
+			fip.transactionId, fip.characterId, fip.petId, fip.newTemplateId)
+	}
+
+	// An EVOLVED status event was emitted.
+	ke := mb.GetAll()
+	se, ok := ke[pet2.EnvStatusEventTopic]
+	if !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 1 {
+		t.Fatalf("Expected exactly 1 status event (EVOLVED), got %d", len(se))
+	}
+}
+
+// eggDragonData returns egg pet data: a single evolution target, reqItemId 0,
+// reqPetLevel 0 -> IsEgg() == true.
+func eggDragonData() data2.Model {
+	return data2.NewModelBuilder().
+		SetReqItemId(0).
+		SetReqPetLevel(0).
+		SetEvolutions([]data2.EvolutionModel{
+			data2.NewEvolutionModel(5000029, 100),
+		}).
+		Build()
+}
+
+// characterMockOwningCash returns a character mock whose cash compartment holds
+// a single asset with the given templateId (or an empty compartment when
+// templateId == 0).
+func characterMockOwningCash(characterId uint32, templateId uint32) *cm.Processor {
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			cb := compartment.NewBuilder(uuid.New(), characterId, inventory2.TypeValueCash, 24)
+			if templateId != 0 {
+				cb.AddAsset(asset.NewBuilder(uuid.Nil, templateId).
+					SetId(1).
+					SetSlot(0).
+					SetPetId(1).
+					Build())
+			}
+			return character.NewModelBuilder().
+				SetInventory(inventory.NewBuilder(characterId).
+					SetCash(cb.Build()).
+					Build()).
+				Build(), nil
+		}
+	}
+	return cp
+}
+
+func TestSpawnHatchesEgg(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return eggDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	// Character owns the egg 5000028 in cash but NOT the baby 5000029.
+	cp := characterMockOwningCash(7000000, 5000028)
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		pet.WithCharacterProcessor(cp),
+	)
+
+	// An egg pet (template 5000028), not summoned.
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000028, "Egg", 1).
+		SetLevel(1).
+		SetSlot(-1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	oldExpiration := i.Expiration()
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if err != nil {
+		t.Fatalf("Failed to spawn (hatch) egg: %v", err)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet after hatch: %v", err)
+	}
+	// Hatched in place: templateId egg -> baby.
+	if o.TemplateId() != 5000029 {
+		t.Fatalf("Egg did not hatch. Expected templateId 5000029, got %d", o.TemplateId())
+	}
+	// Egg was consumed; the pet did NOT spawn (slot stays -1).
+	if o.Slot() != -1 {
+		t.Fatalf("Egg should not have spawned. Expected slot -1, got %d", o.Slot())
+	}
+	// Identity preserved; egg expiration preserved.
+	if o.Id() != i.Id() {
+		t.Fatalf("Hatch mutated Id. Expected %d, got %d", i.Id(), o.Id())
+	}
+	if !o.Expiration().Equal(oldExpiration) {
+		t.Fatalf("Hatch did not preserve egg expiration. old=%v new=%v", oldExpiration, o.Expiration())
+	}
+	// The inventory CHANGE_TEMPLATE cascade was buffered to swap egg -> baby.
+	if !fip.called {
+		t.Fatalf("Hatch did not cascade ChangeTemplate to inventory")
+	}
+	if fip.characterId != i.OwnerId() || fip.petId != i.Id() || fip.newTemplateId != 5000029 {
+		t.Fatalf("ChangeTemplate received wrong args: char=%d pet=%d tmpl=%d",
+			fip.characterId, fip.petId, fip.newTemplateId)
+	}
+}
+
+func TestSpawnHatchRefusedWhenBabyOwned(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return eggDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	// Character already owns the baby 5000029 in cash.
+	cp := characterMockOwningCash(7000000, 5000029)
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		pet.WithCharacterProcessor(cp),
+	)
+
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000028, "Egg", 1).
+		SetLevel(1).
+		SetSlot(-1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if err != nil {
+		t.Fatalf("Spawn returned error when refusing hatch: %v", err)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet: %v", err)
+	}
+	// Refused: templateId stays the egg.
+	if o.TemplateId() != 5000028 {
+		t.Fatalf("Egg should not hatch when baby owned. Expected templateId 5000028, got %d", o.TemplateId())
+	}
+	if fip.called {
+		t.Fatalf("Refused hatch should not cascade ChangeTemplate")
+	}
+}
+
+func TestEvolveRejectsUnderLevel(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return evolvableDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		pet.WithRollEvolution(func(_ []uint32) int { return 2 }),
+	)
+
+	// Level 10 < reqPetLevel 15.
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000029, "Draco", 1).
+		SetLevel(10).
+		SetSlot(-1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Evolve(mb)(uuid.New(), i.Id())
+	if err == nil {
+		t.Fatalf("Expected evolution to be rejected for under-level pet")
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet: %v", err)
+	}
+	if o.TemplateId() != 5000029 {
+		t.Fatalf("Under-level pet was evolved. Expected templateId 5000029, got %d", o.TemplateId())
+	}
+	if fip.called {
+		t.Fatalf("Under-level evolution should not cascade ChangeTemplate")
+	}
+}
+
+func TestEvolveSummonedRefreshesAppearance(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return evolvableDragonData(), nil
+	}
+	fip := &fakeInventoryProcessor{}
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+		}
+	}
+	mfh := position.NewModel(99, 0, 95, 100, 95)
+	pp := &pm.Processor{}
+	pp.GetBelowFn = func(mapId _map.Id, x int16, y int16) model.Provider[position.Model] {
+		return model.FixedProvider(mfh)
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(
+		pet.WithDataProcessor(dp),
+		pet.WithInventoryProcessor(fip),
+		pet.WithCharacterProcessor(cp),
+		pet.WithPositionProcessor(pp),
+		pet.WithRollEvolution(func(_ []uint32) int { return 0 }),
+	)
+
+	// Summoned (lead) baby dragon at level 20.
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000029, "Draco", 1).
+		SetLevel(20).
+		SetSlot(0)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Evolve(mb)(uuid.New(), i.Id())
+	if err != nil {
+		t.Fatalf("Failed to evolve summoned pet: %v", err)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet: %v", err)
+	}
+	if o.TemplateId() != 5000030 {
+		t.Fatalf("Evolution rolled wrong template. Expected 5000030, got %d", o.TemplateId())
+	}
+
+	// The buffer must contain BOTH a DESPAWNED and a SPAWNED event in addition
+	// to the EVOLVED event, proving the appearance refresh ran.
+	ke := mb.GetAll()
+	se, ok := ke[pet2.EnvStatusEventTopic]
+	if !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	var sawEvolved, sawDespawned, sawSpawned bool
+	for _, msg := range se {
+		var env struct {
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(msg.Value, &env); err != nil {
+			t.Fatalf("Failed to unmarshal status event: %v", err)
+		}
+		switch env.Type {
+		case pet2.StatusEventTypeEvolved:
+			sawEvolved = true
+		case pet2.StatusEventTypeDespawned:
+			sawDespawned = true
+		case pet2.StatusEventTypeSpawned:
+			sawSpawned = true
+		}
+	}
+	if !sawEvolved {
+		t.Fatalf("Expected an EVOLVED event")
+	}
+	if !sawDespawned {
+		t.Fatalf("Expected a DESPAWNED event from appearance refresh")
+	}
+	if !sawSpawned {
+		t.Fatalf("Expected a SPAWNED event from appearance refresh")
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/party_quest"
+	"atlas-query-aggregator/pet"
 	"atlas-query-aggregator/quest"
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
@@ -26,6 +27,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// SpawnedPet is the minimal per-pet detail the validation context retains for
+// pet-based conditions (e.g. petTameness).
+type SpawnedPet struct {
+	TemplateId uint32
+	Closeness  uint16
+}
+
 // ValidationContext provides all the data needed for validation
 type ValidationContext struct {
 	character   character.Model
@@ -35,6 +43,7 @@ type ValidationContext struct {
 	buddyList   buddy.Model
 	party       party.Model
 	petCount    int
+	spawnedPets []SpawnedPet
 	mapP        npcMap.Processor
 	itemP       item.Processor
 	transportP  transport.Processor
@@ -56,6 +65,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		marriage:    marriage.NewModel(char.Id(), false),
 		buddyList:   buddy.NewModel(char.Id(), 0),
 		petCount:    0,
+		spawnedPets: nil,
 		mapP:        nil,
 		itemP:       nil,
 		transportP:  nil,
@@ -78,6 +88,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		marriage:    marriage.NewModel(char.Id(), false),
 		buddyList:   buddy.NewModel(char.Id(), 0),
 		petCount:    0,
+		spawnedPets: nil,
 		mapP:        npcMap.NewProcessor(l, ctx),
 		itemP:       item.NewProcessor(l, ctx),
 		transportP:  transport.NewProcessor(l, ctx),
@@ -195,6 +206,23 @@ func (ctx ValidationContext) BuddyList() buddy.Model {
 // PetCount returns the count of spawned pets
 func (ctx ValidationContext) PetCount() int {
 	return ctx.petCount
+}
+
+// SpawnedPets returns the per-pet detail retained for pet-based conditions.
+func (ctx ValidationContext) SpawnedPets() []SpawnedPet { return ctx.spawnedPets }
+
+// MaxPetClosenessForTemplates returns the highest closeness among spawned pets
+// whose template id is in templateIds, or 0 if none match.
+func (ctx ValidationContext) MaxPetClosenessForTemplates(templateIds []uint32) int {
+	max := 0
+	for _, p := range ctx.spawnedPets {
+		for _, id := range templateIds {
+			if p.TemplateId == id && int(p.Closeness) > max {
+				max = int(p.Closeness)
+			}
+		}
+	}
+	return max
 }
 
 // Party returns the party model
@@ -340,6 +368,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		buddyList:   ctx.buddyList,
 		party:       ctx.party,
 		petCount:    ctx.petCount,
+		spawnedPets: ctx.spawnedPets,
 		mapP:        ctx.mapP,
 		itemP:       ctx.itemP,
 		transportP:  ctx.transportP,
@@ -369,6 +398,7 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		buddyList:   ctx.buddyList,
 		party:       ctx.party,
 		petCount:    ctx.petCount,
+		spawnedPets: ctx.spawnedPets,
 		mapP:        ctx.mapP,
 		itemP:       ctx.itemP,
 		transportP:  ctx.transportP,
@@ -392,6 +422,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		buddyList:   ctx.buddyList,
 		party:       ctx.party,
 		petCount:    ctx.petCount,
+		spawnedPets: ctx.spawnedPets,
 		mapP:        ctx.mapP,
 		itemP:       ctx.itemP,
 		transportP:  ctx.transportP,
@@ -415,6 +446,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		buddyList:   buddyListModel,
 		party:       ctx.party,
 		petCount:    ctx.petCount,
+		spawnedPets: ctx.spawnedPets,
 		mapP:        ctx.mapP,
 		itemP:       ctx.itemP,
 		transportP:  ctx.transportP,
@@ -438,6 +470,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		buddyList:   ctx.buddyList,
 		party:       ctx.party,
 		petCount:    count,
+		spawnedPets: ctx.spawnedPets,
 		mapP:        ctx.mapP,
 		itemP:       ctx.itemP,
 		transportP:  ctx.transportP,
@@ -460,6 +493,7 @@ type ValidationContextBuilder struct {
 	buddyList   buddy.Model
 	party       party.Model
 	petCount    int
+	spawnedPets []SpawnedPet
 	mapP        npcMap.Processor
 	itemP       item.Processor
 	transportP  transport.Processor
@@ -481,6 +515,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		marriage:    marriage.NewModel(char.Id(), false),
 		buddyList:   buddy.NewModel(char.Id(), 0),
 		petCount:    0,
+		spawnedPets: nil,
 		mapP:        nil,
 		itemP:       nil,
 		transportP:  nil,
@@ -503,6 +538,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		marriage:    marriage.NewModel(char.Id(), false),
 		buddyList:   buddy.NewModel(char.Id(), 0),
 		petCount:    0,
+		spawnedPets: nil,
 		mapP:        npcMap.NewProcessor(l, ctx),
 		itemP:       item.NewProcessor(l, ctx),
 		transportP:  transport.NewProcessor(l, ctx),
@@ -558,6 +594,12 @@ func (b *ValidationContextBuilder) SetPetCount(count int) *ValidationContextBuil
 	return b
 }
 
+// SetSpawnedPets sets the spawned-pet detail for the context being built.
+func (b *ValidationContextBuilder) SetSpawnedPets(pets []SpawnedPet) *ValidationContextBuilder {
+	b.spawnedPets = pets
+	return b
+}
+
 // SetMonsterBookProcessor overrides the monster book processor on the
 // builder, primarily so tests can inject a fake.
 func (b *ValidationContextBuilder) SetMonsterBookProcessor(p monsterbook.Processor) *ValidationContextBuilder {
@@ -575,6 +617,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		buddyList:   b.buddyList,
 		party:       b.party,
 		petCount:    b.petCount,
+		spawnedPets: b.spawnedPets,
 		mapP:        b.mapP,
 		itemP:       b.itemP,
 		transportP:  b.transportP,
@@ -614,6 +657,7 @@ type ContextBuilderProvider struct {
 	marriageProvider  func(uint32) model.Provider[marriage.Model]
 	buddyProvider     func(uint32) model.Provider[buddy.Model]
 	petCountProvider  func(uint32) model.Provider[int]
+	petsProvider      func(uint32) model.Provider[[]pet.Model]
 	partyProvider     func(uint32) model.Provider[party.Model]
 	l                 logrus.FieldLogger
 	ctx               context.Context
@@ -626,6 +670,7 @@ func NewContextBuilderProvider(
 	marriageProvider func(uint32) model.Provider[marriage.Model],
 	buddyProvider func(uint32) model.Provider[buddy.Model],
 	petCountProvider func(uint32) model.Provider[int],
+	petsProvider func(uint32) model.Provider[[]pet.Model],
 	partyProvider func(uint32) model.Provider[party.Model],
 	l logrus.FieldLogger,
 	ctx context.Context,
@@ -636,6 +681,7 @@ func NewContextBuilderProvider(
 		marriageProvider:  marriageProvider,
 		buddyProvider:     buddyProvider,
 		petCountProvider:  petCountProvider,
+		petsProvider:      petsProvider,
 		partyProvider:     partyProvider,
 		l:                 l,
 		ctx:               ctx,
@@ -689,12 +735,20 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32, reqs C
 			}
 		}
 
-		if reqs.Pets && p.petCountProvider != nil {
-			petCount, err := p.petCountProvider(characterId)()
+		if reqs.Pets && p.petsProvider != nil {
+			pets, err := p.petsProvider(characterId)()
 			if err != nil {
-				p.l.WithError(err).Debugf("Failed to get pet count data for character %d, treating as no pets", characterId)
+				p.l.WithError(err).Debugf("Failed to get pet data for character %d, treating as no pets", characterId)
 			} else {
-				builder.SetPetCount(petCount)
+				detail := make([]SpawnedPet, 0, len(pets))
+				count := 0
+				for _, pt := range pets {
+					if pt.IsSpawned() {
+						count++
+						detail = append(detail, SpawnedPet{TemplateId: pt.TemplateId(), Closeness: pt.Closeness()})
+					}
+				}
+				builder.SetPetCount(count).SetSpawnedPets(detail)
 			}
 		}
 

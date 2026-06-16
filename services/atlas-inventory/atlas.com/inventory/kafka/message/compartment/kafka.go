@@ -29,6 +29,7 @@ const (
 	CommandRelease           = "RELEASE"
 	CommandExpire            = "EXPIRE"
 	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
+	CommandChangeTemplate    = "CHANGE_TEMPLATE"
 )
 
 type Command[E any] struct {
@@ -163,6 +164,14 @@ type ModifyEquipmentCommandBody struct {
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
 	Expiration     time.Time `json:"expiration"`
+}
+
+// ChangeTemplateCommandBody changes an existing pet asset's templateId in place.
+// The asset is resolved by (CharacterId, PetId); the cash reference, slot, and
+// expiration are preserved.
+type ChangeTemplateCommandBody struct {
+	PetId         uint32 `json:"petId"`
+	NewTemplateId uint32 `json:"newTemplateId"`
 }
 
 const (

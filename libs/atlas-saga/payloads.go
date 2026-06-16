@@ -254,6 +254,13 @@ type GainClosenessPayload struct {
 	Amount uint16 `json:"amount"` // Amount of closeness to gain
 }
 
+// EvolvePetPayload drives an NPC pet evolution. The outcome roll is owned by
+// atlas-pets; this payload only identifies the pet.
+type EvolvePetPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	PetId       uint32 `json:"petId"`
+}
+
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                     `json:"characterId"` // CharacterId associated with the action

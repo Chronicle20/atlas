@@ -55,24 +55,36 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.Hungry = uint32(i.GetIntegerWithDefault("hungry", 0))
 			m.Cash = i.GetBool("cash", true)
 			m.Life = uint32(i.GetIntegerWithDefault("life", 0))
-
-			it, err := exml.ChildByName("interact")
-			if err != nil {
-				return model.ErrorProvider[RestModel](err)
+			m.ReqPetLevel = uint32(i.GetIntegerWithDefault("evolReqPetLvl", 0))
+			m.ReqItemId = uint32(i.GetIntegerWithDefault("evolReqItemID", 0))
+			m.Evolutions = make([]EvolutionRestModel, 0)
+			evolNo := int(i.GetIntegerWithDefault("evolNo", 0))
+			for n := 1; n <= evolNo; n++ {
+				tid := uint32(i.GetIntegerWithDefault(fmt.Sprintf("evol%d", n), 0))
+				if tid == 0 {
+					continue // tolerate gaps
+				}
+				m.Evolutions = append(m.Evolutions, EvolutionRestModel{
+					TemplateId:  tid,
+					Probability: uint32(i.GetIntegerWithDefault(fmt.Sprintf("evolProb%d", n), 0)),
+				})
 			}
 
-			for _, s := range it.ChildNodes {
-				var sid int
-				sid, err = strconv.Atoi(s.Name)
-				if err != nil {
-					return model.ErrorProvider[RestModel](err)
+			// interact is optional: eggs (and other skill-less pets) carry no
+			// interact node. When absent, the pet simply has no interact skills.
+			if it, ierr := exml.ChildByName("interact"); ierr == nil {
+				for _, s := range it.ChildNodes {
+					sid, serr := strconv.Atoi(s.Name)
+					if serr != nil {
+						return model.ErrorProvider[RestModel](serr)
+					}
+					sm := SkillRestModel{
+						Id:          fmt.Sprintf("%d-%d", petId, sid),
+						Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
+						Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
+					}
+					m.Skills = append(m.Skills, sm)
 				}
-				sm := SkillRestModel{
-					Id:          fmt.Sprintf("%d-%d", petId, sid),
-					Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
-					Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
-				}
-				m.Skills = append(m.Skills, sm)
 			}
 			return model.FixedProvider(m)
 		}

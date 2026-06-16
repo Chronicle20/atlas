@@ -214,3 +214,55 @@ func TestBuildStartConditions_SelectedSkillId_CombinedWithOthers(t *testing.T) {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}
 }
+
+func TestBuildStartConditions_PetTameness(t *testing.T) {
+	qd := dataquest.RestModel{
+		StartRequirements: dataquest.RequirementsRestModel{
+			Pet:            []uint32{5000029},
+			PetTamenessMin: 1642,
+		},
+	}
+	conds := buildStartConditions(qd)
+
+	var found *ConditionInput
+	for i := range conds {
+		if conds[i].Type == PetTamenessCondition {
+			found = &conds[i]
+		}
+	}
+	if found == nil {
+		t.Fatal("expected a petTameness condition")
+	}
+	if found.Operator != ">=" || found.Value != 1642 {
+		t.Fatalf("petTameness op/value = %s/%d, want >=/1642", found.Operator, found.Value)
+	}
+	if len(found.Values) != 1 || found.Values[0] != 5000029 {
+		t.Fatalf("petTameness Values = %v, want [5000029]", found.Values)
+	}
+}
+
+func TestBuildEndConditions_PetTameness(t *testing.T) {
+	qd := dataquest.RestModel{
+		EndRequirements: dataquest.RequirementsRestModel{
+			Pet:            []uint32{5000029},
+			PetTamenessMin: 1642,
+		},
+	}
+	conds := buildEndConditions(qd)
+
+	var found *ConditionInput
+	for i := range conds {
+		if conds[i].Type == PetTamenessCondition {
+			found = &conds[i]
+		}
+	}
+	if found == nil {
+		t.Fatal("expected a petTameness condition")
+	}
+	if found.Operator != ">=" || found.Value != 1642 {
+		t.Fatalf("petTameness op/value = %s/%d, want >=/1642", found.Operator, found.Value)
+	}
+	if len(found.Values) != 1 || found.Values[0] != 5000029 {
+		t.Fatalf("petTameness Values = %v, want [5000029]", found.Values)
+	}
+}

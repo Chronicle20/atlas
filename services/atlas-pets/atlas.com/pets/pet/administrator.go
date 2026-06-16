@@ -3,6 +3,7 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
+	"time"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
@@ -84,6 +85,24 @@ func updateLevel(db *gorm.DB) func(petId uint32, level byte) error {
 			return errors.New("no entity found or level is already set to the given value")
 		}
 
+		return nil
+	}
+}
+
+func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiration time.Time) error {
+	return func(petId uint32, templateId uint32, expiration time.Time) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Updates(map[string]interface{}{
+				"template_id": templateId,
+				"expiration":  expiration,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found to evolve")
+		}
 		return nil
 	}
 }

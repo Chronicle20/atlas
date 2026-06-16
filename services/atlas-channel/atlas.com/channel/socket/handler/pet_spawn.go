@@ -21,7 +21,11 @@ func PetSpawnHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Prod
 		lead := p.Lead()
 
 		cp := character.NewProcessor(l, ctx)
-		c, err := cp.GetById(cp.InventoryDecorator)(s.CharacterId())
+		// PetAssetEnrichmentDecorator is required: it populates the cash pet
+		// asset's PetSlot (and name/level/closeness) from atlas-pets. Without it
+		// PetSlot defaults to 0, so the spawned check below (PetSlot != -1) is
+		// always true and every spawn request is mishandled as a despawn.
+		c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
 		if err != nil {
 			return
 		}

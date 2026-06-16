@@ -171,3 +171,19 @@ func excludeChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func evolvedEventProvider(m Model, oldTemplateId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &pet.StatusEvent[pet.EvolvedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    pet.StatusEventTypeEvolved,
+		Body: pet.EvolvedStatusEventBody{
+			Slot:          m.Slot(),
+			OldTemplateId: oldTemplateId,
+			NewTemplateId: m.TemplateId(),
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

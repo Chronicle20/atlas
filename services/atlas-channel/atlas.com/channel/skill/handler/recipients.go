@@ -142,7 +142,12 @@ func selectPartyMembers(
 		if i >= 6 {
 			break
 		}
-		if (memberBitmap>>uint(i))&1 == 0 {
+		// The v83 client packs the affected-member bitmap MSB-first by party
+		// slot: CUserLocal::FindParty (IDA 0x96db3f) shifts the accumulator left
+		// once per slot 0..5 then ORs bit 0, so slot i lands at bit (5-i). The
+		// party member list here is in that same slot order, so member index i
+		// maps to bit (5-i) — NOT bit i.
+		if (memberBitmap>>uint(5-i))&1 == 0 {
 			continue
 		}
 		if !m.Online() {

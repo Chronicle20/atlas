@@ -100,8 +100,9 @@ const (
 )
 
 // threePersonParty builds a party of [caster, A, B] all online and in the
-// caster's channel/map by default. Bit i of the affected-member bitmap maps
-// to member index i in p.Members(): caster=0, A=1, B=2.
+// caster's channel/map by default. The v83 client packs the affected-member
+// bitmap MSB-first by party slot (CUserLocal::FindParty), so member index i
+// maps to bit (5-i): caster=bit5, A(idx1)=bit4, B(idx2)=bit3.
 func threePersonParty(a, b party.MemberModel) party.Model {
 	return party.NewBuilder().
 		SetId(1).
@@ -129,7 +130,7 @@ func TestSelectPartyMembersInMap_AppliesMapWideWithoutRectangle(t *testing.T) {
 		},
 	)
 
-	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b110))
+	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000))
 	if want := []uint32{testMemberA, testMemberB}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -146,8 +147,8 @@ func TestSelectPartyMembersInMap_BitmapMasksOutMember(t *testing.T) {
 		},
 	)
 
-	// Only bit 1 (member A) set.
-	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b010))
+	// Only member A selected (idx1 -> bit4, 0b10000).
+	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b10000))
 	if want := []uint32{testMemberA}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -164,7 +165,7 @@ func TestSelectPartyMembersInMap_ExcludesDifferentMap(t *testing.T) {
 		},
 	)
 
-	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b110))
+	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000))
 	if want := []uint32{testMemberA}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -181,7 +182,7 @@ func TestSelectPartyMembersInMap_ExcludesOffline(t *testing.T) {
 		},
 	)
 
-	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b110))
+	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000))
 	if want := []uint32{testMemberB}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -198,7 +199,7 @@ func TestSelectPartyMembersInMap_ExcludesNoLiveSession(t *testing.T) {
 		},
 	)
 
-	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b110))
+	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000))
 	if want := []uint32{testMemberA}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -215,7 +216,7 @@ func TestSelectPartyMembersInMap_ExcludesDeadMember(t *testing.T) {
 		},
 	)
 
-	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b110))
+	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000))
 	if want := []uint32{testMemberA}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -227,7 +228,7 @@ func TestSelectPartyMembersInMap_PartyLoadErrorYieldsEmpty(t *testing.T) {
 		map[uint32]character.Model{},
 	)
 
-	got := SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b110)
+	got := SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000)
 	if len(got) != 0 {
 		t.Fatalf("got %d recipients, want 0", len(got))
 	}
@@ -246,7 +247,7 @@ func TestSelectInRangePartyMembers_NoRectangleReturnsNil(t *testing.T) {
 		},
 	)
 
-	got := SelectInRangePartyMembers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, effect.Model{}, 0b110)
+	got := SelectInRangePartyMembers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, effect.Model{}, 0b11000)
 	if got != nil {
 		t.Fatalf("got %v, want nil (caster-only fallback)", got)
 	}

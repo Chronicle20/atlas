@@ -187,6 +187,28 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 		}()
 
+		// spawn the entering character's OWN spawned pets back to themselves.
+		// enterMap spawns self's pets to other players, and the loop above spawns
+		// other players' pets to self, but on a fresh field entry (login, map
+		// change, cash-shop return) nothing re-sends the owner's own pet to the
+		// owner. Without this the pet stays invisible to its owner even though it
+		// is still spawned (slot >= 0).
+		go func() {
+			cp := character.NewProcessor(l, ctx)
+			self, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to fetch self [%d] for own-pet spawn.", s.CharacterId())
+				return
+			}
+			for _, p := range self.Pets() {
+				if p.Slot() >= 0 {
+					if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+						l.WithError(err).Errorf("SpawnForSelf: unable to spawn own pet for character [%d].", s.CharacterId())
+					}
+				}
+			}
+		}()
+
 		go func() {
 			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to spawn npcs for character [%d].", s.CharacterId())

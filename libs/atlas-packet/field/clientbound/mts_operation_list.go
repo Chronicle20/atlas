@@ -87,23 +87,23 @@ func NewMtsItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32
 	}
 }
 
-func (m MtsItem) Item() model.Asset       { return m.item }
-func (m MtsItem) ItcSn() uint32           { return m.itcSn }
-func (m MtsItem) Price() uint32           { return m.price }
-func (m MtsItem) ContractFee() uint32     { return m.contractFee }
-func (m MtsItem) ContractFeeTx() string   { return m.contractFeeTx }
-func (m MtsItem) RollbackUsage() string   { return m.rollbackUsage }
-func (m MtsItem) DateExpired() [8]byte    { return m.dateExpired }
-func (m MtsItem) UserId() string          { return m.userId }
-func (m MtsItem) GameId() string          { return m.gameId }
-func (m MtsItem) Comment() string         { return m.comment }
-func (m MtsItem) BidCount() uint32        { return m.bidCount }
-func (m MtsItem) BidRange() uint32        { return m.bidRange }
-func (m MtsItem) BidPrice() uint32        { return m.bidPrice }
-func (m MtsItem) MinPrice() uint32        { return m.minPrice }
-func (m MtsItem) MaxPrice() uint32        { return m.maxPrice }
-func (m MtsItem) UnitPrice() uint32       { return m.unitPrice }
-func (m MtsItem) ProcessStatus() uint16   { return m.processStatus }
+func (m MtsItem) Item() model.Asset     { return m.item }
+func (m MtsItem) ItcSn() uint32         { return m.itcSn }
+func (m MtsItem) Price() uint32         { return m.price }
+func (m MtsItem) ContractFee() uint32   { return m.contractFee }
+func (m MtsItem) ContractFeeTx() string { return m.contractFeeTx }
+func (m MtsItem) RollbackUsage() string { return m.rollbackUsage }
+func (m MtsItem) DateExpired() [8]byte  { return m.dateExpired }
+func (m MtsItem) UserId() string        { return m.userId }
+func (m MtsItem) GameId() string        { return m.gameId }
+func (m MtsItem) Comment() string       { return m.comment }
+func (m MtsItem) BidCount() uint32      { return m.bidCount }
+func (m MtsItem) BidRange() uint32      { return m.bidRange }
+func (m MtsItem) BidPrice() uint32      { return m.bidPrice }
+func (m MtsItem) MinPrice() uint32      { return m.minPrice }
+func (m MtsItem) MaxPrice() uint32      { return m.maxPrice }
+func (m MtsItem) UnitPrice() uint32     { return m.unitPrice }
+func (m MtsItem) ProcessStatus() uint16 { return m.processStatus }
 
 // Encode writes one ITCITEM. The leading GW_ItemSlotBase blob is encoded by the
 // shared model.Asset codec via WriteByteArray (the standard recurse pattern);
@@ -175,15 +175,15 @@ func (m *MtsItem) Decode(l logrus.FieldLogger, ctx context.Context) func(r *requ
 //
 // packet-audit:fname CITC::OnNormalItemResult#GetItcListDone
 type MtsResultGetItcListDone struct {
-	mode             byte
-	categoryItemCnt  uint32
-	category         uint32
-	subCategory      uint32
-	page             uint32
-	sortType         byte
-	sortColumn       byte
-	items            []MtsItem
-	requestSent      byte
+	mode            byte
+	categoryItemCnt uint32
+	category        uint32
+	subCategory     uint32
+	page            uint32
+	sortType        byte
+	sortColumn      byte
+	items           []MtsItem
+	requestSent     byte
 }
 
 func NewMtsResultGetItcListDone(categoryItemCnt uint32, category uint32, subCategory uint32, page uint32, sortType byte, sortColumn byte, items []MtsItem, requestSent byte) MtsResultGetItcListDone {
@@ -200,16 +200,16 @@ func NewMtsResultGetItcListDone(categoryItemCnt uint32, category uint32, subCate
 	}
 }
 
-func (m MtsResultGetItcListDone) Mode() byte             { return m.mode }
+func (m MtsResultGetItcListDone) Mode() byte              { return m.mode }
 func (m MtsResultGetItcListDone) CategoryItemCnt() uint32 { return m.categoryItemCnt }
-func (m MtsResultGetItcListDone) Category() uint32       { return m.category }
-func (m MtsResultGetItcListDone) SubCategory() uint32    { return m.subCategory }
-func (m MtsResultGetItcListDone) Page() uint32           { return m.page }
-func (m MtsResultGetItcListDone) SortType() byte         { return m.sortType }
-func (m MtsResultGetItcListDone) SortColumn() byte       { return m.sortColumn }
-func (m MtsResultGetItcListDone) Items() []MtsItem       { return m.items }
-func (m MtsResultGetItcListDone) RequestSent() byte      { return m.requestSent }
-func (m MtsResultGetItcListDone) Operation() string      { return MtsOperationWriter }
+func (m MtsResultGetItcListDone) Category() uint32        { return m.category }
+func (m MtsResultGetItcListDone) SubCategory() uint32     { return m.subCategory }
+func (m MtsResultGetItcListDone) Page() uint32            { return m.page }
+func (m MtsResultGetItcListDone) SortType() byte          { return m.sortType }
+func (m MtsResultGetItcListDone) SortColumn() byte        { return m.sortColumn }
+func (m MtsResultGetItcListDone) Items() []MtsItem        { return m.items }
+func (m MtsResultGetItcListDone) RequestSent() byte       { return m.requestSent }
+func (m MtsResultGetItcListDone) Operation() string       { return MtsOperationWriter }
 func (m MtsResultGetItcListDone) String() string {
 	return fmt.Sprintf("mts get itc list done mode [%d] category [%d] page [%d] items [%d]", m.mode, m.category, m.page, len(m.items))
 }
@@ -217,14 +217,14 @@ func (m MtsResultGetItcListDone) String() string {
 func (m MtsResultGetItcListDone) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode)                  // dispatcher mode byte (0x15)
-		w.WriteInt(m.categoryItemCnt)        // Decode4 categoryItemCnt
-		w.WriteInt(uint32(len(m.items)))     // Decode4 pageItemCnt (loop count)
-		w.WriteInt(m.category)               // Decode4 category
-		w.WriteInt(m.subCategory)            // Decode4 subCategory
-		w.WriteInt(m.page)                   // Decode4 page
-		w.WriteByte(m.sortType)              // Decode1 sortType
-		w.WriteByte(m.sortColumn)            // Decode1 sortColumn
+		w.WriteByte(m.mode)              // dispatcher mode byte (0x15)
+		w.WriteInt(m.categoryItemCnt)    // Decode4 categoryItemCnt
+		w.WriteInt(uint32(len(m.items))) // Decode4 pageItemCnt (loop count)
+		w.WriteInt(m.category)           // Decode4 category
+		w.WriteInt(m.subCategory)        // Decode4 subCategory
+		w.WriteInt(m.page)               // Decode4 page
+		w.WriteByte(m.sortType)          // Decode1 sortType
+		w.WriteByte(m.sortColumn)        // Decode1 sortColumn
 		for _, it := range m.items {
 			w.WriteByteArray(it.Encode(l, ctx)(options)) // ITCITEM::Decode
 		}
@@ -289,13 +289,13 @@ func NewMtsResultGetSearchItcListDone(categoryItemCnt uint32, category uint32, s
 	}
 }
 
-func (m MtsResultGetSearchItcListDone) Mode() byte             { return m.mode }
+func (m MtsResultGetSearchItcListDone) Mode() byte              { return m.mode }
 func (m MtsResultGetSearchItcListDone) CategoryItemCnt() uint32 { return m.categoryItemCnt }
-func (m MtsResultGetSearchItcListDone) Category() uint32       { return m.category }
-func (m MtsResultGetSearchItcListDone) SubCategory() uint32    { return m.subCategory }
-func (m MtsResultGetSearchItcListDone) Page() uint32           { return m.page }
-func (m MtsResultGetSearchItcListDone) Items() []MtsItem       { return m.items }
-func (m MtsResultGetSearchItcListDone) Operation() string      { return MtsOperationWriter }
+func (m MtsResultGetSearchItcListDone) Category() uint32        { return m.category }
+func (m MtsResultGetSearchItcListDone) SubCategory() uint32     { return m.subCategory }
+func (m MtsResultGetSearchItcListDone) Page() uint32            { return m.page }
+func (m MtsResultGetSearchItcListDone) Items() []MtsItem        { return m.items }
+func (m MtsResultGetSearchItcListDone) Operation() string       { return MtsOperationWriter }
 func (m MtsResultGetSearchItcListDone) String() string {
 	return fmt.Sprintf("mts get search itc list done mode [%d] category [%d] page [%d] items [%d]", m.mode, m.category, m.page, len(m.items))
 }
@@ -361,11 +361,11 @@ func NewMtsResultGetUserPurchaseItemDone(items []MtsItem, limitedCount uint32, r
 	}
 }
 
-func (m MtsResultGetUserPurchaseItemDone) Mode() byte          { return m.mode }
-func (m MtsResultGetUserPurchaseItemDone) Items() []MtsItem    { return m.items }
+func (m MtsResultGetUserPurchaseItemDone) Mode() byte           { return m.mode }
+func (m MtsResultGetUserPurchaseItemDone) Items() []MtsItem     { return m.items }
 func (m MtsResultGetUserPurchaseItemDone) LimitedCount() uint32 { return m.limitedCount }
-func (m MtsResultGetUserPurchaseItemDone) RequestSent() byte   { return m.requestSent }
-func (m MtsResultGetUserPurchaseItemDone) Operation() string   { return MtsOperationWriter }
+func (m MtsResultGetUserPurchaseItemDone) RequestSent() byte    { return m.requestSent }
+func (m MtsResultGetUserPurchaseItemDone) Operation() string    { return MtsOperationWriter }
 func (m MtsResultGetUserPurchaseItemDone) String() string {
 	return fmt.Sprintf("mts get user purchase item done mode [%d] items [%d] limited [%d]", m.mode, len(m.items), m.limitedCount)
 }

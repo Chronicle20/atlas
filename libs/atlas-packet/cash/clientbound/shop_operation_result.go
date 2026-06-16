@@ -22,8 +22,8 @@ func NewOperationError(mode byte, errorCode byte) OperationError {
 	return OperationError{mode: mode, errorCode: errorCode}
 }
 
-func (m OperationError) Mode() byte      { return m.mode }
-func (m OperationError) ErrorCode() byte  { return m.errorCode }
+func (m OperationError) Mode() byte        { return m.mode }
+func (m OperationError) ErrorCode() byte   { return m.errorCode }
 func (m OperationError) Operation() string { return CashShopOperationWriter }
 
 func (m OperationError) String() string {
@@ -58,10 +58,10 @@ func NewInventoryCapacitySuccess(mode byte, inventoryType byte, capacity uint16)
 	return InventoryCapacitySuccess{mode: mode, inventoryType: inventoryType, capacity: capacity}
 }
 
-func (m InventoryCapacitySuccess) Mode() byte           { return m.mode }
-func (m InventoryCapacitySuccess) InventoryType() byte   { return m.inventoryType }
-func (m InventoryCapacitySuccess) Capacity() uint16      { return m.capacity }
-func (m InventoryCapacitySuccess) Operation() string     { return CashShopOperationWriter }
+func (m InventoryCapacitySuccess) Mode() byte          { return m.mode }
+func (m InventoryCapacitySuccess) InventoryType() byte { return m.inventoryType }
+func (m InventoryCapacitySuccess) Capacity() uint16    { return m.capacity }
+func (m InventoryCapacitySuccess) Operation() string   { return CashShopOperationWriter }
 
 func (m InventoryCapacitySuccess) String() string {
 	return fmt.Sprintf("mode [%d] inventoryType [%d] capacity [%d]", m.mode, m.inventoryType, m.capacity)
@@ -96,8 +96,8 @@ func NewInventoryCapacityFailed(mode byte, errorCode byte) InventoryCapacityFail
 	return InventoryCapacityFailed{mode: mode, errorCode: errorCode}
 }
 
-func (m InventoryCapacityFailed) Mode() byte      { return m.mode }
-func (m InventoryCapacityFailed) ErrorCode() byte  { return m.errorCode }
+func (m InventoryCapacityFailed) Mode() byte        { return m.mode }
+func (m InventoryCapacityFailed) ErrorCode() byte   { return m.errorCode }
 func (m InventoryCapacityFailed) Operation() string { return CashShopOperationWriter }
 
 func (m InventoryCapacityFailed) String() string {
@@ -131,7 +131,7 @@ func NewWishList(mode byte, items []uint32) WishList {
 	return WishList{mode: mode, items: items}
 }
 
-func (m WishList) Mode() byte       { return m.mode }
+func (m WishList) Mode() byte        { return m.mode }
 func (m WishList) Items() []uint32   { return m.items }
 func (m WishList) Operation() string { return CashShopOperationWriter }
 

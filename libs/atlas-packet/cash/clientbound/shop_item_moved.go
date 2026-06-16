@@ -22,8 +22,8 @@ func NewCashItemMovedToInventory(mode byte, slot uint16, asset packetmodel.Asset
 	return CashItemMovedToInventory{mode: mode, slot: slot, asset: asset}
 }
 
-func (m CashItemMovedToInventory) Mode() byte              { return m.mode }
-func (m CashItemMovedToInventory) Slot() uint16            { return m.slot }
+func (m CashItemMovedToInventory) Mode() byte               { return m.mode }
+func (m CashItemMovedToInventory) Slot() uint16             { return m.slot }
 func (m CashItemMovedToInventory) Asset() packetmodel.Asset { return m.asset }
 func (m CashItemMovedToInventory) Operation() string        { return CashShopOperationWriter }
 

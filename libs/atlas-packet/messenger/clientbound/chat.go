@@ -20,7 +20,7 @@ func NewMessengerChat(mode byte, message string) Chat {
 }
 
 func (m Chat) Mode() byte      { return m.mode }
-func (m Chat) Message() string  { return m.message }
+func (m Chat) Message() string { return m.message }
 
 func (m Chat) Operation() string { return MessengerOperationWriter }
 

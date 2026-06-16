@@ -63,25 +63,25 @@ func decodeCashInventoryItemSkipPadding(r *request.Reader) CashInventoryItem {
 // are not constructor params and default to 0.
 // packet-audit:fname CCashShop::OnCashItemResult#CashShopInventory
 type CashShopInventory struct {
-	mode               byte
-	items              []CashInventoryItem
-	storageSlots       uint16
-	characterSlots     int16
-	buyCharacterCount  int16 // v95-only (m_nBuyCharacterCount)
-	characterCount     int16 // v95-only (m_nCharacterCount)
+	mode              byte
+	items             []CashInventoryItem
+	storageSlots      uint16
+	characterSlots    int16
+	buyCharacterCount int16 // v95-only (m_nBuyCharacterCount)
+	characterCount    int16 // v95-only (m_nCharacterCount)
 }
 
 func NewCashShopInventory(mode byte, items []CashInventoryItem, storageSlots uint16, characterSlots int16) CashShopInventory {
 	return CashShopInventory{mode: mode, items: items, storageSlots: storageSlots, characterSlots: characterSlots}
 }
 
-func (m CashShopInventory) Mode() byte                  { return m.mode }
-func (m CashShopInventory) Items() []CashInventoryItem   { return m.items }
-func (m CashShopInventory) StorageSlots() uint16         { return m.storageSlots }
-func (m CashShopInventory) CharacterSlots() int16        { return m.characterSlots }
-func (m CashShopInventory) BuyCharacterCount() int16     { return m.buyCharacterCount }
-func (m CashShopInventory) CharacterCount() int16        { return m.characterCount }
-func (m CashShopInventory) Operation() string            { return CashShopOperationWriter }
+func (m CashShopInventory) Mode() byte                 { return m.mode }
+func (m CashShopInventory) Items() []CashInventoryItem { return m.items }
+func (m CashShopInventory) StorageSlots() uint16       { return m.storageSlots }
+func (m CashShopInventory) CharacterSlots() int16      { return m.characterSlots }
+func (m CashShopInventory) BuyCharacterCount() int16   { return m.buyCharacterCount }
+func (m CashShopInventory) CharacterCount() int16      { return m.characterCount }
+func (m CashShopInventory) Operation() string          { return CashShopOperationWriter }
 
 func (m CashShopInventory) String() string {
 	return fmt.Sprintf("cash shop inventory items [%d]", len(m.items))
@@ -177,7 +177,7 @@ func NewCashShopGifts(mode byte) CashShopGifts {
 	return CashShopGifts{mode: mode}
 }
 
-func (m CashShopGifts) Mode() byte       { return m.mode }
+func (m CashShopGifts) Mode() byte        { return m.mode }
 func (m CashShopGifts) Operation() string { return CashShopOperationWriter }
 func (m CashShopGifts) String() string    { return "cash shop gifts" }
 

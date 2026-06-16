@@ -122,9 +122,9 @@ func TestMtsResultReasonGolden(t *testing.T) {
 		// v83/v84/v87/v95 (Decode1(reason) -> NoticeFailReason; the GetUser*Failed
 		// arms additionally re-send the transfer-field packet when reason==73, which
 		// reads NO further bytes).
-		{"GetSearchITCListFailed", 0x18, 0x51},     // v83 0x5a49e3 / v84 0x5b4ed3 / v87 0x5d4ad3 / v95 0x575fa0
-		{"GetUserPurchaseItemFailed", 0x22, 0x49},  // v83 0x5a4c2a / v84 0x5b511a / v87 0x5d4d1a / v95 0x575fd0
-		{"GetUserSaleItemFailed", 0x24, 0x49},      // v83 0x5a4ce7 / v84 0x5b51d7 / v87 0x5d4dd7 / v95 0x576000
+		{"GetSearchITCListFailed", 0x18, 0x51},    // v83 0x5a49e3 / v84 0x5b4ed3 / v87 0x5d4ad3 / v95 0x575fa0
+		{"GetUserPurchaseItemFailed", 0x22, 0x49}, // v83 0x5a4c2a / v84 0x5b511a / v87 0x5d4d1a / v95 0x575fd0
+		{"GetUserSaleItemFailed", 0x24, 0x49},     // v83 0x5a4ce7 / v84 0x5b51d7 / v87 0x5d4dd7 / v95 0x576000
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

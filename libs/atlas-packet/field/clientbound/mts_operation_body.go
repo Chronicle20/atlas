@@ -86,9 +86,9 @@ func NewMtsResultEmpty(mode byte) MtsResultEmpty {
 	return MtsResultEmpty{mode: mode}
 }
 
-func (m MtsResultEmpty) Mode() byte          { return m.mode }
-func (m MtsResultEmpty) Operation() string   { return MtsOperationWriter }
-func (m MtsResultEmpty) String() string      { return fmt.Sprintf("mts result (notice) mode [%d]", m.mode) }
+func (m MtsResultEmpty) Mode() byte        { return m.mode }
+func (m MtsResultEmpty) Operation() string { return MtsOperationWriter }
+func (m MtsResultEmpty) String() string    { return fmt.Sprintf("mts result (notice) mode [%d]", m.mode) }
 
 func (m MtsResultEmpty) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
@@ -149,7 +149,7 @@ func NewMtsResultReason(mode byte, reason byte) MtsResultReason {
 }
 
 func (m MtsResultReason) Mode() byte        { return m.mode }
-func (m MtsResultReason) Reason() byte       { return m.reason }
+func (m MtsResultReason) Reason() byte      { return m.reason }
 func (m MtsResultReason) Operation() string { return MtsOperationWriter }
 func (m MtsResultReason) String() string {
 	return fmt.Sprintf("mts result (fail) mode [%d] reason [%d]", m.mode, m.reason)
@@ -301,22 +301,22 @@ func (m *MtsResultRegisterSaleEntryFailed) Decode(_ logrus.FieldLogger, _ contex
 // packet-audit:fname CITC::OnNormalItemResult#SuccessBidInfo
 type MtsResultSuccessBidInfo struct {
 	mode         byte
-	soldFlag     byte     // Decode1: 1=sold (StringPool 0x12AA), else bought (0x12AB)
-	itemId       uint32   // Decode4: ITC item id; <=0 ends the body
-	price        uint32   // Decode4: meso price (itemId>0 only)
-	contractDate [8]byte  // DecodeBuffer(8): FILETIME (itemId>0 only)
+	soldFlag     byte    // Decode1: 1=sold (StringPool 0x12AA), else bought (0x12AB)
+	itemId       uint32  // Decode4: ITC item id; <=0 ends the body
+	price        uint32  // Decode4: meso price (itemId>0 only)
+	contractDate [8]byte // DecodeBuffer(8): FILETIME (itemId>0 only)
 }
 
 func NewMtsResultSuccessBidInfo(soldFlag byte, itemId uint32, price uint32, contractDate [8]byte) MtsResultSuccessBidInfo {
 	return MtsResultSuccessBidInfo{mode: 0x3E, soldFlag: soldFlag, itemId: itemId, price: price, contractDate: contractDate}
 }
 
-func (m MtsResultSuccessBidInfo) Mode() byte             { return m.mode }
-func (m MtsResultSuccessBidInfo) SoldFlag() byte         { return m.soldFlag }
-func (m MtsResultSuccessBidInfo) ItemId() uint32         { return m.itemId }
-func (m MtsResultSuccessBidInfo) Price() uint32          { return m.price }
-func (m MtsResultSuccessBidInfo) ContractDate() [8]byte  { return m.contractDate }
-func (m MtsResultSuccessBidInfo) Operation() string      { return MtsOperationWriter }
+func (m MtsResultSuccessBidInfo) Mode() byte            { return m.mode }
+func (m MtsResultSuccessBidInfo) SoldFlag() byte        { return m.soldFlag }
+func (m MtsResultSuccessBidInfo) ItemId() uint32        { return m.itemId }
+func (m MtsResultSuccessBidInfo) Price() uint32         { return m.price }
+func (m MtsResultSuccessBidInfo) ContractDate() [8]byte { return m.contractDate }
+func (m MtsResultSuccessBidInfo) Operation() string     { return MtsOperationWriter }
 func (m MtsResultSuccessBidInfo) String() string {
 	return fmt.Sprintf("mts success bid info mode [%d] soldFlag [%d] itemId [%d] price [%d]", m.mode, m.soldFlag, m.itemId, m.price)
 }
@@ -328,7 +328,7 @@ func (m MtsResultSuccessBidInfo) Encode(l logrus.FieldLogger, _ context.Context)
 		w.WriteByte(m.soldFlag) // Decode1 sold/bought flag
 		w.WriteInt(m.itemId)    // Decode4 ITC item id
 		if m.itemId > 0 {
-			w.WriteInt(m.price)              // Decode4 meso price (itemId>0 branch)
+			w.WriteInt(m.price)                 // Decode4 meso price (itemId>0 branch)
 			w.WriteByteArray(m.contractDate[:]) // DecodeBuffer(8) FILETIME contract date
 		}
 		return w.Bytes()

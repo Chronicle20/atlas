@@ -23,9 +23,9 @@ func NewStorageUpdateAssets(mode byte, slots byte, flags uint64, assets []model.
 	return UpdateAssets{mode: mode, slots: slots, flags: flags, assets: assets}
 }
 
-func (m UpdateAssets) Mode() byte           { return m.mode }
-func (m UpdateAssets) Slots() byte          { return m.slots }
-func (m UpdateAssets) Flags() uint64        { return m.flags }
+func (m UpdateAssets) Mode() byte            { return m.mode }
+func (m UpdateAssets) Slots() byte           { return m.slots }
+func (m UpdateAssets) Flags() uint64         { return m.flags }
 func (m UpdateAssets) Assets() []model.Asset { return m.assets }
 func (m UpdateAssets) Operation() string     { return StorageOperationWriter }
 

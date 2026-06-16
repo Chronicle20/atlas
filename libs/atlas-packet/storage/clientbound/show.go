@@ -52,11 +52,11 @@ func NewStorageShow(mode byte, npcId uint32, slots byte, flags uint64, meso uint
 	return Show{mode: mode, npcId: npcId, slots: slots, flags: flags, meso: meso, assets: assets}
 }
 
-func (m Show) Mode() byte           { return m.mode }
-func (m Show) NpcId() uint32        { return m.npcId }
-func (m Show) Slots() byte          { return m.slots }
-func (m Show) Flags() uint64        { return m.flags }
-func (m Show) Meso() uint32         { return m.meso }
+func (m Show) Mode() byte            { return m.mode }
+func (m Show) NpcId() uint32         { return m.npcId }
+func (m Show) Slots() byte           { return m.slots }
+func (m Show) Flags() uint64         { return m.flags }
+func (m Show) Meso() uint32          { return m.meso }
 func (m Show) Assets() []model.Asset { return m.assets }
 func (m Show) Operation() string     { return StorageOperationWriter }
 

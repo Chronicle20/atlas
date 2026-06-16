@@ -7,6 +7,7 @@ import {
   type SetupData,
   type EtcData,
   type CashItemData,
+  type PetData,
   type ItemDetailData,
 } from "@/types/models/item";
 import type { Compartment } from "@/lib/items/taxonomy";
@@ -116,6 +117,10 @@ export const itemsService = {
     return api.getOne<CashItemData>(`/api/data/cash/items/${itemId}`);
   },
 
+  async getPet(itemId: string): Promise<PetData> {
+    return api.getOne<PetData>(`/api/data/pets/${itemId}`);
+  },
+
   async getItemDetail(itemId: string): Promise<ItemDetailData> {
     const type = getItemType(itemId);
     switch (type) {
@@ -124,6 +129,7 @@ export const itemsService = {
       case "Setup": return itemsService.getSetup(itemId);
       case "Etc": return itemsService.getEtc(itemId);
       case "Cash": return itemsService.getCashItem(itemId);
+      case "Pet": return itemsService.getPet(itemId);
       default: throw new Error(`Unknown item type for ID ${itemId}`);
     }
   },

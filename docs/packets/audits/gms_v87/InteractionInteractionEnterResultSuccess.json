@@ -1,0 +1,30 @@
+{
+  "WriterName": "InteractionInteractionEnterResultSuccess",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess",
+  "Address": "0x6982f8",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (5; dispatch byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "room (roomType + maxUsers + myPosition + per-slot avatar loop; interaction.Room substruct)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

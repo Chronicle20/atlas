@@ -1,11 +1,11 @@
 {
   "toolSha": "95d1c990a61ed184f0ec395b2e242f25ac70499b",
   "exportHashes": {
-    "gms_v83": "154f0462f042459df2f2f783ba82eeea17f28114ffb607e9cd02cf754d9d4a52",
-    "gms_v84": "87b84477759e441d991baa0ea397037883308444f9781508d06af12a2fe1b2b2",
-    "gms_v87": "af012f4b42fddfbbcd8799cef71f8fa7ee9fd7f98f69c6aa4bbc60ff471970ff",
+    "gms_v83": "fd1d8ee596b8319364c1f532a80fb26c6465e1110784af55d2076877e06646c0",
+    "gms_v84": "da5eb266d885a9abde9bd325f6c90d4ed9ef521ca7a75ab1c8327afa4203093e",
+    "gms_v87": "728efcf81c07c174935ad523f1594c5ffbcddbad47e0a33a2a7fcc9e83ae9980",
     "gms_v95": "849ef648f0e087ff0435b5bd6c1a5725a985130765951cc551492cd74df27803",
-    "jms_v185": "cfcc6e6d95eca6dc4271f7b4799ac0c762e8441c69dbc6f7d04546ea2bee8bad"
+    "jms_v185": "f4fd2b7796284d670bb4fbf8d3e9957cd34317aeaef68da7962aec8399401884"
   },
   "rows": [
     {
@@ -24306,7 +24306,7 @@
     {
       "kind": "op",
       "op": "PLAYER_INTERACTION",
-      "packet": "interaction/clientbound/InteractionInteractionChat",
+      "packet": "interaction/clientbound/InteractionInteractionEnter",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -24314,18 +24314,18 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "family",
+          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
           "opcode": 314
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "family",
+          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
           "opcode": 321
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "family",
+          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
           "opcode": 331
         },
         "gms_v95": {
@@ -24334,8 +24334,8 @@
           "opcode": 373
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "family",
+          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
           "opcode": 339
         }
       }
@@ -27220,18 +27220,15 @@
       "tier1": true,
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {

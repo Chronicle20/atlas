@@ -5,11 +5,11 @@
 
 Tool: `95d1c990a61ed184f0ec395b2e242f25ac70499b`
 
-- export gms_v83: `154f0462f042459df2f2f783ba82eeea17f28114ffb607e9cd02cf754d9d4a52`
-- export gms_v84: `87b84477759e441d991baa0ea397037883308444f9781508d06af12a2fe1b2b2`
-- export gms_v87: `af012f4b42fddfbbcd8799cef71f8fa7ee9fd7f98f69c6aa4bbc60ff471970ff`
+- export gms_v83: `fd1d8ee596b8319364c1f532a80fb26c6465e1110784af55d2076877e06646c0`
+- export gms_v84: `da5eb266d885a9abde9bd325f6c90d4ed9ef521ca7a75ab1c8327afa4203093e`
+- export gms_v87: `728efcf81c07c174935ad523f1594c5ffbcddbad47e0a33a2a7fcc9e83ae9980`
 - export gms_v95: `849ef648f0e087ff0435b5bd6c1a5725a985130765951cc551492cd74df27803`
-- export jms_v185: `cfcc6e6d95eca6dc4271f7b4799ac0c762e8441c69dbc6f7d04546ea2bee8bad`
+- export jms_v185: `f4fd2b7796284d670bb4fbf8d3e9957cd34317aeaef68da7962aec8399401884`
 
 ## Clientbound
 
@@ -417,7 +417,7 @@ Tool: `95d1c990a61ed184f0ec395b2e242f25ac70499b`
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
 | MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x141 | ❌ | 0x14B | ❌ | 0x175 | 🧩 | 0x153 | ❌ |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionEnter (T1) | 0x13A | 🧩 | 0x141 | 🧩 | 0x14B | 🧩 | 0x175 | 🧩 | 0x153 | 🧩 |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x177 | ✅ | 0x155 | ✅ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x178 | ✅ | 0x156 | ✅ |
@@ -837,7 +837,7 @@ Tool: `95d1c990a61ed184f0ec395b2e242f25ac70499b`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |
-| interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldRemoveFromBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -905,11 +905,11 @@ Tool: `95d1c990a61ed184f0ec395b2e242f25ac70499b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 329 | 2 | 0 | 344 | 200 | 0 | 48.7% |
-| v84 | 284 | 2 | 0 | 368 | 221 | 0 | 43.4% |
-| v87 | 345 | 3 | 0 | 364 | 163 | 0 | 48.5% |
+| v83 | 330 | 3 | 0 | 342 | 200 | 0 | 48.9% |
+| v84 | 285 | 3 | 0 | 366 | 221 | 0 | 43.6% |
+| v87 | 346 | 4 | 0 | 362 | 163 | 0 | 48.6% |
 | v95 | 386 | 3 | 1 | 406 | 79 | 0 | 48.5% |
-| JMS185 | 324 | 1 | 0 | 381 | 169 | 0 | 45.9% |
+| JMS185 | 324 | 2 | 0 | 380 | 169 | 0 | 45.9% |
 
 ## Conflicts
 

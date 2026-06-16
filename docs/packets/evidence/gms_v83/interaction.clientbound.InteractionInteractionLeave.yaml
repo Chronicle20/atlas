@@ -1,0 +1,8 @@
+packet: interaction/clientbound/InteractionInteractionLeave
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#Leave
+    address: "0x65edb5"
+    decompile_sha256: 978af58cf780ab730df16621a4295cc3e0e8b59bfbffbdec16847a11c2dfbab3

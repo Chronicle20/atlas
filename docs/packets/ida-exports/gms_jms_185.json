@@ -9824,6 +9824,110 @@
           "guard": "!sub_48603A(s)"
         }
       ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#Invite": {
+      "address": "0x6da7b4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (2; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (v2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (sInviter)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwSN (v3)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#InviteResult": {
+      "address": "0x6daa56",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (3; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result (v1)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message (sTargetName; ONLY read for result 2/3/4, NOT result 1)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#Enter": {
+      "address": "0x6dace2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (4; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "visitor (slot + DecodeAvatar + userID str + jobCode; interaction.Visitor substruct)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess": {
+      "address": "0x6da234",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (5; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "room (roomType + maxUsers + myPosition + per-slot avatar loop; interaction.Room substruct)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#EnterResultError": {
+      "address": "0x6da234",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (5; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "discriminator (v1==0 -> error path)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (switch value)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#Leave": {
+      "address": "0x6dad8a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (10; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (v4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "status (read by subclass OnLeave; e.g. CTradingRoomDlg)"
+        }
+      ]
     }
   }
 }

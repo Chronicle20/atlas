@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultGetItcListDone
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#GetItcListDone
+    address: "0x5d499f"
+    decompile_sha256: de7da7046cf5f90281243f06b61338a42c83f9286ae6354cbb9f8ed88b0c26a2
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_list_test.go#TestMtsResultGetItcListDoneGolden

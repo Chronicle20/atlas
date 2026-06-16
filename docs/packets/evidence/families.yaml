@@ -34,7 +34,23 @@ dispatchers:
   # CCashShop__OnCashItemResult_recv_0x14C@0x47c291), v87 0x4847f4 (dispatcher),
   # jms 0x48bcff.., v95 0x499370 (dispatcher). The remaining cases (gift/coupon/
   # gachapon/transfer-world/maple-point/destroy/expire) are not emitted by Atlas.
-  - CITC::OnNormalItemResult      # ITC/MTS result; v95 0x5771d0 switch(Decode1) -> 35 arms (MTS_OPERATION)
+  # CITC::OnNormalItemResult — GRADUATED (task-096): all 35 mode arms of
+  # MTS_OPERATION have decompile-verified per-mode body codecs in field/clientbound
+  # (mts_operation_body.go + mts_operation_list.go; each writes the leading mode
+  # byte THEN the full arm body, not mode-byte-only), each with a packet-audit:verify
+  # byte-fixture + fresh pinned evidence across gms_v83/v84/v87/v95. jms VERSION-ABSENT
+  # (no CITC op). Body-shape groups (synthetic #-suffix FNames in the per-version
+  # exports): Empty (notice-only arms, no wire body after the mode byte: 0x1D/0x1F/
+  # 0x25/0x29/0x2A/0x2B/0x2C/0x2E/0x2F/0x30/0x31/0x32/0x33/0x34/0x35/0x36/0x37/0x38/
+  # 0x3C), Reason (Decode1 fail-reason: 0x16/0x18/0x20/0x22/0x24/0x26/0x28), TwoInts
+  # (Decode4×2: 0x27/0x3D), RegisterSaleEntryFailed (0x1E; Decode1 reason + optional
+  # Decode2 sale-limit when reason==0x48), SuccessBidInfo (0x3E; Decode1 soldFlag +
+  # Decode4 itemId + optional Decode4 price + DecodeBuffer(8) date when itemId>0), and
+  # the list/item-blob arms GetItcListDone (0x15), GetSearchItcListDone (0x17),
+  # GetUserPurchaseItemDone (0x21), GetUserSaleItemDone (0x23), LoadWishSaleListDone
+  # (0x2D) — each reads a count then count*ITCITEM (GW_ItemSlotBase blob via model.Asset
+  # + meso/contract/bid trailer). Read order decompile-confirmed version-stable across
+  # all four GMS versions (only the dispatcher mode bytes + sub-handler addresses shift).
   # CShopDlg::OnPacket — GRADUATED (task-096): all Atlas-supported mode arms of
   # CONFIRM_SHOP_TRANSACTION have decompile-verified per-mode body codecs in
   # npc/clientbound/shop_operation.go (each writes the leading mode byte THEN the

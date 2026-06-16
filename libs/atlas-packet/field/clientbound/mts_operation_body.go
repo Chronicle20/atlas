@@ -77,7 +77,7 @@ import (
 //	0x35 BuyZzimItemDone       v83 0x5a5174 / v84 0x5b562b / v87 0x5d522e / v95 0x5763d0
 //	0x37 RegisterWishItemDone  v83 0x5a51d4 / v84 0x5b568b / v87 0x5d528e / v95 0x576440
 //
-// packet-audit:fname CITC::OnNormalItemResult#Empty  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CITC::OnNormalItemResult#Empty
 type MtsResultEmpty struct {
 	mode byte
 }
@@ -138,7 +138,7 @@ func (m *MtsResultEmpty) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 //	0x26 CancelSaleItemFailed         v83 0x5a4d49 / v84 0x5b5239 / v87 0x5d4e39 / v95 0x576070
 //	0x28 MoveITCPurchaseItemLtoSFailed v83 0x5a4dcf / v84 0x5b52bf / v87 0x5d4ec2 / v95 0x576110
 //
-// packet-audit:fname CITC::OnNormalItemResult#Reason  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CITC::OnNormalItemResult#Reason
 type MtsResultReason struct {
 	mode   byte
 	reason byte
@@ -184,7 +184,7 @@ func (m *MtsResultReason) Decode(_ logrus.FieldLogger, _ context.Context) func(r
 // read order is identical: Decode4 then Decode4. The trailing this[6]=0 store on
 // the LtoSDone arm is a member write, not a wire read.
 //
-// packet-audit:fname CITC::OnNormalItemResult#TwoInts  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CITC::OnNormalItemResult#TwoInts
 type MtsResultTwoInts struct {
 	mode byte
 	a    uint32
@@ -243,7 +243,7 @@ const mtsRegisterSaleEntryFailedSaleLimitReason byte = 0x48 // 72
 //	v83 sub_5A4581          / v84 sub_5B4A38
 //	v87 0x5d4640            / v95 0x576b80
 //
-// packet-audit:fname CITC::OnNormalItemResult#RegisterSaleEntryFailed  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CITC::OnNormalItemResult#RegisterSaleEntryFailed
 type MtsResultRegisterSaleEntryFailed struct {
 	mode      byte
 	reason    byte
@@ -298,7 +298,7 @@ func (m *MtsResultRegisterSaleEntryFailed) Decode(_ logrus.FieldLogger, _ contex
 //	v83 sub_5A52DE          / v84 sub_5B5795
 //	v87 OnSuccessBidInfoResult@0x5d5398 / v95 OnSuccessBidInfoResult@0x577000
 //
-// packet-audit:fname CITC::OnNormalItemResult#SuccessBidInfo  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CITC::OnNormalItemResult#SuccessBidInfo
 type MtsResultSuccessBidInfo struct {
 	mode         byte
 	soldFlag     byte     // Decode1: 1=sold (StringPool 0x12AA), else bought (0x12AB)

@@ -1925,6 +1925,41 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::OnNormalItemResult#SuccessBidInfo":
 		return []candidate{{name: "MtsResultSuccessBidInfo", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// MTS_OPERATION list/item-blob arms (task-096 iteration 6, FINAL — completes
+	// the family). Each embeds one or more ITCITEM entries; an ITCITEM is a
+	// GW_ItemSlotBase blob (model.Asset codec) + an MTS trailer (meso/contract/
+	// bid metadata). Read order decompile-confirmed version-stable across
+	// gms_v83/v84/v87/v95 (the loop count, item-blob, and any leading/trailing
+	// scalars are identical; only the dispatcher mode bytes and sub-handler
+	// addresses shift). jms VERSION-ABSENT (no CITC). See
+	// field/clientbound/mts_operation_list.go.
+	//
+	//   #GetItcListDone            -> MtsResultGetItcListDone (0x15): Decode4
+	//              catItemCnt, Decode4 pageItemCnt (loop), Decode4 category,
+	//              Decode4 subCategory, Decode4 page, Decode1 sortType,
+	//              Decode1 sortColumn, pageItemCnt × ITCITEM, Decode1 requestSent.
+	//   #GetSearchItcListDone      -> MtsResultGetSearchItcListDone (0x17): same
+	//              leading 5×Decode4 (catItemCnt, pageItemCnt, category,
+	//              subCategory, page), pageItemCnt × ITCITEM; NO sort bytes, NO
+	//              trailing requestSent byte.
+	//   #GetUserPurchaseItemDone   -> MtsResultGetUserPurchaseItemDone (0x21):
+	//              Decode4 totalCount, totalCount × ITCITEM, Decode4 limitedCount,
+	//              Decode1 requestSent.
+	//   #GetUserSaleItemDone       -> MtsResultGetUserSaleItemDone (0x23): Decode4
+	//              totalCount, totalCount × ITCITEM. No trailing fields.
+	//   #LoadWishSaleListDone      -> MtsResultLoadWishSaleListDone (0x2D): Decode4
+	//              totalCount, totalCount × ITCITEM. No trailing fields.
+	case "CITC::OnNormalItemResult#GetItcListDone":
+		return []candidate{{name: "MtsResultGetItcListDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetSearchItcListDone":
+		return []candidate{{name: "MtsResultGetSearchItcListDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserPurchaseItemDone":
+		return []candidate{{name: "MtsResultGetUserPurchaseItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#GetUserSaleItemDone":
+		return []candidate{{name: "MtsResultGetUserSaleItemDone", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#LoadWishSaleListDone":
+		return []candidate{{name: "MtsResultLoadWishSaleListDone", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// FOOTHOLD_INFO clientbound (task-096, recipe R-CB). CField::OnFootHoldInfo
 	// is version-divergent: v87 reads a single entry (name, mode, [mode==2:
 	// 8×int32 + 2×byte]); v95/jms read Decode4(count) then per entry name, mode,

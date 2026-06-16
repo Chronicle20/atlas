@@ -17,7 +17,7 @@ const MtsOperationWriter = "MtsOperation"
 // (0x15..0x3E). Only the leading mode byte is modeled here; the per-mode tail
 // is mode-opaque (each arm reads its own structure). This is the OP-MODE-PREFIX
 // shape: the wire contract this codec owns is the mode byte that selects the arm.
-// packet-audit:fname CITC::OnNormalItemResult#Mode  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CITC::OnNormalItemResult#Mode
 type MtsOperation struct {
 	mode byte
 }

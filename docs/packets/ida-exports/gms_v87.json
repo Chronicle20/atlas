@@ -10943,6 +10943,163 @@
           "comment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset)"
         }
       ]
+    },
+    "CITC::OnNormalItemResult#GetItcListDone": {
+      "address": "0x5d499f",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x15 GetITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x15 GET_ITC_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "categoryItemCnt"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageItemCnt (loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "category"
+        },
+        {
+          "op": "Decode4",
+          "comment": "subCategory"
+        },
+        {
+          "op": "Decode4",
+          "comment": "page"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sortType"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sortColumn"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        },
+        {
+          "op": "Decode1",
+          "comment": "requestSent flag"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetSearchItcListDone": {
+      "address": "0x5d4af2",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x17 GetSearchITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x17 GET_SEARCH_ITC_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "categoryItemCnt"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageItemCnt (loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "category"
+        },
+        {
+          "op": "Decode4",
+          "comment": "subCategory"
+        },
+        {
+          "op": "Decode4",
+          "comment": "page"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserPurchaseItemDone": {
+      "address": "0x5d4be3",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x21 GetUserPurchaseItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x21 GET_USER_PURCHASE_ITEM_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        },
+        {
+          "op": "Decode4",
+          "comment": "limitedCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "requestSent flag"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#GetUserSaleItemDone": {
+      "address": "0x5d4d47",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x23 GetUserSaleItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x23 GET_USER_SALE_ITEM_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#LoadWishSaleListDone": {
+      "address": "0x5d4fb9",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x2D LoadWishSaleListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2D LOAD_WISH_SALE_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.",
+          "guard": "loop items"
+        }
+      ]
     }
   }
 }

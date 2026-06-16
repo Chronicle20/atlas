@@ -1158,7 +1158,19 @@
       },
       {
         "opCode": "0x87",
-        "writer": "FieldEffect"
+        "writer": "FieldEffect",
+        "options": {
+          "operations": {
+            "SUMMON": 0,
+            "TREMBLE": 1,
+            "OBJECT": 2,
+            "SCREEN": 3,
+            "SOUND": 4,
+            "BOSS_HP": 5,
+            "BACKGROUND_MUSIC": 6,
+            "REWARD_RULLET": 7
+          }
+        }
       },
       {
         "opCode": "0x88",

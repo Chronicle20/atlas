@@ -1438,20 +1438,21 @@
         "writer": "CharacterStatusMessage",
         "options": {
           "operations": {
-            "DROP_PICK_UP": "0x00",
-            "QUEST_RECORD": "0x01",
-            "CASH_ITEM_EXPIRE": "0x02",
-            "INCREASE_EXPERIENCE": "0x03",
-            "INCREASE_FAME": "0x04",
-            "INCREASE_MESO": "0x05",
-            "INCREASE_GUILD_POINT": "0x06",
-            "GIVE_BUFF": "0x07",
-            "GENERAL_ITEM_EXPIRE": "0x08",
-            "SYSTEM_MESSAGE": "0x09",
-            "QUEST_RECORD_EX": "0x0A",
-            "ITEM_PROTECT_EXPIRE": "0x0B",
-            "ITEM_EXPIRE_REPLACE": "0x0C",
-            "SKILL_EXPIRE": "0x0D"
+            "DROP_PICK_UP": 0,
+            "QUEST_RECORD": 1,
+            "CASH_ITEM_EXPIRE": 2,
+            "INCREASE_EXPERIENCE": 3,
+            "INCREASE_SKILL_POINT": 4,
+            "INCREASE_FAME": 5,
+            "INCREASE_MESO": 6,
+            "INCREASE_GUILD_POINT": 7,
+            "GIVE_BUFF": 8,
+            "GENERAL_ITEM_EXPIRE": 9,
+            "SYSTEM_MESSAGE": 10,
+            "QUEST_RECORD_EX": 11,
+            "ITEM_PROTECT_EXPIRE": 12,
+            "ITEM_EXPIRE_REPLACE": 13,
+            "SKILL_EXPIRE": 14
           }
         }
       },

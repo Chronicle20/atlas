@@ -709,11 +709,38 @@
       },
       {
         "opCode": "0x26",
-        "writer": "CharacterStatusMessage"
+        "writer": "CharacterStatusMessage",
+        "options": {
+          "operations": {
+            "DROP_PICK_UP": 0,
+            "QUEST_RECORD": 1,
+            "CASH_ITEM_EXPIRE": 2,
+            "INCREASE_EXPERIENCE": 3,
+            "INCREASE_SKILL_POINT": 4,
+            "INCREASE_FAME": 5,
+            "INCREASE_MESO": 6,
+            "INCREASE_GUILD_POINT": 7,
+            "GIVE_BUFF": 8,
+            "GENERAL_ITEM_EXPIRE": 9,
+            "SYSTEM_MESSAGE": 10,
+            "QUEST_RECORD_EX": 11,
+            "ITEM_PROTECT_EXPIRE": 12,
+            "ITEM_EXPIRE_REPLACE": 13,
+            "SKILL_EXPIRE": 14
+          }
+        }
       },
       {
         "opCode": "0x28",
-        "writer": "NoteOperation"
+        "writer": "NoteOperation",
+        "options": {
+          "operations": {
+            "SHOW": 3,
+            "SEND_SUCCESS": 4,
+            "SEND_ERROR": 5,
+            "REFRESH": 7
+          }
+        }
       },
       {
         "opCode": "0x2F",
@@ -813,7 +840,19 @@
       },
       {
         "opCode": "0x9A",
-        "writer": "FieldEffect"
+        "writer": "FieldEffect",
+        "options": {
+          "operations": {
+            "SUMMON": 0,
+            "TREMBLE": 1,
+            "OBJECT": 2,
+            "SCREEN": 3,
+            "SOUND": 4,
+            "BOSS_HP": 5,
+            "BACKGROUND_MUSIC": 6,
+            "REWARD_RULLET": 7
+          }
+        }
       },
       {
         "opCode": "0x9B",

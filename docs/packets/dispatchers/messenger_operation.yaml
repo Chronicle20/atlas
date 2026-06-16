@@ -1,28 +1,22 @@
-# MessengerOperation — CUIMessenger::OnPacket mode enumeration (PER-VERSION).
+# MessengerOperation — CUIMessenger::OnPacket per-version mode table.
 #
-# Clientbound dispatcher (registry op MESSENGER): Decode1(mode) → switch.
-# Unlike CashShopOperation, the messenger mode enum is VERSION-STABLE: cases 0..8
-# are byte-identical in gms_v83 (0x8511fc), gms_v87 (0x8b978f), and gms_v95
-# (0x7f5e40) — IDA-verified. So one table serves every version; the gms_83/gms_84
-# table can be copied verbatim to gms_87/gms_95/jms_185 (which currently lack it).
-#
-# `key` = Atlas semantic operation key; `handler` = v95 PDB sub-handler;
-# `mode` = the byte (same on all versions). See bug_operations_mode_tables_
-# missing_v87_v95_jms.
+# SOURCE OF TRUTH for the CashShopOperation-style `operations` map of the
+# MessengerOperation writer. Unlike cash, the messenger mode enum is
+# VERSION-STABLE: the CUIMessenger::OnPacket switch is byte-identical (cases 0..8)
+# in gms_v83 (0x8511fc), gms_v87 (0x8b978f), gms_v95 (0x7f5e40), jms_v185
+# (0x8e447e) — IDA-verified. gms_v84 inferred identical (stable family; v84
+# structure tracks v83). Mode 8 (OnMigrated) is not emitted by Atlas (omitted).
 
+writer: MessengerOperation
 fname: CUIMessenger::OnPacket
 op: MESSENGER
 direction: clientbound
-discriminator: Decode1
-version_stable: true   # modes identical across gms_v83/v87/v95 (verified)
-
 operations:
-  - { key: ADD,             handler: OnEnter,            mode: 0 }   # slot, AvatarLook, id, byte, byte
-  - { key: JOIN,            handler: OnSelfEnterResult,  mode: 1 }   # 1 byte
-  - { key: REMOVE,          handler: OnLeave,            mode: 2 }   # 1 byte (slot)
-  - { key: REQUEST_INVITE,  handler: OnInvite,           mode: 3 }   # str, byte, int, byte
-  - { key: INVITE_SENT,     handler: OnInviteResult,     mode: 4 }   # str name, byte result
-  - { key: INVITE_DECLINED, handler: OnBlocked,          mode: 5 }   # str user, byte flag (Atlas reuses the "blocked" arm for declined)
-  - { key: CHAT,            handler: OnChat,             mode: 6 }   # str chat line
-  - { key: UPDATE,          handler: OnAvatar,           mode: 7 }   # slot, AvatarLook
-  # mode 8 (OnMigrated) — channel-migration roster; Atlas does not emit it (n/a).
+  - { key: ADD,             handler: OnEnter,           modes: { gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
+  - { key: JOIN,            handler: OnSelfEnterResult,  modes: { gms_v83: 1, gms_v84: 1, gms_v87: 1, gms_v95: 1, jms_v185: 1 } }
+  - { key: REMOVE,          handler: OnLeave,            modes: { gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
+  - { key: REQUEST_INVITE,  handler: OnInvite,           modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
+  - { key: INVITE_SENT,     handler: OnInviteResult,     modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
+  - { key: INVITE_DECLINED, handler: OnBlocked,          modes: { gms_v83: 5, gms_v84: 5, gms_v87: 5, gms_v95: 5, jms_v185: 5 } }
+  - { key: CHAT,            handler: OnChat,             modes: { gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
+  - { key: UPDATE,          handler: OnAvatar,           modes: { gms_v83: 7, gms_v84: 7, gms_v87: 7, gms_v95: 7, jms_v185: 7 } }

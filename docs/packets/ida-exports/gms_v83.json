@@ -5481,6 +5481,63 @@
         }
       ]
     },
+    "CTrunkDlg::OnPacket#UpdateMeso": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19 = UPDATE_MESO; dispatcher case 0x13 -> SetGetItems)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slotCount (m_nSlotCount)"
+        },
+        {
+          "op": "Decode8",
+          "comment": "tab-flag bitmask (atlas writes 2 = currency-only; 8 bytes)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (m_nMoney; read because flag&2)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorSimple": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (error code; client maps to StringPool message)"
+        }
+      ]
+    },
+    "CTrunkDlg::OnPacket#ErrorMessage": {
+      "address": "0x7c8a4c",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "v2",
+          "case": 23
+        }
+      ],
+      "notes": "inferred-high-confidence (1.00) @0x7c8a4c",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (23)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "enabled flag (if true -> read message)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        }
+      ]
+    },
     "CUIGuildBBS::OnComment": {
       "address": "0x0",
       "direction": "serverbound",

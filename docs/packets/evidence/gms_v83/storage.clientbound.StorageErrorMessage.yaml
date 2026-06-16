@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageErrorMessage
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#ErrorMessage
+    address: "0x7c8a4c"
+    decompile_sha256: ef7bc6220996f0f4898c53d15901d2b9d8d4452605147b75a3db78b623feb46f

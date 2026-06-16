@@ -12,7 +12,7 @@ import (
 const StorageOperationWriter = "StorageOperation"
 
 // ErrorSimple - just mode (covers InventoryFull, NotEnoughMesos, OneOfAKind, etc.)
-// packet-audit:fname CTrunkDlg::OnPacket#ErrorSimple  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CTrunkDlg::OnPacket#ErrorSimple
 type ErrorSimple struct {
 	mode byte
 }
@@ -39,7 +39,7 @@ func (m *ErrorSimple) Decode(_ logrus.FieldLogger, _ context.Context) func(r *re
 }
 
 // UpdateMeso - mode, slots, currency flag, meso
-// packet-audit:fname CTrunkDlg::OnPacket#UpdateMeso  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CTrunkDlg::OnPacket#UpdateMeso
 type UpdateMeso struct {
 	mode  byte
 	slots byte
@@ -76,7 +76,7 @@ func (m *UpdateMeso) Decode(_ logrus.FieldLogger, _ context.Context) func(r *req
 }
 
 // ErrorMessage - mode, bool(true), message
-// packet-audit:fname CTrunkDlg::OnPacket#ErrorMessage  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CTrunkDlg::OnPacket#ErrorMessage
 type ErrorMessage struct {
 	mode    byte
 	message string

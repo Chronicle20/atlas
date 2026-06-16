@@ -29,6 +29,8 @@ func etcAsset() model.Asset {
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v83 ida=0x7c5dae
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v95 ida=0x76a990
 // packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v87 ida=0x819648
+// packet-audit:verify packet=storage/clientbound/StorageShow version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageShow version=jms_v185 ida=0x84e5a1
 func TestStorageShowSegmentation(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
@@ -128,6 +130,17 @@ func TestStorageShowEmptyRoundTrip(t *testing.T) {
 	}
 }
 
+// TestStorageUpdateAssetsRoundTrip exercises the SetGetItems body (modes
+// 9/13/15) the dispatcher routes to: Decode1 slotCount, DecodeBuffer(8) tab-flag
+// bitmask, Decode4 meso gated on flag&2, then the per-tab count+items loop over
+// bits 4/8/16/32/64. Read order IDA-confirmed identical across versions:
+// SetGetItems v83 0x7c5dfd, v84 sub_7EBFCB (dispatcher 0x7eec1a case 9/13/15),
+// v87 0x819648 (dispatcher 0x81c336), v95 0x76a390 (dispatcher 0x76a990).
+// packet-audit:verify packet=storage/clientbound/StorageUpdateAssets version=gms_v83 ida=0x7c5dfd
+// packet-audit:verify packet=storage/clientbound/StorageUpdateAssets version=gms_v84 ida=0x7eec1a
+// packet-audit:verify packet=storage/clientbound/StorageUpdateAssets version=gms_v87 ida=0x81c336
+// packet-audit:verify packet=storage/clientbound/StorageUpdateAssets version=gms_v95 ida=0x76a990
+// packet-audit:verify packet=storage/clientbound/StorageUpdateAssets version=jms_v185 ida=0x84e5a1
 func TestStorageUpdateAssetsRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

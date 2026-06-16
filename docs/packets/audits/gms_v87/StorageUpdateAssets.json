@@ -1,8 +1,8 @@
 {
   "WriterName": "StorageUpdateAssets",
   "IDAName": "CTrunkDlg::OnPacket#UpdateAssets",
-  "Address": "0x7eec1a",
-  "Variant": "GMS/v84",
+  "Address": "0x81c336",
+  "Variant": "GMS/v87",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/storage/clientbound/update_assets.go",
   "Rows": [

@@ -1,11 +1,11 @@
 {
   "toolSha": "95d1c990a61ed184f0ec395b2e242f25ac70499b",
   "exportHashes": {
-    "gms_v83": "fd1d8ee596b8319364c1f532a80fb26c6465e1110784af55d2076877e06646c0",
-    "gms_v84": "da5eb266d885a9abde9bd325f6c90d4ed9ef521ca7a75ab1c8327afa4203093e",
-    "gms_v87": "728efcf81c07c174935ad523f1594c5ffbcddbad47e0a33a2a7fcc9e83ae9980",
+    "gms_v83": "bd02ab87f54c054d188eb6c3b726195457f89dff10a913374c3499ee0a06437c",
+    "gms_v84": "bfe4ba905e67b035ad45eafbce1b5985fb510cb874eaf037b5642656bca3e83b",
+    "gms_v87": "8e3146e1c2bbeb8a2635b50804fa02d8478f82ca19836cd52e772ece7dacede8",
     "gms_v95": "849ef648f0e087ff0435b5bd6c1a5725a985130765951cc551492cd74df27803",
-    "jms_v185": "f613b43012d43c5b107b4fb992b60aced46ce83ecf92f24fad591fda33c90a02"
+    "jms_v185": "6d75c59f90f3b4fad33e94d320fb1224ee931fcb835e270edf51c27b5b9508b1"
   },
   "rows": [
     {
@@ -24129,7 +24129,7 @@
     {
       "kind": "op",
       "op": "STORAGE",
-      "packet": "storage/clientbound/StorageShow",
+      "packet": "storage/clientbound/StorageErrorMessage",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -24137,28 +24137,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 309
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 316
         },
         "gms_v87": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 326
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 368
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 334
         }
       }

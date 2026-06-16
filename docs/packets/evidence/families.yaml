@@ -61,4 +61,19 @@ dispatchers:
   # 0x53b2fc->0x740179), but 22 in jms (sub_761650 case 22 -> sub_54adb9 ->
   # sub_761dba) because jms shifts personal-shop sub-modes down by 3. Modes
   # 6/8/9 (Chat/ChatThing/Avatar) are not emitted by Atlas as PLAYER_INTERACTION.
-  - CTrunkDlg::OnPacket           # storage; v95 0x76a990 switch(Decode1) mode (STORAGE)
+  # CTrunkDlg::OnPacket — GRADUATED (task-096): all Atlas-supported mode arms of
+  # STORAGE have decompile-verified per-mode body codecs in storage/clientbound
+  # (each writes the leading mode byte THEN the full arm body, not mode-byte-only),
+  # each with a packet-audit:verify byte-fixture + fresh pinned evidence across
+  # gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic #-suffix FNames in the
+  # per-version exports): Show (SHOW=22, gms / 21 jms -> SetTrunkDlg: Decode4 npc +
+  # SetGetItems body), UpdateAssets (RETRIEVE/STORE = 9/13/15 gms, 8/12/14 jms ->
+  # SetGetItems: slotCount + 8-byte tab-flag + meso[flag&2] + per-tab item loop),
+  # UpdateMeso (UPDATE_MESO=19 gms / 18 jms -> SetGetItems currency-only),
+  # ErrorSimple (notice arms 10/11/12/16/17 + default -> mode byte only, no body),
+  # ErrorMessage (ERROR_MESSAGE=23 gms_v83/v84/v87, 24 gms_v95 -> Decode1 flag +
+  # DecodeStr message). Per-version arm bodies are byte-identical in shape
+  # (version-shifted mode bytes + addresses only), decompile-confirmed this session:
+  # dispatchers v83 0x7c8a4c, v84 0x7eec1a (CTrunkDlg__OnPacket_recv_0x13C), v87
+  # 0x81c336, v95 0x76a990, jms 0x84e5a1 (shift -1). ErrorMessage is version-absent
+  # in jms (its dispatcher has no Decode1+DecodeStr arm) so it is not an arm there.

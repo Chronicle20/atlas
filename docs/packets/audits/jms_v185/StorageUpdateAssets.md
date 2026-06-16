@@ -1,8 +1,8 @@
 # StorageUpdateAssets (← `CTrunkDlg::OnPacket#UpdateAssets`)
 
-- **IDA:** 0x7eec1a
+- **IDA:** 0x84e5a1
 - **Atlas file:** `libs/atlas-packet/storage/clientbound/update_assets.go`
-- **Variant:** GMS/v84
+- **Variant:** JMS/v185
 - **Branch depth:** 0
 - **Verdict:** 🔍
 - **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | byte `mode (9/13/15/19)` | ✅ |  |
+| 0 | byte | byte `mode (8/12/14 = RETRIEVE/STORE; jms shift -1)` | ✅ |  |
 | 1 | byte | byte `slotCount (m_nSlotCount)` | ✅ |  |
 | 2 | int64 | int64 `tab-flag bitmask (8 bytes via DecodeBuffer; WriteLong-compatible width)` | ✅ |  |
 | 3 | byte | int32 `meso (m_nMoney; ONLY if tab-flag bit 1 set — runtime callers never set it)` | ❌ | width mismatch |

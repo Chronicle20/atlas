@@ -1,8 +1,8 @@
 {
   "WriterName": "StorageUpdateAssets",
   "IDAName": "CTrunkDlg::OnPacket#UpdateAssets",
-  "Address": "0x7eec1a",
-  "Variant": "GMS/v84",
+  "Address": "0x84e5a1",
+  "Variant": "JMS/v185",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/storage/clientbound/update_assets.go",
   "Rows": [
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "mode (9/13/15/19)",
+      "IDAComment": "mode (8/12/14 = RETRIEVE/STORE; jms shift -1)",
       "Verdict": 0,
       "Note": ""
     },

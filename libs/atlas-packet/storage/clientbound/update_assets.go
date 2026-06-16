@@ -11,7 +11,7 @@ import (
 )
 
 // UpdateAssets - mode, slots, flags, assets
-// packet-audit:fname CTrunkDlg::OnPacket#UpdateAssets  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CTrunkDlg::OnPacket#UpdateAssets
 type UpdateAssets struct {
 	mode   byte
 	slots  byte

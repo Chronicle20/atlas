@@ -1,0 +1,8 @@
+packet: storage/clientbound/StorageErrorSimple
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket#ErrorSimple
+    address: "0x84e5a1"
+    decompile_sha256: 546a33b0f7d5eabbf7fc18cba5277970e1585e921a51a2a08524df1d4be38319

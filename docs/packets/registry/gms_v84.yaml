@@ -3140,9 +3140,9 @@
 - op: WHISPER
   direction: serverbound
   opcode: 122
-  fname: CField::SendLocationWhisper
+  fname: CField::SendChatMsgWhisper
   fname_alts:
-  - CField::SendChatMsgWhisper
+  - CField::SendLocationWhisper
   provenance: ida-discovered
   ida:
     address: 5487388

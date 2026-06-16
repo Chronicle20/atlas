@@ -613,7 +613,7 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | ADMIN_CHAT | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) | 0x076 | ✅ | 0x078 | ✅ | 0x07C | ✅ | 0x08B | ✅ | 0x078 | ✅ |
 | MULTI_CHAT | CUIStatusBar::SendGroupMessage |  | 0x077 | ❌ | 0x079 | ❌ | 0x07D | ❌ | 0x08C | ❌ | 0x079 | ❌ |
-| WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper |  | 0x078 | ❌ | 0x07A | ❌ | 0x07E | ❌ | 0x08D | ❌ | 0x07A | ❌ |
+| WHISPER | CField::SendChatMsgWhisper; CField::SendLocationWhisper | chat/serverbound/ChatWhisper (T1) | 0x078 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x08D | ✅ | 0x07A | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | SPOUSE_CHAT | CUIStatusBar::SendCoupleMessage | field/serverbound/FieldCoupleMessage (T1) | 0x079 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x08E | ✅ |  | ⬜ |
 | MESSENGER | CFadeWnd::SendCloseMessage; CUIMessenger::OnCreate; CUIMessenger::OnDestroy; CUIMessenger::OnInvite; CUIMessenger::ProcessChat; CUIMessenger::SendInviteMsg; CUIMessenger::Update | messenger/serverbound/MessengerOperationDeclineInvite (T1) | 0x07A | ✅ | 0x07C | ❌ | 0x080 | ✅ | 0x08F | ✅ | 0x07B | ✅ |
@@ -819,7 +819,6 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 | character/serverbound/ExpressionRequest (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/KeyMapChange (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| chat/serverbound/ChatWhisper (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldChange (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | guild/clientbound/GuildBBSThread (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | guild/clientbound/GuildBBSThreadList (T1) |  |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
@@ -906,11 +905,11 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 333 | 0 | 0 | 343 | 200 | 0 | 49.3% |
-| v84 | 288 | 0 | 0 | 367 | 221 | 0 | 44.0% |
-| v87 | 349 | 0 | 0 | 364 | 163 | 0 | 48.9% |
-| v95 | 390 | 0 | 1 | 406 | 79 | 0 | 48.9% |
-| JMS185 | 327 | 0 | 0 | 380 | 169 | 0 | 46.3% |
+| v83 | 333 | 0 | 0 | 342 | 200 | 0 | 49.3% |
+| v84 | 288 | 0 | 0 | 366 | 221 | 0 | 44.0% |
+| v87 | 349 | 0 | 0 | 363 | 163 | 0 | 49.0% |
+| v95 | 390 | 0 | 1 | 405 | 79 | 0 | 49.0% |
+| JMS185 | 327 | 0 | 0 | 379 | 169 | 0 | 46.3% |
 
 ## Conflicts
 

@@ -2574,9 +2574,9 @@
 - op: WHISPER
   direction: serverbound
   opcode: 126
-  fname: CField::SendLocationWhisper
+  fname: CField::SendChatMsgWhisper
   fname_alts:
-    - CField::SendChatMsgWhisper
+    - CField::SendLocationWhisper
   provenance: csv-import
 - op: SPOUSE_CHAT
   direction: serverbound

@@ -91,4 +91,10 @@ func TestPetAssetEnrichmentDecorator_PreservesEquipmentLook(t *testing.T) {
 	if cashAssets[0].PetName() != "Pet" {
 		t.Errorf("pet name = %q, want %q", cashAssets[0].PetName(), "Pet")
 	}
+	// PetSlot must mirror the live pet's slot (-1 = despawned). PetSpawnHandle
+	// relies on this to decide spawn vs despawn; without enrichment it defaults
+	// to 0 and the handler always despawns.
+	if cashAssets[0].PetSlot() != -1 {
+		t.Errorf("pet slot = %d, want -1 (from live pet)", cashAssets[0].PetSlot())
+	}
 }

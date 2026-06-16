@@ -2007,7 +2007,7 @@
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 312
-  fname: CShopDlg::OnPacket
+  fname: CShopDlg::SetShopDlg
   provenance: manual
   note: v84 opcode re-derived from IDB dispatcher case label (task-085)
 - op: CONFIRM_SHOP_TRANSACTION

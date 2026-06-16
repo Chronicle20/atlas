@@ -33,7 +33,8 @@ type matrixOpts struct {
 	ExportsDir   string
 	EvidenceDir  string // consumed from Phase 2 on; empty = no evidence
 	TiersFile    string // consumed from Phase 2 on; defaults to docs/packets/evidence/tiers.yaml
-	FamiliesFile string // mode-prefix dispatcher membership; defaults to docs/packets/evidence/families.yaml
+	FamiliesFile   string // mode-prefix dispatcher membership; defaults to docs/packets/evidence/families.yaml
+	DispatchersDir string // per-version dispatcher enumerations; lift the family cap when an op is fully enumerated
 	PacketLibDir string // consumed from Phase 3 on (marker scan); empty = no markers
 	Versions     []string
 	OutDir       string
@@ -52,6 +53,7 @@ func runMatrix(args []string, stderr io.Writer) int {
 	fs.StringVar(&o.EvidenceDir, "evidence-dir", "docs/packets/evidence", "evidence ledger dir")
 	fs.StringVar(&o.TiersFile, "tiers", "docs/packets/evidence/tiers.yaml", "tier-1 membership YAML")
 	fs.StringVar(&o.FamiliesFile, "families", "docs/packets/evidence/families.yaml", "mode-prefix dispatcher membership YAML")
+	fs.StringVar(&o.DispatchersDir, "dispatchers-dir", "docs/packets/dispatchers", "per-version dispatcher enumeration YAML dir")
 	fs.StringVar(&o.PacketLibDir, "packet-lib", "libs/atlas-packet", "atlas-packet root for marker scanning")
 	fs.StringVar(&versionsCSV, "versions", strings.Join(matrix.VersionKeys, ","), "comma-separated version keys")
 	fs.StringVar(&o.OutDir, "out-dir", "docs/packets/audits", "output dir for STATUS.md/status.json")
@@ -95,6 +97,27 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		return exitRuntime
 	}
 	in.Families = families.Set()
+	// Dispatcher enumerations lift the family cap: an op whose complete mode set
+	// is IDA-verified per version (a dispatcher YAML covers it) may reach ✅.
+	in.OperationsVerified = map[string]map[string]bool{}
+	if docs, derr := loadDispatcherDocs(o.DispatchersDir); derr == nil {
+		for _, d := range docs {
+			if d.Op == "" {
+				continue
+			}
+			if in.OperationsVerified[d.Op] == nil {
+				in.OperationsVerified[d.Op] = map[string]bool{}
+			}
+			for _, op := range d.Operations {
+				for vk := range op.Modes {
+					in.OperationsVerified[d.Op][vk] = true
+				}
+			}
+		}
+	} else {
+		fmt.Fprintf(stderr, "packet-audit matrix: dispatchers: %v\n", derr)
+		return exitRuntime
+	}
 	hashes := map[string]string{}
 	exportPaths := map[string]string{}
 	for _, vk := range o.Versions {

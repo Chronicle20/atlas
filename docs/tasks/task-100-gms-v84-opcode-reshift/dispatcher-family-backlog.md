@@ -1,5 +1,34 @@
 # Dispatcher-family body-verification backlog
 
+## RESOLUTION (per-mode coverage)
+
+The dispatcher families are now driven to ✅ by the per-mode coverage model, not
+left at 🧩. The mechanism: each dispatcher's complete mode set is IDA-verified
+per version in `docs/packets/dispatchers/*.yaml`, populated into the tenant
+`operations` tables, and gated by `packet-audit operations --check`. The grader
+(`OperationsVerified`) lifts the 🧩 family cap to ✅ for a version when that
+dispatcher's mode contract is fully enumerated + config-correct there — because
+the leading mode byte IS the entire wire contract the dispatcher codec owns, so
+verifying every emitted mode's per-version value is the verification (no separate
+per-arm byte-fixture needed; it would only re-test the same byte).
+
+Now ✅ across all versions: CASHSHOP_OPERATION, CONFIRM_SHOP_TRANSACTION,
+MESSENGER, PLAYER_INTERACTION, STORAGE. OPEN_NPC_SHOP was mis-modeled (registry
+fname `CShopDlg::OnPacket` → corrected to its real leaf handler
+`CShopDlg::SetShopDlg`); it is the shop-open packet, not a mode dispatcher, and
+now grades ✅ via its own `NpcShopList` body.
+
+**Remaining exception — MTS_OPERATION (`CITC::OnNormalItemResult`)**: stays 🧩.
+It IS a mode dispatcher (its modes shift per version like cash), but Atlas
+**registers the writer and never emits it** — `MtsOperationBody` has no caller and
+the codec takes the mode byte directly (no `operations` table). So there is no
+emitted mode set to enumerate/verify; MTS is effectively unimplemented. If Atlas
+ever implements MTS sending, it must resolve the mode per version (ideally via the
+`operations` table) and gets a dispatcher YAML then.
+
+---
+
+
 ## Why this exists
 
 The packet coverage matrix grades at **(op, version)** granularity. A handful of

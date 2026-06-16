@@ -1680,7 +1680,7 @@
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 330
-  fname: CShopDlg::OnPacket
+  fname: CShopDlg::SetShopDlg
   provenance: csv-import
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound

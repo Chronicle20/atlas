@@ -198,6 +198,26 @@ func TestGradeFamilyCapsTier0VerifiedToFamily(t *testing.T) {
 	}
 }
 
+func TestGradeFamilyOperationsVerifiedLiftsToVerified(t *testing.T) {
+	// A dispatcher op whose complete mode contract is enumerated+verified for the
+	// version (OperationsVerified) reaches ✅ even without a per-version byte-fixture
+	// — the mode byte is the dispatcher codec's entire wire contract.
+	in := presentWithReport(t, diff.VerdictMatch, false)
+	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
+	in.OperationsVerified = map[string]map[string]bool{"ACCOUNT_INFO": {"gms_v83": true}}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateVerified {
+		t.Errorf("operations-verified dispatcher must be ✅, not %v (%s)", c.State.Name(), c.Note)
+	}
+	// A DIFFERENT version (not operations-verified) still caps at family.
+	in.OperationsVerified = map[string]map[string]bool{"ACCOUNT_INFO": {"gms_v95": true}}
+	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
+	c = gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	if c.State != StateFamily {
+		t.Errorf("non-operations-verified version must stay family, not %v", c.State.Name())
+	}
+}
+
 func TestGradeFamilyCapsTier1FixtureToFamily(t *testing.T) {
 	// A would-be tier-1 ✅ (marker + fresh evidence) is capped at 🧩 family for a
 	// dispatcher op — one sub-handler's fixture cannot verify the whole family.

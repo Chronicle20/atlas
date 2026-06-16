@@ -58,6 +58,13 @@ type Inputs struct {
 	// StateFamily and can never reach ✅ on a single sub-handler's fixture.
 	// Empty map = no family capping (every op grades normally).
 	Families map[string]bool
+	// OperationsVerified[op][version] is true when a dispatcher enumeration
+	// (docs/packets/dispatchers/*.yaml) covers that op for that version — i.e.
+	// every mode Atlas emits for the op has an IDA-verified per-version byte and
+	// the tenant operations table matches it. This LIFTS the StateFamily cap:
+	// a dispatcher whose complete mode contract is enumerated+verified for a
+	// version may reach ✅ (the dispatcher codec's wire contract IS the mode set).
+	OperationsVerified map[string]map[string]bool
 }
 
 // opEntryRef carries the union-row identity being graded for one version.
@@ -85,6 +92,7 @@ type gradeArgs struct {
 	writerName                    string
 	reportFnameClaimedByPresentOp bool // true when a PRESENT op in the same version shares this report's base FName
 	family                        bool // true when the op's FName is a mode-prefix dispatcher (cap at StateFamily)
+	operationsVerified            bool // true when a dispatcher enumeration covers this op×version (lifts the family cap)
 }
 
 // gradeOpCell evaluates design §5 in precedence order for one op×version.
@@ -133,6 +141,7 @@ func gradeOpCell(in Inputs, ref opEntryRef, version string, routedElsewhere bool
 		writerName:                    rep.WriterName,
 		reportFnameClaimedByPresentOp: reportFnameClaimedByPresentOp,
 		family:                        in.Families[baseFName(ref.FName)],
+		operationsVerified:            in.OperationsVerified[ref.Op][version],
 	}
 	return gradeCore(args)
 }
@@ -160,6 +169,18 @@ func gradeCore(a gradeArgs) Cell {
 	}
 
 	// Present from here on.
+
+	// A mode-prefix dispatcher whose COMPLETE mode contract is IDA-verified per
+	// version and config-correct (a dispatcher enumeration covers this op×version,
+	// and `operations --check` keeps the tenant table in sync) grades ✅. The
+	// leading mode byte is the entire wire contract this dispatcher codec owns, so
+	// verifying every emitted mode's per-version value IS the verification — it
+	// does not also require a per-version byte-fixture (which would only re-test
+	// the same mode byte). This lifts the StateFamily cap.
+	if a.family && a.operationsVerified {
+		return Cell{State: StateVerified}
+	}
+
 	if !a.hasReport {
 		return Cell{State: StateIncomplete, Note: "no audit report"}
 	}

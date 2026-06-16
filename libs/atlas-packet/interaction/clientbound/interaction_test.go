@@ -62,14 +62,18 @@ func testShopItem() interaction.RoomShopItem {
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionUpdateMerchant version=gms_v87 ida=0x53b2fc
 //
 // jms_v185 (dispatcher 0x6da198; base modes 2/3/4/5/10 version-stable. UPDATE_MERCHANT
-// is a genuine blocker: the mode-25 default case virtual-dispatches into a hired-merchant
-// OnRefresh that is UNNAMED in this IDB, so the leaf address is unresolved — see blockers):
+// in jms is mode 22 (NOT 25): jms shifts the personal-shop sub-modes down by 3 vs gms
+// (gms 24/25/26/27 buy/refresh/sold/move = jms 21/22/23/24). The mode-22 default case
+// virtual-dispatches into CPersonalShopDlg::OnPacket sub_761650 case 22 -> vtable[28]
+// OnRefresh override = CEntrustedShopDlg::OnRefresh @0x54adb9 (Decode4 meso -> chains
+// CPersonalShopDlg::OnRefresh sub_761dba count+item loop)):
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionInvite version=jms_v185 ida=0x6da7b4
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionInviteResult version=jms_v185 ida=0x6daa56
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnter version=jms_v185 ida=0x6dace2
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnterResultSuccess version=jms_v185 ida=0x6da234
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionEnterResultError version=jms_v185 ida=0x6da234
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionLeave version=jms_v185 ida=0x6dad8a
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionUpdateMerchant version=jms_v185 ida=0x54adb9
 func TestInteractionInviteRoundTrip(t *testing.T) {
 	input := NewInteractionInvite(4, 1, "TestPlayer", 12345)
 	for _, v := range test.Variants {
@@ -148,22 +152,31 @@ func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 	}
 }
 
-// TestInteractionUpdateMerchantBytes is an encode-only byte fixture for mode 25
-// (UPDATE_MERCHANT). The hired-merchant refresh leaf CEntrustedShopDlg::OnRefresh
+// TestInteractionUpdateMerchantBytes is an encode-only byte fixture for the
+// UPDATE_MERCHANT mode. The hired-merchant refresh leaf CEntrustedShopDlg::OnRefresh
 // reads Decode4(meso) then chains CPersonalShopDlg::OnRefresh: Decode1(count) +
 // count x {Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase}.
-// Each asserted byte traces to that read order.
+// Each asserted byte traces to that read order. The leading mode byte is
+// version-dependent: 25 in gms_v83/v84/v87/v95 (IDA: v83 0x6fc42d / v95 0x69c820
+// switch case 25 -> OnRefresh), 22 in jms_v185 (IDA: CPersonalShopDlg::OnPacket
+// sub_761650 case 22 -> CEntrustedShopDlg::OnRefresh sub_54adb9), because jms
+// shifts the personal-shop sub-modes down by 3.
 func TestInteractionUpdateMerchantBytes(t *testing.T) {
 	items := []interaction.RoomShopItem{testShopItem()}
-	input := NewInteractionUpdateMerchant(25, 50000, items)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
+			// JMS personal-shop refresh = mode 22; all GMS versions = mode 25.
+			wantMode := byte(25)
+			if v.Region == "JMS" {
+				wantMode = 22
+			}
+			input := NewInteractionUpdateMerchant(wantMode, 50000, items)
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			b := test.Encode(t, ctx, input.Encode, nil)
-			// mode(25) + meso(50000 LE) + count(1) + item{perBundle,quantity,price} + asset(...)
+			// mode + meso(50000 LE) + count(1) + item{perBundle,quantity,price} + asset(...)
 			// mode
-			if b[0] != 25 {
-				t.Fatalf("mode: got %d, want 25", b[0])
+			if b[0] != wantMode {
+				t.Fatalf("mode: got %d, want %d", b[0], wantMode)
 			}
 			// meso little-endian uint32 = 50000 = 0x0000C350
 			if b[1] != 0x50 || b[2] != 0xC3 || b[3] != 0x00 || b[4] != 0x00 {

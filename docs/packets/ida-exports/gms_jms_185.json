@@ -9928,6 +9928,29 @@
           "comment": "status (read by subclass OnLeave; e.g. CTradingRoomDlg)"
         }
       ]
+    },
+    "CEntrustedShopDlg::OnRefresh#UpdateMerchant": {
+      "address": "0x54adb9",
+      "direction": "clientbound",
+      "notes": "mode-22 (UPDATE_MERCHANT) leaf: OnPacketBase default case virtual-dispatches into the concrete dialog OnPacket (CPersonalShopDlg::OnPacket sub_761650, case 22 -> __vftable[28] OnRefresh override). For the hired merchant that override is CEntrustedShopDlg::OnRefresh @0x54adb9, which reads Decode4(meso=m_nMoney) then chains CPersonalShopDlg::OnRefresh sub_761DBA (count byte + per-item perBundle/quantity/price/asset). jms personal-shop sub-modes are -3 vs gms (gms 24/25/26/27 buy/refresh/sold/move = jms 21/22/23/24), so UPDATE_MERCHANT is 22 in jms vs 25 in gms.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (22; OnPacketBase dispatch byte; jms personal-shop refresh = 22, gms = 25)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso (this[500]=m_nMoney; CEntrustedShopDlg::OnRefresh @0x54adb9)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (this[3].m_rcInvalidated.bottom; CPersonalShopDlg::OnRefresh sub_761DBA @0x761dba)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset @0x50f611)"
+        }
+      ]
     }
   }
 }

@@ -13,7 +13,7 @@ import (
 const CharacterInteractionWriter = "CharacterInteraction"
 
 // InteractionInvite - invite to a mini room
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Invite  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Invite
 type InteractionInvite struct {
 	mode     byte
 	roomType byte
@@ -51,7 +51,7 @@ func (m *InteractionInvite) Decode(_ logrus.FieldLogger, _ context.Context) func
 }
 
 // InteractionInviteResult - invite result
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#InviteResult  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#InviteResult
 type InteractionInviteResult struct {
 	mode    byte
 	result  byte
@@ -86,7 +86,7 @@ func (m *InteractionInviteResult) Decode(_ logrus.FieldLogger, _ context.Context
 }
 
 // InteractionEnter - visitor entering a room
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Enter  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Enter
 type InteractionEnter struct {
 	mode    byte
 	visitor interaction.Visitor
@@ -117,7 +117,7 @@ func (m *InteractionEnter) Decode(l logrus.FieldLogger, ctx context.Context) fun
 }
 
 // InteractionEnterResultSuccess - successful room entry
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess
 type InteractionEnterResultSuccess struct {
 	mode byte
 	room interaction.Room
@@ -148,7 +148,7 @@ func (m *InteractionEnterResultSuccess) Decode(l logrus.FieldLogger, ctx context
 }
 
 // InteractionChat - chat message in a mini room
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Chat  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Chat
 type InteractionChat struct {
 	mode     byte
 	chatType byte
@@ -186,7 +186,7 @@ func (m *InteractionChat) Decode(_ logrus.FieldLogger, _ context.Context) func(r
 }
 
 // InteractionEnterResultError - failed room entry
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultError  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#EnterResultError
 type InteractionEnterResultError struct {
 	mode      byte
 	errorCode byte
@@ -220,7 +220,7 @@ func (m *InteractionEnterResultError) Decode(_ logrus.FieldLogger, _ context.Con
 }
 
 // InteractionLeave - visitor leaving a room
-// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Leave  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#Leave
 type InteractionLeave struct {
 	mode   byte
 	slot   byte

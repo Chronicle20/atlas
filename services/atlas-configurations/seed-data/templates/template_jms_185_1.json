@@ -2128,7 +2128,7 @@
             "ENTER": 4,
             "ENTER_RESULT": 5,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
+            "UPDATE_MERCHANT": 22
           }
         }
       },

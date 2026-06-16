@@ -44,5 +44,21 @@ dispatchers:
   # emitted by Atlas. v95 decompile cross-checked 2026-06: OnEnter 0x7f5d30,
   # OnSelfEnterResult 0x7f5e00, OnLeave 0x7f5e20, OnInvite 0x7f2cb0,
   # OnInviteResult 0x7f5030, OnBlocked 0x7f51a0, OnChat 0x7f52d0, OnAvatar 0x7f2ea0.
-  - CMiniRoomBaseDlg::OnPacketBase # mini-room/player-interaction; v95 0x639e10 switch(Decode1) (PLAYER_INTERACTION)
+  # CMiniRoomBaseDlg::OnPacketBase — GRADUATED (task-096): all 6 Atlas-supported
+  # mode arms of PLAYER_INTERACTION have decompile-verified per-mode body codecs in
+  # interaction/clientbound (each writes the leading mode byte THEN the full arm
+  # body, not mode-byte-only), each with a packet-audit:verify byte-fixture + fresh
+  # pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic
+  # #-suffix FNames in the per-version exports): InteractionInvite (INVITE=2),
+  # InteractionInviteResult (INVITE_RESULT=3), InteractionEnter (ENTER=4),
+  # InteractionEnterResultSuccess/Error (ENTER_RESULT=5), InteractionLeave
+  # (LEAVE=10), InteractionUpdateMerchant (UPDATE_MERCHANT). Base modes 2/3/4/5/10
+  # are version-stable (dispatcher v83 0x65df4c, v95 0x639e10, jms 0x6da198).
+  # UPDATE_MERCHANT is subclass-routed (OnPacketBase default -> CPersonalShopDlg::
+  # OnPacket -> OnRefresh vtable[28], CEntrustedShopDlg::OnRefresh prefixes Decode4
+  # meso then chains the personal-shop count+item loop): mode 25 in gms (v83
+  # 0x6fc42d / v95 0x69c820 switch case 25; v95 leaf 0x51cc30; v87 chain
+  # 0x53b2fc->0x740179), but 22 in jms (sub_761650 case 22 -> sub_54adb9 ->
+  # sub_761dba) because jms shifts personal-shop sub-modes down by 3. Modes
+  # 6/8/9 (Chat/ChatThing/Avatar) are not emitted by Atlas as PLAYER_INTERACTION.
   - CTrunkDlg::OnPacket           # storage; v95 0x76a990 switch(Decode1) mode (STORAGE)

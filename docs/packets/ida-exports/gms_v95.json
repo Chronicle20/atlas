@@ -1771,32 +1771,26 @@
         }
       ]
     },
-    "CPersonalShopDlg::OnRefresh#UpdateMerchant": {
+    "CEntrustedShopDlg::OnRefresh#UpdateMerchant": {
       "address": "0x51cc30",
       "direction": "clientbound",
-      "dispatch": [
-        {
-          "case": 0,
-          "guard": "v6"
-        }
-      ],
-      "notes": "inferred-high-confidence (1.00) @0x51cc30",
+      "notes": "mode-25 (UPDATE_MERCHANT) leaf: OnPacketBase default case virtual-dispatches into CEntrustedShopDlg::OnRefresh @0x51cc30 (reads Decode4 meso then chains CPersonalShopDlg::OnRefresh count+item loop)",
       "calls": [
         {
           "op": "Decode1",
-          "comment": "mode (25; dispatch byte)"
+          "comment": "mode (25; OnPacketBase dispatch byte)"
         },
         {
           "op": "Decode4",
-          "comment": "meso (m_nMoney; CEntrustedShopDlg::OnRefresh prefix)"
+          "comment": "meso (this->m_nMoney; CEntrustedShopDlg::OnRefresh @0x51cc30)"
         },
         {
           "op": "Decode1",
-          "comment": "count (m_nItem)"
+          "comment": "count (this[110]; CPersonalShopDlg::OnRefresh @0x698050)"
         },
         {
           "op": "DecodeBuffer",
-          "comment": "items (count x: perBundle short, quantity short, price int, GW_ItemSlotBase substruct)"
+          "comment": "items (count x: Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase::Decode asset)"
         }
       ]
     },

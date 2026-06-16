@@ -254,8 +254,12 @@ func (m *InteractionLeave) Decode(_ logrus.FieldLogger, _ context.Context) func(
 	}
 }
 
-// InteractionUpdateMerchant - refresh shop listings for viewers
-// packet-audit:fname CPersonalShopDlg::OnRefresh#UpdateMerchant
+// InteractionUpdateMerchant - refresh shop listings for viewers (hired merchant).
+// Wire shape: mode(25) + Decode4 meso + Decode1 count + count x {short perBundle,
+// short quantity, int price, GW_ItemSlotBase asset}. The OnPacketBase default case
+// virtual-dispatches into CEntrustedShopDlg::OnRefresh (v95 0x51cc30), which reads
+// the meso (m_nMoney) then chains CPersonalShopDlg::OnRefresh for the item loop.
+// packet-audit:fname CEntrustedShopDlg::OnRefresh#UpdateMerchant
 type InteractionUpdateMerchant struct {
 	mode  byte
 	meso  uint32

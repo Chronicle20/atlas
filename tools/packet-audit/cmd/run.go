@@ -1664,7 +1664,14 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
-	case "CPersonalShopDlg::OnRefresh#UpdateMerchant":
+	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
+		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
+		// dispatcher's default case virtual-dispatches into the concrete dialog;
+		// for the hired merchant that is CEntrustedShopDlg::OnRefresh, which reads
+		// Decode4(meso=m_nMoney) then chains into CPersonalShopDlg::OnRefresh
+		// (count byte + per-item perBundle/quantity/price/asset). v95 0x51cc30,
+		// v83 0x518852, v84 0x5218ca, v87 0x53b2fc — all IDA-verified to read the
+		// meso prefix before the personal-shop item loop.
 		return []candidate{{name: "InteractionUpdateMerchant", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	// --- cash sub-domain (task-067, Phase 1d) ---
 	// Clientbound: QueryResult routes through CCashShop::OnQueryCashResult (opcode 0x17F),

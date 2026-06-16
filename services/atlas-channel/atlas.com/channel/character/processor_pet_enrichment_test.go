@@ -75,6 +75,16 @@ func TestPetAssetEnrichmentDecorator_PreservesEquipmentLook(t *testing.T) {
 
 	got := p.PetAssetEnrichmentDecorator(m)
 
+	// Pets must be set on the model: CharacterInfoBody writes the info-window
+	// pet block from c.Pets(), so this is the data the character-info handler
+	// depends on.
+	if len(got.Pets()) != 1 {
+		t.Fatalf("pets on model = %d, want 1", len(got.Pets()))
+	}
+	if got.Pets()[0].Name() != "Pet" {
+		t.Errorf("model pet name = %q, want %q", got.Pets()[0].Name(), "Pet")
+	}
+
 	// The worn hat must still be in the look after enrichment.
 	hat, ok := got.Equipment().Get("hat")
 	if !ok || hat.Equipable == nil {

@@ -2753,7 +2753,46 @@
       },
       {
         "opCode": "0x15C",
-        "writer": "MtsOperation"
+        "writer": "MtsOperation",
+        "options": {
+          "operations": {
+            "GET_ITC_LIST_DONE": 21,
+            "GET_ITC_LIST_FAILED": 22,
+            "GET_SEARCH_ITC_LIST_DONE": 23,
+            "GET_SEARCH_ITC_LIST_FAILED": 24,
+            "REGISTER_SALE_ENTRY_DONE": 29,
+            "REGISTER_SALE_ENTRY_FAILED": 30,
+            "SALE_CURRENT_ITEM_TO_WISH_DONE": 31,
+            "SALE_CURRENT_ITEM_TO_WISH_FAILED": 32,
+            "GET_USER_PURCHASE_ITEM_DONE": 33,
+            "GET_USER_PURCHASE_ITEM_FAILED": 34,
+            "GET_USER_SALE_ITEM_DONE": 35,
+            "GET_USER_SALE_ITEM_FAILED": 36,
+            "CANCEL_SALE_ITEM_DONE": 37,
+            "CANCEL_SALE_ITEM_FAILED": 38,
+            "MOVE_ITC_PURCHASE_ITEM_LTOS_DONE": 39,
+            "MOVE_ITC_PURCHASE_ITEM_LTOS_FAILED": 40,
+            "SET_ZZIM_DONE": 41,
+            "SET_ZZIM_FAILED": 42,
+            "DELETE_ZZIM_DONE": 43,
+            "DELETE_ZZIM_FAILED": 44,
+            "LOAD_WISH_SALE_LIST_DONE": 45,
+            "LOAD_WISH_SALE_LIST_FAILED": 46,
+            "BUY_WISH_DONE": 47,
+            "BUY_WISH_FAILED": 48,
+            "CANCEL_WISH_DONE": 49,
+            "CANCEL_WISH_FAILED": 50,
+            "BUY_ITEM_DONE": 51,
+            "BUY_ITEM_FAILED": 52,
+            "BUY_ZZIM_ITEM_DONE": 53,
+            "BUY_ZZIM_ITEM_FAILED": 54,
+            "REGISTER_WISH_ITEM_DONE": 55,
+            "REGISTER_WISH_ITEM_FAILED": 56,
+            "BID_AUCTION_FAILED": 60,
+            "NOTIFY_CANCEL_WISH_RESULT": 61,
+            "SUCCESS_BID_INFO_RESULT": 62
+          }
+        }
       },
       {
         "opCode": "0x94",

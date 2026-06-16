@@ -449,7 +449,7 @@ Tool: `d215b0090ace182433084f17aea411490ffe7e8b`
 | IDA_0X15A | CITC::OnChargeParamResult |  | 0x15A | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x19B | ✅ |  | ⬜ |
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
-| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsOperation (T1) | 0x15C | 🧩 | 0x15C | 🧩 | 0x171 | 🧩 | 0x19C | 🧩 |  | ⬜ |
+| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsOperation (T1) | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x19C | ✅ |  | ⬜ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x19D | ❌ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
@@ -905,10 +905,10 @@ Tool: `d215b0090ace182433084f17aea411490ffe7e8b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 330 | 1 | 0 | 344 | 200 | 0 | 48.9% |
-| v84 | 285 | 1 | 0 | 368 | 221 | 0 | 43.6% |
-| v87 | 346 | 1 | 0 | 365 | 163 | 0 | 48.6% |
-| v95 | 387 | 1 | 1 | 407 | 79 | 0 | 48.6% |
+| v83 | 331 | 0 | 0 | 344 | 200 | 0 | 49.0% |
+| v84 | 286 | 0 | 0 | 368 | 221 | 0 | 43.7% |
+| v87 | 347 | 0 | 0 | 365 | 163 | 0 | 48.7% |
+| v95 | 388 | 0 | 1 | 407 | 79 | 0 | 48.7% |
 | JMS185 | 326 | 0 | 0 | 380 | 169 | 0 | 46.2% |
 
 ## Conflicts

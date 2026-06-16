@@ -18,13 +18,16 @@ fname `CShopDlg::OnPacket` → corrected to its real leaf handler
 `CShopDlg::SetShopDlg`); it is the shop-open packet, not a mode dispatcher, and
 now grades ✅ via its own `NpcShopList` body.
 
-**Remaining exception — MTS_OPERATION (`CITC::OnNormalItemResult`)**: stays 🧩.
-It IS a mode dispatcher (its modes shift per version like cash), but Atlas
-**registers the writer and never emits it** — `MtsOperationBody` has no caller and
-the codec takes the mode byte directly (no `operations` table). So there is no
-emitted mode set to enumerate/verify; MTS is effectively unimplemented. If Atlas
-ever implements MTS sending, it must resolve the mode per version (ideally via the
-`operations` table) and gets a dispatcher YAML then.
+**MTS_OPERATION (`CITC::OnNormalItemResult`) — now ✅ (stubbed config-driven).**
+Atlas registers the MtsOperation writer but has no MTS feature emitting it yet.
+It previously took a raw mode byte (not table-driven), so it was the one
+inconsistent dispatcher. Fixed: `MtsOperationBody` now resolves the mode from the
+`operations` table via `WithResolvedCode` (like every sibling), backed by
+`mts_operation.yaml` (the 35 CITC result modes — version-STABLE across
+v83/v84/v87/v95, IDA-verified; jms has no MTS_OPERATION op → ⬜). So the codec is
+a proper, version-correct stub ready for a future MTS feature, and the cell is ✅
+on every GMS version. The remaining work is the MTS *feature* itself (a send
+path), which is out of this packet-correctness scope.
 
 ---
 

@@ -74,10 +74,22 @@ func createPetName(provided string) string {
 	return "Pet"
 }
 
+// createPetLevel defaults a pet's level for creation. The generic inventory/award
+// path POSTs a bare pet (level 0), which fails the model's "level must be between
+// 1 and 30" check; a new pet starts at level 1 (mirroring the processor's
+// new-pet defaults). A valid level (1-30) is preserved.
+func createPetLevel(provided byte) byte {
+	if provided < 1 || provided > 30 {
+		return 1
+	}
+	return provided
+}
+
 func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 		i.Name = createPetName(i.Name)
+		i.Level = createPetLevel(i.Level)
 		ip, err := model.Map(Extract)(model.FixedProvider(i))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model from input.")

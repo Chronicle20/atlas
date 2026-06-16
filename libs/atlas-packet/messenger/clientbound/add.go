@@ -11,7 +11,7 @@ import (
 )
 
 // Add - mode, position, avatar, name, channelId
-// packet-audit:fname CUIMessenger::OnPacket#Add  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CUIMessenger::OnPacket#Add
 type Add struct {
 	mode      byte
 	position  byte

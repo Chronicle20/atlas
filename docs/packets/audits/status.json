@@ -1,5 +1,5 @@
 {
-  "toolSha": "2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9",
+  "toolSha": "209e0bc9c6f2381c89cc5418872713c2da575359",
   "exportHashes": {
     "gms_v83": "fef3c4e302140d5ae30c6a44dbaaf58f89e5ed5035757ae4a3d9328848785c19",
     "gms_v84": "e3d4ea92c4b27f9aba424b92843eee4df6c5a1247c16b13ffb9b2e46514c86d5",
@@ -24282,28 +24282,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 313
         },
         "gms_v84": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 320
         },
         "gms_v87": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 330
         },
         "gms_v95": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 372
         },
         "jms_v185": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 338
         }
       }

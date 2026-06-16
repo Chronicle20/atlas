@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// packet-audit:fname CUIMessenger::OnPacket#Chat  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CUIMessenger::OnPacket#Chat
 type Chat struct {
 	mode    byte
 	message string

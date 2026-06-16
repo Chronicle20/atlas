@@ -22,6 +22,13 @@ dispatchers:
   - CCashShop::OnCashItemResult   # cash-shop result; v95 0x499370 switch(Decode1) -> 57 arms (CASHSHOP_OPERATION)
   - CITC::OnNormalItemResult      # ITC/MTS result; v95 0x5771d0 switch(Decode1) -> 35 arms (MTS_OPERATION)
   - CShopDlg::OnPacket            # NPC shop; v95 0x6eb7d0 switch(Decode1) mode (OPEN_NPC_SHOP, CONFIRM_SHOP_TRANSACTION)
-  - CUIMessenger::OnPacket        # messenger; v95 0x7f5e40 switch(Decode1) -> 9 arms (MESSENGER clientbound)
+  # CUIMessenger::OnPacket — GRADUATED (task-096): all 8 supported mode arms
+  # (Add/Join/Remove/RequestInvite/InviteSent/InviteDeclined/Chat/Update) have
+  # decompile-verified body codecs in messenger/clientbound (per-mode bodies, not
+  # mode-byte-only), each with a packet-audit:verify byte-fixture + fresh pinned
+  # evidence across gms_v83/v84/v87/v95/jms_v185. Mode 8 (OnMigrated) is not
+  # emitted by Atlas. v95 decompile cross-checked 2026-06: OnEnter 0x7f5d30,
+  # OnSelfEnterResult 0x7f5e00, OnLeave 0x7f5e20, OnInvite 0x7f2cb0,
+  # OnInviteResult 0x7f5030, OnBlocked 0x7f51a0, OnChat 0x7f52d0, OnAvatar 0x7f2ea0.
   - CMiniRoomBaseDlg::OnPacketBase # mini-room/player-interaction; v95 0x639e10 switch(Decode1) (PLAYER_INTERACTION)
   - CTrunkDlg::OnPacket           # storage; v95 0x76a990 switch(Decode1) mode (STORAGE)

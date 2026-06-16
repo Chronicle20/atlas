@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// packet-audit:fname CUIMessenger::OnPacket#Remove  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CUIMessenger::OnPacket#Remove
 type Remove struct {
 	mode     byte
 	position byte

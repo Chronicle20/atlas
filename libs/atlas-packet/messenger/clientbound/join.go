@@ -11,7 +11,7 @@ import (
 
 const MessengerOperationWriter = "MessengerOperation"
 
-// packet-audit:fname CUIMessenger::OnPacket#Join  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CUIMessenger::OnPacket#Join
 type Join struct {
 	mode     byte
 	position byte

@@ -22,7 +22,7 @@ import (
 // mode-byte-only MtsOperation false-pass for the arms whose body shape is
 // scalar and fully decompile-cited below. The heavier list arms
 // (Get*ListDone / Get*ItemDone / LoadWishSaleListDone) embed the ITCITEM /
-// GW_ItemSlotBase item blob and are not yet modeled here.
+// GW_ItemSlotBase item blob and are modeled in mts_operation_list.go (MtsItem).
 
 // MtsResultEmpty — arms whose CITC sub-handler reads NOTHING from the packet
 // beyond the mode byte already consumed by the dispatcher (it only shows a

@@ -3143,7 +3143,6 @@
   fname: CField::SendLocationWhisper
   fname_alts:
   - CField::SendChatMsgWhisper
-  - CField::OnWhisper
   provenance: ida-discovered
   ida:
     address: 5487388

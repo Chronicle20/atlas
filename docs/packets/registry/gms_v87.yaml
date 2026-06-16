@@ -2577,7 +2577,6 @@
   fname: CField::SendLocationWhisper
   fname_alts:
     - CField::SendChatMsgWhisper
-    - CField::OnWhisper
   provenance: csv-import
 - op: SPOUSE_CHAT
   direction: serverbound

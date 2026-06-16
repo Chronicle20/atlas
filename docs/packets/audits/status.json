@@ -1,5 +1,5 @@
 {
-  "toolSha": "d215b0090ace182433084f17aea411490ffe7e8b",
+  "toolSha": "2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9",
   "exportHashes": {
     "gms_v83": "fef3c4e302140d5ae30c6a44dbaaf58f89e5ed5035757ae4a3d9328848785c19",
     "gms_v84": "e3d4ea92c4b27f9aba424b92843eee4df6c5a1247c16b13ffb9b2e46514c86d5",
@@ -9443,7 +9443,6 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CField::OnWhisper",
         "CField::SendChatMsgWhisper",
         "CField::SendLocationWhisper"
       ],

@@ -34,9 +34,14 @@ type operationsOpts struct {
 }
 
 type dispatcherDoc struct {
-	Writer     string `yaml:"writer"`
-	FName      string `yaml:"fname"`
-	Op         string `yaml:"op"`
+	Writer string `yaml:"writer"`
+	FName  string `yaml:"fname"`
+	Op     string `yaml:"op"`
+	// Opcodes optionally supplies the per-version writer opCode (e.g. "0x14B").
+	// When a template LACKS this writer entirely but the YAML provides the
+	// version's opcode, `operations` generate ADDS the writer entry (opCode +
+	// writer + operations); `--check` flags its absence as missing.
+	Opcodes    map[string]string `yaml:"opcodes"`
 	Operations []struct {
 		Key   string         `yaml:"key"`
 		Modes map[string]int `yaml:"modes"`
@@ -83,8 +88,20 @@ func operationsRun(o operationsOpts, stdout, stderr io.Writer) int {
 			expected := expectedTable(doc, vk)
 			w := findWriterNode(writers, doc.Writer)
 			if w == nil {
-				if len(expected) > 0 {
-					absent = append(absent, fmt.Sprintf("%s: writer %q not in template (cannot populate %d ops)", vk, doc.Writer, len(expected)))
+				if len(expected) == 0 {
+					continue
+				}
+				oc, hasOC := doc.Opcodes[vk]
+				if !hasOC {
+					absent = append(absent, fmt.Sprintf("%s: writer %q not in template (cannot populate %d ops; add an opcodes entry to the YAML to wire it)", vk, doc.Writer, len(expected)))
+					continue
+				}
+				if o.Check {
+					missing = append(missing, fmt.Sprintf("%s %s: writer entry absent (should be wired at %s)", vk, doc.Writer, oc))
+					continue
+				}
+				if addWriter(root, doc, oc, expected) {
+					changed = true
 				}
 				continue
 			}
@@ -351,6 +368,58 @@ func findWriterNode(writers []*node, name string) *node {
 	return nil
 }
 
+// writersArrayNode returns the socket.writers array node (for appending).
+func writersArrayNode(root *node) *node {
+	if root.kind != 'o' {
+		return nil
+	}
+	socket := root.obj["socket"]
+	if socket == nil || socket.kind != 'o' {
+		return nil
+	}
+	w := socket.obj["writers"]
+	if w == nil || w.kind != 'a' {
+		return nil
+	}
+	return w
+}
+
+// buildOperationsNode builds a fresh, dirty operations object node in YAML order.
+func buildOperationsNode(doc dispatcherDoc, expected map[string]int) *node {
+	ops := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
+	for _, op := range doc.Operations {
+		v, ok := expected[op.Key]
+		if !ok {
+			continue
+		}
+		ops.keys = append(ops.keys, op.Key)
+		ops.obj[op.Key] = &node{kind: 's', raw: json.RawMessage(strconv.Itoa(v))}
+	}
+	return ops
+}
+
+// addWriter appends a new writer entry {opCode, writer, options:{operations}} to
+// socket.writers. Returns true on success.
+func addWriter(root *node, doc dispatcherDoc, opcode string, expected map[string]int) bool {
+	arr := writersArrayNode(root)
+	if arr == nil {
+		return false
+	}
+	ocBytes, _ := json.Marshal(opcode)
+	wnBytes, _ := json.Marshal(doc.Writer)
+	opts := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
+	opts.keys = []string{"operations"}
+	opts.obj["operations"] = buildOperationsNode(doc, expected)
+	w := &node{kind: 'o', dirty: true, obj: map[string]*node{
+		"opCode":  {kind: 's', raw: ocBytes},
+		"writer":  {kind: 's', raw: wnBytes},
+		"options": opts,
+	}, keys: []string{"opCode", "writer", "options"}}
+	arr.arr = append(arr.arr, w)
+	arr.dirty = true
+	return true
+}
+
 func operationsOf(w *node) map[string]int {
 	out := map[string]int{}
 	opts := w.obj["options"]
@@ -393,19 +462,10 @@ func setOperations(w *node, doc dispatcherDoc, expected map[string]int) bool {
 		w.keys = append(w.keys, "options")
 		w.obj["options"] = opts
 	}
-	ops := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
-	for _, op := range doc.Operations {
-		v, ok := expected[op.Key]
-		if !ok {
-			continue
-		}
-		ops.keys = append(ops.keys, op.Key)
-		ops.obj[op.Key] = &node{kind: 's', raw: json.RawMessage(strconv.Itoa(v))}
-	}
 	if _, ok := opts.obj["operations"]; !ok {
 		opts.keys = append(opts.keys, "operations")
 	}
-	opts.obj["operations"] = ops
+	opts.obj["operations"] = buildOperationsNode(doc, expected)
 	return !bytes.Equal(before, nodeBytes(w))
 }
 

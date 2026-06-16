@@ -75,6 +75,45 @@ func TestSetOperationsInjectsInYAMLOrder(t *testing.T) {
 	}
 }
 
+func TestAddWriterAppendsEntry(t *testing.T) {
+	src := []byte(`{
+  "socket": {
+    "writers": [
+      {
+        "opCode": "0x01",
+        "writer": "Existing"
+      }
+    ]
+  }
+}
+`)
+	n, _ := parseNode(src)
+	doc := dispatcherDoc{Writer: "NewOp", Operations: []struct {
+		Key   string         `yaml:"key"`
+		Modes map[string]int `yaml:"modes"`
+	}{
+		{Key: "A", Modes: map[string]int{"gms_v87": 2}},
+	}}
+	if !addWriter(n, doc, "0x14B", expectedTable(doc, "gms_v87")) {
+		t.Fatal("addWriter failed")
+	}
+	w := findWriterNode(writersOf(n), "NewOp")
+	if w == nil {
+		t.Fatal("new writer not found after add")
+	}
+	if got := operationsOf(w); got["A"] != 2 {
+		t.Errorf("new writer operations wrong: %v", got)
+	}
+	out, _ := encodeNode(n)
+	if !bytes.Contains(out, []byte(`"0x14B"`)) || !bytes.Contains(out, []byte(`"NewOp"`)) {
+		t.Errorf("encoded output missing new writer:\n%s", out)
+	}
+	// Existing writer preserved verbatim.
+	if !bytes.Contains(out, []byte(`"writer": "Existing"`)) {
+		t.Errorf("existing writer lost:\n%s", out)
+	}
+}
+
 func TestExpectedTableOmitsAbsentVersion(t *testing.T) {
 	doc := dispatcherDoc{Operations: []struct {
 		Key   string         `yaml:"key"`

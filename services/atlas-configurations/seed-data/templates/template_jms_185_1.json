@@ -2112,6 +2112,37 @@
       {
         "opCode": "0xB9",
         "writer": "SummonSkill"
+      },
+      {
+        "opCode": "0x153",
+        "writer": "CharacterInteraction",
+        "options": {
+          "operations": {
+            "INVITE": 2,
+            "INVITE_RESULT": 3,
+            "ENTER": 4,
+            "ENTER_RESULT": 5,
+            "LEAVE": 10,
+            "UPDATE_MERCHANT": 25
+          }
+        }
+      },
+      {
+        "opCode": "0x14E",
+        "writer": "StorageOperation",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSETS": 8,
+            "INVENTORY_FULL": 9,
+            "NOT_ENOUGH_MESOS": 10,
+            "ONE_OF_A_KIND": 11,
+            "STORE_ASSETS": 12,
+            "NOT_ENOUGH_MESOS_2": 15,
+            "UNKNOWN": 16,
+            "UPDATE_MESO": 18,
+            "SHOW": 21
+          }
+        }
       }
     ]
   },

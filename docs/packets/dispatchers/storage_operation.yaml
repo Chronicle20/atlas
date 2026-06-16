@@ -16,18 +16,24 @@
 # jms_185: the StorageOperation writer is absent from that template (Atlas does
 # not wire storage on jms) — no jms column.
 
+# jms_185: the StorageOperation writer was absent from that template; STORAGE
+# clientbound IS in the jms registry (0x14E). jms's CTrunkDlg::OnPacket (0x84e5a1)
+# is shifted -1 vs GMS (RETRIEVE=8, STORE=12, UPDATE_MESO=18, SHOW=21) and has NO
+# Decode1+DecodeStr arm, so ERROR_MESSAGE is version-absent there (omitted).
+# `opcodes` wires the missing jms writer at the registry opcode.
 writer: StorageOperation
 fname: CTrunkDlg::OnPacket
 op: STORAGE
 direction: clientbound
+opcodes: { jms_v185: "0x14E" }
 operations:
-  - { key: RETRIEVE_ASSETS,    modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9  } }
-  - { key: INVENTORY_FULL,     modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10 } }
-  - { key: NOT_ENOUGH_MESOS,   modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11 } }
-  - { key: ONE_OF_A_KIND,      modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12 } }
-  - { key: STORE_ASSETS,       modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13 } }
-  - { key: NOT_ENOUGH_MESOS_2, modes: { gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16 } }
-  - { key: UNKNOWN,            modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17 } }
-  - { key: UPDATE_MESO,        modes: { gms_v83: 19, gms_v84: 19, gms_v87: 19, gms_v95: 19 } }
-  - { key: SHOW,               modes: { gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22 } }
+  - { key: RETRIEVE_ASSETS,    modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 8  } }
+  - { key: INVENTORY_FULL,     modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 9  } }
+  - { key: NOT_ENOUGH_MESOS,   modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 10 } }
+  - { key: ONE_OF_A_KIND,      modes: { gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v95: 12, jms_v185: 11 } }
+  - { key: STORE_ASSETS,       modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 12 } }
+  - { key: NOT_ENOUGH_MESOS_2, modes: { gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 15 } }
+  - { key: UNKNOWN,            modes: { gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 16 } }
+  - { key: UPDATE_MESO,        modes: { gms_v83: 19, gms_v84: 19, gms_v87: 19, gms_v95: 19, jms_v185: 18 } }
+  - { key: SHOW,               modes: { gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22, jms_v185: 21 } }
   - { key: ERROR_MESSAGE,      modes: { gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v95: 24 } }

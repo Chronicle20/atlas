@@ -197,57 +197,62 @@ type node struct {
 }
 
 func parseNode(b []byte) (*node, error) {
-	dec := json.NewDecoder(bytes.NewReader(b))
-	dec.UseNumber()
-	return readNode(dec)
+	return readNode(json.RawMessage(b))
 }
 
-func readNode(dec *json.Decoder) (*node, error) {
-	t, err := dec.Token()
-	if err != nil {
-		return nil, err
+// readNode parses one JSON value, preserving object key order AND scalar bytes
+// verbatim (so \uXXXX escapes, number formatting, etc. survive a round-trip
+// untouched — only the operations maps we set are re-emitted).
+func readNode(raw json.RawMessage) (*node, error) {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("empty JSON value")
 	}
-	switch d := t.(type) {
-	case json.Delim:
-		if d == '{' {
-			n := &node{kind: 'o', obj: map[string]*node{}}
-			for dec.More() {
-				kt, err := dec.Token()
-				if err != nil {
-					return nil, err
-				}
-				key := kt.(string)
-				child, err := readNode(dec)
-				if err != nil {
-					return nil, err
-				}
-				n.keys = append(n.keys, key)
-				n.obj[key] = child
-			}
-			if _, err := dec.Token(); err != nil { // closing }
+	switch trimmed[0] {
+	case '{':
+		n := &node{kind: 'o', obj: map[string]*node{}}
+		dec := json.NewDecoder(bytes.NewReader(trimmed))
+		if _, err := dec.Token(); err != nil { // opening {
+			return nil, err
+		}
+		for dec.More() {
+			kt, err := dec.Token()
+			if err != nil {
 				return nil, err
 			}
-			return n, nil
+			key := kt.(string)
+			var cv json.RawMessage
+			if err := dec.Decode(&cv); err != nil {
+				return nil, err
+			}
+			child, err := readNode(cv)
+			if err != nil {
+				return nil, err
+			}
+			n.keys = append(n.keys, key)
+			n.obj[key] = child
 		}
-		// array
+		return n, nil
+	case '[':
 		n := &node{kind: 'a'}
+		dec := json.NewDecoder(bytes.NewReader(trimmed))
+		if _, err := dec.Token(); err != nil { // opening [
+			return nil, err
+		}
 		for dec.More() {
-			child, err := readNode(dec)
+			var cv json.RawMessage
+			if err := dec.Decode(&cv); err != nil {
+				return nil, err
+			}
+			child, err := readNode(cv)
 			if err != nil {
 				return nil, err
 			}
 			n.arr = append(n.arr, child)
 		}
-		if _, err := dec.Token(); err != nil { // closing ]
-			return nil, err
-		}
 		return n, nil
 	default:
-		rb, err := json.Marshal(t)
-		if err != nil {
-			return nil, err
-		}
-		return &node{kind: 's', raw: rb}, nil
+		return &node{kind: 's', raw: append(json.RawMessage{}, trimmed...)}, nil
 	}
 }
 

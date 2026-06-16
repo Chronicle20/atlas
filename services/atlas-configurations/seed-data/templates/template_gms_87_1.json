@@ -1786,7 +1786,24 @@
       },
       {
         "opCode": "0x143",
-        "writer": "NPCShopOperation"
+        "writer": "NPCShopOperation",
+        "options": {
+          "operations": {
+            "OK": 0,
+            "OUT_OF_STOCK": 1,
+            "NOT_ENOUGH_MONEY": 2,
+            "INVENTORY_FULL": 3,
+            "OUT_OF_STOCK_2": 5,
+            "OUT_OF_STOCK_3": 9,
+            "NOT_ENOUGH_MONEY_2": 10,
+            "NEED_MORE_ITEMS": 13,
+            "OVER_LEVEL_REQUIREMENT": 14,
+            "UNDER_LEVEL_REQUIREMENT": 15,
+            "TRADE_LIMIT": 16,
+            "GENERIC_ERROR": 17,
+            "GENERIC_ERROR_WITH_REASON": 17
+          }
+        }
       },
       {
         "opCode": "0x146",

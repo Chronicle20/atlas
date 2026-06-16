@@ -1,0 +1,8 @@
+packet: cash/clientbound/CashOperationError
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#OperationError
+    address: "0x47c71a"
+    decompile_sha256: 29f7ef9e3264922002b6f8b3d078a146cde3c9950b7e29929aee22461a944d0c

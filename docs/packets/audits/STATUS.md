@@ -5,11 +5,11 @@
 
 Tool: `d42737aab5bf66f2041a51c2c86bc92e87710be6`
 
-- export gms_v83: `fef3c4e302140d5ae30c6a44dbaaf58f89e5ed5035757ae4a3d9328848785c19`
-- export gms_v84: `e3d4ea92c4b27f9aba424b92843eee4df6c5a1247c16b13ffb9b2e46514c86d5`
-- export gms_v87: `00c2c4f67270266e3a8b5f0abfdf05e6c68817b6fd88cdb7a6df7055154d88a2`
+- export gms_v83: `154f0462f042459df2f2f783ba82eeea17f28114ffb607e9cd02cf754d9d4a52`
+- export gms_v84: `87b84477759e441d991baa0ea397037883308444f9781508d06af12a2fe1b2b2`
+- export gms_v87: `af012f4b42fddfbbcd8799cef71f8fa7ee9fd7f98f69c6aa4bbc60ff471970ff`
 - export gms_v95: `7e14518f05f4ce0b949e3a8ab06d6696b6230848c070fea9d1d287ca0cfc62e6`
-- export jms_v185: `735b99a08dc616e4a706a02321ccd6ca46cbcde3c03935dca7368ac52962c051`
+- export jms_v185: `cfcc6e6d95eca6dc4271f7b4799ac0c762e8441c69dbc6f7d04546ea2bee8bad`
 
 ## Clientbound
 
@@ -428,7 +428,7 @@ Tool: `d42737aab5bf66f2041a51c2c86bc92e87710be6`
 | PARCEL | CParcelDlg::OnPacket |  | 0x142 | ❌ | 0x149 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x17F | ✅ | 0x163 | ✅ |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashShopInventory (T1) | 0x145 | 🧩 | 0x14C | 🧩 | 0x156 | 🧩 | 0x180 | 🧩 | 0x164 | 🧩 |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
@@ -905,11 +905,11 @@ Tool: `d42737aab5bf66f2041a51c2c86bc92e87710be6`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 328 | 3 | 0 | 344 | 200 | 0 | 48.6% |
-| v84 | 283 | 3 | 0 | 368 | 221 | 0 | 43.3% |
-| v87 | 344 | 4 | 0 | 364 | 163 | 0 | 48.3% |
-| v95 | 385 | 4 | 1 | 406 | 79 | 0 | 48.4% |
-| JMS185 | 323 | 2 | 0 | 381 | 169 | 0 | 45.8% |
+| v83 | 329 | 2 | 0 | 344 | 200 | 0 | 48.7% |
+| v84 | 284 | 2 | 0 | 368 | 221 | 0 | 43.4% |
+| v87 | 345 | 3 | 0 | 364 | 163 | 0 | 48.5% |
+| v95 | 386 | 3 | 1 | 406 | 79 | 0 | 48.5% |
+| JMS185 | 324 | 1 | 0 | 381 | 169 | 0 | 45.9% |
 
 ## Conflicts
 

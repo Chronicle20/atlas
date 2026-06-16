@@ -15,6 +15,10 @@ import (
 // GW_CashItemInfo (CInPacket::DecodeBuffer @0x4948d0). The wire is mode +
 // CashInventoryItem.EncodeBytes (55 bytes).
 // packet-audit:verify packet=cash/clientbound/CashCashItemMovedToCashInventory version=gms_v95 ida=0x4948d0
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToCashInventory version=gms_v83 ida=0x47b2fd
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToCashInventory version=gms_v84 ida=0x47e49b
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToCashInventory version=gms_v87 ida=0x486ad3
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToCashInventory version=jms_v185 ida=0x48ded7
 func TestCashItemMovedToCashInventoryRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -43,6 +47,10 @@ func TestCashItemMovedToCashInventoryRoundTrip(t *testing.T) {
 // opaque model.Asset (register boundary — verified via model.Asset's own
 // encoder, not byte-cited here).
 // packet-audit:verify packet=cash/clientbound/CashCashItemMovedToInventory version=gms_v95 ida=0x495050
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToInventory version=gms_v83 ida=0x47aee2
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToInventory version=gms_v84 ida=0x47e080
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToInventory version=gms_v87 ida=0x4866b4
+// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToInventory version=jms_v185 ida=0x48dab8
 func TestCashItemMovedToInventoryBytePrefix(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	// non-zero asset so the opaque payload is present; only the leading

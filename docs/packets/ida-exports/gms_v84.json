@@ -187,6 +187,38 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#CashItemMovedToCashInventory": {
+      "address": "0x47e49b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6d MOVE_S_TO_L_DONE = item moved storage->locker=cash inventory; op-byte consumed by dispatcher before OnCashItemResMoveStoLDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes); DecodeBuffer(pItem, 0x37)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashItemMovedToInventory": {
+      "address": "0x47e080",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6b MOVE_L_TO_S_DONE = item moved locker->slot=player inventory; op-byte consumed by dispatcher before OnCashItemResMoveLtoSDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS (inventory slot); Decode2"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(&pItem) = item slot payload (model.Asset)"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#CashShopInventory": {
       "address": "0x47c694",
       "direction": "",
@@ -206,6 +238,80 @@
         {
           "op": "Decode2",
           "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CashShopPurchaseSuccess": {
+      "address": "0x47ca64",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5a BUY_DONE; op-byte consumed by dispatcher before OnCashItemResBuyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "55 bytes GW_CashItemInfo (CashInventoryItem.EncodeBytes); DecodeBuffer(pItem, 0x37)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#InventoryCapacityFailed": {
+      "address": "0x47dc8c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x64 INC_SLOT_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncSlotCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#InventoryCapacitySuccess": {
+      "address": "0x47db98",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x63 INC_SLOT_COUNT_DONE; op-byte consumed by dispatcher before OnCashItemResIncSlotCountDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nTI (inventoryType); Decode1"
+        },
+        {
+          "op": "Decode2",
+          "comment": "newCount (capacity); Decode2"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#OperationError": {
+      "address": "0x47c71a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4f LOAD_LOCKER_FAILED; op-byte consumed by OnCashItemResult dispatcher before OnCashItemResLoadLockerFailed). Generic failure-family arm: NoticeFailReason(Decode1)."
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#WishList": {
+      "address": "0x47c980",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x52 LOAD_WISH_DONE; op-byte consumed by dispatcher before OnCashItemResLoadWishDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "40 bytes = 10 x int32 wishlist SNs (DecodeBuffer(this+wishbuf, 40))"
         }
       ]
     },

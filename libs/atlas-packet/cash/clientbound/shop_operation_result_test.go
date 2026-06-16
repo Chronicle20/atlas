@@ -7,9 +7,25 @@ import (
 )
 
 // packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=gms_v95 ida=0x497270
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=gms_v83 ida=0x47a9fa
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=gms_v84 ida=0x47db98
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=gms_v87 ida=0x4861b2
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=jms_v185 ida=0x48d54e
 // packet-audit:verify packet=cash/clientbound/CashOperationError version=gms_v95 ida=0x4969f0
+// packet-audit:verify packet=cash/clientbound/CashOperationError version=gms_v83 ida=0x47957c
+// packet-audit:verify packet=cash/clientbound/CashOperationError version=gms_v84 ida=0x47c71a
+// packet-audit:verify packet=cash/clientbound/CashOperationError version=gms_v87 ida=0x484ca3
+// packet-audit:verify packet=cash/clientbound/CashOperationError version=jms_v185 ida=0x48bda6
 // packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v95 ida=0x497390
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v83 ida=0x47aaee
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v84 ida=0x47dc8c
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=gms_v87 ida=0x4862ae
+// packet-audit:verify packet=cash/clientbound/CashInventoryCapacityFailed version=jms_v185 ida=0x48d642
 // packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v95 ida=0x494d60
+// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v83 ida=0x4797e2
+// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v84 ida=0x47c980
+// packet-audit:verify packet=cash/clientbound/CashWishList version=gms_v87 ida=0x484f09
+// packet-audit:verify packet=cash/clientbound/CashWishList version=jms_v185 ida=0x48c00c
 func TestOperationErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

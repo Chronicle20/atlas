@@ -61,7 +61,7 @@ func decodeCashInventoryItemSkipPadding(r *request.Reader) CashInventoryItem {
 // CashShopInventory - mode, items, storageSlots, characterSlots. The trailing
 // buyCharacterCount + characterCount shorts are v95-only (absent in v83); they
 // are not constructor params and default to 0.
-// packet-audit:fname CCashShop::OnCashItemResult#CashShopInventory  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CCashShop::OnCashItemResult#CashShopInventory
 type CashShopInventory struct {
 	mode               byte
 	items              []CashInventoryItem
@@ -134,7 +134,7 @@ func cashInventoryHasExtraCounts(t tenant.Model) bool {
 }
 
 // CashShopPurchaseSuccess - mode, item
-// packet-audit:fname CCashShop::OnCashItemResult#CashShopPurchaseSuccess  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CCashShop::OnCashItemResult#CashShopPurchaseSuccess
 type CashShopPurchaseSuccess struct {
 	mode byte
 	item CashInventoryItem

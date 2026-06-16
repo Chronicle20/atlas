@@ -11,7 +11,7 @@ import (
 )
 
 // CashItemMovedToInventory - mode, slot, asset
-// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToInventory  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToInventory
 type CashItemMovedToInventory struct {
 	mode  byte
 	slot  uint16
@@ -50,7 +50,7 @@ func (m *CashItemMovedToInventory) Decode(l logrus.FieldLogger, ctx context.Cont
 }
 
 // CashItemMovedToCashInventory - mode, item
-// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToCashInventory  (dispatcher family — see docs/packets/evidence/families.yaml)
+// packet-audit:fname CCashShop::OnCashItemResult#CashItemMovedToCashInventory
 type CashItemMovedToCashInventory struct {
 	mode byte
 	item CashInventoryItem

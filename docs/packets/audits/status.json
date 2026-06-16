@@ -1,11 +1,11 @@
 {
   "toolSha": "d42737aab5bf66f2041a51c2c86bc92e87710be6",
   "exportHashes": {
-    "gms_v83": "fef3c4e302140d5ae30c6a44dbaaf58f89e5ed5035757ae4a3d9328848785c19",
-    "gms_v84": "e3d4ea92c4b27f9aba424b92843eee4df6c5a1247c16b13ffb9b2e46514c86d5",
-    "gms_v87": "00c2c4f67270266e3a8b5f0abfdf05e6c68817b6fd88cdb7a6df7055154d88a2",
+    "gms_v83": "154f0462f042459df2f2f783ba82eeea17f28114ffb607e9cd02cf754d9d4a52",
+    "gms_v84": "87b84477759e441d991baa0ea397037883308444f9781508d06af12a2fe1b2b2",
+    "gms_v87": "af012f4b42fddfbbcd8799cef71f8fa7ee9fd7f98f69c6aa4bbc60ff471970ff",
     "gms_v95": "7e14518f05f4ce0b949e3a8ab06d6696b6230848c070fea9d1d287ca0cfc62e6",
-    "jms_v185": "735b99a08dc616e4a706a02321ccd6ca46cbcde3c03935dca7368ac52962c051"
+    "jms_v185": "cfcc6e6d95eca6dc4271f7b4799ac0c762e8441c69dbc6f7d04546ea2bee8bad"
   },
   "rows": [
     {
@@ -24671,7 +24671,7 @@
     {
       "kind": "op",
       "op": "CASHSHOP_OPERATION",
-      "packet": "cash/clientbound/CashCashShopInventory",
+      "packet": "cash/clientbound/CashCashItemMovedToCashInventory",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -24679,28 +24679,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 325
         },
         "gms_v84": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 332
         },
         "gms_v87": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 342
         },
         "gms_v95": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 384
         },
         "jms_v185": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 356
         }
       }

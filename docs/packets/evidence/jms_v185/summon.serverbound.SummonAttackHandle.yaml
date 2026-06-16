@@ -1,0 +1,10 @@
+packet: summon/serverbound/SummonAttackHandle
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CSummoned::TryDoingAttackManual
+    address: "0x824a81"
+    decompile_sha256: 2bf5ddecd9e2ce081121acf3798b9c445a04db13ab15e09ea3f2d9b581b0a6f9
+verifies:
+    - libs/atlas-packet/summon/serverbound/attack_test.go#TestSummonAttackDecodeJMS185

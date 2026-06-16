@@ -43,6 +43,7 @@ const (
 	PartySizeCondition              = "partySize"
 	PqCustomDataCondition           = "pqCustomData"
 	MonsterBookCountCondition       = "monsterBookCount"
+	PetTamenessCondition            = "petTameness"
 )
 
 // Operator constants for validation conditions

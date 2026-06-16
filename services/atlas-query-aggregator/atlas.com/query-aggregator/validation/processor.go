@@ -167,7 +167,7 @@ func requiresContextPath(t ConditionType) bool {
 	switch t {
 	case QuestStatusCondition, QuestProgressCondition,
 		UnclaimedMarriageGiftsCondition,
-		BuddyCapacityCondition, PetCountCondition,
+		BuddyCapacityCondition, PetCountCondition, PetTamenessCondition,
 		MapCapacityCondition, InventorySpaceCondition,
 		TransportAvailableCondition, SkillLevelCondition,
 		BuffCondition,
@@ -189,7 +189,7 @@ func requirementsFor(t ConditionType) ContextRequirements {
 		return ContextRequirements{Marriage: true}
 	case BuddyCapacityCondition:
 		return ContextRequirements{Buddy: true}
-	case PetCountCondition:
+	case PetCountCondition, PetTamenessCondition:
 		return ContextRequirements{Pets: true}
 	case PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
 		return ContextRequirements{Party: true}
@@ -236,6 +236,9 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		},
 		func(characterId uint32) model.Provider[int] {
 			return p.petProcessor.GetSpawnedPetCount(characterId)
+		},
+		func(characterId uint32) model.Provider[[]pet.Model] {
+			return p.petProcessor.GetPets(characterId)
 		},
 		func(characterId uint32) model.Provider[party.Model] {
 			return p.partyProcessor.GetPartyByCharacter(characterId)

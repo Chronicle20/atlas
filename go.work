@@ -75,6 +75,7 @@ use (
 	./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
 	./services/atlas-skills/atlas.com/skills
 	./services/atlas-storage/atlas.com/storage
+	./services/atlas-summons/atlas.com/summons
 	./services/atlas-tenants/atlas.com/tenants
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world

@@ -138,7 +138,12 @@ func (p *ProcessorImpl) PetAssetEnrichmentDecorator(m Model) Model {
 
 	enrichedCash := compartment.CloneModel(cashComp).SetAssets(enrichedAssets).MustBuild()
 	enrichedInventory := inventory.CloneModel(m.Inventory()).SetCash(enrichedCash).MustBuild()
-	return m.SetInventory(enrichedInventory)
+	// Use the builder's plain inventory setter, NOT Model.SetInventory: the
+	// latter rebuilds the equipment look from the equipable compartment, which
+	// InventoryDecorator has already stripped of worn (negative-slot) items.
+	// Re-running it here would wipe the look and render the avatar naked. Only
+	// the cash compartment changed, so preserve the existing equipment look.
+	return CloneModel(m).SetInventory(enrichedInventory).MustBuild()
 }
 
 func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {

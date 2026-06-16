@@ -48,6 +48,7 @@ const (
 
 	// Pet.
 	EventKindPetClosenessChanged EventKind = "pet.closeness_changed"
+	EventKindPetEvolved          EventKind = "pet.evolved"
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated       EventKind = "cashshop.wallet_updated"
@@ -119,6 +120,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ValidateCharacterState: {},
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
+	sharedsaga.EvolvePet:              {EventKindPetEvolved},
 
 	// Skills.
 	sharedsaga.CreateSkill: {EventKindSkillCreated},

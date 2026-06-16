@@ -25,6 +25,8 @@ const GuildsPage = lazy(() => import("@/pages/GuildsPage").then(m => ({ default:
 const GuildDetailPage = lazy(() => import("@/pages/GuildDetailPage").then(m => ({ default: m.GuildDetailPage })));
 const ItemsPage = lazy(() => import("@/pages/ItemsPage").then(m => ({ default: m.ItemsPage })));
 const ItemDetailPage = lazy(() => import("@/pages/ItemDetailPage").then(m => ({ default: m.ItemDetailPage })));
+const JobsPage = lazy(() => import("@/pages/JobsPage").then(m => ({ default: m.JobsPage })));
+const JobDetailPage = lazy(() => import("@/pages/JobDetailPage").then(m => ({ default: m.JobDetailPage })));
 const LoginHistoryPage = lazy(() => import("@/pages/LoginHistoryPage").then(m => ({ default: m.LoginHistoryPage })));
 const MapsPage = lazy(() => import("@/pages/MapsPage").then(m => ({ default: m.MapsPage })));
 const MapDetailPage = lazy(() => import("@/pages/MapDetailPage").then(m => ({ default: m.MapDetailPage })));
@@ -83,6 +85,8 @@ export function App() {
                     <Route path="/guilds/:id" element={<GuildDetailPage />} />
                     <Route path="/items" element={<ItemsPage />} />
                     <Route path="/items/:id" element={<ItemDetailPage />} />
+                    <Route path="/jobs" element={<JobsPage />} />
+                    <Route path="/jobs/:jobId" element={<JobDetailPage />} />
                     <Route path="/login-history" element={<LoginHistoryPage />} />
                     <Route path="/maps" element={<MapsPage />} />
                     <Route path="/maps/:id" element={<MapDetailPage />} />

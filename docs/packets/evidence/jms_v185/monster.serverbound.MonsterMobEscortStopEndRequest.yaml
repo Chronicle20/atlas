@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobEscortStopEndRequest
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::SendEscortStopEndRequest
+    address: "0x6effcd"
+    decompile_sha256: c0dcdce4bf15a3bdf42b4282dfe20b2772c228f70f6618e96ab0b6bc370c680d
+verifies:
+    - libs/atlas-packet/monster/serverbound/mob_escort_stop_end_request_test.go#TestMobEscortStopEndRequest

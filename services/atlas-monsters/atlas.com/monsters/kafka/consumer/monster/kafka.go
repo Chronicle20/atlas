@@ -21,6 +21,8 @@ const (
 	CommandTypeDestroyField      = "DESTROY_FIELD"
 	CommandTypeSpawnField        = "SPAWN_FIELD"
 	CommandTypeDrainMp           = "DRAIN_MP"
+	CommandTypeAddPuppet         = "ADD_PUPPET"
+	CommandTypeRemovePuppet      = "REMOVE_PUPPET"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -97,6 +99,31 @@ type drainMpCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	SkillId     uint32 `json:"skillId"`
 	Amount      uint32 `json:"amount"`
+}
+
+// addPuppetCommand registers a player's puppet in a field so the monster
+// controller picker can bias toward the puppet's owner. Emitted by atlas-summons
+// on puppet spawn. Type must equal CommandTypeAddPuppet.
+type addPuppetCommand struct {
+	WorldId          world.Id   `json:"worldId"`
+	ChannelId        channel.Id `json:"channelId"`
+	MapId            _map.Id    `json:"mapId"`
+	Instance         uuid.UUID  `json:"instance"`
+	Type             string     `json:"type"`
+	OwnerCharacterId uint32     `json:"ownerCharacterId"`
+	X                int16      `json:"x"`
+	Y                int16      `json:"y"`
+}
+
+// removePuppetCommand clears a previously registered puppet. Emitted by
+// atlas-summons on puppet despawn. Type must equal CommandTypeRemovePuppet.
+type removePuppetCommand struct {
+	WorldId          world.Id   `json:"worldId"`
+	ChannelId        channel.Id `json:"channelId"`
+	MapId            _map.Id    `json:"mapId"`
+	Instance         uuid.UUID  `json:"instance"`
+	Type             string     `json:"type"`
+	OwnerCharacterId uint32     `json:"ownerCharacterId"`
 }
 
 type movementCommand struct {

@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalObtainedCP
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnPersonalCP
+    address: "0x55a2a0"
+    decompile_sha256: 6ea29d6982d9683fd65007c7d11838fc7154415ce3aecff9b8f75845b0ecd5ee
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_obtained_cp_test.go#TestMonsterCarnivalObtainedCP

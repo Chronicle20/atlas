@@ -84,5 +84,5 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 
 // Extract converts a REST model to a domain model
 func Extract(rm RestModel) (Model, error) {
-	return NewModel(rm.Id, rm.Slot), nil
+	return NewModel(rm.Id, rm.TemplateId, rm.Name, rm.Level, rm.Slot), nil
 }

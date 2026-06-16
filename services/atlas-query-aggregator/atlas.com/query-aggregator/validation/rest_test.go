@@ -126,6 +126,17 @@ func TestValidateConditionInput(t *testing.T) {
 			wantError: false,
 		},
 		{
+			name:      "petTameness valid",
+			input:     ConditionInput{Type: "petTameness", Operator: ">=", Value: 1642, Values: []int{5000029}},
+			wantError: false,
+		},
+		{
+			name:          "petTameness missing pet template ids",
+			input:         ConditionInput{Type: "petTameness", Operator: ">=", Value: 1642},
+			wantError:     true,
+			errorContains: "values",
+		},
+		{
 			name:          "unknown type still rejected",
 			input:         ConditionInput{Type: "bogus", Operator: "=", Value: 1},
 			wantError:     true,

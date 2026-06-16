@@ -13,9 +13,9 @@ import (
 )
 
 // PartyRecipient is the canonical party-member descriptor produced by
-// SelectInRangePartyMembers. Embeds enough state for downstream
-// handlers (heal: HP / MaxHp; buff: just Id is enough) without forcing
-// each call site to refetch.
+// the party selectors. Embeds enough state for downstream handlers
+// (heal: HP / MaxHp; buff: just Id is enough) without forcing each call
+// site to refetch.
 type PartyRecipient struct {
 	id    uint32
 	x     int16
@@ -44,49 +44,95 @@ func (b *PartyRecipientBuilder) SetHp(v uint16) *PartyRecipientBuilder    { b.r.
 func (b *PartyRecipientBuilder) SetMaxHp(v uint16) *PartyRecipientBuilder { b.r.maxHp = v; return b }
 func (b *PartyRecipientBuilder) Build() PartyRecipient                    { return b.r }
 
-// SelectInRangePartyMembers returns party members other than the
-// caster that satisfy all of:
-//   - the bitmap bit for their party slot is set
-//   - they are on the same channel + map as the caster
-//   - they have a live session in the caster's field
-//   - their (x,y) lies inside the LT/RB rectangle around the caster
-//   - their Hp() > 0
-//
-// LT/RB are taken from e. If both LT and RB are zero-valued
-// (point.Model with X=0, Y=0), the function returns an empty slice —
-// the caster-only fallback. Callers wanting "caster + in-range party"
-// prepend the caster themselves.
-//
-// Errors loading the party return an empty slice (the cast continues
-// caster-only). Errors enumerating sessions or fetching individual
-// members are logged and the offending member is skipped.
-func SelectInRangePartyMembers(
-	l logrus.FieldLogger, ctx context.Context,
-	f field.Model, casterId uint32, casterX, casterY int16,
-	e effect.Model, memberBitmap byte,
-) []PartyRecipient {
-	if memberBitmap == 0 || memberBitmap >= 128 {
-		return nil
-	}
-	lt, rb := e.LT(), e.RB()
-	if lt.X() == 0 && lt.Y() == 0 && rb.X() == 0 && rb.Y() == 0 {
-		// Missing rectangle — caster-only fallback.
-		return nil
-	}
+// loadCasterPartyFunc is the party-load seam tests can replace.
+var loadCasterPartyFunc = func(l logrus.FieldLogger, ctx context.Context, casterId uint32) (party.Model, error) {
+	return party.NewProcessor(l, ctx).GetByMemberId(casterId)
+}
 
-	p, err := party.NewProcessor(l, ctx).GetByMemberId(casterId)
-	if err != nil {
-		return nil
-	}
-
-	// Build set of in-map session ids so we exclude offline members.
+// inMapCharacterIdsFunc is the live-session seam tests can replace. Returns
+// the set of character ids with a live session in the caster's field, used
+// to exclude members who are in the party + same map per the party service
+// but not actually present on this channel.
+var inMapCharacterIdsFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model) map[uint32]struct{} {
 	inMap := map[uint32]struct{}{}
 	_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 		inMap[s.CharacterId()] = struct{}{}
 		return nil
 	})
+	return inMap
+}
 
-	cp := character.NewProcessor(l, ctx)
+// loadPartyMemberFunc is the per-member character-load seam tests can replace.
+var loadPartyMemberFunc = func(l logrus.FieldLogger, ctx context.Context, memberId uint32) (character.Model, error) {
+	return character.NewProcessor(l, ctx).GetById()(memberId)
+}
+
+// SelectInRangePartyMembers returns party members other than the
+// caster that satisfy all of:
+//   - the bitmap bit for their party slot is set
+//   - they are on the same channel + map as the caster
+//   - they have a live session in the caster's field
+//   - their Hp() > 0
+//   - their (x,y) lies inside the LT/RB rectangle around the caster
+//
+// LT/RB are taken from e. If both LT and RB are zero-valued
+// (point.Model with X=0, Y=0), the function returns an empty slice —
+// the caster-only fallback. This is the selector for AoE party skills
+// like Heal that carry a rectangle in WZ; the missing-rectangle case is
+// an anomaly the caller (Heal) logs before falling back to caster-only.
+//
+// Errors loading the party return an empty slice (the cast continues
+// caster-only). Errors fetching individual members are logged and the
+// offending member is skipped.
+func SelectInRangePartyMembers(
+	l logrus.FieldLogger, ctx context.Context,
+	f field.Model, casterId uint32, casterX, casterY int16,
+	e effect.Model, memberBitmap byte,
+) []PartyRecipient {
+	lt, rb := e.LT(), e.RB()
+	if lt.X() == 0 && lt.Y() == 0 && rb.X() == 0 && rb.Y() == 0 {
+		// Missing rectangle — caster-only fallback.
+		return nil
+	}
+	return selectPartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap, true)
+}
+
+// SelectPartyMembersInMap returns bitmap-selected, same-map, living party
+// members other than the caster, WITHOUT any LT/RB rectangle restriction.
+//
+// Pure party buffs (Sharp Eyes, Hyper Body, Maple Warrior, Bless, Haste,
+// Meditation, Rage, ...) carry no LT/RB rectangle in their WZ effect and
+// apply to the whole map; the client-sent affected-member bitmap is the
+// authority for which members are affected. Using SelectInRangePartyMembers
+// for these would always hit the missing-rectangle caster-only fallback and
+// never buff anyone but the caster.
+func SelectPartyMembersInMap(
+	l logrus.FieldLogger, ctx context.Context,
+	f field.Model, casterId uint32, memberBitmap byte,
+) []PartyRecipient {
+	return selectPartyMembers(l, ctx, f, casterId, 0, 0, effect.Model{}, memberBitmap, false)
+}
+
+// selectPartyMembers is the shared enumeration backing both party-member
+// selectors. When requireRect is true the caster-relative LT/RB rectangle
+// from e is applied as a final filter; when false the rectangle is ignored
+// entirely (map-wide application).
+func selectPartyMembers(
+	l logrus.FieldLogger, ctx context.Context,
+	f field.Model, casterId uint32, casterX, casterY int16,
+	e effect.Model, memberBitmap byte, requireRect bool,
+) []PartyRecipient {
+	if memberBitmap == 0 || memberBitmap >= 128 {
+		return nil
+	}
+
+	p, err := loadCasterPartyFunc(l, ctx, casterId)
+	if err != nil {
+		return nil
+	}
+
+	// Set of in-map session ids so we exclude offline / not-present members.
+	inMap := inMapCharacterIdsFunc(l, ctx, f)
 
 	out := make([]PartyRecipient, 0, len(p.Members()))
 	for i, m := range p.Members() {
@@ -108,7 +154,7 @@ func SelectInRangePartyMembers(
 		if _, present := inMap[m.Id()]; !present {
 			continue
 		}
-		mc, mErr := cp.GetById()(m.Id())
+		mc, mErr := loadPartyMemberFunc(l, ctx, m.Id())
 		if mErr != nil {
 			l.WithError(mErr).Debugf("Skipping party member [%d] from skill recipients: fetch failed.", m.Id())
 			continue
@@ -116,10 +162,13 @@ func SelectInRangePartyMembers(
 		if mc.Hp() == 0 {
 			continue
 		}
-		dx := mc.X() - casterX
-		dy := mc.Y() - casterY
-		if dx < int16(lt.X()) || dx > int16(rb.X()) || dy < int16(lt.Y()) || dy > int16(rb.Y()) {
-			continue
+		if requireRect {
+			lt, rb := e.LT(), e.RB()
+			dx := mc.X() - casterX
+			dy := mc.Y() - casterY
+			if dx < int16(lt.X()) || dx > int16(rb.X()) || dy < int16(lt.Y()) || dy > int16(rb.Y()) {
+				continue
+			}
 		}
 		out = append(out, NewPartyRecipientBuilder().
 			SetId(mc.Id()).

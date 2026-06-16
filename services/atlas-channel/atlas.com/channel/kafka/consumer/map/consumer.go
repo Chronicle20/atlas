@@ -4,26 +4,28 @@ import (
 	"atlas-channel/chair"
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
-	"atlas-channel/door"
-	"atlas-channel/listener"
-	"atlas-channel/merchant"
 	"atlas-channel/character/buff"
 	cashData "atlas-channel/data/cash"
 	mapData "atlas-channel/data/map"
 	npc2 "atlas-channel/data/npc"
+	"atlas-channel/door"
 	"atlas-channel/drop"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map3 "atlas-channel/kafka/message/map"
+	"atlas-channel/listener"
 	_map "atlas-channel/map"
+	"atlas-channel/merchant"
 	"atlas-channel/monster"
 	"atlas-channel/party"
+	"atlas-channel/party/hpsync"
 	"atlas-channel/party_quest"
 	"atlas-channel/reactor"
 	"atlas-channel/saga"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	summoncmd "atlas-channel/summon"
 	"atlas-channel/transport/route"
 	"atlas-channel/weather"
 	"context"
@@ -36,23 +38,23 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
+	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
+	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
+	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
-	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
-	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
-	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
-	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
-	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
-	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
-	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
-	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
-	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
-	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -189,6 +191,28 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 		}()
 
+		// spawn the entering character's OWN spawned pets back to themselves.
+		// enterMap spawns self's pets to other players, and the loop above spawns
+		// other players' pets to self, but on a fresh field entry (login, map
+		// change, cash-shop return) nothing re-sends the owner's own pet to the
+		// owner. Without this the pet stays invisible to its owner even though it
+		// is still spawned (slot >= 0).
+		go func() {
+			cp := character.NewProcessor(l, ctx)
+			self, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to fetch self [%d] for own-pet spawn.", s.CharacterId())
+				return
+			}
+			for _, p := range self.Pets() {
+				if p.Slot() >= 0 {
+					if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+						l.WithError(err).Errorf("SpawnForSelf: unable to spawn own pet for character [%d].", s.CharacterId())
+					}
+				}
+			}
+		}()
+
 		go func() {
 			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to spawn npcs for character [%d].", s.CharacterId())
@@ -198,6 +222,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		go func() {
 			if err := monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn monsters for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := summoncmd.NewProcessor(l, ctx).ForEachInMap(f, spawnSummonForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn summons for character [%d].", s.CharacterId())
 			}
 		}()
 
@@ -238,26 +268,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		}()
 
 		go func() {
-			cp := character.NewProcessor(l, ctx)
-			cd, err := cp.GetById(cp.PartyDecorator)(s.CharacterId())
-			if err != nil || !cd.InParty() {
-				return
+			if err := hpsync.Sync(l, ctx, wp, s.Field(), s.CharacterId()); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to sync party member HP for character [%d].", s.CharacterId())
 			}
-			pmp := model.FixedProvider(cd.Party())
-			imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
-			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))
-			_ = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cd.Hp(), cd.MaxHp()).Encode))
-			_ = model.ForEachSlice(oip, func(oid uint32) error {
-				oc, oerr := cp.GetById()(oid)
-				if oerr != nil {
-					if errors.Is(oerr, requests.ErrNotFound) {
-						l.Warnf("SpawnForSelf: skipping party HP for stale character [%d].", oid)
-						return nil
-					}
-					return oerr
-				}
-				return session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(oid, oc.Hp(), oc.MaxHp()).Encode)(s)
-			}, model.ParallelExecute())
 		}()
 
 		go func() {
@@ -385,6 +398,23 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			// path (session bootstrap and warpCharacter) to guarantee packet ordering.
 			// enterMap only handles the inter-character notifications.
 			return nil
+		}
+	}
+}
+
+// spawnSummonForSession sends a SummonSpawn for an existing summon to the entering
+// session s. animated=false (the summon is already present — no spawn animation);
+// stance=0 matches a fresh cast (which also spawns at stance 0). The summon's
+// movement corrects on the next broadcast SummonMove.
+func spawnSummonForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[summoncmd.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[summoncmd.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[summoncmd.Model] {
+			return func(s session.Model) model.Operator[summoncmd.Model] {
+				return func(m summoncmd.Model) error {
+					return session.Announce(l)(ctx)(wp)(summonpkt.SummonSpawnWriter)(
+						writer.SummonSpawnBody(m.OwnerCharacterId(), m.Id(), m.SkillId(), m.SkillLevel(), m.X(), m.Y(), 0, m.MovementType(), m.IsPuppet(), false))(s)
+				}
+			}
 		}
 	}
 }

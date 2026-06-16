@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobAttackedByMob
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnMobAttackedByMob
+    address: "0x68749a"
+    decompile_sha256: 60bc61094732f472fa57ce1c3348a7c62e0caa3fa7a5aa2de1ead4dd95a6eb40
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_attacked_by_mob_test.go#TestMobAttackedByMob

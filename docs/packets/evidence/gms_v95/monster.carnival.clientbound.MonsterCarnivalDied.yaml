@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalDied
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnProcessForDeath
+    address: "0x55ab90"
+    decompile_sha256: 88070b64977c89416efe40d584ba1ab840dead033ec5d73410ad34fed98da1a4
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_died_test.go#TestMonsterCarnivalDied

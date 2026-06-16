@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobRequestEscortInfo
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMob::SendRequestEscortPath
+    address: "0x6411f0"
+    decompile_sha256: 4c731919e17a8e7942fb02420cc2d2115e831b6124cd7c56520dfaef4dbea961
+verifies:
+    - libs/atlas-packet/monster/serverbound/mob_request_escort_info_test.go#TestMobRequestEscortInfo

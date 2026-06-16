@@ -37,8 +37,9 @@ type Restorer struct {
 
 // runRestoreTables consumes the tar reader and dispatches each table entry
 // to restoreOneTable. Pulled out of Restore so the marker UPSERT can be
-// deferred until every entry succeeds.
-func runRestoreTables(ctx context.Context, db *gorm.DB, tr *tar.Reader, target uuid.UUID) error {
+// deferred until every entry succeeds. columns is the header's per-table
+// column list (the order the dump's COPY stream was produced with).
+func runRestoreTables(ctx context.Context, db *gorm.DB, tr *tar.Reader, target uuid.UUID, columns map[string][]string) error {
 	for {
 		e, err := tr.Next()
 		if err == io.EOF {
@@ -51,20 +52,30 @@ func runRestoreTables(ctx context.Context, db *gorm.DB, tr *tar.Reader, target u
 		if !contains(DumpTables, table) {
 			return fmt.Errorf("unexpected table %s", table)
 		}
-		if err := restoreOneTable(ctx, db, table, tr, target); err != nil {
+		cols := columns[table]
+		if len(cols) == 0 {
+			return fmt.Errorf("restore table %s: header has no column list (re-publish with schema %s)", table, SchemaVersion)
+		}
+		if err := restoreOneTable(ctx, db, table, cols, tr, target); err != nil {
 			return fmt.Errorf("restore table %s: %w", table, err)
 		}
 	}
 }
 
-func restoreOneTable(ctx context.Context, db *gorm.DB, table string, r io.Reader, target uuid.UUID) error {
+func restoreOneTable(ctx context.Context, db *gorm.DB, table string, cols []string, r io.Reader, target uuid.UUID) error {
+	tenantIdx := columnIndex(cols, "tenant_id")
+	if tenantIdx < 0 {
+		return fmt.Errorf("column list has no tenant_id")
+	}
 	return db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("DELETE FROM "+table+" WHERE tenant_id = ?", target.String()).Error; err != nil {
 			return err
 		}
-		rw := Rewriter{TenantColIndex: tenantColIndex(table), Target: target}
-		// Pipe rw.Stream() into COPY FROM STDIN BINARY through the raw connection.
-		return copyInBinary(ctx, tx, table, r, rw)
+		rw := Rewriter{TenantColIndex: tenantIdx, Target: target}
+		// Pipe rw.Stream() into COPY <table> (cols) FROM STDIN BINARY through
+		// the raw connection. The explicit column list maps stream fields to
+		// columns by NAME, so the target's physical column order is irrelevant.
+		return copyInBinary(ctx, tx, table, cols, r, rw)
 	})
 }
 
@@ -142,7 +153,7 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 	//    succeeds. A mid-restore failure triggers cleanupAfterFailure to
 	//    DELETE every DumpTables row for `target` so subsequent reads see
 	//    "never restored" rather than half-restored. See task-076 F5.
-	if err := runRestoreTables(ctx, r.DB, tr, target); err != nil {
+	if err := runRestoreTables(ctx, r.DB, tr, target, hdr.Columns); err != nil {
 		r.L.WithError(err).Warnf("restore: table loop failed for target=%s region=%s ver=%d.%d; cleaning partial state", target, region, major, minor)
 		cleanupAfterFailure(ctx, r.L, r.DB, target)
 		return err
@@ -168,23 +179,16 @@ func (r Restorer) Restore(ctx context.Context, region string, major, minor int, 
 	return nil
 }
 
-func tenantColIndex(table string) int {
-	switch table {
-	case "documents":
-		// (id, tenant_id, type, document_id, content, updated_at)
-		return 1
-	case "monster_search_index":
-		return 0
-	case "npc_search_index":
-		return 0
-	case "reactor_search_index":
-		return 0
-	case "map_search_index":
-		return 0
-	case "item_string_search_index":
-		return 0
+// columnIndex returns the position of name in cols, or -1. Used to locate the
+// tenant_id field in the dump's recorded column list so the Rewriter rewrites
+// the right field regardless of where tenant_id sits per table.
+func columnIndex(cols []string, name string) int {
+	for i, c := range cols {
+		if c == name {
+			return i
+		}
 	}
-	return 0
+	return -1
 }
 
 func contains(ss []string, s string) bool {
@@ -205,9 +209,12 @@ func readMinioObject(ctx context.Context, mc *minio.Client, bucket, key string) 
 	return io.ReadAll(rc)
 }
 
-// copyInBinary pipes rw.Stream(in,…) into `COPY <table> FROM STDIN (FORMAT binary)`
-// through the underlying pgx connection borrowed from the gorm transaction.
-func copyInBinary(ctx context.Context, tx *gorm.DB, table string, in io.Reader, rw Rewriter) error {
+// copyInBinary pipes rw.Stream(in,…) into
+// `COPY <table> (cols) FROM STDIN (FORMAT binary)` through the underlying pgx
+// connection borrowed from the gorm transaction. The explicit column list
+// mirrors the publish-time projection so Postgres maps stream fields to columns
+// by name, not by the target table's physical order.
+func copyInBinary(ctx context.Context, tx *gorm.DB, table string, cols []string, in io.Reader, rw Rewriter) error {
 	sqlDB, err := tx.DB()
 	if err != nil {
 		return err
@@ -228,7 +235,7 @@ func copyInBinary(ctx context.Context, tx *gorm.DB, table string, in io.Reader, 
 			defer pw.Close()
 			errc <- rw.Stream(in, pw)
 		}()
-		sql := fmt.Sprintf(`COPY %s FROM STDIN (FORMAT binary)`, table)
+		sql := fmt.Sprintf(`COPY %s (%s) FROM STDIN (FORMAT binary)`, table, quoteCols(cols))
 		if _, err := pgxConn.Conn().PgConn().CopyFrom(ctx, pr, sql); err != nil {
 			// Drain the rewriter goroutine so it doesn't deadlock writing to pw.
 			_ = pr.CloseWithError(err)

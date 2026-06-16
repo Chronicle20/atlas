@@ -1065,3 +1065,174 @@ func TestReader(t *testing.T) {
 		t.Fatal("len(rm.Skills) != 28")
 	}
 }
+
+const evolvablePetXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5000029.img">
+  <imgdir name="info">
+    <int name="hungry" value="2"/>
+    <int name="cash" value="1"/>
+    <int name="life" value="90"/>
+    <int name="evol" value="1"/>
+    <int name="evolNo" value="4"/>
+    <int name="evol1" value="5000030"/>
+    <int name="evol2" value="5000031"/>
+    <int name="evol3" value="5000032"/>
+    <int name="evol4" value="5000033"/>
+    <int name="evolProb1" value="33"/>
+    <int name="evolProb2" value="33"/>
+    <int name="evolProb3" value="33"/>
+    <int name="evolProb4" value="1"/>
+    <int name="evolReqPetLvl" value="15"/>
+    <int name="evolReqItemID" value="5380000"/>
+  </imgdir>
+  <imgdir name="interact"/>
+</imgdir>
+`
+
+const nonEvolvablePetXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5000029.img">
+  <imgdir name="info">
+    <int name="hungry" value="2"/>
+    <int name="cash" value="1"/>
+    <int name="life" value="90"/>
+  </imgdir>
+  <imgdir name="interact"/>
+</imgdir>
+`
+
+func TestReadEvolutionData(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(evolvablePetXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.ReqPetLevel != 15 {
+		t.Fatalf("ReqPetLevel = %d, want 15", rm.ReqPetLevel)
+	}
+	if rm.ReqItemId != 5380000 {
+		t.Fatalf("ReqItemId = %d, want 5380000", rm.ReqItemId)
+	}
+	if len(rm.Evolutions) != 4 {
+		t.Fatalf("len(Evolutions) = %d, want 4", len(rm.Evolutions))
+	}
+	if rm.Evolutions[0].TemplateId != 5000030 || rm.Evolutions[0].Probability != 33 {
+		t.Fatalf("Evolutions[0] = %+v, want {5000030 33}", rm.Evolutions[0])
+	}
+	if rm.Evolutions[3].TemplateId != 5000033 || rm.Evolutions[3].Probability != 1 {
+		t.Fatalf("Evolutions[3] = %+v, want {5000033 1}", rm.Evolutions[3])
+	}
+}
+
+func TestReadNonEvolvablePet(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(nonEvolvablePetXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.ReqPetLevel != 0 {
+		t.Fatalf("ReqPetLevel = %d, want 0", rm.ReqPetLevel)
+	}
+	if rm.ReqItemId != 0 {
+		t.Fatalf("ReqItemId = %d, want 0", rm.ReqItemId)
+	}
+	if len(rm.Evolutions) != 0 {
+		t.Fatalf("len(Evolutions) = %d, want 0", len(rm.Evolutions))
+	}
+}
+
+const evolGapPetXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5000029.img">
+  <imgdir name="info">
+    <int name="hungry" value="2"/>
+    <int name="cash" value="1"/>
+    <int name="life" value="90"/>
+    <int name="evol" value="1"/>
+    <int name="evolNo" value="3"/>
+    <int name="evol1" value="5000030"/>
+    <int name="evol2" value="0"/>
+    <int name="evol3" value="5000032"/>
+    <int name="evolProb1" value="50"/>
+    <int name="evolProb3" value="50"/>
+  </imgdir>
+  <imgdir name="interact"/>
+</imgdir>
+`
+
+func TestReadEvolutionGapTolerance(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(evolGapPetXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rm.Evolutions) != 2 {
+		t.Fatalf("len(Evolutions) = %d, want 2", len(rm.Evolutions))
+	}
+	if rm.Evolutions[0].TemplateId != 5000030 {
+		t.Fatalf("Evolutions[0].TemplateId = %d, want 5000030", rm.Evolutions[0].TemplateId)
+	}
+	if rm.Evolutions[1].TemplateId != 5000032 {
+		t.Fatalf("Evolutions[1].TemplateId = %d, want 5000032", rm.Evolutions[1].TemplateId)
+	}
+}
+
+// eggPetXML mirrors a Dragon/Robo egg: it carries hatch data in info (evol1 →
+// baby form) but has NO interact node, because an egg has no pet skills.
+const eggPetXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5000028.img">
+  <imgdir name="info">
+    <int name="life" value="90"/>
+    <int name="evol" value="1"/>
+    <int name="evolNo" value="1"/>
+    <int name="evol1" value="5000029"/>
+  </imgdir>
+</imgdir>
+`
+
+func TestReadPetWithoutInteract(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(eggPetXML)))()
+	if err != nil {
+		t.Fatalf("Read errored on a pet without an interact node (egg): %v", err)
+	}
+	if len(rm.Skills) != 0 {
+		t.Fatalf("len(Skills) = %d, want 0", len(rm.Skills))
+	}
+	if len(rm.Evolutions) != 1 {
+		t.Fatalf("len(Evolutions) = %d, want 1", len(rm.Evolutions))
+	}
+	if rm.Evolutions[0].TemplateId != 5000029 {
+		t.Fatalf("Evolutions[0].TemplateId = %d, want 5000029", rm.Evolutions[0].TemplateId)
+	}
+}

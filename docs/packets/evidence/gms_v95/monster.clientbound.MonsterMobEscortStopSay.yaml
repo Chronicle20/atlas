@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobEscortStopSay
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnEscortStopSay
+    address: "0x64c500"
+    decompile_sha256: 8079f9f0d9b95acc61da27fd63d6dfa0c25b4664a8bb41375761f88781b0f46d
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_escort_stop_say_test.go#TestMobEscortStopSay

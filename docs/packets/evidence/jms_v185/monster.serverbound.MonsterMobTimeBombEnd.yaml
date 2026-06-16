@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobTimeBombEnd
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMob::UpdateTimeBomb
+    address: "0x6ef8f8"
+    decompile_sha256: 50fdc8cab2b1b9c9e0c4abf2893af05ae74a257337a6b2a7ce20a91cbe21b3d5
+verifies:
+    - libs/atlas-packet/monster/serverbound/mob_time_bomb_end_test.go#TestMobTimeBombEnd

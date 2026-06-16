@@ -26,15 +26,20 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		cp := character.NewProcessor(l, ctx)
-		decorators := make([]model.Decorator[character.Model], 0)
-		if p.PetInfo() {
-			decorators = append(decorators, cp.PetAssetEnrichmentDecorator)
+		// Order matters: InventoryDecorator must run first so the writer can read
+		// the equipped medal and the tamed-mob (slot tamingMob) that gates the
+		// mount block, AND so PetAssetEnrichmentDecorator — which reads the loaded
+		// cash compartment — can enrich pet assets.
+		//
+		// Pets are loaded unconditionally, NOT gated on p.PetInfo(): CharacterInfoBody
+		// always writes the info-window pet block from c.Pets(), and the v83 client
+		// sends petInfo=false even when the window shows pets. Gating the load on that
+		// flag left c.Pets() empty and the pet block blank.
+		decorators := []model.Decorator[character.Model]{
+			cp.InventoryDecorator,
+			cp.PetAssetEnrichmentDecorator,
+			cp.MonsterBookDecorator,
 		}
-		// Load equipment so the writer can read the equipped medal and the tamed-mob
-		// (slot tamingMob) that gates the mount block. Without this the character's
-		// equipment is empty and neither medal nor mount info appears in the window.
-		decorators = append(decorators, cp.InventoryDecorator)
-		decorators = append(decorators, cp.MonsterBookDecorator)
 		c, err := cp.GetById(decorators...)(p.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", p.CharacterId())

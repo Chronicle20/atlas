@@ -1,0 +1,39 @@
+{
+  "WriterName": "SummonRemove",
+  "IDAName": "CSummonedPool::OnRemoved",
+  "Address": "0x75a470",
+  "Variant": "GMS/v95",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/summon/clientbound/remove.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "charId — read by CSummonedPool::OnPacket@0x75ac70 before dispatch",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "oid (dwSummonedID) — CSummonedPool::OnRemoved@0x75a4ae",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "animated flag (4=animated leave, 1=immediate) — consumed via CUser::OnSummonedRemoved@0x8e3790; atlas writes 4 or 1",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

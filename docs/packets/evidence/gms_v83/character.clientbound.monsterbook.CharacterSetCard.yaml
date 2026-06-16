@@ -1,0 +1,10 @@
+packet: character/clientbound/monsterbook/CharacterSetCard
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMonsterBookSetCard
+    address: "0xa081b8"
+    decompile_sha256: ba57f9b0a45f172767e13cc12a2fbe5f7ef6e22ee3cfb7df7445fc775a7db328
+verifies:
+    - libs/atlas-packet/character/clientbound/monsterbook/set_card_test.go#TestSetCardEncodeShape

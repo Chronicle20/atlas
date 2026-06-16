@@ -156,6 +156,84 @@ func TestMCPHTTPLookupFuncsNotFound(t *testing.T) {
 	}
 }
 
+// TestMCPHTTPDemangledFallback asserts that when lookup_funcs misses a demangled
+// Class::Method name, GetFunctionByName falls back to a func_query whose
+// name_regex is anchored to the mangled symbol (^\?Method@Class@@) and returns
+// the resolved address. This is the bridge for IDA storing MSVC symbols mangled.
+func TestMCPHTTPDemangledFallback(t *testing.T) {
+	var gotRegex string
+	rt := rtFunc(func(r *http.Request) (*http.Response, error) {
+		method, name, args := readMethodAndArgs(r)
+		if resp, ok := handshakeOK(method); ok {
+			return resp, nil
+		}
+		switch name {
+		case "lookup_funcs":
+			return structuredResp(map[string]any{
+				"result": []map[string]any{{"query": "CMob::OnAffected", "fn": nil, "error": "Not found"}},
+			}), nil
+		case "func_query":
+			var a struct {
+				Queries []struct {
+					NameRegex string `json:"name_regex"`
+				} `json:"queries"`
+			}
+			_ = json.Unmarshal(args, &a)
+			if len(a.Queries) > 0 {
+				gotRegex = a.Queries[0].NameRegex
+			}
+			return structuredResp(map[string]any{
+				"result": []map[string]any{{"data": []map[string]any{
+					{"addr": "0x66c675", "name": "?OnAffected@CMob@@QAEXAAVCInPacket@@@Z"},
+				}}},
+			}), nil
+		default:
+			return structuredResp(map[string]any{"result": []map[string]any{}}), nil
+		}
+	})
+	c := NewMCPHTTPClient("http://test/mcp", &http.Client{Transport: rt})
+	addr, ok, err := c.GetFunctionByName(context.Background(), "CMob::OnAffected")
+	if err != nil || !ok {
+		t.Fatalf("err=%v ok=%v, want resolved via fallback", err, ok)
+	}
+	if addr != "0x66c675" {
+		t.Errorf("addr = %q, want 0x66c675", addr)
+	}
+	if gotRegex != `^\?OnAffected@CMob@@` {
+		t.Errorf("name_regex = %q, want %q", gotRegex, `^\?OnAffected@CMob@@`)
+	}
+}
+
+// TestMCPHTTPDemangledFallbackNoMatch asserts a demangled miss with no func_query
+// match stays an honest soft miss (no error), so a genuinely-absent function
+// still becomes an Unresolved export entry.
+func TestMCPHTTPDemangledFallbackNoMatch(t *testing.T) {
+	rt := rtFunc(func(r *http.Request) (*http.Response, error) {
+		method, name, _ := readMethodAndArgs(r)
+		if resp, ok := handshakeOK(method); ok {
+			return resp, nil
+		}
+		switch name {
+		case "func_query":
+			return structuredResp(map[string]any{
+				"result": []map[string]any{{"data": []map[string]any{}}},
+			}), nil
+		default: // lookup_funcs
+			return structuredResp(map[string]any{
+				"result": []map[string]any{{"query": "CMob::Nope", "fn": nil, "error": "Not found"}},
+			}), nil
+		}
+	})
+	c := NewMCPHTTPClient("http://test/mcp", &http.Client{Transport: rt})
+	addr, ok, err := c.GetFunctionByName(context.Background(), "CMob::Nope")
+	if err != nil {
+		t.Fatalf("unexpected err=%v (no match is a soft miss)", err)
+	}
+	if ok || addr != "" {
+		t.Errorf("got addr=%q ok=%v, want empty/false", addr, ok)
+	}
+}
+
 // TestMCPHTTPDecompileSuccess asserts the NEW decompile success shape returns
 // the clean code string and sends {addr, include_addresses:false}.
 func TestMCPHTTPDecompileSuccess(t *testing.T) {

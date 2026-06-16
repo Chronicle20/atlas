@@ -1,0 +1,10 @@
+packet: monster/carnival/clientbound/MonsterCarnivalPartyCP
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnTeamCP
+    address: "0x56553e"
+    decompile_sha256: 294dbba155f96f8f1ccab8a06f6eb756716aac908e57f27fba5e7471fe146297
+verifies:
+    - libs/atlas-packet/monster/carnival/clientbound/monster_carnival_party_cp_test.go#TestMonsterCarnivalPartyCP

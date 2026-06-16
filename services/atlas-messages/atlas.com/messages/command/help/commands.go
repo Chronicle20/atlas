@@ -21,6 +21,7 @@ var commandSyntaxList = []string{
 	"@award <target> meso <amount> - Award mesos (can be negative)",
 	"@award <target> <currencyType> <amount> - Award currency (credit, points, prepaid)",
 	"@award <target> item <itemId> [quantity] - Award items",
+	"@award <petName> tameness <amount> - Award tameness (closeness) to your pet by name",
 	"@change <target> job <jobId> - Change job",
 	"@skill max <skillId> - Maximize a skill",
 	"@skill reset <skillId> - Reset a skill",

@@ -48,6 +48,7 @@ import (
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
+	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/listener"
 	"atlas-channel/logger"
@@ -100,6 +101,8 @@ import (
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	messengersb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	carnivalcb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/clientbound"
+	carnivalsb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/serverbound"
 	monstercb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	monstersb "github.com/Chronicle20/atlas/libs/atlas-packet/monster/serverbound"
 	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
@@ -121,6 +124,8 @@ import (
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
+	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
+	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -179,6 +184,7 @@ func main() {
 	member.InitConsumers(l)(cmf)(consumerGroupId)
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	summonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -443,6 +449,9 @@ func buildListener(
 		if err := register(monster.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -612,6 +621,35 @@ func produceWriters() []string {
 		monstercb.MonsterControlWriter,
 		monstercb.MonsterMovementWriter,
 		monstercb.MonsterMovementAckWriter,
+		summoncb.SummonSpawnWriter,
+		summoncb.SummonRemoveWriter,
+		summoncb.SummonMoveWriter,
+		summoncb.SummonAttackWriter,
+		summoncb.SummonDamageWriter,
+		summoncb.SummonSkillWriter,
+		monstercb.MobCrcKeyChangedWriter,
+		monstercb.MobAffectedWriter,
+		monstercb.MonsterSpecialEffectBySkillWriter,
+		monstercb.ResetMonsterAnimationWriter,
+		monstercb.CatchMonsterWriter,
+		monstercb.CatchMonsterWithItemWriter,
+		monstercb.IncMobChargeCountWriter,
+		monstercb.MobSkillDelayWriter,
+		monstercb.MobSpeakingWriter,
+		monstercb.MobAttackedByMobWriter,
+		monstercb.MobNextAttackWriter,
+		monstercb.MobEscortReturnBeforeWriter,
+		monstercb.MobEscortStopWriter,
+		monstercb.MobEscortStopSayWriter,
+		monstercb.MobEscortFullPathWriter,
+		carnivalcb.MonsterCarnivalStartWriter,
+		carnivalcb.MonsterCarnivalObtainedCPWriter,
+		carnivalcb.MonsterCarnivalPartyCPWriter,
+		carnivalcb.MonsterCarnivalSummonWriter,
+		carnivalcb.MonsterCarnivalMessageWriter,
+		carnivalcb.MonsterCarnivalDiedWriter,
+		carnivalcb.MonsterCarnivalLeaveWriter,
+		carnivalcb.MonsterCarnivalResultWriter,
 		charcb.CharacterSpawnWriter,
 		chatCB.GeneralChatWriter,
 		charcb.CharacterMovementWriter,
@@ -700,6 +738,7 @@ func produceWriters() []string {
 		doorcb.RemoveDoorWriter,
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
+		charcb.BridleMobCatchFailWriter,
 	}
 }
 
@@ -715,6 +754,21 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cashsb.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
+	handlerMap[summonsb.SummonAttackHandle] = handler.SummonAttackHandleFunc
+	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
+	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
+	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
+	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc
+	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc
+	handlerMap[monstersb.MobSkillDelayEndHandle] = handler.MobSkillDelayEndHandleFunc
+	handlerMap[monstersb.MobTimeBombEndHandle] = handler.MobTimeBombEndHandleFunc
+	handlerMap[monstersb.MobEscortCollisionHandle] = handler.MobEscortCollisionHandleFunc
+	handlerMap[monstersb.MobRequestEscortInfoHandle] = handler.MobRequestEscortInfoHandleFunc
+	handlerMap[monstersb.MobEscortStopEndRequestHandle] = handler.MobEscortStopEndRequestHandleFunc
+	handlerMap[carnivalsb.MonsterCarnivalHandle] = handler.MonsterCarnivalHandleFunc
+	handlerMap[charsb.MobBanishPlayerHandle] = handler.MobBanishPlayerHandleFunc
 	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc

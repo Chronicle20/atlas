@@ -1,16 +1,19 @@
 package inventory
 
 import (
+	"atlas-pets/kafka/message"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
 	GetByCharacterId(characterId uint32) (Model, error)
+	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 }
 
 type ProcessorImpl struct {

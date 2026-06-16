@@ -22,6 +22,7 @@ const (
 	QuestStatusCondition      = "questStatus"
 	SkillCondition            = "skillLevel"
 	MonsterBookCountCondition = "monsterBookCount"
+	PetTamenessCondition      = "petTameness"
 )
 
 // Quest states for QuestStatusCondition

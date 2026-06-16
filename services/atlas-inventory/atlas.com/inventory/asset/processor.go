@@ -265,6 +265,33 @@ func (p *Processor) UpdateEquipmentStats(mb *message.Buffer) func(transactionId 
 	}
 }
 
+func (p *Processor) ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
+		return p.ChangeTemplate(mb)(transactionId, characterId, assetId, newTemplateId)
+	})
+}
+
+// ChangeTemplate swaps only the templateId of a pet asset in place, preserving its
+// slot, compartment, cashId, petId, expiration, and quantity. It emits the existing
+// UPDATED status event (never DELETED), which is what keeps the pet alive downstream.
+func (p *Processor) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
+		a, err := p.GetById(assetId)
+		if err != nil {
+			return err
+		}
+		if !a.IsPet() {
+			return errors.New("change template only supported for pet assets")
+		}
+		p.l.Debugf("Character [%d] changing template of pet asset [%d] from [%d] to [%d].", characterId, assetId, a.TemplateId(), newTemplateId)
+		updated := Clone(a).SetTemplateId(newTemplateId).Build()
+		if err = updateTemplate(p.db.WithContext(p.ctx), assetId, newTemplateId); err != nil {
+			return err
+		}
+		return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+	}
+}
+
 func (p *Processor) DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error {
 	p.l.Debugf("Attempting to delete and emit asset [%d] for character [%d] in compartment [%s].", assetId, characterId, compartmentId.String())
 	a, err := p.GetById(assetId)

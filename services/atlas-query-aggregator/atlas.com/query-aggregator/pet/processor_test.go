@@ -14,9 +14,9 @@ func TestProcessorMock_GetPets_Success(t *testing.T) {
 		GetPetsFunc: func(characterId uint32) model.Provider[[]pet.Model] {
 			return func() ([]pet.Model, error) {
 				return []pet.Model{
-					pet.NewModel(1001, 0),  // Spawned
-					pet.NewModel(1002, 1),  // Spawned
-					pet.NewModel(1003, -1), // Not spawned
+					pet.NewModel(1001, 0, 0, 0),  // Spawned
+					pet.NewModel(1002, 1, 0, 0),  // Spawned
+					pet.NewModel(1003, -1, 0, 0), // Not spawned
 				}, nil
 			}
 		},
@@ -156,7 +156,7 @@ func TestModel_IsSpawned(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := pet.NewModel(1, tt.slot)
+			p := pet.NewModel(1, tt.slot, 0, 0)
 			if p.IsSpawned() != tt.expected {
 				t.Errorf("Expected IsSpawned()=%v for slot=%d, got %v", tt.expected, tt.slot, p.IsSpawned())
 			}

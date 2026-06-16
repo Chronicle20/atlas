@@ -194,21 +194,21 @@ images:
   - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-240243e
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-4c35f59
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
@@ -226,7 +226,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
@@ -234,7 +234,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
@@ -242,7 +242,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
@@ -254,9 +254,9 @@ images:
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
@@ -264,27 +264,27 @@ images:
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
     newTag: main-b1aea07
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
-    newTag: main-a2207e7
+    newTag: main-c8bea47
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultEmpty
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#Empty
+    address: "0x5d4748"
+    decompile_sha256: 848c013ac42cba67024bc458c1a0914503d960f632bc20958897d021bc62e4e8
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_body_test.go#TestMtsResultEmptyGolden

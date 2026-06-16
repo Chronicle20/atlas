@@ -1,0 +1,116 @@
+package clientbound
+
+import (
+	"bytes"
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
+)
+
+// Per-mode body arms of CITC::OnNormalItemResult (MTS_OPERATION), task-096
+// iteration 1. The body shapes are version-stable across gms_v83/v84/v87/v95
+// (IDA-confirmed identical read order; only the dispatcher mode bytes and
+// sub-handler addresses shift). jms_v185 has NO CITC op (VERSION-ABSENT) so it
+// is not marked. The per-version ida= addresses below pin each arm's
+// sub-handler in the matching dispatcher.
+
+// MtsResultEmpty arms — sub-handler reads NOTHING after the dispatcher mode byte
+// (StringPool notice only). Addresses: REGISTER_SALE_ENTRY_DONE (0x1D) used as
+// the pinned representative per version; the remaining Empty arms in this batch
+// (0x1F/0x29/0x2A) share the identical zero-body shape (see mts_operation_body.go
+// for their per-version addresses).
+//
+// packet-audit:verify packet=field/clientbound/FieldMtsResultEmpty version=gms_v83 ida=0x5a4674
+// packet-audit:verify packet=field/clientbound/FieldMtsResultEmpty version=gms_v84 ida=0x5b4b64
+// packet-audit:verify packet=field/clientbound/FieldMtsResultEmpty version=gms_v87 ida=0x5d4748
+// packet-audit:verify packet=field/clientbound/FieldMtsResultEmpty version=gms_v95 ida=0x575cd0
+func TestMtsResultEmptyGolden(t *testing.T) {
+	// mode 0x1D = REGISTER_SALE_ENTRY_DONE. Sub-handler decompile (v95 0x575cd0):
+	// GetString(0x12BC) + CUtilDlg::Notice + ResetInfo — no CInPacket::Decode*
+	// after the dispatcher's Decode1(mode). So the wire is exactly the mode byte.
+	cases := []struct {
+		name string
+		mode byte
+	}{
+		{"RegisterSaleEntryDone", 0x1D},
+		{"SaleCurrentItemToWishDone", 0x1F},
+		{"SetZzimDone", 0x29},
+		{"SetZzimFailed", 0x2A},
+	}
+	ctx := test.CreateContext("GMS", 95, 0)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			input := NewMtsResultEmpty(c.mode)
+			expected := []byte{c.mode} // dispatcher mode byte; sub-handler reads no further fields
+			actual := test.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(actual, expected) {
+				t.Errorf("golden mismatch: got %v want %v", actual, expected)
+			}
+		})
+	}
+}
+
+func TestMtsResultEmptyRoundTrip(t *testing.T) {
+	input := NewMtsResultEmpty(0x29)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			output := MtsResultEmpty{}
+			test.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+		})
+	}
+}
+
+// MtsResultReason arms — sub-handler reads a single Decode1 fail-reason byte
+// after the dispatcher mode byte. GET_ITC_LIST_FAILED (0x16) is the pinned
+// representative; SALE_CURRENT_ITEM_TO_WISH_FAILED (0x20) shares the identical
+// mode + Decode1(reason) wire shape.
+//
+// packet-audit:verify packet=field/clientbound/FieldMtsResultReason version=gms_v83 ida=0x5a4882
+// packet-audit:verify packet=field/clientbound/FieldMtsResultReason version=gms_v84 ida=0x5b4d72
+// packet-audit:verify packet=field/clientbound/FieldMtsResultReason version=gms_v87 ida=0x5d4972
+// packet-audit:verify packet=field/clientbound/FieldMtsResultReason version=gms_v95 ida=0x575f70
+func TestMtsResultReasonGolden(t *testing.T) {
+	// mode 0x16 = GET_ITC_LIST_FAILED. Sub-handler decompile (v95 0x575f70):
+	// Decode1(reason) -> NoticeFailReason(reason). The wire after the dispatcher
+	// mode byte is exactly one Decode1 reason byte.
+	ctx := test.CreateContext("GMS", 95, 0)
+	cases := []struct {
+		name   string
+		mode   byte
+		reason byte
+	}{
+		{"GetITCListFailed", 0x16, 0x49}, // reason 73 = the transfer-field branch value
+		{"SaleCurrentItemToWishFailed", 0x20, 0x50},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			input := NewMtsResultReason(c.mode, c.reason)
+			expected := []byte{c.mode, c.reason}
+			actual := test.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(actual, expected) {
+				t.Errorf("golden mismatch: got %v want %v", actual, expected)
+			}
+		})
+	}
+}
+
+func TestMtsResultReasonRoundTrip(t *testing.T) {
+	input := NewMtsResultReason(0x16, 0x42)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			output := MtsResultReason{}
+			test.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+			if output.Reason() != input.Reason() {
+				t.Errorf("reason: got %v, want %v", output.Reason(), input.Reason())
+			}
+		})
+	}
+}

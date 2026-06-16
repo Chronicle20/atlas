@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultReason
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#Reason
+    address: "0x5d4972"
+    decompile_sha256: c8047ca4ff65e4e3df1095b805faa09e98ef964cbc948950bafa7b8496920bf9
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_body_test.go#TestMtsResultReasonGolden

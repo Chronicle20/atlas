@@ -11012,6 +11012,34 @@
         }
       ]
     },
+    "CITC::OnNormalItemResult#Empty": {
+      "address": "0x575cd0",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1): Empty-shape arms of CITC::OnNormalItemResult that read NOTHING after the dispatcher Decode1(mode) (StringPool notice only). Covered modes 0x1D RegisterSaleEntryDone / 0x1F SaleCurrentItemToWishDone / 0x29 SetZzimDone / 0x2A SetZzimFailed. Address pins 0x1D (RegisterSaleEntryDone) as the per-version representative. Maps atlas field/clientbound MtsResultEmpty.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator; e.g. 0x1D RegisterSaleEntryDone)"
+        }
+      ]
+    },
+    "CITC::OnNormalItemResult#Reason": {
+      "address": "0x575f70",
+      "region": "GMS",
+      "direction": "clientbound",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1): Reason-shape arms of CITC::OnNormalItemResult that read a single Decode1 fail-reason byte after the dispatcher mode byte. Covered modes 0x16 GetITCListFailed / 0x20 SaleCurrentItemToWishFailed. Address pins 0x16 (GetITCListFailed) as the per-version representative. Maps atlas field/clientbound MtsResultReason.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "MTS result mode byte (switch discriminator; e.g. 0x16 GetITCListFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "fail reason byte -> NoticeFailReason / reason-keyed StringPool notice"
+        }
+      ]
+    },
     "CSummoned::SetDamaged": {
       "address": "0x74b730",
       "direction": "serverbound",

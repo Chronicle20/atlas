@@ -1872,6 +1872,29 @@ func candidatesFromFName(fname string) []candidate {
 	case "CITC::OnNormalItemResult#Mode":
 		return []candidate{{name: "MtsOperation", pkg: "field", dir: csvpkg.DirClientbound}}
 
+	// MTS_OPERATION per-mode body arms (task-096 graduation, FIELD_EFFECT model).
+	// Each #-suffixed synthetic FName maps a body-shape group of CITC sub-handlers
+	// to a per-mode body codec in field/clientbound/mts_operation_body.go. The
+	// codec writes the leading dispatcher mode byte THEN the full arm body (the
+	// read order the matching CITC sub-handler performs on CInPacket) — replacing
+	// the mode-byte-only MtsOperation false-pass for the covered arms.
+	//
+	//   #Empty  -> MtsResultEmpty  (sub-handlers that read NOTHING after the mode
+	//              byte; they just show a StringPool notice). Covers, this batch:
+	//              0x1D RegisterSaleEntryDone, 0x1F SaleCurrentItemToWishDone,
+	//              0x29 SetZzimDone, 0x2A SetZzimFailed.
+	//   #Reason -> MtsResultReason (sub-handlers that read a single Decode1
+	//              fail-reason byte). Covers, this batch: 0x16 GetITCListFailed,
+	//              0x20 SaleCurrentItemToWishFailed.
+	//
+	// Body shapes are version-stable (gms_v83/v84/v87/v95 IDA-confirmed identical;
+	// jms VERSION-ABSENT — no CITC). The remaining arms (list/item-blob, two-int,
+	// search/purchase/sale) land in later task-096 iterations.
+	case "CITC::OnNormalItemResult#Empty":
+		return []candidate{{name: "MtsResultEmpty", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CITC::OnNormalItemResult#Reason":
+		return []candidate{{name: "MtsResultReason", pkg: "field", dir: csvpkg.DirClientbound}}
+
 	// FOOTHOLD_INFO clientbound (task-096, recipe R-CB). CField::OnFootHoldInfo
 	// is version-divergent: v87 reads a single entry (name, mode, [mode==2:
 	// 8×int32 + 2×byte]); v95/jms read Decode4(count) then per entry name, mode,

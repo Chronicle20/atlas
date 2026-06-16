@@ -1,0 +1,27 @@
+# CharacterInteraction — CMiniRoomBaseDlg::OnPacketBase per-version mode table.
+#
+# SOURCE OF TRUTH for the CharacterInteraction writer (trade / personal shop /
+# hired merchant / mini-game invites + enter/leave). The base dispatcher
+# (Decode1 mode → switch) handles invite/enter/leave directly; other modes are
+# virtual-dispatched into the concrete sub-dialog. Atlas emits exactly:
+# Invite/InviteResult/Enter/EnterResult/Leave (base) + UpdateMerchant (subclass).
+#
+# Base modes 2/3/4/5/10 are VERSION-STABLE: byte-identical in gms_v83 (0x65df4c)
+# and gms_v95 (0x639e10) — IDA-verified — and the mini-room protocol predates
+# v83. UPDATE_MERCHANT=25 is subclass-routed (hired-merchant); template-consistent
+# across versions. gms_v84 = v83 (stable). gms_v87 + jms_185: the
+# CharacterInteraction WRITER ENTRY is absent from those templates entirely
+# (a separate gap — `operations --check` reports it; adding the writer needs its
+# opcode, out of this tool's scope), so no v87/jms columns are asserted here.
+
+writer: CharacterInteraction
+fname: CMiniRoomBaseDlg::OnPacketBase
+op: PLAYER_INTERACTION
+direction: clientbound
+operations:
+  - { key: INVITE,          modes: { gms_v83: 2,  gms_v84: 2,  gms_v95: 2  } }
+  - { key: INVITE_RESULT,   modes: { gms_v83: 3,  gms_v84: 3,  gms_v95: 3  } }
+  - { key: ENTER,           modes: { gms_v83: 4,  gms_v84: 4,  gms_v95: 4  } }
+  - { key: ENTER_RESULT,    modes: { gms_v83: 5,  gms_v84: 5,  gms_v95: 5  } }
+  - { key: LEAVE,           modes: { gms_v83: 10, gms_v84: 10, gms_v95: 10 } }
+  - { key: UPDATE_MERCHANT, modes: { gms_v83: 25, gms_v84: 25, gms_v95: 25 } }

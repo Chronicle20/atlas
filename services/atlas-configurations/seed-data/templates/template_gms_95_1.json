@@ -1236,7 +1236,17 @@
       },
       {
         "opCode": "0x175",
-        "writer": "CharacterInteraction"
+        "writer": "CharacterInteraction",
+        "options": {
+          "operations": {
+            "INVITE": 2,
+            "INVITE_RESULT": 3,
+            "ENTER": 4,
+            "ENTER_RESULT": 5,
+            "LEAVE": 10,
+            "UPDATE_MERCHANT": 25
+          }
+        }
       },
       {
         "opCode": "0x176",

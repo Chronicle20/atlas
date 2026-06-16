@@ -1975,6 +1975,25 @@ func candidatesFromFName(fname string) []candidate {
 		// NPC_SHOP RECHARGE body (op=2). CShopDlg::SendRechargeRequest@0x6e4e90 after the
 		// op byte: Encode2(slot/nPos). Atlas ShopRecharge writes Short(slot). ✓
 		return []candidate{{name: "ShopRecharge", pkg: "npc", dir: csvpkg.DirServerbound, prefixSubOps: 1}}
+
+	// --- Door domain (Mystic Door, task-093) ---
+	case "CTownPortalPool::OnTownPortalCreated":
+		// SPAWN_DOOR (0x113 v83): Decode1(launched) Decode4(ownerId) Decode2(x)
+		// Decode2(y). Atlas SpawnDoor writes Bool/Int/Short/Short. ✓
+		return []candidate{{name: "SpawnDoor", dir: csvpkg.DirClientbound}}
+	case "CTownPortalPool::OnTownPortalRemoved":
+		// REMOVE_DOOR (0x114 v83): Decode1(animate flag) Decode4(ownerId). Atlas
+		// RemoveDoor writes Byte(0)/Int(ownerId). ✓
+		return []candidate{{name: "RemoveDoor", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnTownPortal":
+		// TOWN_PORTAL minimap packet (0x043 v83). SpawnPortal: Decode4(townId)
+		// Decode4(targetId) Decode2(x) Decode2(y) = 12B. RemoveTownDoor reuses the
+		// same opcode but both ids are MapId.NONE (999999999), so OnTownPortal's
+		// `townId != NONE && targetId != NONE` guard skips the x/y reads = 8B.
+		return []candidate{
+			{name: "SpawnPortal", dir: csvpkg.DirClientbound},
+			{name: "RemoveTownDoor", dir: csvpkg.DirClientbound},
+		}
 	}
 	return nil
 }

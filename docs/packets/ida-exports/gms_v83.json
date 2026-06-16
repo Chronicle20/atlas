@@ -8683,6 +8683,66 @@
       "address": "0x424704",
       "direction": "",
       "calls": null
+    },
+    "CTownPortalPool::OnTownPortalCreated": {
+      "address": "0x7bd6c6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "launched flag (writeBool launched)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position, writeShort)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position, writeShort)"
+        }
+      ]
+    },
+    "CTownPortalPool::OnTownPortalRemoved": {
+      "address": "0x7be064",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "animate flag (Cosmic writes constant 0; gates removal animation)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (door owner character id; registry lookup key)"
+        }
+      ]
+    },
+    "CWvsContext::OnTownPortal": {
+      "address": "0xa226a6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "townId (SpawnPortal); MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetId; MapId.NONE (999999999) for RemoveTownDoor"
+        },
+        {
+          "op": "Decode2",
+          "comment": "x (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "y (door position)",
+          "guard": "townId != 999999999 && targetId != 999999999"
+        }
+      ]
     }
   }
 }

@@ -5,7 +5,7 @@
 
 Tool: `2feb82e6c76b4a3c7b512af0e9e41ba376c80770`
 
-- export gms_v83: `d1def1b1cdb0c8c427c937a3446e3875da0ef5670f7c280e4cc392dcceb374ce`
+- export gms_v83: `fed76f09db0e6ebbbee99aa3738e0d97c9e94a98df18f880d10f4aae14f41b5d`
 - export gms_v84: `83b5b9123174bb20696e2b2ff1c1ffbe14639c1ed393d03b873c828d36c2a645`
 - export gms_v87: `34104599994acb9bbe66071372bffc99b12b9fd2b8b14d3ee102aa89f1c95eef`
 - export gms_v95: `82fa71bf4933c2064936d26df4af97e9146814af50813e309b50266fa8f718c6`
@@ -84,7 +84,7 @@ Tool: `2feb82e6c76b4a3c7b512af0e9e41ba376c80770`
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x041 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | ALLIANCE_OPERATION | CWvsContext::OnAllianceResult |  | 0x042 | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x044 | ❌ | 0x03C | ❌ |
-| SPAWN_PORTAL | CWvsContext::OnTownPortal |  | 0x043 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
+| SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor (T1) | 0x043 | ✅ | 0x043 | ❌ | 0x045 | ❌ | 0x045 | ❌ | 0x03D | ❌ |
 | SERVERMESSAGE | CWvsContext::OnBroadcastMsg |  | 0x044 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x045 | ❌ | 0x045 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
 | OPEN_GATE | CWvsContext::OnOpenGate |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x046 | ❌ |  | ⬜ |
@@ -371,9 +371,9 @@ Tool: `2feb82e6c76b4a3c7b512af0e9e41ba376c80770`
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x112 | ✅ | 0x112 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated |  | 0x113 | ❌ | 0x113 | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor | 0x113 | ✅ | 0x113 | ❌ | 0x124 | ❌ | 0x14A | ❌ | 0x128 | ❌ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
-| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved |  | 0x114 | ❌ | 0x114 | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
+| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x114 | ✅ | 0x114 | ❌ | 0x125 | ❌ | 0x14B | ❌ | 0x129 | ❌ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
 | REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
@@ -910,7 +910,7 @@ Tool: `2feb82e6c76b4a3c7b512af0e9e41ba376c80770`
 
 | Version | ✅ | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|-----------|
-| v83 | 266 | 0 | 411 | 203 | 0 | 39.3% |
+| v83 | 269 | 0 | 408 | 203 | 0 | 39.7% |
 | v84 | 224 | 0 | 453 | 203 | 0 | 33.1% |
 | v87 | 283 | 0 | 431 | 166 | 0 | 39.6% |
 | v95 | 324 | 1 | 474 | 81 | 0 | 40.6% |

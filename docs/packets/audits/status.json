@@ -1,7 +1,7 @@
 {
   "toolSha": "2feb82e6c76b4a3c7b512af0e9e41ba376c80770",
   "exportHashes": {
-    "gms_v83": "d1def1b1cdb0c8c427c937a3446e3875da0ef5670f7c280e4cc392dcceb374ce",
+    "gms_v83": "fed76f09db0e6ebbbee99aa3738e0d97c9e94a98df18f880d10f4aae14f41b5d",
     "gms_v84": "83b5b9123174bb20696e2b2ff1c1ffbe14639c1ed393d03b873c828d36c2a645",
     "gms_v87": "34104599994acb9bbe66071372bffc99b12b9fd2b8b14d3ee102aa89f1c95eef",
     "gms_v95": "82fa71bf4933c2064936d26df4af97e9146814af50813e309b50266fa8f718c6",
@@ -4900,15 +4900,15 @@
     {
       "kind": "op",
       "op": "SPAWN_PORTAL",
+      "packet": "door/clientbound/RemoveTownDoor",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnTownPortal"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 67
         },
         "gms_v84": {
@@ -22693,6 +22693,7 @@
     {
       "kind": "op",
       "op": "SPAWN_DOOR",
+      "packet": "door/clientbound/SpawnDoor",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -22700,8 +22701,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 275
         },
         "gms_v84": {
@@ -22795,6 +22795,7 @@
     {
       "kind": "op",
       "op": "REMOVE_DOOR",
+      "packet": "door/clientbound/RemoveDoor",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -22802,8 +22803,7 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 276
         },
         "gms_v84": {

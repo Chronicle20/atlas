@@ -10265,7 +10265,7 @@
       "address": "0x5a4674",
       "region": "GMS",
       "direction": "clientbound",
-      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1): Empty-shape arms of CITC::OnNormalItemResult that read NOTHING after the dispatcher Decode1(mode) (StringPool notice only). Covered modes 0x1D RegisterSaleEntryDone / 0x1F SaleCurrentItemToWishDone / 0x29 SetZzimDone / 0x2A SetZzimFailed. Address pins 0x1D (RegisterSaleEntryDone) as the per-version representative. Maps atlas field/clientbound MtsResultEmpty.",
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 1+2): Empty-shape arms of CITC::OnNormalItemResult that read NOTHING after the dispatcher Decode1(mode) (StringPool notice only; the trailing m_bITCRequestSent=0 store on the *Failed/CancelSaleItemDone arms is not a wire read). Covered modes: iter 1 0x1D RegisterSaleEntryDone / 0x1F SaleCurrentItemToWishDone / 0x29 SetZzimDone / 0x2A SetZzimFailed; iter 2 0x25 CancelSaleItemDone / 0x2B DeleteZzimDone / 0x2C DeleteZzimFailed / 0x2E LoadWishSaleListFailed / 0x2F BuyWishDone / 0x30 BuyWishFailed. Address pins 0x1D (RegisterSaleEntryDone) as the per-version representative. Maps atlas field/clientbound MtsResultEmpty.",
       "calls": [
         {
           "op": "Decode1",

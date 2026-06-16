@@ -1880,9 +1880,12 @@ func candidatesFromFName(fname string) []candidate {
 	// the mode-byte-only MtsOperation false-pass for the covered arms.
 	//
 	//   #Empty  -> MtsResultEmpty  (sub-handlers that read NOTHING after the mode
-	//              byte; they just show a StringPool notice). Covers, this batch:
+	//              byte; they just show a StringPool notice). Covers, iteration 1:
 	//              0x1D RegisterSaleEntryDone, 0x1F SaleCurrentItemToWishDone,
-	//              0x29 SetZzimDone, 0x2A SetZzimFailed.
+	//              0x29 SetZzimDone, 0x2A SetZzimFailed; iteration 2:
+	//              0x25 CancelSaleItemDone, 0x2B DeleteZzimDone, 0x2C DeleteZzimFailed,
+	//              0x2E LoadWishSaleListFailed, 0x2F BuyWishDone, 0x30 BuyWishFailed
+	//              (all decompile-confirmed Empty-shape in v83/v84/v87/v95).
 	//   #Reason -> MtsResultReason (sub-handlers that read a single Decode1
 	//              fail-reason byte). Covers, this batch: 0x16 GetITCListFailed,
 	//              0x20 SaleCurrentItemToWishFailed.

@@ -16,9 +16,11 @@ import (
 
 // MtsResultEmpty arms — sub-handler reads NOTHING after the dispatcher mode byte
 // (StringPool notice only). Addresses: REGISTER_SALE_ENTRY_DONE (0x1D) used as
-// the pinned representative per version; the remaining Empty arms in this batch
-// (0x1F/0x29/0x2A) share the identical zero-body shape (see mts_operation_body.go
-// for their per-version addresses).
+// the pinned representative per version; every other Empty arm shares the
+// identical zero-body shape (see mts_operation_body.go for their per-version
+// addresses). Only ONE verify marker per (packet,version) is permitted; the
+// representative below stands for the whole Empty-shape group, and the golden
+// table exercises each covered mode against the byte-proven codec.
 //
 // packet-audit:verify packet=field/clientbound/FieldMtsResultEmpty version=gms_v83 ida=0x5a4674
 // packet-audit:verify packet=field/clientbound/FieldMtsResultEmpty version=gms_v84 ida=0x5b4b64
@@ -28,14 +30,28 @@ func TestMtsResultEmptyGolden(t *testing.T) {
 	// mode 0x1D = REGISTER_SALE_ENTRY_DONE. Sub-handler decompile (v95 0x575cd0):
 	// GetString(0x12BC) + CUtilDlg::Notice + ResetInfo — no CInPacket::Decode*
 	// after the dispatcher's Decode1(mode). So the wire is exactly the mode byte.
+	//
+	// Each case is decompile-verified Empty-shape (StringPool::GetString +
+	// CUtilDlg::Notice, zero CInPacket::Decode* after the dispatcher Decode1) in
+	// ALL FOUR versions; the per-version sub-handler addresses are in
+	// mts_operation_body.go. iteration 1: 0x1D/0x1F/0x29/0x2A. iteration 2:
+	// 0x25/0x2B/0x2C/0x2E/0x2F/0x30.
 	cases := []struct {
 		name string
 		mode byte
 	}{
+		// iteration 1
 		{"RegisterSaleEntryDone", 0x1D},
 		{"SaleCurrentItemToWishDone", 0x1F},
 		{"SetZzimDone", 0x29},
 		{"SetZzimFailed", 0x2A},
+		// iteration 2 (this batch)
+		{"CancelSaleItemDone", 0x25},     // v83 0x5a4d14 / v84 0x5b5204 / v87 0x5d4e04 / v95 0x576030
+		{"DeleteZzimDone", 0x2B},         // v83 0x5a4e66 / v84 0x5b5501 / v87 0x5d4f59 / v95 0x5761c0
+		{"DeleteZzimFailed", 0x2C},       // v83 0x5a4e91 / v84 0x5b552c / v87 0x5d4f84 / v95 0x5761f0
+		{"LoadWishSaleListFailed", 0x2E}, // v83 0x5a4fdc / v84 0x5b5596 / v87 0x5d50cf / v95 0x576230
+		{"BuyWishDone", 0x2F},            // v83 0x5a5011 / v84 0x5b55cb / v87 0x5d5104 / v95 0x576270
+		{"BuyWishFailed", 0x30},          // v83 0x5a503c / v84 0x5b55f6 / v87 0x5d512f / v95 0x5762a0
 	}
 	ctx := test.CreateContext("GMS", 95, 0)
 	for _, c := range cases {

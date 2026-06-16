@@ -5,6 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CITC::OnNormalItemResult#Empty
     address: "0x5d4748"
-    decompile_sha256: 848c013ac42cba67024bc458c1a0914503d960f632bc20958897d021bc62e4e8
-verifies:
-  - libs/atlas-packet/field/clientbound/mts_operation_body_test.go#TestMtsResultEmptyGolden
+    decompile_sha256: 4aedc7d18c251676f68cf64649acc0d1f16890edfc27e96446babd18c22e59d3

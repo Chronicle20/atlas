@@ -288,6 +288,16 @@ func validateConditionInput(input ConditionInput) error {
 		if input.Step == "" {
 			return fmt.Errorf("step (custom data key) is required for pqCustomData conditions")
 		}
+	case PetTamenessCondition:
+		// Composite condition: a summoned pet of one of the listed templates
+		// (Values) must have closeness >= Value. atlas-quest emits this for the
+		// quest `pet` + `pettamenessmin` checks.
+		if len(input.Values) == 0 {
+			return fmt.Errorf("values (pet template ids) required for petTameness conditions")
+		}
+		if input.Value < 0 {
+			return fmt.Errorf("petTameness value (min closeness) must be non-negative")
+		}
 	case LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition,
 		GmLevelCondition, HpCondition, MaxHpCondition:
 		if input.Value < 0 {

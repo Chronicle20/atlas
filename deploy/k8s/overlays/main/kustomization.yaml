@@ -209,6 +209,8 @@ images:
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: main-c8bea47
+  - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-a2207e7
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops

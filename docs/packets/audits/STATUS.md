@@ -406,7 +406,7 @@ Tool: `95d1c990a61ed184f0ec395b2e242f25ac70499b`
 | NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x137 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | MOB_ESCORT_STOP | CMob::OnEscortStopEndPermmision | monster/clientbound/MonsterMobEscortStop (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x131 | ✅ |  | ⬜ |
 | OPEN_NPC_SHOP | CShopDlg::SetShopDlg | npc/clientbound/NpcShopList (T1) | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
-| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | 🧩 | 0x139 | 🧩 | 0x143 | 🧩 | 0x16D | 🧩 | 0x14B | 🧩 |
+| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | ✅ | 0x139 | ✅ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
 | MOB_ESCORT_STOP_SAY | CMob::OnEscortStopSay | monster/clientbound/MonsterMobEscortStopSay (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ✅ | 0x112 | ✅ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x133 | ❌ | 0x13A | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore | monster/clientbound/MonsterMobEscortReturnBefore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ✅ | 0x113 | ✅ |
@@ -905,11 +905,11 @@ Tool: `95d1c990a61ed184f0ec395b2e242f25ac70499b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 332 | 2 | 0 | 341 | 200 | 0 | 49.2% |
-| v84 | 287 | 2 | 0 | 365 | 221 | 0 | 43.9% |
-| v87 | 348 | 2 | 0 | 362 | 163 | 0 | 48.9% |
-| v95 | 388 | 2 | 1 | 405 | 79 | 0 | 48.7% |
-| JMS185 | 327 | 1 | 0 | 378 | 169 | 0 | 46.3% |
+| v83 | 333 | 1 | 0 | 341 | 200 | 0 | 49.3% |
+| v84 | 288 | 1 | 0 | 365 | 221 | 0 | 44.0% |
+| v87 | 349 | 1 | 0 | 362 | 163 | 0 | 49.0% |
+| v95 | 389 | 1 | 1 | 405 | 79 | 0 | 48.9% |
+| JMS185 | 328 | 0 | 0 | 378 | 169 | 0 | 46.5% |
 
 ## Conflicts
 

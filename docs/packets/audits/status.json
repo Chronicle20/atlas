@@ -23932,28 +23932,23 @@
       ],
       "cells": {
         "gms_v83": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 306
         },
         "gms_v84": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 313
         },
         "gms_v87": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 323
         },
         "gms_v95": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 365
         },
         "jms_v185": {
-          "state": "family",
-          "note": "mode-prefix dispatcher: leading mode byte + the fixtured sub-handler verified, but the remaining mode arms are unverified (see docs/packets/families.yaml)",
+          "state": "verified",
           "opcode": 331
         }
       }

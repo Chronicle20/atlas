@@ -35,7 +35,28 @@ dispatchers:
   # jms 0x48bcff.., v95 0x499370 (dispatcher). The remaining cases (gift/coupon/
   # gachapon/transfer-world/maple-point/destroy/expire) are not emitted by Atlas.
   - CITC::OnNormalItemResult      # ITC/MTS result; v95 0x5771d0 switch(Decode1) -> 35 arms (MTS_OPERATION)
-  - CShopDlg::OnPacket            # NPC shop; v95 0x6eb7d0 switch(Decode1) mode (OPEN_NPC_SHOP, CONFIRM_SHOP_TRANSACTION)
+  # CShopDlg::OnPacket — GRADUATED (task-096): all Atlas-supported mode arms of
+  # CONFIRM_SHOP_TRANSACTION have decompile-verified per-mode body codecs in
+  # npc/clientbound/shop_operation.go (each writes the leading mode byte THEN the
+  # full arm body, not mode-byte-only), each with a packet-audit:verify byte-fixture
+  # + fresh pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms
+  # (synthetic #-suffix FNames in the per-version exports): Simple (mode-only notice
+  # arms: cases 0/1/2/3/5/8/9/0xA/0xD/0x10/0x11/0x12 v95, 0/1/2/3/4/5/8/9/0xA/0xD/0x10
+  # v83 + default -> Decode1 mode only, StringPool Notice), LevelRequirement
+  # (OVER/UNDER = cases 0xE/0xF all versions -> Decode1 mode + Decode4 level),
+  # GenericError (Decode1 mode + Decode1 hasReason + optional DecodeStr reason).
+  # The mode bytes are the switch discriminator (server-config operations table),
+  # version-shifted but the body shapes are byte-identical. Decompile-confirmed this
+  # session: v83 dispatcher 0x756da7 (case 17 generic-error Decode1+DecodeStr @0x756f1b/
+  # 0x756f23; cases 14/15 Decode4 @0x756f85/0x757001), v95 dispatcher 0x6eb7d0 (case
+  # 0x13 generic-error Decode1+DecodeStr @0x6eb9a4/0x6eb9ad; cases 0xE/0xF Decode4
+  # @0x6eba5a/0x6ebb09); v84 0x77905b, v87 0x7a290d, jms 0x7cb04e per export. GenericError
+  # with-reason is mode 17 in gms_v83/v84/v87, 19 in v95; in jms case 0x13 is a no-op
+  # return (no Decode1/DecodeStr arm) so its GenericError diff is 🔍-advisory and the
+  # byte-fixture marker + fresh evidence promotes the arm (the GMS mode+bool+string
+  # shape is unchanged; jms's reason path is a client no-op). The remaining shop modes
+  # (4/8 RETURN with no body, OnPacket nType==364 -> SetShopDlg is OPEN_NPC_SHOP, its
+  # own leaf op) are not CONFIRM_SHOP_TRANSACTION arms.
   # CUIMessenger::OnPacket — GRADUATED (task-096): all 8 supported mode arms
   # (Add/Join/Remove/RequestInvite/InviteSent/InviteDeclined/Chat/Update) have
   # decompile-verified body codecs in messenger/clientbound (per-mode bodies, not

@@ -295,6 +295,16 @@
         "handler": "CharacterChatGeneralHandle"
       },
       {
+        "opCode": "0x7E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatWhisperHandle"
+      },
+      {
+        "opCode": "0x7F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSpouseChatHandle"
+      },
+      {
         "opCode": "0x35",
         "validator": "LoggedInValidator",
         "handler": "ChalkboardCloseHandle"

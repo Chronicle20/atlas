@@ -511,6 +511,11 @@
         "handler": "CharacterChatWhisperHandle"
       },
       {
+        "opCode": "0x7B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSpouseChatHandle"
+      },
+      {
         "opCode": "0x7C",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle",

@@ -382,6 +382,11 @@
         "handler": "AdminChat"
       },
       {
+        "opCode": "0x7A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatWhisperHandle"
+      },
+      {
         "opCode": "0x7B",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle"

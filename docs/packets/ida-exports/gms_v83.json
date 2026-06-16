@@ -10097,6 +10097,69 @@
           "comment": "MTS result mode byte (switch discriminator)"
         }
       ]
+    },
+    "CField::SendLocationWhisper": {
+      "address": "0x52f9c6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&v11, sWhisperTarget) && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&v11, sWhisperTarget) && <default>"
+        }
+      ]
+    },
+    "CField::SendChatMsgWhisper": {
+      "address": "0x52f185",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v9 && ZXString<char>::operator==(v11, (dword_BED738 + 4 * i))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v9 && ZXString<char>::operator==(v11, (dword_BED738 + 4 * i))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v9 && ZXString<char>::operator==(v11, (dword_BED738 + 4 * i))"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CUIStatusBar::SendCoupleMessage": {
+      "address": "0x8defff",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
     }
   }
 }

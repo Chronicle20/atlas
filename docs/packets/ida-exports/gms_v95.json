@@ -11380,6 +11380,89 @@
           "comment": "movement blob — CMovePath::Flush@0x668160 (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
         }
       ]
+    },
+    "CField::SendLocationWhisper": {
+      "address": "0x534150",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&sCharacterName, sWhisperTarget) && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&sCharacterName, sWhisperTarget) && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!ZXString<char>::operator==(&sCharacterName, sWhisperTarget) && <default>"
+        }
+      ]
+    },
+    "CUIStatusBar::SendCoupleMessage": {
+      "address": "0x87b3e0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "p->lMarriageRecord._m_uCount"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "p->lMarriageRecord._m_uCount"
+        }
+      ]
+    },
+    "CField::SendChatMsgWhisper": {
+      "address": "0x53d3b0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!ZMap<ZXString<char>,ZXString<char>,ZXString<char>>::GetAt(&mMacroNotice, sText, &sNotice && ZArray<ZXString<char>>::GetCount(&aMacroNotice)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!ZMap<ZXString<char>,ZXString<char>,ZXString<char>>::GetAt(&mMacroNotice, sText, &sNotice && ZArray<ZXString<char>>::GetCount(&aMacroNotice)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!ZMap<ZXString<char>,ZXString<char>,ZXString<char>>::GetAt(&mMacroNotice, sText, &sNotice && ZArray<ZXString<char>>::GetCount(&aMacroNotice)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!ZMap<ZXString<char>,ZXString<char>,ZXString<char>>::GetAt(&mMacroNotice, sText, &sNotice && ZArray<ZXString<char>>::GetCount(&aMacroNotice)"
+        }
+      ]
     }
   }
 }

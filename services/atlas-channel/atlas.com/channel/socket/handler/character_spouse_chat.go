@@ -1,0 +1,24 @@
+package handler
+
+import (
+	"atlas-channel/message"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
+
+	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/sirupsen/logrus"
+)
+
+func CharacterSpouseChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := fieldsb.CoupleMessage{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		err := message.NewProcessor(l, ctx).SpouseChat(s.Field(), s.CharacterId(), p.Message(), p.SpouseName())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process spouse chat message for character [%d].", s.CharacterId())
+		}
+	}
+}

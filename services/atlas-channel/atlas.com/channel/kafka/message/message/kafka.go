@@ -17,6 +17,7 @@ const (
 	ChatTypeMessenger = "MESSENGER"
 	ChatTypePet       = "PET"
 	ChatTypePinkText  = "PINK_TEXT"
+	ChatTypeSpouse    = "SPOUSE"
 )
 
 const (
@@ -63,6 +64,10 @@ type WhisperChatBody struct {
 
 type WhisperChatEventBody struct {
 	RecipientName string `json:"recipientName"`
+}
+
+type SpouseChatBody struct {
+	SpouseName string `json:"spouseName"`
 }
 
 type MessengerChatBody struct {

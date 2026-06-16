@@ -3131,10 +3131,12 @@
   note: task-096 — real v84 COutPacket opcode read from CField::SendChatMsgSlash send-site 0x539f6a (was stale csv-import 118 seeded from the v83 column; v84 serverbound opcode table shifted vs v83).
 - op: MULTI_CHAT
   direction: serverbound
-  opcode: 119
+  opcode: 121
   fname: CUIStatusBar::SendGroupMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9520452
+  note: 'task-100 block sweep: v84 COutPacket opcode read at CUIStatusBar::SendGroupMessage send-site (0x914744) -> COutPacket(121)/0x79, Encode1(chatTarget)+Encode1(memberCount)+loop Encode4(memberIds)+EncodeStr(text). Was stale csv-import 0x77 (v83 carryover, never reshifted). v83 MULTI_CHAT 0x77 +2 -> 0x79; matches the verified +2 shift of the chat/social serverbound block (ADMIN 0x76->0x78, WHISPER 0x78->0x7A, MESSENGER 0x7A->0x7C, PARTY 0x7C->0x7E). Stale 0x77 is now an inserted v84 op (untracked).'
 - op: WHISPER
   direction: serverbound
   opcode: 122
@@ -3148,10 +3150,12 @@
   note: 'task-100 cluster A: v84 COutPacket opcode read at CField::SendLocationWhisper send-site (0x53bb1c) -> COutPacket(122)/0x7A, Encode1((tab?64:1)|4)+EncodeStr; body-verified vs v83 SendLocationWhisper (0x52f9c6, COutPacket 0x78) and v95 (0x534150, COutPacket 141). Matches template CharacterChatWhisperHandle route 0x7A. Was stale v83 0x78 colliding with ADMIN_CHAT.'
 - op: SPOUSE_CHAT
   direction: serverbound
-  opcode: 121
+  opcode: 123
   fname: CUIStatusBar::SendCoupleMessage
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 9520622
+  note: 'task-100 block sweep: v84 COutPacket opcode read at CUIStatusBar::SendCoupleMessage send-site (0x9145ee) -> COutPacket(123)/0x7B, marriage-record guard + EncodeStr(spouseName)+EncodeStr(message) (no mode byte). Structure-identical to v87 (0x953c15, COutPacket 0x7F) and v95 (0x87b3e0, COutPacket 142/0x8E), same StringPool id 159 not-married path. Was stale csv-import 0x79 (v83 carryover); v83 SPOUSE_CHAT 0x79 +2 -> 0x7B (verified +2 block shift). Old 0x79 now owned by MULTI_CHAT.'
 - op: MESSENGER
   direction: serverbound
   opcode: 124
@@ -3169,7 +3173,7 @@
   note: 'task-100 cluster-E: v84 serverbound opcode corrected 0x7A->0x7C by READING the v84 send-site CFadeWnd::SendCloseMessage (v84 fn 0x52b457 renamed+saved). FNAME SURFACED: CFadeWnd::SendCloseMessage is a MULTIPLEXED send keyed on m_nType — its case-0 path builds the MESSENGER invite-response packet: COutPacket(124)/0x7C + Encode1(5) + EncodeStr(inviter) + EncodeStr(myName) + Encode1(0); other cases of the same fn send DIFFERENT opcodes (case5 party 0x7F, case6 alliance 0x94, case8 0x83). The registry fname is correct (this IS the function that emits MESSENGER) but it is a shared send-site, not a messenger-only fn. Body match: v83 case-0 COutPacket(0x7A) Encode1(5) (=the stale value, confirming v83 carryover), v95 case-0 COutPacket(0x8F) Encode1(5). v84 shift +2 vs v83 (0x7A->0x7C). Stale 0x7A now owned by WHISPER-sb/CField::SendLocationWhisper. NOTE: clientbound MESSENGER (0x140/CUIMessenger::OnPacket) is unaffected.'
 - op: PLAYER_INTERACTION
   direction: serverbound
-  opcode: 123
+  opcode: 125
   fname: CCashTradingRoomDlg::SetRet
   fname_alts:
   - CCashTradingRoomDlg::OnTrade
@@ -3233,8 +3237,10 @@
   - CWvsContext::SendCreateMiniGameRequest
   - CWvsContext::SendOpenShopRequest
   - CWvsContext::OnEntrustedShopCheckResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6771928
+  note: 'task-100 block sweep: v84 PLAYER_INTERACTION dispatcher opcode read at the mini-room chat send-site CMiniRoomBaseDlg::CheckAndSendChat (0x6752d8) -> COutPacket(125)/0x7D + Encode1(6 mode) + EncodeStr(text); also witnessed by MiniRoom::SendTradeItemList (0x4868a1, COutPacket 0x7D). All mini-room sub-sends share this opcode. Was stale csv-import 0x7B (v83 carryover); v83 PLAYER_INTERACTION 0x7B +2 -> 0x7D (verified +2 block shift). Old 0x7B now owned by SPOUSE_CHAT.'
 - op: PARTY_OPERATION
   direction: serverbound
   opcode: 126
@@ -3251,10 +3257,12 @@
   note: 'task-100 cluster-E cascade (revealed by MESSENGER-sb moving to 0x7C): v84 serverbound opcode corrected 0x7C->0x7E by READING the v84 send-site CField::SendCreateNewPartyMsg (0x53be37, already named; idb saved): job/level guard then COutPacket(126)/0x7E + Encode1(1) + SendPacket. Body match v95 SendCreateNewPartyMsg @0x52ebc0 (COutPacket(145) + Encode1(1)) and v83 (COutPacket(0x7C) + Encode1(1) = the stale value). Shift +2 vs v83 (0x7C->0x7E). Stale 0x7C was v83 carryover (now owned by MESSENGER-sb/CFadeWnd::SendCloseMessage).'
 - op: DENY_PARTY_REQUEST
   direction: serverbound
-  opcode: 125
-  fname: ''
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  opcode: 127
+  fname: CFadeWnd::SendCloseMessage
+  provenance: ida-discovered
+  ida:
+    address: 5420119
+  note: 'task-100 block sweep: v84 DENY_PARTY_REQUEST opcode read at CFadeWnd::SendCloseMessage (0x52b457) case m_nType==5 -> COutPacket(127)/0x7F + Encode1(0x19) + Encode4(partyId). Same multiplexed send as MESSENGER-sb (case0 0x7C), DENY_ALLIANCE (case6 0x94), DENY_GUILD (case8 0x83). Was stale csv-import 0x7D (v83 carryover, empty fname); v83 DENY_PARTY_REQUEST 0x7D +2 -> 0x7F (verified +2 block shift). Old 0x7D now owned by PLAYER_INTERACTION.'
 - op: GUILD_OPERATION
   direction: serverbound
   opcode: 130

@@ -9665,6 +9665,73 @@
           "comment": "movement blob — CMovePath::Flush@0xaa602b (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
         }
       ]
+    },
+    "CField::SendLocationWhisper": {
+      "address": "0x56c73d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!sub_48603A(result._m_pStr) && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!sub_48603A(result._m_pStr) && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_48603A(result._m_pStr) && <default>"
+        }
+      ]
+    },
+    "CField::SendChatMsgWhisper": {
+      "address": "0x56bf11",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!sub_48603A(s) && result._m_pStr && v39 && sub_48603A(dword_CD7530 + 4 * i)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!sub_48603A(s) && result._m_pStr && v39 && sub_48603A(dword_CD7530 + 4 * i)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_48603A(s) && result._m_pStr && v39 && sub_48603A(dword_CD7530 + 4 * i)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_48603A(s) && result._m_pStr && v39 && sub_48603A(dword_CD7530 + 4 * i)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!sub_48603A(s)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!sub_48603A(s)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_48603A(s)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_48603A(s)"
+        }
+      ]
     }
   }
 }

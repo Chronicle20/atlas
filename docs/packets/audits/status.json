@@ -1,11 +1,11 @@
 {
   "toolSha": "d215b0090ace182433084f17aea411490ffe7e8b",
   "exportHashes": {
-    "gms_v83": "3f575df6265d69b87a4b7fb51ea9f1aa37f5752e67573b59d03ec4bb00adb5e5",
-    "gms_v84": "51765f5ed73d6193ec879f48066ec58e417d71dc87a43ba5ee66a08992338831",
-    "gms_v87": "760c738f3e6d61544175df67b0266d8091952ff1a95c707baa62451ce525164b",
-    "gms_v95": "5fdb1723784d7d0c98d2a8f90263bbfa672d8b55630e52a3a40f2fba98e77aa8",
-    "jms_v185": "9bfecb734c4c88dc874200c23f920485bf38a637697814e969c5adf981677811"
+    "gms_v83": "fef3c4e302140d5ae30c6a44dbaaf58f89e5ed5035757ae4a3d9328848785c19",
+    "gms_v84": "e3d4ea92c4b27f9aba424b92843eee4df6c5a1247c16b13ffb9b2e46514c86d5",
+    "gms_v87": "00c2c4f67270266e3a8b5f0abfdf05e6c68817b6fd88cdb7a6df7055154d88a2",
+    "gms_v95": "546adffb84c799a2f6ba5357a7b218bc8ac570df10a420f09918eba54e9aa59b",
+    "jms_v185": "735b99a08dc616e4a706a02321ccd6ca46cbcde3c03935dca7368ac52962c051"
   },
   "rows": [
     {
@@ -9316,7 +9316,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 119
+          "opcode": 121
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9579,30 +9579,27 @@
     {
       "kind": "op",
       "op": "SPOUSE_CHAT",
+      "packet": "field/serverbound/FieldCoupleMessage",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUIStatusBar::SendCoupleMessage"
       ],
       "cells": {
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 121
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 121
+          "state": "verified",
+          "opcode": 123
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 127
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 142
         },
         "jms_v185": {
@@ -9830,7 +9827,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 123
+          "opcode": 125
         },
         "gms_v87": {
           "state": "incomplete",
@@ -9961,6 +9958,9 @@
       "op": "DENY_PARTY_REQUEST",
       "direction": "serverbound",
       "tier1": false,
+      "fnames": [
+        "CFadeWnd::SendCloseMessage"
+      ],
       "cells": {
         "gms_v83": {
           "state": "incomplete",
@@ -9970,7 +9970,7 @@
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 125
+          "opcode": 127
         },
         "gms_v87": {
           "state": "n-a",
@@ -26658,6 +26658,33 @@
     {
       "kind": "sub-struct",
       "packet": "character/serverbound/Move",
+      "tier1": true,
+      "cells": {
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "chat/serverbound/ChatWhisper",
       "tier1": true,
       "cells": {
         "gms_v83": {

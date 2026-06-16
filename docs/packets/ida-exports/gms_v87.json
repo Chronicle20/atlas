@@ -3,6 +3,62 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CField::SendChatMsgWhisper": {
+      "address": "0x556385",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v8 && sub_47F23F(v10, (dword_CA0268 + 4 * i))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v8 && sub_47F23F(v10, (dword_CA0268 + 4 * i))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v8 && sub_47F23F(v10, (dword_CA0268 + 4 * i))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v8 && sub_47F23F(v10, (dword_CA0268 + 4 * i))"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CUIStatusBar::SendCoupleMessage": {
+      "address": "0x953c15",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::CheckAndSendChat": {
       "address": "0x69973e",
       "direction": "serverbound",

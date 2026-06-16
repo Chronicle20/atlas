@@ -1240,6 +1240,23 @@ func candidatesFromFName(fname string) []candidate {
 		// CSV: WHISPER — atlas Whisper (serverbound chat/whisper.go).
 		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
 
+	// WHISPER (serverbound) primary registry fname is CField::SendLocationWhisper
+	// (the find-friend send-site); SendChatMsgWhisper is the chat-msg sibling. Both
+	// emit the same WHISPER opcode and the same atlas chat.Whisper codec decodes
+	// both. Per-version wire (IDA): mode byte + Encode4(get_update_time) [v87+/jms]
+	// + EncodeStr(target) + optional EncodeStr(msg for mode==Chat).
+	case "CField::SendLocationWhisper":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// CSV: SPOUSE_CHAT (serverbound) → CUIStatusBar::SendCoupleMessage. The client
+	// reads the partner name from the local marriage record and sends two strings
+	// with NO leading mode byte / NO updateTime: EncodeStr(spouseName) +
+	// EncodeStr(message). Per-version opcodes: v84 0x7B, v87 0x7F, v95 0x8E; jms
+	// version-absent. Atlas struct field/serverbound/CoupleMessage (named to avoid
+	// the qualified writer-name collision with field/clientbound/SpouseChat).
+	case "CUIStatusBar::SendCoupleMessage":
+		return []candidate{{name: "CoupleMessage", pkg: "field", dir: csvpkg.DirServerbound}}
+
 	// --- Social: party (clientbound) ---
 	// CSV: PARTY_OPERATION (clientbound, opcode 0x3E/62 in GMS v95) → CWvsContext::OnPartyResult
 	// dispatches on a leading mode byte to 10+ sub-ops. Each atlas clientbound struct is modelled

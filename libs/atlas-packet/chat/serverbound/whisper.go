@@ -12,6 +12,22 @@ import (
 
 const CharacterChatWhisperHandle = "CharacterChatWhisperHandle"
 
+// whisperHasUpdateTime reports whether the leading get_update_time field
+// follows the mode byte. The client send-sites CField::SendLocationWhisper /
+// CField::SendChatMsgWhisper prove it is present from GMS v87 onward (v83/v84
+// omit it) AND in JMS v185 — IDA-verified opcodes/structure:
+//
+//	gms_v83 (0x78, SendLocationWhisper@0x52f9c6): mode + EncodeStr — NO updateTime
+//	gms_v84 (0x7A, SendLocationWhisper@0x53bb1c): mode + EncodeStr — NO updateTime
+//	gms_v87 (0x7E, SendChatMsgWhisper@0x556385):  mode + Encode4(get_update_time) + EncodeStr
+//	gms_v95 (0x8D, SendLocationWhisper@0x534150): mode + Encode4(get_update_time) + EncodeStr
+//	jms_v185 (0x7A, SendLocationWhisper@0x56c73d): mode + Encode4(get_update_time) + EncodeStr
+//
+// Same v87plus predicate used by interaction/serverbound/operation_chat.go.
+func whisperHasUpdateTime(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
+}
+
 type WhisperMode byte
 
 const (
@@ -21,6 +37,7 @@ const (
 	WhisperModeMacroNotice     = WhisperMode(134)
 )
 
+// packet-audit:fname CField::SendChatMsgWhisper
 type Whisper struct {
 	mode       WhisperMode
 	updateTime uint32
@@ -57,7 +74,7 @@ func (m Whisper) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(byte(m.mode))
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if whisperHasUpdateTime(t) {
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteAsciiString(m.targetName)
@@ -72,7 +89,7 @@ func (m *Whisper) Decode(l logrus.FieldLogger, ctx context.Context) func(r *requ
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = WhisperMode(r.ReadByte())
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if whisperHasUpdateTime(t) {
 			m.updateTime = r.ReadUint32()
 		}
 		m.targetName = r.ReadAsciiString()

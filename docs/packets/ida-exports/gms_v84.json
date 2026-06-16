@@ -23365,6 +23365,69 @@
           "comment": "movement blob — CMovePath__Flush@0xa0fdec (opaque; head is Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). Atlas rebroadcasts the whole post-identity remainder byte-faithfully and extracts startX/startY from the first 4 bytes for position seeding."
         }
       ]
+    },
+    "CField::SendChatMsgWhisper": {
+      "address": "0x53b2db",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v9 && sub_4771FD(dword_C46D20 + 4 * i)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v9 && sub_4771FD(dword_C46D20 + 4 * i)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v9 && sub_4771FD(dword_C46D20 + 4 * i)"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CField::SendLocationWhisper": {
+      "address": "0x53bb1c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!sub_4771FD(a2) && <default>"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_4771FD(a2) && <default>"
+        }
+      ]
+    },
+    "CUIStatusBar::SendCoupleMessage": {
+      "address": "0x9145ee",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
     }
   }
 }

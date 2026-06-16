@@ -198,23 +198,18 @@ func TestGradeFamilyCapsTier0VerifiedToFamily(t *testing.T) {
 	}
 }
 
-func TestGradeFamilyOperationsVerifiedLiftsToVerified(t *testing.T) {
-	// A dispatcher op whose complete mode contract is enumerated+verified for the
-	// version (OperationsVerified) reaches ✅ even without a per-version byte-fixture
-	// — the mode byte is the dispatcher codec's entire wire contract.
+func TestGradeFamilyModeEnumerationDoesNotLiftToVerified(t *testing.T) {
+	// Regression for the false-pass removal: a mode-prefix dispatcher with a
+	// single sub-handler fixture (marker + fresh evidence) must STAY 🧩 family.
+	// Per-version mode-byte enumeration no longer lifts a dispatcher to ✅ —
+	// only per-mode body coverage may (a future model), never enumeration alone.
 	in := presentWithReport(t, diff.VerdictMatch, false)
 	in.Families = map[string]bool{"CLogin::OnAccountInfoResult": true}
-	in.OperationsVerified = map[string]map[string]bool{"ACCOUNT_INFO": {"gms_v83": true}}
-	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
-	if c.State != StateVerified {
-		t.Errorf("operations-verified dispatcher must be ✅, not %v (%s)", c.State.Name(), c.Note)
-	}
-	// A DIFFERENT version (not operations-verified) still caps at family.
-	in.OperationsVerified = map[string]map[string]bool{"ACCOUNT_INFO": {"gms_v95": true}}
 	in.Markers[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = MarkerStatus{Found: true, Address: "0xa3f2e8"}
-	c = gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
+	in.Evidence[EvKey{"login/clientbound/AccountInfo", "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0xa3f2e8"}
+	c := gradeOpCell(in, refACCOUNT(), "gms_v83", false, nil)
 	if c.State != StateFamily {
-		t.Errorf("non-operations-verified version must stay family, not %v", c.State.Name())
+		t.Errorf("dispatcher must stay 🧩 family (no enumeration lift), not %v (%s)", c.State.Name(), c.Note)
 	}
 }
 

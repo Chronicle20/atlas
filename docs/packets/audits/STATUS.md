@@ -406,18 +406,18 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 | NPC_TALK | CScriptMan::OnPacket |  | 0x130 | ❌ | 0x137 | ❌ | 0x141 | ❌ | 0x16B | ❌ | 0x149 | ❌ |
 | MOB_ESCORT_STOP | CMob::OnEscortStopEndPermmision | monster/clientbound/MonsterMobEscortStop (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x131 | ✅ |  | ⬜ |
 | OPEN_NPC_SHOP | CShopDlg::SetShopDlg | npc/clientbound/NpcShopList (T1) | 0x131 | ✅ | 0x138 | ✅ | 0x142 | ✅ | 0x16C | ✅ | 0x14A | ✅ |
-| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | ✅ | 0x139 | ✅ | 0x143 | ✅ | 0x16D | ✅ | 0x14B | ✅ |
+| CONFIRM_SHOP_TRANSACTION | CShopDlg::OnPacket | npc/clientbound/NpcShopOperationGenericError (T1) | 0x132 | 🧩 | 0x139 | 🧩 | 0x143 | 🧩 | 0x16D | 🧩 | 0x14B | 🧩 |
 | MOB_ESCORT_STOP_SAY | CMob::OnEscortStopSay | monster/clientbound/MonsterMobEscortStopSay (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ✅ | 0x112 | ✅ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  | 0x133 | ❌ | 0x13A | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore | monster/clientbound/MonsterMobEscortReturnBefore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ✅ | 0x113 | ✅ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket |  | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | MOB_NEXT_ATTACK | CMob::OnNextAttack | monster/clientbound/MonsterMobNextAttack (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x134 | ✅ |  | ⬜ |
-| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageShow (T1) | 0x135 | ✅ | 0x13C | ✅ | 0x146 | ✅ | 0x170 | ✅ | 0x14E | ✅ |
+| STORAGE | CTrunkDlg::OnPacket | storage/clientbound/StorageShow (T1) | 0x135 | ❌ | 0x13C | ❌ | 0x146 | 🧩 | 0x170 | ❌ | 0x14E | ❌ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
 | RPS_GAME | CRPSGameDlg::OnPacket |  | 0x138 | ❌ | 0x13F | ❌ | 0x149 | ❌ | 0x173 | ❌ | 0x151 | ❌ |
-| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
+| MESSENGER | CUIMessenger::OnPacket | messenger/clientbound/MessengerAdd (T1) | 0x139 | 🧩 | 0x140 | 🧩 | 0x14A | 🧩 | 0x174 | 🧩 | 0x152 | 🧩 |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) | 0x13A | ❌ | 0x141 | ❌ | 0x14B | ❌ | 0x175 | 🧩 | 0x153 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x177 | ✅ | 0x155 | ✅ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x178 | ✅ | 0x156 | ✅ |
@@ -428,7 +428,7 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 | PARCEL | CParcelDlg::OnPacket |  | 0x142 | ❌ | 0x149 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x17F | ✅ | 0x163 | ✅ |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashShopInventory (T1) | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashShopInventory (T1) | 0x145 | 🧩 | 0x14C | 🧩 | 0x156 | 🧩 | 0x180 | 🧩 | 0x164 | 🧩 |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
@@ -449,7 +449,7 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 | IDA_0X15A | CITC::OnChargeParamResult |  | 0x15A | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x19B | ✅ |  | ⬜ |
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
-| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsOperation (T1) | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x19C | ✅ |  | ⬜ |
+| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsOperation (T1) | 0x15C | 🧩 | 0x15C | 🧩 | 0x171 | 🧩 | 0x19C | 🧩 |  | ⬜ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x19D | ❌ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
@@ -905,11 +905,11 @@ Tool: `2c2ece0a624d1a0d8b76b8fe8f0df145cb13acb9`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v83 | 333 | 0 | 0 | 342 | 200 | 0 | 49.3% |
-| v84 | 288 | 0 | 0 | 366 | 221 | 0 | 44.0% |
-| v87 | 349 | 0 | 0 | 363 | 163 | 0 | 49.0% |
-| v95 | 390 | 0 | 1 | 405 | 79 | 0 | 49.0% |
-| JMS185 | 327 | 0 | 0 | 379 | 169 | 0 | 46.3% |
+| v83 | 327 | 4 | 0 | 344 | 200 | 0 | 48.4% |
+| v84 | 282 | 4 | 0 | 368 | 221 | 0 | 43.1% |
+| v87 | 343 | 5 | 0 | 364 | 163 | 0 | 48.2% |
+| v95 | 384 | 5 | 1 | 406 | 79 | 0 | 48.2% |
+| JMS185 | 322 | 3 | 0 | 381 | 169 | 0 | 45.6% |
 
 ## Conflicts
 

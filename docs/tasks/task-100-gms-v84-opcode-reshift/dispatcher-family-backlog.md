@@ -1,33 +1,51 @@
 # Dispatcher-family body-verification backlog
 
-## RESOLUTION (per-mode coverage)
+## CORRECTION (the enumeration model was a FALSE PASS — reverted)
 
-The dispatcher families are now driven to ✅ by the per-mode coverage model, not
-left at 🧩. The mechanism: each dispatcher's complete mode set is IDA-verified
-per version in `docs/packets/dispatchers/*.yaml`, populated into the tenant
-`operations` tables, and gated by `packet-audit operations --check`. The grader
-(`OperationsVerified`) lifts the 🧩 family cap to ✅ for a version when that
-dispatcher's mode contract is fully enumerated + config-correct there — because
-the leading mode byte IS the entire wire contract the dispatcher codec owns, so
-verifying every emitted mode's per-version value is the verification (no separate
-per-arm byte-fixture needed; it would only re-test the same byte).
+An earlier iteration drove these dispatcher families to ✅ via an "operations
+enumeration = verification" grader path (`OperationsVerified`): a dispatcher's
+per-version mode BYTES were enumerated in `docs/packets/dispatchers/*.yaml`,
+populated into the tenant `operations` tables, and that alone lifted the 🧩 cap
+to ✅. **That was wrong** — it is exactly the "passes because we only read one
+byte" false pass. Enumerating the leading discriminator byte proves NOTHING about
+each mode arm's body; the codecs (e.g. `field/clientbound/MtsOperation`) emit only
+the mode byte and zero body. A green cell there overstated coverage.
 
-Now ✅ across all versions: CASHSHOP_OPERATION, CONFIRM_SHOP_TRANSACTION,
-MESSENGER, PLAYER_INTERACTION, STORAGE. OPEN_NPC_SHOP was mis-modeled (registry
-fname `CShopDlg::OnPacket` → corrected to its real leaf handler
-`CShopDlg::SetShopDlg`); it is the shop-open packet, not a mode dispatcher, and
-now grades ✅ via its own `NpcShopList` body.
+**Reverted (this commit):** the `OperationsVerified` lift is removed from the
+grader (`tools/packet-audit/internal/matrix/grade.go`, `cmd/matrix.go`). A
+mode-prefix dispatcher now stays capped at 🧩 (or ❌ where no fixture exists)
+until **every supported mode arm has an implemented + byte-fixture-verified
+body**. The `dispatchers/*.yaml` enumerations are retained — they remain the
+authoritative mode inventory (and still drive the tenant `operations` tables via
+`operations --check`) — they just no longer green a cell on their own.
 
-**MTS_OPERATION (`CITC::OnNormalItemResult`) — now ✅ (stubbed config-driven).**
-Atlas registers the MtsOperation writer but has no MTS feature emitting it yet.
-It previously took a raw mode byte (not table-driven), so it was the one
-inconsistent dispatcher. Fixed: `MtsOperationBody` now resolves the mode from the
-`operations` table via `WithResolvedCode` (like every sibling), backed by
-`mts_operation.yaml` (the 35 CITC result modes — version-STABLE across
-v83/v84/v87/v95, IDA-verified; jms has no MTS_OPERATION op → ⬜). So the codec is
-a proper, version-correct stub ready for a future MTS feature, and the cell is ✅
-on every GMS version. The remaining work is the MTS *feature* itself (a send
-path), which is out of this packet-correctness scope.
+The honest path back to ✅ is the **per-mode body-coverage model**: decompose each
+dispatcher into per-mode synthetic IDA entries (the `CField::OnFieldEffect#Summon`
+/ `#Tremble` / `#BossHp` … pattern that FIELD_EFFECT already uses and that grades
+✅ legitimately), implement a body codec per supported mode, and byte-fixture each.
+A family graduates to ✅ only when all its supported arms are covered.
+
+OPEN_NPC_SHOP is unaffected: it was mis-modeled as the `CShopDlg::OnPacket`
+dispatcher; corrected to its real leaf handler `CShopDlg::SetShopDlg`, it is the
+flat shop-open packet (`NpcShopList` body) and grades ✅ on its own merits.
+
+## In-scope families needing per-mode bodies (task-092 + task-096)
+
+Currently 🧩/❌ until bodies land (mode counts from `dispatchers/*.yaml`):
+
+| Op | Dispatcher fname | modes | writer pkg |
+|----|------------------|-------|-----------|
+| CASHSHOP_OPERATION | `CCashShop::OnCashItemResult` | 9 | cash/clientbound |
+| MTS_OPERATION | `CITC::OnNormalItemResult` | 35 | field/clientbound (MtsOperation) |
+| MESSENGER | `CUIMessenger::OnPacket` | 8 | messenger/clientbound |
+| PLAYER_INTERACTION | `CMiniRoomBaseDlg::OnPacketBase` | 6 | interaction/clientbound |
+| STORAGE | `CTrunkDlg::OnPacket` | 10 | storage/clientbound |
+| CONFIRM_SHOP_TRANSACTION | `CShopDlg::OnPacket` | 13 | npc/clientbound |
+
+Reference (already done the right way): FIELD_EFFECT, and the
+`CField::OnWhisper` clientbound find-result demux — both per-mode decomposed and
+✅. MTS's `mts_operation.go` writer is still mode-byte-only and must be rebuilt to
+write each result body.
 
 ---
 

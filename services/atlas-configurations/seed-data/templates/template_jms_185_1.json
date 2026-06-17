@@ -1044,7 +1044,12 @@
       },
       {
         "opCode": "0x36",
-        "writer": "PartyOperation"
+        "writer": "PartyOperation",
+        "options": {
+          "operations": {
+            "TOWN_PORTAL": "0x28"
+          }
+        }
       },
       {
         "opCode": "0x39",

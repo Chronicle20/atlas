@@ -7,6 +7,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,11 +19,18 @@ import (
 // party must update it here — the per-slot surgical equivalent of Cosmic's
 // partyPortal, fired on door create/remove rather than a full PARTYDATA reload.
 //
-// v83 CWvsContext::OnPartyResult @0xa3e31c case 0x25 (and v84 @0xa89cf3 case
-// 0x28) reads: Decode1 mode, Decode1 slot, Decode4 townId, Decode4 targetId,
-// Decode2 x, Decode2 y -> aTownPortal[slot] = {town, field, x, y}. A targetId
-// of EmptyMapId (999999999) clears the slot (the render loop skips field ids
-// == 999999999). The mode byte is version-resolved via the operations table.
+// Body (per IDA OnPartyResult): Decode1 mode, Decode1 slot, Decode4 townId,
+// Decode4 targetId, [Decode4 skillId — GMS v95+ only], Decode2 x, Decode2 y ->
+// aTownPortal[slot]. A targetId of EmptyMapId (999999999) clears the slot (the
+// render loop skips field ids == 999999999). The mode byte is version-resolved
+// via the operations table; the per-version cases (modes shift non-uniformly):
+//
+//	v83 @0xa3e31c case 0x25      v84 @0xa89cf3 case 0x28
+//	v87 @0xad697a case 0x29      v95 @0xa10ab0 case 0x2E (adds skillId)
+//	jms @0xb297e7 case 0x28
+//
+// The GMS v95+ skillId matches the 5-int aTownPortal in WritePartyData (written
+// as 0 there); we encode 0 too. JMS uses the small (4-int) layout like v83.
 type TownPortal struct {
 	mode        byte
 	slot        byte
@@ -53,28 +61,40 @@ func (m TownPortal) String() string {
 	return fmt.Sprintf("mode [%d], slot [%d], townMapId [%d], targetMapId [%d], x [%d], y [%d]", m.mode, m.slot, m.townMapId, m.targetMapId, m.x, m.y)
 }
 
-// Encode: Encode1(mode), Encode1(slot), Encode4(townId), Encode4(targetId),
-// Encode2(x), Encode2(y). x/y are 2 bytes (Decode2), unlike the 4-byte
-// PARTYDATA aTownPortal coordinates.
-func (m TownPortal) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+// townPortalHasSkillId reports whether this tenant's aTownPortal entry carries
+// the 5th m_nSKillID int (GMS v95+). Mirrors WritePartyData's v95plus gate;
+// JMS uses the small (4-int) layout like v83.
+func townPortalHasSkillId(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() >= 95
+}
+
+func (m TownPortal) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteByte(m.slot)
 		w.WriteInt(uint32(m.townMapId))
 		w.WriteInt(uint32(m.targetMapId))
+		if townPortalHasSkillId(t) {
+			w.WriteInt(0) // m_nSKillID (GMS v95+); WritePartyData also writes 0
+		}
 		w.WriteShort(uint16(m.x))
 		w.WriteShort(uint16(m.y))
 		return w.Bytes()
 	}
 }
 
-func (m *TownPortal) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *TownPortal) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.slot = r.ReadByte()
 		m.townMapId = _map.Id(r.ReadUint32())
 		m.targetMapId = _map.Id(r.ReadUint32())
+		if townPortalHasSkillId(t) {
+			_ = r.ReadUint32() // m_nSKillID (GMS v95+)
+		}
 		m.x = int16(r.ReadUint16())
 		m.y = int16(r.ReadUint16())
 	}

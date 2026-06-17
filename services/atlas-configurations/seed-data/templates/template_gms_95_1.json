@@ -672,7 +672,12 @@
       },
       {
         "opCode": "0x3E",
-        "writer": "PartyOperation"
+        "writer": "PartyOperation",
+        "options": {
+          "operations": {
+            "TOWN_PORTAL": "0x2E"
+          }
+        }
       },
       {
         "opCode": "0x41",

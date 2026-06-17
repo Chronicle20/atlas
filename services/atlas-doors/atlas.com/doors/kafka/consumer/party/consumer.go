@@ -97,6 +97,8 @@ func handleJoined(l logrus.FieldLogger) message.Handler[StatusEvent[JoinedEventB
 			return
 		}
 		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
+		// Make the party's existing doors visible to the member who just joined.
+		enginedoor.NewProcessor(l, ctx).ShowPartyDoorsToCharacter(e.PartyId, pm.Members(), e.ActorId)
 	}
 }
 
@@ -114,6 +116,8 @@ func handleLeft(l logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]
 			return
 		}
 		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []character.Id{e.ActorId})
+		// Hide the party's doors from the member who just left.
+		enginedoor.NewProcessor(l, ctx).HidePartyDoorsFromCharacter(e.PartyId, pm.Members(), e.ActorId)
 	}
 }
 

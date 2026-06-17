@@ -24,6 +24,7 @@ const (
 	RemoveReasonChannelChanged = "CHANNEL_CHANGED"
 	RemoveReasonLeftField      = "LEFT_FIELD"
 	RemoveReasonRecast         = "RECAST"
+	RemoveReasonPartyLeft      = "PARTY_LEFT"
 )
 
 // StatusEvent is the channel-side copy of the atlas-doors D1 door status
@@ -37,8 +38,11 @@ type StatusEvent[E any] struct {
 	PairId           uint32     `json:"pairId"`
 	OwnerCharacterId uint32     `json:"ownerCharacterId"`
 	PartyId          uint32     `json:"partyId"`
-	Type             string     `json:"type"`
-	Body             E          `json:"body"`
+	// ForCharacterId: 0 = broadcast to the door's eligible set; non-zero =
+	// deliver only to this character (party join/leave visibility delta).
+	ForCharacterId uint32 `json:"forCharacterId"`
+	Type           string `json:"type"`
+	Body           E      `json:"body"`
 }
 
 type CreatedBody struct {

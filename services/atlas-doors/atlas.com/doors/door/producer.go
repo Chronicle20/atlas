@@ -6,13 +6,14 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func createdEventProvider(m Model) model.Provider[[]kafka.Message] {
+func createdEventProvider(m Model, forCharacterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.Field().MapId()))
 	value := StatusEvent[CreatedBody]{
 		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
 		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
 		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
-		Type: EventDoorStatusCreated,
+		ForCharacterId: forCharacterId,
+		Type:           EventDoorStatusCreated,
 		Body: CreatedBody{
 			AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(), TownMapId: m.TownMapId(),
 			Slot: m.Slot(), TownPortalId: m.TownPortalId(),
@@ -23,13 +24,14 @@ func createdEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, &value)
 }
 
-func removedEventProvider(m Model, reason string) model.Provider[[]kafka.Message] {
+func removedEventProvider(m Model, reason string, forCharacterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.Field().MapId()))
 	value := StatusEvent[RemovedBody]{
 		WorldId: m.Field().WorldId(), ChannelId: m.Field().ChannelId(),
 		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
 		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
-		Type: EventDoorStatusRemoved,
+		ForCharacterId: forCharacterId,
+		Type:           EventDoorStatusRemoved,
 		Body: RemovedBody{AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
 			TownMapId: m.TownMapId(), Slot: m.Slot(), Reason: reason},
 	}

@@ -28,6 +28,7 @@ type broadcastCall struct {
 	writerName       string
 	ownerCharacterId uint32
 	partyId          uint32
+	forCharacterId   uint32
 }
 
 // withRecordingBroadcaster swaps the package-level broadcast seam for a
@@ -37,12 +38,13 @@ func withRecordingBroadcaster(t *testing.T) (restore func(), calls *[]broadcastC
 	t.Helper()
 	recorded := make([]broadcastCall, 0)
 	orig := broadcastDoorToEligible
-	broadcastDoorToEligible = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, f field.Model, ownerCharacterId, partyId uint32, writerName string, _ packet.Encode) {
+	broadcastDoorToEligible = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, f field.Model, ownerCharacterId, partyId, forCharacterId uint32, writerName string, _ packet.Encode) {
 		recorded = append(recorded, broadcastCall{
 			mapId:            f.MapId(),
 			writerName:       writerName,
 			ownerCharacterId: ownerCharacterId,
 			partyId:          partyId,
+			forCharacterId:   forCharacterId,
 		})
 	}
 	return func() { broadcastDoorToEligible = orig }, &recorded

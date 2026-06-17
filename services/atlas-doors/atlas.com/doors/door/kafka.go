@@ -25,6 +25,7 @@ const (
 	RemoveReasonChannelChanged = "CHANNEL_CHANGED"
 	RemoveReasonLeftField      = "LEFT_FIELD"
 	RemoveReasonRecast         = "RECAST"
+	RemoveReasonPartyLeft      = "PARTY_LEFT"
 )
 
 type StatusEvent[E any] struct {
@@ -35,8 +36,14 @@ type StatusEvent[E any] struct {
 	PairId           uint32       `json:"pairId"`
 	OwnerCharacterId character.Id `json:"ownerCharacterId"`
 	PartyId          uint32       `json:"partyId"`
-	Type             string       `json:"type"`
-	Body             E            `json:"body"`
+	// ForCharacterId targets a membership-change visibility delta at a single
+	// character: 0 means broadcast to the door's eligible set (owner + current
+	// party members); non-zero means deliver this packet ONLY to that character,
+	// bypassing the eligibility filter (used to spawn party doors to a joiner and
+	// remove them from a leaver, who is no longer in the eligible set).
+	ForCharacterId uint32 `json:"forCharacterId"`
+	Type           string `json:"type"`
+	Body           E      `json:"body"`
 }
 
 type CreatedBody struct {

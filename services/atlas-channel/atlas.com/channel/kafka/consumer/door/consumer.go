@@ -83,10 +83,20 @@ var partyMemberSet = func(l logrus.FieldLogger, ctx context.Context, ownerCharac
 // in field `f` whose character is the owner or a same-channel party member of
 // the owner (caster always included). Held as a package-level var so the test
 // can stub session enumeration + party membership.
-var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, ownerCharacterId, partyId uint32, writerName string, enc packet.Encode) {
-	members := partyMemberSet(l, ctx, ownerCharacterId, partyId)
+var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, ownerCharacterId, partyId, forCharacterId uint32, writerName string, enc packet.Encode) {
+	// forCharacterId != 0 targets a single character (a party joiner/leaver) and
+	// bypasses the eligibility filter — a leaver is no longer in the party set but
+	// still needs the removeDoor. 0 broadcasts to the door's eligible set.
+	var members map[uint32]struct{}
+	if forCharacterId == 0 {
+		members = partyMemberSet(l, ctx, ownerCharacterId, partyId)
+	}
 	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
-		if _, ok := members[s.CharacterId()]; !ok {
+		if forCharacterId != 0 {
+			if s.CharacterId() != forCharacterId {
+				return nil
+			}
+		} else if _, ok := members[s.CharacterId()]; !ok {
 			return nil
 		}
 		return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
@@ -111,15 +121,15 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 		// AREA field viewers (Cosmic DoorObject.sendSpawnData, areaDoor: from=area,
 		// inTown=false): spawnPortal(area, town, townPortalPos) then
 		// spawnDoor(owner, areaPos, launched=false-for-first-deploy).
-		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnPortalWriter, writer.SpawnPortalBody(e.MapId, b.TownMapId, b.TownX, b.TownY))
-		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnDoorWriter, writer.SpawnDoorBody(e.OwnerCharacterId, b.AreaX, b.AreaY, false))
 
 		// TOWN field viewers (Cosmic townDoor: from=town, inTown=true): ONLY
 		// spawnPortal(town, area, areaPos) — NO spawnDoor (line 120 guards
 		// spawnDoor behind !inTown()).
-		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnPortalWriter, writer.SpawnPortalBody(b.TownMapId, e.MapId, b.AreaX, b.AreaY))
 	}
 }
@@ -137,12 +147,12 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 		townField := field.NewBuilder(e.WorldId, e.ChannelId, b.TownMapId).SetInstance(e.Instance).Build()
 
 		// AREA viewers (areaDoor.sendDestroyData, inTown=false): removeDoor(owner).
-		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, areaField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.RemoveDoorWriter, writer.RemoveDoorBody(e.OwnerCharacterId))
 
 		// TOWN viewers (townDoor.sendDestroyData, inTown=true): removeDoor town=true
 		// -> 8-byte SPAWN_PORTAL clear (RemoveTownDoor), NOT SpawnPortal(...,0,0).
-		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.RemoveTownDoorWriter, writer.RemoveTownDoorBody())
 	}
 }
@@ -163,9 +173,9 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[Stat
 		// town portal indicator is re-placed at the new slot). Cosmic has no
 		// dedicated reslot packet, so emit remove(town) + spawnPortal at the new
 		// slot for the town field. The party-packet minimap update is Task G6.
-		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.RemoveTownDoorWriter, writer.RemoveTownDoorBody())
-		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId,
+		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnPortalWriter, writer.SpawnPortalBody(b.TownMapId, e.MapId, b.TownX, b.TownY))
 	}
 }

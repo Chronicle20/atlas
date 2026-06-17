@@ -138,7 +138,7 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId character.Id, skil
 		p.alloc.Release(p.ctx, p.t, townId)
 		return Model{}, err
 	}
-	if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(m)); err != nil {
+	if err := p.emit(EnvEventTopicDoorStatus, createdEventProvider(m, 0)); err != nil {
 		p.l.WithError(err).Errorf("failed emitting CREATED for door %d", areaId)
 	}
 	return m, nil
@@ -156,7 +156,7 @@ func (p *ProcessorImpl) RemoveByOwner(ownerCharacterId character.Id, reason stri
 		}
 		p.alloc.Release(p.ctx, p.t, m.AreaDoorId())
 		p.alloc.Release(p.ctx, p.t, m.TownDoorId())
-		if err := p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, reason)); err != nil {
+		if err := p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, reason, 0)); err != nil {
 			p.l.WithError(err).Errorf("failed emitting REMOVED for door %d", m.AreaDoorId())
 		}
 	}
@@ -184,9 +184,51 @@ func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId character.Id, 
 		}
 		p.alloc.Release(p.ctx, p.t, m.AreaDoorId())
 		p.alloc.Release(p.ctx, p.t, m.TownDoorId())
-		_ = p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, RemoveReasonLeftField))
+		_ = p.emit(EnvEventTopicDoorStatus, removedEventProvider(m, RemoveReasonLeftField, 0))
 	}
 	return nil
+}
+
+// ShowPartyDoorsToCharacter re-emits a CREATED status for every door owned by a
+// party member, targeted at `target` (a member who just joined). The channel
+// delivers the spawn only to that character, so a player who joins a party with
+// an active door starts seeing it without waiting for a recast (the door state
+// itself is unchanged — this is a visibility-only refresh).
+func (p *ProcessorImpl) ShowPartyDoorsToCharacter(partyId uint32, ownerIds []character.Id, target character.Id) {
+	for _, owner := range ownerIds {
+		doors, err := GetRegistry().GetByOwner(p.ctx, p.t, owner)
+		if err != nil {
+			continue
+		}
+		for _, d := range doors {
+			if d.PartyId() != partyId {
+				continue
+			}
+			_ = p.emit(EnvEventTopicDoorStatus, createdEventProvider(d, uint32(target)))
+		}
+	}
+}
+
+// HidePartyDoorsFromCharacter emits a REMOVED status for every door owned by a
+// REMAINING party member, targeted at `target` (a member who just left), so the
+// leaver stops seeing the party's doors. The leaver's own door is left alone (it
+// reslots to solo via ReslotParty and stays visible to them).
+func (p *ProcessorImpl) HidePartyDoorsFromCharacter(partyId uint32, ownerIds []character.Id, target character.Id) {
+	for _, owner := range ownerIds {
+		if owner == target {
+			continue
+		}
+		doors, err := GetRegistry().GetByOwner(p.ctx, p.t, owner)
+		if err != nil {
+			continue
+		}
+		for _, d := range doors {
+			if d.PartyId() != partyId {
+				continue
+			}
+			_ = p.emit(EnvEventTopicDoorStatus, removedEventProvider(d, RemoveReasonPartyLeft, uint32(target)))
+		}
+	}
 }
 
 func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX point.X, townY point.Y) error {

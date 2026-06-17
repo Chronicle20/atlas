@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // recordedEvent is a decoded custody status ack captured by the test producer.
@@ -160,6 +161,162 @@ func TestAcceptToMtsListing_ReplayIsNoOpAndReacks(t *testing.T) {
 	for i, ev := range rp.events {
 		if ev.eventType != custody.StatusEventTypeAccepted {
 			t.Fatalf("ack %d not ACCEPTED: %s", i, ev.eventType)
+		}
+		if ev.transactionId != transactionId {
+			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
+		}
+	}
+}
+
+// seedActiveListing persists an active listing row with a known snapshot so the
+// move handler has something to move to a buyer holding.
+func seedActiveListing(t *testing.T, db *gorm.DB, ctx context.Context, listingId uuid.UUID) listing.Model {
+	t.Helper()
+	m, err := listing.NewBuilder(test.TestTenantId, 0, 42).
+		SetId(listingId).
+		SetSellerName("Seller").
+		SetSaleType(listing.SaleTypeFixed).
+		SetState(listing.StateActive).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		SetWeaponAttack(17).
+		SetSlots(7).
+		SetLevel(1).
+		SetListValue(1000).
+		SetCommissionRate(0.10).
+		SetCategory("equip").
+		SetSubCategory("onehand").
+		Build()
+	if err != nil {
+		t.Fatalf("build listing: %v", err)
+	}
+	stored, err := listing.CreateListing(db.WithContext(ctx), m)
+	if err != nil {
+		t.Fatalf("seed listing: %v", err)
+	}
+	return stored
+}
+
+// holdingsForBuyer returns the (non-deleted) holdings owned by buyerId. The
+// package's cache=shared in-memory DB leaks rows across tests, so per-buyer
+// filtering keeps the "exactly one holding" assertion isolated.
+func holdingsForBuyer(t *testing.T, db *gorm.DB, ctx context.Context, buyerId uint32) []holding.Model {
+	t.Helper()
+	all, err := holding.GetAll()(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("holding GetAll: %v", err)
+	}
+	var out []holding.Model
+	for _, m := range all {
+		if m.OwnerId() == buyerId {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func newMoveCommand(transactionId uuid.UUID, listingId uuid.UUID, buyerId uint32) custody.Command[custody.MtsMoveListingToHoldingCommandBody] {
+	return custody.Command[custody.MtsMoveListingToHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandMtsMoveListingToHolding,
+		Body: custody.MtsMoveListingToHoldingCommandBody{
+			ListingId: listingId,
+			BuyerId:   buyerId,
+			WorldId:   0,
+		},
+	}
+}
+
+func TestMtsMoveListingToHolding_MarksSoldCreatesHoldingAndAcks(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	// The package uses a cache=shared in-memory DB, so rows leak across tests;
+	// scope holding assertions to this test's unique buyer id.
+	const buyerId = uint32(7770001)
+	seedActiveListing(t, db, ctx, listingId)
+
+	rp := &recordingProducer{}
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, newMoveCommand(transactionId, listingId, buyerId))
+
+	// listing marked sold
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateSold {
+		t.Fatalf("expected listing state sold, got %s", stored.State())
+	}
+
+	// exactly one holding for the buyer, origin purchased, snapshot copied
+	buyerHoldings := holdingsForBuyer(t, db, ctx, buyerId)
+	if len(buyerHoldings) != 1 {
+		t.Fatalf("expected exactly 1 holding for buyer %d, got %d", buyerId, len(buyerHoldings))
+	}
+	h := buyerHoldings[0]
+	if h.Origin() != holding.OriginPurchased {
+		t.Fatalf("expected origin purchased, got %s", h.Origin())
+	}
+	if h.TemplateId() != 1302000 || h.Quantity() != 1 || h.WeaponAttack() != 17 || h.Slots() != 7 {
+		t.Fatalf("holding snapshot not copied: tmpl=%d qty=%d watk=%d slots=%d", h.TemplateId(), h.Quantity(), h.WeaponAttack(), h.Slots())
+	}
+
+	// exactly one MOVED ack carrying the transactionId
+	if len(rp.events) != 1 {
+		t.Fatalf("expected 1 ack, got %d", len(rp.events))
+	}
+	if rp.events[0].eventType != custody.StatusEventTypeMoved {
+		t.Fatalf("expected MOVED ack, got %s", rp.events[0].eventType)
+	}
+	if rp.events[0].transactionId != transactionId {
+		t.Fatalf("ack transactionId mismatch: want %s got %s", transactionId, rp.events[0].transactionId)
+	}
+}
+
+func TestMtsMoveListingToHolding_ReplayCreatesNoSecondHoldingAndReacks(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	transactionId := uuid.New()
+	listingId := uuid.New()
+	// Unique buyer id so the shared in-memory DB's leaked rows don't pollute the
+	// per-buyer count.
+	const buyerId = uint32(7770002)
+	seedActiveListing(t, db, ctx, listingId)
+
+	rp := &recordingProducer{}
+	cmd := newMoveCommand(transactionId, listingId, buyerId)
+
+	// first delivery
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, cmd)
+	// replayed delivery (same listing/buyer/transaction)
+	handleMtsMoveListingToHolding(rp.provider())(db)(l, ctx, cmd)
+
+	// still exactly one holding for this buyer after replay (no second copy granted)
+	if got := len(holdingsForBuyer(t, db, ctx, buyerId)); got != 1 {
+		t.Fatalf("expected exactly 1 holding for buyer %d after replay, got %d", buyerId, got)
+	}
+
+	// listing remains sold
+	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("listing lookup: %v", err)
+	}
+	if stored.State() != listing.StateSold {
+		t.Fatalf("expected listing state sold, got %s", stored.State())
+	}
+
+	// both deliveries re-acked MOVED with the same transactionId
+	if len(rp.events) != 2 {
+		t.Fatalf("expected 2 MOVED acks (original + replay), got %d", len(rp.events))
+	}
+	for i, ev := range rp.events {
+		if ev.eventType != custody.StatusEventTypeMoved {
+			t.Fatalf("ack %d not MOVED: %s", i, ev.eventType)
 		}
 		if ev.transactionId != transactionId {
 			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)

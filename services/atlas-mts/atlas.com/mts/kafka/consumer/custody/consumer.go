@@ -9,6 +9,7 @@ import (
 	custodyproducer "atlas-mts/kafka/producer/custody"
 	"atlas-mts/listing"
 	"context"
+	"encoding/binary"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -19,6 +20,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -45,6 +47,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseFromMtsHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMtsMoveListingToHolding(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -170,6 +175,106 @@ func handleReleaseFromMtsHolding(pf providerFn) func(db *gorm.DB) message.Handle
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
 				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, c.Body.HoldingId))
+			})
+		}
+	}
+}
+
+// moveHoldingId derives a deterministic surrogate id for the buyer's holding from
+// the (listingId, buyerId) pair. A replayed settlement-move therefore targets the
+// same holding id, so the existence-check below short-circuits and no second
+// holding is created (mirrors the AcceptToMtsListing id-existence idempotency).
+func moveHoldingId(listingId uuid.UUID, buyerId uint32) uuid.UUID {
+	var buf [20]byte
+	copy(buf[:16], listingId[:])
+	binary.BigEndian.PutUint32(buf[16:], buyerId)
+	return uuid.NewSHA1(uuid.Nil, buf[:])
+}
+
+// handleMtsMoveListingToHolding settles a purchase: in ONE local DB transaction it
+// (a) loads the listing, (b) conditionally marks it sold via the listing
+// administrator's UpdateState(active→sold), and (c) creates the buyer's holding row
+// (origin=purchased) copying the listing's item snapshot. Idempotency: the buyer
+// holding id is derived deterministically from (listingId, buyerId); a replayed
+// delivery finds that holding already present and is a no-op that still re-acks
+// MOVED. The conditional UpdateState affecting 0 rows on a replay (already sold) is
+// likewise success, not an error.
+func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Handler[custody.Command[custody.MtsMoveListingToHoldingCommandBody]] {
+	return func(db *gorm.DB) message.Handler[custody.Command[custody.MtsMoveListingToHoldingCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c custody.Command[custody.MtsMoveListingToHoldingCommandBody]) {
+			if c.Type != custody.CommandMtsMoveListingToHolding {
+				return
+			}
+			b := c.Body
+			tdb := db.WithContext(ctx)
+			hid := moveHoldingId(b.ListingId, b.BuyerId)
+
+			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
+				lm, gerr := listing.GetById(b.ListingId.String())(tx)()
+				if gerr != nil {
+					return gerr
+				}
+
+				// Conditional active->sold transition. 0 rows on a replay (already
+				// sold) is success, not an error.
+				if _, uerr := listing.UpdateState(tx, b.ListingId.String(), listing.StateActive, listing.StateSold); uerr != nil {
+					return uerr
+				}
+
+				// Idempotency: if the buyer holding already exists for this
+				// (listing, buyer), the move has been applied — do not create a
+				// second copy.
+				if existing, herr := holding.GetById(hid.String())(tx)(); herr == nil && existing.Id() == hid {
+					return nil
+				}
+
+				t := tenant.MustFromContext(ctx)
+				hm, berr := holding.NewBuilder(t.Id(), world.Id(b.WorldId), b.BuyerId).
+					SetId(hid).
+					SetOrigin(holding.OriginPurchased).
+					SetTemplateId(lm.TemplateId()).
+					SetQuantity(lm.Quantity()).
+					SetStrength(lm.Strength()).
+					SetDexterity(lm.Dexterity()).
+					SetIntelligence(lm.Intelligence()).
+					SetLuck(lm.Luck()).
+					SetHP(lm.HP()).
+					SetMP(lm.MP()).
+					SetWeaponAttack(lm.WeaponAttack()).
+					SetMagicAttack(lm.MagicAttack()).
+					SetWeaponDefense(lm.WeaponDefense()).
+					SetMagicDefense(lm.MagicDefense()).
+					SetAccuracy(lm.Accuracy()).
+					SetAvoidability(lm.Avoidability()).
+					SetHands(lm.Hands()).
+					SetSpeed(lm.Speed()).
+					SetJump(lm.Jump()).
+					SetSlots(lm.Slots()).
+					SetLevel(lm.Level()).
+					SetItemLevel(lm.ItemLevel()).
+					SetItemExp(lm.ItemExp()).
+					SetRingId(lm.RingId()).
+					SetViciousCount(lm.ViciousCount()).
+					SetFlags(lm.Flags()).
+					Build()
+				if berr != nil {
+					return berr
+				}
+				_, cerr := holding.CreateHolding(tx, hm)
+				return cerr
+			})
+
+			p := pf(ctx)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to move listing [%s] to holding for buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
+				})
+				return
+			}
+
+			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.MovedStatusEventProvider(c.TransactionId, b.ListingId, hid))
 			})
 		}
 	}

@@ -42,6 +42,21 @@ func ReleasedStatusEventProvider(transactionId uuid.UUID, holdingId uuid.UUID) m
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
 }
 
+// MovedStatusEventProvider builds a MOVED ack for a settled listing whose
+// custody moved to the buyer's holding (or was already moved on replay),
+// echoing the transactionId, listingId, and the created holdingId.
+func MovedStatusEventProvider(transactionId uuid.UUID, listingId uuid.UUID, holdingId uuid.UUID) model.Provider[[]kafka.Message] {
+	value := &custody.StatusEvent[custody.StatusEventMovedBody]{
+		TransactionId: transactionId,
+		Type:          custody.StatusEventTypeMoved,
+		Body: custody.StatusEventMovedBody{
+			ListingId: listingId,
+			HoldingId: holdingId,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
 // ErrorStatusEventProvider builds an ERROR ack carrying the transactionId and a
 // failure message.
 func ErrorStatusEventProvider(transactionId uuid.UUID, errMsg string) model.Provider[[]kafka.Message] {

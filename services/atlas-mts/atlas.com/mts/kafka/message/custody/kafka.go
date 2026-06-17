@@ -17,6 +17,9 @@ const (
 	CommandAcceptToMtsListing = "ACCEPT_TO_MTS_LISTING"
 	// CommandReleaseFromMtsHolding soft-deletes a take-home holding row.
 	CommandReleaseFromMtsHolding = "RELEASE_FROM_MTS_HOLDING"
+	// CommandMtsMoveListingToHolding marks a sold listing's row `sold` and creates
+	// the buyer's `purchased` holding from the listing's snapshot, in one tx.
+	CommandMtsMoveListingToHolding = "MTS_MOVE_LISTING_TO_HOLDING"
 )
 
 // Command is the generic custody command envelope. TransactionId keys the saga
@@ -82,6 +85,16 @@ type ReleaseFromMtsHoldingCommandBody struct {
 	HoldingId uuid.UUID `json:"holdingId"`
 }
 
+// MtsMoveListingToHoldingCommandBody carries the listing to settle plus the
+// buyer/world identity for the holding to create. The item snapshot is read from
+// the listing row by atlas-mts (not carried here), since the listing already
+// holds it.
+type MtsMoveListingToHoldingCommandBody struct {
+	ListingId uuid.UUID `json:"listingId"`
+	BuyerId   uint32    `json:"buyerId"`
+	WorldId   byte      `json:"worldId"`
+}
+
 const (
 	// EnvStatusEventTopic names the custody status (ack) topic.
 	EnvStatusEventTopic = "EVENT_TOPIC_MTS_CUSTODY_STATUS"
@@ -92,6 +105,9 @@ const (
 	// StatusEventTypeReleased acks a ReleaseFromMtsHolding command (row
 	// soft-deleted or already released — both are success).
 	StatusEventTypeReleased = "RELEASED"
+	// StatusEventTypeMoved acks an MtsMoveListingToHolding command (listing marked
+	// sold and buyer holding created, or already moved on replay — both success).
+	StatusEventTypeMoved = "MOVED"
 	// StatusEventTypeError reports a custody failure.
 	StatusEventTypeError = "ERROR"
 )
@@ -111,6 +127,13 @@ type StatusEventAcceptedBody struct {
 
 // StatusEventReleasedBody acks a holding release, echoing the holding id.
 type StatusEventReleasedBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
+// StatusEventMovedBody acks a settlement move, echoing the listing id and the
+// created buyer holding id.
+type StatusEventMovedBody struct {
+	ListingId uuid.UUID `json:"listingId"`
 	HoldingId uuid.UUID `json:"holdingId"`
 }
 

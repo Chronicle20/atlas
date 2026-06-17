@@ -67,10 +67,12 @@ func (a *counterAllocator) Release(_ context.Context, _ tenant.Model, id uint32)
 	a.released = append(a.released, id)
 }
 
-// fakeEmit captures (topic, decoded event Type) for each emitted message.
+// fakeEmit captures (topic, decoded event Type) for each emitted message, plus
+// the raw value so tests can decode further fields (partyId/forCharacterId/...).
 type fakeEmit struct {
 	topics []string
 	types  []string
+	values [][]byte
 }
 
 func (e *fakeEmit) emit(topic string, p model.Provider[[]kafka.Message]) error {
@@ -85,6 +87,7 @@ func (e *fakeEmit) emit(topic string, p model.Provider[[]kafka.Message]) error {
 		_ = json.Unmarshal(msg.Value, &env)
 		e.topics = append(e.topics, topic)
 		e.types = append(e.types, env.Type)
+		e.values = append(e.values, msg.Value)
 	}
 	return nil
 }
@@ -547,5 +550,60 @@ func TestReslotEmitsSlotChangedAndNoOpsWhenUnchanged(t *testing.T) {
 	}
 	if got.Slot() != 2 || got.TownPortalId() != 0x82 || got.TownX() != 50 || got.TownY() != 60 {
 		t.Fatalf("reslot not persisted: slot=%d portal=%d x=%d y=%d", got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
+	}
+}
+
+// TestLeavePartyDoorRemovesFromPartyThenRekeysSolo pins the party-leave fix: a
+// departed member's door is REMOVED while still party-scoped (broadcast to the
+// remaining members) and then re-CREATED as a solo door (party 0, slot 0). This
+// is what stops the leaver's door lingering on a remaining member's client and
+// being dragged onto slot 0 by a stale party-scoped reslot.
+func TestLeavePartyDoorRemovesFromPartyThenRekeysSolo(t *testing.T) {
+	em := &fakeEmit{}
+	p, ten, ctx := newTestProcessor(t, fakeResolver{}, &counterAllocator{next: 1}, em)
+
+	f := field.NewBuilder(1, 2, 240011000).Build()
+	// Leaver's door: party 123, slot 1 (a non-leader's party slot).
+	m := NewBuilder().
+		SetAreaDoorId(900_001).SetTownDoorId(900_002).
+		SetOwnerCharacterId(5).SetPartyId(123).SetField(f).
+		SetTownMapId(_map.Id(240000000)).SetSlot(1).SetTownPortalId(0x81).
+		SetTownX(-85).SetTownY(531).Build()
+	if err := GetRegistry().Put(ctx, ten, m); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	// Slot-0 town portal for the solo re-key.
+	portals := []TownPortal{{X: 10, Y: 20}, {X: -85, Y: 531}}
+	p.LeavePartyDoor(123, 5, func(_ _map.Id) []TownPortal { return portals })
+
+	if len(em.types) != 2 || em.types[0] != EventDoorStatusRemoved || em.types[1] != EventDoorStatusCreated {
+		t.Fatalf("expected [REMOVED, CREATED], got %v", em.types)
+	}
+	decode := func(b []byte) (partyId, forCh uint32) {
+		var env struct {
+			PartyId        uint32 `json:"partyId"`
+			ForCharacterId uint32 `json:"forCharacterId"`
+		}
+		_ = json.Unmarshal(b, &env)
+		return env.PartyId, env.ForCharacterId
+	}
+	// REMOVED is still party-scoped and broadcast (forCharacterId 0) so it reaches
+	// — and clears the town-portal slot for — the remaining members.
+	if pid, fc := decode(em.values[0]); pid != 123 || fc != 0 {
+		t.Fatalf("REMOVED should be party-scoped broadcast: partyId=%d forCharacterId=%d", pid, fc)
+	}
+	// CREATED is solo (party 0) so it reaches only the owner.
+	if pid, fc := decode(em.values[1]); pid != 0 || fc != 0 {
+		t.Fatalf("CREATED should be solo: partyId=%d forCharacterId=%d", pid, fc)
+	}
+	// Persisted door is now solo at slot 0 with the slot-0 town portal.
+	got, err := GetRegistry().Get(ctx, ten, 900_001)
+	if err != nil {
+		t.Fatalf("Get after leave: %v", err)
+	}
+	if got.PartyId() != 0 || got.Slot() != 0 || got.TownPortalId() != 0x80 || got.TownX() != 10 || got.TownY() != 20 {
+		t.Fatalf("not re-keyed to solo: party=%d slot=%d portal=%d x=%d y=%d",
+			got.PartyId(), got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
 	}
 }

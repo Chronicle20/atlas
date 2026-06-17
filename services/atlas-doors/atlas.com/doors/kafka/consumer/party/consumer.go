@@ -1,10 +1,10 @@
 package party
 
 import (
-	consumer2 "atlas-doors/kafka/consumer"
-	enginedoor "atlas-doors/door"
-	"atlas-doors/party"
 	mapdata "atlas-doors/data/map"
+	enginedoor "atlas-doors/door"
+	consumer2 "atlas-doors/kafka/consumer"
+	"atlas-doors/party"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -111,13 +111,19 @@ func handleLeft(l logrus.FieldLogger) message.Handler[StatusEvent[LeftEventBody]
 		}
 		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
-			// Party may be disbanded already — still reslot the leaver to solo.
-			reslotAfterMembership(l, ctx, e.PartyId, nil, []character.Id{e.ActorId})
+			// Party may be disbanded already — still transition the leaver's door to solo.
+			enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.ActorId, townPortalsForMap(l, ctx))
 			return
 		}
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []character.Id{e.ActorId})
-		// Hide the party's doors from the member who just left.
+		// Reslot only the REMAINING members (their indices shift). The leaver's door
+		// is NOT reslotted within the party — that would broadcast its slot change
+		// back to the party it just left, dragging it onto the remaining members'
+		// slot 0. LeavePartyDoor instead removes it from them and re-keys it to solo.
+		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
+		// Hide the remaining party's doors from the member who just left.
 		enginedoor.NewProcessor(l, ctx).HidePartyDoorsFromCharacter(e.PartyId, pm.Members(), e.ActorId)
+		// Hide the leaver's own door from the remaining members + re-key it to solo.
+		enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.ActorId, townPortalsForMap(l, ctx))
 	}
 }
 
@@ -129,10 +135,14 @@ func handleExpel(l logrus.FieldLogger) message.Handler[StatusEvent[ExpelEventBod
 		}
 		pm, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
-			reslotAfterMembership(l, ctx, e.PartyId, nil, []character.Id{e.Body.CharacterId})
+			enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.Body.CharacterId, townPortalsForMap(l, ctx))
 			return
 		}
-		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), []character.Id{e.Body.CharacterId})
+		// Same handling as a voluntary leave (see handleLeft): reslot only the
+		// remaining members, and transition the expelled member's door to solo so
+		// it is removed from the remaining members rather than reslotted in-party.
+		reslotAfterMembership(l, ctx, e.PartyId, pm.Members(), nil)
+		enginedoor.NewProcessor(l, ctx).LeavePartyDoor(e.PartyId, e.Body.CharacterId, townPortalsForMap(l, ctx))
 	}
 }
 

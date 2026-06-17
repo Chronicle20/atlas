@@ -556,6 +556,66 @@ type ReleaseFromStoragePayload struct {
 	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
 }
 
+// TransferToMtsPayload — expanded into release_from_character + accept_to_mts_listing.
+type TransferToMtsPayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`
+	CharacterId         uint32    `json:"characterId"`
+	WorldId             world.Id  `json:"worldId"`
+	SourceInventoryType byte      `json:"sourceInventoryType"`
+	AssetId             uint32    `json:"assetId"`
+	Quantity            uint32    `json:"quantity"`
+	ListingId           uuid.UUID `json:"listingId"`
+}
+
+// WithdrawFromMtsPayload — expanded into release_from_mts_holding + accept_to_character.
+type WithdrawFromMtsPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	WorldId       world.Id  `json:"worldId"`
+	HoldingId     uuid.UUID `json:"holdingId"`
+	InventoryType byte      `json:"inventoryType"`
+}
+
+// AcceptToMtsListingPayload (atomic, dispatched to atlas-mts custody consumer).
+type AcceptToMtsListingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ListingId     uuid.UUID `json:"listingId"`
+}
+
+// ReleaseFromMtsHoldingPayload (atomic, dispatched to atlas-mts custody consumer).
+type ReleaseFromMtsHoldingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	HoldingId     uuid.UUID `json:"holdingId"`
+}
+
+// MtsMoveListingToHoldingPayload (atomic custody step): moves a sold/settled
+// listing's custody to the buyer's holding.
+type MtsMoveListingToHoldingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ListingId     uuid.UUID `json:"listingId"`
+}
+
+// MtsSettlePurchasePayload (composite money-mover): debit buyer prepaid, credit seller points, move custody.
+type MtsSettlePurchasePayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	BuyerId         uint32    `json:"buyerId"`
+	BuyerAccountId  uint32    `json:"buyerAccountId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	MarkedUpPrice   int32     `json:"markedUpPrice"`
+	ListValue       int32     `json:"listValue"`
+}
+
+// MtsBidEscrowPayload (single-step wallet hold).
+type MtsBidEscrowPayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	BidderId        uint32    `json:"bidderId"`
+	BidderAccountId uint32    `json:"bidderAccountId"`
+	Amount          int32     `json:"amount"` // negative to hold, positive to release
+}
+
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

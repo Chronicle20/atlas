@@ -279,6 +279,241 @@ func TestUnmarshalEvolvePetStep(t *testing.T) {
 	}
 }
 
+func TestUnmarshalTransferToMtsStep(t *testing.T) {
+	raw := `{
+		"stepId": "transfer_to_mts-1",
+		"status": "pending",
+		"action": "transfer_to_mts",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"characterId": 100,
+			"worldId": 0,
+			"sourceInventoryType": 1,
+			"assetId": 555,
+			"quantity": 1,
+			"listingId": "22222222-2222-2222-2222-222222222222"
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != TransferToMts {
+		t.Fatalf("expected action TransferToMts, got %q", step.Action)
+	}
+	p, ok := step.Payload.(TransferToMtsPayload)
+	if !ok {
+		t.Fatalf("expected TransferToMtsPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.AssetId != 555 {
+		t.Errorf("assetId: expected 555, got %d", p.AssetId)
+	}
+}
+
+func TestUnmarshalWithdrawFromMtsStep(t *testing.T) {
+	raw := `{
+		"stepId": "withdraw_from_mts-1",
+		"status": "pending",
+		"action": "withdraw_from_mts",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"characterId": 101,
+			"worldId": 0,
+			"holdingId": "33333333-3333-3333-3333-333333333333",
+			"inventoryType": 2
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != WithdrawFromMts {
+		t.Fatalf("expected action WithdrawFromMts, got %q", step.Action)
+	}
+	p, ok := step.Payload.(WithdrawFromMtsPayload)
+	if !ok {
+		t.Fatalf("expected WithdrawFromMtsPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 101 {
+		t.Errorf("characterId: expected 101, got %d", p.CharacterId)
+	}
+	if p.InventoryType != 2 {
+		t.Errorf("inventoryType: expected 2, got %d", p.InventoryType)
+	}
+}
+
+func TestUnmarshalAcceptToMtsListingStep(t *testing.T) {
+	raw := `{
+		"stepId": "accept_to_mts_listing-1",
+		"status": "pending",
+		"action": "accept_to_mts_listing",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"listingId": "22222222-2222-2222-2222-222222222222"
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != AcceptToMtsListing {
+		t.Fatalf("expected action AcceptToMtsListing, got %q", step.Action)
+	}
+	p, ok := step.Payload.(AcceptToMtsListingPayload)
+	if !ok {
+		t.Fatalf("expected AcceptToMtsListingPayload, got %T", step.Payload)
+	}
+	if p.ListingId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("listingId mismatch, got %s", p.ListingId)
+	}
+}
+
+func TestUnmarshalReleaseFromMtsHoldingStep(t *testing.T) {
+	raw := `{
+		"stepId": "release_from_mts_holding-1",
+		"status": "pending",
+		"action": "release_from_mts_holding",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"holdingId": "33333333-3333-3333-3333-333333333333"
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ReleaseFromMtsHolding {
+		t.Fatalf("expected action ReleaseFromMtsHolding, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ReleaseFromMtsHoldingPayload)
+	if !ok {
+		t.Fatalf("expected ReleaseFromMtsHoldingPayload, got %T", step.Payload)
+	}
+	if p.HoldingId.String() != "33333333-3333-3333-3333-333333333333" {
+		t.Errorf("holdingId mismatch, got %s", p.HoldingId)
+	}
+}
+
+func TestUnmarshalMtsSettlePurchaseStep(t *testing.T) {
+	raw := `{
+		"stepId": "mts_settle_purchase-1",
+		"status": "pending",
+		"action": "mts_settle_purchase",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"listingId": "22222222-2222-2222-2222-222222222222",
+			"buyerId": 100,
+			"buyerAccountId": 10,
+			"sellerId": 200,
+			"sellerAccountId": 20,
+			"markedUpPrice": 1100,
+			"listValue": 1000
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != MtsSettlePurchase {
+		t.Fatalf("expected action MtsSettlePurchase, got %q", step.Action)
+	}
+	p, ok := step.Payload.(MtsSettlePurchasePayload)
+	if !ok {
+		t.Fatalf("expected MtsSettlePurchasePayload, got %T", step.Payload)
+	}
+	if p.BuyerId != 100 {
+		t.Errorf("buyerId: expected 100, got %d", p.BuyerId)
+	}
+	if p.MarkedUpPrice != 1100 {
+		t.Errorf("markedUpPrice: expected 1100, got %d", p.MarkedUpPrice)
+	}
+	if p.ListValue != 1000 {
+		t.Errorf("listValue: expected 1000, got %d", p.ListValue)
+	}
+}
+
+func TestUnmarshalMtsMoveListingToHoldingStep(t *testing.T) {
+	raw := `{
+		"stepId": "mts_move_listing_to_holding-1",
+		"status": "pending",
+		"action": "mts_move_listing_to_holding",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"listingId": "22222222-2222-2222-2222-222222222222"
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != MtsMoveListingToHolding {
+		t.Fatalf("expected action MtsMoveListingToHolding, got %q", step.Action)
+	}
+	p, ok := step.Payload.(MtsMoveListingToHoldingPayload)
+	if !ok {
+		t.Fatalf("expected MtsMoveListingToHoldingPayload, got %T", step.Payload)
+	}
+	if p.ListingId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("listingId mismatch, got %s", p.ListingId)
+	}
+}
+
+func TestUnmarshalMtsBidEscrowStep(t *testing.T) {
+	raw := `{
+		"stepId": "mts_bid_escrow-1",
+		"status": "pending",
+		"action": "mts_bid_escrow",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"listingId": "22222222-2222-2222-2222-222222222222",
+			"bidderId": 100,
+			"bidderAccountId": 10,
+			"amount": -500
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != MtsBidEscrow {
+		t.Fatalf("expected action MtsBidEscrow, got %q", step.Action)
+	}
+	p, ok := step.Payload.(MtsBidEscrowPayload)
+	if !ok {
+		t.Fatalf("expected MtsBidEscrowPayload, got %T", step.Payload)
+	}
+	if p.BidderId != 100 {
+		t.Errorf("bidderId: expected 100, got %d", p.BidderId)
+	}
+	if p.Amount != -500 {
+		t.Errorf("amount: expected -500, got %d", p.Amount)
+	}
+}
+
 func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 	// Mirrors the sentinel-payload shape that character-factory emits before
 	// orchestrator result-forwarding substitutes the real characterId.

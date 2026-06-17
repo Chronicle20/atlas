@@ -42,6 +42,19 @@ func ReleasedStatusEventProvider(transactionId uuid.UUID, holdingId uuid.UUID) m
 	return producer.SingleMessageProvider(keyFor(transactionId), value)
 }
 
+// RestoredStatusEventProvider builds a RESTORED ack for an un-soft-deleted (or
+// already-live) holding, echoing the transactionId and holdingId.
+func RestoredStatusEventProvider(transactionId uuid.UUID, holdingId uuid.UUID) model.Provider[[]kafka.Message] {
+	value := &custody.StatusEvent[custody.StatusEventRestoredBody]{
+		TransactionId: transactionId,
+		Type:          custody.StatusEventTypeRestored,
+		Body: custody.StatusEventRestoredBody{
+			HoldingId: holdingId,
+		},
+	}
+	return producer.SingleMessageProvider(keyFor(transactionId), value)
+}
+
 // MovedStatusEventProvider builds a MOVED ack for a settled listing whose
 // custody moved to the buyer's holding (or was already moved on replay),
 // echoing the transactionId, listingId, and the created holdingId.

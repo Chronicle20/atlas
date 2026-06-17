@@ -20,6 +20,13 @@ const (
 	// CommandMtsMoveListingToHolding marks a sold listing's row `sold` and creates
 	// the buyer's `purchased` holding from the listing's snapshot, in one tx.
 	CommandMtsMoveListingToHolding = "MTS_MOVE_LISTING_TO_HOLDING"
+	// CommandRestoreMtsHolding un-soft-deletes a holding row by id. It is the
+	// inverse of ReleaseFromMtsHolding, dispatched by the saga compensator when a
+	// WithdrawFromMts saga fails AFTER the holding was released (the take-home
+	// AcceptToCharacter step failed): the released holding must be restored so the
+	// item is not lost. Idempotent: clearing deleted_at on an already-live row
+	// affects 0 rows and is still success.
+	CommandRestoreMtsHolding = "RESTORE_MTS_HOLDING"
 )
 
 // Command is the generic custody command envelope. TransactionId keys the saga
@@ -85,6 +92,12 @@ type ReleaseFromMtsHoldingCommandBody struct {
 	HoldingId uuid.UUID `json:"holdingId"`
 }
 
+// RestoreMtsHoldingCommandBody un-soft-deletes the holding row by id (the
+// compensating inverse of ReleaseFromMtsHolding).
+type RestoreMtsHoldingCommandBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
 // MtsMoveListingToHoldingCommandBody carries the listing to settle plus the
 // buyer/world identity for the holding to create. The item snapshot is read from
 // the listing row by atlas-mts (not carried here), since the listing already
@@ -108,6 +121,9 @@ const (
 	// StatusEventTypeMoved acks an MtsMoveListingToHolding command (listing marked
 	// sold and buyer holding created, or already moved on replay — both success).
 	StatusEventTypeMoved = "MOVED"
+	// StatusEventTypeRestored acks a RestoreMtsHolding command (row un-soft-deleted
+	// or already live — both success).
+	StatusEventTypeRestored = "RESTORED"
 	// StatusEventTypeError reports a custody failure.
 	StatusEventTypeError = "ERROR"
 )
@@ -127,6 +143,11 @@ type StatusEventAcceptedBody struct {
 
 // StatusEventReleasedBody acks a holding release, echoing the holding id.
 type StatusEventReleasedBody struct {
+	HoldingId uuid.UUID `json:"holdingId"`
+}
+
+// StatusEventRestoredBody acks a holding restore, echoing the holding id.
+type StatusEventRestoredBody struct {
 	HoldingId uuid.UUID `json:"holdingId"`
 }
 

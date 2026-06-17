@@ -373,3 +373,60 @@ func TestReleaseFromMtsHolding_SoftDeletesAndIsIdempotent(t *testing.T) {
 		}
 	}
 }
+
+// TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent asserts the WithdrawFromMts
+// compensation handler un-soft-deletes the holding (making it readable again)
+// and is idempotent: a replayed restore on an already-live row re-acks RESTORED
+// without error. This is the dupe-safety inverse of ReleaseFromMtsHolding.
+func TestRestoreMtsHolding_UndoesReleaseAndIsIdempotent(t *testing.T) {
+	db := test.SetupTestDB(t, listing.Migration, holding.Migration)
+	ctx := test.CreateTestContext()
+	l := logrus.New()
+
+	// seed + release a holding row so there is something to restore
+	holdingId := uuid.New()
+	m, err := holding.NewBuilder(test.TestTenantId, 0, 99).
+		SetId(holdingId).
+		SetOrigin(holding.OriginPurchased).
+		SetTemplateId(1302000).
+		SetQuantity(1).
+		Build()
+	if err != nil {
+		t.Fatalf("build holding: %v", err)
+	}
+	if _, err := holding.CreateHolding(db.WithContext(ctx), m); err != nil {
+		t.Fatalf("seed holding: %v", err)
+	}
+	if _, err := holding.SoftDelete(db.WithContext(ctx), holdingId.String()); err != nil {
+		t.Fatalf("seed release: %v", err)
+	}
+
+	rp := &recordingProducer{}
+	transactionId := uuid.New()
+	cmd := custody.Command[custody.RestoreMtsHoldingCommandBody]{
+		TransactionId: transactionId,
+		Type:          custody.CommandRestoreMtsHolding,
+		Body:          custody.RestoreMtsHoldingCommandBody{HoldingId: holdingId},
+	}
+
+	// first delivery: un-soft-deletes + acks; the holding is readable again
+	handleRestoreMtsHolding(rp.provider())(db)(l, ctx, cmd)
+	if _, err := holding.GetById(holdingId.String())(db.WithContext(ctx))(); err != nil {
+		t.Fatalf("expected holding restored (readable) after restore: %v", err)
+	}
+
+	// replayed delivery: already live, re-acks without error
+	handleRestoreMtsHolding(rp.provider())(db)(l, ctx, cmd)
+
+	if len(rp.events) != 2 {
+		t.Fatalf("expected 2 RESTORED acks (original + replay), got %d", len(rp.events))
+	}
+	for i, ev := range rp.events {
+		if ev.eventType != custody.StatusEventTypeRestored {
+			t.Fatalf("ack %d not RESTORED: %s", i, ev.eventType)
+		}
+		if ev.transactionId != transactionId {
+			t.Fatalf("ack %d transactionId mismatch: %s", i, ev.transactionId)
+		}
+	}
+}

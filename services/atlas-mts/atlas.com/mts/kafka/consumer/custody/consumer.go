@@ -49,6 +49,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseFromMtsHolding(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreMtsHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMtsMoveListingToHolding(producer2.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
@@ -175,6 +178,42 @@ func handleReleaseFromMtsHolding(pf providerFn) func(db *gorm.DB) message.Handle
 
 			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
 				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, c.Body.HoldingId))
+			})
+		}
+	}
+}
+
+// handleRestoreMtsHolding un-soft-deletes the holding row by id — the inverse of
+// handleReleaseFromMtsHolding, dispatched by the saga compensator when a
+// WithdrawFromMts saga fails after the holding was already released. Restore is
+// idempotent: clearing deleted_at on an already-live row affects 0 rows and is
+// success, not an error. The whole restore runs in one local DB transaction.
+func handleRestoreMtsHolding(pf providerFn) func(db *gorm.DB) message.Handler[custody.Command[custody.RestoreMtsHoldingCommandBody]] {
+	return func(db *gorm.DB) message.Handler[custody.Command[custody.RestoreMtsHoldingCommandBody]] {
+		return func(l logrus.FieldLogger, ctx context.Context, c custody.Command[custody.RestoreMtsHoldingCommandBody]) {
+			if c.Type != custody.CommandRestoreMtsHolding {
+				return
+			}
+			tdb := db.WithContext(ctx)
+
+			err := database.ExecuteTransaction(tdb, func(tx *gorm.DB) error {
+				// Restore is idempotent: 0 rows affected on a replay (already
+				// live) is success, not an error.
+				_, rerr := holding.Restore(tx, c.Body.HoldingId.String())
+				return rerr
+			})
+
+			p := pf(ctx)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to restore holding [%s] for transaction [%s].", c.Body.HoldingId.String(), c.TransactionId.String())
+				_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+					return buf.Put(custody.EnvStatusEventTopic, custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
+				})
+				return
+			}
+
+			_ = msg.Emit(p)(func(buf *msg.Buffer) error {
+				return buf.Put(custody.EnvStatusEventTopic, custodyproducer.RestoredStatusEventProvider(c.TransactionId, c.Body.HoldingId))
 			})
 		}
 	}

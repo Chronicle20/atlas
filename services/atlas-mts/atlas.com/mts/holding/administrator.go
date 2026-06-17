@@ -93,3 +93,15 @@ func SoftDelete(db *gorm.DB, id string) (int64, error) {
 	result := db.Where(&entity{Id: parseId(id)}).Delete(&entity{})
 	return result.RowsAffected, result.Error
 }
+
+// Restore un-soft-deletes the holding by id (clears deleted_at), returning the
+// number of rows affected. It is the inverse of SoftDelete and is idempotent:
+// restoring an already-live row clears nothing (0 rows) and is still success.
+// Unscoped is required so the UPDATE can see the soft-deleted row.
+func Restore(db *gorm.DB, id string) (int64, error) {
+	result := db.Unscoped().Model(&entity{}).
+		Where(&entity{Id: parseId(id)}).
+		Where("deleted_at IS NOT NULL").
+		Update("deleted_at", nil)
+	return result.RowsAffected, result.Error
+}

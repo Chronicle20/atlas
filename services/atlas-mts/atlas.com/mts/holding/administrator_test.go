@@ -163,6 +163,55 @@ func TestAdministratorSoftDeleteIdempotent(t *testing.T) {
 	}
 }
 
+// TestAdministratorRestoreUndoesSoftDelete asserts Restore is the inverse of
+// SoftDelete (the WithdrawFromMts compensation path): a soft-deleted holding
+// becomes readable again after Restore, and Restore is idempotent — restoring an
+// already-live row affects 0 rows.
+func TestAdministratorRestoreUndoesSoftDelete(t *testing.T) {
+	tenantId := uuid.New()
+	ctx := tenantCtx(t, tenantId)
+	db := adminTestDB(t).WithContext(ctx)
+
+	m := buildHolding(t, tenantId, 100)
+	created, err := holding.CreateHolding(db, m)
+	if err != nil {
+		t.Fatalf("CreateHolding: %v", err)
+	}
+
+	if _, err := holding.SoftDelete(db, created.Id().String()); err != nil {
+		t.Fatalf("SoftDelete: %v", err)
+	}
+	if _, err := holding.GetById(created.Id().String())(db)(); err == nil {
+		t.Fatal("soft-deleted holding was still readable before restore")
+	}
+
+	affected, err := holding.Restore(db, created.Id().String())
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	if affected != 1 {
+		t.Errorf("Restore affected %d rows, want 1", affected)
+	}
+
+	// The restored row must be readable again.
+	got, err := holding.GetById(created.Id().String())(db)()
+	if err != nil {
+		t.Fatalf("GetById after Restore: %v", err)
+	}
+	if got.Id() != created.Id() {
+		t.Errorf("restored id = %s, want %s", got.Id(), created.Id())
+	}
+
+	// Restore is idempotent: restoring an already-live row affects 0 rows.
+	affected, err = holding.Restore(db, created.Id().String())
+	if err != nil {
+		t.Fatalf("Restore second: %v", err)
+	}
+	if affected != 0 {
+		t.Errorf("second Restore affected %d rows, want 0 (idempotent)", affected)
+	}
+}
+
 // TestAdministratorMultipleHoldingsPerTenant asserts a single tenant can hold
 // many holdings concurrently. Guards against a unique constraint on tenant_id
 // alone (which would cap a tenant at one holding). The (tenant_id, id) unique

@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationOutOfStock2
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#OutOfStock2
+    address: "0x7cb04e"
+    decompile_sha256: 2b297b76f3da7a9b1c1ca41b29b5fe19e2852d0eba212d3d108a07562f33d350

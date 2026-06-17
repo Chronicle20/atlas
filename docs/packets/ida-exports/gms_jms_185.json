@@ -4375,10 +4375,98 @@
         }
       ]
     },
-    "CShopDlg::OnPacket#Simple": {
+    "CShopDlg::OnPacket#Ok": {
       "address": "0x7cb04e",
       "direction": "clientbound",
-      "notes": "CONFIRM_SHOP_TRANSACTION (JMS185 opcode 0x14B/331). CShopDlg::OnPacket@0x7cb04e (nType==0x14B) switch(Decode1 mode @0x7cb0e5). Mode-only arms (cases 0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x14 and default) read no further packet fields (StringPool Notice only). Atlas ShopOperationSimple writes only Byte(mode). MATCH (mode is the dispatcher discriminator).",
+      "notes": "CONFIRM_SHOP_TRANSACTION OK arm (mode 0). Discrete per-mode struct NpcShopOperationOk (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OutOfStock": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK arm (mode 1). Discrete per-mode struct NpcShopOperationOutOfStock (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#NotEnoughMoney": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION NOT_ENOUGH_MONEY arm (mode 2). Discrete per-mode struct NpcShopOperationNotEnoughMoney (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#InventoryFull": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION INVENTORY_FULL arm (mode 3). Discrete per-mode struct NpcShopOperationInventoryFull (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OutOfStock2": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK_2 arm (mode 5). Discrete per-mode struct NpcShopOperationOutOfStock2 (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#OutOfStock3": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK_3 arm (mode 9). Discrete per-mode struct NpcShopOperationOutOfStock3 (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#NotEnoughMoney2": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION NOT_ENOUGH_MONEY_2 arm (mode 10). Discrete per-mode struct NpcShopOperationNotEnoughMoney2 (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#NeedMoreItems": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION NEED_MORE_ITEMS arm (mode 13). Discrete per-mode struct NpcShopOperationNeedMoreItems (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (transaction result discriminator @0x7cb0e5)"
+        }
+      ]
+    },
+    "CShopDlg::OnPacket#TradeLimit": {
+      "address": "0x7cb04e",
+      "direction": "clientbound",
+      "notes": "CONFIRM_SHOP_TRANSACTION TRADE_LIMIT arm (mode 16). Discrete per-mode struct NpcShopOperationTradeLimit (mode-only StringPool-notice arm: Decode1 mode only). Split from the shared mode-byte family per task-096; mode byte from docs/packets/dispatchers/npc_shop_operation.yaml.",
       "calls": [
         {
           "op": "Decode1",

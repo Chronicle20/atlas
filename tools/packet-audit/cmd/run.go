@@ -2224,13 +2224,32 @@ func candidatesFromFName(fname string) []candidate {
 		// Decode2 slotMax}. Atlas ShopList loop body matches per-item; analyzer flattens
 		// the loop → ⚠️ tool-limitation (manually verified — see NpcShopList ## Loop bounds).
 		return []candidate{{name: "ShopList", pkg: "npc", dir: csvpkg.DirClientbound}}
-	case "CShopDlg::OnPacket#Simple":
-		// CSV: CONFIRM_SHOP_TRANSACTION (GMS v95 opcode 0x12F? no — 0x130/304) →
-		// CShopDlg::OnPacket@0x6eb7d0 (nType==365) switch(Decode1 mode). Most modes
-		// (0,1,2,3,5,8,9,0xA,0xD,0x10,0x11,0x12) read no further fields (mode byte only,
-		// then a StringPool Notice). Atlas ShopOperationSimple writes Byte(mode). ✓
-		// ⚠️ OP-FAMILY-npc-shop-operation: full mode enum deferred to _pending.md.
-		return []candidate{{name: "ShopOperationSimple", pkg: "npc", dir: csvpkg.DirClientbound}}
+	// CONFIRM_SHOP_TRANSACTION (CShopDlg::OnPacket switch(Decode1 mode)) mode-only
+	// "notice" arms — each dispatcher mode maps to its OWN discrete struct (no
+	// shared shape). Each arm reads exactly one byte (the mode discriminator) then
+	// shows a StringPool Notice; the structs differ only by the fixed operation key
+	// their body func resolves. Mode bytes per docs/packets/dispatchers/
+	// npc_shop_operation.yaml (IDA-verified): OK=0, OUT_OF_STOCK=1,
+	// NOT_ENOUGH_MONEY=2, INVENTORY_FULL=3, OUT_OF_STOCK_2=5, OUT_OF_STOCK_3=9,
+	// NOT_ENOUGH_MONEY_2=10, NEED_MORE_ITEMS=13, TRADE_LIMIT=16 (version-stable).
+	case "CShopDlg::OnPacket#Ok":
+		return []candidate{{name: "ShopOperationOk", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OutOfStock":
+		return []candidate{{name: "ShopOperationOutOfStock", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#NotEnoughMoney":
+		return []candidate{{name: "ShopOperationNotEnoughMoney", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#InventoryFull":
+		return []candidate{{name: "ShopOperationInventoryFull", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OutOfStock2":
+		return []candidate{{name: "ShopOperationOutOfStock2", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#OutOfStock3":
+		return []candidate{{name: "ShopOperationOutOfStock3", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#NotEnoughMoney2":
+		return []candidate{{name: "ShopOperationNotEnoughMoney2", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#NeedMoreItems":
+		return []candidate{{name: "ShopOperationNeedMoreItems", pkg: "npc", dir: csvpkg.DirClientbound}}
+	case "CShopDlg::OnPacket#TradeLimit":
+		return []candidate{{name: "ShopOperationTradeLimit", pkg: "npc", dir: csvpkg.DirClientbound}}
 	case "CShopDlg::OnPacket#LevelRequirement":
 		// Same handler, cases 0xE/0xF (over/under level requirement): Decode4(level).
 		// Atlas ShopOperationLevelRequirement writes Byte(mode) + Int(levelLimit). ✓

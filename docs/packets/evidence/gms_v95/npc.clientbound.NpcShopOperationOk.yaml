@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationOk
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#Ok
+    address: "0x6eb7d0"
+    decompile_sha256: f1ffa8cf521d215a99efd4d84aeff8ba15bb157a20c61eef7e89adb7a51cd0fe

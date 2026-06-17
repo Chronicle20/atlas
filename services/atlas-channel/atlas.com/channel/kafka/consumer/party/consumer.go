@@ -330,29 +330,27 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[party2.Stat
 			return
 		}
 
-		// For remaining party members.
+		// Announce the join to every party member synchronously FIRST. The v83
+		// PARTYDATA carries no HP, so this join packet sets every party gauge to 0;
+		// the hpsync below must reach each session's writer AFTER it, or the join
+		// packet overwrites the synced gauges back to 0. The previous code raced
+		// these in separate goroutines, so the joiner's HP frequently stuck at 0.
 		for _, m := range p.Members() {
-			go func() {
-				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to announce party [%d] joined party [%d].", e.PartyId, p.Id())
-				}
-			}()
+			if aErr := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId())); aErr != nil {
+				l.WithError(aErr).Errorf("Unable to announce party [%d] joined party [%d].", e.PartyId, p.Id())
+			}
 		}
 
-		// v83 PARTYDATA carries no HP, so the join packet leaves every party
-		// gauge at 0. Sync the joining character's HP gauges in both directions
-		// with the in-map party members the same way map entry does — otherwise
-		// the gauges stay 0 until each member's next HP change. Done only on the
-		// actor's own channel server to avoid redundant cross-channel work.
+		// Sync the joining character's HP gauges in both directions with the in-map
+		// party members (PARTYDATA has no HP). Enqueued after the join announces
+		// above so it is not overwritten. Done only on the actor's own channel
+		// server to avoid redundant cross-channel work.
 		if f, ferr := location.GetField(l, ctx, e.ActorId); ferr != nil {
 			l.WithError(ferr).Debugf("Unable to resolve field for character [%d]; skipping party member HP sync on join.", e.ActorId)
 		} else if f.ChannelId() == sc.ChannelId() {
-			go func() {
-				if hpErr := hpsync.Sync(l, ctx, wp, f, e.ActorId); hpErr != nil {
-					l.WithError(hpErr).Debugf("Unable to sync party member HP for character [%d] on join.", e.ActorId)
-				}
-			}()
+			if hpErr := hpsync.Sync(l, ctx, wp, f, e.ActorId); hpErr != nil {
+				l.WithError(hpErr).Debugf("Unable to sync party member HP for character [%d] on join.", e.ActorId)
+			}
 		}
 	}
 }

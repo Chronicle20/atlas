@@ -10,6 +10,7 @@ import (
 	"atlas-mts/listing"
 	"context"
 	"encoding/binary"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -24,6 +25,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+// errMoveLostRace is returned by the settle move handler when the listing was
+// claimed by a concurrent cancel/expire (the active->sold transition affected 0
+// rows and there is no prior buyer holding). It forces an ERROR ack so the
+// MtsSettlePurchase saga compensates the buyer's prepaid debit instead of
+// silently completing a purchase the buyer never received.
+var errMoveLostRace = errors.New("mts: settle move lost the race to a concurrent cancel/expire; listing no longer active")
 
 // InitConsumers registers the MTS custody command consumer (the saga custody
 // channel), mirroring the cash-compartment consumer.
@@ -278,8 +286,15 @@ func handleMtsMoveListingToHolding(pf providerFn) func(db *gorm.DB) message.Hand
 				// seller cancel/expire holding plus this purchased holding), so settle
 				// must lose the race and create nothing.
 				if affected == 0 {
-					l.Warnf("MtsMoveListingToHolding lost the race for listing [%s] (no active->sold transition, no prior holding); creating no buyer holding for buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
-					return nil
+					// Lost the race to a concurrent cancel/expire (no prior holding =
+					// not a replay). Creating no holding avoids the double-custody dupe,
+					// but the settle MUST fail so the saga compensates the buyer's
+					// already-applied prepaid debit. Returning an error emits an ERROR
+					// ack -> the move step fails -> reverse-walk re-credits the buyer. A
+					// silent success here would charge the buyer for an item the seller
+					// reclaimed (currency desync).
+					l.Warnf("MtsMoveListingToHolding lost the race for listing [%s] (no active->sold transition, no prior holding); failing settle so the buyer debit is compensated. buyer [%d], transaction [%s].", b.ListingId.String(), b.BuyerId, c.TransactionId.String())
+					return errMoveLostRace
 				}
 
 				t := tenant.MustFromContext(ctx)

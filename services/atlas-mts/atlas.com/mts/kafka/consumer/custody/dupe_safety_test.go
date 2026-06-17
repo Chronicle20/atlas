@@ -175,6 +175,17 @@ func TestDupeSafety_CancelRacingPurchase_CancelWins(t *testing.T) {
 		t.Fatalf("single-custody invariant violated: settle-move lost the race but created %d buyer holdings, want 0", got)
 	}
 
+	// CURRENCY invariant: the losing settle move must ack ERROR (not MOVED) so the
+	// MtsSettlePurchase saga compensates the buyer's already-applied prepaid debit.
+	// A MOVED ack would complete the purchase -> the buyer is charged for an item
+	// the seller reclaimed (currency desync), with no compensation.
+	if len(rp.events) != 1 {
+		t.Fatalf("expected exactly 1 ack from the losing move, got %d", len(rp.events))
+	}
+	if rp.events[0].eventType != custody.StatusEventTypeError {
+		t.Fatalf("settle move lost the race but acked %q; want ERROR so the saga compensates the buyer debit", rp.events[0].eventType)
+	}
+
 	// Listing stays cancelled (the losing move did not flip it to sold).
 	stored, err := listing.GetById(listingId.String())(db.WithContext(ctx))()
 	if err != nil {

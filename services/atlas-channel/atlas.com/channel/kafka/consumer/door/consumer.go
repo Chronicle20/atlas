@@ -11,12 +11,14 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	mapc "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
+	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -106,6 +108,36 @@ var broadcastDoorToEligible = func(l logrus.FieldLogger, ctx context.Context, wp
 	}
 }
 
+// announceTownPortalToParty sends the per-slot PARTY_OPERATION town-portal
+// update to every online member of the owner's party. This is what makes a
+// Mystic Door cast (or removed) while in a party appear/disappear in town: the
+// v83 client renders town doors from the party town-portal array when in a
+// party and ignores the solo SPAWN_PORTAL (CField::OnTownPortalChanged). The
+// SPAWN_PORTAL emitted alongside remains the SOLO render path. Held as a
+// package var so tests can stub party/session resolution.
+var announceTownPortalToParty = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, sc server.Model, partyId uint32, slot byte, townMapId, targetMapId mapc.Id, x, y int16, clear bool) {
+	if partyId == 0 {
+		return
+	}
+	p, err := party.NewProcessor(l, ctx).GetById(partyId)
+	if err != nil {
+		l.WithError(err).Warnf("TownPortal: unable to resolve party [%d] for door owner.", partyId)
+		return
+	}
+	var body packet.Encode
+	if clear {
+		body = partycb.PartyTownPortalClearBody(slot)
+	} else {
+		body = partycb.PartyTownPortalBody(slot, townMapId, targetMapId, x, y)
+	}
+	sp := session.NewProcessor(l, ctx)
+	for _, m := range p.Members() {
+		_ = sp.IfPresentByCharacterId(sc.Channel())(m.Id(), func(s session.Model) error {
+			return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(body)(s)
+		})
+	}
+}
+
 func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEvent[CreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e StatusEvent[CreatedBody]) {
 		if e.Type != EventDoorStatusCreated {
@@ -128,9 +160,18 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 
 		// TOWN field viewers (Cosmic townDoor: from=town, inTown=true): ONLY
 		// spawnPortal(town, area, areaPos) — NO spawnDoor (line 120 guards
-		// spawnDoor behind !inTown()).
+		// spawnDoor behind !inTown()). SPAWN_PORTAL is the SOLO town render path.
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.SpawnPortalWriter, writer.SpawnPortalBody(b.TownMapId, e.MapId, b.AreaX, b.AreaY))
+
+		// PARTY town render path: a viewer in a party renders town doors from the
+		// party town-portal array, not SPAWN_PORTAL — so set this member's slot for
+		// every party member (wherever they are; the array is global client state).
+		// ForCharacterId != 0 is a join/leave visibility delta already covered by the
+		// JOIN/LEAVE PARTYDATA refresh, so only broadcast on a fresh cast.
+		if e.ForCharacterId == 0 {
+			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.Slot, b.TownMapId, e.MapId, b.AreaX, b.AreaY, false)
+		}
 	}
 }
 
@@ -152,8 +193,15 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 
 		// TOWN viewers (townDoor.sendDestroyData, inTown=true): removeDoor town=true
 		// -> 8-byte SPAWN_PORTAL clear (RemoveTownDoor), NOT SpawnPortal(...,0,0).
+		// This is the SOLO town clear; party members clear via the town-portal array.
 		broadcastDoorToEligible(l, ctx, wp, townField, e.OwnerCharacterId, e.PartyId, e.ForCharacterId,
 			doorcb.RemoveTownDoorWriter, writer.RemoveTownDoorBody())
+
+		// PARTY town render path: clear this member's town-portal slot. See
+		// handleCreated; only on a real removal broadcast (not a leave delta).
+		if e.ForCharacterId == 0 {
+			announceTownPortalToParty(l, ctx, wp, sc, e.PartyId, b.Slot, 0, 0, 0, 0, true)
+		}
 	}
 }
 

@@ -31,15 +31,31 @@ type broadcastCall struct {
 	forCharacterId   uint32
 }
 
-// withRecordingBroadcaster swaps the package-level broadcast seam for a
-// recording stub so tests assert the (field, writerName) wire effect of the
-// door consumer without standing up a REST mock for ForSessionsInMap or party.
-func withRecordingBroadcaster(t *testing.T) (restore func(), calls *[]broadcastCall) {
+// townPortalCall captures one announceTownPortalToParty invocation.
+type townPortalCall struct {
+	partyId     uint32
+	slot        byte
+	townMapId   _map.Id
+	targetMapId _map.Id
+	x, y        int16
+	clear       bool
+}
+
+// recordedCalls bundles the recorders for both broadcast seams.
+type recordedCalls struct {
+	broadcasts  []broadcastCall
+	townPortals []townPortalCall
+}
+
+// withRecordingBroadcaster swaps the package-level broadcast seams for recording
+// stubs so tests assert the wire effect of the door consumer without standing up
+// REST mocks for ForSessionsInMap or party/session resolution.
+func withRecordingBroadcaster(t *testing.T) (restore func(), calls *recordedCalls) {
 	t.Helper()
-	recorded := make([]broadcastCall, 0)
-	orig := broadcastDoorToEligible
+	rec := &recordedCalls{}
+	origB := broadcastDoorToEligible
 	broadcastDoorToEligible = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, f field.Model, ownerCharacterId, partyId, forCharacterId uint32, writerName string, _ packet.Encode) {
-		recorded = append(recorded, broadcastCall{
+		rec.broadcasts = append(rec.broadcasts, broadcastCall{
 			mapId:            f.MapId(),
 			writerName:       writerName,
 			ownerCharacterId: ownerCharacterId,
@@ -47,7 +63,13 @@ func withRecordingBroadcaster(t *testing.T) (restore func(), calls *[]broadcastC
 			forCharacterId:   forCharacterId,
 		})
 	}
-	return func() { broadcastDoorToEligible = orig }, &recorded
+	origT := announceTownPortalToParty
+	announceTownPortalToParty = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ server.Model, partyId uint32, slot byte, townMapId, targetMapId _map.Id, x, y int16, clear bool) {
+		rec.townPortals = append(rec.townPortals, townPortalCall{
+			partyId: partyId, slot: slot, townMapId: townMapId, targetMapId: targetMapId, x: x, y: y, clear: clear,
+		})
+	}
+	return func() { broadcastDoorToEligible = origB; announceTownPortalToParty = origT }, rec
 }
 
 func newTestTenant(t *testing.T) tenant.Model {
@@ -112,24 +134,34 @@ func TestHandleCreated_AreaSpawnDoorPlusPortal_TownPortalOnly(t *testing.T) {
 		},
 	})
 
-	if got := countWriter(*calls, areaMapId, doorcb.SpawnDoorWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, areaMapId, doorcb.SpawnDoorWriter); got != 1 {
 		t.Fatalf("area SpawnDoor: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, areaMapId, doorcb.SpawnPortalWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, areaMapId, doorcb.SpawnPortalWriter); got != 1 {
 		t.Fatalf("area SpawnPortal: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, townMapId, doorcb.SpawnPortalWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnPortalWriter); got != 1 {
 		t.Fatalf("town SpawnPortal: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, townMapId, doorcb.SpawnDoorWriter); got != 0 {
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnDoorWriter); got != 0 {
 		t.Fatalf("town SpawnDoor: want 0 (Cosmic sends spawnDoor only when !inTown), got %d", got)
 	}
 	// Eligibility wiring: every broadcast carries the owner + party id so the
 	// seam can intersect with same-channel party membership.
-	for _, c := range *calls {
+	for _, c := range calls.broadcasts {
 		if c.ownerCharacterId != ownerId || c.partyId != 77 {
 			t.Fatalf("broadcast lost eligibility args: %+v", c)
 		}
+	}
+	// PARTY town render: a partied cast also sets the member's town-portal slot
+	// (the in-party town-door render source), townMapId + area targetMapId + area pos.
+	if len(calls.townPortals) != 1 {
+		t.Fatalf("town-portal set: want 1, got %d", len(calls.townPortals))
+	}
+	tp := calls.townPortals[0]
+	if tp.clear || tp.partyId != 77 || tp.slot != 0 || tp.townMapId != townMapId ||
+		tp.targetMapId != areaMapId || tp.x != 300 || tp.y != 400 {
+		t.Fatalf("town-portal set payload: %+v", tp)
 	}
 }
 
@@ -150,8 +182,8 @@ func TestHandleCreated_WrongType_NoBroadcast(t *testing.T) {
 		Type:      EventDoorStatusRemoved, // wrong type for created handler
 	})
 
-	if len(*calls) != 0 {
-		t.Fatalf("wrong-type event: want 0 broadcasts, got %d", len(*calls))
+	if len(calls.broadcasts) != 0 {
+		t.Fatalf("wrong-type event: want 0 broadcasts, got %d", len(calls.broadcasts))
 	}
 }
 
@@ -174,8 +206,8 @@ func TestHandleCreated_OtherChannel_NoBroadcast(t *testing.T) {
 		Body:      CreatedBody{TownMapId: townMapId},
 	})
 
-	if len(*calls) != 0 {
-		t.Fatalf("other-channel event: want 0 broadcasts, got %d", len(*calls))
+	if len(calls.broadcasts) != 0 {
+		t.Fatalf("other-channel event: want 0 broadcasts, got %d", len(calls.broadcasts))
 	}
 }
 
@@ -207,14 +239,18 @@ func TestHandleRemoved_AreaRemoveDoor_TownRemoveTownDoor(t *testing.T) {
 		},
 	})
 
-	if got := countWriter(*calls, areaMapId, doorcb.RemoveDoorWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, areaMapId, doorcb.RemoveDoorWriter); got != 1 {
 		t.Fatalf("area RemoveDoor: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
 		t.Fatalf("town RemoveTownDoor: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, townMapId, doorcb.SpawnPortalWriter); got != 0 {
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnPortalWriter); got != 0 {
 		t.Fatalf("town must NOT get SpawnPortal on removal (use RemoveTownDoor 8-byte clear), got %d", got)
+	}
+	// PARTY town render: removal clears the member's town-portal slot.
+	if len(calls.townPortals) != 1 || !calls.townPortals[0].clear || calls.townPortals[0].partyId != 77 {
+		t.Fatalf("town-portal clear: want 1 clear for party 77, got %+v", calls.townPortals)
 	}
 }
 
@@ -247,13 +283,13 @@ func TestHandleSlotChanged_ReslotsTownPortal(t *testing.T) {
 		},
 	})
 
-	if got := countWriter(*calls, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.RemoveTownDoorWriter); got != 1 {
 		t.Fatalf("reslot town RemoveTownDoor: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, townMapId, doorcb.SpawnPortalWriter); got != 1 {
+	if got := countWriter(calls.broadcasts, townMapId, doorcb.SpawnPortalWriter); got != 1 {
 		t.Fatalf("reslot town SpawnPortal: want 1, got %d", got)
 	}
-	if got := countWriter(*calls, areaMapId, doorcb.SpawnDoorWriter); got != 0 {
+	if got := countWriter(calls.broadcasts, areaMapId, doorcb.SpawnDoorWriter); got != 0 {
 		t.Fatalf("reslot must not touch the area door, got %d area SpawnDoor", got)
 	}
 }
